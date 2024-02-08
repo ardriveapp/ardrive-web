@@ -893,69 +893,70 @@ class _UploadFormState extends State<UploadForm> {
     final progress = state.progress;
     return ArDriveStandardModal(
       actions: [
-        ModalAction(
-          action: () {
-            if (state.uploadMethod == UploadMethod.ar &&
-                state.progress.task.values.any(
-                    (element) => element.status == UploadStatus.inProgress)) {
-              _isShowingCancelDialog = true;
-              final cubit = context.read<UploadCubit>();
+        if (state.progress.hasUploadInProgress)
+          ModalAction(
+            action: () {
+              if (state.uploadMethod == UploadMethod.ar &&
+                  state.progress.tasks.values.any(
+                      (element) => element.status == UploadStatus.inProgress)) {
+                _isShowingCancelDialog = true;
+                final cubit = context.read<UploadCubit>();
 
-              showAnimatedDialog(
-                context,
-                content: BlocBuilder<UploadCubit, UploadState>(
-                  bloc: cubit,
-                  builder: (context, state) {
-                    if (state is UploadComplete) {
+                showAnimatedDialog(
+                  context,
+                  content: BlocBuilder<UploadCubit, UploadState>(
+                    bloc: cubit,
+                    builder: (context, state) {
+                      if (state is UploadComplete) {
+                        // TODO: localize
+                        return ArDriveStandardModal(
+                          title: 'Upload complete',
+                          description:
+                              'Your upload is complete. You can not cancel it anymore.',
+                          actions: [
+                            ModalAction(
+                              action: () {
+                                // parent modal
+                                Navigator.pop(context);
+
+                                Navigator.pop(context);
+                              },
+                              title: 'Ok',
+                            ),
+                          ],
+                        );
+                      }
                       // TODO: localize
                       return ArDriveStandardModal(
-                        title: 'Upload complete',
+                        title: 'Warning',
                         description:
-                            'Your upload is complete. You can not cancel it anymore.',
+                            'Cancelling this upload may still result in a charge to your wallet. Do you still wish to proceed?',
                         actions: [
                           ModalAction(
+                            action: () => Navigator.pop(context),
+                            title: 'No',
+                          ),
+                          ModalAction(
                             action: () {
-                              // parent modal
-                              Navigator.pop(context);
-
+                              cubit.cancelUpload();
                               Navigator.pop(context);
                             },
-                            title: 'Ok',
+                            title: 'Yes',
                           ),
                         ],
                       );
-                    }
-                    // TODO: localize
-                    return ArDriveStandardModal(
-                      title: 'Warning',
-                      description:
-                          'Cancelling this upload may still result in a charge to your wallet. Do you still wish to proceed?',
-                      actions: [
-                        ModalAction(
-                          action: () => Navigator.pop(context),
-                          title: 'No',
-                        ),
-                        ModalAction(
-                          action: () {
-                            cubit.cancelUpload();
-                            Navigator.pop(context);
-                          },
-                          title: 'Yes',
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              );
-            } else {
-              context.read<UploadCubit>().cancelUpload();
-            }
-          },
-          // TODO: localize
-          title: state.isCanceling
-              ? 'Canceling...'
-              : appLocalizationsOf(context).cancelEmphasized,
-        ),
+                    },
+                  ),
+                );
+              } else {
+                context.read<UploadCubit>().cancelUpload();
+              }
+            },
+            // TODO: localize
+            title: state.isCanceling
+                ? 'Canceling...'
+                : appLocalizationsOf(context).cancelEmphasized,
+          ),
       ],
       width: kLargeDialogWidth,
       title:
@@ -972,9 +973,9 @@ class _UploadFormState extends State<UploadForm> {
                 child: Scrollbar(
                   child: ListView.builder(
                     shrinkWrap: true,
-                    itemCount: progress.task.length,
+                    itemCount: progress.tasks.length,
                     itemBuilder: (BuildContext context, int index) {
-                      final task = progress.task.values.elementAt(index);
+                      final task = progress.tasks.values.elementAt(index);
 
                       String? progressText;
                       String status = '';
