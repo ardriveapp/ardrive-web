@@ -3,6 +3,7 @@ import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/views/create_new_wallet_view.dart';
 import 'package:ardrive/authentication/login/views/enter_seed_phrase_view.dart';
 import 'package:ardrive/authentication/login/views/generate_wallet_view.dart';
+import 'package:ardrive/authentication/login/views/modals/secure_your_password_modal.dart';
 import 'package:ardrive/authentication/login/views/tiles/tiles_view.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/app_version_widget.dart';
@@ -24,7 +25,6 @@ import 'package:responsive_builder/responsive_builder.dart';
 import '../../components/fadethrough_transition_switcher.dart';
 import '../../components/login_card.dart';
 import '../../components/max_device_sizes_constrained_box.dart';
-import 'create_password_view.dart';
 import 'download_wallet_view.dart';
 import 'landing_page.dart';
 import 'modals/enter_your_password_modal.dart';
@@ -83,6 +83,12 @@ class _LoginPageState extends State<LoginPage> {
 
           if (loginState is PromptPassword) {
             showEnterYourPasswordDialog(
+                context: context,
+                loginBloc: context.read<LoginBloc>(),
+                wallet: loginState.walletFile);
+            return;
+          } else if (loginState is CreatingNewPassword) {
+            showSecureYourPasswordDialog(
                 context: context,
                 loginBloc: context.read<LoginBloc>(),
                 wallet: loginState.walletFile);
@@ -345,19 +351,9 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
       },
       builder: (context, loginState) {
         late Widget content;
+        final loginBloc = context.read<LoginBloc>();
 
-        if (loginState is PromptPassword) {
-          final loginBloc = context.read<LoginBloc>();
-          content = PromptWalletView(
-            key: const Key('promptWalletView'),
-            isArConnectAvailable: loginBloc.isArConnectAvailable,
-            existingUserFlow: loginBloc.existingUserFlow,
-          );
-        } else if (loginState is CreatingNewPassword) {
-          content = CreatePasswordView(
-            wallet: loginState.walletFile,
-          );
-        } else if (loginState is LoginLoading || loginState is LoginSuccess) {
+        if (loginState is LoginLoading || loginState is LoginSuccess) {
           content = const MaxDeviceSizesConstrainedBox(
             child: LoginCard(
               content: Center(
@@ -381,11 +377,10 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
             key: Key('landingPageView'),
           );
         } else {
-          var existingUserFlow = (loginState as LoginInitial).existingUserFlow;
           content = PromptWalletView(
             key: const Key('promptWalletView'),
-            isArConnectAvailable: loginState.isArConnectAvailable,
-            existingUserFlow: existingUserFlow,
+            isArConnectAvailable: loginBloc.isArConnectAvailable,
+            existingUserFlow: loginBloc.existingUserFlow,
           );
         }
 
