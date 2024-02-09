@@ -71,6 +71,7 @@ class _UploadController implements UploadController {
   final Map<String, UploadTask> _completedTasks = {};
   final Map<String, UploadTask> _failedTasks = {};
   final Map<String, UploadTask> _canceledTasks = {};
+  final Map<String, UploadTask> _inProgressTasks = {};
 
   int _totalSize = 0;
   int _numberOfItems = 0;
@@ -128,15 +129,14 @@ class _UploadController implements UploadController {
     final existingTask = tasks[taskId];
     final uploadItem = task.uploadItem;
 
-    _updateTaskStatus(task, taskId);
-    _updateTotalSize(task, uploadItem, existingTask);
-    _updateProgress(task, uploadItem, existingTask);
-
     if (task.progress == 1 && task.status == UploadStatus.inProgress) {
       task = task.copyWith(status: UploadStatus.finalizing);
     }
 
     tasks[taskId] = task;
+    _updateTaskStatus(task, taskId);
+    _updateTotalSize(task, uploadItem, existingTask);
+    _updateProgress(task, uploadItem, existingTask);
 
     _progressStream.add(_generateUploadProgress());
   }
@@ -411,11 +411,17 @@ class _UploadController implements UploadController {
         }
         _completedTasks[taskId] = task;
         _totalUploadedItems += task.content!.length;
+        _inProgressTasks.remove(taskId);
         break;
       case UploadStatus.failed:
         _failedTasks[taskId] = task;
+        _inProgressTasks.remove(taskId);
+        break;
+      case UploadStatus.inProgress:
+        _inProgressTasks[taskId] = task;
         break;
       default:
+        _inProgressTasks.remove(taskId);
         break;
     }
   }
@@ -444,7 +450,8 @@ class _UploadController implements UploadController {
   UploadProgress _generateUploadProgress() {
     final progressInPercentage = _totalProgress / tasks.length;
     return _uploadProgress.copyWith(
-      task: tasks,
+      hasUploadInProgress: _inProgressTasks.isNotEmpty,
+      tasks: tasks,
       progressInPercentage: progressInPercentage,
       totalSize: _totalSize,
       totalUploaded: _totalUploaded,
@@ -495,19 +502,22 @@ class UploadProgress {
   final double progressInPercentage;
   final int totalSize;
   final int totalUploaded;
-  final Map<String, UploadTask> task;
+  final Map<String, UploadTask> tasks;
   final int numberOfItems;
   final int numberOfUploadedItems;
+
+  final bool hasUploadInProgress;
 
   DateTime? startTime;
 
   UploadProgress({
     required this.progressInPercentage,
     required this.totalSize,
-    required this.task,
+    required this.tasks,
     required this.totalUploaded,
     required this.numberOfItems,
     required this.numberOfUploadedItems,
+    required this.hasUploadInProgress,
     this.startTime,
   });
 
@@ -515,29 +525,32 @@ class UploadProgress {
     return UploadProgress(
       progressInPercentage: 0,
       totalSize: 0,
-      task: {},
+      tasks: {},
       totalUploaded: 0,
       numberOfItems: 0,
       numberOfUploadedItems: 0,
+      hasUploadInProgress: false,
     );
   }
 
   UploadProgress copyWith({
     double? progressInPercentage,
     int? totalSize,
-    Map<String, UploadTask>? task,
+    Map<String, UploadTask>? tasks,
     int? totalUploaded,
     DateTime? startTime,
     int? numberOfItems,
     int? numberOfUploadedItems,
+    bool? hasUploadInProgress,
   }) {
     return UploadProgress(
+      hasUploadInProgress: hasUploadInProgress ?? this.hasUploadInProgress,
       numberOfUploadedItems:
           numberOfUploadedItems ?? this.numberOfUploadedItems,
       startTime: startTime ?? this.startTime,
       progressInPercentage: progressInPercentage ?? this.progressInPercentage,
       totalSize: totalSize ?? this.totalSize,
-      task: task ?? this.task,
+      tasks: tasks ?? this.tasks,
       totalUploaded: totalUploaded ?? this.totalUploaded,
       numberOfItems: numberOfItems ?? this.numberOfItems,
     );

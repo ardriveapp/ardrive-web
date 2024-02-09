@@ -894,11 +894,9 @@ class _UploadFormState extends State<UploadForm> {
     final progress = state.progress;
     return ArDriveStandardModal(
       actions: [
-        ModalAction(
-          action: () {
-            if (state.uploadMethod == UploadMethod.ar &&
-                state.progress.task.values.any(
-                    (element) => element.status == UploadStatus.inProgress)) {
+        if (state.progress.hasUploadInProgress)
+          ModalAction(
+            action: () {
               _isShowingCancelDialog = true;
               final cubit = context.read<UploadCubit>();
 
@@ -948,15 +946,12 @@ class _UploadFormState extends State<UploadForm> {
                   },
                 ),
               );
-            } else {
-              context.read<UploadCubit>().cancelUpload();
-            }
-          },
-          // TODO: localize
-          title: state.isCanceling
-              ? 'Canceling...'
-              : appLocalizationsOf(context).cancelEmphasized,
-        ),
+            },
+            // TODO: localize
+            title: state.isCanceling
+                ? 'Canceling...'
+                : appLocalizationsOf(context).cancelEmphasized,
+          ),
       ],
       width: kLargeDialogWidth,
       title:
@@ -973,9 +968,9 @@ class _UploadFormState extends State<UploadForm> {
                 child: Scrollbar(
                   child: ListView.builder(
                     shrinkWrap: true,
-                    itemCount: progress.task.length,
+                    itemCount: progress.tasks.length,
                     itemBuilder: (BuildContext context, int index) {
-                      final task = progress.task.values.elementAt(index);
+                      final task = progress.tasks.values.elementAt(index);
 
                       String? progressText;
                       String status = '';
@@ -1231,12 +1226,13 @@ class _UploadFormState extends State<UploadForm> {
                 .copyWith(fontWeight: FontWeight.bold),
           ),
           // TODO: localize
-          Text(
-            'Upload speed: ${filesize(state.progress.calculateUploadSpeed().toInt())}/s',
-            style: ArDriveTypography.body.buttonNormalBold(
-                color:
-                    ArDriveTheme.of(context).themeData.colors.themeFgDefault),
-          ),
+          if (state.progress.hasUploadInProgress)
+            Text(
+              'Upload speed: ${filesize(state.progress.calculateUploadSpeed().toInt())}/s',
+              style: ArDriveTypography.body.buttonNormalBold(
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeFgDefault),
+            ),
         ],
       ),
     );
