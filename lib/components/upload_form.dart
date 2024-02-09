@@ -896,61 +896,55 @@ class _UploadFormState extends State<UploadForm> {
         if (state.progress.hasUploadInProgress)
           ModalAction(
             action: () {
-              if (state.uploadMethod == UploadMethod.ar &&
-                  state.progress.tasks.values.any(
-                      (element) => element.status == UploadStatus.inProgress)) {
-                _isShowingCancelDialog = true;
-                final cubit = context.read<UploadCubit>();
+              _isShowingCancelDialog = true;
+              final cubit = context.read<UploadCubit>();
 
-                showAnimatedDialog(
-                  context,
-                  content: BlocBuilder<UploadCubit, UploadState>(
-                    bloc: cubit,
-                    builder: (context, state) {
-                      if (state is UploadComplete) {
-                        // TODO: localize
-                        return ArDriveStandardModal(
-                          title: 'Upload complete',
-                          description:
-                              'Your upload is complete. You can not cancel it anymore.',
-                          actions: [
-                            ModalAction(
-                              action: () {
-                                // parent modal
-                                Navigator.pop(context);
-
-                                Navigator.pop(context);
-                              },
-                              title: 'Ok',
-                            ),
-                          ],
-                        );
-                      }
+              showAnimatedDialog(
+                context,
+                content: BlocBuilder<UploadCubit, UploadState>(
+                  bloc: cubit,
+                  builder: (context, state) {
+                    if (state is UploadComplete) {
                       // TODO: localize
                       return ArDriveStandardModal(
-                        title: 'Warning',
+                        title: 'Upload complete',
                         description:
-                            'Cancelling this upload may still result in a charge to your wallet. Do you still wish to proceed?',
+                            'Your upload is complete. You can not cancel it anymore.',
                         actions: [
                           ModalAction(
-                            action: () => Navigator.pop(context),
-                            title: 'No',
-                          ),
-                          ModalAction(
                             action: () {
-                              cubit.cancelUpload();
+                              // parent modal
+                              Navigator.pop(context);
+
                               Navigator.pop(context);
                             },
-                            title: 'Yes',
+                            title: 'Ok',
                           ),
                         ],
                       );
-                    },
-                  ),
-                );
-              } else {
-                context.read<UploadCubit>().cancelUpload();
-              }
+                    }
+                    // TODO: localize
+                    return ArDriveStandardModal(
+                      title: 'Warning',
+                      description:
+                          'Cancelling this upload may still result in a charge to your wallet. Do you still wish to proceed?',
+                      actions: [
+                        ModalAction(
+                          action: () => Navigator.pop(context),
+                          title: 'No',
+                        ),
+                        ModalAction(
+                          action: () {
+                            cubit.cancelUpload();
+                            Navigator.pop(context);
+                          },
+                          title: 'Yes',
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              );
             },
             // TODO: localize
             title: state.isCanceling
