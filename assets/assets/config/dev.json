@@ -4,7 +4,7 @@
   "useTurboPayment": true,
   "defaultTurboUploadUrl": "https://upload.ardrive.dev",
   "defaultTurboPaymentUrl": "https://payment.ardrive.dev",
-  "allowedDataItemSizeForTurbo": 500000,
+  "allowedDataItemSizeForTurbo": 100000,
   "enableQuickSyncAuthoring": true,
   "enableMultipleFileDownload": true,
   "enableVideoPreview": true,
