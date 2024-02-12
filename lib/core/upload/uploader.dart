@@ -451,12 +451,19 @@ class UploadPaymentEvaluator {
       );
     }
 
-    uploadMethod = await _determineUploadMethod(
-      turboBalance,
-      turboBundleSizes,
-      _appConfig.allowedDataItemSizeForTurbo,
-      _isTurboAvailableToUploadAllFiles,
-    );
+    // Checking isFreeUploadPossibleUsingTurbo uses the 100KB file size check
+    // against the date, but using _determineUploadMethod() additionally uses the
+    // Turbo bundle headers as part of the size check. A 100KB file might be
+    // larger than _appConfig.allowedDataItemSizeForTurbo due to the headers,
+    // so we need to catch that here.
+    uploadMethod = isFreeUploadPossibleUsingTurbo
+        ? UploadMethod.turbo
+        : await _determineUploadMethod(
+            turboBalance,
+            turboBundleSizes,
+            _appConfig.allowedDataItemSizeForTurbo,
+            _isTurboAvailableToUploadAllFiles,
+          );
 
     return UploadPaymentInfo(
       isTurboAvailable: _isTurboAvailableToUploadAllFiles,
