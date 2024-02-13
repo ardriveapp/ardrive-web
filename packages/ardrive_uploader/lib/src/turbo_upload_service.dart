@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:dio/dio.dart';
 import 'package:retry/retry.dart';
-import 'package:ardrive_uploader/src/utils/logger.dart';
 
 class TurboUploadService {
   TurboUploadService({
@@ -55,7 +55,7 @@ class TurboUploadService {
         final totalBytesSent = completedRequestsBytesSent + inFlightBytesSent;
         final progress = totalBytesSent / dataItem.dataItemSize;
 
-        if (progress == 1) {
+        if (progress >= 1) {
           timer.cancel();
         }
 
