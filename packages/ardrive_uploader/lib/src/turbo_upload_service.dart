@@ -17,7 +17,7 @@ class TurboUploadService {
   final CancelToken _cancelToken = CancelToken();
   final dio = Dio();
   final dataItemConfirmationRetryDelay = Duration(seconds: 15);
-  final maxInFlightData = MiB(200).size;
+  final maxInFlightData = MiB(100).size;
 
   Future<Response> post({
     required DataItemResult dataItem,
@@ -41,7 +41,7 @@ class TurboUploadService {
     );
     final maxUploadsInParallel = maxInFlightData ~/ uploadChunkSizeInBytes;
     logger.d(
-        '[${dataItem.id}] UUpload ID: $uploadId, Uploads in parallel: $maxUploadsInParallel, Chunk size: $uploadChunkSizeInBytes');
+        '[${dataItem.id}] Upload ID: $uploadId, Uploads in parallel: $maxUploadsInParallel, Chunk size: $uploadChunkSizeInBytes');
 
     // (offset: sent bytes) map for in flight requests progress
     Map<int, int> inFlightRequestsBytesSent = {};
