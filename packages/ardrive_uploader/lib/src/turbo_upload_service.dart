@@ -56,13 +56,6 @@ class TurboUploadService {
             : inFlightRequestsBytesSent.values.reduce((a, b) => a + b);
         final totalBytesSent = completedRequestsBytesSent + inFlightBytesSent;
         final progress = totalBytesSent / dataItem.dataItemSize;
-        print('------------------');
-        print('inFlightBytesSent: $inFlightBytesSent');
-        print('completedRequestsBytesSent: $completedRequestsBytesSent');
-        print('totalBytesSent: $totalBytesSent');
-        print('dataItemSize: ${dataItem.dataItemSize}');
-        print('progress: $progress');
-        print('------------------');
 
         if (progress >= 1) {
           timer.cancel();
@@ -89,6 +82,7 @@ class TurboUploadService {
                     }
                   },
                   options: Options(
+                    sendTimeout: Duration(seconds: 10),
                     headers: {
                       'Content-Type': 'application/octet-stream',
                       'Content-Length': chunk.length.toString(),
