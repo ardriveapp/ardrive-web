@@ -1,0 +1,1 @@
+- Fixes private file download issue with missing bytes
