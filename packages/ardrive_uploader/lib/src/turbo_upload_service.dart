@@ -18,6 +18,7 @@ class TurboUploadService {
   final dio = Dio();
   final dataItemConfirmationRetryDelay = Duration(seconds: 15);
   final maxInFlightData = MiB(100).size;
+  Timer? onSendProgressTimer;
 
   Future<Response> post({
     required DataItemResult dataItem,
@@ -48,12 +49,20 @@ class TurboUploadService {
     int completedRequestsBytesSent = 0;
 
     if (onSendProgress != null) {
-      Timer.periodic(Duration(milliseconds: 500), (timer) {
+      onSendProgressTimer =
+          Timer.periodic(Duration(milliseconds: 500), (timer) {
         final inFlightBytesSent = inFlightRequestsBytesSent.isEmpty
             ? 0
             : inFlightRequestsBytesSent.values.reduce((a, b) => a + b);
         final totalBytesSent = completedRequestsBytesSent + inFlightBytesSent;
         final progress = totalBytesSent / dataItem.dataItemSize;
+        print('------------------');
+        print('inFlightBytesSent: $inFlightBytesSent');
+        print('completedRequestsBytesSent: $completedRequestsBytesSent');
+        print('totalBytesSent: $totalBytesSent');
+        print('dataItemSize: ${dataItem.dataItemSize}');
+        print('progress: $progress');
+        print('------------------');
 
         if (progress >= 1) {
           timer.cancel();
@@ -70,34 +79,39 @@ class TurboUploadService {
         dataItemId: dataItem.id, (chunk, offset) async {
       try {
         logger.d('[${dataItem.id}] Uploading chunk. Offset: $offset');
-        return r.retry(
-          () => dio.post(
-            '$turboUploadUri/chunks/arweave/$uploadId/$offset',
-            data: chunk,
-            onSendProgress: (sent, _) {
-              if (onSendProgress != null) {
-                inFlightRequestsBytesSent[offset] = sent;
-              }
-            },
-            options: Options(
-              headers: {
-                'Content-Type': 'application/octet-stream',
-                'Content-Length': chunk.length.toString(),
-              }..addAll(headers ?? const {}),
-            ),
-            cancelToken: _cancelToken,
-          )..whenComplete(() {
-              if (onSendProgress != null) {
-                inFlightRequestsBytesSent.remove(offset);
-                completedRequestsBytesSent += chunk.length;
-              }
-            }),
-        );
+        return r
+            .retry(() => dio.post(
+                  '$turboUploadUri/chunks/arweave/$uploadId/$offset',
+                  data: chunk,
+                  onSendProgress: (sent, total) {
+                    if (onSendProgress != null) {
+                      inFlightRequestsBytesSent[offset] = sent;
+                    }
+                  },
+                  options: Options(
+                    headers: {
+                      'Content-Type': 'application/octet-stream',
+                      'Content-Length': chunk.length.toString(),
+                    }..addAll(headers ?? const {}),
+                  ),
+                  cancelToken: _cancelToken,
+                ))
+            .then((response) {
+          if (onSendProgress != null) {
+            inFlightRequestsBytesSent.remove(offset);
+            completedRequestsBytesSent += chunk.length;
+          }
+          return response;
+        }, onError: (error) {
+          throw error;
+        });
       } catch (e) {
         if (_isCanceled) {
           logger.d('[${dataItem.id}] Upload canceled');
+          onSendProgressTimer?.cancel();
           _cancelToken.cancel();
         }
+
         rethrow;
       }
     });
@@ -120,10 +134,14 @@ class TurboUploadService {
 
       if (finaliseInfo.statusCode == 504) {
         final confirmInfo = await _confirmUpload(dataItem.id);
+        onSendProgressTimer?.cancel();
+
         return confirmInfo;
       }
 
       logger.d('[${dataItem.id}] Upload finalised');
+
+      onSendProgressTimer?.cancel();
 
       return finaliseInfo;
     } catch (e) {
@@ -133,6 +151,8 @@ class TurboUploadService {
         logger.d('[${dataItem.id}] Upload canceled');
         _cancelToken.cancel();
       }
+
+      onSendProgressTimer?.cancel();
 
       rethrow;
     }
@@ -167,9 +187,10 @@ class TurboUploadService {
   }
 
   Future<void> cancel() {
-    _cancelToken.cancel();
     logger.d('Stream closed');
+    _cancelToken.cancel();
     _isCanceled = true;
+    onSendProgressTimer?.cancel();
     return Future.value();
   }
 
