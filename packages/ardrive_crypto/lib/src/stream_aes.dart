@@ -10,7 +10,6 @@ import 'package:webcrypto/webcrypto.dart';
 const _aesBlockLengthBytes = 16;
 const _aesNonceLengthBytes = 12;
 const _aesCounterLengthBytes = _aesBlockLengthBytes - _aesNonceLengthBytes;
-const _aesGcmTagLengthBytes = 16;
 
 const _aes128KeyLengthBytes = 16;
 const _aes192KeyLengthBytes = 24;
@@ -104,7 +103,7 @@ class AesCtrStream extends AesStream with EncryptStream, DecryptStream {
   @override
   StreamTransformer<Uint8List, Uint8List> decryptTransformer(
     Uint8List nonce,
-    int streamLength,
+    int fileSize,
   ) {
     return aesStreamTransformer(_aesCtr.decryptBytes, nonce);
   }
@@ -133,15 +132,17 @@ class AesGcmStream extends AesStream with DecryptStream {
 
   @override
   StreamTransformer<Uint8List, Uint8List> decryptTransformer(
-      Uint8List nonce, int streamLength) {
+    Uint8List nonce,
+    int fileSize,
+  ) {
     debugPrint(
         'WARNING: Decrypting AES-GCM without MAC verification! Only do this if you know what you are doing.');
 
-    final streamLengthNoMac = streamLength - _aesGcmTagLengthBytes;
-
     return StreamTransformer.fromBind((ciphertextStream) {
+      // File size is used to trim the MAC from the end of the fileSize
+      // stream length = file size + 16 (MAC length)
       final ciphertextStreamNoMac =
-          ciphertextStream.transform(trimData(streamLengthNoMac));
+          ciphertextStream.transform(trimData(fileSize));
       return ciphertextStreamNoMac
           .transform(aesStreamTransformer(_aesCtr.decryptBytes, nonce));
     });
