@@ -220,7 +220,7 @@ class _TutorialContent extends StatelessWidget {
                         padding: const EdgeInsets.fromLTRB(46, 0, 0, 0),
                         child: ArDriveImage(
                           image:
-                              AssetImage(Resources.images.login.confettiLeft),
+                              AssetImage(Resources.images.login.confettiRight),
                           fit: BoxFit.contain,
                         )),
                   )
