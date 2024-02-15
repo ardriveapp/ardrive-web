@@ -24,8 +24,8 @@ class LoginInitial extends LoginState {
 
 class LoginLoading extends LoginState {}
 
-class LoginOnBoarding extends LoginState {
-  const LoginOnBoarding(this.walletFile);
+class LoginTutorials extends LoginState {
+  const LoginTutorials(this.walletFile);
 
   final Wallet walletFile;
 }

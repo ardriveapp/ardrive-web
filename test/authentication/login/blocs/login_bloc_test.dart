@@ -83,7 +83,7 @@ void main() {
       },
       expect: () => [
         LoginLoading(),
-        LoginOnBoarding(wallet),
+        LoginTutorials(wallet),
       ],
     );
   });
@@ -621,7 +621,7 @@ void main() {
       act: (bloc) async {
         bloc.add(const AddWalletFromArConnect());
       },
-      expect: () => [LoginLoading(), const TypeMatcher<LoginOnBoarding>()],
+      expect: () => [LoginLoading(), const TypeMatcher<LoginTutorials>()],
     );
 
     blocTest(

@@ -28,8 +28,8 @@ import '../../components/max_device_sizes_constrained_box.dart';
 import 'download_wallet_view.dart';
 import 'landing_page.dart';
 import 'modals/enter_your_password_modal.dart';
-import 'onboarding_view.dart';
 import 'prompt_wallet_view.dart';
+import 'tutorials_view.dart';
 
 class LoginPage extends StatefulWidget {
   final bool gettingStarted;
@@ -93,7 +93,7 @@ class _LoginPageState extends State<LoginPage> {
                 loginBloc: context.read<LoginBloc>(),
                 wallet: loginState.walletFile);
             return;
-          } else if (loginState is LoginOnBoarding) {
+          } else if (loginState is LoginTutorials) {
             preCacheOnBoardingAssets(context);
           } else if (loginState is LoginFailure) {
             // TODO: Verify if the error is `NoConnectionException` and show an
@@ -145,8 +145,9 @@ class _LoginPageState extends State<LoginPage> {
         },
         builder: (context, loginState) {
           late Widget view;
-          if (loginState is LoginOnBoarding) {
-            view = OnBoardingView(wallet: loginState.walletFile);
+          if (loginState is LoginTutorials) {
+            view = TutorialsView(wallet: loginState.walletFile);
+            // view = TutorialsView();
           } else if (loginState is LoginCreateNewWallet) {
             view = CreateNewWalletView(mnemonic: loginState.mnemonic);
           } else {
@@ -344,7 +345,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
       buildWhen: (previous, current) {
         final isFailure = current is LoginFailure;
         final isSuccess = current is LoginSuccess;
-        final isOnBoarding = current is LoginOnBoarding;
+        final isOnBoarding = current is LoginTutorials;
         final isCreateNewWallet = current is LoginCreateNewWallet;
 
         return !(isFailure || isSuccess || isOnBoarding || isCreateNewWallet);

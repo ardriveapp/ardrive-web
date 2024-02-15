@@ -147,7 +147,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       if (await _arDriveAuth.userHasPassword(wallet)) {
         emit(PromptPassword(walletFile: wallet));
       } else {
-        emit(LoginOnBoarding(wallet));
+        emit(LoginTutorials(wallet));
       }
     } catch (e) {
       usingSeedphrase = false;
@@ -299,7 +299,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       if (await _arDriveAuth.userHasPassword(wallet)) {
         emit(PromptPassword(walletFile: wallet));
       } else {
-        emit(LoginOnBoarding(wallet));
+        emit(LoginTutorials(wallet));
       }
     } catch (e) {
       emit(LoginFailure(e));
@@ -479,7 +479,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       if (await _arDriveAuth.userHasPassword(wallet)) {
         emit(PromptPassword(walletFile: wallet));
       } else {
-        emit(LoginOnBoarding(wallet));
+        emit(LoginTutorials(wallet));
       }
     } catch (e) {
       usingSeedphrase = false;

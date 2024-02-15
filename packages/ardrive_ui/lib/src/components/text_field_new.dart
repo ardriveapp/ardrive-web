@@ -375,7 +375,9 @@ class ArDriveTextFieldStateNew extends State<ArDriveTextFieldNew> {
               focusedBorder: _getFocusedBoder(colorTokens),
               disabledBorder: _getDisabledBorder(colorTokens),
               filled: true,
-              fillColor: colorTokens.inputDefault,
+              fillColor: widget.isEnabled
+                  ? colorTokens.inputDefault
+                  : colorTokens.inputDisabled,
               contentPadding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
             ),
           ),

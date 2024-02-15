@@ -91,18 +91,18 @@ class Primitives {
         solidRed900: const Color(0xffc0151e),
         solidRed1000: const Color(0xff4d080c),
         solidRed1100: const Color(0xff150203),
-        solidGrey50: const Color(0xfff7f7f7),
-        solidGrey100: const Color(0xffe3e3e3),
-        solidGrey200: const Color(0xffc4c4c4),
-        solidGrey300: const Color(0xffbababa),
-        solidGrey400: const Color(0xff8a8a8a),
-        solidGrey500: const Color(0xff666666),
-        solidGrey600: const Color(0xff4f4f4f),
-        solidGrey700: const Color(0xff3b3b3b),
-        solidGrey800: const Color(0xff262626),
-        solidGrey900: const Color(0xff1f1f1f),
-        solidGrey1000: const Color(0xff0d0d0d),
-        solidGrey1100: const Color(0xff000000),
+        solidGrey50: const Color(0xFFF7F7F7),
+        solidGrey100: const Color(0xFFE3E3E3),
+        solidGrey200: const Color(0xFFDEDEDE),
+        solidGrey300: const Color(0xFFCECECE),
+        solidGrey400: const Color(0xFFBABABA),
+        solidGrey500: const Color(0xFF8A8A8A),
+        solidGrey600: const Color(0xFF666666),
+        solidGrey700: const Color(0xFF4F4F4F),
+        solidGrey800: const Color(0xFF3B3B3B),
+        solidGrey900: const Color(0xFF262626),
+        solidGrey1000: const Color(0xFF1F1F1F),
+        solidGrey1100: const Color(0xFF000000),
         transparent100_64: const Color(0xa3bababa),
         transparent100_32: const Color(0x51bababa),
         transparent100_16: const Color(0x28bababa),
@@ -187,6 +187,7 @@ class ArDriveColorTokens {
     required this.buttonOutlineHover,
     required this.buttonOutlinePress,
     required this.inputDefault,
+    required this.inputDisabled,
     required this.iconLow,
     required this.iconMid,
     required this.iconHigh,
@@ -224,6 +225,7 @@ class ArDriveColorTokens {
         buttonOutlineHover: primitives.solidGrey600,
         buttonOutlinePress: primitives.solidGrey500,
         inputDefault: primitives.solidGrey900,
+        inputDisabled: primitives.solidGrey800,
         iconLow: primitives.solidGrey400,
         iconMid: primitives.solidGrey200,
         iconHigh: primitives.solidGrey50);
@@ -260,10 +262,11 @@ class ArDriveColorTokens {
         buttonOutlineDefault: Colors.transparent,
         buttonOutlineHover: primitives.transparent900_12,
         buttonOutlinePress: primitives.transparent900_16,
-        inputDefault: primitives.solidGrey900,
-        iconLow: primitives.solidGrey400,
-        iconMid: primitives.solidGrey200,
-        iconHigh: primitives.solidGrey50);
+        inputDefault: primitives.solidGrey200,
+        inputDisabled: primitives.solidGrey300,
+        iconLow: primitives.solidGrey500,
+        iconMid: primitives.solidGrey600,
+        iconHigh: primitives.solidGrey700);
   }
 
   final Primitives primitives;
@@ -294,6 +297,7 @@ class ArDriveColorTokens {
   final Color buttonOutlineHover;
   final Color buttonOutlinePress;
   final Color inputDefault;
+  final Color inputDisabled;
   final Color iconLow;
   final Color iconMid;
   final Color iconHigh;

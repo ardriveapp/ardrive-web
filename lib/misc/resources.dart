@@ -91,6 +91,10 @@ class Login {
   final String latticeLarge = 'assets/images/login/lattice_large.svg';
   final String latticeLargeLight =
       'assets/images/login/lattice_large_light.svg';
+  final String placeholder1 = 'assets/images/login/placeholder1.gif';
+  final String placeholder2 = 'assets/images/login/placeholder2.gif';
+  final String confettiLeft = 'assets/images/login/confetti_left.png';
+  final String confettiRight = 'assets/images/login/confetti_right.png';
 }
 
 const String discord = 'Discord';
