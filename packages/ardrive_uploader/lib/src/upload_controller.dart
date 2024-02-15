@@ -265,20 +265,12 @@ class _UploadController implements UploadController {
     _progressStream.close();
     _progressStream = StreamController.broadcast();
 
-    final failedTasks =
-        tasks.values.where((e) => e.status == UploadStatus.failed).toList();
-
-    if (failedTasks.isEmpty) {
-      return Future.value();
-    }
-
     _resetUploadProgress();
 
-    _failedTasks.clear();
     _completedTasks.clear();
     tasks.clear();
 
-    for (var task in failedTasks) {
+    for (var task in _failedTasks.values) {
       addTask(
         task.copyWith(
           status: UploadStatus.notStarted,
@@ -287,6 +279,8 @@ class _UploadController implements UploadController {
         ),
       );
     }
+
+    _failedTasks.clear();
 
     init();
 
