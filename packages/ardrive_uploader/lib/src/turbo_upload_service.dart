@@ -78,11 +78,14 @@ class TurboUploadService {
                   data: chunk,
                   onSendProgress: (sent, total) {
                     if (onSendProgress != null) {
-                      inFlightRequestsBytesSent[offset] = sent;
+                      if (inFlightRequestsBytesSent[offset] == null) {
+                        inFlightRequestsBytesSent[offset] = 0;
+                      } else if (inFlightRequestsBytesSent[offset]! < sent) {
+                        inFlightRequestsBytesSent[offset] = sent;
+                      }
                     }
                   },
                   options: Options(
-                    sendTimeout: Duration(seconds: 10),
                     headers: {
                       'Content-Type': 'application/octet-stream',
                       'Content-Length': chunk.length.toString(),
