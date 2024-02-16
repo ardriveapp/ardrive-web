@@ -100,6 +100,7 @@ class TurboUploadService {
           }
           return response;
         }, onError: (error) {
+          onSendProgressTimer?.cancel();
           throw error;
         });
       } catch (e) {

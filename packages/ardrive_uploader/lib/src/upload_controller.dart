@@ -265,10 +265,14 @@ class _UploadController implements UploadController {
     _progressStream.close();
     _progressStream = StreamController.broadcast();
 
+    tasks.clear();
+    _completedTasks.clear();
+    _canceledTasks.clear();
+    _inProgressTasks.clear();
+
     _resetUploadProgress();
 
-    _completedTasks.clear();
-    tasks.clear();
+    _progressStream.add(UploadProgress.notStarted());
 
     for (var task in _failedTasks.values) {
       addTask(
@@ -278,6 +282,12 @@ class _UploadController implements UploadController {
           cancelToken: null,
         ),
       );
+    }
+
+    logger.d('Retrying failed tasks.');
+
+    for (var task in tasks.values) {
+      logger.d('Task: ${task.id} and progress ${task.progress}');
     }
 
     _failedTasks.clear();
