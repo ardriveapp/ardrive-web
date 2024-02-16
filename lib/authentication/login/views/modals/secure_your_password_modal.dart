@@ -60,7 +60,7 @@ class _SecureYourPasswordWidgetState extends State<SecureYourPasswordWidget> {
             Align(
               alignment: Alignment.topCenter,
               child: Text(
-                'Secure Your Password',
+                'Secure Your Wallet',
                 style: typography.heading2(
                     color: colorTokens.textHigh, fontWeight: ArFontWeight.bold),
               ),
