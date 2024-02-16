@@ -95,6 +95,7 @@ class Login {
   final String placeholder2 = 'assets/images/login/placeholder2.gif';
   final String confettiLeft = 'assets/images/login/confetti_left.png';
   final String confettiRight = 'assets/images/login/confetti_right.png';
+  final String arrowRed = 'assets/images/login/arrow_red.svg';
 }
 
 const String discord = 'Discord';

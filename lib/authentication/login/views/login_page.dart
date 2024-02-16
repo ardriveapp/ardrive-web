@@ -1,6 +1,5 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
-import 'package:ardrive/authentication/login/views/create_new_wallet_view.dart';
 import 'package:ardrive/authentication/login/views/enter_seed_phrase_view.dart';
 import 'package:ardrive/authentication/login/views/generate_wallet_view.dart';
 import 'package:ardrive/authentication/login/views/modals/secure_your_password_modal.dart';
@@ -18,6 +17,7 @@ import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.da
 import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -145,17 +145,17 @@ class _LoginPageState extends State<LoginPage> {
         },
         builder: (context, loginState) {
           late Widget view;
-          if (loginState is LoginTutorials) {
-            view = TutorialsView(wallet: loginState.walletFile);
-            // view = TutorialsView();
-          } else if (loginState is LoginCreateNewWallet) {
-            view = CreateNewWalletView(mnemonic: loginState.mnemonic);
-          } else {
-            view = LoginPageScaffold(
-              loginState: loginState,
-              isGettingStartedLoading: isGettingStartedLoading,
-            );
-          }
+          // if (loginState is LoginTutorials) {
+          //   view = TutorialsView(wallet: loginState.walletFile);
+          view = TutorialsView(wallet: Wallet());
+          // } else if (loginState is LoginCreateNewWallet) {
+          //   view = CreateNewWalletView(mnemonic: loginState.mnemonic);
+          // } else {
+          //   view = LoginPageScaffold(
+          //     loginState: loginState,
+          //     isGettingStartedLoading: isGettingStartedLoading,
+          //   );
+          // }
 
           return FadeThroughTransitionSwitcher(
             fillColor: Colors.transparent,

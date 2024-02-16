@@ -4,6 +4,7 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -117,21 +118,31 @@ class TutorialsViewState extends State<TutorialsView> {
       desktop: (context) => Material(
           color: colorTokens.containerL0,
           child: Expanded(
-              child: Container(
-                  decoration: BoxDecoration(
-                    border: Border(
-                        top: BorderSide(
-                            color: colorTokens.containerRed, width: 6)),
-                    color: colorTokens.containerL0,
-                  ),
-                  padding: const EdgeInsets.fromLTRB(140, 100, 140, 100),
-                  child: Expanded(
-                      child: Center(
-                          child: MaxDeviceSizesConstrainedBox(
-                              maxHeightPercent: 1.0,
-                              defaultMaxWidth: 1168,
-                              defaultMaxHeight: 800,
-                              child: _buildOnBoardingContent())))))),
+              child: Stack(children: [
+            Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                      top: BorderSide(
+                          color: colorTokens.containerRed, width: 6)),
+                  color: colorTokens.containerL0,
+                ),
+                padding: const EdgeInsets.fromLTRB(140, 100, 140, 100),
+                child: Expanded(
+                    child: Center(
+                        child: MaxDeviceSizesConstrainedBox(
+                            maxHeightPercent: 1.0,
+                            defaultMaxWidth: 1168,
+                            defaultMaxHeight: 800,
+                            child: _buildOnBoardingContent())))),
+            // Placing red arrow here as it has to be overlaying the padding area
+            // for the bottom buttons/page number to be vertically stable across
+            // screens
+            if (_currentPage >= _list.length - 1)
+              Positioned(
+                  right: 140,
+                  bottom: 95,
+                  child: SvgPicture.asset(Resources.images.login.arrowRed)),
+          ]))),
       mobile: (context) => Scaffold(
         resizeToAvoidBottomInset: true,
         body: Container(
@@ -277,6 +288,8 @@ class _TutorialContent extends StatelessWidget {
                         ),
                       ))),
               Container(
+                  padding:
+                      EdgeInsets.only(right: pageNumber >= totalPages ? 10 : 0),
                   width: 200,
                   alignment: Alignment.centerRight,
                   child: Text.rich(
