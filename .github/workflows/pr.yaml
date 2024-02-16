@@ -12,7 +12,7 @@ env:
   PR_NUMBER: ${{ github.event.pull_request.number }}
   PR_TITLE: ${{ github.event.pull_request.title }}
   RELEASE_NOTES: ${{ github.event.pull_request.title }} - ${{ github.sha }}
-  
+
 jobs:
   pre-build:
     uses: ./.github/workflows/test.yml
@@ -109,6 +109,8 @@ jobs:
         run: bundle exec fastlane update_release_url
 
   build-android:
+    # skipped for now
+    if: false
     needs: pre-build
     runs-on: ubuntu-latest
     steps:
