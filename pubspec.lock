@@ -531,10 +531,10 @@ packages:
     dependency: "direct main"
     description:
       name: dio
-      sha256: "417e2a6f9d83ab396ec38ff4ea5da6c254da71e4db765ad737a42af6930140b7"
+      sha256: "797e1e341c3dd2f69f2dad42564a6feff3bfb87187d05abb93b9609e6f1645c3"
       url: "https://pub.dev"
     source: hosted
-    version: "5.3.3"
+    version: "5.4.0"
   dio_smart_retry:
     dependency: transitive
     description:
@@ -639,26 +639,26 @@ packages:
     dependency: transitive
     description:
       name: file_selector
-      sha256: "84eaf3e034d647859167d1f01cfe7b6352488f34c1b4932635012b202014c25b"
+      sha256: "070062b9fca7482baf60af671219086e188e50dd80497393e7d58532b56215d3"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.1"
+    version: "1.0.2"
   file_selector_android:
     dependency: transitive
     description:
       name: file_selector_android
-      sha256: d41e165d6f798ca941d536e5dc93494d50e78c571c28ad60cfe0b0fefeb9f1e7
+      sha256: a2d50f9de59861605b866467a55d681a0ca7bc108129c0bd33e74fa602dd0249
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.0+3"
+    version: "0.5.0+5"
   file_selector_ios:
     dependency: transitive
     description:
       name: file_selector_ios
-      sha256: b3fbdda64aa2e335df6e111f6b0f1bb968402ed81d2dd1fa4274267999aa32c2
+      sha256: b015154e6d9fddbc4d08916794df170b44531798c8dd709a026df162d07ad81d
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.1+6"
+    version: "0.5.1+8"
   file_selector_linux:
     dependency: transitive
     description:
@@ -780,10 +780,10 @@ packages:
     dependency: transitive
     description:
       name: flutter_downloader
-      sha256: bc13eb52ce81822a94f107b2ea0541b0e28be350f0c064dfbb5c66e95d7791f4
+      sha256: e130001cf85d8d7450b8318a4670c19e495dd8c102ad4b15a512e9405e7c451d
       url: "https://pub.dev"
     source: hosted
-    version: "1.11.3"
+    version: "1.11.6"
   flutter_driver:
     dependency: "direct dev"
     description: flutter
@@ -1147,34 +1147,34 @@ packages:
     dependency: transitive
     description:
       name: image_picker
-      sha256: "7d7f2768df2a8b0a3cefa5ef4f84636121987d403130e70b17ef7e2cf650ba84"
+      sha256: "26222b01a0c9a2c8fe02fc90b8208bd3325da5ed1f4a2acabf75939031ac0bdd"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.4"
+    version: "1.0.7"
   image_picker_android:
     dependency: transitive
     description:
       name: image_picker_android
-      sha256: "0c7b83bbe2980c8a8e36e974f055e11e51675784e13a4762889feed0f3937ff2"
+      sha256: "39f2bfe497e495450c81abcd44b62f56c2a36a37a175da7d137b4454977b51b1"
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.8+1"
+    version: "0.8.9+3"
   image_picker_for_web:
     dependency: transitive
     description:
       name: image_picker_for_web
-      sha256: "50bc9ae6a77eea3a8b11af5eb6c661eeb858fdd2f734c2a4fd17086922347ef7"
+      sha256: e2423c53a68b579a7c37a1eda967b8ae536c3d98518e5db95ca1fe5719a730a3
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.1"
+    version: "3.0.2"
   image_picker_ios:
     dependency: transitive
     description:
       name: image_picker_ios
-      sha256: c5538cacefacac733c724be7484377923b476216ad1ead35a0d2eadcdc0fc497
+      sha256: fadafce49e8569257a0cad56d24438a6fa1f0cbd7ee0af9b631f7492818a4ca3
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.8+2"
+    version: "0.8.9+1"
   image_picker_linux:
     dependency: transitive
     description:
@@ -1195,10 +1195,10 @@ packages:
     dependency: transitive
     description:
       name: image_picker_platform_interface
-      sha256: ed9b00e63977c93b0d2d2b343685bed9c324534ba5abafbb3dfbd6a780b1b514
+      sha256: "0e827c156e3a90edd3bbe7f6de048b39247b16e58173b08a835b7eb00aba239e"
       url: "https://pub.dev"
     source: hosted
-    version: "2.9.1"
+    version: "2.9.2"
   image_picker_windows:
     dependency: transitive
     description:
@@ -1584,10 +1584,10 @@ packages:
     dependency: transitive
     description:
       name: permission_handler_android
-      sha256: ace7d15a3d1a4a0b91c041d01e5405df221edb9de9116525efc773c74e6fc790
+      sha256: f9fddd3b46109bd69ff3f9efa5006d2d309b7aec0f3c1c5637a60a2d5659e76e
       url: "https://pub.dev"
     source: hosted
-    version: "11.0.5"
+    version: "11.1.0"
   permission_handler_apple:
     dependency: transitive
     description:
@@ -1600,10 +1600,10 @@ packages:
     dependency: transitive
     description:
       name: permission_handler_platform_interface
-      sha256: f2343e9fa9c22ae4fd92d4732755bfe452214e7189afcc097380950cf567b4b2
+      sha256: "6760eb5ef34589224771010805bea6054ad28453906936f843a8cc4d3a55c4a4"
       url: "https://pub.dev"
     source: hosted
-    version: "3.11.5"
+    version: "3.12.0"
   permission_handler_windows:
     dependency: transitive
     description:
@@ -2074,14 +2074,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.0.0"
-  system_info_plus:
-    dependency: transitive
-    description:
-      name: system_info_plus
-      sha256: b915c811c6605b802f3988859bc2bb79c95f735762a75b5451741f7a2b949d1b
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.5"
   term_glyph:
     dependency: transitive
     description:

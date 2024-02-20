@@ -3,8 +3,8 @@ import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 // ignore: depend_on_referenced_packages
 import 'package:equatable/equatable.dart';
-import 'package:flutter/foundation.dart';
 import 'package:pst/pst.dart';
+import 'package:ardrive_uploader/src/utils/logger.dart';
 
 abstract class ArDriveUploadCostCalculator {
   Future<UploadCostEstimate> calculateCost({required int totalSize});
@@ -73,7 +73,7 @@ class UploadCostEstimateCalculatorForAR extends ArDriveUploadCostCalculator {
 
     final arUploadCost = winstonToAr(totalCostAR);
 
-    debugPrint('Upload cost in AR: $arUploadCost');
+    logger.d('Upload cost in AR: $arUploadCost');
 
     final usdUploadCost = await _arCostToUsd.convertForUSD(
       double.parse(arUploadCost),

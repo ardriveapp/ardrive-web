@@ -4,8 +4,8 @@ import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_uploader/src/data_bundler.dart';
 import 'package:ardrive_uploader/src/exceptions.dart';
 import 'package:ardrive_uploader/src/utils/data_bundler_utils.dart';
+import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:arweave/arweave.dart';
-import 'package:flutter/foundation.dart';
 
 abstract class UploadFileStrategy {
   Future<void> upload({
@@ -46,19 +46,19 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
       wallet,
     );
 
-    debugPrint('metadata uploaded for the file: ${task.metadataUploaded}');
+    logger.d('metadata uploaded for the file: ${task.metadataUploaded}');
 
     /// uploads the metadata item if it hasn't been uploaded yet. It can happen
     /// that the metadata item is uploaded but the data item is not, so we need
     /// to check for that.
     if (!task.metadataUploaded) {
-      debugPrint('uploading metadata for the file');
+      logger.d('uploading metadata for the file');
 
       final metadataItem = dataItemResults[0];
 
       /// The upload can be canceled while the bundle is being created
       if (verifyCancel()) {
-        debugPrint('Upload canceled while data item was being created');
+        logger.d('Upload canceled while data item was being created');
         throw UploadCanceledException(
           'Upload canceled while metadata item was being created',
         );
@@ -76,7 +76,7 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
         // we don't need to update the progress of the metadata item
       });
 
-      debugPrint('metadata upload result: $uploadResult');
+      logger.d('metadata upload result: $uploadResult');
 
       if (!uploadResult.success) {
         throw MetadataUploadException(
@@ -126,7 +126,7 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
 
     /// The upload can be canceled while the bundle is being created
     if (verifyCancel()) {
-      debugPrint('Upload canceled while data item was being created');
+      logger.d('Upload canceled while data item was being created');
       throw UploadCanceledException(
         'Upload canceled while data data item was being created',
       );
@@ -157,7 +157,7 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
     );
 
     if (!result.success) {
-      debugPrint('Failed to upload data item. Error: ${result.error}');
+      logger.d('Failed to upload data item. Error: ${result.error}');
       throw DataUploadException(
         message: 'Failed to upload data item. Error: ${result.error}',
         error: result.error,
@@ -240,7 +240,7 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
 
     /// The upload can be canceled while the bundle is being created
     if (verifyCancel()) {
-      debugPrint('Upload canceled while bundle was being created');
+      logger.d('Upload canceled while bundle was being created');
       throw UploadCanceledException('Upload canceled');
     }
 
@@ -330,7 +330,7 @@ class UploadFolderStructureAsBundleStrategy
     }
 
     if (verifyCancel()) {
-      debugPrint('Upload canceled after bundle creation and before upload');
+      logger.d('Upload canceled after bundle creation and before upload');
       throw UploadCanceledException('Upload canceled on bundle creation');
     }
 
