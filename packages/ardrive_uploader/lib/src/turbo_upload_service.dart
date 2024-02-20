@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:ardrive_uploader/src/exceptions.dart';
+import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:dio/dio.dart';
 import 'package:retry/retry.dart';
-import 'package:ardrive_uploader/src/utils/logger.dart';
 
 class TurboUploadService {
   TurboUploadService({
@@ -14,10 +15,11 @@ class TurboUploadService {
 
   final Uri turboUploadUri;
   final r = RetryOptions(maxAttempts: 8);
-  final CancelToken _cancelToken = CancelToken();
+  final List<CancelToken> _cancelTokens = [];
   final dio = Dio();
   final dataItemConfirmationRetryDelay = Duration(seconds: 15);
-  final maxInFlightData = MiB(200).size;
+  final maxInFlightData = MiB(100).size;
+  Timer? onSendProgressTimer;
 
   Future<Response> post({
     required DataItemResult dataItem,
@@ -41,21 +43,22 @@ class TurboUploadService {
     );
     final maxUploadsInParallel = maxInFlightData ~/ uploadChunkSizeInBytes;
     logger.d(
-        '[${dataItem.id}] UUpload ID: $uploadId, Uploads in parallel: $maxUploadsInParallel, Chunk size: $uploadChunkSizeInBytes');
+        '[${dataItem.id}] Upload ID: $uploadId, Uploads in parallel: $maxUploadsInParallel, Chunk size: $uploadChunkSizeInBytes');
 
     // (offset: sent bytes) map for in flight requests progress
     Map<int, int> inFlightRequestsBytesSent = {};
     int completedRequestsBytesSent = 0;
 
     if (onSendProgress != null) {
-      Timer.periodic(Duration(milliseconds: 500), (timer) {
+      onSendProgressTimer =
+          Timer.periodic(Duration(milliseconds: 500), (timer) {
         final inFlightBytesSent = inFlightRequestsBytesSent.isEmpty
             ? 0
             : inFlightRequestsBytesSent.values.reduce((a, b) => a + b);
         final totalBytesSent = completedRequestsBytesSent + inFlightBytesSent;
         final progress = totalBytesSent / dataItem.dataItemSize;
 
-        if (progress == 1) {
+        if (progress >= 1) {
           timer.cancel();
         }
 
@@ -68,15 +71,27 @@ class TurboUploadService {
         chunkSize: uploadChunkSizeInBytes,
         maxConcurrent: maxUploadsInParallel,
         dataItemId: dataItem.id, (chunk, offset) async {
+      if (_isCanceled) {
+        throw UploadCanceledException('Upload canceled. Cant upload chunk.');
+      }
+
+      final cancelToken = CancelToken();
+
+      _cancelTokens.add(cancelToken);
+
       try {
         logger.d('[${dataItem.id}] Uploading chunk. Offset: $offset');
-        return r.retry(
-          () => dio.post(
+        return r.retry(() {
+          return dio.post(
             '$turboUploadUri/chunks/arweave/$uploadId/$offset',
             data: chunk,
-            onSendProgress: (sent, _) {
+            onSendProgress: (sent, total) {
               if (onSendProgress != null) {
-                inFlightRequestsBytesSent[offset] = sent;
+                if (inFlightRequestsBytesSent[offset] == null) {
+                  inFlightRequestsBytesSent[offset] = 0;
+                } else if (inFlightRequestsBytesSent[offset]! < sent) {
+                  inFlightRequestsBytesSent[offset] = sent;
+                }
               }
             },
             options: Options(
@@ -85,30 +100,47 @@ class TurboUploadService {
                 'Content-Length': chunk.length.toString(),
               }..addAll(headers ?? const {}),
             ),
-            cancelToken: _cancelToken,
-          )..whenComplete(() {
-              if (onSendProgress != null) {
-                inFlightRequestsBytesSent.remove(offset);
-                completedRequestsBytesSent += chunk.length;
-              }
-            }),
-        );
+            cancelToken: cancelToken,
+          );
+        }).then((response) {
+          _cancelTokens.remove(cancelToken);
+
+          if (onSendProgress != null) {
+            inFlightRequestsBytesSent.remove(offset);
+            completedRequestsBytesSent += chunk.length;
+          }
+
+          return response;
+        }, onError: (error) {
+          onSendProgressTimer?.cancel();
+          _cancelTokens.remove(cancelToken);
+          throw error;
+        });
       } catch (e) {
         if (_isCanceled) {
           logger.d('[${dataItem.id}] Upload canceled');
-          _cancelToken.cancel();
+          onSendProgressTimer?.cancel();
+          cancelToken.cancel();
         }
+
+        _cancelTokens.remove(cancelToken);
+
         rethrow;
       }
     });
 
+    final finalizeCancelToken = CancelToken();
+
     try {
       logger.d('[${dataItem.id}] Finalising upload to Turbo');
+
+      _cancelTokens.add(finalizeCancelToken);
+
       final finaliseInfo = await r.retry(
         () => dio.post(
           '$turboUploadUri/chunks/arweave/$uploadId/-1',
           data: null,
-          cancelToken: _cancelToken,
+          cancelToken: finalizeCancelToken,
           options: Options(
             validateStatus: (int? status) {
               return status != null &&
@@ -120,10 +152,14 @@ class TurboUploadService {
 
       if (finaliseInfo.statusCode == 504) {
         final confirmInfo = await _confirmUpload(dataItem.id);
+        onSendProgressTimer?.cancel();
+
         return confirmInfo;
       }
 
       logger.d('[${dataItem.id}] Upload finalised');
+
+      onSendProgressTimer?.cancel();
 
       return finaliseInfo;
     } catch (e) {
@@ -131,8 +167,10 @@ class TurboUploadService {
         logger.d('[${dataItem.id}] Finalising upload failed, ${e.type}');
       } else if (_isCanceled) {
         logger.d('[${dataItem.id}] Upload canceled');
-        _cancelToken.cancel();
+        finalizeCancelToken.cancel();
       }
+
+      onSendProgressTimer?.cancel();
 
       rethrow;
     }
@@ -167,9 +205,14 @@ class TurboUploadService {
   }
 
   Future<void> cancel() {
-    _cancelToken.cancel();
     logger.d('Stream closed');
+
+    for (var cancelToken in _cancelTokens) {
+      cancelToken.cancel();
+    }
+
     _isCanceled = true;
+    onSendProgressTimer?.cancel();
     return Future.value();
   }
 
