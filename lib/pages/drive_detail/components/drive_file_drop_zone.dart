@@ -1,29 +1,12 @@
 import 'dart:ui';
 
-import 'package:ardrive/authentication/ardrive_auth.dart';
-import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/upload/models/upload_file.dart';
-import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/upload_form.dart';
-import 'package:ardrive/core/activity_tracker.dart';
-import 'package:ardrive/core/crypto/crypto.dart';
-import 'package:ardrive/core/upload/cost_calculator.dart';
-import 'package:ardrive/core/upload/uploader.dart';
-import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
-import 'package:ardrive/pages/congestion_warning_wrapper.dart';
-import 'package:ardrive/services/services.dart';
-import 'package:ardrive/turbo/services/payment_service.dart';
-import 'package:ardrive/turbo/services/upload_service.dart';
-import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
-import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
-import 'package:pst/pst.dart';
 
 class DriveFileDropZone extends StatefulWidget {
   final String driveId;
@@ -108,74 +91,14 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
     if (!isCurrentlyShown) {
       isCurrentlyShown = true;
       _onLeave();
-      final selectedFiles = files
-          .map((e) => UploadFile(
-                ioFile: e,
-                parentFolderId: parentFolderId,
-              ))
-          .toList();
 
-      // ignore: use_build_context_synchronously
-      await showCongestionDependentModalDialog(
+      promptToUpload(
         context,
-        () => showArDriveDialog(
-          context,
-          content: BlocProvider<UploadCubit>(
-            create: (context) => UploadCubit(
-              isDragNDrop: true,
-              activityTracker: context.read<ActivityTracker>(),
-              arDriveUploadManager: ArDriveUploadPreparationManager(
-                uploadPreparePaymentOptions: UploadPaymentEvaluator(
-                  appConfig: context.read<ConfigService>().config,
-                  auth: context.read<ArDriveAuth>(),
-                  turboBalanceRetriever: TurboBalanceRetriever(
-                    paymentService: context.read<PaymentService>(),
-                  ),
-                  turboUploadCostCalculator: TurboUploadCostCalculator(
-                    priceEstimator: TurboPriceEstimator(
-                      wallet: context.read<ArDriveAuth>().currentUser.wallet,
-                      costCalculator: TurboCostCalculator(
-                        paymentService: context.read<PaymentService>(),
-                      ),
-                      paymentService: context.read<PaymentService>(),
-                    ),
-                    turboCostCalculator: TurboCostCalculator(
-                      paymentService: context.read<PaymentService>(),
-                    ),
-                  ),
-                  uploadCostEstimateCalculatorForAR:
-                      UploadCostEstimateCalculatorForAR(
-                    arweaveService: context.read<ArweaveService>(),
-                    pstService: context.read<PstService>(),
-                    arCostToUsd: ConvertArToUSD(
-                      arweave: context.read<ArweaveService>(),
-                    ),
-                  ),
-                ),
-                uploadPreparer: UploadPreparer(
-                  uploadPlanUtils: UploadPlanUtils(
-                    crypto: ArDriveCrypto(),
-                    arweave: context.read<ArweaveService>(),
-                    turboUploadService: context.read<TurboUploadService>(),
-                    driveDao: context.read<DriveDao>(),
-                  ),
-                ),
-              ),
-              uploadFileSizeChecker: context.read<UploadFileSizeChecker>(),
-              driveId: driveId,
-              parentFolderId: parentFolderId,
-              files: selectedFiles,
-              pst: context.read<PstService>(),
-              profileCubit: context.read<ProfileCubit>(),
-              driveDao: context.read<DriveDao>(),
-              auth: context.read<ArDriveAuth>(),
-              licenseService: context.read<LicenseService>(),
-            )..startUploadPreparation(),
-            child: const UploadForm(),
-          ),
-          barrierDismissible: false,
-        ).then((value) => isCurrentlyShown = false),
-      );
+        driveId: driveId,
+        parentFolderId: parentFolderId,
+        isFolderUpload: false,
+        files: files,
+      ).then((value) => isCurrentlyShown = false);
     }
   }
 

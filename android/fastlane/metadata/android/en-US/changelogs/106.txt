@@ -1,0 +1,2 @@
+- Fixes web drag and drop upload issue.
+- Fixes Turbo upload for small files when payment service is not available
