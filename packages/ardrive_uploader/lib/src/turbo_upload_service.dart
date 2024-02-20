@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:ardrive_uploader/src/exceptions.dart';
 import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -14,7 +15,7 @@ class TurboUploadService {
 
   final Uri turboUploadUri;
   final r = RetryOptions(maxAttempts: 8);
-  final CancelToken _cancelToken = CancelToken();
+  final List<CancelToken> _cancelTokens = [];
   final dio = Dio();
   final dataItemConfirmationRetryDelay = Duration(seconds: 15);
   final maxInFlightData = MiB(100).size;
@@ -70,53 +71,76 @@ class TurboUploadService {
         chunkSize: uploadChunkSizeInBytes,
         maxConcurrent: maxUploadsInParallel,
         dataItemId: dataItem.id, (chunk, offset) async {
+      if (_isCanceled) {
+        throw UploadCanceledException('Upload canceled. Cant upload chunk.');
+      }
+
+      final cancelToken = CancelToken();
+
+      _cancelTokens.add(cancelToken);
+
       try {
         logger.d('[${dataItem.id}] Uploading chunk. Offset: $offset');
-        return r
-            .retry(() => dio.post(
-                  '$turboUploadUri/chunks/arweave/$uploadId/$offset',
-                  data: chunk,
-                  onSendProgress: (sent, total) {
-                    if (onSendProgress != null) {
-                      inFlightRequestsBytesSent[offset] = sent;
-                    }
-                  },
-                  options: Options(
-                    sendTimeout: Duration(seconds: 10),
-                    headers: {
-                      'Content-Type': 'application/octet-stream',
-                      'Content-Length': chunk.length.toString(),
-                    }..addAll(headers ?? const {}),
-                  ),
-                  cancelToken: _cancelToken,
-                ))
-            .then((response) {
+        return r.retry(() {
+          return dio.post(
+            '$turboUploadUri/chunks/arweave/$uploadId/$offset',
+            data: chunk,
+            onSendProgress: (sent, total) {
+              if (onSendProgress != null) {
+                if (inFlightRequestsBytesSent[offset] == null) {
+                  inFlightRequestsBytesSent[offset] = 0;
+                } else if (inFlightRequestsBytesSent[offset]! < sent) {
+                  inFlightRequestsBytesSent[offset] = sent;
+                }
+              }
+            },
+            options: Options(
+              headers: {
+                'Content-Type': 'application/octet-stream',
+                'Content-Length': chunk.length.toString(),
+              }..addAll(headers ?? const {}),
+            ),
+            cancelToken: cancelToken,
+          );
+        }).then((response) {
+          _cancelTokens.remove(cancelToken);
+
           if (onSendProgress != null) {
             inFlightRequestsBytesSent.remove(offset);
             completedRequestsBytesSent += chunk.length;
           }
+
           return response;
         }, onError: (error) {
+          onSendProgressTimer?.cancel();
+          _cancelTokens.remove(cancelToken);
           throw error;
         });
       } catch (e) {
         if (_isCanceled) {
           logger.d('[${dataItem.id}] Upload canceled');
           onSendProgressTimer?.cancel();
-          _cancelToken.cancel();
+          cancelToken.cancel();
         }
+
+        _cancelTokens.remove(cancelToken);
 
         rethrow;
       }
     });
 
+    final finalizeCancelToken = CancelToken();
+
     try {
       logger.d('[${dataItem.id}] Finalising upload to Turbo');
+
+      _cancelTokens.add(finalizeCancelToken);
+
       final finaliseInfo = await r.retry(
         () => dio.post(
           '$turboUploadUri/chunks/arweave/$uploadId/-1',
           data: null,
-          cancelToken: _cancelToken,
+          cancelToken: finalizeCancelToken,
           options: Options(
             validateStatus: (int? status) {
               return status != null &&
@@ -143,7 +167,7 @@ class TurboUploadService {
         logger.d('[${dataItem.id}] Finalising upload failed, ${e.type}');
       } else if (_isCanceled) {
         logger.d('[${dataItem.id}] Upload canceled');
-        _cancelToken.cancel();
+        finalizeCancelToken.cancel();
       }
 
       onSendProgressTimer?.cancel();
@@ -182,7 +206,11 @@ class TurboUploadService {
 
   Future<void> cancel() {
     logger.d('Stream closed');
-    _cancelToken.cancel();
+
+    for (var cancelToken in _cancelTokens) {
+      cancelToken.cancel();
+    }
+
     _isCanceled = true;
     onSendProgressTimer?.cancel();
     return Future.value();
