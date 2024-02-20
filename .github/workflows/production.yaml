@@ -102,6 +102,8 @@ jobs:
         run: bundle exec fastlane deploy type:staging
 
   build-android:
+    # Skipped until fix the upload to turbo
+    if: false
     needs: pre-build
     runs-on: ubuntu-latest
     steps:
