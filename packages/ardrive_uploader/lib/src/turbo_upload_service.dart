@@ -138,20 +138,19 @@ class TurboUploadService {
 
       final finaliseInfo = await r.retry(
         () => dio.post(
-          '$turboUploadUri/chunks/arweave/$uploadId/-1',
+          '$turboUploadUri/chunks/arweave/$uploadId/finalize',
           data: null,
           cancelToken: finalizeCancelToken,
-          options: Options(
-            validateStatus: (int? status) {
-              return status != null &&
-                  ((status >= 200 && status < 300) || status == 504);
-            },
-          ),
         ),
       );
 
-      if (finaliseInfo.statusCode == 504) {
-        final confirmInfo = await _confirmUpload(dataItem.id);
+      if (finaliseInfo.statusCode == 202) {
+        // TODO: Send this upload to a queue. We'd need to change the
+        // type of the returned data though. Perhaps the returned object
+        // could be an event emitter that the calling client cas use to
+        // listen for async outcomes like finalization success/failure.
+        final confirmInfo =
+            await _confirmUpload(dataItemId: dataItem.id, uploadId: uploadId);
         onSendProgressTimer?.cancel();
 
         return confirmInfo;
@@ -176,17 +175,25 @@ class TurboUploadService {
     }
   }
 
-  Future<Response> _confirmUpload(TxID dataItemId) async {
+  // TODO: This funciton as designed should go away, but some incremental
+  // improvements that could be helpful:
+  // - Don't use recursion. Use a while loop instead.
+  // - Have a max retry count and/or max finalization time
+  // - Make retries based on an exponential backoff rather than a fixed delay
+  // - Make starting time for first wait based on some linear function of file size
+  // - Don't keep retrying infinitely in the case of errors.
+  Future<Response> _confirmUpload(
+      {required TxID dataItemId, required String uploadId}) async {
     try {
-      logger.d('[$dataItemId] Confirming upload to Turbo');
+      logger.d(
+          '[$dataItemId] Confirming upload to Turbo with uploadId $uploadId');
       final response = await dio.get(
-        '$turboUploadUri/v1/tx/$dataItemId/status',
+        '$turboUploadUri/chunks/arweave/$uploadId/status',
       );
 
       final responseData = response.data;
 
-      if (responseData['status'] == 'CONFIRMED' ||
-          responseData['status'] == 'FINALIZED') {
+      if (responseData['status'] == 'finalized') {
         logger.d('[$dataItemId] DataItem confirmed!');
         return response;
       } else {
@@ -195,12 +202,12 @@ class TurboUploadService {
 
         await Future.delayed(dataItemConfirmationRetryDelay);
 
-        return _confirmUpload(dataItemId);
+        return _confirmUpload(dataItemId: dataItemId, uploadId: uploadId);
       }
     } catch (e) {
       await Future.delayed(dataItemConfirmationRetryDelay);
 
-      return _confirmUpload(dataItemId);
+      return _confirmUpload(dataItemId: dataItemId, uploadId: uploadId);
     }
   }
 
