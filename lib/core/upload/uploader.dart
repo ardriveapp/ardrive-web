@@ -451,12 +451,19 @@ class UploadPaymentEvaluator {
       );
     }
 
-    uploadMethod = await _determineUploadMethod(
-      turboBalance,
-      turboBundleSizes,
-      _appConfig.allowedDataItemSizeForTurbo,
-      _isTurboAvailableToUploadAllFiles,
-    );
+    // Checking isFreeUploadPossibleUsingTurbo uses the 100KB file size check
+    // against the date, but using _determineUploadMethod() additionally uses the
+    // Turbo bundle headers as part of the size check. A 100KB file might be
+    // larger than _appConfig.allowedDataItemSizeForTurbo due to the headers,
+    // so we need to catch that here.
+    uploadMethod = isFreeUploadPossibleUsingTurbo
+        ? UploadMethod.turbo
+        : await _determineUploadMethod(
+            turboBalance,
+            turboBundleSizes,
+            _appConfig.allowedDataItemSizeForTurbo,
+            _isTurboAvailableToUploadAllFiles,
+          );
 
     if (uploadMethod == UploadMethod.turbo) {
       totalSize = turboBundleSizes;
@@ -498,17 +505,22 @@ class UploadPaymentEvaluator {
   }
 
   Future<UploadMethod> _determineUploadMethod(
-      BigInt turboBalance,
-      int turboBundleSizes,
-      int allowedSizeForTurbo,
-      bool isTurboAvailableToUploadAllFiles) async {
+    BigInt turboBalance,
+    int turboBundleSizes,
+    int allowedSizeForTurbo,
+    bool isTurboAvailableToUploadAllFiles,
+  ) async {
+    bool isFreeUploadPossibleUsingTurbo =
+        turboBundleSizes <= allowedSizeForTurbo;
+
+    if (isFreeUploadPossibleUsingTurbo) {
+      return UploadMethod.turbo;
+    }
+
     try {
       final turboCostEstimate = await _turboUploadCostCalculator.calculateCost(
         totalSize: turboBundleSizes,
       );
-
-      bool isFreeUploadPossibleUsingTurbo =
-          turboBundleSizes <= allowedSizeForTurbo;
 
       if ((isTurboAvailableToUploadAllFiles &&
               turboBalance >= turboCostEstimate.totalCost) ||
@@ -519,6 +531,7 @@ class UploadPaymentEvaluator {
       }
     } catch (e) {
       _isTurboAvailableToUploadAllFiles = false;
+
       return UploadMethod.ar;
     }
   }
