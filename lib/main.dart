@@ -336,11 +336,10 @@ class AppState extends State<App> {
   List<SingleChildWidget> get repositoryProviders => [
         RepositoryProvider<ArweaveService>(create: (_) => _arweave),
         // repository provider for UploadFileChecker
-        RepositoryProvider<UploadFileChecker>(
-          create: (_) => UploadFileChecker(
-            privateFileSafeSizeLimit:
-                kIsWeb ? privateFileSizeLimit : mobilePrivateFileSizeLimit,
-            publicFileSafeSizeLimit: publicFileSafeSizeLimit,
+        RepositoryProvider<UploadFileSizeChecker>(
+          create: (_) => UploadFileSizeChecker(
+            fileSizeWarning: fileSizeWarning,
+            fileSizeLimit: fileSizeLimit,
           ),
         ),
         RepositoryProvider<ArweaveService>(create: (_) => _arweave),
