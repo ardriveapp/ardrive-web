@@ -193,7 +193,7 @@ class TurboUploadService {
 
       final responseData = response.data;
 
-      if (responseData['status'] == 'finalized') {
+      if (responseData['status'] == 'FINALIZED') {
         logger.d('[$dataItemId] DataItem confirmed!');
         return response;
       } else {
