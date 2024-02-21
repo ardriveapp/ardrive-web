@@ -99,12 +99,13 @@ class EnterSeedPhrase extends LoginEvent {
 }
 
 class AddWalletFromMnemonic extends LoginEvent {
-  const AddWalletFromMnemonic(this.mnemonic);
+  const AddWalletFromMnemonic(this.mnemonic, this.wallet);
 
   final String mnemonic;
+  final Wallet wallet;
 
   @override
-  List<Object> get props => [mnemonic];
+  List<Object> get props => [mnemonic, wallet];
 }
 
 class AddWalletFromCompleter extends LoginEvent {

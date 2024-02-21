@@ -19,9 +19,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'stub_web_wallet.dart' // stub implementation
-    if (dart.library.html) 'web_wallet.dart';
-
 part 'login_event.dart';
 part 'login_state.dart';
 
@@ -74,8 +71,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _handleFinishOnboardingEvent(event, emit);
     } else if (event is UnLockWithBiometrics) {
       await _handleUnlockUserWithBiometricsEvent(event, emit);
-    } else if (event is EnterSeedPhrase) {
-      await _handleEnterSeedPhrase(event, emit);
     } else if (event is AddWalletFromMnemonic) {
       await _handleAddWalletFromMnemonicEvent(event, emit);
     } else if (event is AddWalletFromCompleter) {
@@ -298,7 +293,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       if (await _arDriveAuth.userHasPassword(wallet)) {
         emit(PromptPassword(walletFile: wallet));
-      } else {
+      } else if (await _arDriveAuth.isExistingUser(wallet)) {
         emit(LoginTutorials(wallet));
       }
     } catch (e) {
@@ -413,22 +408,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     return;
   }
 
-  Future<void> _handleEnterSeedPhrase(
-    EnterSeedPhrase event,
-    Emitter<LoginState> emit,
-  ) async {
-    emit(LoginEnterSeedPhrase());
-  }
-
   Future<void> _handleAddWalletFromMnemonicEvent(
       AddWalletFromMnemonic event, Emitter<LoginState> emit) async {
     profileType = ProfileType.json;
     usingSeedphrase = true;
 
-    emit(const LoginGenerateWallet());
-
-    final wallet = await generateWalletFromMnemonic(event.mnemonic);
-    emit(LoginDownloadGeneratedWallet(event.mnemonic, wallet));
+    emit(LoginDownloadGeneratedWallet(event.mnemonic, event.wallet));
   }
 
   Future<void> _handleAddWalletFromCompleterEvent(
@@ -442,7 +427,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     Wallet wallet;
 
     if (!completer.isCompleted) {
-      emit(const LoginGenerateWallet());
+      // emit(const LoginGenerateWallet());
 
       // wait for minimum 3 seconds
       var results = await Future.wait(

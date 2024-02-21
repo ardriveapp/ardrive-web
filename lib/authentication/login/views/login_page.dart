@@ -1,10 +1,10 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/views/create_new_wallet_view.dart';
-import 'package:ardrive/authentication/login/views/enter_seed_phrase_view.dart';
-import 'package:ardrive/authentication/login/views/generate_wallet_view.dart';
 import 'package:ardrive/authentication/login/views/modals/secure_your_password_modal.dart';
 import 'package:ardrive/authentication/login/views/tiles/tiles_view.dart';
+import 'package:ardrive/authentication/login/views/tutorials_view.dart';
+import 'package:ardrive/authentication/login/views/wallet_created_view.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
@@ -25,11 +25,9 @@ import 'package:responsive_builder/responsive_builder.dart';
 import '../../components/fadethrough_transition_switcher.dart';
 import '../../components/login_card.dart';
 import '../../components/max_device_sizes_constrained_box.dart';
-import 'download_wallet_view.dart';
 import 'landing_page.dart';
 import 'modals/enter_your_password_modal.dart';
 import 'prompt_wallet_view.dart';
-import 'tutorials_view.dart';
 
 class LoginPage extends StatefulWidget {
   final bool gettingStarted;
@@ -150,6 +148,10 @@ class _LoginPageState extends State<LoginPage> {
             // view = TutorialsView(wallet: Wallet());
           } else if (loginState is LoginCreateNewWallet) {
             view = CreateNewWalletView(mnemonic: loginState.mnemonic);
+          } else if (loginState is LoginDownloadGeneratedWallet) {
+            view = WalletCreatedView(
+                mnemonic: loginState.mnemonic, wallet: loginState.walletFile);
+            // view = WalletCreatedView(mnemonic: 'test 1 2 3', wallet: Wallet());
           } else {
             view = LoginPageScaffold(
               loginState: loginState,
@@ -362,17 +364,12 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
               ),
             ),
           );
-        } else if (enableSeedPhraseLogin &&
-            loginState is LoginEnterSeedPhrase) {
-          content = const EnterSeedPhraseView();
-        } else if (enableSeedPhraseLogin && loginState is LoginGenerateWallet) {
-          content = const GenerateWalletView();
-        } else if (enableSeedPhraseLogin &&
-            loginState is LoginDownloadGeneratedWallet) {
-          content = DownloadWalletView(
-            mnemonic: loginState.mnemonic,
-            wallet: loginState.walletFile,
-          );
+          // } else if (enableSeedPhraseLogin &&
+          //     loginState is LoginDownloadGeneratedWallet) {
+          //   content = DownloadWalletView(
+          //     mnemonic: loginState.mnemonic,
+          //     wallet: loginState.walletFile,
+          //   );
         } else if (loginState is LoginLanding) {
           content = const LandingPageView(
             key: Key('landingPageView'),

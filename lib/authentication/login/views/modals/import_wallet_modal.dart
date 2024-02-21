@@ -2,11 +2,17 @@ import 'package:ardrive/authentication/components/button.dart';
 import 'package:ardrive/authentication/components/lined_text_divider.dart';
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
+import 'package:ardrive/authentication/login/views/modals/loader_modal.dart';
 import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:bip39/bip39.dart' as bip39;
 import 'package:flutter/material.dart';
+
+import '../../blocs/stub_web_wallet.dart' // stub implementation
+    if (dart.library.html) '../../blocs/web_wallet.dart';
 
 class ImportWalletModal extends StatefulWidget {
   const ImportWalletModal({Key? key, required this.loginBloc})
@@ -72,29 +78,12 @@ class _ImportWalletModalState extends State<ImportWalletModal> {
               minLines: 3,
               maxLines: 3,
             ),
-            // TextField(
-            //   decoration: InputDecoration(
-            //     enabledBorder: OutlineInputBorder(
-            //       borderSide: BorderSide(
-            //         color: colorTokens.strokeMid,
-            //       ),
-            //     ),
-            //     border: OutlineInputBorder(
-            //       borderSide: BorderSide(
-            //         color: colorTokens.strokeMid,
-            //       ),
-            //     ),
-            //     hintText: 'Enter your seed phrase',
-            //     filled: true,
-            //     fillColor: colorTokens.inputDefault,
-            //   ),
-            // ),
             const SizedBox(height: 20),
             ArDriveButtonNew(
                 text: 'Continue',
                 typography: typography,
                 variant: ButtonVariant.primary,
-                onPressed: () {}),
+                onPressed: _onSubmitSeedPhrase),
             const SizedBox(height: 40),
             const LinedTextDivider(),
             const SizedBox(height: 40),
@@ -116,6 +105,46 @@ class _ImportWalletModalState extends State<ImportWalletModal> {
                 }),
           ],
         ));
+  }
+
+  void _onSubmitSeedPhrase() async {
+    final isValid = _seedPhraseController.text.isNotEmpty &&
+        bip39.validateMnemonic(_seedPhraseController.text);
+
+    if (!isValid) {
+      showArDriveDialog(context,
+          content: ArDriveIconModal(
+            icon: ArDriveIcons.triangle(
+              size: 88,
+              color: ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
+            ),
+            title: appLocalizationsOf(context).error,
+            // TODO: create/update localization key
+            content:
+                'The seed phrase you have provided is invalid. Please correct and retry.',
+            actions: [
+              ModalAction(
+                action: () {
+                  Navigator.pop(context);
+                },
+                title: appLocalizationsOf(context).ok,
+              )
+            ],
+          ));
+      return;
+    }
+
+    // Navigator.pop(context);
+    showLoaderDialog(context: context, loginBloc: widget.loginBloc);
+    final wallet = await generateWalletFromMnemonic(_seedPhraseController.text);
+    // FIXME: Trying to pop the current dialog before showLoaderDialog()
+    // and then trying to pop the loader dialog caused problems with context
+    // Revise this code for better UX
+    Navigator.pop(context);
+    Navigator.pop(context);
+
+    widget.loginBloc
+        .add(AddWalletFromMnemonic(_seedPhraseController.text, wallet));
   }
 }
 

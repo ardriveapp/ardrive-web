@@ -53,12 +53,6 @@ class LoginSuccess extends LoginState {
   final User user;
 }
 
-class LoginEnterSeedPhrase extends LoginState {}
-
-class LoginGenerateWallet extends LoginState {
-  const LoginGenerateWallet();
-}
-
 class LoginDownloadGeneratedWallet extends LoginState {
   const LoginDownloadGeneratedWallet(this.mnemonic, this.walletFile);
   final String mnemonic;
