@@ -4,7 +4,17 @@ import 'package:equatable/equatable.dart';
 enum LicenseType {
   udl,
   ccBy,
+  ccByNC,
+  ccByNCND,
+  ccByNCSA,
+  ccByND,
+  ccBySA,
   unknown,
+}
+
+enum LicenseCategory {
+  cc,
+  udl,
 }
 
 class LicenseMeta extends Equatable {
@@ -47,6 +57,16 @@ class EmptyParams extends LicenseParams {}
 final licenseMetaMap = {
   LicenseType.udl: udlLicenseMeta,
   LicenseType.ccBy: ccByLicenseMeta,
+  LicenseType.ccByNC: ccByNCLicenseMeta,
+  LicenseType.ccByNCND: ccByNCNDLicenseMeta,
+  LicenseType.ccByNCSA: ccByNCSA,
+  LicenseType.ccByND: ccByNDLicenseMeta,
+  LicenseType.ccBySA: ccBySA,
+};
+
+final licenseCategoryNames = {
+  LicenseCategory.udl: 'Universal Data License - UDL',
+  LicenseCategory.cc: 'Creative Commons - CC',
 };
 
 class LicenseState extends Equatable {

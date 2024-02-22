@@ -24,40 +24,9 @@ class FsEntryLicenseBloc
   final String driveId;
   final List<ArDriveDataTableItem> selectedItems;
 
-  final selectForm = FormGroup({
-    'licenseType': FormControl<LicenseMeta>(
-      validators: [Validators.required],
-      value: udlLicenseMeta,
-    ),
-  });
-  LicenseMeta get selectFormLicenseMeta =>
-      selectForm.control('licenseType').value;
-
-  final udlForm = FormGroup({
-    'licenseFeeAmount': FormControl<String>(
-      validators: [
-        Validators.composeOR([
-          Validators.pattern(
-            r'^\d+\.?\d*$',
-            validationMessage: 'Invalid amount',
-          ),
-          Validators.equals(''),
-        ]),
-      ],
-    ),
-    'licenseFeeCurrency': FormControl<UdlCurrency>(
-      validators: [Validators.required],
-      value: UdlCurrency.u,
-    ),
-    'commercialUse': FormControl<UdlCommercialUse>(
-      validators: [Validators.required],
-      value: UdlCommercialUse.unspecified,
-    ),
-    'derivations': FormControl<UdlDerivation>(
-      validators: [Validators.required],
-      value: UdlDerivation.unspecified,
-    ),
-  });
+  // We initialize with UDL license by default
+  LicenseMeta _selectedLicenseMeta = udlLicenseMeta;
+  LicenseMeta get selectedLicenseMeta => _selectedLicenseMeta;
 
   List<FileEntry>? filesToLicense;
   LicenseParams? licenseParams;
@@ -112,12 +81,18 @@ class FsEntryLicenseBloc
         }
 
         if (event is FsEntryLicenseSelect) {
-          if (selectFormLicenseMeta.hasParams) {
-            emit(const FsEntryLicenseConfiguring());
-          } else {
-            licenseParams = null;
-            emit(const FsEntryLicenseReviewing());
+          final licenseType = selectForm.control('licenseType').value;
+
+          switch (licenseType) {
+            case LicenseCategory.udl:
+              _selectedLicenseMeta = udlLicenseMeta;
+              break;
+            case LicenseCategory.cc:
+              _selectedLicenseMeta = ccByLicenseMeta;
+              break;
           }
+
+          emit(const FsEntryLicenseConfiguring());
         }
 
         if (event is FsEntryLicenseConfigurationBack) {
@@ -125,17 +100,24 @@ class FsEntryLicenseBloc
         }
 
         if (event is FsEntryLicenseConfigurationSubmit) {
-          if (selectFormLicenseMeta.licenseType == LicenseType.udl) {
+          final licenseCategory = selectForm.control('licenseType').value;
+
+          if (licenseCategory == LicenseCategory.cc) {
+            _selectedLicenseMeta = ccForm.control('ccAttributionField').value;
+          }
+
+          if (_selectedLicenseMeta.licenseType == LicenseType.udl) {
             licenseParams = await udlFormToLicenseParams(udlForm);
           } else {
             addError(
-                'Unsupported license configuration: ${selectFormLicenseMeta.licenseType}');
+                'Unsupported license configuration: ${_selectedLicenseMeta.licenseType}');
           }
+
           emit(const FsEntryLicenseReviewing());
         }
 
         if (event is FsEntryLicenseReviewBack) {
-          if (selectFormLicenseMeta.hasParams) {
+          if (_selectedLicenseMeta.hasParams) {
             licenseParams = null;
             emit(const FsEntryLicenseConfiguring());
           } else {
@@ -148,7 +130,7 @@ class FsEntryLicenseBloc
           try {
             await licenseEntities(
               profile: profile,
-              licenseMeta: selectFormLicenseMeta,
+              licenseMeta: _selectedLicenseMeta,
               licenseParams: licenseParams,
             );
             emit(const FsEntryLicenseSuccess());
@@ -328,4 +310,46 @@ class FsEntryLicenseBloc
     errorLog.add(error.toString());
     super.onError(error, stackTrace);
   }
+
+  // Forms
+
+  final selectForm = FormGroup({
+    'licenseType': FormControl<LicenseCategory>(
+      validators: [Validators.required],
+      value: LicenseCategory.udl,
+    ),
+  });
+
+  final udlForm = FormGroup({
+    'licenseFeeAmount': FormControl<String>(
+      validators: [
+        Validators.composeOR([
+          Validators.pattern(
+            r'^\d+\.?\d*$',
+            validationMessage: 'Invalid amount',
+          ),
+          Validators.equals(''),
+        ]),
+      ],
+    ),
+    'licenseFeeCurrency': FormControl<UdlCurrency>(
+      validators: [Validators.required],
+      value: UdlCurrency.u,
+    ),
+    'commercialUse': FormControl<UdlCommercialUse>(
+      validators: [Validators.required],
+      value: UdlCommercialUse.unspecified,
+    ),
+    'derivations': FormControl<UdlDerivation>(
+      validators: [Validators.required],
+      value: UdlDerivation.unspecified,
+    ),
+  });
+
+  final ccForm = FormGroup({
+    'ccAttributionField': FormControl<LicenseMeta>(
+      validators: [Validators.required],
+      value: ccByLicenseMeta,
+    ),
+  });
 }
