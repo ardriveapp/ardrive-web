@@ -33,6 +33,7 @@ class Images {
   final brand = const Brand();
   final profile = const Profile();
   final Login login = const Login();
+  final icons = const _Icons();
 }
 
 class Brand {
@@ -98,6 +99,18 @@ class Login {
   final String arrowRed = 'assets/images/login/arrow_red.svg';
   final String ardriveLoader = 'assets/images/login/ardrive_loader.gif';
   final String checkCircle = 'assets/images/login/check_circle.png';
+  final String whatIsAKeyfile = 'assets/images/login/what_is_a_keyfile.png';
+  final String aboutSecurity = 'assets/images/login/about_security.png';
+}
+
+class _Icons {
+  const _Icons();
+
+  final String copy = 'images/icons/iconCopy.svg';
+  final String download = 'images/icons/iconDownload.svg';
+  final String encryptedLock = 'images/icons/iconEncryptedLock.svg';
+  final String eyeOpen = 'images/icons/iconEyeOpen.svg';
+  final String eyeClosed = 'images/icons/iconEyeClosed.svg';
 }
 
 const String discord = 'Discord';

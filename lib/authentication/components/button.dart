@@ -19,6 +19,7 @@ class ArDriveButtonNew extends StatefulWidget {
     this.maxWidth,
     this.borderRadius = 6,
     this.icon,
+    this.rightIcon,
     this.isDisabled = false,
     this.customContent,
   });
@@ -37,6 +38,7 @@ class ArDriveButtonNew extends StatefulWidget {
   /// An optional icon to display to the left of the button text.
   /// Only applies to primary and secondary buttons.
   final Widget? icon;
+  final Widget? rightIcon;
 
   // An optional widget to display instead of the button text.
   // Only applies to primary
@@ -112,12 +114,20 @@ class _ArDriveButtonState extends State<ArDriveButtonNew> {
     return SizedBox(
         height: widget.maxHeight ?? buttonDefaultHeight,
         width: widget.maxWidth,
-        child: TextButton(
-            onPressed: widget.isDisabled ? null : widget.onPressed,
-            style: style,
-            child: Text(widget.text,
-                style: typography.paragraphLarge(
-                    color: foregroundColor,
-                    fontWeight: ArFontWeight.semiBold))));
+        child: Stack(fit: StackFit.expand, children: [
+          TextButton(
+              onPressed: widget.isDisabled ? null : widget.onPressed,
+              style: style,
+              child: Text(widget.text,
+                  style: typography.paragraphLarge(
+                      color: foregroundColor,
+                      fontWeight: ArFontWeight.semiBold))),
+          if (widget.rightIcon != null)
+            Container(
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 16),
+              child: widget.rightIcon!,
+            )
+        ]));
   }
 }

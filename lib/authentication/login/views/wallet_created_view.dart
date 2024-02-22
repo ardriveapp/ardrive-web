@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:ardrive/authentication/components/button.dart';
 import 'package:ardrive/authentication/components/login_card_new.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
@@ -9,6 +11,7 @@ import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class WalletCreatedView extends StatefulWidget {
   const WalletCreatedView(
@@ -22,8 +25,33 @@ class WalletCreatedView extends StatefulWidget {
   State<WalletCreatedView> createState() => _WalletCreatedViewState();
 }
 
+class _PageInfo {
+  String title;
+  String description;
+
+  _PageInfo({required this.title, required this.description});
+}
+
 class _WalletCreatedViewState extends State<WalletCreatedView> {
   bool _isTermsChecked = false;
+  bool _isBlurred = true;
+
+  int _currentPage = 0;
+
+  final _pageInfo = [
+    _PageInfo(
+        title: 'What is a Seed Phrase?',
+        description:
+            "A seed phrase is a unique set of words acting as your wallet's master key. It generates your wallet whenever you log in. You can store it in a password manager or secure offline location for added protection."),
+    _PageInfo(
+        title: 'What is a Keyfile?',
+        description:
+            'A keyfile is another way to access your wallet. It contains encrypted information that helps us authenticate your identity. Keep it secure alongside your seed phrase.'),
+    _PageInfo(
+        title: 'About security',
+        description:
+            "It's crucial to safeguard both your seed phrase and keyfile. Losing them means permanent loss of access to your funds as we don't retain your wallet.")
+  ];
 
   @override
   void initState() {
@@ -50,7 +78,84 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           LoginCardNew(
-            child: Text('Mnemonic: ${widget.mnemonic}'),
+            child: Column(
+              children: [
+                Container(
+                  color: colorTokens.containerL3,
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Row(children: [
+                      _tabLink(
+                        'Seed phrase',
+                        0,
+                        rightIcon: SvgPicture.asset(
+                          Resources.images.icons.encryptedLock,
+                          width: 20,
+                          height: 20,
+                          color: _currentPage == 0
+                              ? colorTokens.textHigh
+                              : colorTokens.textLow,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Spacer(),
+                      _tabLink('Keyfile', 1),
+                      const SizedBox(width: 16),
+                      _tabLink('Security', 2)
+                    ]),
+                  ),
+                ),
+                _currentPage == 0
+                    ? SizedBox(
+                        width: 450,
+                        height: 281,
+                        child: Stack(fit: StackFit.expand, children: [
+                          _blurred(450, widget.mnemonic, _isBlurred),
+                          Positioned(
+                              right: 46,
+                              bottom: 16,
+                              child: _iconButton(
+                                  _isBlurred
+                                      ? Resources.images.icons.eyeClosed
+                                      : Resources.images.icons.eyeOpen, () {
+                                setState(() {
+                                  _isBlurred = !_isBlurred;
+                                });
+                              })),
+                          Positioned(
+                              right: 16,
+                              bottom: 16,
+                              child:
+                                  _iconButton(Resources.images.icons.copy, () {
+                                Clipboard.setData(
+                                    ClipboardData(text: widget.mnemonic));
+                              }))
+                        ]))
+                    : _currentPage == 1
+                        ? ArDriveImage(
+                            image: AssetImage(
+                                Resources.images.login.whatIsAKeyfile),
+                            fit: BoxFit.contain)
+                        : ArDriveImage(
+                            image: AssetImage(
+                                Resources.images.login.aboutSecurity),
+                            fit: BoxFit.contain),
+                Container(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(_pageInfo[_currentPage].title,
+                            style: typography.paragraphNormal()),
+                        const SizedBox(height: 12),
+                        Text(_pageInfo[_currentPage].description,
+                            style: typography.paragraphNormal(
+                                color: colorTokens.textLow,
+                                fontWeight: ArFontWeight.semiBold)),
+                      ],
+                    ))
+              ],
+            ),
           ),
           const SizedBox(width: 24),
           LoginCardNew(
@@ -93,6 +198,12 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
                   onPressed: () async {
                     Clipboard.setData(ClipboardData(text: widget.mnemonic));
                   },
+                  rightIcon: SvgPicture.asset(
+                    Resources.images.icons.copy,
+                    width: 20,
+                    height: 20,
+                    color: colorTokens.textMid,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 ArDriveButtonNew(
@@ -106,6 +217,12 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
                       wallet: widget.wallet,
                     );
                   },
+                  rightIcon: SvgPicture.asset(
+                    Resources.images.icons.download,
+                    width: 20,
+                    height: 20,
+                    color: colorTokens.textMid,
+                  ),
                 ),
                 const SizedBox(height: 40),
                 ArDriveButtonNew(
@@ -147,5 +264,66 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
         ],
       ))),
     ));
+  }
+
+  Widget _blurred(double width, String seedPhrase, bool isBlurred) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.desktop;
+
+    var text = Container(
+        width: width,
+        // height: 45,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: colorTokens.containerL1,
+        ),
+        // alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.all(24),
+        child: Text(seedPhrase,
+            style: typography.paragraphNormal(
+                color: colorTokens.textMid, fontWeight: ArFontWeight.book)));
+
+    return isBlurred
+        ? ClipRect(
+            child: ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+            child: text,
+          ))
+        : text;
+  }
+
+  Widget _tabLink(String text, int index, {Widget? rightIcon}) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.desktop;
+
+    final textRow = Row(
+      children: [
+        Text(text,
+            style: typography.paragraphLarge(
+                color: (index == _currentPage)
+                    ? colorTokens.textHigh
+                    : colorTokens.textLow,
+                fontWeight: ArFontWeight.semiBold)),
+        if (rightIcon != null) ...[const SizedBox(width: 6), rightIcon]
+      ],
+    );
+
+    return index == _currentPage
+        ? textRow
+        : ArDriveClickArea(
+            child: GestureDetector(
+            onTap: () => setState(() => _currentPage = index),
+            child: textRow,
+          ));
+  }
+
+  Widget _iconButton(String resource, void Function() callback) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return ArDriveClickArea(
+        child: GestureDetector(
+            onTap: callback,
+            child: SvgPicture.asset(resource,
+                width: 20, height: 20, color: colorTokens.textMid)));
   }
 }
