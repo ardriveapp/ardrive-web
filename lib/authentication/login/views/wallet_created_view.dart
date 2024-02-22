@@ -14,11 +14,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class WalletCreatedView extends StatefulWidget {
-  const WalletCreatedView(
-      {Key? key, required this.mnemonic, required this.wallet})
+  const WalletCreatedView({Key? key, this.mnemonic, required this.wallet})
       : super(key: key);
 
-  final String mnemonic;
+  final String? mnemonic;
   final Wallet wallet;
 
   @override
@@ -36,7 +35,7 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
   bool _isTermsChecked = false;
   bool _isBlurred = true;
 
-  int _currentPage = 0;
+  late int _currentPage;
 
   final _pageInfo = [
     _PageInfo(
@@ -56,6 +55,8 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
   @override
   void initState() {
     super.initState();
+
+    _currentPage = widget.mnemonic != null ? 0 : 1;
 
     PlausibleEventTracker.trackPageview(
         page: PlausiblePageView.walletGenerationPage);
@@ -85,20 +86,22 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Row(children: [
-                      _tabLink(
-                        'Seed phrase',
-                        0,
-                        rightIcon: SvgPicture.asset(
-                          Resources.images.icons.encryptedLock,
-                          width: 20,
-                          height: 20,
-                          color: _currentPage == 0
-                              ? colorTokens.textHigh
-                              : colorTokens.textLow,
+                      if (widget.mnemonic != null) ...[
+                        _tabLink(
+                          'Seed phrase',
+                          0,
+                          rightIcon: SvgPicture.asset(
+                            Resources.images.icons.encryptedLock,
+                            width: 20,
+                            height: 20,
+                            color: _currentPage == 0
+                                ? colorTokens.textHigh
+                                : colorTokens.textLow,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 6),
-                      const Spacer(),
+                        const SizedBox(width: 6),
+                        const Spacer()
+                      ],
                       _tabLink('Keyfile', 1),
                       const SizedBox(width: 16),
                       _tabLink('Security', 2)
@@ -110,7 +113,7 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
                         width: 450,
                         height: 281,
                         child: Stack(fit: StackFit.expand, children: [
-                          _blurred(450, widget.mnemonic, _isBlurred),
+                          _blurred(450, widget.mnemonic!, _isBlurred),
                           Positioned(
                               right: 46,
                               bottom: 16,
@@ -128,7 +131,7 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
                               child:
                                   _iconButton(Resources.images.icons.copy, () {
                                 Clipboard.setData(
-                                    ClipboardData(text: widget.mnemonic));
+                                    ClipboardData(text: widget.mnemonic!));
                               }))
                         ]))
                     : _currentPage == 1
@@ -191,21 +194,23 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
-                ArDriveButtonNew(
-                  typography: typography,
-                  text: 'Copy Seed Phrase',
-                  variant: ButtonVariant.outline,
-                  onPressed: () async {
-                    Clipboard.setData(ClipboardData(text: widget.mnemonic));
-                  },
-                  rightIcon: SvgPicture.asset(
-                    Resources.images.icons.copy,
-                    width: 20,
-                    height: 20,
-                    color: colorTokens.textMid,
+                if (widget.mnemonic != null) ...[
+                  ArDriveButtonNew(
+                    typography: typography,
+                    text: 'Copy Seed Phrase',
+                    variant: ButtonVariant.outline,
+                    onPressed: () async {
+                      Clipboard.setData(ClipboardData(text: widget.mnemonic!));
+                    },
+                    rightIcon: SvgPicture.asset(
+                      Resources.images.icons.copy,
+                      width: 20,
+                      height: 20,
+                      color: colorTokens.textMid,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
+                  const SizedBox(height: 12),
+                ],
                 ArDriveButtonNew(
                   typography: typography,
                   text: 'Download Keyfile',
