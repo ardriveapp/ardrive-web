@@ -2,10 +2,10 @@ import '../license_state.dart';
 
 const udlLicenseMeta = LicenseMeta(
   licenseType: LicenseType.udl,
-  licenseDefinitionTxId: 'yRj4a5KMctX_uOmKWCFJIjmY8DeJcusVk6-HzLiM_t8',
+  licenseDefinitionTxId: 'IVjAM1C3x3GFdc3t9EqMnbtGnpgTuJbaiYZa1lk09_8',
   name: 'Universal Data License',
   shortName: 'UDL',
-  version: '1.0',
+  version: '2.0',
   hasParams: true,
 );
 
