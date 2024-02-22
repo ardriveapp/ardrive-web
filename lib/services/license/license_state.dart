@@ -59,9 +59,9 @@ final licenseMetaMap = {
   LicenseType.ccBy: ccByLicenseMeta,
   LicenseType.ccByNC: ccByNCLicenseMeta,
   LicenseType.ccByNCND: ccByNCNDLicenseMeta,
-  LicenseType.ccByNCSA: ccByNCSA,
+  LicenseType.ccByNCSA: ccByNCSAMeta,
   LicenseType.ccByND: ccByNDLicenseMeta,
-  LicenseType.ccBySA: ccBySA,
+  LicenseType.ccBySA: ccBySAMeta,
 };
 
 final licenseCategoryNames = {

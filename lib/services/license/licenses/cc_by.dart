@@ -4,9 +4,9 @@ List<LicenseMeta> ccLicenses = [
   ccByLicenseMeta,
   ccByNCLicenseMeta,
   ccByNCNDLicenseMeta,
-  ccByNCSA,
+  ccByNCSAMeta,
   ccByNDLicenseMeta,
-  ccBySA,
+  ccBySAMeta,
 ];
 
 const ccByLicenseMeta = LicenseMeta(
@@ -34,7 +34,7 @@ const ccByNCNDLicenseMeta = LicenseMeta(
   version: '4.0',
 );
 
-const ccByNCSA = LicenseMeta(
+const ccByNCSAMeta = LicenseMeta(
   licenseType: LicenseType.ccByNCSA,
   licenseDefinitionTxId: '2PO2MDRNZLJjgA_0hNGUAD7yXg9nneq-3fxTTLP-uo8',
   name: 'Attribution Non-Commercial Share-A-Like',
@@ -50,7 +50,7 @@ const ccByNDLicenseMeta = LicenseMeta(
   version: '4.0',
 );
 
-const ccBySA = LicenseMeta(
+const ccBySAMeta = LicenseMeta(
   licenseType: LicenseType.ccBySA,
   licenseDefinitionTxId: 'sKz-PZ96ApDoy5RTBspxhs1GP-cHommw4_9hEiZ6K3c',
   name: 'Attribution Share-A-Like',
