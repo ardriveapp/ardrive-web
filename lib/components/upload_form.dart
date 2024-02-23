@@ -148,7 +148,7 @@ Future<void> promptToUpload(
                 folder: ioFolder,
                 arDriveUploadManager:
                     context.read<ArDriveUploadPreparationManager>(),
-                uploadFileChecker: context.read<UploadFileChecker>(),
+                uploadFileSizeChecker: context.read<UploadFileSizeChecker>(),
                 driveId: driveId,
                 parentFolderId: parentFolderId,
                 files: selectedFiles,
@@ -855,11 +855,7 @@ class _UploadFormState extends State<UploadForm> {
                       Text(
                         appLocalizationsOf(context)
                             .weDontRecommendUploadsAboveASafeLimit(
-                          filesize(
-                            state.reason == UploadWarningReason.fileTooLarge
-                                ? publicFileSafeSizeLimit
-                                : nonChromeBrowserUploadSafeLimitUsingTurbo,
-                          ),
+                          filesize(fileSizeWarning),
                         ),
                         style: ArDriveTypography.body.buttonNormalRegular(),
                       ),
@@ -873,10 +869,7 @@ class _UploadFormState extends State<UploadForm> {
                   ),
                   ModalAction(
                     action: () {
-                      if (state.uploadPlanForAR != null &&
-                          state.reason ==
-                              UploadWarningReason
-                                  .fileTooLargeOnNonChromeBrowser) {
+                      if (state.uploadPlanForAR != null) {
                         return context.read<UploadCubit>().startUpload(
                               uploadPlanForAr: state.uploadPlanForAR!,
                               uploadPlanForTurbo: state.uploadPlanForTurbo,
@@ -901,11 +894,9 @@ class _UploadFormState extends State<UploadForm> {
     final progress = state.progress;
     return ArDriveStandardModal(
       actions: [
-        ModalAction(
-          action: () {
-            if (state.uploadMethod == UploadMethod.ar &&
-                state.progress.task.values.any(
-                    (element) => element.status == UploadStatus.inProgress)) {
+        if (state.progress.hasUploadInProgress)
+          ModalAction(
+            action: () {
               _isShowingCancelDialog = true;
               final cubit = context.read<UploadCubit>();
 
@@ -955,15 +946,12 @@ class _UploadFormState extends State<UploadForm> {
                   },
                 ),
               );
-            } else {
-              context.read<UploadCubit>().cancelUpload();
-            }
-          },
-          // TODO: localize
-          title: state.isCanceling
-              ? 'Canceling...'
-              : appLocalizationsOf(context).cancelEmphasized,
-        ),
+            },
+            // TODO: localize
+            title: state.isCanceling
+                ? 'Canceling...'
+                : appLocalizationsOf(context).cancelEmphasized,
+          ),
       ],
       width: kLargeDialogWidth,
       title:
@@ -980,9 +968,9 @@ class _UploadFormState extends State<UploadForm> {
                 child: Scrollbar(
                   child: ListView.builder(
                     shrinkWrap: true,
-                    itemCount: progress.task.length,
+                    itemCount: progress.tasks.length,
                     itemBuilder: (BuildContext context, int index) {
-                      final task = progress.task.values.elementAt(index);
+                      final task = progress.tasks.values.elementAt(index);
 
                       String? progressText;
                       String status = '';
@@ -1005,6 +993,9 @@ class _UploadFormState extends State<UploadForm> {
                         case UploadStatus.encryting:
                           status = 'Encrypting';
                           break;
+                        case UploadStatus.finalizing:
+                          status = 'Finalizing upload';
+                          break;
                         case UploadStatus.complete:
                           status = 'Complete';
                           break;
@@ -1022,10 +1013,14 @@ class _UploadFormState extends State<UploadForm> {
                               'We are preparing your upload. Preparation step 2/2';
                       }
 
+                      final statusAvailableForShowingProgress =
+                          task.status == UploadStatus.failed ||
+                              task.status == UploadStatus.inProgress ||
+                              task.status == UploadStatus.complete ||
+                              task.status == UploadStatus.finalizing;
+
                       if (task.isProgressAvailable) {
-                        if (task.status == UploadStatus.inProgress ||
-                            task.status == UploadStatus.complete ||
-                            task.status == UploadStatus.failed) {
+                        if (statusAvailableForShowingProgress) {
                           if (task.uploadItem != null) {
                             progressText =
                                 '${filesize(((task.uploadItem!.size) * task.progress).ceil())}/${filesize(task.uploadItem!.size)}';
@@ -1088,16 +1083,23 @@ class _UploadFormState extends State<UploadForm> {
                                                 const Duration(seconds: 1),
                                             child: Column(
                                               children: [
-                                                Text(
-                                                  status,
-                                                  style: ArDriveTypography.body
-                                                      .buttonNormalBold(
-                                                    color:
-                                                        ArDriveTheme.of(context)
-                                                            .themeData
-                                                            .colors
-                                                            .themeFgOnDisabled,
-                                                  ),
+                                                Row(
+                                                  children: [
+                                                    Flexible(
+                                                      child: Text(
+                                                        status,
+                                                        style: ArDriveTypography
+                                                            .body
+                                                            .buttonNormalBold(
+                                                          color: ArDriveTheme
+                                                                  .of(context)
+                                                              .themeData
+                                                              .colors
+                                                              .themeFgOnDisabled,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ],
                                             ),
@@ -1106,7 +1108,7 @@ class _UploadFormState extends State<UploadForm> {
                                             Text(
                                               progressText,
                                               style: ArDriveTypography.body
-                                                  .buttonNormalRegular(
+                                                  .buttonNormalBold(
                                                 color: ArDriveTheme.of(context)
                                                     .themeData
                                                     .colors
@@ -1126,13 +1128,7 @@ class _UploadFormState extends State<UploadForm> {
                                             MainAxisAlignment.end,
                                         children: [
                                           if (task.isProgressAvailable &&
-                                              (task.status ==
-                                                      UploadStatus.failed ||
-                                                  task.status ==
-                                                      UploadStatus.inProgress ||
-                                                  task.status ==
-                                                      UploadStatus
-                                                          .complete)) ...[
+                                              statusAvailableForShowingProgress) ...[
                                             Flexible(
                                               flex: 2,
                                               child: ArDriveProgressBar(
@@ -1230,12 +1226,13 @@ class _UploadFormState extends State<UploadForm> {
                 .copyWith(fontWeight: FontWeight.bold),
           ),
           // TODO: localize
-          Text(
-            'Upload speed: ${filesize(state.progress.calculateUploadSpeed().toInt())}/s',
-            style: ArDriveTypography.body.buttonNormalBold(
-                color:
-                    ArDriveTheme.of(context).themeData.colors.themeFgDefault),
-          ),
+          if (state.progress.hasUploadInProgress)
+            Text(
+              'Upload speed: ${filesize(state.progress.calculateUploadSpeed().toInt())}/s',
+              style: ArDriveTypography.body.buttonNormalBold(
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeFgDefault),
+            ),
         ],
       ),
     );

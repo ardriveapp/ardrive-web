@@ -57,7 +57,7 @@ mixin DecryptStream implements CipherStream {
   @protected
   StreamTransformer<Uint8List, Uint8List> decryptTransformer(
     Uint8List nonce,
-    int streamLength,
+    int fileSize,
   );
 
   FutureOr<CipherStreamRes> decryptStream(

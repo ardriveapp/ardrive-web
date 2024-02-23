@@ -529,10 +529,10 @@ packages:
     dependency: "direct main"
     description:
       name: dio
-      sha256: "417e2a6f9d83ab396ec38ff4ea5da6c254da71e4db765ad737a42af6930140b7"
+      sha256: "797e1e341c3dd2f69f2dad42564a6feff3bfb87187d05abb93b9609e6f1645c3"
       url: "https://pub.dev"
     source: hosted
-    version: "5.3.3"
+    version: "5.4.0"
   dio_smart_retry:
     dependency: transitive
     description:
@@ -637,10 +637,10 @@ packages:
     dependency: transitive
     description:
       name: file_selector
-      sha256: "84eaf3e034d647859167d1f01cfe7b6352488f34c1b4932635012b202014c25b"
+      sha256: "070062b9fca7482baf60af671219086e188e50dd80497393e7d58532b56215d3"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.1"
+    version: "1.0.2"
   file_selector_android:
     dependency: transitive
     description:
@@ -653,10 +653,10 @@ packages:
     dependency: transitive
     description:
       name: file_selector_ios
-      sha256: "2f48db7e338b2255101c35c604b7ca5ab588dce032db7fc418a2fe5f28da63f8"
+      sha256: b015154e6d9fddbc4d08916794df170b44531798c8dd709a026df162d07ad81d
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.1+7"
+    version: "0.5.1+8"
   file_selector_linux:
     dependency: transitive
     description:
@@ -1145,18 +1145,18 @@ packages:
     dependency: transitive
     description:
       name: image_picker
-      sha256: "340efe08645537d6b088a30620ee5752298b1630f23a829181172610b868262b"
+      sha256: "26222b01a0c9a2c8fe02fc90b8208bd3325da5ed1f4a2acabf75939031ac0bdd"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.6"
+    version: "1.0.7"
   image_picker_android:
     dependency: transitive
     description:
       name: image_picker_android
-      sha256: "1a27bf4cc0330389cebe465bab08fe6dec97e44015b4899637344bb7297759ec"
+      sha256: "39f2bfe497e495450c81abcd44b62f56c2a36a37a175da7d137b4454977b51b1"
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.9+2"
+    version: "0.8.9+3"
   image_picker_for_web:
     dependency: transitive
     description:
@@ -1169,10 +1169,10 @@ packages:
     dependency: transitive
     description:
       name: image_picker_ios
-      sha256: eac0a62104fa12feed213596df0321f57ce5a572562f72a68c4ff81e9e4caacf
+      sha256: fadafce49e8569257a0cad56d24438a6fa1f0cbd7ee0af9b631f7492818a4ca3
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.9"
+    version: "0.8.9+1"
   image_picker_linux:
     dependency: transitive
     description:
@@ -2072,14 +2072,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.0.0"
-  system_info_plus:
-    dependency: transitive
-    description:
-      name: system_info_plus
-      sha256: b915c811c6605b802f3988859bc2bb79c95f735762a75b5451741f7a2b949d1b
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.5"
   term_glyph:
     dependency: transitive
     description:
