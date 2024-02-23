@@ -10,7 +10,6 @@ import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/authentication/biometric_permission_dialog.dart';
-import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -344,8 +343,6 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
   // }
 
   Widget _buildContent(BuildContext context, {required LoginState loginState}) {
-    final enableSeedPhraseLogin =
-        context.read<ConfigService>().config.enableSeedPhraseLogin;
     return BlocBuilder<LoginBloc, LoginState>(
       key: globalKey,
       buildWhen: (previous, current) {

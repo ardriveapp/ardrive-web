@@ -140,7 +140,10 @@ class _ImportWalletModalState extends State<ImportWalletModal> {
     // FIXME: Trying to pop the current dialog before showLoaderDialog()
     // and then trying to pop the loader dialog caused problems with context
     // Revise this code for better UX
+
+    // ignore: use_build_context_synchronously
     Navigator.pop(context);
+    // ignore: use_build_context_synchronously
     Navigator.pop(context);
 
     widget.loginBloc
