@@ -23,7 +23,6 @@ const ccByLicenseMeta = LicenseMeta(
   licenseDefinitionTxId: 'rz2DNzn9pnYOU6049Wm6V7kr0BhyfWE6ZD_mqrXMv5A',
   name: 'Attribution',
   shortName: 'CC-BY',
-  hasParams: true,
 );
 
 const ccByLicenseMetaV2 = LicenseMeta(
