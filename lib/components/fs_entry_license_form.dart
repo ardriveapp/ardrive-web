@@ -322,7 +322,7 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                               .filesToLicense!),
                       const SizedBox(height: 16),
                       const Divider(height: 24),
-                      licenseType == LicenseType.udl
+                      licenseType == LicenseType.udlV2
                           ? UdlParamsForm(
                               onChangeLicenseFee: () {
                                 setState(() {});

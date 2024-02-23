@@ -175,7 +175,7 @@ class FsEntryLicenseBloc
       _selectedLicenseMeta = ccForm.control('ccAttributionField').value;
     }
 
-    if (_selectedLicenseMeta.licenseType == LicenseType.udl) {
+    if (_selectedLicenseMeta.licenseType == LicenseType.udlV2) {
       licenseParams = await _udlFormToLicenseParams(udlForm);
     } else {
       addError(

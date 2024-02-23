@@ -31,6 +31,7 @@ class LicenseService {
   }) {
     switch (licenseType) {
       case LicenseType.udl:
+      case LicenseType.udlV2:
         return UdlLicenseParams.fromAdditionalTags(additionalTags ?? {});
       case LicenseType.ccBy:
       case LicenseType.ccByV2:

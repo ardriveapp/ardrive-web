@@ -55,7 +55,10 @@ class LicenseAssertionEntity with TransactionPropertiesMixin {
       }
       return licenseAssertionEntity;
     } catch (e, stacktrace) {
-      logger.e('Failed to parse license assertion transaction', e, stacktrace);
+      logger.e(
+          'Failed to parse license assertion transaction. licenseDefinitionTxId: ${transaction.tags.firstWhere((tag) => tag.name == LicenseTag.licenseDefinitionTxId).value}',
+          e,
+          stacktrace);
       throw LicenseAssertionTransactionParseException(
         transactionId: transaction.id,
       );
