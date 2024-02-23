@@ -3,7 +3,9 @@ import 'package:equatable/equatable.dart';
 
 enum LicenseType {
   udl,
+  udlV2,
   ccBy,
+  ccByV2,
   ccByNC,
   ccByNCND,
   ccByNCSA,
@@ -22,7 +24,6 @@ class LicenseMeta extends Equatable {
   final String licenseDefinitionTxId;
   final String name;
   final String shortName;
-  final String version;
   final bool hasParams;
 
   const LicenseMeta({
@@ -30,7 +31,6 @@ class LicenseMeta extends Equatable {
     required this.licenseDefinitionTxId,
     required this.name,
     required this.shortName,
-    required this.version,
     this.hasParams = false,
   });
 
@@ -40,7 +40,6 @@ class LicenseMeta extends Equatable {
         licenseDefinitionTxId,
         name,
         shortName,
-        version,
         hasParams,
       ];
 }
@@ -56,7 +55,9 @@ class EmptyParams extends LicenseParams {}
 
 final licenseMetaMap = {
   LicenseType.udl: udlLicenseMeta,
+  LicenseType.udlV2: udlLicenseMetaV2,
   LicenseType.ccBy: ccByLicenseMeta,
+  LicenseType.ccByV2: ccByLicenseMetaV2,
   LicenseType.ccByNC: ccByNCLicenseMeta,
   LicenseType.ccByNCND: ccByNCNDLicenseMeta,
   LicenseType.ccByNCSA: ccByNCSAMeta,
