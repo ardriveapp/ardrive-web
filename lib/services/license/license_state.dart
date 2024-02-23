@@ -8,6 +8,7 @@ import 'package:equatable/equatable.dart';
 enum LicenseType {
   udl,
   udlV2,
+  cc0,
   ccBy,
   ccByV2,
   ccByNC,
@@ -26,6 +27,7 @@ enum LicenseCategory {
 final licenseMetaMap = {
   LicenseType.udl: udlLicenseMeta,
   LicenseType.udlV2: udlLicenseMetaV2,
+  LicenseType.cc0: cc0LicenseMeta,
   LicenseType.ccBy: ccByLicenseMeta,
   LicenseType.ccByV2: ccByLicenseMetaV2,
   LicenseType.ccByNC: ccByNCLicenseMeta,

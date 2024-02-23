@@ -1,13 +1,21 @@
 import '../license_state.dart';
 
 List<LicenseMeta> ccLicenses = [
-  ccByLicenseMeta,
+  cc0LicenseMeta,
+  ccByLicenseMetaV2,
   ccByNCLicenseMeta,
   ccByNCNDLicenseMeta,
   ccByNCSAMeta,
   ccByNDLicenseMeta,
   ccBySAMeta,
 ];
+
+const cc0LicenseMeta = LicenseMeta(
+  licenseType: LicenseType.cc0,
+  licenseDefinitionTxId: 'nF6Mjy_Yy_Gv-DYLq7QPxz5PdXUQ4rtOpbJZdcaFEKw',
+  name: 'Public Domain',
+  shortName: 'CC0',
+);
 
 // Version 4.0
 const ccByLicenseMeta = LicenseMeta(
@@ -19,7 +27,7 @@ const ccByLicenseMeta = LicenseMeta(
 );
 
 const ccByLicenseMetaV2 = LicenseMeta(
-  licenseType: LicenseType.ccBy,
+  licenseType: LicenseType.ccByV2,
   licenseDefinitionTxId: 'mSOFUrl5mUQvG7VBP36DD39kzJASv9FDe3GxHpcCvRA',
   name: 'Attribution',
   shortName: 'CC-BY',
@@ -45,7 +53,7 @@ const ccByNCNDLicenseMeta = LicenseMeta(
 // Version 4.0
 const ccByNCSAMeta = LicenseMeta(
   licenseType: LicenseType.ccByNCSA,
-  licenseDefinitionTxId: 'c1TDjOvM0PiwLKOGMYNUOCfe2iO_yPiN1LTit78DZUM',
+  licenseDefinitionTxId: '2PO2MDRNZLJjgA_0hNGUAD7yXg9nneq-3fxTTLP-uo8',
   name: 'Attribution Non-Commercial Share-A-Like',
   shortName: 'CC-BY-NC-SA',
 );
