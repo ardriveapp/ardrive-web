@@ -83,13 +83,15 @@ class _LoginPageState extends State<LoginPage> {
             showEnterYourPasswordDialog(
                 context: context,
                 loginBloc: context.read<LoginBloc>(),
-                wallet: loginState.walletFile);
+                wallet: loginState.wallet);
             return;
-          } else if (loginState is CreatingNewPassword) {
+          } else if (loginState is CreateNewPassword) {
             showSecureYourPasswordDialog(
                 context: context,
                 loginBloc: context.read<LoginBloc>(),
-                wallet: loginState.walletFile);
+                wallet: loginState.wallet,
+                showTutorials: loginState.showTutorials,
+                showWalletCreated: loginState.showWalletCreated);
             return;
           } else if (loginState is LoginTutorials) {
             preCacheOnBoardingAssets(context);
@@ -144,13 +146,15 @@ class _LoginPageState extends State<LoginPage> {
         builder: (context, loginState) {
           late Widget view;
           if (loginState is LoginTutorials) {
-            view = TutorialsView(wallet: loginState.walletFile);
+            view = TutorialsView(
+                wallet: loginState.wallet,
+                showWalletCreated: loginState.showWalletCreated);
             // view = TutorialsView(wallet: Wallet());
           } else if (loginState is LoginCreateNewWallet) {
             view = CreateNewWalletView(mnemonic: loginState.mnemonic);
           } else if (loginState is LoginDownloadGeneratedWallet) {
             view = WalletCreatedView(
-                mnemonic: loginState.mnemonic, wallet: loginState.walletFile);
+                mnemonic: loginState.mnemonic, wallet: loginState.wallet);
             // view = WalletCreatedView(mnemonic: 'test 1 2 3', wallet: Wallet());
           } else {
             view = LoginPageScaffold(
@@ -364,12 +368,6 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
               ),
             ),
           );
-          // } else if (enableSeedPhraseLogin &&
-          //     loginState is LoginDownloadGeneratedWallet) {
-          //   content = DownloadWalletView(
-          //     mnemonic: loginState.mnemonic,
-          //     wallet: loginState.walletFile,
-          //   );
         } else if (loginState is LoginLanding) {
           content = const LandingPageView(
             key: Key('landingPageView'),

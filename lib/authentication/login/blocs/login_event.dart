@@ -46,14 +46,16 @@ class CheckIfUserIsLoggedIn extends LoginEvent {
 class LoginWithPassword extends LoginEvent {
   final String password;
   final Wallet wallet;
+  final bool showWalletCreated;
 
   const LoginWithPassword({
     required this.password,
     required this.wallet,
+    required this.showWalletCreated,
   });
 
   @override
-  List<Object> get props => [password, wallet];
+  List<Object> get props => [password, wallet, showWalletCreated];
 }
 
 class UnlockUserWithPassword extends LoginEvent {
@@ -70,11 +72,18 @@ class UnlockUserWithPassword extends LoginEvent {
 class CreatePassword extends LoginEvent {
   final String password;
   final Wallet wallet;
+  final bool showTutorials;
+  final bool showWalletCreated;
 
-  const CreatePassword({required this.password, required this.wallet});
+  const CreatePassword(
+      {required this.password,
+      required this.wallet,
+      required this.showTutorials,
+      required this.showWalletCreated});
 
   @override
-  List<Object> get props => [password, wallet];
+  List<Object> get props =>
+      [password, wallet, showTutorials, showWalletCreated];
 }
 
 class ForgetWallet extends LoginEvent {
@@ -98,8 +107,8 @@ class EnterSeedPhrase extends LoginEvent {
   const EnterSeedPhrase();
 }
 
-class AddWalletFromMnemonic extends LoginEvent {
-  const AddWalletFromMnemonic(this.mnemonic, this.wallet);
+class AddWalletFromSeedPhraseLogin extends LoginEvent {
+  const AddWalletFromSeedPhraseLogin(this.mnemonic, this.wallet);
 
   final String mnemonic;
   final Wallet wallet;

@@ -11,11 +11,17 @@ import 'package:flutter/material.dart';
 
 class SecureYourPasswordWidget extends StatefulWidget {
   const SecureYourPasswordWidget(
-      {Key? key, required this.loginBloc, required this.wallet})
+      {Key? key,
+      required this.loginBloc,
+      required this.wallet,
+      required this.showTutorials,
+      required this.showWalletCreated})
       : super(key: key);
 
   final Wallet wallet;
   final LoginBloc loginBloc;
+  final bool showTutorials;
+  final bool showWalletCreated;
 
   @override
   State<SecureYourPasswordWidget> createState() =>
@@ -207,9 +213,10 @@ class _SecureYourPasswordWidgetState extends State<SecureYourPasswordWidget> {
 
     widget.loginBloc.add(
       CreatePassword(
-        password: _passwordController.text,
-        wallet: widget.wallet,
-      ),
+          password: _passwordController.text,
+          wallet: widget.wallet,
+          showTutorials: widget.showTutorials,
+          showWalletCreated: widget.showWalletCreated),
     );
   }
 }
@@ -217,9 +224,15 @@ class _SecureYourPasswordWidgetState extends State<SecureYourPasswordWidget> {
 void showSecureYourPasswordDialog(
     {required BuildContext context,
     required LoginBloc loginBloc,
-    required Wallet wallet}) {
+    required Wallet wallet,
+    required bool showTutorials,
+    required bool showWalletCreated}) {
   showArDriveDialog(context,
       barrierDismissible: false,
       useRootNavigator: false,
-      content: SecureYourPasswordWidget(loginBloc: loginBloc, wallet: wallet));
+      content: SecureYourPasswordWidget(
+          loginBloc: loginBloc,
+          wallet: wallet,
+          showTutorials: showTutorials,
+          showWalletCreated: showWalletCreated));
 }

@@ -4,7 +4,7 @@ abstract class LoginState extends Equatable {
   const LoginState();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class LoginLanding extends LoginState {
@@ -25,21 +25,43 @@ class LoginInitial extends LoginState {
 class LoginLoading extends LoginState {}
 
 class LoginTutorials extends LoginState {
-  const LoginTutorials(this.walletFile);
+  const LoginTutorials({required this.wallet, required this.showWalletCreated});
 
-  final Wallet walletFile;
+  final Wallet wallet;
+  final bool showWalletCreated;
 }
 
 class PromptPassword extends LoginState {
-  const PromptPassword({this.walletFile});
+  const PromptPassword(
+      {this.mnemonic, this.wallet, this.showWalletCreated = false});
 
-  final Wallet? walletFile;
+  final String? mnemonic;
+  final Wallet? wallet;
+
+  /// Used to determine next screens to show on password success
+  final bool showWalletCreated;
+
+  @override
+  List<Object?> get props => [mnemonic, wallet, showWalletCreated];
 }
 
-class CreatingNewPassword extends LoginState {
-  const CreatingNewPassword({required this.walletFile});
+class CreateNewPassword extends LoginState {
+  const CreateNewPassword(
+      {required this.wallet,
+      this.mnemonic,
+      required this.showTutorials,
+      required this.showWalletCreated});
 
-  final Wallet walletFile;
+  final String? mnemonic;
+  final Wallet wallet;
+
+  /// Used to determine next screens to show on password success
+  final bool showTutorials;
+  final bool showWalletCreated;
+
+  @override
+  List<Object?> get props =>
+      [mnemonic, wallet, showTutorials, showWalletCreated];
 }
 
 class LoginFailure extends LoginState {
@@ -54,9 +76,9 @@ class LoginSuccess extends LoginState {
 }
 
 class LoginDownloadGeneratedWallet extends LoginState {
-  const LoginDownloadGeneratedWallet(this.mnemonic, this.walletFile);
-  final String mnemonic;
-  final Wallet walletFile;
+  const LoginDownloadGeneratedWallet({this.mnemonic, required this.wallet});
+  final String? mnemonic;
+  final Wallet wallet;
 }
 
 class LoginCreateNewWallet extends LoginState {

@@ -47,6 +47,8 @@ void main() {
       setUp: () {
         when(() => mockArDriveAuth.userHasPassword(any()))
             .thenAnswer((_) async => true);
+        when(() => mockArDriveAuth.isExistingUser(any()))
+            .thenAnswer((_) async => true);
       },
       act: (bloc) async {
         bloc.add(AddWalletFile(await IOFile.fromData(
@@ -57,11 +59,14 @@ void main() {
       },
       expect: () => [
         LoginLoading(),
-        PromptPassword(walletFile: wallet),
+        predicate<PromptPassword>((p) {
+          return p.showWalletCreated == false && p.mnemonic == null;
+        })
       ],
     );
+
     blocTest(
-      'should emit the event to show onboarding when user is not an existing one',
+      'should emit the event to secure wallet and show tutorials when user is not an existing one',
       build: () {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
@@ -73,6 +78,8 @@ void main() {
         // user doesn't exist
         when(() => mockArDriveAuth.userHasPassword(any()))
             .thenAnswer((_) async => false);
+        when(() => mockArDriveAuth.isExistingUser(any()))
+            .thenAnswer((_) async => false);
       },
       act: (bloc) async {
         bloc.add(AddWalletFile(await IOFile.fromData(
@@ -83,7 +90,43 @@ void main() {
       },
       expect: () => [
         LoginLoading(),
-        LoginTutorials(wallet),
+        predicate<CreateNewPassword>((cnp) {
+          return cnp.showWalletCreated == false &&
+              cnp.mnemonic == null &&
+              cnp.showTutorials == true;
+        })
+      ],
+    );
+    blocTest(
+      'should emit the event to secure wallet and skip tutorials when user is an existing one with no private drives',
+      build: () {
+        return LoginBloc(
+          arDriveAuth: mockArDriveAuth,
+          arConnectService: mockArConnectService,
+          userRepository: mockUserRepository,
+        );
+      },
+      setUp: () {
+        // user doesn't exist
+        when(() => mockArDriveAuth.userHasPassword(any()))
+            .thenAnswer((_) async => false);
+        when(() => mockArDriveAuth.isExistingUser(any()))
+            .thenAnswer((_) async => true);
+      },
+      act: (bloc) async {
+        bloc.add(AddWalletFile(await IOFile.fromData(
+          Uint8List.fromList(getWalletString.codeUnits),
+          name: 'name',
+          lastModifiedDate: DateTime.now(),
+        )));
+      },
+      expect: () => [
+        LoginLoading(),
+        predicate<CreateNewPassword>((cnp) {
+          return cnp.showTutorials == false &&
+              cnp.showWalletCreated == false &&
+              cnp.mnemonic == null;
+        })
       ],
     );
   });
@@ -123,9 +166,7 @@ void main() {
         bloc.profileType = ProfileType.json;
 
         bloc.add(LoginWithPassword(
-          wallet: wallet,
-          password: 'password',
-        ));
+            wallet: wallet, password: 'password', showWalletCreated: false));
       },
       expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
     );
@@ -157,6 +198,7 @@ void main() {
         bloc.add(LoginWithPassword(
           wallet: wallet,
           password: 'password',
+          showWalletCreated: false,
         ));
       },
       expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
@@ -186,9 +228,7 @@ void main() {
         bloc.emit(const PromptPassword());
 
         bloc.add(LoginWithPassword(
-          wallet: wallet,
-          password: 'password',
-        ));
+            wallet: wallet, password: 'password', showWalletCreated: false));
         bloc.profileType = ProfileType.arConnect;
       },
       expect: () => [
@@ -222,6 +262,7 @@ void main() {
         bloc.add(LoginWithPassword(
           wallet: wallet,
           password: 'password',
+          showWalletCreated: false,
         ));
       },
       expect: () => [
@@ -454,9 +495,10 @@ void main() {
       },
       act: (bloc) async {
         bloc.add(CreatePassword(
-          wallet: wallet,
-          password: 'password',
-        ));
+            wallet: wallet,
+            password: 'password',
+            showTutorials: false,
+            showWalletCreated: false));
         bloc.profileType = ProfileType.json;
       },
       expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
@@ -484,9 +526,10 @@ void main() {
         bloc.emit(const PromptPassword());
 
         bloc.add(CreatePassword(
-          wallet: wallet,
-          password: 'password',
-        ));
+            wallet: wallet,
+            password: 'password',
+            showTutorials: false,
+            showWalletCreated: false));
         bloc.profileType = ProfileType.json;
       },
       expect: () => [
@@ -522,6 +565,8 @@ void main() {
         bloc.add(CreatePassword(
           wallet: wallet,
           password: 'password',
+          showTutorials: false,
+          showWalletCreated: false,
         ));
       },
       expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
@@ -555,6 +600,8 @@ void main() {
         bloc.add(CreatePassword(
           wallet: wallet,
           password: 'password',
+          showWalletCreated: false,
+          showTutorials: false,
         ));
         bloc.profileType = ProfileType.json;
       },
@@ -621,7 +668,14 @@ void main() {
       act: (bloc) async {
         bloc.add(const AddWalletFromArConnect());
       },
-      expect: () => [LoginLoading(), const TypeMatcher<LoginTutorials>()],
+      expect: () => [
+        LoginLoading(),
+        predicate<CreateNewPassword>((cnp) {
+          return cnp.showWalletCreated == false &&
+              cnp.mnemonic == null &&
+              cnp.showTutorials == true;
+        })
+      ],
     );
 
     blocTest(
@@ -728,10 +782,25 @@ void main() {
           userRepository: mockUserRepository,
         );
       },
+      setUp: () {
+        // not logged in
+        when(() => mockArDriveAuth.isUserLoggedIn())
+            .thenAnswer((invocation) => Future.value(true));
+        when(() => mockArDriveAuth.currentUser).thenAnswer(
+          (_) => User(
+            password: 'password',
+            wallet: getTestWallet(),
+            walletAddress: 'walletAddress',
+            walletBalance: BigInt.one,
+            cipherKey: SecretKey([]),
+            profileType: ProfileType.json,
+          ),
+        );
+      },
       act: (bloc) async {
         bloc.add(FinishOnboarding(wallet: wallet));
       },
-      expect: () => [const TypeMatcher<CreatingNewPassword>()],
+      expect: () => [const TypeMatcher<LoginSuccess>()],
     );
   });
 

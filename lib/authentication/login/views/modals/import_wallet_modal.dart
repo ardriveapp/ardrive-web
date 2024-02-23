@@ -144,7 +144,7 @@ class _ImportWalletModalState extends State<ImportWalletModal> {
     Navigator.pop(context);
 
     widget.loginBloc
-        .add(AddWalletFromMnemonic(_seedPhraseController.text, wallet));
+        .add(AddWalletFromSeedPhraseLogin(_seedPhraseController.text, wallet));
   }
 }
 

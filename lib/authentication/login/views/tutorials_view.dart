@@ -13,11 +13,10 @@ import '../../../utils/plausible_event_tracker/plausible_event_tracker.dart';
 import '../../components/max_device_sizes_constrained_box.dart';
 
 class TutorialsView extends StatefulWidget {
-  const TutorialsView({
-    super.key,
-    required this.wallet,
-  });
+  const TutorialsView(
+      {super.key, required this.wallet, required this.showWalletCreated});
   final Wallet wallet;
+  final bool showWalletCreated;
 
   @override
   State<TutorialsView> createState() => TutorialsViewState();
@@ -66,13 +65,22 @@ class TutorialsViewState extends State<TutorialsView> {
           illustration: AssetImage(Resources.images.login.placeholder2),
         ),
         _TutorialPage(
-          nextButtonText: appLocalizationsOf(context).diveInButtonOnboarding,
+          nextButtonText:
+              widget.showWalletCreated ? 'Get your wallet' : 'Go to app',
           nextButtonAction: () {
-            context.read<LoginBloc>().add(
-                  FinishOnboarding(
-                    wallet: widget.wallet,
-                  ),
-                );
+            if (widget.showWalletCreated) {
+              context.read<LoginBloc>().add(
+                    CompleteWalletGeneration(
+                      widget.wallet,
+                    ),
+                  );
+            } else {
+              context.read<LoginBloc>().add(
+                    FinishOnboarding(
+                      wallet: widget.wallet,
+                    ),
+                  );
+            }
           },
           previousButtonText: appLocalizationsOf(context).backButtonOnboarding,
           previousButtonAction: () {

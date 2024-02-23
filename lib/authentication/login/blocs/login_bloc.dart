@@ -71,8 +71,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _handleFinishOnboardingEvent(event, emit);
     } else if (event is UnLockWithBiometrics) {
       await _handleUnlockUserWithBiometricsEvent(event, emit);
-    } else if (event is AddWalletFromMnemonic) {
-      await _handleAddWalletFromMnemonicEvent(event, emit);
+    } else if (event is AddWalletFromSeedPhraseLogin) {
+      await _handleAddWalletFromSeedPhraseLoginEvent(event, emit);
     } else if (event is AddWalletFromCompleter) {
       await _handleAddWalletFromCompleterEvent(event, emit);
     } else if (event is CreateNewWallet) {
@@ -140,11 +140,16 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           Wallet.fromJwk(json.decode(await event.walletFile.readAsString()));
 
       if (await _arDriveAuth.userHasPassword(wallet)) {
-        emit(PromptPassword(walletFile: wallet));
+        emit(PromptPassword(wallet: wallet, showWalletCreated: false));
       } else {
-        emit(LoginTutorials(wallet));
+        final hasDrives = await _arDriveAuth.isExistingUser(wallet);
+        emit(CreateNewPassword(
+            wallet: wallet,
+            showTutorials: !hasDrives,
+            showWalletCreated: false));
       }
     } catch (e) {
+      print(e);
       usingSeedphrase = false;
       emit(LoginFailure(e));
       emit(previousState);
@@ -166,6 +171,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         emit: emit,
         previousState: previousState,
         profileType: profileType!,
+        showTutorials: false,
+        showWalletCreated: event.showWalletCreated,
       );
     } catch (e) {
       usingSeedphrase = false;
@@ -195,7 +202,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           logger.e('Failed to unlock user with biometrics', e);
         }
       }
-      emit(const PromptPassword());
+      emit(const PromptPassword(showWalletCreated: false));
       return;
     }
 
@@ -245,12 +252,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     try {
       await _verifyArConnectWalletAddressAndLogIn(
-        wallet: event.wallet,
-        password: event.password,
-        emit: emit,
-        previousState: previousState,
-        profileType: profileType!,
-      );
+          wallet: event.wallet,
+          password: event.password,
+          emit: emit,
+          previousState: previousState,
+          profileType: profileType!,
+          showTutorials: event.showTutorials,
+          showWalletCreated: event.showWalletCreated);
     } catch (e) {
       usingSeedphrase = false;
       emit(LoginFailure(e));
@@ -292,9 +300,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       lastKnownWalletAddress = await wallet.getAddress();
 
       if (await _arDriveAuth.userHasPassword(wallet)) {
-        emit(PromptPassword(walletFile: wallet));
-      } else if (await _arDriveAuth.isExistingUser(wallet)) {
-        emit(LoginTutorials(wallet));
+        emit(PromptPassword(wallet: wallet, showWalletCreated: false));
+      } else {
+        emit(CreateNewPassword(
+            wallet: wallet, showTutorials: true, showWalletCreated: false));
       }
     } catch (e) {
       emit(LoginFailure(e));
@@ -321,20 +330,26 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
   Future<void> _handleFinishOnboardingEvent(
       FinishOnboarding event, Emitter<LoginState> emit) async {
-    emit(CreatingNewPassword(walletFile: event.wallet));
+    if (await _arDriveAuth.isUserLoggedIn()) {
+      emit(LoginSuccess(_arDriveAuth.currentUser));
+    } else {
+      // should not happen as user should be logged in by this point
+      emit(const LoginFailure('Error logging in user'));
+    }
   }
 
   Future<bool> _verifyArConnectWalletAddress() async {
     return lastKnownWalletAddress == await _arConnectService.getWalletAddress();
   }
 
-  Future<void> _verifyArConnectWalletAddressAndLogIn({
-    required Wallet wallet,
-    required String password,
-    required ProfileType profileType,
-    required LoginState previousState,
-    required Emitter<LoginState> emit,
-  }) async {
+  Future<void> _verifyArConnectWalletAddressAndLogIn(
+      {required Wallet wallet,
+      required String password,
+      required ProfileType profileType,
+      required LoginState previousState,
+      required Emitter<LoginState> emit,
+      required bool showTutorials,
+      required bool showWalletCreated}) async {
     if (_isArConnectWallet()) {
       final isArConnectAddressValid = await _verifyArConnectWalletAddress();
 
@@ -360,7 +375,14 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
             : LoginType.json;
     PlausibleEventTracker.trackLogin(type: type);
 
-    emit(LoginSuccess(user));
+    if (showTutorials) {
+      emit(
+          LoginTutorials(wallet: wallet, showWalletCreated: showWalletCreated));
+    } else if (showWalletCreated) {
+      emit(LoginDownloadGeneratedWallet(wallet: wallet));
+    } else {
+      emit(LoginSuccess(user));
+    }
   }
 
   bool _isArConnectWallet() {
@@ -408,12 +430,20 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     return;
   }
 
-  Future<void> _handleAddWalletFromMnemonicEvent(
-      AddWalletFromMnemonic event, Emitter<LoginState> emit) async {
+  Future<void> _handleAddWalletFromSeedPhraseLoginEvent(
+      AddWalletFromSeedPhraseLogin event, Emitter<LoginState> emit) async {
     profileType = ProfileType.json;
     usingSeedphrase = true;
 
-    emit(LoginDownloadGeneratedWallet(event.mnemonic, event.wallet));
+    final wallet = event.wallet;
+
+    if (await _arDriveAuth.userHasPassword(wallet)) {
+      emit(PromptPassword(wallet: wallet, showWalletCreated: true));
+    } else {
+      final hasDrives = await _arDriveAuth.isExistingUser(wallet);
+      emit(CreateNewPassword(
+          wallet: wallet, showTutorials: !hasDrives, showWalletCreated: true));
+    }
   }
 
   Future<void> _handleAddWalletFromCompleterEvent(
@@ -438,7 +468,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       wallet = await completer.future;
     }
 
-    emit(LoginDownloadGeneratedWallet(event.mnemonic, wallet));
+    emit(
+        LoginDownloadGeneratedWallet(mnemonic: event.mnemonic, wallet: wallet));
   }
 
   void _handleCreateNewWalletEvent(
@@ -455,21 +486,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     CompleteWalletGeneration event,
     Emitter<LoginState> emit,
   ) async {
-    final previousState = state;
     final wallet = event.wallet;
-
     profileType = ProfileType.json;
 
-    try {
-      if (await _arDriveAuth.userHasPassword(wallet)) {
-        emit(PromptPassword(walletFile: wallet));
-      } else {
-        emit(LoginTutorials(wallet));
-      }
-    } catch (e) {
-      usingSeedphrase = false;
-      emit(LoginFailure(e));
-      emit(previousState);
-    }
+    emit(LoginDownloadGeneratedWallet(wallet: wallet));
   }
 }

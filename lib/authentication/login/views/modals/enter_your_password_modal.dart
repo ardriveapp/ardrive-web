@@ -13,11 +13,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class EnterYourPasswordWidget extends StatefulWidget {
   const EnterYourPasswordWidget(
-      {Key? key, required this.loginBloc, this.wallet})
+      {Key? key,
+      required this.loginBloc,
+      this.wallet,
+      required this.showWalletCreated})
       : super(key: key);
 
   final Wallet? wallet;
   final LoginBloc loginBloc;
+  final bool showWalletCreated;
 
   @override
   State<EnterYourPasswordWidget> createState() =>
@@ -138,9 +142,9 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
       ));
     } else {
       widget.loginBloc.add(LoginWithPassword(
-        password: _passwordController.text,
-        wallet: widget.wallet!,
-      ));
+          password: _passwordController.text,
+          wallet: widget.wallet!,
+          showWalletCreated: widget.showWalletCreated));
     }
   }
 }
@@ -148,9 +152,14 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
 void showEnterYourPasswordDialog(
     {required BuildContext context,
     required LoginBloc loginBloc,
-    Wallet? wallet}) {
+    Wallet? wallet,
+    bool showWalletCreated = false}) {
   showArDriveDialog(context,
       barrierDismissible: false,
       useRootNavigator: false,
-      content: EnterYourPasswordWidget(loginBloc: loginBloc, wallet: wallet));
+      content: EnterYourPasswordWidget(
+        loginBloc: loginBloc,
+        wallet: wallet,
+        showWalletCreated: showWalletCreated,
+      ));
 }
