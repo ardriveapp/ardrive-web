@@ -149,7 +149,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
             showWalletCreated: false));
       }
     } catch (e) {
-      print(e);
       usingSeedphrase = false;
       emit(LoginFailure(e));
       emit(previousState);
