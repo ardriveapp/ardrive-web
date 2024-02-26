@@ -106,7 +106,7 @@ class FsEntryLicenseBloc
   final _ccForm = FormGroup({
     'ccAttributionField': FormControl<LicenseMeta>(
       validators: [Validators.required],
-      value: ccByLicenseMetaV2,
+      value: cc0LicenseMeta,
     ),
   });
 

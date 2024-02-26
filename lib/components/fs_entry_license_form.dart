@@ -309,7 +309,7 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
             return ArDriveScrollBar(
               child: SingleChildScrollView(
                 child: ArDriveStandardModal(
-                  title: 'Configure ${licenseMeta.name}',
+                  title: 'Configure Creative Commons License',
                   width: kLargeDialogWidth,
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
