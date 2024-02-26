@@ -33,6 +33,7 @@ class LicenseService {
       case LicenseType.udl:
       case LicenseType.udlV2:
         return UdlLicenseParams.fromAdditionalTags(additionalTags ?? {});
+      case LicenseType.cc0:
       case LicenseType.ccBy:
       case LicenseType.ccByV2:
       case LicenseType.ccByNC:

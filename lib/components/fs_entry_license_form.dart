@@ -330,7 +330,7 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                               formGroup:
                                   context.watch<FsEntryLicenseBloc>().udlForm,
                             )
-                          : licenseType == LicenseType.ccBy
+                          : licenseType == LicenseType.ccByV2
                               ? CcParamsForm(
                                   formGroup: context
                                       .watch<FsEntryLicenseBloc>()

@@ -155,10 +155,10 @@ class FsEntryLicenseBloc
 
     switch (licenseType) {
       case LicenseCategory.udl:
-        _selectedLicenseMeta = udlLicenseMeta;
+        _selectedLicenseMeta = udlLicenseMetaV2;
         break;
       case LicenseCategory.cc:
-        _selectedLicenseMeta = ccByLicenseMeta;
+        _selectedLicenseMeta = ccByLicenseMetaV2;
         break;
     }
 
