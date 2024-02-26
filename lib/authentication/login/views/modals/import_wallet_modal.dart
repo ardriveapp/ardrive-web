@@ -2,9 +2,9 @@ import 'package:ardrive/authentication/components/button.dart';
 import 'package:ardrive/authentication/components/lined_text_divider.dart';
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
+import 'package:ardrive/authentication/login/views/modals/common.dart';
 import 'package:ardrive/authentication/login/views/modals/loader_modal.dart';
 import 'package:ardrive/misc/resources.dart';
-import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -112,25 +112,10 @@ class _ImportWalletModalState extends State<ImportWalletModal> {
         bip39.validateMnemonic(_seedPhraseController.text);
 
     if (!isValid) {
-      showArDriveDialog(context,
-          content: ArDriveIconModal(
-            icon: ArDriveIcons.triangle(
-              size: 88,
-              color: ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
-            ),
-            title: appLocalizationsOf(context).error,
-            // TODO: create/update localization key
-            content:
-                'The seed phrase you have provided is invalid. Please correct and retry.',
-            actions: [
-              ModalAction(
-                action: () {
-                  Navigator.pop(context);
-                },
-                title: appLocalizationsOf(context).ok,
-              )
-            ],
-          ));
+      showErrorDialog(
+          context: context,
+          message:
+              'The seed phrase you have provided is invalid. Please correct and retry.');
       return;
     }
 

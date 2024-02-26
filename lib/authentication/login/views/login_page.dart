@@ -1,6 +1,7 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/views/create_new_wallet_view.dart';
+import 'package:ardrive/authentication/login/views/modals/common.dart';
 import 'package:ardrive/authentication/login/views/modals/secure_your_password_modal.dart';
 import 'package:ardrive/authentication/login/views/tiles/tiles_view.dart';
 import 'package:ardrive/authentication/login/views/tutorials_view.dart';
@@ -15,7 +16,6 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
-import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -98,20 +98,11 @@ class _LoginPageState extends State<LoginPage> {
             // TODO: Verify if the error is `NoConnectionException` and show an
             /// appropriate message after validating with UI/UX
             if (loginState.error is WalletMismatchException) {
-              showArDriveDialog(
-                context,
-                content: ArDriveIconModal(
-                  title: appLocalizationsOf(context).loginFailed,
-                  content: appLocalizationsOf(context)
-                      .arConnectWalletDoestNotMatchArDriveWallet,
-                  icon: ArDriveIcons.triangle(
-                    size: 88,
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeErrorMuted,
-                  ),
-                ),
+              showErrorDialog(
+                context: context,
+                title: appLocalizationsOf(context).loginFailed,
+                message: appLocalizationsOf(context)
+                    .arConnectWalletDoestNotMatchArDriveWallet,
               );
               return;
             } else if (loginState.error is BiometricException) {
@@ -120,17 +111,10 @@ class _LoginPageState extends State<LoginPage> {
               return;
             }
 
-            showArDriveDialog(
-              context,
-              content: ArDriveIconModal(
-                title: appLocalizationsOf(context).loginFailed,
-                content: appLocalizationsOf(context).pleaseTryAgain,
-                icon: ArDriveIcons.triangle(
-                  size: 88,
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
-                ),
-              ),
+            showErrorDialog(
+              context: context,
+              title: appLocalizationsOf(context).loginFailed,
+              message: appLocalizationsOf(context).pleaseTryAgain,
             );
           } else if (loginState is LoginSuccess) {
             final profileType = loginState.user.profileType;

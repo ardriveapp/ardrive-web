@@ -106,6 +106,7 @@ class Login {
 class _Icons {
   const _Icons();
 
+  final String alert = 'images/icons/iconAlert.svg';
   final String copy = 'images/icons/iconCopy.svg';
   final String download = 'images/icons/iconDownload.svg';
   final String encryptedLock = 'images/icons/iconEncryptedLock.svg';

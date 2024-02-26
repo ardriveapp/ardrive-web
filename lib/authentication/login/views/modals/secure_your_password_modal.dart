@@ -1,6 +1,7 @@
 import 'package:ardrive/authentication/components/button.dart';
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
+import 'package:ardrive/authentication/login/views/modals/common.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
@@ -166,44 +167,18 @@ class _SecureYourPasswordWidgetState extends State<SecureYourPasswordWidget> {
     final isValid = _formKey.currentState!.validateSync();
 
     if (!isValid) {
-      showArDriveDialog(context,
-          content: ArDriveIconModal(
-            icon: ArDriveIcons.triangle(
-              size: 88,
-              color: ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
-            ),
-            title: appLocalizationsOf(context).passwordCannotBeEmpty,
-            content: appLocalizationsOf(context).pleaseTryAgain,
-            actions: [
-              ModalAction(
-                action: () {
-                  Navigator.pop(context);
-                },
-                title: appLocalizationsOf(context).ok,
-              )
-            ],
-          ));
+      showErrorDialog(
+          context: context,
+          title: appLocalizationsOf(context).error,
+          message: appLocalizationsOf(context).passwordDoNotMatch);
       return;
     }
 
     if (_passwordController.text != _confirmPasswordController.text) {
-      showArDriveDialog(context,
-          content: ArDriveIconModal(
-            icon: ArDriveIcons.triangle(
-              size: 88,
-              color: ArDriveTheme.of(context).themeData.colors.themeErrorMuted,
-            ),
-            title: appLocalizationsOf(context).passwordDoNotMatch,
-            content: appLocalizationsOf(context).pleaseTryAgain,
-            actions: [
-              ModalAction(
-                action: () {
-                  Navigator.pop(context);
-                },
-                title: appLocalizationsOf(context).ok,
-              )
-            ],
-          ));
+      showErrorDialog(
+          context: context,
+          title: appLocalizationsOf(context).error,
+          message: appLocalizationsOf(context).passwordDoNotMatch);
       return;
     }
 
