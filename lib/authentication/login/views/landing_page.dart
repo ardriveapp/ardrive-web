@@ -34,6 +34,7 @@ class _LandingPageViewState extends State<LandingPageView> {
           content: Column(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 ArDriveImage(
                   image: AssetImage(Resources.images.brand.logo1),
@@ -45,6 +46,7 @@ class _LandingPageViewState extends State<LandingPageView> {
                   child: Text(
                     // FIXME: Add localization key
                     'Welcome to ArDrive',
+                    textAlign: TextAlign.center,
                     style: typography.heading1(
                         color: colors.textHigh, fontWeight: ArFontWeight.bold),
                   ),
@@ -52,6 +54,7 @@ class _LandingPageViewState extends State<LandingPageView> {
                 heightSpacing(),
                 //FIXME: Add localization key
                 Text('Are you an existing user or a new user?',
+                    textAlign: TextAlign.center,
                     style: typography.paragraphLarge(
                         color: colors.textLow,
                         fontWeight: ArFontWeight.semiBold)),

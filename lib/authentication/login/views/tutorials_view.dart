@@ -125,8 +125,7 @@ class TutorialsViewState extends State<TutorialsView> {
     return ScreenTypeLayout.builder(
       desktop: (context) => Material(
           color: colorTokens.containerL0,
-          child: Expanded(
-              child: Stack(children: [
+          child: Stack(fit: StackFit.expand, children: [
             Container(
                 decoration: BoxDecoration(
                   border: Border(
@@ -135,13 +134,12 @@ class TutorialsViewState extends State<TutorialsView> {
                   color: colorTokens.containerL0,
                 ),
                 padding: const EdgeInsets.fromLTRB(140, 100, 140, 100),
-                child: Expanded(
-                    child: Center(
-                        child: MaxDeviceSizesConstrainedBox(
-                            maxHeightPercent: 1.0,
-                            defaultMaxWidth: 1168,
-                            defaultMaxHeight: 800,
-                            child: _buildOnBoardingContent())))),
+                child: Center(
+                    child: MaxDeviceSizesConstrainedBox(
+                        maxHeightPercent: 1.0,
+                        defaultMaxWidth: 1168,
+                        defaultMaxHeight: 800,
+                        child: _buildOnBoardingContent()))),
             // Placing red arrow here as it has to be overlaying the padding area
             // for the bottom buttons/page number to be vertically stable across
             // screens
@@ -150,7 +148,7 @@ class TutorialsViewState extends State<TutorialsView> {
                   right: 140,
                   bottom: 95,
                   child: SvgPicture.asset(Resources.images.login.arrowRed)),
-          ]))),
+          ])),
       mobile: (context) => Scaffold(
         resizeToAvoidBottomInset: true,
         body: Container(

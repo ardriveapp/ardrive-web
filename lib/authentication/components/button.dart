@@ -83,6 +83,7 @@ class _ArDriveButtonState extends State<ArDriveButtonNew> {
           RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(6)),
       )),
+      alignment: Alignment.center,
       padding: MaterialStateProperty.all<EdgeInsetsGeometry>(
           const EdgeInsets.symmetric(horizontal: 48, vertical: 10)),
       backgroundColor: MaterialStateProperty.all<Color>(
@@ -119,6 +120,7 @@ class _ArDriveButtonState extends State<ArDriveButtonNew> {
               onPressed: widget.isDisabled ? null : widget.onPressed,
               style: style,
               child: Text(widget.text,
+                  textAlign: TextAlign.center,
                   style: typography.paragraphLarge(
                       color: foregroundColor,
                       fontWeight: ArFontWeight.semiBold))),

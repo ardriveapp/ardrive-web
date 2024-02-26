@@ -43,31 +43,32 @@ class _PromptWalletViewState extends State<PromptWalletView> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               ArDriveImage(
                 image: AssetImage(Resources.images.brand.logo1),
                 height: 50,
               ),
               heightSpacing(),
-              Align(
-                alignment: Alignment.topCenter,
-                child: Text(
-                  // FIXME: Add localization key
-                  'Welcome to ArDrive',
-                  style: typography.heading1(
-                      color: colorTokens.textHigh,
-                      fontWeight: ArFontWeight.bold),
-                ),
+              Text(
+                // FIXME: Add localization key
+                'Welcome to ArDrive',
+                textAlign: TextAlign.center,
+                style: typography.heading1(
+                    color: colorTokens.textHigh, fontWeight: ArFontWeight.bold),
               ),
+
               heightSpacing(),
               //FIXME: Add localization key
               Text(
-                  widget.existingUserFlow
-                      ? 'Sign in using one of the options below.'
-                      : 'To use ArDrive you need a wallet. A wallet is a new way to log in. Instead of creating usernames and passwords, just connect your wallet.',
-                  style: typography.paragraphLarge(
-                      color: colorTokens.textLow,
-                      fontWeight: ArFontWeight.semiBold)),
+                widget.existingUserFlow
+                    ? 'Sign in using one of the options below.'
+                    : 'To use ArDrive you need a wallet. A wallet is a new way to log in. Instead of creating usernames and passwords, just connect your wallet.',
+                style: typography.paragraphLarge(
+                    color: colorTokens.textLow,
+                    fontWeight: ArFontWeight.semiBold),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 72),
               // TODO: Check if we need to do the same for ArConnect as in the past
 
@@ -75,7 +76,6 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                 ArDriveButtonNew(
                     text: 'Continue with ArConnect',
                     typography: typography,
-                    maxWidth: double.maxFinite,
                     onPressed: () {
                       context
                           .read<LoginBloc>()
@@ -86,7 +86,6 @@ class _PromptWalletViewState extends State<PromptWalletView> {
               ArDriveButtonNew(
                   text: 'Continue with MetaMask',
                   typography: typography,
-                  maxWidth: double.maxFinite,
                   onPressed: () {
                     // print('Implement me!');
                   }),
@@ -114,6 +113,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
               const SizedBox(height: 72),
               // TODO:  make this into a reusable component
               Text.rich(
+                textAlign: TextAlign.center,
                 TextSpan(
                   children: [
                     TextSpan(
