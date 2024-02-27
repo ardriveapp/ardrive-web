@@ -1,0 +1,3 @@
+- Updates user interface to include new Creative Commons license options: CC0, CC-BY-NC, CC-BY-NC-ND, CC-BY-NC-SA, CC-BY-ND, and CC-BY-SA.
+- Fixes issue with moving files in private drives
+- Fixes issue displaying long content in the activity section of the details panel
