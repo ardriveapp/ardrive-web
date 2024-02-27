@@ -1,11 +1,9 @@
-import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
-void showLoaderDialog(
-    {required BuildContext context, required LoginBloc loginBloc}) {
+void showLoaderDialog({required BuildContext context}) {
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
   showArDriveDialog(context,
       barrierDismissible: false,

@@ -24,6 +24,10 @@ class LoginInitial extends LoginState {
 
 class LoginLoading extends LoginState {}
 
+class LoginLoaderStarted extends LoginState {}
+
+class LoginLoaderEnded extends LoginState {}
+
 class LoginTutorials extends LoginState {
   const LoginTutorials({required this.wallet, required this.showWalletCreated});
 

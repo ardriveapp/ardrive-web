@@ -19,6 +19,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'web_wallet.dart';
+
 part 'login_event.dart';
 part 'login_state.dart';
 
@@ -434,7 +436,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     profileType = ProfileType.json;
     usingSeedphrase = true;
 
-    final wallet = event.wallet;
+    emit(LoginLoaderStarted());
+
+    final wallet = await generateWalletFromMnemonic(event.mnemonic);
+
+    emit(LoginLoaderEnded());
 
     if (await _arDriveAuth.userHasPassword(wallet)) {
       emit(PromptPassword(wallet: wallet, showWalletCreated: true));

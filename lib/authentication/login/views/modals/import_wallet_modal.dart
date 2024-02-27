@@ -3,16 +3,12 @@ import 'package:ardrive/authentication/components/lined_text_divider.dart';
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/views/modals/common.dart';
-import 'package:ardrive/authentication/login/views/modals/loader_modal.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:flutter/material.dart';
-
-import '../../blocs/stub_web_wallet.dart' // stub implementation
-    if (dart.library.html) '../../blocs/web_wallet.dart';
 
 class ImportWalletModal extends StatefulWidget {
   const ImportWalletModal({Key? key, required this.loginBloc})
@@ -119,20 +115,21 @@ class _ImportWalletModalState extends State<ImportWalletModal> {
       return;
     }
 
-    // Navigator.pop(context);
-    showLoaderDialog(context: context, loginBloc: widget.loginBloc);
-    final wallet = await generateWalletFromMnemonic(_seedPhraseController.text);
-    // FIXME: Trying to pop the current dialog before showLoaderDialog()
-    // and then trying to pop the loader dialog caused problems with context
-    // Revise this code for better UX
-
-    // ignore: use_build_context_synchronously
     Navigator.pop(context);
-    // ignore: use_build_context_synchronously
-    Navigator.pop(context);
-
     widget.loginBloc
-        .add(AddWalletFromSeedPhraseLogin(_seedPhraseController.text, wallet));
+        .add(AddWalletFromSeedPhraseLogin(_seedPhraseController.text));
+
+    // // Navigator.pop(context);
+    // showLoaderDialog(context: context, loginBloc: widget.loginBloc);
+    // final wallet = await generateWalletFromMnemonic(_seedPhraseController.text);
+    // // FIXME: Trying to pop the current dialog before showLoaderDialog()
+    // // and then trying to pop the loader dialog caused problems with context
+    // // Revise this code for better UX
+
+    // // ignore: use_build_context_synchronously
+    // Navigator.pop(context);
+    // // ignore: use_build_context_synchronously
+    // Navigator.pop(context);
   }
 }
 
