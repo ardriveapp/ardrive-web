@@ -306,10 +306,15 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                 .read<FsEntryLicenseBloc>()
                 .selectedLicenseMeta
                 .licenseType;
+            final modalTitle = licenseType == LicenseType.udlV2
+                ? 'Configure Universal Data License'
+                : licenseType == LicenseType.ccByV2
+                    ? 'Configure Creative Commons License'
+                    : 'Unsupported license type';
             return ArDriveScrollBar(
               child: SingleChildScrollView(
                 child: ArDriveStandardModal(
-                  title: 'Configure Creative Commons License',
+                  title: modalTitle,
                   width: kLargeDialogWidth,
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
