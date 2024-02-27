@@ -21,19 +21,63 @@ part 'fs_entry_license_state.dart';
 
 class FsEntryLicenseBloc
     extends Bloc<FsEntryLicenseEvent, FsEntryLicenseState> {
+  FsEntryLicenseBloc({
+    required this.driveId,
+    required this.selectedItems,
+    required ArweaveService arweave,
+    required TurboUploadService turboUploadService,
+    required DriveDao driveDao,
+    required ProfileCubit profileCubit,
+    required ArDriveCrypto crypto,
+    required LicenseService licenseService,
+    Platform platform = const LocalPlatform(),
+  })  : _arweave = arweave,
+        _turboUploadService = turboUploadService,
+        _driveDao = driveDao,
+        _profileCubit = profileCubit,
+        _crypto = crypto,
+        _licenseService = licenseService,
+        super(const FsEntryLicenseLoadInProgress()) {
+    if (selectedItems.isEmpty) {
+      addError(Exception('selectedItems cannot be empty'));
+    }
+
+    on<FsEntryLicenseEvent>(_onEvent, transformer: restartable());
+  }
+
   final String driveId;
   final List<ArDriveDataTableItem> selectedItems;
 
-  final selectForm = FormGroup({
-    'licenseType': FormControl<LicenseMeta>(
+  // We initialize with UDL license by default
+  LicenseMeta _selectedLicenseMeta = udlLicenseMeta;
+  LicenseMeta get selectedLicenseMeta => _selectedLicenseMeta;
+
+  List<FileEntry>? filesToLicense;
+  LicenseParams? licenseParams;
+
+  final ArweaveService _arweave;
+  final TurboUploadService _turboUploadService;
+  final DriveDao _driveDao;
+  final ProfileCubit _profileCubit;
+  final ArDriveCrypto _crypto;
+  final LicenseService _licenseService;
+
+  final List<String> errorLog = [];
+
+  /// Form getters
+  FormGroup get selectForm => _selectForm;
+  FormGroup get udlForm => _udlForm;
+  FormGroup get ccForm => _ccForm;
+
+  // Forms
+  final _selectForm = FormGroup({
+    'licenseType': FormControl<LicenseCategory>(
       validators: [Validators.required],
-      value: udlLicenseMeta,
+      value: LicenseCategory.udl,
     ),
   });
-  LicenseMeta get selectFormLicenseMeta =>
-      selectForm.control('licenseType').value;
 
-  final udlForm = FormGroup({
+  final _udlForm = FormGroup({
     'licenseFeeAmount': FormControl<String>(
       validators: [
         Validators.composeOR([
@@ -59,139 +103,141 @@ class FsEntryLicenseBloc
     ),
   });
 
-  List<FileEntry>? filesToLicense;
-  LicenseParams? licenseParams;
+  final _ccForm = FormGroup({
+    'ccAttributionField': FormControl<LicenseMeta>(
+      validators: [Validators.required],
+      value: cc0LicenseMeta,
+    ),
+  });
 
-  final ArweaveService _arweave;
-  final TurboUploadService _turboUploadService;
-  final DriveDao _driveDao;
-  final ProfileCubit _profileCubit;
-  final ArDriveCrypto _crypto;
-  final LicenseService _licenseService;
+  Future<void> _onEvent(
+    FsEntryLicenseEvent event,
+    Emitter<FsEntryLicenseState> emit,
+  ) async {
+    if (event is FsEntryLicenseInitial) {
+      await _handleInitial(event, emit);
+    } else if (event is FsEntryLicenseSelect) {
+      await _handleSelect(event, emit);
+    } else if (event is FsEntryLicenseConfigurationSubmit) {
+      await _handleConfigurationSubmit(event, emit);
+    } else if (event is FsEntryLicenseReviewConfirm) {
+      await _handleReviewConfirm(event, emit);
+    } else if (event is FsEntryLicenseReviewBack) {
+      _handleReviewBack(event, emit);
+    } else if (event is FsEntryLicenseConfigurationBack) {
+      _handleConfigurationBack(event, emit);
+    } else if (event is FsEntryLicenseSuccessClose) {
+      _handleSuccessClose(event, emit);
+    } else if (event is FsEntryLicenseFailureTryAgain) {
+      _handleFailureTryAgain(event, emit);
+    } else {
+      addError('Unsupported event: ${event.runtimeType}');
+    }
+  }
 
-  final List<String> errorLog = [];
+  Future<void> _handleInitial(
+    FsEntryLicenseInitial event,
+    Emitter<FsEntryLicenseState> emit,
+  ) async {
+    filesToLicense = await _enumerateFiles(items: selectedItems, emit: emit);
+    if (filesToLicense!.isEmpty) {
+      emit(const FsEntryLicenseNoFiles());
+    } else {
+      emit(const FsEntryLicenseSelecting());
+    }
+  }
 
-  FsEntryLicenseBloc({
-    required this.driveId,
-    required this.selectedItems,
-    required ArweaveService arweave,
-    required TurboUploadService turboUploadService,
-    required DriveDao driveDao,
-    required ProfileCubit profileCubit,
-    required ArDriveCrypto crypto,
-    required LicenseService licenseService,
-    Platform platform = const LocalPlatform(),
-  })  : _arweave = arweave,
-        _turboUploadService = turboUploadService,
-        _driveDao = driveDao,
-        _profileCubit = profileCubit,
-        _crypto = crypto,
-        _licenseService = licenseService,
-        super(const FsEntryLicenseLoadInProgress()) {
-    if (selectedItems.isEmpty) {
-      addError(Exception('selectedItems cannot be empty'));
+  Future<void> _handleSelect(
+    FsEntryLicenseSelect event,
+    Emitter<FsEntryLicenseState> emit,
+  ) async {
+    final licenseType = selectForm.control('licenseType').value;
+
+    switch (licenseType) {
+      case LicenseCategory.udl:
+        _selectedLicenseMeta = udlLicenseMetaV2;
+        break;
+      case LicenseCategory.cc:
+        _selectedLicenseMeta = ccByLicenseMetaV2;
+        break;
     }
 
-    final profile = _profileCubit.state as ProfileLoggedIn;
-
-    on<FsEntryLicenseEvent>(
-      (event, emit) async {
-        if (await _profileCubit.logoutIfWalletMismatch()) {
-          emit(const FsEntryLicenseWalletMismatch());
-          return;
-        }
-
-        if (event is FsEntryLicenseInitial) {
-          filesToLicense =
-              await enumerateFiles(items: selectedItems, emit: emit);
-          if (filesToLicense!.isEmpty) {
-            emit(const FsEntryLicenseNoFiles());
-          } else {
-            emit(const FsEntryLicenseSelecting());
-          }
-        }
-
-        if (event is FsEntryLicenseSelect) {
-          if (selectFormLicenseMeta.hasParams) {
-            emit(const FsEntryLicenseConfiguring());
-          } else {
-            licenseParams = null;
-            emit(const FsEntryLicenseReviewing());
-          }
-        }
-
-        if (event is FsEntryLicenseConfigurationBack) {
-          emit(const FsEntryLicenseSelecting());
-        }
-
-        if (event is FsEntryLicenseConfigurationSubmit) {
-          if (selectFormLicenseMeta.licenseType == LicenseType.udl) {
-            licenseParams = await udlFormToLicenseParams(udlForm);
-          } else {
-            addError(
-                'Unsupported license configuration: ${selectFormLicenseMeta.licenseType}');
-          }
-          emit(const FsEntryLicenseReviewing());
-        }
-
-        if (event is FsEntryLicenseReviewBack) {
-          if (selectFormLicenseMeta.hasParams) {
-            licenseParams = null;
-            emit(const FsEntryLicenseConfiguring());
-          } else {
-            emit(const FsEntryLicenseSelecting());
-          }
-        }
-
-        if (event is FsEntryLicenseReviewConfirm) {
-          emit(const FsEntryLicenseLoadInProgress());
-          try {
-            await licenseEntities(
-              profile: profile,
-              licenseMeta: selectFormLicenseMeta,
-              licenseParams: licenseParams,
-            );
-            emit(const FsEntryLicenseSuccess());
-          } catch (_, trace) {
-            addError('Error licensing entities', trace);
-            emit(const FsEntryLicenseFailure());
-          }
-        }
-
-        if (event is FsEntryLicenseSuccessClose) {
-          emit(const FsEntryLicenseComplete());
-        }
-
-        if (event is FsEntryLicenseFailureTryAgain) {
-          emit(const FsEntryLicenseReviewing());
-        }
-      },
-      transformer: restartable(),
-    );
+    emit(const FsEntryLicenseConfiguring());
   }
 
-  Future<UdlLicenseParams> udlFormToLicenseParams(FormGroup udlForm) async {
-    final String? licenseFeeAmountString =
-        udlForm.control('licenseFeeAmount').value;
-    final double? licenseFeeAmount = licenseFeeAmountString == null
-        ? null
-        : double.tryParse(licenseFeeAmountString);
+  Future<void> _handleConfigurationSubmit(
+    FsEntryLicenseConfigurationSubmit event,
+    Emitter<FsEntryLicenseState> emit,
+  ) async {
+    final licenseCategory = selectForm.control('licenseType').value;
 
-    final UdlCurrency licenseFeeCurrency =
-        udlForm.control('licenseFeeCurrency').value;
-    final UdlCommercialUse commercialUse =
-        udlForm.control('commercialUse').value;
-    final UdlDerivation derivations = udlForm.control('derivations').value;
+    if (licenseCategory == LicenseCategory.cc) {
+      _selectedLicenseMeta = ccForm.control('ccAttributionField').value;
+    }
 
-    return UdlLicenseParams(
-      licenseFeeAmount: licenseFeeAmount,
-      licenseFeeCurrency: licenseFeeCurrency,
-      commercialUse: commercialUse,
-      derivations: derivations,
-    );
+    if (_selectedLicenseMeta.licenseType == LicenseType.udlV2) {
+      licenseParams = await _udlFormToLicenseParams(udlForm);
+    } else {
+      addError(
+          'Unsupported license configuration: ${_selectedLicenseMeta.licenseType}');
+    }
+
+    emit(const FsEntryLicenseReviewing());
   }
 
-  Future<List<FileEntry>> enumerateFiles({
+  Future<void> _handleReviewConfirm(
+    FsEntryLicenseReviewConfirm event,
+    Emitter<FsEntryLicenseState> emit,
+  ) async {
+    emit(const FsEntryLicenseLoadInProgress());
+    try {
+      final profile = _profileCubit.state as ProfileLoggedIn;
+      await _licenseEntities(
+        profile: profile,
+        licenseMeta: _selectedLicenseMeta,
+        licenseParams: licenseParams,
+      );
+      emit(const FsEntryLicenseSuccess());
+    } catch (_, trace) {
+      addError('Error licensing entities', trace);
+      emit(const FsEntryLicenseFailure());
+    }
+  }
+
+  void _handleReviewBack(
+    FsEntryLicenseReviewBack event,
+    Emitter<FsEntryLicenseState> emit,
+  ) {
+    if (_selectedLicenseMeta.hasParams) {
+      licenseParams = null;
+      emit(const FsEntryLicenseConfiguring());
+    } else {
+      emit(const FsEntryLicenseSelecting());
+    }
+  }
+
+  void _handleConfigurationBack(
+    FsEntryLicenseConfigurationBack event,
+    Emitter<FsEntryLicenseState> emit,
+  ) {
+    emit(const FsEntryLicenseSelecting());
+  }
+
+  void _handleSuccessClose(
+    FsEntryLicenseSuccessClose event,
+    Emitter<FsEntryLicenseState> emit,
+  ) {
+    emit(const FsEntryLicenseComplete());
+  }
+
+  void _handleFailureTryAgain(
+    FsEntryLicenseFailureTryAgain event,
+    Emitter<FsEntryLicenseState> emit,
+  ) {
+    emit(const FsEntryLicenseReviewing());
+  }
+
+  Future<List<FileEntry>> _enumerateFiles({
     required List<ArDriveDataTableItem> items,
     required Emitter<FsEntryLicenseState> emit,
   }) async {
@@ -231,7 +277,7 @@ class FsEntryLicenseBloc
     return files.where((file) => file.pinnedDataOwnerAddress == null).toList();
   }
 
-  Future<void> licenseEntities({
+  Future<void> _licenseEntities({
     required ProfileLoggedIn profile,
     required LicenseMeta licenseMeta,
     LicenseParams? licenseParams,
@@ -321,6 +367,27 @@ class FsEntryLicenseBloc
       );
       await _arweave.postTx(dataBundle);
     }
+  }
+
+  Future<UdlLicenseParams> _udlFormToLicenseParams(FormGroup udlForm) async {
+    final String? licenseFeeAmountString =
+        udlForm.control('licenseFeeAmount').value;
+    final double? licenseFeeAmount = licenseFeeAmountString == null
+        ? null
+        : double.tryParse(licenseFeeAmountString);
+
+    final UdlCurrency licenseFeeCurrency =
+        udlForm.control('licenseFeeCurrency').value;
+    final UdlCommercialUse commercialUse =
+        udlForm.control('commercialUse').value;
+    final UdlDerivation derivations = udlForm.control('derivations').value;
+
+    return UdlLicenseParams(
+      licenseFeeAmount: licenseFeeAmount,
+      licenseFeeCurrency: licenseFeeCurrency,
+      commercialUse: commercialUse,
+      derivations: derivations,
+    );
   }
 
   @override

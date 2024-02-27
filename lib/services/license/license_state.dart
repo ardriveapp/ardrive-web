@@ -1,18 +1,47 @@
-import 'package:ardrive/services/license/licenses/licenses.dart';
+import 'package:ardrive/services/license/license.dart';
 import 'package:equatable/equatable.dart';
 
+/// Updating a license type version will require to update the corresponding [licenseMetaMap].
+/// The [licenseMetaMap] is used to map the license type to the corresponding [LicenseMeta].
+///
+/// Please ensure to update the [licenseMetaMap] when adding a new license type.
 enum LicenseType {
   udl,
+  udlV2,
+  cc0,
   ccBy,
+  ccByV2,
+  ccByNC,
+  ccByNCND,
+  ccByNCSA,
+  ccByND,
+  ccBySA,
   unknown,
 }
+
+enum LicenseCategory {
+  cc,
+  udl,
+}
+
+final licenseMetaMap = {
+  LicenseType.udl: udlLicenseMeta,
+  LicenseType.udlV2: udlLicenseMetaV2,
+  LicenseType.cc0: cc0LicenseMeta,
+  LicenseType.ccBy: ccByLicenseMeta,
+  LicenseType.ccByV2: ccByLicenseMetaV2,
+  LicenseType.ccByNC: ccByNCLicenseMeta,
+  LicenseType.ccByNCND: ccByNCNDLicenseMeta,
+  LicenseType.ccByNCSA: ccByNCSAMeta,
+  LicenseType.ccByND: ccByNDLicenseMeta,
+  LicenseType.ccBySA: ccBySAMeta,
+};
 
 class LicenseMeta extends Equatable {
   final LicenseType licenseType;
   final String licenseDefinitionTxId;
   final String name;
   final String shortName;
-  final String version;
   final bool hasParams;
 
   const LicenseMeta({
@@ -20,7 +49,6 @@ class LicenseMeta extends Equatable {
     required this.licenseDefinitionTxId,
     required this.name,
     required this.shortName,
-    required this.version,
     this.hasParams = false,
   });
 
@@ -30,7 +58,6 @@ class LicenseMeta extends Equatable {
         licenseDefinitionTxId,
         name,
         shortName,
-        version,
         hasParams,
       ];
 }
@@ -44,9 +71,9 @@ abstract class LicenseParams extends Equatable {
 
 class EmptyParams extends LicenseParams {}
 
-final licenseMetaMap = {
-  LicenseType.udl: udlLicenseMeta,
-  LicenseType.ccBy: ccByLicenseMeta,
+final licenseCategoryNames = {
+  LicenseCategory.udl: 'Universal Data License - UDL',
+  LicenseCategory.cc: 'Creative Commons - CC',
 };
 
 class LicenseState extends Equatable {

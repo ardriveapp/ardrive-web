@@ -1039,10 +1039,10 @@ class DetailsPanelItem extends StatelessWidget {
       children: [
         Flexible(
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.start,
             mainAxisSize: MainAxisSize.max,
             children: [
-              Flexible(
+              Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1051,7 +1051,7 @@ class DetailsPanelItem extends StatelessWidget {
                       child: Text(
                         itemTitle,
                         style: ArDriveTypography.body.buttonNormalRegular(),
-                        maxLines: 2,
+                        maxLines: 4,
                       ),
                     ),
                     if (itemSubtitle != null)
@@ -1062,7 +1062,11 @@ class DetailsPanelItem extends StatelessWidget {
                   ],
                 ),
               ),
-              if (leading != null) Flexible(child: leading!),
+              if (leading != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: leading!,
+                ),
             ],
           ),
         ),
