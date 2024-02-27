@@ -72,12 +72,14 @@ class UnlockUserWithPassword extends LoginEvent {
 class CreatePassword extends LoginEvent {
   final String password;
   final Wallet wallet;
+  final String? mnemonic;
   final bool showTutorials;
   final bool showWalletCreated;
 
   const CreatePassword(
       {required this.password,
       required this.wallet,
+      this.mnemonic,
       required this.showTutorials,
       required this.showWalletCreated});
 
@@ -135,9 +137,10 @@ class CreateNewWallet extends LoginEvent {
 }
 
 class CompleteWalletGeneration extends LoginEvent {
-  const CompleteWalletGeneration(this.wallet);
+  const CompleteWalletGeneration({required this.wallet, this.mnemonic});
 
   final Wallet wallet;
+  final String? mnemonic;
 
   @override
   List<Object> get props => [wallet];

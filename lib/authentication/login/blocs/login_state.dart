@@ -29,9 +29,11 @@ class LoginLoaderStarted extends LoginState {}
 class LoginLoaderEnded extends LoginState {}
 
 class LoginTutorials extends LoginState {
-  const LoginTutorials({required this.wallet, required this.showWalletCreated});
+  const LoginTutorials(
+      {required this.wallet, this.mnemonic, required this.showWalletCreated});
 
   final Wallet wallet;
+  final String? mnemonic;
   final bool showWalletCreated;
 }
 
@@ -83,15 +85,4 @@ class LoginDownloadGeneratedWallet extends LoginState {
   const LoginDownloadGeneratedWallet({this.mnemonic, required this.wallet});
   final String? mnemonic;
   final Wallet wallet;
-}
-
-class LoginCreateNewWallet extends LoginState {
-  const LoginCreateNewWallet(this.mnemonic);
-  final String mnemonic;
-}
-
-class LoginConfirmMnemonic extends LoginState {
-  const LoginConfirmMnemonic(this.mnemonic, this.walletFile);
-  final String mnemonic;
-  final Wallet walletFile;
 }

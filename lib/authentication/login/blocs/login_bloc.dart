@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/authentication/login/blocs/stub_web_wallet.dart' // stub implementation
+    if (dart.library.html) 'package:ardrive/authentication/login/blocs/web_wallet.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
@@ -18,8 +20,6 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import 'web_wallet.dart';
 
 part 'login_event.dart';
 part 'login_state.dart';
@@ -78,7 +78,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     } else if (event is AddWalletFromCompleter) {
       await _handleAddWalletFromCompleterEvent(event, emit);
     } else if (event is CreateNewWallet) {
-      _handleCreateNewWalletEvent(event, emit);
+      await _handleCreateNewWalletEvent(event, emit);
     } else if (event is CompleteWalletGeneration) {
       await _handleCompleteWalletGenerationEvent(event, emit);
     }
@@ -258,6 +258,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           emit: emit,
           previousState: previousState,
           profileType: profileType!,
+          mnemonic: event.mnemonic,
           showTutorials: event.showTutorials,
           showWalletCreated: event.showWalletCreated);
     } catch (e) {
@@ -349,6 +350,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       required ProfileType profileType,
       required LoginState previousState,
       required Emitter<LoginState> emit,
+      String? mnemonic,
       required bool showTutorials,
       required bool showWalletCreated}) async {
     if (_isArConnectWallet()) {
@@ -377,10 +379,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     PlausibleEventTracker.trackLogin(type: type);
 
     if (showTutorials) {
-      emit(
-          LoginTutorials(wallet: wallet, showWalletCreated: showWalletCreated));
+      emit(LoginTutorials(
+          wallet: wallet,
+          mnemonic: mnemonic,
+          showWalletCreated: showWalletCreated));
     } else if (showWalletCreated) {
-      emit(LoginDownloadGeneratedWallet(wallet: wallet));
+      emit(LoginDownloadGeneratedWallet(wallet: wallet, mnemonic: mnemonic));
     } else {
       emit(LoginSuccess(user));
     }
@@ -477,14 +481,25 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         LoginDownloadGeneratedWallet(mnemonic: event.mnemonic, wallet: wallet));
   }
 
-  void _handleCreateNewWalletEvent(
+  Future<void> _handleCreateNewWalletEvent(
     CreateNewWallet event,
     Emitter<LoginState> emit,
   ) async {
     profileType = ProfileType.json;
     usingSeedphrase = true;
     final mnemonic = bip39.generateMnemonic();
-    emit(LoginCreateNewWallet(mnemonic));
+
+    emit(LoginLoaderStarted());
+
+    final wallet = await generateWalletFromMnemonic(mnemonic);
+
+    emit(LoginLoaderEnded());
+
+    emit(CreateNewPassword(
+        wallet: wallet,
+        mnemonic: mnemonic,
+        showTutorials: true,
+        showWalletCreated: true));
   }
 
   Future<void> _handleCompleteWalletGenerationEvent(
@@ -494,6 +509,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     final wallet = event.wallet;
     profileType = ProfileType.json;
 
-    emit(LoginDownloadGeneratedWallet(wallet: wallet));
+    emit(
+        LoginDownloadGeneratedWallet(wallet: wallet, mnemonic: event.mnemonic));
   }
 }

@@ -14,8 +14,12 @@ import '../../components/max_device_sizes_constrained_box.dart';
 
 class TutorialsView extends StatefulWidget {
   const TutorialsView(
-      {super.key, required this.wallet, required this.showWalletCreated});
+      {super.key,
+      required this.wallet,
+      this.mnemonic,
+      required this.showWalletCreated});
   final Wallet wallet;
+  final String? mnemonic;
   final bool showWalletCreated;
 
   @override
@@ -71,7 +75,8 @@ class TutorialsViewState extends State<TutorialsView> {
             if (widget.showWalletCreated) {
               context.read<LoginBloc>().add(
                     CompleteWalletGeneration(
-                      widget.wallet,
+                      wallet: widget.wallet,
+                      mnemonic: widget.mnemonic,
                     ),
                   );
             } else {

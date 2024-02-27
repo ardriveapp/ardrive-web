@@ -1,6 +1,5 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
-import 'package:ardrive/authentication/login/views/create_new_wallet_view.dart';
 import 'package:ardrive/authentication/login/views/modals/common.dart';
 import 'package:ardrive/authentication/login/views/modals/loader_modal.dart';
 import 'package:ardrive/authentication/login/views/modals/secure_your_password_modal.dart';
@@ -90,6 +89,7 @@ class _LoginPageState extends State<LoginPage> {
                 context: context,
                 loginBloc: context.read<LoginBloc>(),
                 wallet: loginState.wallet,
+                mnemonic: loginState.mnemonic,
                 showTutorials: loginState.showTutorials,
                 showWalletCreated: loginState.showWalletCreated);
             return;
@@ -137,10 +137,9 @@ class _LoginPageState extends State<LoginPage> {
           if (loginState is LoginTutorials) {
             view = TutorialsView(
                 wallet: loginState.wallet,
+                mnemonic: loginState.mnemonic,
                 showWalletCreated: loginState.showWalletCreated);
             // view = TutorialsView(wallet: Wallet());
-          } else if (loginState is LoginCreateNewWallet) {
-            view = CreateNewWalletView(mnemonic: loginState.mnemonic);
           } else if (loginState is LoginDownloadGeneratedWallet) {
             view = WalletCreatedView(
                 mnemonic: loginState.mnemonic, wallet: loginState.wallet);
@@ -339,9 +338,11 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
         final isFailure = current is LoginFailure;
         final isSuccess = current is LoginSuccess;
         final isOnBoarding = current is LoginTutorials;
-        final isCreateNewWallet = current is LoginCreateNewWallet;
+        final isLoading = current is LoginLoading ||
+            current is LoginLoaderStarted ||
+            current is LoginLoaderEnded;
 
-        return !(isFailure || isSuccess || isOnBoarding || isCreateNewWallet);
+        return !(isFailure || isSuccess || isOnBoarding || isLoading);
       },
       builder: (context, loginState) {
         late Widget content;

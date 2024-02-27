@@ -108,7 +108,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                       variant: ButtonVariant.primary,
                       maxWidth: double.maxFinite,
                       onPressed: () {
-                        // print('Implement me!');
+                        context.read<LoginBloc>().add(const CreateNewWallet());
                       }),
               const SizedBox(height: 72),
               // TODO:  make this into a reusable component

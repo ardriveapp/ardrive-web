@@ -15,11 +15,13 @@ class SecureYourPasswordWidget extends StatefulWidget {
       {Key? key,
       required this.loginBloc,
       required this.wallet,
+      this.mnemonic,
       required this.showTutorials,
       required this.showWalletCreated})
       : super(key: key);
 
   final Wallet wallet;
+  final String? mnemonic;
   final LoginBloc loginBloc;
   final bool showTutorials;
   final bool showWalletCreated;
@@ -190,6 +192,7 @@ class _SecureYourPasswordWidgetState extends State<SecureYourPasswordWidget> {
       CreatePassword(
           password: _passwordController.text,
           wallet: widget.wallet,
+          mnemonic: widget.mnemonic,
           showTutorials: widget.showTutorials,
           showWalletCreated: widget.showWalletCreated),
     );
@@ -200,6 +203,7 @@ void showSecureYourPasswordDialog(
     {required BuildContext context,
     required LoginBloc loginBloc,
     required Wallet wallet,
+    String? mnemonic,
     required bool showTutorials,
     required bool showWalletCreated}) {
   showArDriveDialog(context,
@@ -208,6 +212,7 @@ void showSecureYourPasswordDialog(
       content: SecureYourPasswordWidget(
           loginBloc: loginBloc,
           wallet: wallet,
+          mnemonic: mnemonic,
           showTutorials: showTutorials,
           showWalletCreated: showWalletCreated));
 }
