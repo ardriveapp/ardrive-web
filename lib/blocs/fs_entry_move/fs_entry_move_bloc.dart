@@ -20,7 +20,7 @@ part 'fs_entry_move_state.dart';
 
 class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
   final String driveId;
-  final List<ArDriveDataTableItem> selectedItems;
+  final List<ArDriveDataTableItem> _selectedItems;
 
   final ArweaveService _arweave;
   final TurboUploadService _turboUploadService;
@@ -32,7 +32,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
   FsEntryMoveBloc({
     required this.driveId,
-    required this.selectedItems,
+    required List<ArDriveDataTableItem> selectedItems,
     required ArweaveService arweave,
     required TurboUploadService turboUploadService,
     required DriveDao driveDao,
@@ -41,7 +41,8 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     required ArDriveCrypto crypto,
     required DriveDetailCubit driveDetailCubit,
     Platform platform = const LocalPlatform(),
-  })  : _arweave = arweave,
+  })  : _selectedItems = List.from(selectedItems, growable: false),
+        _arweave = arweave,
         _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
@@ -49,7 +50,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
         _syncCubit = syncCubit,
         _crypto = crypto,
         super(const FsEntryMoveLoadInProgress()) {
-    if (selectedItems.isEmpty) {
+    if (_selectedItems.isEmpty) {
       addError(Exception('selectedItems cannot be empty'));
     }
 
@@ -93,7 +94,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
               FsEntryMoveNameConflict(
                 conflictingItems: conflictingItems,
                 folderInView: folderInView,
-                allItems: selectedItems,
+                allItems: _selectedItems,
               ),
             );
           }
@@ -145,7 +146,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
       onData: (FolderWithContents folderWithContents) => FsEntryMoveLoadSuccess(
         viewingRootFolder: folderWithContents.folder.parentFolderId == null,
         viewingFolder: folderWithContents,
-        itemsToMove: selectedItems,
+        itemsToMove: _selectedItems,
       ),
     );
   }
@@ -156,7 +157,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
   }) async {
     final conflictingItems = <ArDriveDataTableItem>[];
     try {
-      for (var itemToMove in selectedItems) {
+      for (var itemToMove in _selectedItems) {
         final entityWithSameNameExists =
             await _driveDao.doesEntityWithNameExist(
           name: itemToMove.name,
@@ -184,7 +185,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     final isShowingHiddenItems =
         (_driveDetailCubit.state as DriveDetailLoadSuccess)
             .isShowingHiddenFiles;
-    final files = selectedItems.whereType<FileDataTableItem>().toList();
+    final files = _selectedItems.whereType<FileDataTableItem>().toList();
 
     if (!isShowingHiddenItems) {
       files.removeWhere((element) => element.isHidden);
@@ -198,7 +199,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
     files.clear();
 
-    final folders = selectedItems.whereType<FolderDataTableItem>().toList();
+    final folders = _selectedItems.whereType<FolderDataTableItem>().toList();
 
     if (!isShowingHiddenItems) {
       folders.removeWhere((element) => element.isHidden);
