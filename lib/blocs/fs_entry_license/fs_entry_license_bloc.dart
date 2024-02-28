@@ -51,6 +51,9 @@ class FsEntryLicenseBloc
   final List<ArDriveDataTableItem> selectedItems;
 
   // We initialize with UDL license by default
+  LicenseCategory _selectedLicenseCategory = LicenseCategory.udl;
+  LicenseCategory get selectedLicenseCategory => _selectedLicenseCategory;
+
   LicenseMeta _selectedLicenseMeta = udlDefaultLicense;
   LicenseMeta get selectedLicenseMeta => _selectedLicenseMeta;
 
@@ -73,7 +76,7 @@ class FsEntryLicenseBloc
 
   // Forms
   final _selectForm = FormGroup({
-    'licenseType': FormControl<LicenseCategory>(
+    'licenseCategory': FormControl<LicenseCategory>(
       validators: [Validators.required],
       value: LicenseCategory.udl,
     ),
@@ -123,17 +126,7 @@ class FsEntryLicenseBloc
     FsEntryLicenseSelect event,
     Emitter<FsEntryLicenseState> emit,
   ) async {
-    final licenseType = selectForm.control('licenseType').value;
-
-    switch (licenseType) {
-      case LicenseCategory.udl:
-        _selectedLicenseMeta = udlDefaultLicense;
-        break;
-      case LicenseCategory.cc:
-        _selectedLicenseMeta = ccDefaultLicense;
-        break;
-    }
-
+    _selectedLicenseCategory = selectForm.control('licenseCategory').value;
     emit(const FsEntryLicenseConfiguring());
   }
 
@@ -141,17 +134,17 @@ class FsEntryLicenseBloc
     FsEntryLicenseConfigurationSubmit event,
     Emitter<FsEntryLicenseState> emit,
   ) async {
-    final licenseCategory = selectForm.control('licenseType').value;
-
-    if (licenseCategory == LicenseCategory.cc) {
-      _selectedLicenseMeta = ccForm.control('ccTypeField').value;
-    }
-
-    if (_selectedLicenseMeta.licenseType == LicenseType.udlV2) {
-      licenseParams = await _udlFormToLicenseParams(udlForm);
-    } else {
-      addError(
-          'Unsupported license configuration: ${_selectedLicenseMeta.licenseType}');
+    switch (selectedLicenseCategory) {
+      case LicenseCategory.udl:
+        _selectedLicenseMeta = udlDefaultLicense;
+        licenseParams = await _udlFormToLicenseParams(udlForm);
+        break;
+      case LicenseCategory.cc:
+        _selectedLicenseMeta = ccForm.control('ccTypeField').value;
+        licenseParams = null;
+        break;
+      default:
+        addError('Unsupported license category: $selectedLicenseCategory');
     }
 
     emit(const FsEntryLicenseReviewing());

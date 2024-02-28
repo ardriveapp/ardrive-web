@@ -214,7 +214,7 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                       child: ReactiveDropdownField(
                         alignment: AlignmentDirectional.centerStart,
                         isExpanded: true,
-                        formControlName: 'licenseType',
+                        formControlName: 'licenseCategory',
                         decoration: InputDecoration(
                           border: InputBorder.none,
                           label: Text(
@@ -304,13 +304,11 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
               ],
             );
           } else if (state is FsEntryLicenseConfiguring) {
-            final licenseType = context
-                .read<FsEntryLicenseBloc>()
-                .selectedLicenseMeta
-                .licenseType;
-            final modalTitle = licenseType == LicenseType.udlV2
+            final licenseCategory =
+                context.read<FsEntryLicenseBloc>().selectedLicenseCategory;
+            final modalTitle = licenseCategory == LicenseCategory.udl
                 ? 'Configure Universal Data License'
-                : licenseType == LicenseType.ccByV2
+                : licenseCategory == LicenseCategory.cc
                     ? 'Configure Creative Commons License'
                     : 'Unsupported license type';
             return ArDriveScrollBar(
@@ -329,7 +327,7 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                               .filesToLicense!),
                       const SizedBox(height: 16),
                       const Divider(height: 24),
-                      licenseType == LicenseType.udlV2
+                      licenseCategory == LicenseCategory.udl
                           ? UdlParamsForm(
                               onChangeLicenseFee: () {
                                 setState(() {});
@@ -337,7 +335,7 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                               formGroup:
                                   context.watch<FsEntryLicenseBloc>().udlForm,
                             )
-                          : licenseType == LicenseType.ccByV2
+                          : licenseCategory == LicenseCategory.cc
                               ? CcParamsForm(
                                   formGroup: context
                                       .watch<FsEntryLicenseBloc>()
