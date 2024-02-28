@@ -144,7 +144,7 @@ class FsEntryLicenseBloc
     final licenseCategory = selectForm.control('licenseType').value;
 
     if (licenseCategory == LicenseCategory.cc) {
-      _selectedLicenseMeta = ccForm.control('ccAttributionField').value;
+      _selectedLicenseMeta = ccForm.control('ccTypeField').value;
     }
 
     if (_selectedLicenseMeta.licenseType == LicenseType.udlV2) {

@@ -2,7 +2,7 @@ import 'package:ardrive/blocs/fs_entry_license/fs_entry_license_bloc.dart';
 import 'package:ardrive/components/labeled_input.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/services/license/license_state.dart';
-import 'package:ardrive/services/license/licenses/cc_by.dart';
+import 'package:ardrive/services/license/licenses/cc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -52,7 +52,7 @@ class _CcParamsFormState extends State<CcParamsForm> {
                   child: LabeledInput(
                     labelText: 'Type',
                     child: ReactiveDropdownField(
-                      formControlName: 'ccAttributionField',
+                      formControlName: 'ccTypeField',
                       decoration: InputDecoration(
                         enabledBorder: inputBorder,
                         focusedBorder: inputBorder,
@@ -81,7 +81,7 @@ class _CcParamsFormState extends State<CcParamsForm> {
                 final selectedLicenseMeta = context
                     .watch<FsEntryLicenseBloc>()
                     .ccForm
-                    .value['ccAttributionField'] as LicenseMeta;
+                    .value['ccTypeField'] as LicenseMeta;
 
                 return Text(
                   selectedLicenseMeta.shortName,

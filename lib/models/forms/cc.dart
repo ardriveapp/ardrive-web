@@ -3,7 +3,7 @@ import 'package:ardrive/services/license/licenses/cc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 createCcForm() => FormGroup({
-      'ccAttributionField': FormControl<LicenseMeta>(
+      'ccTypeField': FormControl<LicenseMeta>(
         validators: [Validators.required],
         value: cc0LicenseMeta,
       ),
