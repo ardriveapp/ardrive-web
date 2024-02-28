@@ -106,12 +106,12 @@ class Login {
 class _Icons {
   const _Icons();
 
-  final String alert = 'images/icons/iconAlert.svg';
-  final String copy = 'images/icons/iconCopy.svg';
-  final String download = 'images/icons/iconDownload.svg';
-  final String encryptedLock = 'images/icons/iconEncryptedLock.svg';
-  final String eyeOpen = 'images/icons/iconEyeOpen.svg';
-  final String eyeClosed = 'images/icons/iconEyeClosed.svg';
+  final String alert = 'assets/images/icons/iconAlert.svg';
+  final String copy = 'assets/images/icons/iconCopy.svg';
+  final String download = 'assets/images/icons/iconDownload.svg';
+  final String encryptedLock = 'assets/images/icons/iconEncryptedLock.svg';
+  final String eyeOpen = 'assets/images/icons/iconEyeOpen.svg';
+  final String eyeClosed = 'assets/images/icons/iconEyeClosed.svg';
 }
 
 const String discord = 'Discord';
