@@ -51,7 +51,7 @@ class FsEntryLicenseBloc
   final List<ArDriveDataTableItem> selectedItems;
 
   // We initialize with UDL license by default
-  LicenseMeta _selectedLicenseMeta = udlLicenseMeta;
+  LicenseMeta _selectedLicenseMeta = udlDefaultLicense;
   LicenseMeta get selectedLicenseMeta => _selectedLicenseMeta;
 
   List<FileEntry>? filesToLicense;
@@ -127,10 +127,10 @@ class FsEntryLicenseBloc
 
     switch (licenseType) {
       case LicenseCategory.udl:
-        _selectedLicenseMeta = udlLicenseMetaV2;
+        _selectedLicenseMeta = udlDefaultLicense;
         break;
       case LicenseCategory.cc:
-        _selectedLicenseMeta = ccByLicenseMetaV2;
+        _selectedLicenseMeta = ccDefaultLicense;
         break;
     }
 

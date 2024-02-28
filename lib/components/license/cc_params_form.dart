@@ -1,8 +1,8 @@
 import 'package:ardrive/blocs/fs_entry_license/fs_entry_license_bloc.dart';
 import 'package:ardrive/components/labeled_input.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
+import 'package:ardrive/models/forms/cc.dart';
 import 'package:ardrive/services/license/license_state.dart';
-import 'package:ardrive/services/license/licenses/cc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -63,7 +63,7 @@ class _CcParamsFormState extends State<CcParamsForm> {
                       showErrors: (control) => control.dirty && control.invalid,
                       validationMessages:
                           kValidationMessages(appLocalizationsOf(context)),
-                      items: ccLicenses
+                      items: ccActiveLicenses
                           .map(
                             (e) => DropdownMenuItem(
                               value: e,
