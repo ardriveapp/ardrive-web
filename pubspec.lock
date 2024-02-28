@@ -1282,6 +1282,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.8.1"
+  json_rpc_2:
+    dependency: transitive
+    description:
+      name: json_rpc_2
+      sha256: "5e469bffa23899edacb7b22787780068d650b106a21c76db3c49218ab7ca447e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.2"
   json_serializable:
     dependency: "direct dev"
     description:
@@ -2336,6 +2344,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.1"
+  webthree:
+    dependency: "direct main"
+    description:
+      name: webthree
+      sha256: "3c653ea7a3a8e846f444afac9912daf6f83e9270f5ee0d677873569ef42d3374"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.5.7+2"
   win32:
     dependency: transitive
     description:

@@ -1,8 +1,8 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
+import 'package:ardrive/authentication/login/views/modals/blocking_modals.dart';
 import 'package:ardrive/authentication/login/views/modals/common.dart';
-import 'package:ardrive/authentication/login/views/modals/loader_modal.dart';
-import 'package:ardrive/authentication/login/views/modals/secure_your_password_modal.dart';
+import 'package:ardrive/authentication/login/views/modals/secure_your_wallet_modal.dart';
 import 'package:ardrive/authentication/login/views/tiles/tiles_view.dart';
 import 'package:ardrive/authentication/login/views/tutorials_view.dart';
 import 'package:ardrive/authentication/login/views/wallet_created_view.dart';
@@ -11,6 +11,7 @@ import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/authentication/biometric_permission_dialog.dart';
+import 'package:ardrive/services/ethereum/provider/ethereum_provider.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -60,6 +61,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     final loginBloc = LoginBloc(
       arConnectService: ArConnectService(),
+      ethereumProviderService: EthereumProviderService(),
       arDriveAuth: context.read<ArDriveAuth>(),
       userRepository: context.read<UserRepository>(),
     )..add(
@@ -93,10 +95,14 @@ class _LoginPageState extends State<LoginPage> {
                 showTutorials: loginState.showTutorials,
                 showWalletCreated: loginState.showWalletCreated);
             return;
-          } else if (loginState is LoginLoaderStarted) {
+          } else if (loginState is LoginShowLoader) {
             showLoaderDialog(context: context);
             return;
-          } else if (loginState is LoginLoaderEnded) {
+          } else if (loginState is LoginShowBlockingDialog) {
+            showBlockingMessageDialog(
+                context: context, message: loginState.message);
+            return;
+          } else if (loginState is LoginCloseBlockingDialog) {
             Navigator.of(context).pop();
           } else if (loginState is LoginTutorials) {
             preCacheOnBoardingAssets(context);
@@ -339,8 +345,8 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
         final isSuccess = current is LoginSuccess;
         final isOnBoarding = current is LoginTutorials;
         final isLoading = current is LoginLoading ||
-            current is LoginLoaderStarted ||
-            current is LoginLoaderEnded;
+            current is LoginShowLoader ||
+            current is LoginCloseBlockingDialog;
 
         return !(isFailure || isSuccess || isOnBoarding || isLoading);
       },

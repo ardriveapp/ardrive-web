@@ -73,6 +73,9 @@ class MockArDriveAuth extends Mock implements ArDriveAuth {}
 
 class MockArConnectService extends Mock implements ArConnectService {}
 
+class MockEthereumProviderService extends Mock
+    implements EthereumProviderService {}
+
 class MockTabVisibilitySingleton extends Mock
     implements TabVisibilitySingleton {}
 

@@ -10,8 +10,8 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
 
-class SecureYourPasswordWidget extends StatefulWidget {
-  const SecureYourPasswordWidget(
+class SecureYourWalletWidget extends StatefulWidget {
+  const SecureYourWalletWidget(
       {Key? key,
       required this.loginBloc,
       required this.wallet,
@@ -27,11 +27,10 @@ class SecureYourPasswordWidget extends StatefulWidget {
   final bool showWalletCreated;
 
   @override
-  State<SecureYourPasswordWidget> createState() =>
-      _SecureYourPasswordWidgetState();
+  State<SecureYourWalletWidget> createState() => _SecureYourWalletWidgetState();
 }
 
-class _SecureYourPasswordWidgetState extends State<SecureYourPasswordWidget> {
+class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _formKey = GlobalKey<ArDriveFormNewState>();
@@ -209,7 +208,7 @@ void showSecureYourPasswordDialog(
   showArDriveDialog(context,
       barrierDismissible: false,
       useRootNavigator: false,
-      content: SecureYourPasswordWidget(
+      content: SecureYourWalletWidget(
           loginBloc: loginBloc,
           wallet: wallet,
           mnemonic: mnemonic,

@@ -87,7 +87,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                   text: 'Continue with MetaMask',
                   typography: typography,
                   onPressed: () {
-                    // print('Implement me!');
+                    context.read<LoginBloc>().add(const LoginWithMetamask());
                   }),
               const SizedBox(height: 40),
               const LinedTextDivider(text: 'or'),

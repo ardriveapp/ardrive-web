@@ -145,3 +145,7 @@ class CompleteWalletGeneration extends LoginEvent {
   @override
   List<Object> get props => [wallet];
 }
+
+class LoginWithMetamask extends LoginEvent {
+  const LoginWithMetamask();
+}

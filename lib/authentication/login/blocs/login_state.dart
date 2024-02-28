@@ -24,9 +24,15 @@ class LoginInitial extends LoginState {
 
 class LoginLoading extends LoginState {}
 
-class LoginLoaderStarted extends LoginState {}
+class LoginShowLoader extends LoginState {}
 
-class LoginLoaderEnded extends LoginState {}
+class LoginShowBlockingDialog extends LoginState {
+  const LoginShowBlockingDialog({required this.message});
+
+  final String message;
+}
+
+class LoginCloseBlockingDialog extends LoginState {}
 
 class LoginTutorials extends LoginState {
   const LoginTutorials(

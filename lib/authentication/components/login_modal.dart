@@ -9,7 +9,7 @@ class ArDriveLoginModal extends StatelessWidget {
     super.key,
     required this.content,
     this.width,
-    this.hasCloseButton = false,
+    this.hasCloseButton = true,
   });
 
   final Widget content;

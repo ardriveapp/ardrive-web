@@ -7,6 +7,8 @@ import 'package:ardrive/authentication/login/blocs/stub_web_wallet.dart' // stub
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
+import 'package:ardrive/services/ethereum/ethereum_wallet.dart';
+import 'package:ardrive/services/ethereum/provider/ethereum_provider.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -27,6 +29,7 @@ part 'login_state.dart';
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
   final ArDriveAuth _arDriveAuth;
   final ArConnectService _arConnectService;
+  final EthereumProviderService _ethereumProviderService;
 
   bool ignoreNextWaletSwitch = false;
 
@@ -42,9 +45,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   LoginBloc({
     required ArDriveAuth arDriveAuth,
     required ArConnectService arConnectService,
+    required EthereumProviderService ethereumProviderService,
     required UserRepository userRepository,
   })  : _arDriveAuth = arDriveAuth,
         _arConnectService = arConnectService,
+        _ethereumProviderService = ethereumProviderService,
         super(LoginLoading()) {
     on<LoginEvent>(_onLoginEvent);
     _listenToWalletChange();
@@ -81,6 +86,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _handleCreateNewWalletEvent(event, emit);
     } else if (event is CompleteWalletGeneration) {
       await _handleCompleteWalletGenerationEvent(event, emit);
+    } else if (event is LoginWithMetamask) {
+      await _handleLoginWithMetamaskEvent(event, emit);
     }
   }
 
@@ -251,14 +258,39 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     emit(LoginLoading());
 
+    var wallet = event.wallet;
+    var mnemonic = event.mnemonic;
+
+    if (wallet is EthereumWallet) {
+      emit(const LoginShowBlockingDialog(
+          message:
+              'Sign the following data with Metamask to secure your wallet and sign in.'));
+
+      const chainId = 1; // Ethereum mainnet
+      try {
+        mnemonic =
+            await wallet.deriveArdriveSeedphrase(chainId, event.password);
+      } catch (e) {
+        // emit(LoginFailure(e));
+        emit(previousState);
+        return;
+      } finally {
+        emit(LoginCloseBlockingDialog());
+      }
+
+      emit(LoginShowLoader());
+      wallet = await generateWalletFromMnemonic(mnemonic);
+      emit(LoginCloseBlockingDialog());
+    }
+
     try {
       await _verifyArConnectWalletAddressAndLogIn(
-          wallet: event.wallet,
+          wallet: wallet,
           password: event.password,
           emit: emit,
           previousState: previousState,
           profileType: profileType!,
-          mnemonic: event.mnemonic,
+          mnemonic: mnemonic,
           showTutorials: event.showTutorials,
           showWalletCreated: event.showWalletCreated);
     } catch (e) {
@@ -440,11 +472,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     profileType = ProfileType.json;
     usingSeedphrase = true;
 
-    emit(LoginLoaderStarted());
+    emit(LoginShowLoader());
 
     final wallet = await generateWalletFromMnemonic(event.mnemonic);
 
-    emit(LoginLoaderEnded());
+    emit(LoginCloseBlockingDialog());
 
     if (await _arDriveAuth.userHasPassword(wallet)) {
       emit(PromptPassword(wallet: wallet, showWalletCreated: true));
@@ -489,11 +521,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     usingSeedphrase = true;
     final mnemonic = bip39.generateMnemonic();
 
-    emit(LoginLoaderStarted());
+    emit(LoginShowLoader());
 
     final wallet = await generateWalletFromMnemonic(mnemonic);
 
-    emit(LoginLoaderEnded());
+    emit(LoginCloseBlockingDialog());
 
     emit(CreateNewPassword(
         wallet: wallet,
@@ -511,5 +543,39 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     emit(
         LoginDownloadGeneratedWallet(wallet: wallet, mnemonic: event.mnemonic));
+  }
+
+  Future<void> _handleLoginWithMetamaskEvent(
+      LoginWithMetamask event, Emitter<LoginState> emit) async {
+    profileType = ProfileType.json;
+    if (!_ethereumProviderService.isExtensionPresent()) {
+      emit(const LoginFailure('Metamask not available'));
+      return;
+    }
+    emit(const LoginShowBlockingDialog(
+        message: 'Please connect your Metamask wallet'));
+
+    EthereumWallet? ethWallet;
+    try {
+      ethWallet = await _ethereumProviderService.connect();
+    } catch (e) {
+      emit(LoginCloseBlockingDialog());
+      emit(LoginFailure(e));
+      return;
+    }
+
+    emit(LoginCloseBlockingDialog());
+
+    if (ethWallet == null) {
+      emit(const LoginFailure('Unable to connect to Metamask'));
+      return;
+    }
+
+    if (existingUserFlow) {
+      emit(PromptPassword(wallet: ethWallet, showWalletCreated: false));
+    } else {
+      emit(CreateNewPassword(
+          wallet: ethWallet, showTutorials: true, showWalletCreated: true));
+    }
   }
 }

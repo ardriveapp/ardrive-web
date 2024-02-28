@@ -16,6 +16,7 @@ import '../../../test_utils/utils.dart';
 void main() {
   late ArDriveAuth mockArDriveAuth;
   late ArConnectService mockArConnectService;
+  late EthereumProviderService mockEthereumProviderService;
   late UserRepository mockUserRepository;
 
   final wallet = getTestWallet();
@@ -26,6 +27,7 @@ void main() {
   setUp(() {
     mockArDriveAuth = MockArDriveAuth();
     mockArConnectService = MockArConnectService();
+    mockEthereumProviderService = MockEthereumProviderService();
     mockUserRepository = MockUserRepository();
   });
 
@@ -41,6 +43,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -71,6 +74,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -103,6 +107,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -151,6 +156,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -177,6 +183,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -209,6 +216,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -245,6 +253,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -286,6 +295,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -308,6 +318,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -342,6 +353,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -368,6 +380,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -410,6 +423,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -434,6 +448,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -482,6 +497,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -510,6 +526,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -546,6 +563,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -578,6 +596,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -626,6 +645,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -651,6 +671,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -684,6 +705,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -721,6 +743,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -745,6 +768,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -779,6 +803,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -826,6 +851,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },
@@ -852,6 +878,7 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
           userRepository: mockUserRepository,
         );
       },

@@ -29,3 +29,31 @@ void showLoaderDialog({required BuildContext context}) {
         ),
       ));
 }
+
+void showBlockingMessageDialog(
+    {required BuildContext context, required String message}) {
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+  showArDriveDialog(context,
+      barrierDismissible: false,
+      useRootNavigator: false,
+      content: Container(
+        clipBehavior: Clip.hardEdge,
+        decoration: BoxDecoration(
+          color: colorTokens.containerL3,
+          borderRadius: BorderRadius.circular(9),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(64),
+              child: Text(message,
+                  textAlign: TextAlign.center,
+                  style: ArDriveTypographyNew.desktop.paragraphNormal(
+                      color: colorTokens.textLow,
+                      fontWeight: ArFontWeight.semiBold)),
+            ),
+          ],
+        ),
+      ));
+}

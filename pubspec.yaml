@@ -135,6 +135,7 @@ dependencies:
       url: https://github.com/bhagat-techind/flutter_sharing_intent
       ref: 5f4f2e66c02580105ba89b3fec5a7be907d5466f
   sentry_flutter: ^7.14.0
+  webthree: ^2.5.7+2
 
 dependency_overrides:
   stripe_js:
