@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/models/forms/cc.dart';
+import 'package:ardrive/models/forms/udl.dart';
 import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
@@ -77,38 +79,8 @@ class FsEntryLicenseBloc
     ),
   });
 
-  final _udlForm = FormGroup({
-    'licenseFeeAmount': FormControl<String>(
-      validators: [
-        Validators.composeOR([
-          Validators.pattern(
-            r'^\d+\.?\d*$',
-            validationMessage: 'Invalid amount',
-          ),
-          Validators.equals(''),
-        ]),
-      ],
-    ),
-    'licenseFeeCurrency': FormControl<UdlCurrency>(
-      validators: [Validators.required],
-      value: UdlCurrency.u,
-    ),
-    'commercialUse': FormControl<UdlCommercialUse>(
-      validators: [Validators.required],
-      value: UdlCommercialUse.unspecified,
-    ),
-    'derivations': FormControl<UdlDerivation>(
-      validators: [Validators.required],
-      value: UdlDerivation.unspecified,
-    ),
-  });
-
-  final _ccForm = FormGroup({
-    'ccAttributionField': FormControl<LicenseMeta>(
-      validators: [Validators.required],
-      value: cc0LicenseMeta,
-    ),
-  });
+  final _udlForm = createUdlForm();
+  final _ccForm = createCcForm();
 
   Future<void> _onEvent(
     FsEntryLicenseEvent event,
