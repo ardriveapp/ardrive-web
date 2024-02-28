@@ -1,4 +1,3 @@
-import 'package:ardrive/blocs/fs_entry_license/fs_entry_license_bloc.dart';
 import 'package:ardrive/components/labeled_input.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/forms/cc.dart';
@@ -6,7 +5,6 @@ import 'package:ardrive/services/license/license_state.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 class CcTypeForm extends StatefulWidget {
@@ -19,9 +17,6 @@ class CcTypeForm extends StatefulWidget {
 }
 
 class _CcTypeFormState extends State<CcTypeForm> {
-  LicenseMeta get licenseMeta =>
-      context.read<FsEntryLicenseBloc>().selectedLicenseMeta;
-
   @override
   Widget build(BuildContext context) {
     final inputBorder = OutlineInputBorder(
@@ -76,12 +71,10 @@ class _CcTypeFormState extends State<CcTypeForm> {
                 ),
               ],
             ),
-            Builder(
-              builder: (context) {
-                final selectedLicenseMeta = context
-                    .watch<FsEntryLicenseBloc>()
-                    .ccTypeForm
-                    .value['ccTypeField'] as LicenseMeta;
+            ReactiveFormConsumer(
+              builder: (_, form, __) {
+                final LicenseMeta selectedLicenseMeta =
+                    form.control('ccTypeField').value;
 
                 return Text(
                   selectedLicenseMeta.shortName,
