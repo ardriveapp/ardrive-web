@@ -42,7 +42,7 @@ class TurboUploadService {
       maxChunkSize: uploadChunkSizeMaxInBytes,
     );
     final maxUploadsInParallel = maxInFlightData ~/ uploadChunkSizeInBytes;
-    logger.d(
+    logger.i(
         '[${dataItem.id}] Upload ID: $uploadId, Uploads in parallel: $maxUploadsInParallel, Chunk size: $uploadChunkSizeInBytes');
 
     // (offset: sent bytes) map for in flight requests progress
@@ -118,7 +118,7 @@ class TurboUploadService {
         });
       } catch (e) {
         if (_isCanceled) {
-          logger.d('[${dataItem.id}] Upload canceled');
+          logger.i('[${dataItem.id}] Upload canceled');
           onSendProgressTimer?.cancel();
           cancelToken.cancel();
         }
@@ -132,7 +132,7 @@ class TurboUploadService {
     final finalizeCancelToken = CancelToken();
 
     try {
-      logger.d('[${dataItem.id}] Finalising upload to Turbo');
+      logger.i('[${dataItem.id}] Finalising upload to Turbo');
 
       _cancelTokens.add(finalizeCancelToken);
 
@@ -157,16 +157,16 @@ class TurboUploadService {
         return confirmInfo;
       }
 
-      logger.d('[${dataItem.id}] Upload finalised');
+      logger.i('[${dataItem.id}] Upload finalised');
 
       onSendProgressTimer?.cancel();
 
       return finaliseInfo;
     } catch (e) {
       if (e is DioException) {
-        logger.d('[${dataItem.id}] Finalising upload failed, ${e.type}');
+        logger.i('[${dataItem.id}] Finalising upload failed, ${e.type}');
       } else if (_isCanceled) {
-        logger.d('[${dataItem.id}] Upload canceled');
+        logger.i('[${dataItem.id}] Upload canceled');
         finalizeCancelToken.cancel();
       }
 
@@ -178,7 +178,7 @@ class TurboUploadService {
 
   Future<Response> _confirmUpload(TxID dataItemId) async {
     try {
-      logger.d('[$dataItemId] Confirming upload to Turbo');
+      logger.i('[$dataItemId] Confirming upload to Turbo');
       final response = await dio.get(
         '$turboUploadUri/v1/tx/$dataItemId/status',
       );
@@ -187,10 +187,10 @@ class TurboUploadService {
 
       if (responseData['status'] == 'CONFIRMED' ||
           responseData['status'] == 'FINALIZED') {
-        logger.d('[$dataItemId] DataItem confirmed!');
+        logger.i('[$dataItemId] DataItem confirmed!');
         return response;
       } else {
-        logger.d(
+        logger.w(
             '[$dataItemId] DataItem not confirmed. Retrying in ${dataItemConfirmationRetryDelay.toString()}');
 
         await Future.delayed(dataItemConfirmationRetryDelay);
