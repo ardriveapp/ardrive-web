@@ -104,6 +104,7 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
               },
               onFieldSubmitted: (_) async {
                 if (_isPasswordValid) {
+                  Navigator.of(context).pop();
                   _onSubmit();
                 }
               }),

@@ -145,6 +145,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                 },
                 onFieldSubmitted: (_) async {
                   if (_isPasswordValid && _confirmPasswordIsValid) {
+                    Navigator.of(context).pop();
                     _onSubmit();
                   }
                 }),
