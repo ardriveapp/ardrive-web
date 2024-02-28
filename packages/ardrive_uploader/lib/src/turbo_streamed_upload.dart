@@ -2,8 +2,8 @@ import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_uploader/src/exceptions.dart';
 import 'package:ardrive_uploader/src/streamed_upload.dart';
 import 'package:ardrive_uploader/src/turbo_upload_service.dart';
-import 'package:arweave/arweave.dart';
 import 'package:ardrive_uploader/src/utils/logger.dart';
+import 'package:arweave/arweave.dart';
 import 'package:flutter/foundation.dart';
 
 class TurboStreamedUpload implements StreamedUpload<UploadItem> {
@@ -36,14 +36,14 @@ class TurboStreamedUpload implements StreamedUpload<UploadItem> {
         .then((value) async {
       _result = StreamedUploadResult(success: true);
     }).onError((e, s) {
-      logger.d('Error on TurboStreamedUpload.send: $e');
+      logger.e('Error on TurboStreamedUpload.send.', e, s);
 
       _result = StreamedUploadResult(success: false, error: e);
     });
 
     await streamedRequest;
 
-    logger.d(
+    logger.i(
         'TurboStreamedUpload.send completed with result: ${_result?.success}');
 
     return _result!;
