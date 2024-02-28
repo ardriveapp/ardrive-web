@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/license/udl_params_form.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/forms/cc.dart';
 import 'package:ardrive/models/forms/udl.dart';
@@ -137,7 +138,7 @@ class FsEntryLicenseBloc
     switch (selectedLicenseCategory) {
       case LicenseCategory.udl:
         _selectedLicenseMeta = udlDefaultLicense;
-        licenseParams = await _udlFormToLicenseParams(udlForm);
+        licenseParams = await udlFormToLicenseParams(udlForm);
         break;
       case LicenseCategory.cc:
         _selectedLicenseMeta = ccForm.control('ccTypeField').value;
@@ -329,27 +330,6 @@ class FsEntryLicenseBloc
       );
       await _arweave.postTx(dataBundle);
     }
-  }
-
-  Future<UdlLicenseParams> _udlFormToLicenseParams(FormGroup udlForm) async {
-    final String? licenseFeeAmountString =
-        udlForm.control('licenseFeeAmount').value;
-    final double? licenseFeeAmount = licenseFeeAmountString == null
-        ? null
-        : double.tryParse(licenseFeeAmountString);
-
-    final UdlCurrency licenseFeeCurrency =
-        udlForm.control('licenseFeeCurrency').value;
-    final UdlCommercialUse commercialUse =
-        udlForm.control('commercialUse').value;
-    final UdlDerivation derivations = udlForm.control('derivations').value;
-
-    return UdlLicenseParams(
-      licenseFeeAmount: licenseFeeAmount,
-      licenseFeeCurrency: licenseFeeCurrency,
-      commercialUse: commercialUse,
-      derivations: derivations,
-    );
   }
 
   @override
