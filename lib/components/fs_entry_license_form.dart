@@ -1,5 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/components/license/cc_params_form.dart';
+import 'package:ardrive/components/license/cc_type_form.dart';
 import 'package:ardrive/components/license/udl_params_form.dart';
 import 'package:ardrive/components/license_summary.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
@@ -336,7 +336,7 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                                   context.watch<FsEntryLicenseBloc>().udlForm,
                             )
                           : licenseCategory == LicenseCategory.cc
-                              ? CcParamsForm(
+                              ? CcTypeForm(
                                   formGroup: context
                                       .watch<FsEntryLicenseBloc>()
                                       .ccForm,

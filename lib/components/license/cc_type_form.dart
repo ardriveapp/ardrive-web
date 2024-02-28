@@ -9,16 +9,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
-class CcParamsForm extends StatefulWidget {
-  const CcParamsForm({super.key, required this.formGroup});
+class CcTypeForm extends StatefulWidget {
+  const CcTypeForm({super.key, required this.formGroup});
 
   final FormGroup formGroup;
 
   @override
-  State<CcParamsForm> createState() => _CcParamsFormState();
+  State<CcTypeForm> createState() => _CcTypeFormState();
 }
 
-class _CcParamsFormState extends State<CcParamsForm> {
+class _CcTypeFormState extends State<CcTypeForm> {
   LicenseMeta get licenseMeta =>
       context.read<FsEntryLicenseBloc>().selectedLicenseMeta;
 
