@@ -180,12 +180,9 @@ class FsEntryLicenseBloc
     FsEntryLicenseReviewBack event,
     Emitter<FsEntryLicenseState> emit,
   ) {
-    if (_selectedLicenseMeta.hasParams) {
-      licenseParams = null;
-      emit(const FsEntryLicenseConfiguring());
-    } else {
-      emit(const FsEntryLicenseSelecting());
-    }
+    // Every LicenseCategory has its own configure step
+    licenseParams = null;
+    emit(const FsEntryLicenseConfiguring());
   }
 
   void _handleConfigurationBack(
