@@ -1,2 +1,2 @@
-export 'cc_by.dart';
+export 'cc.dart';
 export 'udl.dart';
