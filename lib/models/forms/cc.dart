@@ -14,7 +14,7 @@ const ccActiveLicenses = [
 
 const ccDefaultLicense = ccByLicenseMetaV2;
 
-createCcForm() => FormGroup({
+createCcTypeForm() => FormGroup({
       'ccTypeField': FormControl<LicenseMeta>(
         validators: [Validators.required],
         value: ccDefaultLicense,

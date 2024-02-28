@@ -332,14 +332,15 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                               onChangeLicenseFee: () {
                                 setState(() {});
                               },
-                              formGroup:
-                                  context.watch<FsEntryLicenseBloc>().udlForm,
+                              formGroup: context
+                                  .watch<FsEntryLicenseBloc>()
+                                  .udlParamsForm,
                             )
                           : licenseCategory == LicenseCategory.cc
                               ? CcTypeForm(
                                   formGroup: context
                                       .watch<FsEntryLicenseBloc>()
-                                      .ccForm,
+                                      .ccTypeForm,
                                 )
                               : const Text('Unsupported license type'),
                     ],
@@ -352,8 +353,10 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                       title: appLocalizationsOf(context).backEmphasized,
                     ),
                     ModalAction(
-                      isEnable:
-                          context.watch<FsEntryLicenseBloc>().udlForm.valid,
+                      isEnable: context
+                          .watch<FsEntryLicenseBloc>()
+                          .udlParamsForm
+                          .valid,
                       action: () => context
                           .read<FsEntryLicenseBloc>()
                           .add(const FsEntryLicenseConfigurationSubmit()),

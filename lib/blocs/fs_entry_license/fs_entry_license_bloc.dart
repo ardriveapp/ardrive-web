@@ -72,8 +72,8 @@ class FsEntryLicenseBloc
 
   /// Form getters
   FormGroup get selectForm => _selectForm;
-  FormGroup get udlForm => _udlForm;
-  FormGroup get ccForm => _ccForm;
+  FormGroup get udlParamsForm => _udlParamsForm;
+  FormGroup get ccTypeForm => _ccTypeForm;
 
   // Forms
   final _selectForm = FormGroup({
@@ -83,8 +83,8 @@ class FsEntryLicenseBloc
     ),
   });
 
-  final _udlForm = createUdlForm();
-  final _ccForm = createCcForm();
+  final _udlParamsForm = createUdlParamsForm();
+  final _ccTypeForm = createCcTypeForm();
 
   Future<void> _onEvent(
     FsEntryLicenseEvent event,
@@ -138,10 +138,10 @@ class FsEntryLicenseBloc
     switch (selectedLicenseCategory) {
       case LicenseCategory.udl:
         _selectedLicenseMeta = udlDefaultLicense;
-        licenseParams = await udlFormToLicenseParams(udlForm);
+        licenseParams = await udlFormToLicenseParams(udlParamsForm);
         break;
       case LicenseCategory.cc:
-        _selectedLicenseMeta = ccForm.control('ccTypeField').value;
+        _selectedLicenseMeta = ccTypeForm.control('ccTypeField').value;
         licenseParams = null;
         break;
       default:

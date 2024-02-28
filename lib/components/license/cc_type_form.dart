@@ -80,7 +80,7 @@ class _CcTypeFormState extends State<CcTypeForm> {
               builder: (context) {
                 final selectedLicenseMeta = context
                     .watch<FsEntryLicenseBloc>()
-                    .ccForm
+                    .ccTypeForm
                     .value['ccTypeField'] as LicenseMeta;
 
                 return Text(
