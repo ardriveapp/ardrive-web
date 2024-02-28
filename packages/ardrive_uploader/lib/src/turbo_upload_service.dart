@@ -150,9 +150,11 @@ class TurboUploadService {
         // could be an event emitter that the calling client can use to
         // listen for async outcomes like finalization success/failure.
         final confirmInfo = await _confirmUpload(
-            dataItemId: dataItem.id,
-            uploadId: uploadId,
-            dataItemSize: dataItem.dataItemSize);
+          dataItemId: dataItem.id,
+          uploadId: uploadId,
+          dataItemSize: dataItem.dataItemSize,
+        );
+
         onSendProgressTimer?.cancel();
 
         return confirmInfo;
@@ -184,10 +186,11 @@ class TurboUploadService {
   // - Make retries based on an exponential backoff rather than a fixed delay
   // - Make starting time for first wait based on some linear function of file size
   // - Don't keep retrying infinitely in the case of errors.
-  Future<Response> _confirmUpload(
-      {required TxID dataItemId,
-      required String uploadId,
-      required int dataItemSize}) async {
+  Future<Response> _confirmUpload({
+    required TxID dataItemId,
+    required String uploadId,
+    required int dataItemSize,
+  }) async {
     final fileSizeInGiB = (dataItemSize.toDouble() / GiB(1).size).ceil();
     final maxWaitTime = Duration(minutes: fileSizeInGiB);
     logger.d(
@@ -325,10 +328,16 @@ Stream<Uint8List> streamToChunks(
 }
 
 final defaultBaseDuration = Duration(milliseconds: 250);
-Duration dataItemConfirmationRetryDelay(int iteration,
-    {Duration baseDuration = const Duration(milliseconds: 100),
-    Duration maxDuration = const Duration(seconds: 8)}) {
+
+Duration dataItemConfirmationRetryDelay(
+  int iteration, {
+  Duration baseDuration = const Duration(milliseconds: 100),
+  Duration maxDuration = const Duration(seconds: 8),
+}) {
   return Duration(
-      milliseconds: min(baseDuration.inMilliseconds * pow(2, iteration).toInt(),
-          maxDuration.inMilliseconds));
+    milliseconds: min(
+      baseDuration.inMilliseconds * pow(2, iteration).toInt(),
+      maxDuration.inMilliseconds,
+    ),
+  );
 }
