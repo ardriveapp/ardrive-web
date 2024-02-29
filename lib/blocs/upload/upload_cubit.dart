@@ -68,7 +68,7 @@ class UploadCubit extends Cubit<UploadState> {
       emit(uploadReady.copyWith(
         paymentInfo: paymentInfo,
         uploadMethod: method,
-        isButtonToUploadEnabled: canUpload,
+        isNextButtonEnabled: canUpload,
       ));
     } else if (state is UploadReadyToPrepare) {
       emit(UploadReadyInitial(
@@ -77,7 +77,7 @@ class UploadCubit extends Cubit<UploadState> {
         numberOfFiles: files.length,
         uploadIsPublic: !_targetDrive.isPrivate,
         isDragNDrop: isDragNDrop,
-        isButtonToUploadEnabled: canUpload,
+        isNextButtonEnabled: canUpload,
         isArConnect: (state as UploadReadyToPrepare).isArConnect,
       ));
     }

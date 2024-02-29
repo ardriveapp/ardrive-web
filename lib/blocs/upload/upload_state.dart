@@ -79,7 +79,7 @@ class UploadReadyToPrepare extends UploadState {
 /// [UploadReadyInitial] means that the upload is ready to be performed and is awaiting for user to proceed to review.
 class UploadReadyInitial extends UploadState {
   final UploadPaymentMethodInfo paymentInfo;
-  final bool isButtonToUploadEnabled;
+  final bool isNextButtonEnabled;
   final bool isDragNDrop;
   final bool uploadIsPublic;
   final int numberOfFiles;
@@ -91,7 +91,7 @@ class UploadReadyInitial extends UploadState {
   UploadReadyInitial({
     required this.paymentInfo,
     required this.uploadIsPublic,
-    required this.isButtonToUploadEnabled,
+    required this.isNextButtonEnabled,
     this.isDragNDrop = false,
     required this.params,
     required this.numberOfFiles,
@@ -102,7 +102,7 @@ class UploadReadyInitial extends UploadState {
   UploadReadyInitial copyWith({
     UploadPaymentMethodInfo? paymentInfo,
     UploadMethod? uploadMethod,
-    bool? isButtonToUploadEnabled,
+    bool? isNextButtonEnabled,
     bool? isDragNDrop,
     bool? uploadIsPublic,
     int? numberOfFiles,
@@ -115,8 +115,7 @@ class UploadReadyInitial extends UploadState {
       isDragNDrop: isDragNDrop ?? this.isDragNDrop,
       paymentInfo: paymentInfo ?? this.paymentInfo,
       params: params ?? this.params,
-      isButtonToUploadEnabled:
-          isButtonToUploadEnabled ?? this.isButtonToUploadEnabled,
+      isNextButtonEnabled: isNextButtonEnabled ?? this.isNextButtonEnabled,
       numberOfFiles: numberOfFiles ?? this.numberOfFiles,
     );
   }
@@ -139,7 +138,7 @@ class UploadReadyInitial extends UploadState {
   @override
   List<Object?> get props => [
         paymentInfo,
-        isButtonToUploadEnabled,
+        isNextButtonEnabled,
       ];
 
   @override

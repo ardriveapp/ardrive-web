@@ -413,7 +413,7 @@ class _UploadFormState extends State<UploadForm> {
               int numberOfFilesInBundles = state.numberOfFiles;
 
               logger.d(
-                ' is button to upload enabled: ${state.isButtonToUploadEnabled}',
+                ' is button to upload enabled: ${state.isNextButtonEnabled}',
               );
 
               final v2Files = state
@@ -677,7 +677,7 @@ class _UploadFormState extends State<UploadForm> {
                     title: appLocalizationsOf(context).cancelEmphasized,
                   ),
                   ModalAction(
-                    isEnable: state.isButtonToUploadEnabled,
+                    isEnable: state.isNextButtonEnabled,
                     action: () {
                       context.read<UploadCubit>().initialConfigScreenNext();
                     },
