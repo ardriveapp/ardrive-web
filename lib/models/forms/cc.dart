@@ -2,7 +2,7 @@ import 'package:ardrive/services/license/license_state.dart';
 import 'package:ardrive/services/license/licenses/cc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
-const ccActiveLicenses = [
+const ccLicensesEnabled = [
   cc0LicenseMeta,
   ccByLicenseMetaV2,
   ccByNCLicenseMeta,
@@ -12,11 +12,11 @@ const ccActiveLicenses = [
   ccBySAMeta,
 ];
 
-const ccDefaultLicense = ccByLicenseMetaV2;
+const ccLicenseDefault = ccByLicenseMetaV2;
 
 FormGroup createCcTypeForm() => FormGroup({
       'ccTypeField': FormControl<LicenseMeta>(
         validators: [Validators.required],
-        value: ccDefaultLicense,
+        value: ccLicenseDefault,
       ),
     });

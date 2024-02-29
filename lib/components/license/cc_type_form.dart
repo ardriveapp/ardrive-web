@@ -58,7 +58,7 @@ class _CcTypeFormState extends State<CcTypeForm> {
                       showErrors: (control) => control.dirty && control.invalid,
                       validationMessages:
                           kValidationMessages(appLocalizationsOf(context)),
-                      items: ccActiveLicenses
+                      items: ccLicensesEnabled
                           .map(
                             (e) => DropdownMenuItem(
                               value: e,

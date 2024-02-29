@@ -53,7 +53,7 @@ class FsEntryLicenseBloc
   LicenseCategory get selectedLicenseCategory =>
       categoryForm.control('licenseCategory').value;
 
-  LicenseMeta _selectedLicenseMeta = udlDefaultLicense;
+  LicenseMeta _selectedLicenseMeta = udlLicenseDefault;
   LicenseMeta get selectedLicenseMeta => _selectedLicenseMeta;
 
   List<FileEntry>? filesToLicense;
@@ -134,7 +134,7 @@ class FsEntryLicenseBloc
   ) async {
     switch (selectedLicenseCategory) {
       case LicenseCategory.udl:
-        _selectedLicenseMeta = udlDefaultLicense;
+        _selectedLicenseMeta = udlLicenseDefault;
         licenseParams = udlFormToLicenseParams(udlParamsForm);
         break;
       case LicenseCategory.cc:

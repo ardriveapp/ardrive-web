@@ -1,7 +1,7 @@
 import 'package:ardrive/services/license/licenses/udl.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
-const udlDefaultLicense = udlLicenseMetaV2;
+const udlLicenseDefault = udlLicenseMetaV2;
 
 FormGroup createUdlParamsForm() => FormGroup({
       'licenseFeeAmount': FormControl<String>(

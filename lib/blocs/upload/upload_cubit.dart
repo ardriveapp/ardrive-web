@@ -118,7 +118,7 @@ class UploadCubit extends Cubit<UploadState> {
       switch (configuringLicense.licenseCategory) {
         case LicenseCategory.udl:
           licenseState = LicenseState(
-            meta: udlDefaultLicense,
+            meta: udlLicenseDefault,
             params: udlFormToLicenseParams(_licenseUdlParamsForm),
           );
         case LicenseCategory.cc:
