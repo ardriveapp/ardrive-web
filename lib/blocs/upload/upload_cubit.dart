@@ -87,6 +87,8 @@ class UploadCubit extends Cubit<UploadState> {
   void initialScreenNext() {
     if (state is UploadReady) {
       final readyState = state as UploadReady;
+      final licenseCategory =
+          licenseCategoryForm.control('licenseCategory').value;
       if (licenseCategory != null) {
         emit(UploadConfiguringLicense(
           readyState: readyState,
@@ -185,12 +187,6 @@ class UploadCubit extends Cubit<UploadState> {
   FormGroup get licenseCategoryForm => _licenseCategoryForm;
   FormGroup get licenseUdlParamsForm => _licenseUdlParamsForm;
   FormGroup get licenseCcTypeForm => _licenseCcTypeForm;
-
-  LicenseCategory? get licenseCategory =>
-      licenseCategoryForm.control('licenseCategory').value;
-
-  LicenseMeta? _licenseMeta;
-  LicenseParams? _licenseParams;
 
   List<UploadFile> files = [];
   IOFolder? folder;
