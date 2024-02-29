@@ -51,9 +51,8 @@ class FsEntryLicenseBloc
   final String driveId;
   final List<ArDriveDataTableItem> selectedItems;
 
-  // We initialize with UDL license by default
-  LicenseCategory _selectedLicenseCategory = LicenseCategory.udl;
-  LicenseCategory get selectedLicenseCategory => _selectedLicenseCategory;
+  LicenseCategory get selectedLicenseCategory =>
+      categoryForm.control('licenseCategory').value;
 
   LicenseMeta _selectedLicenseMeta = udlDefaultLicense;
   LicenseMeta get selectedLicenseMeta => _selectedLicenseMeta;
@@ -127,7 +126,6 @@ class FsEntryLicenseBloc
     FsEntryLicenseSelect event,
     Emitter<FsEntryLicenseState> emit,
   ) async {
-    _selectedLicenseCategory = categoryForm.control('licenseCategory').value;
     emit(const FsEntryLicenseConfiguring());
   }
 
