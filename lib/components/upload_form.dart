@@ -544,9 +544,18 @@ class _UploadFormState extends State<UploadForm> {
                   ),
                 ],
                 children: [
-                  if (state is UploadReviewWithLicense) ...[
-                    LicenseSummary(licenseState: state.licenseState)
-                  ]
+                  (state is UploadReviewWithLicense)
+                      ? LicenseSummary(licenseState: state.licenseState)
+                      : LicenseSummary(
+                          licenseState: const LicenseState(
+                            meta: LicenseMeta(
+                              licenseType: LicenseType.unknown,
+                              licenseDefinitionTxId: '',
+                              name: 'None',
+                              shortName: '-',
+                            ),
+                          ),
+                        )
                 ],
               );
             } else if (state is UploadSigningInProgress) {
@@ -1539,7 +1548,7 @@ class UploadReadyModalBase extends StatelessWidget {
           width: width,
           hasCloseButton: hasCloseButton,
           content: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 180),
+            constraints: const BoxConstraints(minHeight: 185),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
