@@ -497,11 +497,14 @@ class _UploadFormState extends State<UploadForm> {
                 ],
               );
             } else if (state is UploadConfiguringLicense) {
+              final headingText =
+                  'Configure ${licenseCategoryNames[state.licenseCategory]}';
               switch (state.licenseCategory) {
                 case LicenseCategory.udl:
                   final udlParamsForm =
                       context.watch<UploadCubit>().licenseUdlParamsForm;
                   return ConfiguringLicenseScreen(
+                    headingText: headingText,
                     readyState: state.readyState,
                     formGroup: udlParamsForm,
                     child: UdlParamsForm(
@@ -513,6 +516,7 @@ class _UploadFormState extends State<UploadForm> {
                   final ccTypeForm =
                       context.watch<UploadCubit>().licenseCcTypeForm;
                   return ConfiguringLicenseScreen(
+                    headingText: headingText,
                     readyState: state.readyState,
                     formGroup: ccTypeForm,
                     child: CcTypeForm(formGroup: ccTypeForm),
@@ -1452,12 +1456,14 @@ class _StatsScreenState extends State<StatsScreen> {
 }
 
 class ConfiguringLicenseScreen extends StatelessWidget {
+  final String headingText;
   final UploadReady readyState;
   final FormGroup formGroup;
   final Widget child;
 
   const ConfiguringLicenseScreen({
     super.key,
+    required this.headingText,
     required this.readyState,
     required this.formGroup,
     required this.child,
@@ -1485,7 +1491,17 @@ class ConfiguringLicenseScreen extends StatelessWidget {
                 title: appLocalizationsOf(context).nextEmphasized,
               ),
             ],
-            children: [child],
+            children: [
+              Text(
+                headingText,
+                style: ArDriveTypography.body.smallBold(
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                ),
+              ),
+              const SizedBox(height: 16),
+              child,
+            ],
           ),
         ));
   }

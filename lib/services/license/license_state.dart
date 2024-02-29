@@ -72,8 +72,8 @@ abstract class LicenseParams extends Equatable {
 class EmptyParams extends LicenseParams {}
 
 final licenseCategoryNames = {
-  LicenseCategory.udl: 'Universal Data License - UDL',
-  LicenseCategory.cc: 'Creative Commons - CC',
+  LicenseCategory.udl: 'Universal Data License (UDL)',
+  LicenseCategory.cc: 'Creative Commons (CC)',
 };
 
 class LicenseState extends Equatable {
