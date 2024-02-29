@@ -1508,17 +1508,23 @@ class UploadReadyModalBase extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ArDriveStandardModal(
-      title: appLocalizationsOf(context).uploadNFiles(readyState.numberOfFiles),
-      // TODO: Create "subtitle"
-      // TODO: Localize
-      description: 'Files will be uploaded publicly.',
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: children,
+    return ArDriveScrollBar(
+      child: SingleChildScrollView(
+        child: ArDriveStandardModal(
+          title: appLocalizationsOf(context)
+              .uploadNFiles(readyState.numberOfFiles),
+          // TODO: Create "subtitle"
+          // TODO: Localize
+          description: 'Files will be uploaded publicly.',
+          width: width,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: children,
+          ),
+          actions: actions,
+        ),
       ),
-      actions: actions,
     );
   }
 }
