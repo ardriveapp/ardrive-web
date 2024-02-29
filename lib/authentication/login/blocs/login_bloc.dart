@@ -430,8 +430,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
             wallet: wallet, showTutorials: true, showWalletCreated: false));
       }
     } catch (e) {
-      emit(LoginFailure(e));
       emit(previousState);
+      emit(LoginFailure(e));
     }
   }
 

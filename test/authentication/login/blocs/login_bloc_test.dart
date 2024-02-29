@@ -307,8 +307,8 @@ void main() {
       expect: () => [
         const PromptPassword(),
         LoginLoading(),
+        const PromptPassword(),
         const TypeMatcher<LoginFailure>(),
-        const PromptPassword()
       ],
     );
   });
@@ -518,8 +518,8 @@ void main() {
       expect: () => [
         const PromptPassword(),
         LoginLoading(),
+        const PromptPassword(),
         const TypeMatcher<LoginFailure>(),
-        const PromptPassword()
       ],
     );
   });
@@ -606,8 +606,8 @@ void main() {
       expect: () => [
         const PromptPassword(),
         LoginLoading(),
+        const PromptPassword(),
         const TypeMatcher<LoginFailure>(),
-        const PromptPassword()
       ],
     );
 
@@ -687,8 +687,8 @@ void main() {
       expect: () => [
         const PromptPassword(),
         LoginLoading(),
+        const PromptPassword(),
         const TypeMatcher<LoginFailure>(),
-        const PromptPassword()
       ],
     );
   });
@@ -794,8 +794,8 @@ void main() {
       expect: () => [
         const PromptPassword(),
         LoginLoading(),
+        const PromptPassword(),
         const TypeMatcher<LoginFailure>(),
-        const PromptPassword()
       ],
     );
   });
@@ -984,7 +984,7 @@ void main() {
         const PromptPassword(),
         LoginLoading(),
         const TypeMatcher<LoginFailure>(),
-        const PromptPassword()
+        const PromptPassword(),
       ],
     );
   });
