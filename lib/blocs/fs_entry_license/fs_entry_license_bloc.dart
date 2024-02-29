@@ -136,7 +136,7 @@ class FsEntryLicenseBloc
     switch (selectedLicenseCategory) {
       case LicenseCategory.udl:
         _selectedLicenseMeta = udlDefaultLicense;
-        licenseParams = await udlFormToLicenseParams(udlParamsForm);
+        licenseParams = udlFormToLicenseParams(udlParamsForm);
         break;
       case LicenseCategory.cc:
         _selectedLicenseMeta = ccTypeForm.control('ccTypeField').value;
