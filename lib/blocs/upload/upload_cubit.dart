@@ -62,8 +62,8 @@ class UploadCubit extends Cubit<UploadState> {
     logger.d('Upload method set to $method');
     _uploadMethod = method;
 
-    if (state is UploadReady) {
-      final uploadReady = state as UploadReady;
+    if (state is UploadReadyInitial) {
+      final uploadReady = state as UploadReadyInitial;
 
       emit(uploadReady.copyWith(
         paymentInfo: paymentInfo,
@@ -71,7 +71,7 @@ class UploadCubit extends Cubit<UploadState> {
         isButtonToUploadEnabled: canUpload,
       ));
     } else if (state is UploadReadyToPrepare) {
-      emit(UploadReady(
+      emit(UploadReadyInitial(
         params: (state as UploadReadyToPrepare).params,
         paymentInfo: paymentInfo,
         numberOfFiles: files.length,
@@ -80,6 +80,18 @@ class UploadCubit extends Cubit<UploadState> {
         isButtonToUploadEnabled: canUpload,
         isArConnect: (state as UploadReadyToPrepare).isArConnect,
       ));
+    }
+  }
+
+  void initialConfigScreenNext() {
+    print(state);
+    if (state is UploadReadyInitial) {
+      if (licenseCategory != null) {
+        emit((state as UploadReadyInitial)
+            .configureLicense(licenseCategory: licenseCategory!));
+      } else {
+        emit((state as UploadReadyInitial).noLicenseReview());
+      }
     }
   }
 

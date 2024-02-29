@@ -409,7 +409,7 @@ class _UploadFormState extends State<UploadForm> {
                   ),
                 ),
               );
-            } else if (state is UploadReady) {
+            } else if (state is UploadReadyInitial) {
               int numberOfFilesInBundles = state.numberOfFiles;
 
               logger.d(
@@ -679,15 +679,20 @@ class _UploadFormState extends State<UploadForm> {
                   ModalAction(
                     isEnable: state.isButtonToUploadEnabled,
                     action: () {
-                      context.read<UploadCubit>().startUpload(
-                            uploadPlanForAr: state.paymentInfo.uploadPlanForAR!,
-                            uploadPlanForTurbo:
-                                state.paymentInfo.uploadPlanForTurbo,
-                          );
+                      context.read<UploadCubit>().initialConfigScreenNext();
                     },
-                    title: appLocalizationsOf(context).uploadEmphasized,
+                    title: appLocalizationsOf(context).nextEmphasized,
                   ),
                 ],
+              );
+            } else if (state is UploadReadyConfiguringLicense) {
+              return ArDriveStandardModal(
+                title: 'UploadReadyConfiguringLicense',
+              );
+            } else if (state is UploadReadyReview ||
+                state is UploadReadyReviewWithLicense) {
+              return ArDriveStandardModal(
+                title: 'UploadReadyReview(WithLicense)',
               );
             } else if (state is UploadSigningInProgress) {
               return ArDriveStandardModal(

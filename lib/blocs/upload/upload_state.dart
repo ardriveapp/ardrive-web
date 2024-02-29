@@ -76,8 +76,8 @@ class UploadReadyToPrepare extends UploadState {
   List<Object> get props => [params];
 }
 
-/// [UploadReady] means that the upload is ready to be performed and is awaiting confirmation from the user.
-class UploadReady extends UploadState {
+/// [UploadReadyInitial] means that the upload is ready to be performed and is awaiting for user to proceed to review.
+class UploadReadyInitial extends UploadState {
   final UploadPaymentMethodInfo paymentInfo;
   final bool isButtonToUploadEnabled;
   final bool isDragNDrop;
@@ -88,7 +88,7 @@ class UploadReady extends UploadState {
 
   final bool isArConnect;
 
-  UploadReady({
+  UploadReadyInitial({
     required this.paymentInfo,
     required this.uploadIsPublic,
     required this.isButtonToUploadEnabled,
@@ -98,8 +98,8 @@ class UploadReady extends UploadState {
     required this.isArConnect,
   });
 
-// copyWith
-  UploadReady copyWith({
+  // copyWith
+  UploadReadyInitial copyWith({
     UploadPaymentMethodInfo? paymentInfo,
     UploadMethod? uploadMethod,
     bool? isButtonToUploadEnabled,
@@ -109,7 +109,7 @@ class UploadReady extends UploadState {
     UploadParams? params,
     bool? isArConnect,
   }) {
-    return UploadReady(
+    return UploadReadyInitial(
       isArConnect: isArConnect ?? this.isArConnect,
       uploadIsPublic: uploadIsPublic ?? this.uploadIsPublic,
       isDragNDrop: isDragNDrop ?? this.isDragNDrop,
@@ -121,6 +121,21 @@ class UploadReady extends UploadState {
     );
   }
 
+  UploadReadyReview noLicenseReview() {
+    return UploadReadyReview(
+      readyState: this,
+    );
+  }
+
+  UploadReadyConfiguringLicense configureLicense({
+    required LicenseCategory licenseCategory,
+  }) {
+    return UploadReadyConfiguringLicense(
+      readyState: this,
+      licenseCategory: licenseCategory,
+    );
+  }
+
   @override
   List<Object?> get props => [
         paymentInfo,
@@ -128,7 +143,94 @@ class UploadReady extends UploadState {
       ];
 
   @override
-  toString() => 'UploadReady { paymentInfo: $paymentInfo }';
+  toString() => 'UploadReadyInitial { paymentInfo: $paymentInfo }';
+}
+
+/// [UploadReadyReview] means that the upload is being reviewed by the user and awaiting confirmation.
+class UploadReadyReview extends UploadState {
+  final UploadReadyInitial readyState;
+
+  UploadReadyReview({
+    required this.readyState,
+  });
+
+  UploadReadyInitial cancelReview() {
+    return readyState;
+  }
+
+  @override
+  List<Object?> get props => [
+        readyState,
+      ];
+
+  @override
+  toString() => 'UploadReadyReview { paymentInfo: ${readyState.paymentInfo} }';
+}
+
+/// [UploadReadyConfiguringLicense] means that the upload is ready to be performed but license is being configured.
+class UploadReadyConfiguringLicense extends UploadState {
+  final UploadReadyInitial readyState;
+  final LicenseCategory licenseCategory;
+
+  UploadReadyConfiguringLicense({
+    required this.readyState,
+    required this.licenseCategory,
+  });
+
+  UploadReadyInitial cancelConfiguring() {
+    return readyState;
+  }
+
+  UploadReadyReviewWithLicense addLicense({
+    required LicenseState licenseState,
+  }) {
+    return UploadReadyReviewWithLicense(
+      readyState: readyState,
+      licenseCategory: licenseCategory,
+      licenseState: licenseState,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+        readyState,
+        licenseCategory,
+      ];
+
+  @override
+  toString() =>
+      'UploadReadyConfiguringLicense { paymentInfo: ${readyState.paymentInfo} }';
+}
+
+/// [UploadReadyReviewWithLicense] means that the (licensed) upload is being reviewed by the user and awaiting confirmation.
+class UploadReadyReviewWithLicense extends UploadState {
+  final UploadReadyInitial readyState;
+  final LicenseCategory licenseCategory;
+  final LicenseState licenseState;
+
+  UploadReadyReviewWithLicense({
+    required this.readyState,
+    required this.licenseCategory,
+    required this.licenseState,
+  });
+
+  UploadReadyConfiguringLicense reconfigureLicense() {
+    return UploadReadyConfiguringLicense(
+      readyState: readyState,
+      licenseCategory: licenseCategory,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+        readyState,
+        licenseCategory,
+        licenseState,
+      ];
+
+  @override
+  toString() =>
+      'UploadReadyReviewWithLicense { paymentInfo: ${readyState.paymentInfo} }';
 }
 
 class UploadInProgress extends UploadState {
