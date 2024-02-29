@@ -5,14 +5,16 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
+import 'package:ardrive/components/license/udl_params_form.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/main.dart';
+import 'package:ardrive/models/forms/cc.dart';
+import 'package:ardrive/models/forms/udl.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/license/license_service.dart';
-import 'package:ardrive/services/license/license_state.dart';
+import 'package:ardrive/services/license/license.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
@@ -83,15 +85,74 @@ class UploadCubit extends Cubit<UploadState> {
     }
   }
 
-  void initialConfigScreenNext() {
+  void initialScreenNext() {
     if (state is UploadReadyInitial) {
+      final uploadReady = state as UploadReadyInitial;
       if (licenseCategory != null) {
-        emit((state as UploadReadyInitial)
-            .configureLicense(licenseCategory: licenseCategory!));
+        emit(uploadReady.configureLicense(
+          licenseCategory: licenseCategory!,
+        ));
       } else {
-        emit((state as UploadReadyInitial).noLicenseReview());
+        emit(uploadReady.noLicenseReview());
       }
     }
+  }
+
+  void configuringLicenseBack() {
+    if (state is UploadReadyConfiguringLicense) {
+      final configuringLicense = state as UploadReadyConfiguringLicense;
+      final prevState = configuringLicense.readyState;
+      emit(prevState);
+    }
+  }
+
+  void configuringLicenseNext() {
+    if (state is UploadReadyConfiguringLicense) {
+      final configuringLicense = state as UploadReadyConfiguringLicense;
+
+      late LicenseState licenseState;
+      switch (configuringLicense.licenseCategory) {
+        case LicenseCategory.udl:
+          licenseState = LicenseState(
+            meta: udlDefaultLicense,
+            params: udlFormToLicenseParams(_licenseUdlParamsForm),
+          );
+        case LicenseCategory.cc:
+          final LicenseMeta licenseMeta =
+              _licenseCcTypeForm.control('ccTypeField').value;
+          licenseState = LicenseState(meta: licenseMeta);
+        default:
+          throw StateError(
+              'Invalid license category: ${configuringLicense.licenseCategory}');
+      }
+
+      emit(UploadReadyReviewWithLicense(
+        readyState: configuringLicense.readyState,
+        licenseCategory: configuringLicense.licenseCategory,
+        licenseState: licenseState,
+      ));
+    }
+  }
+
+  void reviewBack() {
+    if (state is UploadReadyReview) {
+      final review = state as UploadReadyReview;
+      final UploadReadyInitial prevState = review.readyState;
+      emit(prevState);
+    } else if (state is UploadReadyReviewWithLicense) {
+      final reviewWithLicense = state as UploadReadyReviewWithLicense;
+      final UploadReadyInitial readyState = reviewWithLicense.readyState;
+      final licenseCategory = reviewWithLicense.licenseCategory;
+      final prevState = UploadReadyConfiguringLicense(
+        readyState: readyState,
+        licenseCategory: licenseCategory,
+      );
+      emit(prevState);
+    }
+  }
+
+  void reviewUpload() {
+    print('TODO: reviewUpload');
   }
 
   final _licenseCategoryForm = FormGroup({
@@ -100,7 +161,12 @@ class UploadCubit extends Cubit<UploadState> {
       value: null,
     ),
   });
+  final _licenseUdlParamsForm = createUdlParamsForm();
+  final _licenseCcTypeForm = createCcTypeForm();
+
   FormGroup get licenseCategoryForm => _licenseCategoryForm;
+  FormGroup get licenseUdlParamsForm => _licenseUdlParamsForm;
+  FormGroup get licenseCcTypeForm => _licenseCcTypeForm;
 
   LicenseCategory? get licenseCategory =>
       licenseCategoryForm.control('licenseCategory').value;

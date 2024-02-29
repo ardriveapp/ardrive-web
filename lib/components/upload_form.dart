@@ -12,6 +12,8 @@ import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/blocs/upload/upload_handles/file_v2_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
 import 'package:ardrive/components/file_picker_modal.dart';
+import 'package:ardrive/components/license/cc_type_form.dart';
+import 'package:ardrive/components/license/udl_params_form.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
@@ -679,20 +681,55 @@ class _UploadFormState extends State<UploadForm> {
                   ModalAction(
                     isEnable: state.isNextButtonEnabled,
                     action: () {
-                      context.read<UploadCubit>().initialConfigScreenNext();
+                      context.read<UploadCubit>().initialScreenNext();
                     },
                     title: appLocalizationsOf(context).nextEmphasized,
                   ),
                 ],
               );
             } else if (state is UploadReadyConfiguringLicense) {
-              return ArDriveStandardModal(
-                title: 'UploadReadyConfiguringLicense',
-              );
+              switch (state.licenseCategory) {
+                case LicenseCategory.udl:
+                  final udlParamsForm =
+                      context.read<UploadCubit>().licenseUdlParamsForm;
+                  return ConfiguringLicenseScreen(
+                    isNextButtonEnabled: udlParamsForm.valid,
+                    child: UdlParamsForm(
+                      formGroup: udlParamsForm,
+                      onChangeLicenseFee: () {},
+                    ),
+                  );
+                case LicenseCategory.cc:
+                  final ccTypeForm =
+                      context.read<UploadCubit>().licenseCcTypeForm;
+                  return ConfiguringLicenseScreen(
+                    isNextButtonEnabled: ccTypeForm.valid,
+                    child: CcTypeForm(formGroup: ccTypeForm),
+                  );
+                default:
+                  return const ConfiguringLicenseScreen(
+                    isNextButtonEnabled: false,
+                    child: Text('Unsupported license category'),
+                  );
+              }
             } else if (state is UploadReadyReview ||
                 state is UploadReadyReviewWithLicense) {
               return ArDriveStandardModal(
                 title: 'UploadReadyReview(WithLicense)',
+                actions: [
+                  ModalAction(
+                    action: () => {
+                      context.read<UploadCubit>().reviewBack(),
+                    },
+                    title: appLocalizationsOf(context).backEmphasized,
+                  ),
+                  ModalAction(
+                    action: () {
+                      context.read<UploadCubit>().reviewUpload();
+                    },
+                    title: appLocalizationsOf(context).uploadEmphasized,
+                  ),
+                ],
               );
             } else if (state is UploadSigningInProgress) {
               return ArDriveStandardModal(
@@ -1398,5 +1435,38 @@ class _UploadFormState extends State<UploadForm> {
     } else {
       return themeColors.themeFgDefault;
     }
+  }
+}
+
+class ConfiguringLicenseScreen extends StatelessWidget {
+  final bool isNextButtonEnabled;
+  final Widget child;
+
+  const ConfiguringLicenseScreen({
+    super.key,
+    required this.isNextButtonEnabled,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ArDriveStandardModal(
+        title: 'UploadReadyConfiguringLicense',
+        content: child,
+        actions: [
+          ModalAction(
+            action: () => {
+              context.read<UploadCubit>().configuringLicenseBack(),
+            },
+            title: appLocalizationsOf(context).backEmphasized,
+          ),
+          ModalAction(
+            isEnable: isNextButtonEnabled,
+            action: () {
+              context.read<UploadCubit>().configuringLicenseNext();
+            },
+            title: appLocalizationsOf(context).nextEmphasized,
+          ),
+        ]);
   }
 }

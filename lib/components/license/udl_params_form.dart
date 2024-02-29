@@ -158,7 +158,7 @@ class _UdlParamsFormState extends State<UdlParamsForm> {
   }
 }
 
-Future<UdlLicenseParams> udlFormToLicenseParams(FormGroup udlForm) async {
+UdlLicenseParams udlFormToLicenseParams(FormGroup udlForm) {
   final String? licenseFeeAmountString =
       udlForm.control('licenseFeeAmount').value;
   final double? licenseFeeAmount = licenseFeeAmountString == null
