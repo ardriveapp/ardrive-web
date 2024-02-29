@@ -3,7 +3,7 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 const udlDefaultLicense = udlLicenseMetaV2;
 
-createUdlParamsForm() => FormGroup({
+FormGroup createUdlParamsForm() => FormGroup({
       'licenseFeeAmount': FormControl<String>(
         validators: [
           Validators.composeOR([
