@@ -151,7 +151,23 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   void reviewUpload() {
-    print('TODO: reviewUpload');
+    if (state is UploadReadyReview) {
+      final review = state as UploadReadyReview;
+      startUpload(
+        uploadPlanForAr: review.readyState.paymentInfo.uploadPlanForAR!,
+        uploadPlanForTurbo: review.readyState.paymentInfo.uploadPlanForTurbo,
+      );
+    }
+    if (state is UploadReadyReviewWithLicense) {
+      final reviewWithLicense = state as UploadReadyReviewWithLicense;
+      startUpload(
+        uploadPlanForAr:
+            reviewWithLicense.readyState.paymentInfo.uploadPlanForAR!,
+        uploadPlanForTurbo:
+            reviewWithLicense.readyState.paymentInfo.uploadPlanForTurbo,
+        licenseStateConfigured: reviewWithLicense.licenseState,
+      );
+    }
   }
 
   final _licenseCategoryForm = FormGroup({
@@ -443,6 +459,7 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> startUpload({
     required UploadPlan uploadPlanForAr,
     UploadPlan? uploadPlanForTurbo,
+    LicenseState? licenseStateConfigured,
   }) async {
     if (uploadIsInProgress) {
       return;
@@ -507,16 +524,22 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     if (uploadFolders) {
-      await _uploadFolderUsingArDriveUploader();
+      await _uploadFolderUsingArDriveUploader(
+        licenseStateConfigured: licenseStateConfigured,
+      );
       return;
     }
 
-    await _uploadUsingArDriveUploader();
+    await _uploadUsingArDriveUploader(
+      licenseStateConfigured: licenseStateConfigured,
+    );
 
     return;
   }
 
-  Future<void> _uploadFolderUsingArDriveUploader() async {
+  Future<void> _uploadFolderUsingArDriveUploader({
+    LicenseState? licenseStateConfigured,
+  }) async {
     final ardriveUploader = ArDriveUploader(
       turboUploadUri: Uri.parse(configService.config.defaultTurboUploadUrl!),
       metadataGenerator: ARFSUploadMetadataGenerator(
@@ -568,7 +591,8 @@ class UploadCubit extends Cubit<UploadState> {
       logger.d(
           'Reusing id? ${conflictingFiles.containsKey(file.getIdentifier())}');
 
-      final licenseState = await _licenseStateForFileId(fileId);
+      final licenseStateResolved =
+          licenseStateConfigured ?? await _licenseStateForFileId(fileId);
 
       final fileMetadata = ARFSUploadMetadataArgs(
         isPrivate: _targetDrive.isPrivate,
@@ -579,8 +603,8 @@ class UploadCubit extends Cubit<UploadState> {
         type: _uploadMethod == UploadMethod.ar
             ? UploadType.d2n
             : UploadType.turbo,
-        licenseDefinitionTxId: licenseState?.meta.licenseDefinitionTxId,
-        licenseAdditionalTags: licenseState?.params?.toAdditionalTags(),
+        licenseDefinitionTxId: licenseStateResolved?.meta.licenseDefinitionTxId,
+        licenseAdditionalTags: licenseStateResolved?.params?.toAdditionalTags(),
       );
 
       entities.add((fileMetadata, file.ioFile));
@@ -649,7 +673,9 @@ class UploadCubit extends Cubit<UploadState> {
     }
   }
 
-  Future<void> _uploadUsingArDriveUploader() async {
+  Future<void> _uploadUsingArDriveUploader({
+    LicenseState? licenseStateConfigured,
+  }) async {
     final ardriveUploader = ArDriveUploader(
       turboUploadUri: Uri.parse(configService.config.defaultTurboUploadUrl!),
       metadataGenerator: ARFSUploadMetadataGenerator(
@@ -677,7 +703,8 @@ class UploadCubit extends Cubit<UploadState> {
           ? RevisionAction.uploadNewVersion
           : RevisionAction.create;
 
-      final licenseState = await _licenseStateForFileId(conflictingId);
+      final licenseStateResolved =
+          licenseStateConfigured ?? await _licenseStateForFileId(conflictingId);
 
       final args = ARFSUploadMetadataArgs(
         isPrivate: _targetDrive.isPrivate,
@@ -690,8 +717,8 @@ class UploadCubit extends Cubit<UploadState> {
         type: _uploadMethod == UploadMethod.ar
             ? UploadType.d2n
             : UploadType.turbo,
-        licenseDefinitionTxId: licenseState?.meta.licenseDefinitionTxId,
-        licenseAdditionalTags: licenseState?.params?.toAdditionalTags(),
+        licenseDefinitionTxId: licenseStateResolved?.meta.licenseDefinitionTxId,
+        licenseAdditionalTags: licenseStateResolved?.params?.toAdditionalTags(),
       );
 
       uploadFiles.add((args, file.ioFile));
