@@ -414,6 +414,8 @@ class _UploadFormState extends State<UploadForm> {
             } else if (state is UploadReady) {
               return StatsScreen(
                 readyState: state,
+                // Don't show on first screen?
+                hasCloseButton: false,
                 modalActions: [
                   ModalAction(
                     action: () => Navigator.of(context).pop(false),
@@ -1260,9 +1262,12 @@ class StatsScreen extends StatefulWidget {
   final List<ModalAction> modalActions;
   final List<Widget> children;
 
+  final bool hasCloseButton;
+
   const StatsScreen({
     super.key,
     required this.readyState,
+    this.hasCloseButton = true,
     required this.modalActions,
     required this.children,
   });
@@ -1319,6 +1324,7 @@ class _StatsScreenState extends State<StatsScreen> {
   Widget build(BuildContext context) {
     return UploadReadyModalBase(
       readyState: widget.readyState,
+      hasCloseButton: widget.hasCloseButton,
       actions: widget.modalActions,
       children: [
         files == null
@@ -1508,6 +1514,7 @@ class UploadReadyModalBase extends StatelessWidget {
   final List<ModalAction> actions;
   final List<Widget> children;
 
+  final bool hasCloseButton;
   final double width;
 
   const UploadReadyModalBase({
@@ -1515,6 +1522,7 @@ class UploadReadyModalBase extends StatelessWidget {
     required this.readyState,
     required this.actions,
     required this.children,
+    this.hasCloseButton = true,
     this.width = 408,
   });
 
@@ -1529,10 +1537,14 @@ class UploadReadyModalBase extends StatelessWidget {
           // TODO: Localize
           description: 'Files will be uploaded publicly.',
           width: width,
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: children,
+          hasCloseButton: hasCloseButton,
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 180),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: children,
+            ),
           ),
           actions: actions,
         ),
