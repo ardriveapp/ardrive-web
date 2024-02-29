@@ -483,11 +483,7 @@ class _UploadFormState extends State<UploadForm> {
                           (value) {
                             return DropdownMenuItem(
                               value: value,
-                              child: Text(
-                                value == null
-                                    ? 'None'
-                                    : '${licenseCategoryNames[value]}',
-                              ),
+                              child: Text(licenseCategoryNames[value] ?? '---'),
                             );
                           },
                         ).toList(),
