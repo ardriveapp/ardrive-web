@@ -63,8 +63,8 @@ class UploadCubit extends Cubit<UploadState> {
     logger.d('Upload method set to $method');
     _uploadMethod = method;
 
-    if (state is UploadReadyInitial) {
-      final uploadReady = state as UploadReadyInitial;
+    if (state is UploadReady) {
+      final uploadReady = state as UploadReady;
 
       emit(uploadReady.copyWith(
         paymentInfo: paymentInfo,
@@ -72,7 +72,7 @@ class UploadCubit extends Cubit<UploadState> {
         isNextButtonEnabled: canUpload,
       ));
     } else if (state is UploadReadyToPrepare) {
-      emit(UploadReadyInitial(
+      emit(UploadReady(
         params: (state as UploadReadyToPrepare).params,
         paymentInfo: paymentInfo,
         numberOfFiles: files.length,
@@ -85,15 +85,15 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   void initialScreenNext() {
-    if (state is UploadReadyInitial) {
-      final readyState = state as UploadReadyInitial;
+    if (state is UploadReady) {
+      final readyState = state as UploadReady;
       if (licenseCategory != null) {
-        emit(UploadReadyConfiguringLicense(
+        emit(UploadConfiguringLicense(
           readyState: readyState,
           licenseCategory: licenseCategory!,
         ));
       } else {
-        emit(UploadReadyReview(
+        emit(UploadReview(
           readyState: readyState,
         ));
       }
@@ -101,16 +101,16 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   void configuringLicenseBack() {
-    if (state is UploadReadyConfiguringLicense) {
-      final configuringLicense = state as UploadReadyConfiguringLicense;
+    if (state is UploadConfiguringLicense) {
+      final configuringLicense = state as UploadConfiguringLicense;
       final prevState = configuringLicense.readyState;
       emit(prevState);
     }
   }
 
   void configuringLicenseNext() {
-    if (state is UploadReadyConfiguringLicense) {
-      final configuringLicense = state as UploadReadyConfiguringLicense;
+    if (state is UploadConfiguringLicense) {
+      final configuringLicense = state as UploadConfiguringLicense;
 
       late LicenseState licenseState;
       switch (configuringLicense.licenseCategory) {
@@ -128,7 +128,7 @@ class UploadCubit extends Cubit<UploadState> {
               'Invalid license category: ${configuringLicense.licenseCategory}');
       }
 
-      emit(UploadReadyReviewWithLicense(
+      emit(UploadReviewWithLicense(
         readyState: configuringLicense.readyState,
         licenseCategory: configuringLicense.licenseCategory,
         licenseState: licenseState,
@@ -137,15 +137,15 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   void reviewBack() {
-    if (state is UploadReadyReview) {
-      final review = state as UploadReadyReview;
-      final UploadReadyInitial prevState = review.readyState;
+    if (state is UploadReview) {
+      final review = state as UploadReview;
+      final UploadReady prevState = review.readyState;
       emit(prevState);
-    } else if (state is UploadReadyReviewWithLicense) {
-      final reviewWithLicense = state as UploadReadyReviewWithLicense;
-      final UploadReadyInitial readyState = reviewWithLicense.readyState;
+    } else if (state is UploadReviewWithLicense) {
+      final reviewWithLicense = state as UploadReviewWithLicense;
+      final UploadReady readyState = reviewWithLicense.readyState;
       final licenseCategory = reviewWithLicense.licenseCategory;
-      final prevState = UploadReadyConfiguringLicense(
+      final prevState = UploadConfiguringLicense(
         readyState: readyState,
         licenseCategory: licenseCategory,
       );
@@ -154,15 +154,15 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   void reviewUpload() {
-    if (state is UploadReadyReview) {
-      final review = state as UploadReadyReview;
+    if (state is UploadReview) {
+      final review = state as UploadReview;
       startUpload(
         uploadPlanForAr: review.readyState.paymentInfo.uploadPlanForAR!,
         uploadPlanForTurbo: review.readyState.paymentInfo.uploadPlanForTurbo,
       );
     }
-    if (state is UploadReadyReviewWithLicense) {
-      final reviewWithLicense = state as UploadReadyReviewWithLicense;
+    if (state is UploadReviewWithLicense) {
+      final reviewWithLicense = state as UploadReviewWithLicense;
       startUpload(
         uploadPlanForAr:
             reviewWithLicense.readyState.paymentInfo.uploadPlanForAR!,

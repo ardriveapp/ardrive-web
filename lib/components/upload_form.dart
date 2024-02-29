@@ -411,7 +411,7 @@ class _UploadFormState extends State<UploadForm> {
                   ),
                 ),
               );
-            } else if (state is UploadReadyInitial) {
+            } else if (state is UploadReady) {
               int numberOfFilesInBundles = state.numberOfFiles;
 
               logger.d(
@@ -687,7 +687,7 @@ class _UploadFormState extends State<UploadForm> {
                   ),
                 ],
               );
-            } else if (state is UploadReadyConfiguringLicense) {
+            } else if (state is UploadConfiguringLicense) {
               switch (state.licenseCategory) {
                 case LicenseCategory.udl:
                   final udlParamsForm =
@@ -709,8 +709,8 @@ class _UploadFormState extends State<UploadForm> {
                 default:
                   return const Text('Unsupported license category');
               }
-            } else if (state is UploadReadyReview ||
-                state is UploadReadyReviewWithLicense) {
+            } else if (state is UploadReview ||
+                state is UploadReviewWithLicense) {
               return ArDriveStandardModal(
                 title: 'UploadReadyReview(WithLicense)',
                 actions: [

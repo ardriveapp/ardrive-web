@@ -76,8 +76,8 @@ class UploadReadyToPrepare extends UploadState {
   List<Object> get props => [params];
 }
 
-/// [UploadReadyInitial] means that the upload is ready to be performed and is awaiting for user to proceed to review.
-class UploadReadyInitial extends UploadState {
+/// [UploadReady] means that the upload is ready to be performed and is awaiting the user to proceed.
+class UploadReady extends UploadState {
   final UploadPaymentMethodInfo paymentInfo;
   final bool isNextButtonEnabled;
   final bool isDragNDrop;
@@ -88,7 +88,7 @@ class UploadReadyInitial extends UploadState {
 
   final bool isArConnect;
 
-  UploadReadyInitial({
+  UploadReady({
     required this.paymentInfo,
     required this.uploadIsPublic,
     required this.isNextButtonEnabled,
@@ -99,7 +99,7 @@ class UploadReadyInitial extends UploadState {
   });
 
   // copyWith
-  UploadReadyInitial copyWith({
+  UploadReady copyWith({
     UploadPaymentMethodInfo? paymentInfo,
     UploadMethod? uploadMethod,
     bool? isNextButtonEnabled,
@@ -109,7 +109,7 @@ class UploadReadyInitial extends UploadState {
     UploadParams? params,
     bool? isArConnect,
   }) {
-    return UploadReadyInitial(
+    return UploadReady(
       isArConnect: isArConnect ?? this.isArConnect,
       uploadIsPublic: uploadIsPublic ?? this.uploadIsPublic,
       isDragNDrop: isDragNDrop ?? this.isDragNDrop,
@@ -130,11 +130,11 @@ class UploadReadyInitial extends UploadState {
   toString() => 'UploadReadyInitial { paymentInfo: $paymentInfo }';
 }
 
-/// [UploadReadyReview] means that the upload is being reviewed by the user and awaiting confirmation.
-class UploadReadyReview extends UploadState {
-  final UploadReadyInitial readyState;
+/// [UploadReview] means that the upload is being reviewed by the user and awaiting confirmation to begin upload.
+class UploadReview extends UploadState {
+  final UploadReady readyState;
 
-  UploadReadyReview({
+  UploadReview({
     required this.readyState,
   });
 
@@ -147,12 +147,12 @@ class UploadReadyReview extends UploadState {
   toString() => 'UploadReadyReview { paymentInfo: ${readyState.paymentInfo} }';
 }
 
-/// [UploadReadyConfiguringLicense] means that the upload is ready to be performed but license is being configured.
-class UploadReadyConfiguringLicense extends UploadState {
-  final UploadReadyInitial readyState;
+/// [UploadConfiguringLicense] means that the upload is ready to be performed but the user is configuring the license.
+class UploadConfiguringLicense extends UploadState {
+  final UploadReady readyState;
   final LicenseCategory licenseCategory;
 
-  UploadReadyConfiguringLicense({
+  UploadConfiguringLicense({
     required this.readyState,
     required this.licenseCategory,
   });
@@ -168,13 +168,13 @@ class UploadReadyConfiguringLicense extends UploadState {
       'UploadReadyConfiguringLicense { paymentInfo: ${readyState.paymentInfo} }';
 }
 
-/// [UploadReadyReviewWithLicense] means that the (licensed) upload is being reviewed by the user and awaiting confirmation.
-class UploadReadyReviewWithLicense extends UploadState {
-  final UploadReadyInitial readyState;
+/// [UploadReviewWithLicense] means that the upload + license is being reviewed by the user and awaiting confirmation to begin upload.
+class UploadReviewWithLicense extends UploadState {
+  final UploadReady readyState;
   final LicenseCategory licenseCategory;
   final LicenseState licenseState;
 
-  UploadReadyReviewWithLicense({
+  UploadReviewWithLicense({
     required this.readyState,
     required this.licenseCategory,
     required this.licenseState,
