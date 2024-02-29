@@ -693,7 +693,7 @@ class _UploadFormState extends State<UploadForm> {
                   final udlParamsForm =
                       context.watch<UploadCubit>().licenseUdlParamsForm;
                   return ConfiguringLicenseScreen(
-                    isNextButtonEnabled: udlParamsForm.valid,
+                    formGroup: udlParamsForm,
                     child: UdlParamsForm(
                       formGroup: udlParamsForm,
                       onChangeLicenseFee: () {},
@@ -703,14 +703,11 @@ class _UploadFormState extends State<UploadForm> {
                   final ccTypeForm =
                       context.watch<UploadCubit>().licenseCcTypeForm;
                   return ConfiguringLicenseScreen(
-                    isNextButtonEnabled: ccTypeForm.valid,
+                    formGroup: ccTypeForm,
                     child: CcTypeForm(formGroup: ccTypeForm),
                   );
                 default:
-                  return const ConfiguringLicenseScreen(
-                    isNextButtonEnabled: false,
-                    child: Text('Unsupported license category'),
-                  );
+                  return const Text('Unsupported license category');
               }
             } else if (state is UploadReadyReview ||
                 state is UploadReadyReviewWithLicense) {
@@ -1439,34 +1436,39 @@ class _UploadFormState extends State<UploadForm> {
 }
 
 class ConfiguringLicenseScreen extends StatelessWidget {
-  final bool isNextButtonEnabled;
+  final FormGroup formGroup;
   final Widget child;
 
   const ConfiguringLicenseScreen({
     super.key,
-    required this.isNextButtonEnabled,
+    required this.formGroup,
     required this.child,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ArDriveStandardModal(
-        title: 'UploadReadyConfiguringLicense',
-        content: child,
-        actions: [
-          ModalAction(
-            action: () => {
-              context.read<UploadCubit>().configuringLicenseBack(),
-            },
-            title: appLocalizationsOf(context).backEmphasized,
+    return ReactiveForm(
+        formGroup: formGroup,
+        child: ReactiveFormConsumer(
+          builder: (_, form, __) => ArDriveStandardModal(
+            title: 'UploadReadyConfiguringLicense',
+            content: child,
+            actions: [
+              ModalAction(
+                action: () => {
+                  context.read<UploadCubit>().configuringLicenseBack(),
+                },
+                title: appLocalizationsOf(context).backEmphasized,
+              ),
+              ModalAction(
+                isEnable: form.valid,
+                action: () {
+                  context.read<UploadCubit>().configuringLicenseNext();
+                },
+                title: appLocalizationsOf(context).nextEmphasized,
+              ),
+            ],
           ),
-          ModalAction(
-            isEnable: isNextButtonEnabled,
-            action: () {
-              context.read<UploadCubit>().configuringLicenseNext();
-            },
-            title: appLocalizationsOf(context).nextEmphasized,
-          ),
-        ]);
+        ));
   }
 }
