@@ -932,6 +932,7 @@ class _UploadFormState extends State<UploadForm> {
                       ],
               );
             } else if (state is UploadShowingWarning) {
+              // TODO: Fix use of startUpload
               return ArDriveStandardModal(
                 title: appLocalizationsOf(context).warningEmphasized,
                 content: SizedBox(
