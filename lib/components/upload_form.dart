@@ -413,8 +413,6 @@ class _UploadFormState extends State<UploadForm> {
               );
             } else if (state is UploadReady) {
               return StatsScreen(
-                title: appLocalizationsOf(context)
-                    .uploadNFiles(state.numberOfFiles),
                 readyState: state,
                 modalActions: [
                   ModalAction(
@@ -504,6 +502,7 @@ class _UploadFormState extends State<UploadForm> {
                   final udlParamsForm =
                       context.watch<UploadCubit>().licenseUdlParamsForm;
                   return ConfiguringLicenseScreen(
+                    readyState: state.readyState,
                     formGroup: udlParamsForm,
                     child: UdlParamsForm(
                       formGroup: udlParamsForm,
@@ -514,6 +513,7 @@ class _UploadFormState extends State<UploadForm> {
                   final ccTypeForm =
                       context.watch<UploadCubit>().licenseCcTypeForm;
                   return ConfiguringLicenseScreen(
+                    readyState: state.readyState,
                     formGroup: ccTypeForm,
                     child: CcTypeForm(formGroup: ccTypeForm),
                   );
@@ -526,8 +526,6 @@ class _UploadFormState extends State<UploadForm> {
                   ? state.readyState
                   : (state as UploadReviewWithLicense).readyState;
               return StatsScreen(
-                title: appLocalizationsOf(context)
-                    .uploadNFiles(readyState.numberOfFiles),
                 readyState: readyState,
                 modalActions: [
                   ModalAction(
@@ -1258,20 +1256,15 @@ class _UploadFormState extends State<UploadForm> {
 }
 
 class StatsScreen extends StatefulWidget {
-  final String title;
   final UploadReady readyState;
   final List<ModalAction> modalActions;
   final List<Widget> children;
 
-  final double width;
-
   const StatsScreen({
     super.key,
-    required this.title,
     required this.readyState,
     required this.modalActions,
     required this.children,
-    this.width = 408,
   });
 
   @override
@@ -1324,162 +1317,148 @@ class _StatsScreenState extends State<StatsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ArDriveStandardModal(
-      width: widget.width,
-      title: widget.title,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          files == null
-              ? const Center(child: CircularProgressIndicator())
-              : Align(
-                  alignment: Alignment.topCenter,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 256),
-                    child: ArDriveScrollBar(
+    return UploadReadyModalBase(
+      readyState: widget.readyState,
+      actions: widget.modalActions,
+      children: [
+        files == null
+            ? const Center(child: CircularProgressIndicator())
+            : Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 256),
+                  child: ArDriveScrollBar(
+                      controller: _scrollController,
+                      alwaysVisible: true,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.only(top: 0),
                         controller: _scrollController,
-                        alwaysVisible: true,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.only(top: 0),
-                          controller: _scrollController,
-                          shrinkWrap: true,
-                          itemCount: files?.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            final file = files![index];
-                            if (file is FileV2UploadHandle) {
-                              return Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      '${file.entity.name!} ',
-                                      style: ArDriveTypography.body.smallBold(
-                                        color: ArDriveTheme.of(context)
-                                            .themeData
-                                            .colors
-                                            .themeFgSubtle,
-                                      ),
-                                    ),
-                                  ),
-                                  Text(
-                                    filesize(file.size),
-                                    style: ArDriveTypography.body.smallRegular(
+                        shrinkWrap: true,
+                        itemCount: files!.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          final file = files![index];
+                          if (file is FileV2UploadHandle) {
+                            return Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    '${file.entity.name!} ',
+                                    style: ArDriveTypography.body.smallBold(
                                       color: ArDriveTheme.of(context)
                                           .themeData
                                           .colors
-                                          .themeFgMuted,
+                                          .themeFgSubtle,
                                     ),
                                   ),
-                                ],
-                              );
-                            } else {
-                              final bundle = file as BundleUploadHandle;
+                                ),
+                                Text(
+                                  filesize(file.size),
+                                  style: ArDriveTypography.body.smallRegular(
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeFgMuted,
+                                  ),
+                                ),
+                              ],
+                            );
+                          } else {
+                            final bundle = file as BundleUploadHandle;
 
-                              return ListView(
-                                  padding: EdgeInsets.zero,
-                                  shrinkWrap: true,
-                                  children: bundle.fileEntities.map((e) {
-                                    return Row(
-                                      children: [
-                                        Flexible(
-                                          child: Text(
-                                            '${e.name!} ',
-                                            style: ArDriveTypography.body
-                                                .smallBold(
-                                              color: ArDriveTheme.of(context)
-                                                  .themeData
-                                                  .colors
-                                                  .themeFgSubtle,
-                                            ),
-                                          ),
-                                        ),
-                                        Text(
-                                          filesize(e.size),
-                                          style: ArDriveTypography.body
-                                              .smallRegular(
+                            return ListView(
+                                padding: EdgeInsets.zero,
+                                shrinkWrap: true,
+                                children: bundle.fileEntities.map((e) {
+                                  return Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          '${e.name!} ',
+                                          style:
+                                              ArDriveTypography.body.smallBold(
                                             color: ArDriveTheme.of(context)
                                                 .themeData
                                                 .colors
-                                                .themeFgMuted,
+                                                .themeFgSubtle,
                                           ),
                                         ),
-                                      ],
-                                    );
-                                  }).toList());
-                            }
-                          },
-                        )),
-                  ),
+                                      ),
+                                      Text(
+                                        filesize(e.size),
+                                        style:
+                                            ArDriveTypography.body.smallRegular(
+                                          color: ArDriveTheme.of(context)
+                                              .themeData
+                                              .colors
+                                              .themeFgMuted,
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }).toList());
+                          }
+                        },
+                      )),
                 ),
-          const SizedBox(height: 8),
-          RichText(
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: 'Size: ',
-                  style: ArDriveTypography.body.buttonNormalRegular(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgOnDisabled,
-                  ),
-                ),
-                TextSpan(
-                  text: filesize(
-                    widget.readyState.paymentInfo.totalSize,
-                  ),
-                  style: ArDriveTypography.body
-                      .buttonNormalBold(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeFgDefault)
-                      .copyWith(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ),
-          Text.rich(
-            TextSpan(
-              children: [
-                if (widget.readyState.paymentInfo.isFreeThanksToTurbo) ...[
-                  TextSpan(
-                    text: appLocalizationsOf(context).freeTurboTransaction,
-                    style: ArDriveTypography.body.buttonNormalRegular(),
-                  ),
-                ]
-              ],
-              style: ArDriveTypography.body.buttonNormalRegular(),
-            ),
-          ),
-          const Divider(
-            height: 20,
-          ),
-          if (widget.readyState.uploadIsPublic) ...{
-            Text(
-              appLocalizationsOf(context).filesWillBeUploadedPublicly(
-                widget.readyState.numberOfFiles,
               ),
-              style: ArDriveTypography.body.buttonNormalRegular(),
-            ),
-            const SizedBox(
-              height: 8,
-            ),
-          },
-          ...widget.children,
-        ],
-      ),
-      actions: widget.modalActions,
+        const SizedBox(height: 8),
+        RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: 'Size: ',
+                style: ArDriveTypography.body.buttonNormalRegular(
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeFgOnDisabled,
+                ),
+              ),
+              TextSpan(
+                text: filesize(
+                  widget.readyState.paymentInfo.totalSize,
+                ),
+                style: ArDriveTypography.body
+                    .buttonNormalBold(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDefault)
+                    .copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ),
+        Text.rich(
+          TextSpan(
+            children: [
+              if (widget.readyState.paymentInfo.isFreeThanksToTurbo) ...[
+                TextSpan(
+                  text: appLocalizationsOf(context).freeTurboTransaction,
+                  style: ArDriveTypography.body.buttonNormalRegular(),
+                ),
+              ]
+            ],
+            style: ArDriveTypography.body.buttonNormalRegular(),
+          ),
+        ),
+        const Divider(
+          height: 20,
+        ),
+        ...widget.children,
+      ],
     );
   }
 }
 
 class ConfiguringLicenseScreen extends StatelessWidget {
+  final UploadReady readyState;
   final FormGroup formGroup;
   final Widget child;
 
   const ConfiguringLicenseScreen({
     super.key,
+    required this.readyState,
     required this.formGroup,
     required this.child,
   });
@@ -1489,9 +1468,8 @@ class ConfiguringLicenseScreen extends StatelessWidget {
     return ReactiveForm(
         formGroup: formGroup,
         child: ReactiveFormConsumer(
-          builder: (_, form, __) => ArDriveStandardModal(
-            title: 'UploadReadyConfiguringLicense',
-            content: child,
+          builder: (_, form, __) => UploadReadyModalBase(
+            readyState: readyState,
             actions: [
               ModalAction(
                 action: () => {
@@ -1507,7 +1485,40 @@ class ConfiguringLicenseScreen extends StatelessWidget {
                 title: appLocalizationsOf(context).nextEmphasized,
               ),
             ],
+            children: [child],
           ),
         ));
+  }
+}
+
+class UploadReadyModalBase extends StatelessWidget {
+  final UploadReady readyState;
+  final List<ModalAction> actions;
+  final List<Widget> children;
+
+  final double width;
+
+  const UploadReadyModalBase({
+    super.key,
+    required this.readyState,
+    required this.actions,
+    required this.children,
+    this.width = 408,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ArDriveStandardModal(
+      title: appLocalizationsOf(context).uploadNFiles(readyState.numberOfFiles),
+      // TODO: Create "subtitle"
+      // TODO: Localize
+      description: 'Files will be uploaded publicly.',
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ),
+      actions: actions,
+    );
   }
 }
