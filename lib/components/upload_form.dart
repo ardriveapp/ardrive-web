@@ -17,6 +17,7 @@ import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
+import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
@@ -39,6 +40,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:pst/pst.dart';
+import 'package:reactive_forms/reactive_forms.dart';
 
 import '../blocs/upload/upload_handles/bundle_upload_handle.dart';
 import '../pages/drive_detail/components/drive_explorer_item_tile.dart';
@@ -618,6 +620,53 @@ class _UploadFormState extends State<UploadForm> {
                               .setUploadMethod(method, info, canUpload);
                         },
                         params: state.params,
+                      ),
+                    ),
+                    SizedBox(
+                      child: ReactiveForm(
+                        formGroup:
+                            context.watch<UploadCubit>().licenseCategoryForm,
+                        child: ReactiveDropdownField<LicenseCategory?>(
+                          alignment: AlignmentDirectional.centerStart,
+                          isExpanded: true,
+                          formControlName: 'licenseCategory',
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            label: Text(
+                              'License',
+                              // TODO: Localize
+                              // appLocalizationsOf(context).licenseType,
+                              style: ArDriveTheme.of(context)
+                                  .themeData
+                                  .textFieldTheme
+                                  .inputTextStyle
+                                  .copyWith(
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colors
+                                        .themeFgDisabled,
+                                    fontSize: 16,
+                                  ),
+                            ),
+                            focusedBorder: InputBorder.none,
+                          ),
+                          showErrors: (control) =>
+                              control.dirty && control.invalid,
+                          validationMessages:
+                              kValidationMessages(appLocalizationsOf(context)),
+                          items: [null, ...LicenseCategory.values].map(
+                            (value) {
+                              return DropdownMenuItem(
+                                value: value,
+                                child: Text(
+                                  value == null
+                                      ? 'None'
+                                      : '${licenseCategoryNames[value]}',
+                                ),
+                              );
+                            },
+                          ).toList(),
+                        ),
                       ),
                     ),
                   ],

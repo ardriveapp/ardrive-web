@@ -26,6 +26,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pst/pst.dart';
+import 'package:reactive_forms/reactive_forms.dart';
 
 import 'enums/conflicting_files_actions.dart';
 
@@ -81,6 +82,20 @@ class UploadCubit extends Cubit<UploadState> {
       ));
     }
   }
+
+  final _licenseCategoryForm = FormGroup({
+    'licenseCategory': FormControl<LicenseCategory?>(
+      validators: [],
+      value: null,
+    ),
+  });
+  FormGroup get licenseCategoryForm => _licenseCategoryForm;
+
+  LicenseCategory? get licenseCategory =>
+      licenseCategoryForm.control('licenseCategory').value;
+
+  LicenseMeta? _licenseMeta;
+  LicenseParams? _licenseParams;
 
   List<UploadFile> files = [];
   IOFolder? folder;
