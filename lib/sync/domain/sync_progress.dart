@@ -1,5 +1,3 @@
-part of 'sync_cubit.dart';
-
 abstract class LinearProgress {
   double get progress;
 }

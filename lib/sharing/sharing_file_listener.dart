@@ -1,10 +1,10 @@
-import 'package:ardrive/blocs/sync/sync_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/sharing/blocs/sharing_file_bloc.dart';
 import 'package:ardrive/sharing/folder_selector/folder_selector.dart';
 import 'package:ardrive/sharing/folder_selector/folder_selector_bloc.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
