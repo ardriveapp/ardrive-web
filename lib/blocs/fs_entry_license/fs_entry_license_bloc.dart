@@ -71,12 +71,12 @@ class FsEntryLicenseBloc
   final List<String> errorLog = [];
 
   /// Form getters
-  FormGroup get selectForm => _selectForm;
+  FormGroup get categoryForm => _categoryForm;
   FormGroup get udlParamsForm => _udlParamsForm;
   FormGroup get ccTypeForm => _ccTypeForm;
 
   // Forms
-  final _selectForm = FormGroup({
+  final _categoryForm = FormGroup({
     'licenseCategory': FormControl<LicenseCategory>(
       validators: [Validators.required],
       value: LicenseCategory.udl,
@@ -127,7 +127,7 @@ class FsEntryLicenseBloc
     FsEntryLicenseSelect event,
     Emitter<FsEntryLicenseState> emit,
   ) async {
-    _selectedLicenseCategory = selectForm.control('licenseCategory').value;
+    _selectedLicenseCategory = categoryForm.control('licenseCategory').value;
     emit(const FsEntryLicenseConfiguring());
   }
 

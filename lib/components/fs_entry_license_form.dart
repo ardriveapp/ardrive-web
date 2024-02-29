@@ -210,7 +210,8 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                   const Divider(height: 24),
                   SizedBox(
                     child: ReactiveForm(
-                      formGroup: context.watch<FsEntryLicenseBloc>().selectForm,
+                      formGroup:
+                          context.watch<FsEntryLicenseBloc>().categoryForm,
                       child: ReactiveDropdownField(
                         alignment: AlignmentDirectional.centerStart,
                         isExpanded: true,
