@@ -86,13 +86,16 @@ class UploadCubit extends Cubit<UploadState> {
 
   void initialScreenNext() {
     if (state is UploadReadyInitial) {
-      final uploadReady = state as UploadReadyInitial;
+      final readyState = state as UploadReadyInitial;
       if (licenseCategory != null) {
-        emit(uploadReady.configureLicense(
+        emit(UploadReadyConfiguringLicense(
+          readyState: readyState,
           licenseCategory: licenseCategory!,
         ));
       } else {
-        emit(uploadReady.noLicenseReview());
+        emit(UploadReadyReview(
+          readyState: readyState,
+        ));
       }
     }
   }

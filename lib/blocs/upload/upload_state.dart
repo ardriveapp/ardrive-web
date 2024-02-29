@@ -120,21 +120,6 @@ class UploadReadyInitial extends UploadState {
     );
   }
 
-  UploadReadyReview noLicenseReview() {
-    return UploadReadyReview(
-      readyState: this,
-    );
-  }
-
-  UploadReadyConfiguringLicense configureLicense({
-    required LicenseCategory licenseCategory,
-  }) {
-    return UploadReadyConfiguringLicense(
-      readyState: this,
-      licenseCategory: licenseCategory,
-    );
-  }
-
   @override
   List<Object?> get props => [
         paymentInfo,
@@ -152,10 +137,6 @@ class UploadReadyReview extends UploadState {
   UploadReadyReview({
     required this.readyState,
   });
-
-  UploadReadyInitial cancelReview() {
-    return readyState;
-  }
 
   @override
   List<Object?> get props => [
@@ -175,20 +156,6 @@ class UploadReadyConfiguringLicense extends UploadState {
     required this.readyState,
     required this.licenseCategory,
   });
-
-  UploadReadyInitial cancelConfiguring() {
-    return readyState;
-  }
-
-  UploadReadyReviewWithLicense addLicense({
-    required LicenseState licenseState,
-  }) {
-    return UploadReadyReviewWithLicense(
-      readyState: readyState,
-      licenseCategory: licenseCategory,
-      licenseState: licenseState,
-    );
-  }
 
   @override
   List<Object?> get props => [
@@ -212,13 +179,6 @@ class UploadReadyReviewWithLicense extends UploadState {
     required this.licenseCategory,
     required this.licenseState,
   });
-
-  UploadReadyConfiguringLicense reconfigureLicense() {
-    return UploadReadyConfiguringLicense(
-      readyState: readyState,
-      licenseCategory: licenseCategory,
-    );
-  }
 
   @override
   List<Object?> get props => [
