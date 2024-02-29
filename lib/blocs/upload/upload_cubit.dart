@@ -5,7 +5,6 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
-import 'package:ardrive/components/license/udl_params_form.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/file_entity.dart';

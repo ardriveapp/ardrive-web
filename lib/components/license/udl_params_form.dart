@@ -157,23 +157,3 @@ class _UdlParamsFormState extends State<UdlParamsForm> {
         ));
   }
 }
-
-UdlLicenseParams udlFormToLicenseParams(FormGroup udlForm) {
-  final String? licenseFeeAmountString =
-      udlForm.control('licenseFeeAmount').value;
-  final double? licenseFeeAmount = licenseFeeAmountString == null
-      ? null
-      : double.tryParse(licenseFeeAmountString);
-
-  final UdlCurrency licenseFeeCurrency =
-      udlForm.control('licenseFeeCurrency').value;
-  final UdlCommercialUse commercialUse = udlForm.control('commercialUse').value;
-  final UdlDerivation derivations = udlForm.control('derivations').value;
-
-  return UdlLicenseParams(
-    licenseFeeAmount: licenseFeeAmount,
-    licenseFeeCurrency: licenseFeeCurrency,
-    commercialUse: commercialUse,
-    derivations: derivations,
-  );
-}
