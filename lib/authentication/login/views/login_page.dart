@@ -8,10 +8,13 @@ import 'package:ardrive/authentication/login/views/tutorials_view.dart';
 import 'package:ardrive/authentication/login/views/wallet_created_view.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/app_version_widget.dart';
+import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
+import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/authentication/biometric_permission_dialog.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -59,9 +62,15 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final arweaveService = context.read<ArweaveService>();
+    final downloadService = DownloadService(arweaveService);
+
     final loginBloc = LoginBloc(
       arConnectService: ArConnectService(),
       ethereumProviderService: EthereumProviderService(),
+      turboUploadService: context.read<TurboUploadService>(),
+      arweaveService: arweaveService,
+      downloadService: downloadService,
       arDriveAuth: context.read<ArDriveAuth>(),
       userRepository: context.read<UserRepository>(),
     )..add(

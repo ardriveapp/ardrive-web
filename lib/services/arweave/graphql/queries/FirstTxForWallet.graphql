@@ -1,0 +1,9 @@
+query FirstTxForWallet($owner: String!) {
+  transactions(owners: [$owner], first: 1) {
+    edges {
+      node {
+        id
+      }
+    }
+  }
+}

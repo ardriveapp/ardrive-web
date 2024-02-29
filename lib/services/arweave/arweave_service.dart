@@ -1061,6 +1061,20 @@ class ArweaveService {
     return transactionConfirmations;
   }
 
+  Future<String?> getFirstTxForWallet(String owner) async {
+    final firstTxQuery = await _graphQLRetry.execute(
+      FirstTxForWalletQuery(
+        variables: FirstTxForWalletArguments(owner: owner),
+      ),
+    );
+
+    if (firstTxQuery.data!.transactions.edges.isEmpty) {
+      return null;
+    }
+
+    return firstTxQuery.data!.transactions.edges.first.node.id;
+  }
+
   /// Creates and signs a [Transaction] representing the provided entity.
   ///
   /// Optionally provide a [SecretKey] to encrypt the entity data.

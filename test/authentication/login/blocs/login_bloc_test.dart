@@ -1,7 +1,9 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
+import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -18,6 +20,10 @@ void main() {
   late ArConnectService mockArConnectService;
   late EthereumProviderService mockEthereumProviderService;
   late UserRepository mockUserRepository;
+  late TurboUploadService mockTurboUploadService;
+
+  late DownloadService mockDownloadService;
+  late ArweaveService mockArweaveService;
 
   final wallet = getTestWallet();
 
@@ -28,7 +34,10 @@ void main() {
     mockArDriveAuth = MockArDriveAuth();
     mockArConnectService = MockArConnectService();
     mockEthereumProviderService = MockEthereumProviderService();
+    mockTurboUploadService = MockTurboUploadService();
     mockUserRepository = MockUserRepository();
+    mockDownloadService = MockDownloadService();
+    mockArweaveService = MockArweaveService();
   });
 
   group('AddWalletFile', () {
@@ -44,6 +53,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -75,6 +87,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -108,6 +123,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -157,6 +175,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -184,6 +205,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -217,6 +241,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -254,6 +281,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -296,6 +326,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -319,6 +352,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -354,6 +390,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -381,6 +420,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -424,6 +466,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -449,6 +494,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -498,6 +546,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -527,6 +578,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -564,6 +618,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -597,6 +654,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -646,6 +706,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -672,6 +735,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -706,6 +772,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -744,6 +813,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -769,6 +841,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -804,6 +879,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -852,6 +930,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -879,6 +960,9 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },

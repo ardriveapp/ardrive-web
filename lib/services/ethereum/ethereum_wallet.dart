@@ -9,9 +9,13 @@ import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
 
 abstract class EthereumWallet extends Wallet {
-  Future<String> deriveArdriveSeedphrase(int chainId, String password) async {
+  /// Returns 12-word seed phrase derived from first half of message hash and full message hash.
+  Future<(String, Uint8List)> deriveArdriveSeedphrase(
+      int chainId, String password) async {
     final address = await getAddress();
-    final messageText = '$chainId:$address:$password';
+    // final messageText = '$chainId:$address:$password';
+    // FIXME: using 'test:' prefix until scheme is fully finalized
+    final messageText = 'test:$chainId:$address:$password';
     final messageHash = await sha256.hash(utf8.encode(messageText));
     final messageHex = hex.encode(messageHash.bytes);
 
@@ -28,7 +32,7 @@ abstract class EthereumWallet extends Wallet {
 
     final bip39Mnemonnic = bip39.entropyToMnemonic(signatureHex);
 
-    return bip39Mnemonnic;
+    return (bip39Mnemonnic, Uint8List.fromList(signatureSha256.bytes));
   }
 
   // RsaPublicKey is not applicable for Ethereum
