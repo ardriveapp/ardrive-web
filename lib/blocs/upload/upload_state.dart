@@ -127,7 +127,7 @@ class UploadReady extends UploadState {
       ];
 
   @override
-  toString() => 'UploadReadyInitial { paymentInfo: $paymentInfo }';
+  toString() => 'UploadReady { paymentInfo: $paymentInfo }';
 }
 
 /// [UploadReview] means that the upload is being reviewed by the user and awaiting confirmation to begin upload.
@@ -144,7 +144,7 @@ class UploadReview extends UploadState {
       ];
 
   @override
-  toString() => 'UploadReadyReview { paymentInfo: ${readyState.paymentInfo} }';
+  toString() => 'UploadReview { paymentInfo: ${readyState.paymentInfo} }';
 }
 
 /// [UploadConfiguringLicense] means that the upload is ready to be performed but the user is configuring the license.
@@ -165,7 +165,7 @@ class UploadConfiguringLicense extends UploadState {
 
   @override
   toString() =>
-      'UploadReadyConfiguringLicense { paymentInfo: ${readyState.paymentInfo} }';
+      'UploadConfiguringLicense { paymentInfo: ${readyState.paymentInfo} }';
 }
 
 /// [UploadReviewWithLicense] means that the upload + license is being reviewed by the user and awaiting confirmation to begin upload.
@@ -189,7 +189,7 @@ class UploadReviewWithLicense extends UploadState {
 
   @override
   toString() =>
-      'UploadReadyReviewWithLicense { paymentInfo: ${readyState.paymentInfo} }';
+      'UploadReviewWithLicense { paymentInfo: ${readyState.paymentInfo} }';
 }
 
 class UploadInProgress extends UploadState {
