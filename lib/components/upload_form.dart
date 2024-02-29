@@ -691,7 +691,7 @@ class _UploadFormState extends State<UploadForm> {
               switch (state.licenseCategory) {
                 case LicenseCategory.udl:
                   final udlParamsForm =
-                      context.read<UploadCubit>().licenseUdlParamsForm;
+                      context.watch<UploadCubit>().licenseUdlParamsForm;
                   return ConfiguringLicenseScreen(
                     isNextButtonEnabled: udlParamsForm.valid,
                     child: UdlParamsForm(
@@ -701,7 +701,7 @@ class _UploadFormState extends State<UploadForm> {
                   );
                 case LicenseCategory.cc:
                   final ccTypeForm =
-                      context.read<UploadCubit>().licenseCcTypeForm;
+                      context.watch<UploadCubit>().licenseCcTypeForm;
                   return ConfiguringLicenseScreen(
                     isNextButtonEnabled: ccTypeForm.valid,
                     child: CcTypeForm(formGroup: ccTypeForm),
