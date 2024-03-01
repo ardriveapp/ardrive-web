@@ -84,21 +84,23 @@ class UploadCubit extends Cubit<UploadState> {
     }
   }
 
-  void initialScreenNext() {
+  void initialScreenUpload() {
     if (state is UploadReady) {
       final readyState = state as UploadReady;
-      final licenseCategory =
-          licenseCategoryForm.control('licenseCategory').value;
-      if (licenseCategory != null) {
-        emit(UploadConfiguringLicense(
-          readyState: readyState,
-          licenseCategory: licenseCategory!,
-        ));
-      } else {
-        emit(UploadReview(
-          readyState: readyState,
-        ));
-      }
+      startUpload(
+        uploadPlanForAr: readyState.paymentInfo.uploadPlanForAR!,
+        uploadPlanForTurbo: readyState.paymentInfo.uploadPlanForTurbo,
+      );
+    }
+  }
+
+  void initialScreenNext({required LicenseCategory licenseCategory}) {
+    if (state is UploadReady) {
+      final readyState = state as UploadReady;
+      emit(UploadConfiguringLicense(
+        readyState: readyState,
+        licenseCategory: licenseCategory,
+      ));
     }
   }
 
@@ -139,11 +141,7 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   void reviewBack() {
-    if (state is UploadReview) {
-      final review = state as UploadReview;
-      final UploadReady prevState = review.readyState;
-      emit(prevState);
-    } else if (state is UploadReviewWithLicense) {
+    if (state is UploadReviewWithLicense) {
       final reviewWithLicense = state as UploadReviewWithLicense;
       final UploadReady readyState = reviewWithLicense.readyState;
       final licenseCategory = reviewWithLicense.licenseCategory;
@@ -156,13 +154,6 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   void reviewUpload() {
-    if (state is UploadReview) {
-      final review = state as UploadReview;
-      startUpload(
-        uploadPlanForAr: review.readyState.paymentInfo.uploadPlanForAR!,
-        uploadPlanForTurbo: review.readyState.paymentInfo.uploadPlanForTurbo,
-      );
-    }
     if (state is UploadReviewWithLicense) {
       final reviewWithLicense = state as UploadReviewWithLicense;
       startUpload(

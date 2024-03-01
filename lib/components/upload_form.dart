@@ -15,7 +15,6 @@ import 'package:ardrive/components/file_picker_modal.dart';
 import 'package:ardrive/components/license/cc_type_form.dart';
 import 'package:ardrive/components/license/udl_params_form.dart';
 import 'package:ardrive/components/license_details_popover.dart';
-import 'package:ardrive/components/license_summary.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
@@ -416,87 +415,114 @@ class _UploadFormState extends State<UploadForm> {
                 ),
               );
             } else if (state is UploadReady) {
-              return StatsScreen(
-                readyState: state,
-                // Don't show on first screen?
-                hasCloseButton: false,
-                modalActions: [
-                  ModalAction(
-                    action: () => Navigator.of(context).pop(false),
-                    title: appLocalizationsOf(context).cancelEmphasized,
-                  ),
-                  ModalAction(
-                    isEnable: state.isNextButtonEnabled,
-                    action: () {
-                      context.read<UploadCubit>().initialScreenNext();
-                    },
-                    title: appLocalizationsOf(context).nextEmphasized,
-                  ),
-                ],
-                children: [
-                  RepositoryProvider.value(
-                    value: context.read<ArDriveUploadPreparationManager>(),
-                    child: UploadPaymentMethodView(
-                      onError: () {
-                        context.read<UploadCubit>().emitErrorFromPreparation();
-                      },
-                      onTurboTopupSucess: () {
-                        context.read<UploadCubit>().startUploadPreparation(
-                              isRetryingToPayWithTurbo: true,
-                            );
-                      },
-                      onUploadMethodChanged: (method, info, canUpload) {
-                        context
-                            .read<UploadCubit>()
-                            .setUploadMethod(method, info, canUpload);
-                      },
-                      params: state.params,
-                    ),
-                  ),
-                  SizedBox(
-                    child: ReactiveForm(
-                      formGroup:
-                          context.watch<UploadCubit>().licenseCategoryForm,
-                      child: ReactiveDropdownField<LicenseCategory?>(
-                        alignment: AlignmentDirectional.centerStart,
-                        isExpanded: true,
-                        formControlName: 'licenseCategory',
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          label: Text(
-                            'License',
-                            // TODO: Localize
-                            // appLocalizationsOf(context).licenseType,
-                            style: ArDriveTheme.of(context)
-                                .themeData
-                                .textFieldTheme
-                                .inputTextStyle
-                                .copyWith(
-                                  color: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeFgDisabled,
-                                  fontSize: 16,
-                                ),
-                          ),
-                          focusedBorder: InputBorder.none,
-                        ),
-                        showErrors: (control) =>
-                            control.dirty && control.invalid,
-                        validationMessages:
-                            kValidationMessages(appLocalizationsOf(context)),
-                        items: [null, ...LicenseCategory.values].map(
-                          (value) {
-                            return DropdownMenuItem(
-                              value: value,
-                              child: Text(licenseCategoryNames[value] ?? '---'),
-                            );
-                          },
-                        ).toList(),
+              return ReactiveForm(
+                formGroup: context.watch<UploadCubit>().licenseCategoryForm,
+                child: ReactiveFormConsumer(builder: (_, form, __) {
+                  final LicenseCategory? licenseCategory =
+                      form.control('licenseCategory').value;
+                  return StatsScreen(
+                    readyState: state,
+                    // Don't show on first screen?
+                    hasCloseButton: false,
+                    modalActions: [
+                      ModalAction(
+                        action: () => Navigator.of(context).pop(false),
+                        title: appLocalizationsOf(context).cancelEmphasized,
                       ),
-                    ),
-                  ),
-                ],
+                      licenseCategory == null
+                          ? ModalAction(
+                              isEnable: state.isNextButtonEnabled,
+                              action: () {
+                                context
+                                    .read<UploadCubit>()
+                                    .initialScreenUpload();
+                              },
+                              title:
+                                  appLocalizationsOf(context).uploadEmphasized,
+                            )
+                          : ModalAction(
+                              isEnable: state.isNextButtonEnabled,
+                              action: () {
+                                context.read<UploadCubit>().initialScreenNext(
+                                      licenseCategory: licenseCategory,
+                                    );
+                              },
+                              title:
+                                  // TODO: Localize
+                                  // appLocalizationsOf(context).configureEmphasized,
+                                  'CONFIGURE',
+                            ),
+                    ],
+                    children: [
+                      RepositoryProvider.value(
+                        value: context.read<ArDriveUploadPreparationManager>(),
+                        child: UploadPaymentMethodView(
+                          onError: () {
+                            context
+                                .read<UploadCubit>()
+                                .emitErrorFromPreparation();
+                          },
+                          onTurboTopupSucess: () {
+                            context.read<UploadCubit>().startUploadPreparation(
+                                  isRetryingToPayWithTurbo: true,
+                                );
+                          },
+                          onUploadMethodChanged: (method, info, canUpload) {
+                            context
+                                .read<UploadCubit>()
+                                .setUploadMethod(method, info, canUpload);
+                          },
+                          params: state.params,
+                        ),
+                      ),
+                      SizedBox(
+                        child: ReactiveForm(
+                          formGroup:
+                              context.watch<UploadCubit>().licenseCategoryForm,
+                          child: ReactiveDropdownField<LicenseCategory?>(
+                            alignment: AlignmentDirectional.centerStart,
+                            isExpanded: true,
+                            formControlName: 'licenseCategory',
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              label: Text(
+                                'License',
+                                // TODO: Localize
+                                // appLocalizationsOf(context).licenseType,
+                                style: ArDriveTheme.of(context)
+                                    .themeData
+                                    .textFieldTheme
+                                    .inputTextStyle
+                                    .copyWith(
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colors
+                                          .themeFgDisabled,
+                                      fontSize: 16,
+                                    ),
+                              ),
+                              focusedBorder: InputBorder.none,
+                            ),
+                            showErrors: (control) =>
+                                control.dirty && control.invalid,
+                            validationMessages: kValidationMessages(
+                                appLocalizationsOf(context)),
+                            items: [null, ...LicenseCategory.values].map(
+                              (value) {
+                                return DropdownMenuItem(
+                                  value: value,
+                                  child: Text(
+                                    licenseCategoryNames[value] ?? '---',
+                                  ),
+                                );
+                              },
+                            ).toList(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }),
               );
             } else if (state is UploadConfiguringLicense) {
               final headingText =
@@ -526,11 +552,8 @@ class _UploadFormState extends State<UploadForm> {
                 default:
                   return const Text('Unsupported license category');
               }
-            } else if (state is UploadReview ||
-                state is UploadReviewWithLicense) {
-              final readyState = (state is UploadReview)
-                  ? state.readyState
-                  : (state as UploadReviewWithLicense).readyState;
+            } else if (state is UploadReviewWithLicense) {
+              final readyState = state.readyState;
               return StatsScreen(
                 readyState: readyState,
                 modalActions: [
@@ -548,18 +571,7 @@ class _UploadFormState extends State<UploadForm> {
                   ),
                 ],
                 children: [
-                  (state is UploadReviewWithLicense)
-                      ? LicenseReviewInfo(licenseState: state.licenseState)
-                      : LicenseSummary(
-                          licenseState: const LicenseState(
-                            meta: LicenseMeta(
-                              licenseType: LicenseType.unknown,
-                              licenseDefinitionTxId: '',
-                              name: 'None',
-                              shortName: '-',
-                            ),
-                          ),
-                        )
+                  LicenseReviewInfo(licenseState: state.licenseState),
                 ],
               );
             } else if (state is UploadSigningInProgress) {
