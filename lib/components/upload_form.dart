@@ -1605,7 +1605,7 @@ class LicenseReviewInfo extends StatelessWidget {
             ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 300),
                 child: licenseState.params?.hasParams == true
-                    ? LicenseDetailsWithPopoverButton(
+                    ? LicenseNameWithPopoverButton(
                         licenseState: licenseState,
                         anchor: const Aligned(
                           follower: Alignment.bottomLeft,
@@ -1656,23 +1656,23 @@ class LicenseReviewInfo extends StatelessWidget {
   }
 }
 
-class LicenseDetailsWithPopoverButton extends StatefulWidget {
+class LicenseNameWithPopoverButton extends StatefulWidget {
   final LicenseState licenseState;
   final Aligned anchor;
 
-  const LicenseDetailsWithPopoverButton({
+  const LicenseNameWithPopoverButton({
     super.key,
     required this.licenseState,
     required this.anchor,
   });
 
   @override
-  State<LicenseDetailsWithPopoverButton> createState() =>
-      _LicenseDetailsWithPopoverButtonState();
+  State<LicenseNameWithPopoverButton> createState() =>
+      _LicenseNameWithPopoverButtonState();
 }
 
-class _LicenseDetailsWithPopoverButtonState
-    extends State<LicenseDetailsWithPopoverButton> {
+class _LicenseNameWithPopoverButtonState
+    extends State<LicenseNameWithPopoverButton> {
   bool _showLicenseDetailsCard = false;
 
   @override
