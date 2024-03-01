@@ -1341,7 +1341,7 @@ class _StatsScreenState extends State<StatsScreen> {
             : Align(
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 256),
+                  constraints: const BoxConstraints(maxHeight: 120),
                   child: ArDriveScrollBar(
                       controller: _scrollController,
                       alwaysVisible: true,
