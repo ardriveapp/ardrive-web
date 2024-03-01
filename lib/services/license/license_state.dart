@@ -68,6 +68,8 @@ class LicenseMeta extends Equatable {
 abstract class LicenseParams extends Equatable {
   Map<String, String> toAdditionalTags() => {};
 
+  bool get hasParams => toAdditionalTags().isNotEmpty;
+
   @override
   List<Object?> get props => [toAdditionalTags()];
 }

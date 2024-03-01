@@ -1591,25 +1591,24 @@ class LicenseReviewInfo extends StatelessWidget {
         Row(
           children: [
             ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 300),
-              child: licenseState.params == null
-                  ? Text(
-                      licenseState.meta.nameWithShortName,
-                      style: ArDriveTypography.body.buttonLargeRegular(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDefault,
-                      ),
-                    )
-                  : LicenseDetailsWithPopoverButton(
-                      licenseState: licenseState,
-                      anchor: const Aligned(
-                        follower: Alignment.bottomLeft,
-                        target: Alignment.topLeft,
-                      ),
-                    ),
-            ),
+                constraints: const BoxConstraints(maxWidth: 300),
+                child: licenseState.params?.hasParams == true
+                    ? LicenseDetailsWithPopoverButton(
+                        licenseState: licenseState,
+                        anchor: const Aligned(
+                          follower: Alignment.bottomLeft,
+                          target: Alignment.topLeft,
+                        ),
+                      )
+                    : Text(
+                        licenseState.meta.nameWithShortName,
+                        style: ArDriveTypography.body.buttonLargeRegular(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgDefault,
+                        ),
+                      )),
             if (licenseState.meta.licenseType != LicenseType.unknown)
               Text.rich(
                 TextSpan(
