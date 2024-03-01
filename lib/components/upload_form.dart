@@ -822,7 +822,10 @@ class _UploadFormState extends State<UploadForm> {
               }
 
               return ArDriveStandardModal(
-                width: kLargeDialogWidth,
+                hasCloseButton: true,
+                width: state.failedTasks != null
+                    ? kLargeDialogWidth
+                    : kMediumDialogWidth,
                 title: 'Problem with Upload',
                 description: appLocalizationsOf(context).yourUploadFailed,
                 content: state.failedTasks != null
