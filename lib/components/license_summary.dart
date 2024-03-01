@@ -7,10 +7,14 @@ import 'package:flutter/widgets.dart';
 
 class LicenseSummary extends StatelessWidget {
   final LicenseState licenseState;
+
+  final bool showLicenseName;
+
   late final Map<String, String> summaryItems;
 
   LicenseSummary({
     super.key,
+    this.showLicenseName = true,
     required this.licenseState,
   }) {
     summaryItems = licenseState.params is UdlLicenseParams
@@ -32,44 +36,48 @@ class LicenseSummary extends StatelessWidget {
             color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
           ),
         ),
-        Text.rich(
-          TextSpan(
-            children: [
-              TextSpan(
-                text: licenseState.meta.licenseType != LicenseType.unknown
-                    ? '${licenseState.meta.name} (${licenseState.meta.shortName})'
-                    : licenseState.meta.name,
-                style: ArDriveTypography.body.buttonLargeBold(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-                ),
-              ),
-              if (licenseState.meta.licenseType != LicenseType.unknown) ...[
-                const TextSpan(text: '   '),
+        if (showLicenseName) ...[
+          Text.rich(
+            TextSpan(
+              children: [
                 TextSpan(
-                  text: 'View',
-                  style: ArDriveTypography.body
-                      .buttonLargeRegular(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgSubtle,
-                      )
-                      .copyWith(
-                        decoration: TextDecoration.underline,
-                      ),
-                  recognizer: TapGestureRecognizer()
-                    ..onTap = () async {
-                      final url =
-                          'https://arweave.net/${licenseState.meta.licenseDefinitionTxId}';
-                      await openUrl(url: url);
-                    },
+                  text: licenseState.meta.licenseType != LicenseType.unknown
+                      ? '${licenseState.meta.name} (${licenseState.meta.shortName})'
+                      : licenseState.meta.name,
+                  style: ArDriveTypography.body.buttonLargeBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault,
+                  ),
                 ),
-              ]
-            ],
+                if (licenseState.meta.licenseType != LicenseType.unknown) ...[
+                  const TextSpan(text: '   '),
+                  TextSpan(
+                    text: 'View',
+                    style: ArDriveTypography.body
+                        .buttonLargeRegular(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgSubtle,
+                        )
+                        .copyWith(
+                          decoration: TextDecoration.underline,
+                        ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () async {
+                        final url =
+                            'https://arweave.net/${licenseState.meta.licenseDefinitionTxId}';
+                        await openUrl(url: url);
+                      },
+                  ),
+                ]
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 24),
+          const SizedBox(height: 24),
+        ],
         ...summaryItems.entries.expand(
           (entry) => [
             Text(
