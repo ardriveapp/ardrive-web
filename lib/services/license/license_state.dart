@@ -52,6 +52,9 @@ class LicenseMeta extends Equatable {
     this.hasParams = false,
   });
 
+  String get nameWithShortName =>
+      licenseType == LicenseType.unknown ? name : '$name ($shortName)';
+
   @override
   List<Object?> get props => [
         licenseType,

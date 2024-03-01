@@ -41,9 +41,7 @@ class LicenseSummary extends StatelessWidget {
             TextSpan(
               children: [
                 TextSpan(
-                  text: licenseState.meta.licenseType != LicenseType.unknown
-                      ? '${licenseState.meta.name} (${licenseState.meta.shortName})'
-                      : licenseState.meta.name,
+                  text: licenseState.meta.nameWithShortName,
                   style: ArDriveTypography.body.buttonLargeBold(
                     color: ArDriveTheme.of(context)
                         .themeData

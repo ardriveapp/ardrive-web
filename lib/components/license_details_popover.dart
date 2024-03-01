@@ -21,15 +21,21 @@ class LicenseDetailsPopover extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ArDriveCard(
-      contentPadding: const EdgeInsets.all(16),
+      contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       boxShadow: BoxShadowCard.shadow80,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          LicenseSummary(licenseState: licenseState),
-          if (child != null) child!,
-          const SizedBox(height: 8),
+          LicenseSummary(
+            licenseState: licenseState,
+            showLicenseName: showLicenseName,
+          ),
+          if (child != null) ...[
+            const SizedBox(height: 8),
+            child!,
+            const SizedBox(height: 32),
+          ],
         ],
       ),
     );

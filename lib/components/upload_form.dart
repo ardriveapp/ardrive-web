@@ -14,6 +14,7 @@ import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
 import 'package:ardrive/components/file_picker_modal.dart';
 import 'package:ardrive/components/license/cc_type_form.dart';
 import 'package:ardrive/components/license/udl_params_form.dart';
+import 'package:ardrive/components/license_details_popover.dart';
 import 'package:ardrive/components/license_summary.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
@@ -23,6 +24,7 @@ import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
+import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
@@ -31,6 +33,7 @@ import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
@@ -39,6 +42,7 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -545,7 +549,7 @@ class _UploadFormState extends State<UploadForm> {
                 ],
                 children: [
                   (state is UploadReviewWithLicense)
-                      ? LicenseSummary(licenseState: state.licenseState)
+                      ? LicenseReviewInfo(licenseState: state.licenseState)
                       : LicenseSummary(
                           licenseState: const LicenseState(
                             meta: LicenseMeta(
@@ -1556,6 +1560,153 @@ class UploadReadyModalBase extends StatelessWidget {
             ),
           ),
           actions: actions,
+        ),
+      ),
+    );
+  }
+}
+
+class LicenseReviewInfo extends StatelessWidget {
+  final LicenseState licenseState;
+
+  const LicenseReviewInfo({
+    super.key,
+    required this.licenseState,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          // TODO: Localize
+          'License',
+          style: ArDriveTypography.body.smallRegular(
+            color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+          ),
+        ),
+        Row(
+          children: [
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 300),
+              child: licenseState.params == null
+                  ? Text(
+                      licenseState.meta.nameWithShortName,
+                      style: ArDriveTypography.body.buttonLargeRegular(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDefault,
+                      ),
+                    )
+                  : LicenseDetailsWithPopoverButton(
+                      licenseState: licenseState,
+                      anchor: const Aligned(
+                        follower: Alignment.bottomLeft,
+                        target: Alignment.topLeft,
+                      ),
+                    ),
+            ),
+            if (licenseState.meta.licenseType != LicenseType.unknown)
+              Text.rich(
+                TextSpan(
+                  children: [
+                    const TextSpan(text: '   '),
+                    TextSpan(
+                      text: 'View',
+                      style: ArDriveTypography.body
+                          .buttonLargeRegular(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgSubtle,
+                          )
+                          .copyWith(
+                            decoration: TextDecoration.underline,
+                          ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () async {
+                          final url =
+                              'https://arweave.net/${licenseState.meta.licenseDefinitionTxId}';
+                          await openUrl(url: url);
+                        },
+                    ),
+                  ],
+                ),
+              )
+          ],
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+}
+
+class LicenseDetailsWithPopoverButton extends StatefulWidget {
+  final LicenseState licenseState;
+  final Aligned anchor;
+
+  const LicenseDetailsWithPopoverButton({
+    super.key,
+    required this.licenseState,
+    required this.anchor,
+  });
+
+  @override
+  State<LicenseDetailsWithPopoverButton> createState() =>
+      _LicenseDetailsWithPopoverButtonState();
+}
+
+class _LicenseDetailsWithPopoverButtonState
+    extends State<LicenseDetailsWithPopoverButton> {
+  bool _showLicenseDetailsCard = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return ArDriveOverlay(
+      onVisibleChange: (visible) {
+        if (!visible) {
+          setState(() {
+            _showLicenseDetailsCard = false;
+          });
+        }
+      },
+      visible: _showLicenseDetailsCard,
+      anchor: widget.anchor,
+      content: LicenseDetailsPopover(
+        licenseState: widget.licenseState,
+        closePopover: () {
+          setState(() {
+            _showLicenseDetailsCard = false;
+          });
+        },
+        showLicenseName: false,
+      ),
+      child: HoverWidget(
+        hoverScale: 1.0,
+        tooltip:
+            // TODO: Localize
+            // appLocalizations.of(context).licenseDetails,
+            'Show license configuration',
+        child: Text.rich(
+          TextSpan(
+            text: widget.licenseState.meta.nameWithShortName,
+            style: ArDriveTypography.body
+                .buttonLargeRegular(
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                )
+                .copyWith(decoration: TextDecoration.underline),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () {
+                setState(() {
+                  _showLicenseDetailsCard = !_showLicenseDetailsCard;
+                });
+              },
+          ),
         ),
       ),
     );
