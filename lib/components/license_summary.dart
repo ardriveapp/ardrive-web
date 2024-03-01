@@ -10,16 +10,19 @@ class LicenseSummary extends StatelessWidget {
 
   final bool showLicenseName;
 
-  late final Map<String, String> summaryItems;
+  late final Map<String, String> paramsSummaryItems;
 
   LicenseSummary({
     super.key,
     this.showLicenseName = true,
     required this.licenseState,
   }) {
-    summaryItems = licenseState.params is UdlLicenseParams
-        ? udlLicenseSummary(licenseState.params as UdlLicenseParams)
-        : {};
+    if (licenseState.params is UdlLicenseParams) {
+      paramsSummaryItems =
+          udlLicenseSummary(licenseState.params as UdlLicenseParams);
+    } else {
+      paramsSummaryItems = licenseState.params?.toAdditionalTags() ?? {};
+    }
   }
 
   @override
@@ -76,7 +79,7 @@ class LicenseSummary extends StatelessWidget {
           ),
           const SizedBox(height: 24),
         ],
-        ...summaryItems.entries.expand(
+        ...paramsSummaryItems.entries.expand(
           (entry) => [
             Text(
               entry.key,
