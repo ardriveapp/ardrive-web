@@ -29,14 +29,14 @@ class LicenseSummary extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          // TODO: Localize
-          'License',
-          style: ArDriveTypography.body.smallRegular(
-            color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
-          ),
-        ),
         if (showLicenseName) ...[
+          Text(
+            // TODO: Localize
+            'License',
+            style: ArDriveTypography.body.smallRegular(
+              color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+            ),
+          ),
           Text.rich(
             TextSpan(
               children: [
