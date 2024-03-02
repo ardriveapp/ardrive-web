@@ -1432,7 +1432,9 @@ class _StatsScreenState extends State<StatsScreen> {
                       )),
                 ),
               ),
-        const SizedBox(height: 8),
+        const Divider(
+          height: 20,
+        ),
         RichText(
           text: TextSpan(
             children: [
