@@ -1,15 +1,5 @@
 import '../license_state.dart';
 
-List<LicenseMeta> ccLicenses = [
-  cc0LicenseMeta,
-  ccByLicenseMetaV2,
-  ccByNCLicenseMeta,
-  ccByNCNDLicenseMeta,
-  ccByNCSAMeta,
-  ccByNDLicenseMeta,
-  ccBySAMeta,
-];
-
 const cc0LicenseMeta = LicenseMeta(
   licenseType: LicenseType.cc0,
   licenseDefinitionTxId: 'nF6Mjy_Yy_Gv-DYLq7QPxz5PdXUQ4rtOpbJZdcaFEKw',
@@ -30,7 +20,6 @@ const ccByLicenseMetaV2 = LicenseMeta(
   licenseDefinitionTxId: 'mSOFUrl5mUQvG7VBP36DD39kzJASv9FDe3GxHpcCvRA',
   name: 'Attribution',
   shortName: 'CC-BY',
-  hasParams: true,
 );
 
 // Version 4.0
