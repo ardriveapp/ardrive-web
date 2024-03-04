@@ -1,1 +1,1 @@
-- Corrects the learn more link on License Creation page
+- Corrects the Learn More link on License Creation page
