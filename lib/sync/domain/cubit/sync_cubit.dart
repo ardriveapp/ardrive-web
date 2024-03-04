@@ -20,7 +20,6 @@ import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:retry/retry.dart';
 
 part 'sync_state.dart';
 
@@ -39,8 +38,6 @@ class SyncCubit extends Cubit<SyncState> {
   final ProfileCubit _profileCubit;
   final ActivityCubit _activityCubit;
   final PromptToSnapshotBloc _promptToSnapshotBloc;
-  final ArweaveService _arweave;
-  final DriveDao _driveDao;
   final TabVisibilitySingleton _tabVisibility;
   final ConfigService _configService;
   final SyncRepository _syncRepository;
@@ -59,19 +56,13 @@ class SyncCubit extends Cubit<SyncState> {
     required ProfileCubit profileCubit,
     required ActivityCubit activityCubit,
     required PromptToSnapshotBloc promptToSnapshotBloc,
-    required ArweaveService arweave,
-    required DriveDao driveDao,
-    required Database db,
     required TabVisibilitySingleton tabVisibility,
     required ConfigService configService,
-    required LicenseService licenseService,
     required ActivityTracker activityTracker,
     required SyncRepository syncRepository,
   })  : _profileCubit = profileCubit,
         _activityCubit = activityCubit,
         _promptToSnapshotBloc = promptToSnapshotBloc,
-        _arweave = arweave,
-        _driveDao = driveDao,
         _configService = configService,
         _tabVisibility = tabVisibility,
         _syncRepository = syncRepository,
@@ -222,19 +213,6 @@ class SyncCubit extends Cubit<SyncState> {
           return;
         }
 
-        // This syncs in the latest info on drives owned by the user and will be overwritten
-        // below when the full sync process is ran.
-        //
-        // It also adds the encryption keys onto the drive models which isn't touched by the
-        // later system.
-
-        // final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
-        //   profile.wallet,
-        //   profile.password,
-        // );
-
-        // await _driveDao.updateUserDrives(userDriveEntities, profile.cipherKey);
-
         await _syncRepository.updateUserDrives(
           wallet: wallet,
           password: password,
@@ -242,30 +220,10 @@ class SyncCubit extends Cubit<SyncState> {
         );
       }
 
-      // Sync the contents of each drive attached in the app.
-
-      // final drives = await _driveDao.allDrives().map((d) => d).get();
-
-      // if (drives.isEmpty) {
-      //   _syncProgress = SyncProgress.emptySyncCompleted();
-      //   syncProgressController.add(_syncProgress);
-      //   _lastSync = DateTime.now();
-
-      //   emit(SyncIdle());
-
-      //   return;
-      // }
-
-      final currentBlockHeight = await retry(
-        () async => await _arweave.getCurrentBlockHeight(),
-        onRetry: (exception) => logger.w(
-          'Retrying for get the current block height',
-        ),
-      );
+      final currentBlockHeight = await _syncRepository.getCurrentBlockHeight();
 
       _promptToSnapshotBloc.add(const SyncRunning(isRunning: true));
 
-      // _syncProgress = _syncProgress.copyWith(drivesCount: drives.length);
       logger.d('Current block height number $currentBlockHeight');
 
       await for (var syncProgress in _syncRepository.syncAllDrives(
@@ -277,116 +235,7 @@ class SyncCubit extends Cubit<SyncState> {
         _syncProgress = syncProgress;
         syncProgressController.add(_syncProgress);
       }
-      //  final driveSyncProcesses = drives.map(
-      //   (drive) async* {
-      //     try {
-      //       yield* _syncDrive(
-      //         drive.id,
-      //         driveDao: _driveDao,
-      //         arweave: _arweave,
-      //         ghostFolders: ghostFolders,
-      //         database: _db,
-      //         profileState: profile,
-      //         addError: addError,
-      //         lastBlockHeight: syncDeep
-      //             ? 0
-      //             : calculateSyncLastBlockHeight(drive.lastBlockHeight!),
-      //         currentBlockHeight: currentBlockHeight,
-      //         transactionParseBatchSize: 200 ~/
-      //             (_syncProgress.drivesCount - _syncProgress.drivesSynced),
-      //         ownerAddress: drive.ownerAddress,
-      //         configService: _configService,
-      //         promptToSnapshotBloc: _promptToSnapshotBloc,
-      //       );
-      //     } catch (error, stackTrace) {
-      //       logger.e(
-      //         'Error syncing drive. Skipping sync on this drive',
-      //         error,
-      //         stackTrace,
-      //       );
-
-      //       addError(error);
-      //     }
-      //   },
-      // );
-
-      // double totalProgress = 0;
-      // await Future.wait(
-      //   driveSyncProcesses.map(
-      //     (driveSyncProgress) async {
-      //       double currentDriveProgress = 0;
-      //       await for (var driveProgress in driveSyncProgress) {
-      //         currentDriveProgress =
-      //             (totalProgress + driveProgress) / drives.length;
-      //         if (currentDriveProgress > _syncProgress.progress) {
-      //           _syncProgress = _syncProgress.copyWith(
-      //             progress: currentDriveProgress,
-      //           );
-      //         }
-      //         syncProgressController.add(_syncProgress);
-      //       }
-      //       totalProgress += 1;
-      //       _syncProgress = _syncProgress.copyWith(
-      //         drivesSynced: _syncProgress.drivesSynced + 1,
-      //         progress: totalProgress / drives.length,
-      //       );
-      //       syncProgressController.add(_syncProgress);
-      //     },
-      //   ),
-      // );
-
-      // logger.i('Creating ghosts...');
-
-      // await createGhosts(
-      //   driveDao: _driveDao,
-      //   ownerAddress: ownerAddress,
-      //   ghostFolders: ghostFolders,
-      // );
-
-      // ghostFolders.clear();
-
-      // logger.i('Ghosts created...');
-
-      // logger.i('Syncing licenses...');
-
-      // final licenseTxIds = <String>{};
-      // final revisionsToSyncLicense = (await _driveDao
-      //     .allFileRevisionsWithLicenseReferencedButNotSynced()
-      //     .get())
-      //   ..retainWhere((rev) => licenseTxIds.add(rev.licenseTxId!));
-
-      // logger.d('Found ${revisionsToSyncLicense.length} licenses to sync');
-
-      // _updateLicenses(
-      //   driveDao: _driveDao,
-      //   arweave: _arweave,
-      //   licenseService: _licenseService,
-      //   revisionsToSyncLicense: revisionsToSyncLicense,
-      // );
-
-      // logger.i('Licenses synced');
-
-      // logger.i('Updating transaction statuses...');
-
-      // final allFileRevisions = await _getAllFileEntities(driveDao: _driveDao);
-      // final metadataTxsFromSnapshots =
-      //     await SnapshotItemOnChain.getAllCachedTransactionIds();
-
-      // final confirmedFileTxIds = allFileRevisions
-      //     .where((file) => metadataTxsFromSnapshots.contains(file.metadataTxId))
-      //     .map((file) => file.dataTxId)
-      //     .toList();
-
-      // await Future.wait(
-      //   [
       if (profile is ProfileLoggedIn) _profileCubit.refreshBalance();
-      //     _updateTransactionStatuses(
-      //       driveDao: _driveDao,
-      //       arweave: _arweave,
-      //       txsIdsToSkip: confirmedFileTxIds,
-      //     ),
-      //   ],
-      // );
 
       logger.i('Transaction statuses updated');
     } catch (err, stackTrace) {
@@ -424,12 +273,11 @@ class SyncCubit extends Cubit<SyncState> {
     Map<String, FileEntriesCompanion> filesByIdMap,
   ) async {
     logger.i('Generating fs entry paths...');
-    ghostFolders = await _generateFsEntryPaths(
-      ghostFolders: ghostFolders,
-      driveDao: _driveDao,
+    ghostFolders = await _syncRepository.generateFsEntryPaths(
       driveId: driveId,
       foldersByIdMap: foldersByIdMap,
       filesByIdMap: filesByIdMap,
+      ghostFolders: ghostFolders,
     );
   }
 

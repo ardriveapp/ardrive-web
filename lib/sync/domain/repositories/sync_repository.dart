@@ -61,11 +61,19 @@ abstract class SyncRepository {
     String? ownerAddress,
   });
 
+  Future<int> getCurrentBlockHeight();
+
+  Future<Map<FolderID, GhostFolder>> generateFsEntryPaths({
+    required String driveId,
+    required Map<String, FolderEntriesCompanion> foldersByIdMap,
+    required Map<String, FileEntriesCompanion> filesByIdMap,
+    required Map<FolderID, GhostFolder> ghostFolders,
+  });
+
   factory SyncRepository({
     required ArweaveService arweave,
     required DriveDao driveDao,
     required ConfigService configService,
-    // required PromptToSnapshotBloc promptToSnapshotBloc,
     required Database database,
     required LicenseService licenseService,
   }) {
@@ -73,7 +81,6 @@ abstract class SyncRepository {
       arweave: arweave,
       driveDao: driveDao,
       configService: configService,
-      // promptToSnapshotBloc: promptToSnapshotBloc,
       database: database,
       licenseService: licenseService,
     );
@@ -86,7 +93,6 @@ class _SyncRepository implements SyncRepository {
   final ConfigService _configService;
   final LicenseService _licenseService;
   // TODO: Remove this dependency
-  // final PromptToSnapshotBloc _promptToSnapshotBloc;
   final Database _database;
 
   DateTime? _lastSync;
@@ -95,13 +101,11 @@ class _SyncRepository implements SyncRepository {
     required ArweaveService arweave,
     required DriveDao driveDao,
     required ConfigService configService,
-    // required PromptToSnapshotBloc promptToSnapshotBloc,
     required Database database,
     required LicenseService licenseService,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _configService = configService,
-        // _promptToSnapshotBloc = promptToSnapshotBloc,
         _database = database,
         _licenseService = licenseService;
 
@@ -295,12 +299,15 @@ class _SyncRepository implements SyncRepository {
     }
     await Future.wait(
       [
-        ...ghostFoldersByDrive.entries.map((entry) => _generateFsEntryPaths(
+        ...ghostFoldersByDrive.entries.map(
+          (entry) => _generateFsEntryPaths(
             driveDao: driveDao,
             driveId: entry.key,
             foldersByIdMap: entry.value,
             ghostFolders: ghostFolders,
-            filesByIdMap: {})),
+            filesByIdMap: {},
+          ),
+        ),
       ],
     );
   }
@@ -322,6 +329,32 @@ class _SyncRepository implements SyncRepository {
     );
 
     await _driveDao.updateUserDrives(userDriveEntities, cipherKey);
+  }
+
+  @override
+  Future<int> getCurrentBlockHeight() {
+    return retry(
+      () async => await _arweave.getCurrentBlockHeight(),
+      onRetry: (exception) => logger.w(
+        'Retrying for get the current block height',
+      ),
+    );
+  }
+
+  @override
+  Future<Map<FolderID, GhostFolder>> generateFsEntryPaths({
+    required String driveId,
+    required Map<String, FolderEntriesCompanion> foldersByIdMap,
+    required Map<String, FileEntriesCompanion> filesByIdMap,
+    required Map<FolderID, GhostFolder> ghostFolders,
+  }) {
+    return _generateFsEntryPaths(
+      driveDao: _driveDao,
+      driveId: driveId,
+      foldersByIdMap: foldersByIdMap,
+      filesByIdMap: filesByIdMap,
+      ghostFolders: ghostFolders,
+    );
   }
 
   int calculateSyncLastBlockHeight(int lastBlockHeight) {
