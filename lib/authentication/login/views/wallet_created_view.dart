@@ -34,6 +34,8 @@ class _PageInfo {
 class _WalletCreatedViewState extends State<WalletCreatedView> {
   bool _isTermsChecked = false;
   bool _isBlurred = true;
+  bool _showCheck = false;
+  bool _showCheckSmallIcon = false;
 
   late int _currentPage;
 
@@ -126,13 +128,28 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
                                 });
                               })),
                           Positioned(
-                              right: 16,
-                              bottom: 16,
-                              child:
-                                  _iconButton(Resources.images.icons.copy, () {
-                                Clipboard.setData(
-                                    ClipboardData(text: widget.mnemonic!));
-                              }))
+                            right: 16,
+                            bottom: 16,
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 200),
+                              child: _showCheckSmallIcon
+                                  ? ArDriveImage(
+                                      width: 20,
+                                      height: 20,
+                                      image: AssetImage(
+                                          Resources.images.login.checkCircle),
+                                      fit: BoxFit.contain)
+                                  : ArDriveClickArea(
+                                      child: GestureDetector(
+                                          onTap: () => _copy(true),
+                                          child: SvgPicture.asset(
+                                            Resources.images.icons.copy,
+                                            width: 20,
+                                            height: 20,
+                                            color: colorTokens.textMid,
+                                          ))),
+                            ),
+                          )
                         ]))
                     : _currentPage == 1
                         ? ArDriveImage(
@@ -199,15 +216,25 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
                     typography: typography,
                     text: 'Copy Seed Phrase',
                     variant: ButtonVariant.outline,
-                    onPressed: () async {
-                      Clipboard.setData(ClipboardData(text: widget.mnemonic!));
-                    },
-                    rightIcon: SvgPicture.asset(
-                      Resources.images.icons.copy,
-                      width: 20,
-                      height: 20,
-                      color: colorTokens.textMid,
-                    ),
+                    onPressed: () => _copy(false),
+                    rightIcon: IgnorePointer(
+                        child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: _showCheck
+                          ? ArDriveImage(
+                              width: 20,
+                              height: 20,
+                              image: AssetImage(
+                                  Resources.images.login.checkCircle),
+                              fit: BoxFit.contain)
+                          : SvgPicture.asset(
+                              Resources.images.icons.copy,
+                              width: 20,
+                              height: 20,
+                              color: colorTokens.textMid,
+                            ),
+                      // onPressed: _copy,
+                    )),
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -222,12 +249,13 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
                       wallet: widget.wallet,
                     );
                   },
-                  rightIcon: SvgPicture.asset(
+                  rightIcon: IgnorePointer(
+                      child: SvgPicture.asset(
                     Resources.images.icons.download,
                     width: 20,
                     height: 20,
                     color: colorTokens.textMid,
-                  ),
+                  )),
                 ),
                 const SizedBox(height: 40),
                 ArDriveButtonNew(
@@ -330,5 +358,39 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
             onTap: callback,
             child: SvgPicture.asset(resource,
                 width: 20, height: 20, color: colorTokens.textMid)));
+  }
+
+  void _copy(bool smallIcon) {
+    if (widget.mnemonic == null) {
+      return;
+    }
+    Clipboard.setData(ClipboardData(text: widget.mnemonic!));
+    if (mounted) {
+      if (smallIcon ? _showCheckSmallIcon : _showCheck) {
+        return;
+      }
+
+      setState(() {
+        if (smallIcon) {
+          _showCheckSmallIcon = true;
+        } else {
+          _showCheck = true;
+        }
+
+        Future.delayed(const Duration(seconds: 2), () {
+          if (!mounted) {
+            return;
+          }
+
+          setState(() {
+            if (smallIcon) {
+              _showCheckSmallIcon = false;
+            } else {
+              _showCheck = false;
+            }
+          });
+        });
+      });
+    }
   }
 }
