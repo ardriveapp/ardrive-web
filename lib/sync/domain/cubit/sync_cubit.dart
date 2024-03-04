@@ -14,6 +14,7 @@ import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/ghost_folder.dart';
+import 'package:ardrive/sync/domain/repositories/sync_repository.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/snapshots/drive_history_composite.dart';
@@ -23,6 +24,7 @@ import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
@@ -55,6 +57,7 @@ class SyncCubit extends Cubit<SyncState> {
   final TabVisibilitySingleton _tabVisibility;
   final ConfigService _configService;
   final LicenseService _licenseService;
+  final SyncRepository _syncRepository;
 
   StreamSubscription? _restartOnFocusStreamSubscription;
   StreamSubscription? _restartArConnectOnFocusStreamSubscription;
@@ -77,6 +80,7 @@ class SyncCubit extends Cubit<SyncState> {
     required ConfigService configService,
     required LicenseService licenseService,
     required ActivityTracker activityTracker,
+    required SyncRepository syncRepository,
   })  : _profileCubit = profileCubit,
         _activityCubit = activityCubit,
         _promptToSnapshotBloc = promptToSnapshotBloc,
@@ -86,6 +90,7 @@ class SyncCubit extends Cubit<SyncState> {
         _configService = configService,
         _licenseService = licenseService,
         _tabVisibility = tabVisibility,
+        _syncRepository = syncRepository,
         super(SyncIdle()) {
     // Sync the user's drives on start and periodically.
     createSyncStream();
@@ -198,6 +203,9 @@ class SyncCubit extends Cubit<SyncState> {
     try {
       final profile = _profileCubit.state;
       String? ownerAddress;
+      Wallet? wallet;
+      String? password;
+      SecretKey? cipherKey;
 
       _initSync = DateTime.now();
 
@@ -210,6 +218,9 @@ class SyncCubit extends Cubit<SyncState> {
 
         //Check if profile is ArConnect to skip sync while tab is hidden
         ownerAddress = profile.walletAddress;
+        wallet = profile.wallet;
+        password = profile.password;
+        cipherKey = profile.cipherKey;
 
         logger.d('Checking if user is from arconnect...');
 
@@ -234,26 +245,34 @@ class SyncCubit extends Cubit<SyncState> {
         //
         // It also adds the encryption keys onto the drive models which isn't touched by the
         // later system.
-        final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
-          profile.wallet,
-          profile.password,
-        );
 
-        await _driveDao.updateUserDrives(userDriveEntities, profile.cipherKey);
+        // final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
+        //   profile.wallet,
+        //   profile.password,
+        // );
+
+        // await _driveDao.updateUserDrives(userDriveEntities, profile.cipherKey);
+
+        await _syncRepository.updateUserDrives(
+          wallet: wallet,
+          password: password,
+          cipherKey: profile.cipherKey,
+        );
       }
 
       // Sync the contents of each drive attached in the app.
-      final drives = await _driveDao.allDrives().map((d) => d).get();
 
-      if (drives.isEmpty) {
-        _syncProgress = SyncProgress.emptySyncCompleted();
-        syncProgressController.add(_syncProgress);
-        _lastSync = DateTime.now();
+      // final drives = await _driveDao.allDrives().map((d) => d).get();
 
-        emit(SyncIdle());
+      // if (drives.isEmpty) {
+      //   _syncProgress = SyncProgress.emptySyncCompleted();
+      //   syncProgressController.add(_syncProgress);
+      //   _lastSync = DateTime.now();
 
-        return;
-      }
+      //   emit(SyncIdle());
+
+      //   return;
+      // }
 
       final currentBlockHeight = await retry(
         () async => await _arweave.getCurrentBlockHeight(),
@@ -264,118 +283,128 @@ class SyncCubit extends Cubit<SyncState> {
 
       _promptToSnapshotBloc.add(const SyncRunning(isRunning: true));
 
-      _syncProgress = _syncProgress.copyWith(drivesCount: drives.length);
+      // _syncProgress = _syncProgress.copyWith(drivesCount: drives.length);
       logger.d('Current block height number $currentBlockHeight');
-      final driveSyncProcesses = drives.map(
-        (drive) async* {
-          try {
-            yield* _syncDrive(
-              drive.id,
-              driveDao: _driveDao,
-              arweave: _arweave,
-              ghostFolders: ghostFolders,
-              database: _db,
-              profileState: profile,
-              addError: addError,
-              lastBlockHeight: syncDeep
-                  ? 0
-                  : calculateSyncLastBlockHeight(drive.lastBlockHeight!),
-              currentBlockHeight: currentBlockHeight,
-              transactionParseBatchSize: 200 ~/
-                  (_syncProgress.drivesCount - _syncProgress.drivesSynced),
-              ownerAddress: drive.ownerAddress,
-              configService: _configService,
-              promptToSnapshotBloc: _promptToSnapshotBloc,
-            );
-          } catch (error, stackTrace) {
-            logger.e(
-              'Error syncing drive. Skipping sync on this drive',
-              error,
-              stackTrace,
-            );
 
-            addError(error);
-          }
-        },
-      );
+      await for (var syncProgress in _syncRepository.syncAllDrives(
+        wallet: wallet,
+        password: password,
+        cipherKey: cipherKey,
+        syncDeep: syncDeep,
+      )) {
+        _syncProgress = syncProgress;
+        syncProgressController.add(_syncProgress);
+      }
+      //  final driveSyncProcesses = drives.map(
+      //   (drive) async* {
+      //     try {
+      //       yield* _syncDrive(
+      //         drive.id,
+      //         driveDao: _driveDao,
+      //         arweave: _arweave,
+      //         ghostFolders: ghostFolders,
+      //         database: _db,
+      //         profileState: profile,
+      //         addError: addError,
+      //         lastBlockHeight: syncDeep
+      //             ? 0
+      //             : calculateSyncLastBlockHeight(drive.lastBlockHeight!),
+      //         currentBlockHeight: currentBlockHeight,
+      //         transactionParseBatchSize: 200 ~/
+      //             (_syncProgress.drivesCount - _syncProgress.drivesSynced),
+      //         ownerAddress: drive.ownerAddress,
+      //         configService: _configService,
+      //         promptToSnapshotBloc: _promptToSnapshotBloc,
+      //       );
+      //     } catch (error, stackTrace) {
+      //       logger.e(
+      //         'Error syncing drive. Skipping sync on this drive',
+      //         error,
+      //         stackTrace,
+      //       );
 
-      double totalProgress = 0;
-      await Future.wait(
-        driveSyncProcesses.map(
-          (driveSyncProgress) async {
-            double currentDriveProgress = 0;
-            await for (var driveProgress in driveSyncProgress) {
-              currentDriveProgress =
-                  (totalProgress + driveProgress) / drives.length;
-              if (currentDriveProgress > _syncProgress.progress) {
-                _syncProgress = _syncProgress.copyWith(
-                  progress: currentDriveProgress,
-                );
-              }
-              syncProgressController.add(_syncProgress);
-            }
-            totalProgress += 1;
-            _syncProgress = _syncProgress.copyWith(
-              drivesSynced: _syncProgress.drivesSynced + 1,
-              progress: totalProgress / drives.length,
-            );
-            syncProgressController.add(_syncProgress);
-          },
-        ),
-      );
+      //       addError(error);
+      //     }
+      //   },
+      // );
 
-      logger.i('Creating ghosts...');
+      // double totalProgress = 0;
+      // await Future.wait(
+      //   driveSyncProcesses.map(
+      //     (driveSyncProgress) async {
+      //       double currentDriveProgress = 0;
+      //       await for (var driveProgress in driveSyncProgress) {
+      //         currentDriveProgress =
+      //             (totalProgress + driveProgress) / drives.length;
+      //         if (currentDriveProgress > _syncProgress.progress) {
+      //           _syncProgress = _syncProgress.copyWith(
+      //             progress: currentDriveProgress,
+      //           );
+      //         }
+      //         syncProgressController.add(_syncProgress);
+      //       }
+      //       totalProgress += 1;
+      //       _syncProgress = _syncProgress.copyWith(
+      //         drivesSynced: _syncProgress.drivesSynced + 1,
+      //         progress: totalProgress / drives.length,
+      //       );
+      //       syncProgressController.add(_syncProgress);
+      //     },
+      //   ),
+      // );
 
-      await createGhosts(
-        driveDao: _driveDao,
-        ownerAddress: ownerAddress,
-        ghostFolders: ghostFolders,
-      );
+      // logger.i('Creating ghosts...');
 
-      ghostFolders.clear();
+      // await createGhosts(
+      //   driveDao: _driveDao,
+      //   ownerAddress: ownerAddress,
+      //   ghostFolders: ghostFolders,
+      // );
 
-      logger.i('Ghosts created...');
+      // ghostFolders.clear();
 
-      logger.i('Syncing licenses...');
+      // logger.i('Ghosts created...');
 
-      final licenseTxIds = <String>{};
-      final revisionsToSyncLicense = (await _driveDao
-          .allFileRevisionsWithLicenseReferencedButNotSynced()
-          .get())
-        ..retainWhere((rev) => licenseTxIds.add(rev.licenseTxId!));
+      // logger.i('Syncing licenses...');
 
-      logger.d('Found ${revisionsToSyncLicense.length} licenses to sync');
+      // final licenseTxIds = <String>{};
+      // final revisionsToSyncLicense = (await _driveDao
+      //     .allFileRevisionsWithLicenseReferencedButNotSynced()
+      //     .get())
+      //   ..retainWhere((rev) => licenseTxIds.add(rev.licenseTxId!));
 
-      _updateLicenses(
-        driveDao: _driveDao,
-        arweave: _arweave,
-        licenseService: _licenseService,
-        revisionsToSyncLicense: revisionsToSyncLicense,
-      );
+      // logger.d('Found ${revisionsToSyncLicense.length} licenses to sync');
 
-      logger.i('Licenses synced');
+      // _updateLicenses(
+      //   driveDao: _driveDao,
+      //   arweave: _arweave,
+      //   licenseService: _licenseService,
+      //   revisionsToSyncLicense: revisionsToSyncLicense,
+      // );
 
-      logger.i('Updating transaction statuses...');
+      // logger.i('Licenses synced');
 
-      final allFileRevisions = await _getAllFileEntities(driveDao: _driveDao);
-      final metadataTxsFromSnapshots =
-          await SnapshotItemOnChain.getAllCachedTransactionIds();
+      // logger.i('Updating transaction statuses...');
 
-      final confirmedFileTxIds = allFileRevisions
-          .where((file) => metadataTxsFromSnapshots.contains(file.metadataTxId))
-          .map((file) => file.dataTxId)
-          .toList();
+      // final allFileRevisions = await _getAllFileEntities(driveDao: _driveDao);
+      // final metadataTxsFromSnapshots =
+      //     await SnapshotItemOnChain.getAllCachedTransactionIds();
 
-      await Future.wait(
-        [
-          if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
-          _updateTransactionStatuses(
-            driveDao: _driveDao,
-            arweave: _arweave,
-            txsIdsToSkip: confirmedFileTxIds,
-          ),
-        ],
-      );
+      // final confirmedFileTxIds = allFileRevisions
+      //     .where((file) => metadataTxsFromSnapshots.contains(file.metadataTxId))
+      //     .map((file) => file.dataTxId)
+      //     .toList();
+
+      // await Future.wait(
+      //   [
+      if (profile is ProfileLoggedIn) _profileCubit.refreshBalance();
+      //     _updateTransactionStatuses(
+      //       driveDao: _driveDao,
+      //       arweave: _arweave,
+      //       txsIdsToSkip: confirmedFileTxIds,
+      //     ),
+      //   ],
+      // );
 
       logger.i('Transaction statuses updated');
     } catch (err, stackTrace) {

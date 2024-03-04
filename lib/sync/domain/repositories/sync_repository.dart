@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:ardrive/blocs/constants.dart';
-import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
-import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/drive_entity.dart';
 import 'package:ardrive/entities/file_entity.dart';
@@ -46,8 +44,8 @@ abstract class SyncRepository {
 
   Stream<SyncProgress> syncAllDrives({
     bool syncDeep = false,
-    required Wallet wallet,
-    required String password,
+    Wallet? wallet,
+    String? password,
     SecretKey? cipherKey,
   });
 
@@ -56,6 +54,30 @@ abstract class SyncRepository {
     required String password,
     required SecretKey cipherKey,
   });
+
+  Future<void> createGhosts({
+    required DriveDao driveDao,
+    required Map<FolderID, GhostFolder> ghostFolders,
+    String? ownerAddress,
+  });
+
+  factory SyncRepository({
+    required ArweaveService arweave,
+    required DriveDao driveDao,
+    required ConfigService configService,
+    // required PromptToSnapshotBloc promptToSnapshotBloc,
+    required Database database,
+    required LicenseService licenseService,
+  }) {
+    return _SyncRepository(
+      arweave: arweave,
+      driveDao: driveDao,
+      configService: configService,
+      // promptToSnapshotBloc: promptToSnapshotBloc,
+      database: database,
+      licenseService: licenseService,
+    );
+  }
 }
 
 class _SyncRepository implements SyncRepository {
@@ -64,7 +86,7 @@ class _SyncRepository implements SyncRepository {
   final ConfigService _configService;
   final LicenseService _licenseService;
   // TODO: Remove this dependency
-  final PromptToSnapshotBloc _promptToSnapshotBloc;
+  // final PromptToSnapshotBloc _promptToSnapshotBloc;
   final Database _database;
 
   DateTime? _lastSync;
@@ -73,21 +95,21 @@ class _SyncRepository implements SyncRepository {
     required ArweaveService arweave,
     required DriveDao driveDao,
     required ConfigService configService,
-    required PromptToSnapshotBloc promptToSnapshotBloc,
+    // required PromptToSnapshotBloc promptToSnapshotBloc,
     required Database database,
     required LicenseService licenseService,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _configService = configService,
-        _promptToSnapshotBloc = promptToSnapshotBloc,
+        // _promptToSnapshotBloc = promptToSnapshotBloc,
         _database = database,
         _licenseService = licenseService;
 
   @override
   Stream<SyncProgress> syncAllDrives({
     bool syncDeep = false,
-    required Wallet wallet,
-    required String password,
+    Wallet? wallet,
+    String? password,
     SecretKey? cipherKey,
   }) async* {
     // Sync the contents of each drive attached in the app.
@@ -116,6 +138,7 @@ class _SyncRepository implements SyncRepository {
     final driveSyncProcesses = drives.map((drive) async* {
       yield* _syncDrive(
         drive.id,
+        cipherKey: cipherKey,
         ghostFolders: ghostFolders,
         lastBlockHeight:
             syncDeep ? 0 : calculateSyncLastBlockHeight(drive.lastBlockHeight!),
@@ -127,6 +150,7 @@ class _SyncRepository implements SyncRepository {
     });
 
     double totalProgress = 0;
+
     final StreamController<SyncProgress> syncProgressController =
         StreamController<SyncProgress>.broadcast();
 
@@ -157,7 +181,7 @@ class _SyncRepository implements SyncRepository {
 
       await createGhosts(
         driveDao: _driveDao,
-        ownerAddress: await wallet.getAddress(),
+        ownerAddress: await wallet?.getAddress(),
         ghostFolders: ghostFolders,
       );
 
@@ -201,6 +225,7 @@ class _SyncRepository implements SyncRepository {
       );
 
       _lastSync = DateTime.now();
+      syncProgressController.close();
     });
 
     yield* syncProgressController.stream;
@@ -215,6 +240,7 @@ class _SyncRepository implements SyncRepository {
     throw UnimplementedError();
   }
 
+  @override
   Future<void> createGhosts({
     required DriveDao driveDao,
     required Map<FolderID, GhostFolder> ghostFolders,
@@ -602,13 +628,14 @@ class _SyncRepository implements SyncRepository {
 
     logger.d('Done fetching data - ${gqlDriveHistory.driveId}');
 
-    _promptToSnapshotBloc.add(
-      CountSyncedTxs(
-        driveId: driveId,
-        txsSyncedWithGqlCount: gqlDriveHistory.txCount,
-        wasDeepSync: lastBlockHeight == 0,
-      ),
-    );
+    // TODO: verify that.
+    // _promptToSnapshotBloc.add(
+    //   CountSyncedTxs(
+    //     driveId: driveId,
+    //     txsSyncedWithGqlCount: gqlDriveHistory.txCount,
+    //     wasDeepSync: lastBlockHeight == 0,
+    //   ),
+    // );
 
     final fetchPhaseTotalTime =
         DateTime.now().difference(fetchPhaseStartDT).inMilliseconds;

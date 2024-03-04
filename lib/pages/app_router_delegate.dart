@@ -14,6 +14,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
+import 'package:ardrive/sync/domain/repositories/sync_repository.dart';
 import 'package:ardrive/theme/theme_switcher_bloc.dart';
 import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -283,6 +284,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               providers: [
                 BlocProvider(
                   create: (context) => SyncCubit(
+                    syncRepository: context.read<SyncRepository>(),
                     activityTracker: context.read<ActivityTracker>(),
                     configService: context.read<ConfigService>(),
                     licenseService: context.read<LicenseService>(),

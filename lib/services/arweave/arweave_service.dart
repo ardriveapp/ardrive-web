@@ -205,6 +205,46 @@ class ArweaveService {
 
     while (true) {
       // Get a page of 100 transactions
+      final driveEntityHistoryQueryForFolders = await _graphQLRetry.execute(
+        DriveEntityHistoryQuery(
+          variables: DriveEntityHistoryArguments(
+            driveId: driveId,
+            minBlockHeight: minBlockHeight,
+            maxBlockHeight: maxBlockHeight,
+            after: cursor,
+            ownerAddress: ownerAddress,
+            entityType: 'folder',
+          ),
+        ),
+      );
+
+      yield driveEntityHistoryQueryForFolders.data!.transactions.edges
+          .where((element) {
+        final arfsTag = element.node.tags.firstWhereOrNull(
+          (element) => element.name == EntityTag.arFs,
+        );
+
+        if (arfsTag == null) {
+          return false;
+        }
+
+        return supportedArFSVersionsSet.contains(arfsTag.value);
+      }).toList();
+
+      cursor =
+          driveEntityHistoryQueryForFolders.data!.transactions.edges.isNotEmpty
+              ? driveEntityHistoryQueryForFolders
+                  .data!.transactions.edges.last.cursor
+              : null;
+
+      if (!driveEntityHistoryQueryForFolders
+          .data!.transactions.pageInfo.hasNextPage) {
+        break;
+      }
+    }
+
+    while (true) {
+      // Get a page of 100 transactions
       final driveEntityHistoryQuery = await _graphQLRetry.execute(
         DriveEntityHistoryQuery(
           variables: DriveEntityHistoryArguments(
@@ -213,15 +253,24 @@ class ArweaveService {
             maxBlockHeight: maxBlockHeight,
             after: cursor,
             ownerAddress: ownerAddress,
+            entityType: 'file',
           ),
         ),
       );
 
-      yield driveEntityHistoryQuery.data!.transactions.edges
-          .where((element) => doesTagsContainValidArFSVersion(
-                element.node.tags.map((e) => Tag(e.name, e.value)).toList(),
-              ))
-          .toList();
+      yield driveEntityHistoryQuery.data!.transactions.edges.where(
+        (element) {
+          final arfsTag = element.node.tags.firstWhereOrNull(
+            (element) => element.name == EntityTag.arFs,
+          );
+
+          if (arfsTag == null) {
+            return false;
+          }
+
+          return supportedArFSVersionsSet.contains(arfsTag.value);
+        },
+      ).toList();
 
       cursor = driveEntityHistoryQuery.data!.transactions.edges.isNotEmpty
           ? driveEntityHistoryQuery.data!.transactions.edges.last.cursor
