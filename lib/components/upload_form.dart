@@ -512,7 +512,9 @@ class _UploadFormState extends State<UploadForm> {
                                 return DropdownMenuItem(
                                   value: value,
                                   child: Text(
-                                    licenseCategoryNames[value] ?? '---',
+                                    licenseCategoryNames[value] ?? 'Select',
+                                    // TODO: Localize
+                                    // appLocalizationsOf(context).selectLicense,
                                   ),
                                 );
                               },
