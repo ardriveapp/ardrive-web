@@ -12,7 +12,7 @@ const ccLicensesEnabled = [
   ccBySAMeta,
 ];
 
-const ccLicenseDefault = ccByLicenseMetaV2;
+const ccLicenseDefault = cc0LicenseMeta;
 
 FormGroup createCcTypeForm() => FormGroup({
       'ccTypeField': FormControl<LicenseMeta>(
