@@ -1111,24 +1111,13 @@ class _UploadFormState extends State<UploadForm> {
                                                 ),
                                               ),
                                             ),
-                                          const SizedBox(
-                                            width: 8,
-                                          ),
                                         ],
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                          Divider(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgSubtle
-                                .withOpacity(0.5),
-                            thickness: 0.5,
-                            height: 8,
-                          )
+                          const Divider(height: 20)
                         ],
                       );
                     },
@@ -1432,9 +1421,7 @@ class _StatsScreenState extends State<StatsScreen> {
                       )),
                 ),
               ),
-        const Divider(
-          height: 20,
-        ),
+        const Divider(height: 20),
         RichText(
           text: TextSpan(
             children: [
@@ -1475,9 +1462,8 @@ class _StatsScreenState extends State<StatsScreen> {
             style: ArDriveTypography.body.buttonNormalRegular(),
           ),
         ),
-        const Divider(
-          height: 20,
-        ),
+        const SizedBox(height: 10),
+        const Divider(height: 10),
         ...widget.children,
       ],
     );
