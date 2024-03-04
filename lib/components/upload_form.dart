@@ -1324,8 +1324,6 @@ class _StatsScreenState extends State<StatsScreen> {
         .readyState.paymentInfo.uploadPlanForAR?.bundleUploadHandles
         .toList();
 
-    ;
-
     if (v2Files != null) {
       files = [];
 
