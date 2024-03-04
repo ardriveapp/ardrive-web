@@ -1560,9 +1560,6 @@ class UploadReadyModalBase extends StatelessWidget {
         child: ArDriveStandardModal(
           title: appLocalizationsOf(context)
               .uploadNFiles(readyState.numberOfFiles),
-          // TODO: Create "subtitle"
-          // TODO: Localize
-          description: 'Files will be uploaded publicly.',
           width: width,
           hasCloseButton: hasCloseButton,
           content: ConstrainedBox(
