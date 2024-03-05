@@ -512,7 +512,9 @@ class _UploadFormState extends State<UploadForm> {
                                 return DropdownMenuItem(
                                   value: value,
                                   child: Text(
-                                    licenseCategoryNames[value] ?? '---',
+                                    licenseCategoryNames[value] ?? 'None',
+                                    // TODO: Localize
+                                    // appLocalizationsOf(context).none,
                                   ),
                                 );
                               },
@@ -1112,24 +1114,13 @@ class _UploadFormState extends State<UploadForm> {
                                                 ),
                                               ),
                                             ),
-                                          const SizedBox(
-                                            width: 8,
-                                          ),
                                         ],
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                          Divider(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgSubtle
-                                .withOpacity(0.5),
-                            thickness: 0.5,
-                            height: 8,
-                          )
+                          const Divider(height: 20)
                         ],
                       );
                     },
@@ -1433,9 +1424,7 @@ class _StatsScreenState extends State<StatsScreen> {
                       )),
                 ),
               ),
-        const Divider(
-          height: 20,
-        ),
+        const Divider(height: 20),
         RichText(
           text: TextSpan(
             children: [
@@ -1476,9 +1465,8 @@ class _StatsScreenState extends State<StatsScreen> {
             style: ArDriveTypography.body.buttonNormalRegular(),
           ),
         ),
-        const Divider(
-          height: 20,
-        ),
+        const SizedBox(height: 10),
+        const Divider(height: 10),
         ...widget.children,
       ],
     );
@@ -1561,9 +1549,6 @@ class UploadReadyModalBase extends StatelessWidget {
         child: ArDriveStandardModal(
           title: appLocalizationsOf(context)
               .uploadNFiles(readyState.numberOfFiles),
-          // TODO: Create "subtitle"
-          // TODO: Localize
-          description: 'Files will be uploaded publicly.',
           width: width,
           hasCloseButton: hasCloseButton,
           content: ConstrainedBox(
