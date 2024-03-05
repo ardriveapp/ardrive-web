@@ -101,6 +101,8 @@ class Login {
   final String checkCircle = 'assets/images/login/check_circle.png';
   final String whatIsAKeyfile = 'assets/images/login/what_is_a_keyfile.png';
   final String aboutSecurity = 'assets/images/login/about_security.png';
+
+  final String metamask = 'assets/images/login/metamask_logo_flat.svg';
 }
 
 class _Icons {

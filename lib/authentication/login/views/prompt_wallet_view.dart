@@ -6,6 +6,7 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/svg.dart';
 
 import '../../../misc/resources.dart';
 import '../../components/login_card.dart';
@@ -75,6 +76,14 @@ class _PromptWalletViewState extends State<PromptWalletView> {
               if (widget.isArConnectAvailable) ...[
                 ArDriveButtonNew(
                     text: 'Continue with ArConnect',
+                    hoverIcon: Container(
+                        alignment: Alignment.center,
+                        child: ArDriveImage(
+                          width: 24,
+                          height: 24,
+                          image:
+                              AssetImage(Resources.images.login.arconnectLogo),
+                        )),
                     typography: typography,
                     onPressed: () {
                       context
@@ -85,6 +94,14 @@ class _PromptWalletViewState extends State<PromptWalletView> {
               const SizedBox(height: 16),
               ArDriveButtonNew(
                   text: 'Continue with MetaMask',
+                  hoverIcon: Container(
+                      alignment: Alignment.center,
+                      child: SvgPicture.asset(
+                        Resources.images.login.metamask,
+                        width: 24,
+                        height: 24,
+                        fit: BoxFit.contain,
+                      )),
                   typography: typography,
                   onPressed: () {
                     context.read<LoginBloc>().add(const LoginWithMetamask());
