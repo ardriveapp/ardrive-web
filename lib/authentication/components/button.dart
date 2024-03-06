@@ -90,7 +90,7 @@ class _ArDriveButtonState extends State<ArDriveButtonNew> {
       )),
       alignment: Alignment.center,
       padding: MaterialStateProperty.all<EdgeInsetsGeometry>(
-          const EdgeInsets.symmetric(horizontal: 48, vertical: 10)),
+          const EdgeInsets.symmetric(horizontal: 10, vertical: 10)),
       backgroundColor: MaterialStateProperty.all<Color>(
           widget.backgroundColor ?? defaultColor),
       overlayColor:

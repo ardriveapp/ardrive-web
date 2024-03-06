@@ -81,8 +81,8 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                         child: ArDriveImage(
                           width: 24,
                           height: 24,
-                          image:
-                              AssetImage(Resources.images.login.arconnectLogo),
+                          image: SvgImage.asset(
+                              Resources.images.login.arconnectLogo),
                         )),
                     typography: typography,
                     onPressed: () {
@@ -112,6 +112,14 @@ class _PromptWalletViewState extends State<PromptWalletView> {
               existingUserFlow
                   ? ArDriveButtonNew(
                       text: 'Import Wallet',
+                      hoverIcon: Container(
+                          alignment: Alignment.center,
+                          child: SvgPicture.asset(
+                            Resources.images.login.walletUpload,
+                            width: 24,
+                            height: 24,
+                            fit: BoxFit.contain,
+                          )),
                       typography: typography,
                       maxWidth: double.maxFinite,
                       onPressed: () {

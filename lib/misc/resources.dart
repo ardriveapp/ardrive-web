@@ -86,7 +86,7 @@ class Login {
 
   final String gridImage = 'assets/images/login/grid_images.jpg';
   final String ardriveLogoOnboarding = 'assets/images/brand/2x.png';
-  final String arconnectLogo = 'assets/images/login/arconnect_logo.png';
+  final String arconnectLogo = 'assets/images/login/arconnect_logo_flat.svg';
   final String lattice = 'assets/images/login/lattice.svg';
   final String latticeLight = 'assets/images/login/lattice_light.svg';
   final String latticeLarge = 'assets/images/login/lattice_large.svg';
@@ -103,6 +103,7 @@ class Login {
   final String aboutSecurity = 'assets/images/login/about_security.png';
 
   final String metamask = 'assets/images/login/metamask_logo_flat.svg';
+  final String walletUpload = 'assets/images/login/wallet_upload.svg';
 }
 
 class _Icons {
