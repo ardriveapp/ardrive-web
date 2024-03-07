@@ -1,3 +1,4 @@
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:drift/drift.dart';
@@ -53,7 +54,11 @@ class LicenseAssertionEntity with TransactionPropertiesMixin {
             DateTime.fromMillisecondsSinceEpoch(transaction.block!.timestamp);
       }
       return licenseAssertionEntity;
-    } catch (_) {
+    } catch (e, stacktrace) {
+      logger.e(
+          'Failed to parse license assertion transaction. licenseDefinitionTxId: ${transaction.tags.firstWhere((tag) => tag.name == LicenseTag.licenseDefinitionTxId).value}',
+          e,
+          stacktrace);
       throw LicenseAssertionTransactionParseException(
         transactionId: transaction.id,
       );

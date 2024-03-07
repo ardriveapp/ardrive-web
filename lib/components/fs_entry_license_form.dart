@@ -2,11 +2,13 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/license_summary.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
+import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -89,7 +91,7 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
       builder: (context, state) {
         return Builder(builder: (context) {
           final licenseMeta =
-              context.read<FsEntryLicenseBloc>().selectFormLicenseMeta;
+              context.read<FsEntryLicenseBloc>().selectedLicenseMeta;
           if (state is FsEntryLicenseNoFiles) {
             return ArDriveCard(
               height: 350,
@@ -196,20 +198,23 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
               width: kMediumDialogWidth,
               // TODO: Localize
               // title: appLocalizationsOf(context).renameFolderEmphasized,
-              content: SizedBox(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    LicenseFileList(fileList: filesToLicense),
-                    const SizedBox(height: 16),
-                    const Divider(height: 24),
-                    ReactiveForm(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  LicenseFileList(fileList: filesToLicense),
+                  const SizedBox(height: 16),
+                  const Divider(height: 24),
+                  SizedBox(
+                    child: ReactiveForm(
                       formGroup: context.watch<FsEntryLicenseBloc>().selectForm,
                       child: ReactiveDropdownField(
+                        alignment: AlignmentDirectional.centerStart,
+                        isExpanded: true,
                         formControlName: 'licenseType',
                         decoration: InputDecoration(
+                          border: InputBorder.none,
                           label: Text(
                             'License',
                             // TODO: Localize
@@ -232,40 +237,56 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                             control.dirty && control.invalid,
                         validationMessages:
                             kValidationMessages(appLocalizationsOf(context)),
-                        items: licenseMetaMap.values
-                            .map(
-                              (value) => DropdownMenuItem(
-                                value: value,
-                                child:
-                                    Text('${value.name} (${value.shortName})'),
+                        items: LicenseCategory.values.map(
+                          (value) {
+                            return DropdownMenuItem(
+                              value: value,
+                              child: Text(
+                                '${licenseCategoryNames[value]}',
                               ),
-                            )
-                            .toList(),
+                            );
+                          },
+                        ).toList(),
                       ),
                     ),
-                    const Divider(height: 32),
-                    Text(
-                      // TODO: Localize
-                      'Cost: 0 AR',
-                      style: ArDriveTypography.body.buttonLargeRegular(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDefault,
+                  ),
+                  ArDriveClickArea(
+                    child: GestureDetector(
+                      onTap: () {
+                        openUrl(
+                          url: Resources.licenseHelpLink,
+                        );
+                      },
+                      child: Text(
+                        'Learn More about Licensing',
+                        style: ArDriveTypography.body
+                            .buttonNormalRegular()
+                            .copyWith(decoration: TextDecoration.underline),
                       ),
                     ),
-                    Text(
-                      // TODO: Localize
-                      'Free for now, maybe paid later.',
-                      style: ArDriveTypography.body.captionRegular(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgSubtle,
-                      ),
+                  ),
+                  const Divider(height: 32),
+                  Text(
+                    // TODO: Localize
+                    'Cost: 0 AR',
+                    style: ArDriveTypography.body.buttonLargeRegular(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgDefault,
                     ),
-                  ],
-                ),
+                  ),
+                  Text(
+                    // TODO: Localize
+                    'Free for now, maybe paid later.',
+                    style: ArDriveTypography.body.captionRegular(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgSubtle,
+                    ),
+                  ),
+                ],
               ),
               actions: [
                 ModalAction(
@@ -281,12 +302,20 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
               ],
             );
           } else if (state is FsEntryLicenseConfiguring) {
+            final licenseType = context
+                .read<FsEntryLicenseBloc>()
+                .selectedLicenseMeta
+                .licenseType;
+            final modalTitle = licenseType == LicenseType.udlV2
+                ? 'Configure Universal Data License'
+                : licenseType == LicenseType.ccByV2
+                    ? 'Configure Creative Commons License'
+                    : 'Unsupported license type';
             return ArDriveScrollBar(
               child: SingleChildScrollView(
                 child: ArDriveStandardModal(
-                  title:
-                      'Configure ${licenseMeta.name} (${licenseMeta.shortName})',
-                  width: kMediumDialogWidth,
+                  title: modalTitle,
+                  width: kLargeDialogWidth,
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -298,11 +327,7 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                               .filesToLicense!),
                       const SizedBox(height: 16),
                       const Divider(height: 24),
-                      context
-                                  .read<FsEntryLicenseBloc>()
-                                  .selectFormLicenseMeta
-                                  .licenseType ==
-                              LicenseType.udl
+                      licenseType == LicenseType.udlV2
                           ? UdlParamsForm(
                               onChangeLicenseFee: () {
                                 setState(() {});
@@ -310,7 +335,13 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                               formGroup:
                                   context.watch<FsEntryLicenseBloc>().udlForm,
                             )
-                          : const Text('Unsupported license type'),
+                          : licenseType == LicenseType.ccByV2
+                              ? CcParamsForm(
+                                  formGroup: context
+                                      .watch<FsEntryLicenseBloc>()
+                                      .ccForm,
+                                )
+                              : const Text('Unsupported license type'),
                     ],
                   ),
                   actions: [
@@ -826,5 +857,95 @@ class _UdlParamsFormState extends State<UdlParamsForm> {
               )
               .toList(),
         ));
+  }
+}
+
+class CcParamsForm extends StatefulWidget {
+  const CcParamsForm({super.key, required this.formGroup});
+
+  final FormGroup formGroup;
+
+  @override
+  State<CcParamsForm> createState() => _CcParamsFormState();
+}
+
+class _CcParamsFormState extends State<CcParamsForm> {
+  LicenseMeta get licenseMeta =>
+      context.read<FsEntryLicenseBloc>().selectedLicenseMeta;
+
+  @override
+  Widget build(BuildContext context) {
+    final inputBorder = OutlineInputBorder(
+      borderSide: BorderSide(
+        color: ArDriveTheme.of(context)
+            .themeData
+            .colors
+            .themeFgDisabled
+            .withOpacity(0.3),
+        width: 2,
+      ),
+      borderRadius: BorderRadius.circular(4),
+    );
+
+    return ReactiveForm(
+      formGroup: widget.formGroup,
+      child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Flexible(
+                  child: LabeledInput(
+                    labelText: 'Type',
+                    child: ReactiveDropdownField(
+                      formControlName: 'ccAttributionField',
+                      decoration: InputDecoration(
+                        enabledBorder: inputBorder,
+                        focusedBorder: inputBorder,
+                      ),
+                      onChanged: (e) {
+                        setState(() {});
+                      },
+                      showErrors: (control) => control.dirty && control.invalid,
+                      validationMessages:
+                          kValidationMessages(appLocalizationsOf(context)),
+                      items: ccLicenses
+                          .map(
+                            (e) => DropdownMenuItem(
+                              value: e,
+                              child: Text(e.name),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Builder(
+              builder: (context) {
+                final selectedLicenseMeta = context
+                    .watch<FsEntryLicenseBloc>()
+                    .ccForm
+                    .value['ccAttributionField'] as LicenseMeta;
+
+                return Text(
+                  selectedLicenseMeta.shortName,
+                  style: ArDriveTypography.body.buttonNormalBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDisabled,
+                  ),
+                );
+              },
+            ),
+          ]),
+    );
   }
 }
