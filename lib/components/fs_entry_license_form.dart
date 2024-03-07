@@ -257,7 +257,7 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                     child: GestureDetector(
                       onTap: () {
                         openUrl(
-                          url: Resources.howDoesKeyFileLoginWork,
+                          url: Resources.learnMoreAboutLicensing,
                         );
                       },
                       child: Text(

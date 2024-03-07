@@ -21,6 +21,7 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
+import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
@@ -519,6 +520,21 @@ class _UploadFormState extends State<UploadForm> {
                                 );
                               },
                             ).toList(),
+                          ),
+                        ),
+                      ),
+                      ArDriveClickArea(
+                        child: GestureDetector(
+                          onTap: () {
+                            openUrl(
+                              url: Resources.learnMoreAboutLicensing,
+                            );
+                          },
+                          child: Text(
+                            'Learn More about Licensing',
+                            style: ArDriveTypography.body
+                                .buttonNormalRegular()
+                                .copyWith(decoration: TextDecoration.underline),
                           ),
                         ),
                       ),
