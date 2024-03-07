@@ -527,7 +527,7 @@ class _UploadFormState extends State<UploadForm> {
                         child: GestureDetector(
                           onTap: () {
                             openUrl(
-                              url: Resources.learnMoreAboutLicensing,
+                              url: Resources.licenseHelpLink,
                             );
                           },
                           child: Text(

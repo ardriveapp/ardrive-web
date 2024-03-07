@@ -12,13 +12,13 @@ class Resources {
   static const agreementLink = 'https://ardrive.io/tos-and-privacy/';
   static const getWalletLink = 'https://www.arconnect.io/';
   static const sendGiftLink = 'http://gift.ardrive.io/';
+  static const licenseHelpLink =
+      'https://help.ardrive.io/hc/en-us/articles/23162949343131-Licensing-Your-Data';
 
   static const howDoesKeyFileLoginWork =
       'https://help.ardrive.io/hc/en-us/articles/15412384724251-How-Do-Keyfile-and-Seed-Phrase-Login-Work-';
   static const howAreConversionsDetermined =
       'https://help.ardrive.io/hc/en-us/articles/17043397992731';
-  static const learnMoreAboutLicensing =
-      'https://help.ardrive.io/hc/en-us/articles/23162949343131';
   static const cookiePolicy = 'https://stripe.com/legal/cookies-policy';
   static const emailSupport = 'support@ardrive.io';
   static const helpCenterLink =
