@@ -17,8 +17,8 @@ class Resources {
       'https://help.ardrive.io/hc/en-us/articles/15412384724251-How-Do-Keyfile-and-Seed-Phrase-Login-Work-';
   static const howAreConversionsDetermined =
       'https://help.ardrive.io/hc/en-us/articles/17043397992731';
-  // TODO
-  static const learnMoreAboutLicensing = '';
+  static const learnMoreAboutLicensing =
+      'https://help.ardrive.io/hc/en-us/articles/23162949343131';
   static const cookiePolicy = 'https://stripe.com/legal/cookies-policy';
   static const emailSupport = 'support@ardrive.io';
   static const helpCenterLink =
