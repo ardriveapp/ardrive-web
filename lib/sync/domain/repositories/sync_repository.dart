@@ -23,6 +23,8 @@ import 'package:ardrive/services/license/license_state.dart';
 import 'package:ardrive/sync/constants.dart';
 import 'package:ardrive/sync/domain/ghost_folder.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
+import 'package:ardrive/sync/utils/batch_processor.dart';
+import 'package:ardrive/sync/utils/network_transaction_utils.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/snapshots/drive_history_composite.dart';
 import 'package:ardrive/utils/snapshots/gql_drive_history.dart';
@@ -37,9 +39,16 @@ import 'package:drift/drift.dart';
 import 'package:retry/retry.dart';
 
 abstract class SyncRepository {
-  Stream<double> syncDrive({
+  Stream<double> syncDriveById({
     required String driveId,
     required String ownerAddress,
+
+    /// This was required because the usage of the `PromptToSnapshotBloc` in the
+    /// `SyncCubit` and the `PromptToSnapshotBloc` is not available in the `SyncRepository`
+    ///
+    /// This functionality should be refactored. The count of synced tx must be done
+    /// at the `SyncRepository` level, not at the `PromptToSnapshotBloc` level.
+    Function(String driveId, int txCount)? txFechedCallback,
   });
 
   Stream<SyncProgress> syncAllDrives({
@@ -47,9 +56,16 @@ abstract class SyncRepository {
     Wallet? wallet,
     String? password,
     SecretKey? cipherKey,
+
+    /// This was required because the usage of the `PromptToSnapshotBloc` in the
+    /// `SyncCubit` and the `PromptToSnapshotBloc` is not available in the `SyncRepository`
+    ///
+    /// This functionality should be refactored. The count of synced tx must be done
+    /// at the `SyncRepository` level, not at the `PromptToSnapshotBloc` level.
+    Function(String driveId, int txCount)? txFechedCallback,
   });
 
-  Future updateUserDrives({
+  Future<void> updateUserDrives({
     required Wallet wallet,
     required String password,
     required SecretKey cipherKey,
@@ -74,15 +90,15 @@ abstract class SyncRepository {
     required ArweaveService arweave,
     required DriveDao driveDao,
     required ConfigService configService,
-    required Database database,
     required LicenseService licenseService,
+    required BatchProcessor batchProcessor,
   }) {
     return _SyncRepository(
       arweave: arweave,
       driveDao: driveDao,
       configService: configService,
-      database: database,
       licenseService: licenseService,
+      batchProcessor: batchProcessor,
     );
   }
 }
@@ -92,8 +108,7 @@ class _SyncRepository implements SyncRepository {
   final DriveDao _driveDao;
   final ConfigService _configService;
   final LicenseService _licenseService;
-  // TODO: Remove this dependency
-  final Database _database;
+  final BatchProcessor _batchProcessor;
 
   DateTime? _lastSync;
 
@@ -101,13 +116,13 @@ class _SyncRepository implements SyncRepository {
     required ArweaveService arweave,
     required DriveDao driveDao,
     required ConfigService configService,
-    required Database database,
     required LicenseService licenseService,
+    required BatchProcessor batchProcessor,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _configService = configService,
-        _database = database,
-        _licenseService = licenseService;
+        _licenseService = licenseService,
+        _batchProcessor = batchProcessor;
 
   @override
   Stream<SyncProgress> syncAllDrives({
@@ -115,6 +130,7 @@ class _SyncRepository implements SyncRepository {
     Wallet? wallet,
     String? password,
     SecretKey? cipherKey,
+    Function(String driveId, int txCount)? txFechedCallback,
   }) async* {
     // Sync the contents of each drive attached in the app.
     final drives = await _driveDao.allDrives().map((d) => d).get();
@@ -144,12 +160,14 @@ class _SyncRepository implements SyncRepository {
         drive.id,
         cipherKey: cipherKey,
         ghostFolders: ghostFolders,
-        lastBlockHeight:
-            syncDeep ? 0 : calculateSyncLastBlockHeight(drive.lastBlockHeight!),
+        lastBlockHeight: syncDeep
+            ? 0
+            : _calculateSyncLastBlockHeight(drive.lastBlockHeight!),
         currentBlockHeight: currentBlockHeight,
         transactionParseBatchSize:
             200 ~/ (syncProgress.drivesCount - syncProgress.drivesSynced),
         ownerAddress: drive.ownerAddress,
+        txFechedCallback: txFechedCallback,
       );
     });
 
@@ -189,6 +207,7 @@ class _SyncRepository implements SyncRepository {
         ghostFolders: ghostFolders,
       );
 
+      /// Clear the ghost folders after they are created
       ghostFolders.clear();
 
       logger.i('Ghosts created...');
@@ -202,7 +221,7 @@ class _SyncRepository implements SyncRepository {
         ..retainWhere((rev) => licenseTxIds.add(rev.licenseTxId!));
       logger.d('Found ${revisionsToSyncLicense.length} licenses to sync');
 
-      _updateLicenses(
+      await _updateLicenses(
         revisionsToSyncLicense: revisionsToSyncLicense,
       );
 
@@ -236,12 +255,21 @@ class _SyncRepository implements SyncRepository {
   }
 
   @override
-  Stream<double> syncDrive({
+  Stream<double> syncDriveById({
     required String driveId,
     required String ownerAddress,
+    Function(String driveId, int txCount)? txFechedCallback,
   }) {
-    // TODO: implement syncDrive
-    throw UnimplementedError();
+    _lastSync = DateTime.now();
+    return _syncDrive(
+      driveId,
+      ownerAddress: ownerAddress,
+      lastBlockHeight: 0,
+      currentBlockHeight: 0,
+      transactionParseBatchSize: 200,
+      txFechedCallback: txFechedCallback,
+      ghostFolders: {}, // No ghost folders to start with
+    );
   }
 
   @override
@@ -357,7 +385,7 @@ class _SyncRepository implements SyncRepository {
     );
   }
 
-  int calculateSyncLastBlockHeight(int lastBlockHeight) {
+  int _calculateSyncLastBlockHeight(int lastBlockHeight) {
     logger.d('Calculating sync last block height: $lastBlockHeight');
     if (_lastSync != null) {
       return lastBlockHeight;
@@ -512,6 +540,7 @@ class _SyncRepository implements SyncRepository {
     required int transactionParseBatchSize,
     required Map<FolderID, GhostFolder> ghostFolders,
     required String ownerAddress,
+    Function(String driveId, int txCount)? txFechedCallback,
   }) async* {
     /// Variables to count the current drive's progress information
     final drive = await _driveDao.driveById(driveId: driveId).getSingle();
@@ -661,14 +690,7 @@ class _SyncRepository implements SyncRepository {
 
     logger.d('Done fetching data - ${gqlDriveHistory.driveId}');
 
-    // TODO: verify that.
-    // _promptToSnapshotBloc.add(
-    //   CountSyncedTxs(
-    //     driveId: driveId,
-    //     txsSyncedWithGqlCount: gqlDriveHistory.txCount,
-    //     wasDeepSync: lastBlockHeight == 0,
-    //   ),
-    // );
+    txFechedCallback?.call(drive.id, gqlDriveHistory.txCount);
 
     final fetchPhaseTotalTime =
         DateTime.now().difference(fetchPhaseStartDT).inMilliseconds;
@@ -703,7 +725,7 @@ class _SyncRepository implements SyncRepository {
     final averageBetweenFetchAndGet = fetchPhaseTotalTime / syncDriveTotalTime;
 
     logger.i(
-        'Drive ${drive.name} completed parse phase. Progress by block height: $fetchPhasePercentage%. Starting parse phase. Sync duration: $syncDriveTotalTime ms. Parsing used ${(averageBetweenFetchAndGet * 100).toStringAsFixed(2)}% of drive sync process');
+        'Drive ${drive.name} completed parse phase. Progress by block height: $fetchPhasePercentage%. Starting parse phase. Sync duration: $syncDriveTotalTime ms. Fetching used ${(averageBetweenFetchAndGet * 100).toStringAsFixed(2)}% of drive sync process');
   }
 
   Future<void> _updateLicenses({
@@ -818,7 +840,7 @@ class _SyncRepository implements SyncRepository {
       'no. of entities in drive with id ${drive.id} to be parsed are: $numberOfDriveEntitiesToParse\n',
     );
 
-    yield* _batchProcess<DriveHistoryTransaction>(
+    yield* _batchProcessor.batchProcess<DriveHistoryTransaction>(
         list: transactions,
         batchSize: batchSize,
         endOfBatchCallback: (items) async* {
@@ -857,21 +879,15 @@ class _SyncRepository implements SyncRepository {
             ));
           }
 
-          await _database.transaction(() async {
+          await _driveDao.runTransaction(() async {
             final latestDriveRevision = await _addNewDriveEntityRevisions(
-              driveDao: _driveDao,
-              database: _database,
               newEntities: newEntities.whereType<DriveEntity>(),
             );
             final latestFolderRevisions = await _addNewFolderEntityRevisions(
-              driveDao: _driveDao,
-              database: _database,
               driveId: drive.id,
               newEntities: newEntities.whereType<FolderEntity>(),
             );
             final latestFileRevisions = await _addNewFileEntityRevisions(
-              driveDao: _driveDao,
-              database: _database,
               driveId: drive.id,
               newEntities: newEntities.whereType<FileEntity>(),
             );
@@ -904,18 +920,13 @@ class _SyncRepository implements SyncRepository {
 
             // Update the drive model, making sure to not overwrite the existing keys defined on the drive.
             if (updatedDrive != null) {
-              await (_database.update(_database.drives)
-                    ..whereSamePrimaryKey(updatedDrive))
-                  .write(updatedDrive);
+              await _driveDao.updateDrive(updatedDrive);
             }
 
             // Update the folder and file entries before generating their new paths.
-            await _database.batch((b) {
-              b.insertAllOnConflictUpdate(
-                  _database.folderEntries, updatedFoldersById.values.toList());
-              b.insertAllOnConflictUpdate(
-                  _database.fileEntries, updatedFilesById.values.toList());
-            });
+            await _driveDao
+                .updateFolderEntries(updatedFoldersById.values.toList());
+            await _driveDao.updateFileEntries(updatedFilesById.values.toList());
 
             await _generateFsEntryPaths(
               ghostFolders: ghostFolders,
@@ -934,42 +945,123 @@ class _SyncRepository implements SyncRepository {
     logger.i(
         'drive: ${drive.id} sync completed. no. of transactions to be parsed into entities: $numberOfDriveEntitiesToParse. no. of parsed entities: $numberOfDriveEntitiesParsed');
   }
-}
 
-const fetchPhaseWeight = 0.1;
-const parsePhaseWeight = 0.9;
+  /// Computes the new drive revisions from the provided entities, inserts them into the database,
+  /// and returns the latest revision.
+  Future<DriveRevisionsCompanion?> _addNewDriveEntityRevisions({
+    required Iterable<DriveEntity> newEntities,
+  }) async {
+    DriveRevisionsCompanion? latestRevision;
 
-/// Computes the new file revisions from the provided entities, inserts them into the database,
-/// and returns only the latest revisions.
-Future<List<FileRevisionsCompanion>> _addNewFileEntityRevisions({
-  required DriveDao driveDao,
-  required Database database,
-  required String driveId,
-  required Iterable<FileEntity> newEntities,
-}) async {
-  // The latest file revisions, keyed by their entity ids.
-  final latestRevisions = <String, FileRevisionsCompanion>{};
+    final newRevisions = <DriveRevisionsCompanion>[];
+    for (final entity in newEntities) {
+      latestRevision ??= await _driveDao
+          .latestDriveRevisionByDriveId(driveId: entity.id!)
+          .getSingleOrNull()
+          .then((r) => r?.toCompanion(true));
 
-  final newRevisions = <FileRevisionsCompanion>[];
-  for (final entity in newEntities) {
-    if (!latestRevisions.containsKey(entity.id) &&
-        entity.parentFolderId != null) {
-      final revisions = await driveDao
-          .latestFileRevisionByFileId(driveId: driveId, fileId: entity.id!)
-          .getSingleOrNull();
-      if (revisions != null) {
-        latestRevisions[entity.id!] = revisions.toCompanion(true);
+      final revisionPerformedAction =
+          entity.getPerformedRevisionAction(latestRevision);
+      if (revisionPerformedAction == null) {
+        continue;
+      }
+      final revision =
+          entity.toRevisionCompanion(performedAction: revisionPerformedAction);
+
+      if (revision.action.value.isEmpty) {
+        continue;
+      }
+
+      newRevisions.add(revision);
+      latestRevision = revision;
+    }
+
+    final newNetworkTransactions = createNetworkTransactionsCompanionsForDrives(
+      newRevisions,
+    );
+    await _driveDao.insertNewDriveRevisions(newRevisions);
+    await _driveDao.insertNewNetworkTransactions(newNetworkTransactions);
+
+    return latestRevision;
+  }
+
+  /// Computes the new file revisions from the provided entities, inserts them into the database,
+  /// and returns only the latest revisions.
+  Future<List<FileRevisionsCompanion>> _addNewFileEntityRevisions({
+    required String driveId,
+    required Iterable<FileEntity> newEntities,
+  }) async {
+    // The latest file revisions, keyed by their entity ids.
+    final latestRevisions = <String, FileRevisionsCompanion>{};
+
+    final newRevisions = <FileRevisionsCompanion>[];
+    for (final entity in newEntities) {
+      if (!latestRevisions.containsKey(entity.id) &&
+          entity.parentFolderId != null) {
+        final revisions = await _driveDao
+            .latestFileRevisionByFileId(driveId: driveId, fileId: entity.id!)
+            .getSingleOrNull();
+        if (revisions != null) {
+          latestRevisions[entity.id!] = revisions.toCompanion(true);
+        }
+      }
+
+      final revisionPerformedAction =
+          entity.getPerformedRevisionAction(latestRevisions[entity.id]);
+      if (revisionPerformedAction == null) {
+        continue;
+      }
+      // If Parent-Folder-Id is missing for a file, put it in the root folder
+      try {
+        entity.parentFolderId = entity.parentFolderId ?? rootPath;
+        final revision = entity.toRevisionCompanion(
+            performedAction: revisionPerformedAction);
+
+        if (revision.action.value.isEmpty) {
+          continue;
+        }
+
+        newRevisions.add(revision);
+        latestRevisions[entity.id!] = revision;
+      } catch (e, stacktrace) {
+        logger.e('Error adding revision for entity', e, stacktrace);
       }
     }
+    final newNetworkTransactions = createNetworkTransactionsCompanionsForFiles(
+      newRevisions,
+    );
+    await _driveDao.insertNewFileRevisions(newRevisions);
+    await _driveDao.insertNewNetworkTransactions(newNetworkTransactions);
 
-    final revisionPerformedAction =
-        entity.getPerformedRevisionAction(latestRevisions[entity.id]);
-    if (revisionPerformedAction == null) {
-      continue;
-    }
-    // If Parent-Folder-Id is missing for a file, put it in the root folder
-    try {
-      entity.parentFolderId = entity.parentFolderId ?? rootPath;
+    return latestRevisions.values.toList();
+  }
+
+  /// Computes the new folder revisions from the provided entities, inserts them into the database,
+  /// and returns only the latest revisions.
+  Future<List<FolderRevisionsCompanion>> _addNewFolderEntityRevisions({
+    required String driveId,
+    required Iterable<FolderEntity> newEntities,
+  }) async {
+    // The latest folder revisions, keyed by their entity ids.
+    final latestRevisions = <String, FolderRevisionsCompanion>{};
+
+    final newRevisions = <FolderRevisionsCompanion>[];
+    for (final entity in newEntities) {
+      if (!latestRevisions.containsKey(entity.id)) {
+        final revisions = (await _driveDao
+            .latestFolderRevisionByFolderId(
+                driveId: driveId, folderId: entity.id!)
+            .getSingleOrNull());
+        if (revisions != null) {
+          latestRevisions[entity.id!] = revisions.toCompanion(true);
+        }
+      }
+
+      final revisionPerformedAction =
+          entity.getPerformedRevisionAction(latestRevisions[entity.id]);
+      if (revisionPerformedAction == null) {
+        continue;
+      }
       final revision =
           entity.toRevisionCompanion(performedAction: revisionPerformedAction);
 
@@ -979,37 +1071,20 @@ Future<List<FileRevisionsCompanion>> _addNewFileEntityRevisions({
 
       newRevisions.add(revision);
       latestRevisions[entity.id!] = revision;
-    } catch (e, stacktrace) {
-      logger.e('Error adding revision for entity', e, stacktrace);
     }
+    final newNetworkTransactions =
+        createNetworkTransactionsCompanionsForFolders(
+      newRevisions,
+    );
+    await _driveDao.insertNewFolderRevisions(newRevisions);
+    await _driveDao.insertNewNetworkTransactions(newNetworkTransactions);
+
+    return latestRevisions.values.toList();
   }
-
-  await database.batch((b) {
-    b.insertAllOnConflictUpdate(database.fileRevisions, newRevisions);
-    b.insertAllOnConflictUpdate(
-        database.networkTransactions,
-        newRevisions
-            .expand(
-              (rev) => [
-                NetworkTransactionsCompanion.insert(
-                  transactionDateCreated: rev.dateCreated,
-                  id: rev.metadataTxId.value,
-                  status: const Value(TransactionStatus.confirmed),
-                ),
-                // We cannot be sure that the data tx of files have been mined
-                // so we'll mark it as pending initially.
-                NetworkTransactionsCompanion.insert(
-                  transactionDateCreated: rev.dateCreated,
-                  id: rev.dataTxId.value,
-                  status: const Value(TransactionStatus.pending),
-                ),
-              ],
-            )
-            .toList());
-  });
-
-  return latestRevisions.values.toList();
 }
+
+const fetchPhaseWeight = 0.1;
+const parsePhaseWeight = 0.9;
 
 /// Computes the refreshed file entries from the provided revisions and returns them as a map keyed by their ids.
 Future<Map<String, FileEntriesCompanion>>
@@ -1037,63 +1112,6 @@ Future<Map<String, FileEntriesCompanion>>
   }
 
   return updatedFilesById;
-}
-
-/// Computes the new folder revisions from the provided entities, inserts them into the database,
-/// and returns only the latest revisions.
-Future<List<FolderRevisionsCompanion>> _addNewFolderEntityRevisions({
-  required DriveDao driveDao,
-  required Database database,
-  required String driveId,
-  required Iterable<FolderEntity> newEntities,
-}) async {
-  // The latest folder revisions, keyed by their entity ids.
-  final latestRevisions = <String, FolderRevisionsCompanion>{};
-
-  final newRevisions = <FolderRevisionsCompanion>[];
-  for (final entity in newEntities) {
-    if (!latestRevisions.containsKey(entity.id)) {
-      final revisions = (await driveDao
-          .latestFolderRevisionByFolderId(
-              driveId: driveId, folderId: entity.id!)
-          .getSingleOrNull());
-      if (revisions != null) {
-        latestRevisions[entity.id!] = revisions.toCompanion(true);
-      }
-    }
-
-    final revisionPerformedAction =
-        entity.getPerformedRevisionAction(latestRevisions[entity.id]);
-    if (revisionPerformedAction == null) {
-      continue;
-    }
-    final revision =
-        entity.toRevisionCompanion(performedAction: revisionPerformedAction);
-
-    if (revision.action.value.isEmpty) {
-      continue;
-    }
-
-    newRevisions.add(revision);
-    latestRevisions[entity.id!] = revision;
-  }
-
-  await database.batch((b) {
-    b.insertAllOnConflictUpdate(database.folderRevisions, newRevisions);
-    b.insertAllOnConflictUpdate(
-        database.networkTransactions,
-        newRevisions
-            .map(
-              (rev) => NetworkTransactionsCompanion.insert(
-                transactionDateCreated: rev.dateCreated,
-                id: rev.metadataTxId.value,
-                status: const Value(TransactionStatus.confirmed),
-              ),
-            )
-            .toList());
-  });
-
-  return latestRevisions.values.toList();
 }
 
 /// Computes the refreshed folder entries from the provided revisions and returns them as a map keyed by their ids.
@@ -1249,82 +1267,4 @@ Future<DrivesCompanion> _computeRefreshedDriveFromRevision({
           oldestRevision?.dateCreated ?? latestRevision.dateCreated as DateTime,
         ),
       );
-}
-
-Stream<double> _batchProcess<T>({
-  required List<T> list,
-  required Stream<double> Function(List<T> items) endOfBatchCallback,
-  required int batchSize,
-}) async* {
-  if (list.isEmpty) {
-    return;
-  }
-
-  final length = list.length;
-
-  for (var i = 0; i < length / batchSize; i++) {
-    final currentBatch = <T>[];
-
-    /// Mounts the list to be iterated
-    for (var j = i * batchSize; j < ((i + 1) * batchSize); j++) {
-      if (j >= length) {
-        break;
-      }
-
-      currentBatch.add(list[j]);
-    }
-
-    yield* endOfBatchCallback(currentBatch);
-  }
-}
-
-/// Computes the new drive revisions from the provided entities, inserts them into the database,
-/// and returns the latest revision.
-Future<DriveRevisionsCompanion?> _addNewDriveEntityRevisions({
-  required DriveDao driveDao,
-  required Database database,
-  required Iterable<DriveEntity> newEntities,
-}) async {
-  DriveRevisionsCompanion? latestRevision;
-
-  final newRevisions = <DriveRevisionsCompanion>[];
-  for (final entity in newEntities) {
-    latestRevision ??= await driveDao
-        .latestDriveRevisionByDriveId(driveId: entity.id!)
-        .getSingleOrNull()
-        .then((r) => r?.toCompanion(true));
-
-    final revisionPerformedAction =
-        entity.getPerformedRevisionAction(latestRevision);
-    if (revisionPerformedAction == null) {
-      continue;
-    }
-    final revision =
-        entity.toRevisionCompanion(performedAction: revisionPerformedAction);
-
-    if (revision.action.value.isEmpty) {
-      continue;
-    }
-
-    newRevisions.add(revision);
-    latestRevision = revision;
-  }
-
-  await database.batch((b) {
-    b.insertAllOnConflictUpdate(database.driveRevisions, newRevisions);
-    b.insertAllOnConflictUpdate(
-      database.networkTransactions,
-      newRevisions
-          .map(
-            (rev) => NetworkTransactionsCompanion.insert(
-              transactionDateCreated: rev.dateCreated,
-              id: rev.metadataTxId.value,
-              status: const Value(TransactionStatus.confirmed),
-            ),
-          )
-          .toList(),
-    );
-  });
-
-  return latestRevision;
 }

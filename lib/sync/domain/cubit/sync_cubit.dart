@@ -163,7 +163,7 @@ class SyncCubit extends Cubit<SyncState> {
 
   var ghostFolders = <FolderID, GhostFolder>{};
 
-  Future<void> startSync({bool syncDeep = false}) async {
+  Future<void> startSync({bool deepSync = false}) async {
     logger.i('Starting Sync');
 
     if (state is SyncInProgress) {
@@ -225,11 +225,19 @@ class SyncCubit extends Cubit<SyncState> {
       logger.d('Current block height number $currentBlockHeight');
 
       await for (var syncProgress in _syncRepository.syncAllDrives(
-        wallet: wallet,
-        password: password,
-        cipherKey: cipherKey,
-        syncDeep: syncDeep,
-      )) {
+          wallet: wallet,
+          password: password,
+          cipherKey: cipherKey,
+          syncDeep: deepSync,
+          txFechedCallback: (driveId, txCount) {
+            _promptToSnapshotBloc.add(
+              CountSyncedTxs(
+                driveId: driveId,
+                txsSyncedWithGqlCount: txCount,
+                wasDeepSync: deepSync,
+              ),
+            );
+          })) {
         _syncProgress = syncProgress;
         syncProgressController.add(_syncProgress);
       }

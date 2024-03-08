@@ -17,6 +17,7 @@ import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
 import 'package:ardrive/sharing/blocs/sharing_file_bloc.dart';
 import 'package:ardrive/sync/domain/repositories/sync_repository.dart';
+import 'package:ardrive/sync/utils/batch_processor.dart';
 import 'package:ardrive/theme/theme_switcher_bloc.dart';
 import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
@@ -413,9 +414,9 @@ class AppState extends State<App> {
           create: (_) => SyncRepository(
             arweave: _arweave,
             configService: configService,
-            database: _.read<Database>(),
             driveDao: _.read<DriveDao>(),
             licenseService: _.read<LicenseService>(),
+            batchProcessor: BatchProcessor(),
           ),
         ),
       ];

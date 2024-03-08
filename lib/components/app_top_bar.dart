@@ -50,7 +50,7 @@ class SyncButton extends StatelessWidget {
         items: [
           ArDriveDropdownItem(
             onClick: () {
-              context.read<SyncCubit>().startSync(syncDeep: false);
+              context.read<SyncCubit>().startSync(deepSync: false);
               PlausibleEventTracker.trackResync(type: ResyncType.resync);
             },
             content: ArDriveDropdownItemTile(
@@ -62,7 +62,7 @@ class SyncButton extends StatelessWidget {
           ),
           ArDriveDropdownItem(
               onClick: () {
-                context.read<SyncCubit>().startSync(syncDeep: true);
+                context.read<SyncCubit>().startSync(deepSync: true);
                 PlausibleEventTracker.trackResync(type: ResyncType.deepResync);
               },
               content: ArDriveDropdownItemTile(
