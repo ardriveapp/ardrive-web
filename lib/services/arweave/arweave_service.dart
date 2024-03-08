@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
+import 'package:ardrive/services/arweave/get_segmented_transaction_from_drive_strategy.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/arfs_txs_filter.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
@@ -12,6 +13,7 @@ import 'package:ardrive/utils/internet_checker.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
+import 'package:ardrive/utils/snapshots/snapshot_item_to_be_created.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:artemis/artemis.dart';
@@ -194,92 +196,21 @@ class ArweaveService {
     );
   }
 
-  Stream<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>>
-      getSegmentedTransactionsFromDrive(
+  Stream<List<DriveHistoryTransactionEdge>> getSegmentedTransactionsFromDrive(
     String driveId, {
     required String ownerAddress,
     int? minBlockHeight,
     int? maxBlockHeight,
+    GetSegmentedTransactionFromDriveStrategy? strategy,
   }) async* {
-    String? cursor;
+    strategy ??= GetSegmentedTransactionFromDriveStrategyImpl(_graphQLRetry);
 
-    while (true) {
-      // Get a page of 100 transactions
-      final driveEntityHistoryQueryForFolders = await _graphQLRetry.execute(
-        DriveEntityHistoryQuery(
-          variables: DriveEntityHistoryArguments(
-            driveId: driveId,
-            minBlockHeight: minBlockHeight,
-            maxBlockHeight: maxBlockHeight,
-            after: cursor,
-            ownerAddress: ownerAddress,
-            entityType: 'folder',
-          ),
-        ),
-      );
-
-      yield driveEntityHistoryQueryForFolders.data!.transactions.edges
-          .where((element) {
-        final arfsTag = element.node.tags.firstWhereOrNull(
-          (element) => element.name == EntityTag.arFs,
-        );
-
-        if (arfsTag == null) {
-          return false;
-        }
-
-        return supportedArFSVersionsSet.contains(arfsTag.value);
-      }).toList();
-
-      cursor =
-          driveEntityHistoryQueryForFolders.data!.transactions.edges.isNotEmpty
-              ? driveEntityHistoryQueryForFolders
-                  .data!.transactions.edges.last.cursor
-              : null;
-
-      if (!driveEntityHistoryQueryForFolders
-          .data!.transactions.pageInfo.hasNextPage) {
-        break;
-      }
-    }
-
-    while (true) {
-      // Get a page of 100 transactions
-      final driveEntityHistoryQuery = await _graphQLRetry.execute(
-        DriveEntityHistoryQuery(
-          variables: DriveEntityHistoryArguments(
-            driveId: driveId,
-            minBlockHeight: minBlockHeight,
-            maxBlockHeight: maxBlockHeight,
-            after: cursor,
-            ownerAddress: ownerAddress,
-            entityType: 'file',
-          ),
-        ),
-      );
-
-      yield driveEntityHistoryQuery.data!.transactions.edges.where(
-        (element) {
-          final arfsTag = element.node.tags.firstWhereOrNull(
-            (element) => element.name == EntityTag.arFs,
-          );
-
-          if (arfsTag == null) {
-            return false;
-          }
-
-          return supportedArFSVersionsSet.contains(arfsTag.value);
-        },
-      ).toList();
-
-      cursor = driveEntityHistoryQuery.data!.transactions.edges.isNotEmpty
-          ? driveEntityHistoryQuery.data!.transactions.edges.last.cursor
-          : null;
-
-      if (!driveEntityHistoryQuery.data!.transactions.pageInfo.hasNextPage) {
-        break;
-      }
-    }
+    yield* strategy.getSegmentedTransactionFromDrive(
+      driveId,
+      minBlockHeight: minBlockHeight,
+      maxBlockHeight: maxBlockHeight,
+      ownerAddress: ownerAddress,
+    );
   }
 
   Stream<List<LicenseAssertions$Query$TransactionConnection$TransactionEdge$Transaction>>

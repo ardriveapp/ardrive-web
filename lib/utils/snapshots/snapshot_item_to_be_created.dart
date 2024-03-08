@@ -10,6 +10,8 @@ import 'height_range.dart';
 
 typedef DriveHistoryTransaction
     = DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
+typedef DriveHistoryTransactionEdge
+    = DriveEntityHistory$Query$TransactionConnection$TransactionEdge;
 
 class SnapshotItemToBeCreated {
   final HeightRange subRanges;
