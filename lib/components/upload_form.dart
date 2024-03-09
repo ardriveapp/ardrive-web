@@ -15,6 +15,7 @@ import 'package:ardrive/components/file_picker_modal.dart';
 import 'package:ardrive/components/license/cc_type_form.dart';
 import 'package:ardrive/components/license/learn_about_licensing.dart';
 import 'package:ardrive/components/license/udl_params_form.dart';
+import 'package:ardrive/components/license/view_license_definition.dart';
 import 'package:ardrive/components/license_details_popover.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
@@ -33,7 +34,6 @@ import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/logger.dart';
-import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
@@ -1615,25 +1615,12 @@ class LicenseReviewInfo extends StatelessWidget {
               Text.rich(
                 TextSpan(
                   children: [
-                    const TextSpan(text: '   '),
-                    TextSpan(
-                      text: 'View',
-                      style: ArDriveTypography.body
-                          .buttonLargeRegular(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgSubtle,
-                          )
-                          .copyWith(
-                            decoration: TextDecoration.underline,
-                          ),
-                      recognizer: TapGestureRecognizer()
-                        ..onTap = () async {
-                          final url =
-                              'https://arweave.net/${licenseState.meta.licenseDefinitionTxId}';
-                          await openUrl(url: url);
-                        },
+                    const WidgetSpan(
+                      child: SizedBox(width: 16),
+                    ),
+                    viewLicenseDefinitionTextSpan(
+                      context,
+                      licenseState.meta.licenseDefinitionTxId,
                     ),
                   ],
                 ),
