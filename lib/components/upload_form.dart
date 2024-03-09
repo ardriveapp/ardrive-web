@@ -13,6 +13,7 @@ import 'package:ardrive/blocs/upload/upload_handles/file_v2_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
 import 'package:ardrive/components/file_picker_modal.dart';
 import 'package:ardrive/components/license/cc_type_form.dart';
+import 'package:ardrive/components/license/learn_about_licensing.dart';
 import 'package:ardrive/components/license/udl_params_form.dart';
 import 'package:ardrive/components/license_details_popover.dart';
 import 'package:ardrive/core/activity_tracker.dart';
@@ -21,7 +22,6 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
-import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
@@ -523,21 +523,7 @@ class _UploadFormState extends State<UploadForm> {
                           ),
                         ),
                       ),
-                      ArDriveClickArea(
-                        child: GestureDetector(
-                          onTap: () {
-                            openUrl(
-                              url: Resources.licenseHelpLink,
-                            );
-                          },
-                          child: Text(
-                            'Learn More about Licensing',
-                            style: ArDriveTypography.body
-                                .buttonNormalRegular()
-                                .copyWith(decoration: TextDecoration.underline),
-                          ),
-                        ),
-                      ),
+                      const LearnAboutLicensing(),
                     ],
                   );
                 }),

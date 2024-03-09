@@ -1,16 +1,15 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/license/cc_type_form.dart';
+import 'package:ardrive/components/license/learn_about_licensing.dart';
 import 'package:ardrive/components/license/udl_params_form.dart';
 import 'package:ardrive/components/license_summary.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
-import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -253,21 +252,7 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                       ),
                     ),
                   ),
-                  ArDriveClickArea(
-                    child: GestureDetector(
-                      onTap: () {
-                        openUrl(
-                          url: Resources.licenseHelpLink,
-                        );
-                      },
-                      child: Text(
-                        'Learn More about Licensing',
-                        style: ArDriveTypography.body
-                            .buttonNormalRegular()
-                            .copyWith(decoration: TextDecoration.underline),
-                      ),
-                    ),
-                  ),
+                  const LearnAboutLicensing(),
                   const Divider(height: 32),
                   Text(
                     // TODO: Localize
