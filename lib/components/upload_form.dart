@@ -1347,6 +1347,7 @@ class _StatsScreenState extends State<StatsScreen> {
       actions: widget.modalActions,
       children: [
         files == null
+            // TODO: Replace progress indicator with error view
             ? const Center(child: CircularProgressIndicator())
             : Align(
                 alignment: Alignment.topCenter,
