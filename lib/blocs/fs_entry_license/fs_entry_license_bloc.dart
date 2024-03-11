@@ -9,6 +9,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:drift/drift.dart';
@@ -268,8 +269,10 @@ class FsEntryLicenseBloc
             dataTxId: dataTxId,
           )..ownerAddress = profile.walletAddress;
 
+          final owner = await profile.wallet.getOwner();
+          final appInfo = AppInfoServices().appInfo;
           final licenseAssertionDataItem = await licenseAssertionEntity
-              .asPreparedDataItem(owner: await profile.wallet.getOwner());
+              .asPreparedDataItem(owner: owner, appInfo: appInfo);
           await licenseAssertionDataItem.sign(profile.wallet);
           licenseAssertionTxDataItems.add(licenseAssertionDataItem);
 

@@ -67,8 +67,8 @@ class LicenseAssertionEntity with TransactionPropertiesMixin {
 
   Future<DataItem> asPreparedDataItem({
     required ArweaveAddressString owner,
+    required AppInfo appInfo,
   }) async {
-    final appInfo = AppInfoServices().appInfo;
     final ardriveTags = {
       EntityTag.appVersion: appInfo.version,
       EntityTag.appPlatform: appInfo.platform,
