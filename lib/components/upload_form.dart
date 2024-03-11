@@ -13,7 +13,9 @@ import 'package:ardrive/blocs/upload/upload_handles/file_v2_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
 import 'package:ardrive/components/file_picker_modal.dart';
 import 'package:ardrive/components/license/cc_type_form.dart';
+import 'package:ardrive/components/license/learn_about_licensing.dart';
 import 'package:ardrive/components/license/udl_params_form.dart';
+import 'package:ardrive/components/license/view_license_definition.dart';
 import 'package:ardrive/components/license_details_popover.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
@@ -21,7 +23,6 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
-import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
@@ -33,7 +34,6 @@ import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/logger.dart';
-import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
@@ -523,21 +523,7 @@ class _UploadFormState extends State<UploadForm> {
                           ),
                         ),
                       ),
-                      ArDriveClickArea(
-                        child: GestureDetector(
-                          onTap: () {
-                            openUrl(
-                              url: Resources.licenseHelpLink,
-                            );
-                          },
-                          child: Text(
-                            'Learn More about Licensing',
-                            style: ArDriveTypography.body
-                                .buttonNormalRegular()
-                                .copyWith(decoration: TextDecoration.underline),
-                          ),
-                        ),
-                      ),
+                      const LearnAboutLicensing(),
                     ],
                   );
                 }),
@@ -1361,6 +1347,7 @@ class _StatsScreenState extends State<StatsScreen> {
       actions: widget.modalActions,
       children: [
         files == null
+            // TODO: Replace progress indicator with error view
             ? const Center(child: CircularProgressIndicator())
             : Align(
                 alignment: Alignment.topCenter,
@@ -1629,25 +1616,12 @@ class LicenseReviewInfo extends StatelessWidget {
               Text.rich(
                 TextSpan(
                   children: [
-                    const TextSpan(text: '   '),
-                    TextSpan(
-                      text: 'View',
-                      style: ArDriveTypography.body
-                          .buttonLargeRegular(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgSubtle,
-                          )
-                          .copyWith(
-                            decoration: TextDecoration.underline,
-                          ),
-                      recognizer: TapGestureRecognizer()
-                        ..onTap = () async {
-                          final url =
-                              'https://arweave.net/${licenseState.meta.licenseDefinitionTxId}';
-                          await openUrl(url: url);
-                        },
+                    const WidgetSpan(
+                      child: SizedBox(width: 16),
+                    ),
+                    viewLicenseDefinitionTextSpan(
+                      context,
+                      licenseState.meta.licenseDefinitionTxId,
                     ),
                   ],
                 ),

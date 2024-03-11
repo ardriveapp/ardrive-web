@@ -1,8 +1,7 @@
+import 'package:ardrive/components/license/view_license_definition.dart';
 import 'package:ardrive/services/license/license_state.dart';
 import 'package:ardrive/services/license/licenses/udl.dart';
-import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 
 class LicenseSummary extends StatelessWidget {
@@ -53,25 +52,12 @@ class LicenseSummary extends StatelessWidget {
                   ),
                 ),
                 if (licenseState.meta.licenseType != LicenseType.unknown) ...[
-                  const TextSpan(text: '   '),
-                  TextSpan(
-                    text: 'View',
-                    style: ArDriveTypography.body
-                        .buttonLargeRegular(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeFgSubtle,
-                        )
-                        .copyWith(
-                          decoration: TextDecoration.underline,
-                        ),
-                    recognizer: TapGestureRecognizer()
-                      ..onTap = () async {
-                        final url =
-                            'https://arweave.net/${licenseState.meta.licenseDefinitionTxId}';
-                        await openUrl(url: url);
-                      },
+                  const WidgetSpan(
+                    child: SizedBox(width: 16),
+                  ),
+                  viewLicenseDefinitionTextSpan(
+                    context,
+                    licenseState.meta.licenseDefinitionTxId,
                   ),
                 ]
               ],
