@@ -9,17 +9,17 @@ import 'package:drift/drift.dart';
 extension LicensesCompanionExtensions on LicensesCompanion {
   /// Converts the assertion to an instance of [LicenseAssertionEntity].
   LicenseAssertionEntity asAssertionEntity(LicenseService licenseService,
-      {String? ownerAddress}) {
+      {required String dataTxId, String? ownerAddress}) {
     final Map<String, String> additionalTags =
         jsonDecode(customGQLTags.value ?? '{}');
 
     final licenseMeta = licenseService.licenseMetaByType(licenseTypeEnum);
     final licenseAssertion = LicenseAssertionEntity(
-      dataTxId: dataTxId.value,
+      dataTxId: dataTxId,
       licenseDefinitionTxId: licenseMeta.licenseDefinitionTxId,
       additionalTags: additionalTags,
     )
-      ..txId = dataTxId.value
+      ..txId = dataTxId
       ..blockTimestamp = dateCreated.value
       ..bundledIn = bundledIn.value;
 
@@ -45,14 +45,9 @@ extension LicensesCompanionExtensions on LicensesCompanion {
 extension LicenseAssertionEntityExtensions on LicenseAssertionEntity {
   /// Converts the entity to an instance of [LicenseAssertionsCompanion].
   LicensesCompanion toCompanion({
-    required String fileId,
-    required String driveId,
     required LicenseType licenseType,
   }) =>
       LicensesCompanion.insert(
-        fileId: fileId,
-        driveId: driveId,
-        dataTxId: dataTxId,
         licenseTxType: LicenseTxType.assertion.name,
         licenseTxId: txId,
         customGQLTags: additionalTags.isNotEmpty
@@ -67,14 +62,9 @@ extension LicenseAssertionEntityExtensions on LicenseAssertionEntity {
 extension LicenseComposedEntityExtensions on LicenseComposedEntity {
   /// Converts the entity to an instance of [LicenseAssertionsCompanion].
   LicensesCompanion toCompanion({
-    required String fileId,
-    required String driveId,
     required LicenseType licenseType,
   }) =>
       LicensesCompanion.insert(
-        fileId: fileId,
-        driveId: driveId,
-        dataTxId: txId,
         licenseTxType: LicenseTxType.composed.name,
         licenseTxId: txId,
         customGQLTags: additionalTags.isNotEmpty
