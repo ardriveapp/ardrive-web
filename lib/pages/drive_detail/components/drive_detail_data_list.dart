@@ -152,12 +152,52 @@ Widget _buildDataListContent(
   }
 
   return LayoutBuilder(builder: (context, constraints) {
+    final columns = [
+      TableColumn(
+        appLocalizationsOf(context).name,
+        9,
+        index: 0,
+        canHide: false,
+      ),
+      if (constraints.maxWidth > 500)
+        TableColumn(
+          appLocalizationsOf(context).size,
+          3,
+          index: 1,
+          canHide: false,
+        ),
+      if (constraints.maxWidth > 640)
+        TableColumn(
+          appLocalizationsOf(context).lastUpdated,
+          3,
+          index: 2,
+          isVisible: columnVisibility[2] ?? true,
+        ),
+      if (constraints.maxWidth > 700)
+        TableColumn(
+          appLocalizationsOf(context).dateCreated,
+          3,
+          index: 3,
+          isVisible: columnVisibility[3] ?? true,
+        ),
+      if (constraints.maxWidth > 820)
+        TableColumn(
+          // TODO: Localize
+          // appLocalizationsOf(context).licenseType,
+          'License',
+          2,
+          index: 4,
+          isVisible: columnVisibility[4] ?? true,
+        ),
+    ];
+
     final driveDetailCubitState = context.read<DriveDetailCubit>().state;
     final forceRebuildKey = driveDetailCubitState is DriveDetailLoadSuccess
         ? driveDetailCubitState.forceRebuildKey
         : null;
     return ArDriveDataTable<ArDriveDataTableItem>(
-      key: ValueKey('${folder.id}-${forceRebuildKey.toString()}'),
+      key: ValueKey(
+          '${folder.id}-${forceRebuildKey.toString()}${columns.length}'),
       lockMultiSelect: context.watch<SyncCubit>().state is SyncInProgress ||
           !context.watch<ActivityTracker>().isMultiSelectEnabled,
       rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
@@ -186,44 +226,7 @@ Widget _buildDataListContent(
       },
       forceDisableMultiSelect:
           context.read<DriveDetailCubit>().forceDisableMultiselect,
-      columns: [
-        TableColumn(
-          appLocalizationsOf(context).name,
-          9,
-          index: 0,
-          canHide: false,
-        ),
-        if (constraints.maxWidth > 500)
-          TableColumn(
-            appLocalizationsOf(context).size,
-            3,
-            index: 1,
-            canHide: false,
-          ),
-        if (constraints.maxWidth > 640)
-          TableColumn(
-            appLocalizationsOf(context).lastUpdated,
-            3,
-            index: 2,
-            isVisible: columnVisibility[2] ?? true,
-          ),
-        if (constraints.maxWidth > 700)
-          TableColumn(
-            appLocalizationsOf(context).dateCreated,
-            3,
-            index: 3,
-            isVisible: columnVisibility[3] ?? true,
-          ),
-        if (constraints.maxWidth > 820)
-          TableColumn(
-            // TODO: Localize
-            // appLocalizationsOf(context).licenseType,
-            'License',
-            2,
-            index: 4,
-            isVisible: columnVisibility[4] ?? true,
-          ),
-      ],
+      columns: columns,
       trailing: (file) => isMultiselecting
           ? const SizedBox.shrink()
           : DriveExplorerItemTileTrailing(
