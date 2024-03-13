@@ -88,7 +88,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
                     licenseType: LicenseType.unknown,
                     licenseDefinitionTxId: '',
                     name: 'Pending',
-                    shortName: 'Pending',
+                    shortName: '...',
                   ),
                 );
               }
