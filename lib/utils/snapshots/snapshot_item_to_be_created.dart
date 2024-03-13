@@ -47,11 +47,11 @@ class SnapshotItemToBeCreated {
     List<Future<TxSnapshot>> tasks = [];
 
     // Convert the source Stream into a List to get all elements at once
-    List nodes = await source.toList();
+    final nodes = await source.toList();
 
     // Process each node concurrently
     for (var node in nodes) {
-      tasks.add(_processNode(node));
+      tasks.add(_processNode(node.transactionCommonMixin));
     }
 
     // Wait for all tasks to finish in their original order
@@ -66,7 +66,7 @@ class SnapshotItemToBeCreated {
     yield* snapshotDataStream;
   }
 
-  Future<TxSnapshot> _processNode(node) async {
+  Future<TxSnapshot> _processNode(TransactionCommonMixin node) async {
     _dataStart = _dataStart == null || node.block!.height < _dataStart!
         ? node.block!.height
         : _dataStart;
@@ -82,7 +82,7 @@ class SnapshotItemToBeCreated {
     }
   }
 
-  bool _isSnapshotTx(DriveHistoryTransaction node) {
+  bool _isSnapshotTx(TransactionCommonMixin node) {
     final tags = node.tags;
     final entityTypeTags =
         tags.where((tag) => tag.name == EntityTag.entityType);

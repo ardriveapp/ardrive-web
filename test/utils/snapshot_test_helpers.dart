@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
+import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 
 Future<String> fakePrivateSnapshotSource(Range range) async {
@@ -9,9 +10,10 @@ Future<String> fakePrivateSnapshotSource(Range range) async {
       'txSnapshots': await fakeNodesStream(range)
           .map(
             (event) => {
-              'gqlNode': event,
+              'gqlNode': event.transactionCommonMixin,
               'jsonMetadata': base64Encode(
-                utf8.encode(('ENCODED DATA - H:${event.block!.height}')),
+                utf8.encode(
+                    ('ENCODED DATA - H:${event.transactionCommonMixin.block!.height}')),
               ),
             },
           )
@@ -26,8 +28,9 @@ Future<String> fakeSnapshotSource(Range range) async {
       'txSnapshots': await fakeNodesStream(range)
           .map(
             (event) => {
-              'gqlNode': event,
-              'jsonMetadata': '{"name": "${event.block!.height}"}',
+              'gqlNode': event.transactionCommonMixin,
+              'jsonMetadata':
+                  '{"name": "${event.transactionCommonMixin.block!.height}"}',
             },
           )
           .toList(),
@@ -36,11 +39,11 @@ Future<String> fakeSnapshotSource(Range range) async {
 }
 
 // TODO: use the abstraction DriveEntityHistoryTransactionModel
-Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
-    fakeNodesStream(Range range) async* {
+Stream<DriveEntityHistoryTransactionModel> fakeNodesStream(Range range) async* {
   for (int height = range.start; height <= range.end; height++) {
-    yield DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
-        .fromJson(
+    final transactionCommonMixin =
+        DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+            .fromJson(
       {
         'id': 'tx-$height',
         'bundledIn': {'id': 'ASDASDASDASDASDASD'},
@@ -52,13 +55,17 @@ Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transactio
         }
       },
     );
+
+    yield DriveEntityHistoryTransactionModel(
+      transactionCommonMixin: transactionCommonMixin,
+    );
   }
 }
 
-Future<int> countStreamItems(Stream stream) async {
+Future<int> countStreamItems(
+    Stream<DriveEntityHistoryTransactionModel> stream) async {
   int count = 0;
-  await for (DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction _
-      in stream) {
+  await for (var _ in stream) {
     count++;
   }
   return count;
