@@ -10,9 +10,10 @@ import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/main.dart';
+import 'package:ardrive/models/forms/cc.dart';
+import 'package:ardrive/models/forms/udl.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/license/license_service.dart';
-import 'package:ardrive/services/license/license_state.dart';
+import 'package:ardrive/services/license/license.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
@@ -26,6 +27,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pst/pst.dart';
+import 'package:reactive_forms/reactive_forms.dart';
 
 import 'enums/conflicting_files_actions.dart';
 
@@ -67,7 +69,7 @@ class UploadCubit extends Cubit<UploadState> {
       emit(uploadReady.copyWith(
         paymentInfo: paymentInfo,
         uploadMethod: method,
-        isButtonToUploadEnabled: canUpload,
+        isNextButtonEnabled: canUpload,
       ));
     } else if (state is UploadReadyToPrepare) {
       emit(UploadReady(
@@ -76,11 +78,106 @@ class UploadCubit extends Cubit<UploadState> {
         numberOfFiles: files.length,
         uploadIsPublic: !_targetDrive.isPrivate,
         isDragNDrop: isDragNDrop,
-        isButtonToUploadEnabled: canUpload,
+        isNextButtonEnabled: canUpload,
         isArConnect: (state as UploadReadyToPrepare).isArConnect,
       ));
     }
   }
+
+  void initialScreenUpload() {
+    if (state is UploadReady) {
+      final readyState = state as UploadReady;
+      startUpload(
+        uploadPlanForAr: readyState.paymentInfo.uploadPlanForAR!,
+        uploadPlanForTurbo: readyState.paymentInfo.uploadPlanForTurbo,
+      );
+    }
+  }
+
+  void initialScreenNext({required LicenseCategory licenseCategory}) {
+    if (state is UploadReady) {
+      final readyState = state as UploadReady;
+      emit(UploadConfiguringLicense(
+        readyState: readyState,
+        licenseCategory: licenseCategory,
+      ));
+    }
+  }
+
+  void configuringLicenseBack() {
+    if (state is UploadConfiguringLicense) {
+      final configuringLicense = state as UploadConfiguringLicense;
+      final prevState = configuringLicense.readyState;
+      emit(prevState);
+    }
+  }
+
+  void configuringLicenseNext() {
+    if (state is UploadConfiguringLicense) {
+      final configuringLicense = state as UploadConfiguringLicense;
+
+      late LicenseState licenseState;
+      switch (configuringLicense.licenseCategory) {
+        case LicenseCategory.udl:
+          licenseState = LicenseState(
+            meta: udlLicenseDefault,
+            params: udlFormToLicenseParams(_licenseUdlParamsForm),
+          );
+        case LicenseCategory.cc:
+          final LicenseMeta licenseMeta =
+              _licenseCcTypeForm.control('ccTypeField').value;
+          licenseState = LicenseState(meta: licenseMeta);
+        default:
+          throw StateError(
+              'Invalid license category: ${configuringLicense.licenseCategory}');
+      }
+
+      emit(UploadReviewWithLicense(
+        readyState: configuringLicense.readyState,
+        licenseCategory: configuringLicense.licenseCategory,
+        licenseState: licenseState,
+      ));
+    }
+  }
+
+  void reviewBack() {
+    if (state is UploadReviewWithLicense) {
+      final reviewWithLicense = state as UploadReviewWithLicense;
+      final UploadReady readyState = reviewWithLicense.readyState;
+      final licenseCategory = reviewWithLicense.licenseCategory;
+      final prevState = UploadConfiguringLicense(
+        readyState: readyState,
+        licenseCategory: licenseCategory,
+      );
+      emit(prevState);
+    }
+  }
+
+  void reviewUpload() {
+    if (state is UploadReviewWithLicense) {
+      final reviewWithLicense = state as UploadReviewWithLicense;
+      startUpload(
+        uploadPlanForAr:
+            reviewWithLicense.readyState.paymentInfo.uploadPlanForAR!,
+        uploadPlanForTurbo:
+            reviewWithLicense.readyState.paymentInfo.uploadPlanForTurbo,
+        licenseStateConfigured: reviewWithLicense.licenseState,
+      );
+    }
+  }
+
+  final _licenseCategoryForm = FormGroup({
+    'licenseCategory': FormControl<LicenseCategory?>(
+      validators: [],
+      value: null,
+    ),
+  });
+  final _licenseUdlParamsForm = createUdlParamsForm();
+  final _licenseCcTypeForm = createCcTypeForm();
+
+  FormGroup get licenseCategoryForm => _licenseCategoryForm;
+  FormGroup get licenseUdlParamsForm => _licenseUdlParamsForm;
+  FormGroup get licenseCcTypeForm => _licenseCcTypeForm;
 
   List<UploadFile> files = [];
   IOFolder? folder;
@@ -352,6 +449,7 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> startUpload({
     required UploadPlan uploadPlanForAr,
     UploadPlan? uploadPlanForTurbo,
+    LicenseState? licenseStateConfigured,
   }) async {
     if (uploadIsInProgress) {
       return;
@@ -416,16 +514,22 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     if (uploadFolders) {
-      await _uploadFolderUsingArDriveUploader();
+      await _uploadFolderUsingArDriveUploader(
+        licenseStateConfigured: licenseStateConfigured,
+      );
       return;
     }
 
-    await _uploadUsingArDriveUploader();
+    await _uploadUsingArDriveUploader(
+      licenseStateConfigured: licenseStateConfigured,
+    );
 
     return;
   }
 
-  Future<void> _uploadFolderUsingArDriveUploader() async {
+  Future<void> _uploadFolderUsingArDriveUploader({
+    LicenseState? licenseStateConfigured,
+  }) async {
     final ardriveUploader = ArDriveUploader(
       turboUploadUri: Uri.parse(configService.config.defaultTurboUploadUrl!),
       metadataGenerator: ARFSUploadMetadataGenerator(
@@ -477,7 +581,8 @@ class UploadCubit extends Cubit<UploadState> {
       logger.d(
           'Reusing id? ${conflictingFiles.containsKey(file.getIdentifier())}');
 
-      final licenseState = await _licenseStateForFileId(fileId);
+      final licenseStateResolved =
+          licenseStateConfigured ?? await _licenseStateForFileId(fileId);
 
       final fileMetadata = ARFSUploadMetadataArgs(
         isPrivate: _targetDrive.isPrivate,
@@ -488,8 +593,8 @@ class UploadCubit extends Cubit<UploadState> {
         type: _uploadMethod == UploadMethod.ar
             ? UploadType.d2n
             : UploadType.turbo,
-        licenseDefinitionTxId: licenseState?.meta.licenseDefinitionTxId,
-        licenseAdditionalTags: licenseState?.params?.toAdditionalTags(),
+        licenseDefinitionTxId: licenseStateResolved?.meta.licenseDefinitionTxId,
+        licenseAdditionalTags: licenseStateResolved?.params?.toAdditionalTags(),
       );
 
       entities.add((fileMetadata, file.ioFile));
@@ -558,7 +663,9 @@ class UploadCubit extends Cubit<UploadState> {
     }
   }
 
-  Future<void> _uploadUsingArDriveUploader() async {
+  Future<void> _uploadUsingArDriveUploader({
+    LicenseState? licenseStateConfigured,
+  }) async {
     final ardriveUploader = ArDriveUploader(
       turboUploadUri: Uri.parse(configService.config.defaultTurboUploadUrl!),
       metadataGenerator: ARFSUploadMetadataGenerator(
@@ -586,7 +693,8 @@ class UploadCubit extends Cubit<UploadState> {
           ? RevisionAction.uploadNewVersion
           : RevisionAction.create;
 
-      final licenseState = await _licenseStateForFileId(conflictingId);
+      final licenseStateResolved =
+          licenseStateConfigured ?? await _licenseStateForFileId(conflictingId);
 
       final args = ARFSUploadMetadataArgs(
         isPrivate: _targetDrive.isPrivate,
@@ -599,8 +707,8 @@ class UploadCubit extends Cubit<UploadState> {
         type: _uploadMethod == UploadMethod.ar
             ? UploadType.d2n
             : UploadType.turbo,
-        licenseDefinitionTxId: licenseState?.meta.licenseDefinitionTxId,
-        licenseAdditionalTags: licenseState?.params?.toAdditionalTags(),
+        licenseDefinitionTxId: licenseStateResolved?.meta.licenseDefinitionTxId,
+        licenseAdditionalTags: licenseStateResolved?.params?.toAdditionalTags(),
       );
 
       uploadFiles.add((args, file.ioFile));

@@ -1,21 +1,27 @@
+import 'package:ardrive/components/license/view_license_definition.dart';
 import 'package:ardrive/services/license/license_state.dart';
 import 'package:ardrive/services/license/licenses/udl.dart';
-import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 
 class LicenseSummary extends StatelessWidget {
   final LicenseState licenseState;
-  late final Map<String, String> summaryItems;
+
+  final bool showLicenseName;
+
+  late final Map<String, String> paramsSummaryItems;
 
   LicenseSummary({
     super.key,
+    this.showLicenseName = true,
     required this.licenseState,
   }) {
-    summaryItems = licenseState.params is UdlLicenseParams
-        ? udlLicenseSummary(licenseState.params as UdlLicenseParams)
-        : {};
+    if (licenseState.params is UdlLicenseParams) {
+      paramsSummaryItems =
+          udlLicenseSummary(licenseState.params as UdlLicenseParams);
+    } else {
+      paramsSummaryItems = licenseState.params?.toAdditionalTags() ?? {};
+    }
   }
 
   @override
@@ -25,51 +31,41 @@ class LicenseSummary extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          // TODO: Localize
-          'License',
-          style: ArDriveTypography.body.smallRegular(
-            color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+        if (showLicenseName) ...[
+          Text(
+            // TODO: Localize
+            'License',
+            style: ArDriveTypography.body.smallRegular(
+              color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+            ),
           ),
-        ),
-        Text.rich(
-          TextSpan(
-            children: [
-              TextSpan(
-                text:
-                    '${licenseState.meta.name} (${licenseState.meta.shortName})',
-                style: ArDriveTypography.body.buttonLargeBold(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-                ),
-              ),
-              if (licenseState.meta.licenseType != LicenseType.unknown) ...[
-                const TextSpan(text: '   '),
+          Text.rich(
+            TextSpan(
+              children: [
                 TextSpan(
-                  text: 'View',
-                  style: ArDriveTypography.body
-                      .buttonLargeRegular(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgSubtle,
-                      )
-                      .copyWith(
-                        decoration: TextDecoration.underline,
-                      ),
-                  recognizer: TapGestureRecognizer()
-                    ..onTap = () async {
-                      final url =
-                          'https://arweave.net/${licenseState.meta.licenseDefinitionTxId}';
-                      await openUrl(url: url);
-                    },
+                  text: licenseState.meta.nameWithShortName,
+                  style: ArDriveTypography.body.buttonLargeBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault,
+                  ),
                 ),
-              ]
-            ],
+                if (licenseState.meta.licenseType != LicenseType.unknown) ...[
+                  const WidgetSpan(
+                    child: SizedBox(width: 16),
+                  ),
+                  viewLicenseDefinitionTextSpan(
+                    context,
+                    licenseState.meta.licenseDefinitionTxId,
+                  ),
+                ]
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 24),
-        ...summaryItems.entries.expand(
+          const SizedBox(height: 24),
+        ],
+        ...paramsSummaryItems.entries.expand(
           (entry) => [
             Text(
               entry.key,
