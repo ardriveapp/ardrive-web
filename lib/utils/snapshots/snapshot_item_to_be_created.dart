@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
+import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
 import 'package:ardrive/utils/snapshots/snapshot_types.dart';
 import 'package:ardrive/utils/snapshots/tx_snapshot_to_snapshot_data.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -12,13 +13,15 @@ typedef DriveHistoryTransaction
     = DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
 typedef DriveHistoryTransactionEdge
     = DriveEntityHistory$Query$TransactionConnection$TransactionEdge;
+typedef DriveHistoryWithoutEntityTypeFilterTransactionEdge
+    = DriveEntityHistoryWithoutEntityTypeFilter$Query$TransactionConnection$TransactionEdge;
 
 class SnapshotItemToBeCreated {
   final HeightRange subRanges;
   final int blockStart;
   final int blockEnd;
   final DriveID driveId;
-  final Stream<DriveHistoryTransaction> source;
+  final Stream<DriveEntityHistoryTransactionModel> source;
 
   int? _dataStart;
   int? _dataEnd;

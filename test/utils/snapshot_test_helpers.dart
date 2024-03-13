@@ -35,6 +35,7 @@ Future<String> fakeSnapshotSource(Range range) async {
   );
 }
 
+// TODO: use the abstraction DriveEntityHistoryTransactionModel
 Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
     fakeNodesStream(Range range) async* {
   for (int height = range.start; height <= range.end; height++) {

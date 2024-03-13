@@ -6,6 +6,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
 import 'package:ardrive/services/arweave/get_segmented_transaction_from_drive_strategy.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
 import 'package:ardrive/utils/arfs_txs_filter.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
@@ -13,7 +14,6 @@ import 'package:ardrive/utils/internet_checker.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
-import 'package:ardrive/utils/snapshots/snapshot_item_to_be_created.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:artemis/artemis.dart';
@@ -48,7 +48,7 @@ class ArweaveService {
     ArtemisClient? artemisClient,
   }) : _gql = artemisClient ??
             ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
-    _graphQLRetry = GraphQLRetry(
+    graphQLRetry = GraphQLRetry(
       _gql,
       internetChecker: InternetChecker(connectivity: Connectivity()),
     );
@@ -78,7 +78,7 @@ class ArweaveService {
     return (bytes / byteCountPerChunk).ceil();
   }
 
-  late GraphQLRetry _graphQLRetry;
+  late GraphQLRetry graphQLRetry;
   late HttpRetry httpRetry;
 
   /// Returns the onchain balance of the specified address.
@@ -116,7 +116,7 @@ class ArweaveService {
 
   /// Returns the pending transaction fees of the specified address that is not reflected by `getWalletBalance()`.
   Future<BigInt> getPendingTxFees(String address) async {
-    final query = await _graphQLRetry.execute(PendingTxFeesQuery(
+    final query = await graphQLRetry.execute(PendingTxFeesQuery(
         variables: PendingTxFeesArguments(walletAddress: address)));
 
     return query.data!.transactions.edges
@@ -152,7 +152,7 @@ class ArweaveService {
     while (true) {
       try {
         // Get a page of 100 transactions
-        final snapshotEntityHistoryQuery = await _graphQLRetry.execute(
+        final snapshotEntityHistoryQuery = await graphQLRetry.execute(
           SnapshotEntityHistoryQuery(
             variables: SnapshotEntityHistoryArguments(
               driveId: driveId,
@@ -183,27 +183,21 @@ class ArweaveService {
     }
   }
 
-  Stream<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>>
-      getAllTransactionsFromDrive(
-    String driveId, {
-    required String ownerAddress,
-    int? lastBlockHeight,
-  }) {
-    return getSegmentedTransactionsFromDrive(
-      driveId,
-      minBlockHeight: lastBlockHeight,
-      ownerAddress: ownerAddress,
-    );
-  }
-
-  Stream<List<DriveHistoryTransactionEdge>> getSegmentedTransactionsFromDrive(
+  Stream<List<DriveEntityHistoryTransactionModel>>
+      getSegmentedTransactionsFromDrive(
     String driveId, {
     required String ownerAddress,
     int? minBlockHeight,
     int? maxBlockHeight,
     GetSegmentedTransactionFromDriveStrategy? strategy,
   }) async* {
-    strategy ??= GetSegmentedTransactionFromDriveStrategyImpl(_graphQLRetry);
+    strategy ??=
+        GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy(
+      graphQLRetry,
+    );
+
+    logger.d(
+        'Fetching segmented transactions from drive using strategy ${strategy.runtimeType}');
 
     yield* strategy.getSegmentedTransactionFromDrive(
       driveId,
@@ -219,7 +213,7 @@ class ArweaveService {
     final chunks = licenseAssertionTxIds.slices(chunkSize);
     for (final chunk in chunks) {
       // Get a page of 100 transactions
-      final licenseAssertionsQuery = await _graphQLRetry.execute(
+      final licenseAssertionsQuery = await graphQLRetry.execute(
         LicenseAssertionsQuery(
           variables: LicenseAssertionsArguments(transactionIds: chunk),
         ),
@@ -237,7 +231,7 @@ class ArweaveService {
     final chunks = licenseComposedTxIds.slices(chunkSize);
     for (final chunk in chunks) {
       // Get a page of 100 transactions
-      final licenseComposedQuery = await _graphQLRetry.execute(
+      final licenseComposedQuery = await graphQLRetry.execute(
         LicenseComposedQuery(
           variables: LicenseComposedArguments(transactionIds: chunk),
         ),
@@ -255,8 +249,7 @@ class ArweaveService {
   ///
   /// returns DriveEntityHistory object
   Future<DriveEntityHistory> createDriveEntityHistoryFromTransactions(
-    List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
-        entityTxs,
+    List<DriveEntityHistoryTransactionModel> entityTxs,
     SecretKey? driveKey,
     int lastBlockHeight, {
     required String ownerAddress,
@@ -272,7 +265,8 @@ class ArweaveService {
 
     final List<Uint8List> entityDatas = await Future.wait(
       entityTxs.map(
-        (entity) async {
+        (model) async {
+          final entity = model.transactionCommonMixin;
           final tags = entity.tags;
           final isSnapshot = tags.any(
             (tag) =>
@@ -302,7 +296,7 @@ class ArweaveService {
     final blockHistory = <BlockEntities>[];
 
     for (var i = 0; i < entityTxs.length; i++) {
-      final transaction = entityTxs[i];
+      final transaction = entityTxs[i].transactionCommonMixin;
       // If we encounter a transaction that has yet to be mined, we stop moving through history.
       // We can continue once the transaction is mined.
       if (transaction.block == null) {
@@ -455,7 +449,7 @@ class ArweaveService {
     String cursor = '';
 
     while (true) {
-      final userDriveEntitiesQuery = await _graphQLRetry.execute(
+      final userDriveEntitiesQuery = await graphQLRetry.execute(
         UserDriveEntitiesQuery(
           variables: UserDriveEntitiesArguments(
             owner: userAddress,
@@ -603,7 +597,7 @@ class ArweaveService {
 
     String cursor = '';
     while (true) {
-      final latestDriveQuery = await _graphQLRetry.execute(
+      final latestDriveQuery = await graphQLRetry.execute(
         LatestDriveEntityWithIdQuery(
           variables: LatestDriveEntityWithIdArguments(
             driveId: driveId,
@@ -667,7 +661,7 @@ class ArweaveService {
       return null;
     }
 
-    final latestDriveQuery = await _graphQLRetry.execute(
+    final latestDriveQuery = await graphQLRetry.execute(
         LatestDriveEntityWithIdQuery(
             variables: LatestDriveEntityWithIdArguments(
                 driveId: driveId, owner: driveOwner)));
@@ -747,7 +741,7 @@ class ArweaveService {
     String cursor = '';
 
     while (true) {
-      final firstOwnerQuery = await _graphQLRetry.execute(
+      final firstOwnerQuery = await graphQLRetry.execute(
         FirstDriveEntityWithIdOwnerQuery(
           variables: FirstDriveEntityWithIdOwnerArguments(
             driveId: driveId,
@@ -830,7 +824,7 @@ class ArweaveService {
     String cursor = '';
 
     while (true) {
-      final latestFileQuery = await _graphQLRetry.execute(
+      final latestFileQuery = await graphQLRetry.execute(
         LatestFileEntityWithIdQuery(
           variables: LatestFileEntityWithIdArguments(
             fileId: fileId,
@@ -888,7 +882,7 @@ class ArweaveService {
 
     while (true) {
       // Get a page of 100 transactions
-      final allFileEntitiesQuery = await _graphQLRetry.execute(
+      final allFileEntitiesQuery = await graphQLRetry.execute(
         AllFileEntitiesWithIdQuery(
           variables: AllFileEntitiesWithIdArguments(
             fileId: fileId,
@@ -948,7 +942,7 @@ class ArweaveService {
     String cursor = '';
 
     while (true) {
-      final firstOwnerQuery = await _graphQLRetry.execute(
+      final firstOwnerQuery = await graphQLRetry.execute(
         FirstFileEntityWithIdOwnerQuery(
           variables: FirstFileEntityWithIdOwnerArguments(
             fileId: fileId,
@@ -1007,7 +1001,7 @@ class ArweaveService {
             ? i + chunkSize
             : transactionIds.length;
 
-        final query = await _graphQLRetry.execute(
+        final query = await graphQLRetry.execute(
           TransactionStatusesQuery(
             variables: TransactionStatusesArguments(
               transactionIds:

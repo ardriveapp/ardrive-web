@@ -196,16 +196,13 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     // transforms the stream of arrays into a flat stream
     final flatGQLEdgesStream = gqlEdgesStream.expand((element) => element);
 
-    // maps the items to GQL Nodes
-    final gqlNodesStream = flatGQLEdgesStream.map((edge) => edge.node);
-
     // declares the reading stream from the SnapshotItemToBeCreated
     final snapshotItemToBeCreated = SnapshotItemToBeCreated(
       blockStart: _range.start,
       blockEnd: _range.end,
       driveId: _driveId,
       subRanges: HeightRange(rangeSegments: [_range]),
-      source: gqlNodesStream,
+      source: flatGQLEdgesStream,
       jsonMetadataOfTxId: _jsonMetadataOfTxId,
     );
 

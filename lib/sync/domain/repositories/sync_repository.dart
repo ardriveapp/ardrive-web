@@ -22,6 +22,7 @@ import 'package:ardrive/services/license/license_service.dart';
 import 'package:ardrive/services/license/license_state.dart';
 import 'package:ardrive/sync/constants.dart';
 import 'package:ardrive/sync/domain/ghost_folder.dart';
+import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/sync/utils/batch_processor.dart';
 import 'package:ardrive/sync/utils/network_transaction_utils.dart';
@@ -566,7 +567,7 @@ class _SyncRepository implements SyncRepository {
 
     logger.d('Fetching all transactions for drive ${drive.id}');
 
-    final transactions = <DriveHistoryTransaction>[];
+    final transactions = <DriveEntityHistoryTransactionModel>[];
 
     List<SnapshotItem> snapshotItems = [];
 
@@ -634,9 +635,9 @@ class _SyncRepository implements SyncRepository {
 
     /// First phase of the sync
     /// Here we get all transactions from its drive.
-    await for (DriveHistoryTransaction t in transactionsStream) {
+    await for (DriveEntityHistoryTransactionModel t in transactionsStream) {
       double calculatePercentageBasedOnBlockHeights() {
-        final block = t.block;
+        final block = t.transactionCommonMixin.block;
 
         if (block != null) {
           return (1 -
@@ -644,7 +645,7 @@ class _SyncRepository implements SyncRepository {
                   totalBlockHeightDifference));
         }
         logger.d(
-          'The transaction block is null. Transaction node id: ${t.id}',
+          'The transaction block is null. Transaction node id: ${t.transactionCommonMixin.id}',
         );
 
         logger.d('New fetch-phase percentage: $fetchPhasePercentage');
@@ -655,7 +656,7 @@ class _SyncRepository implements SyncRepository {
 
       /// Initialize only once `firstBlockHeight` and `totalBlockHeightDifference`
       if (firstBlockHeight == null) {
-        final block = t.block;
+        final block = t.transactionCommonMixin.block;
 
         if (block != null) {
           firstBlockHeight = block.height;
@@ -665,12 +666,12 @@ class _SyncRepository implements SyncRepository {
           );
         } else {
           logger.d(
-            'The transaction block is null. Transaction node id: ${t.id}',
+            'The transaction block is null. Transaction node id: ${t.transactionCommonMixin.id}',
           );
         }
       }
 
-      logger.d('Adding transaction ${t.id}');
+      logger.d('Adding transaction ${t.transactionCommonMixin.id}');
       transactions.add(t);
 
       /// We can only calculate the fetch percentage if we have the `firstBlockHeight`
@@ -805,7 +806,7 @@ class _SyncRepository implements SyncRepository {
   /// Process the transactions from the first phase into database entities.
   /// This is done in batches to improve performance and provide more granular progress
   Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
-    required List<DriveHistoryTransaction> transactions,
+    required List<DriveEntityHistoryTransactionModel> transactions,
     required Drive drive,
     required SecretKey? driveKey,
     required int lastBlockHeight,
@@ -840,7 +841,7 @@ class _SyncRepository implements SyncRepository {
       'no. of entities in drive with id ${drive.id} to be parsed are: $numberOfDriveEntitiesToParse\n',
     );
 
-    yield* _batchProcessor.batchProcess<DriveHistoryTransaction>(
+    yield* _batchProcessor.batchProcess<DriveEntityHistoryTransactionModel>(
         list: transactions,
         batchSize: batchSize,
         endOfBatchCallback: (items) async* {
