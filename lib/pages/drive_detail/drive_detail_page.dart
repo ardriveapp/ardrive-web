@@ -813,7 +813,7 @@ class ArDriveItemListTile extends StatelessWidget {
         onTap: () {
           final cubit = context.read<DriveDetailCubit>();
           if (item is FolderDataTableItem) {
-            cubit.openFolder(path: item.path);
+            cubit.openFolder(folderId: item.id);
           } else if (item is FileDataTableItem) {
             if (item.id == cubit.selectedItem?.id) {
               cubit.toggleSelectedItemDetails();
@@ -925,9 +925,9 @@ class MobileFolderNavigation extends StatelessWidget {
           Expanded(
             child: InkWell(
               onTap: () {
-                context
-                    .read<DriveDetailCubit>()
-                    .openFolder(path: getParentFolderPath(path));
+                // context
+                //     .read<DriveDetailCubit>()
+                //     .openFolder(path: getParentFolderPath(path));
               },
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,

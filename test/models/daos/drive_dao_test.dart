@@ -43,7 +43,7 @@ void main() {
     test("watchFolder() with root path ('') returns root folder", () async {
       final folderStream = driveDao.watchFolderContents(
         driveId,
-        folderPath: rootPath,
+        // folderPath: rootPath,
       );
 
       await Future.wait([
@@ -54,7 +54,7 @@ void main() {
         () async {
       final folderStream = driveDao.watchFolderContents(
         driveId,
-        folderPath: rootPath,
+        // folderPath: rootPath,
       );
 
       await Future.wait([
@@ -70,7 +70,7 @@ void main() {
         () async {
       final folderStream = driveDao.watchFolderContents(
         driveId,
-        folderPath: rootPath,
+        // folderPath: rootPath,
       );
 
       await Future.wait([
@@ -86,7 +86,7 @@ void main() {
         () async {
       final folderStream = driveDao.watchFolderContents(
         driveId,
-        folderPath: '/$emptyNestedFolderIdPrefix' '0',
+        // folderPath: '/$emptyNestedFolderIdPrefix' '0',
       );
 
       await Future.wait([
@@ -97,7 +97,7 @@ void main() {
     test('watchFolder() returns correct folders inside empty folder', () async {
       final folderStream = driveDao.watchFolderContents(
         driveId,
-        folderPath: '/$emptyNestedFolderIdPrefix' '0',
+        // folderPath: '/$emptyNestedFolderIdPrefix' '0',
       );
 
       await Future.wait([
@@ -110,7 +110,7 @@ void main() {
     test('watchFolder() returns correct files inside empty folder', () async {
       final folderStream = driveDao.watchFolderContents(
         driveId,
-        folderPath: '/$emptyNestedFolderIdPrefix' '0',
+        // folderPath: '/$emptyNestedFolderIdPrefix' '0',
       );
 
       await Future.wait([

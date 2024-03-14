@@ -49,7 +49,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
       return GestureDetector(
         onTap: () {
           final path = _pathSegments.sublist(0, index + 1).join('/');
-          context.read<DriveDetailCubit>().openFolder(path: '/$path');
+          // context.read<DriveDetailCubit>().openFolder(path: '/$path');
         },
         child: HoverText(
           text: _pathSegments[index],
@@ -95,9 +95,9 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
       segments.addAll(
         [
           GestureDetector(
-            onTap: () => context
-                .read<DriveDetailCubit>()
-                .openFolder(path: entities.rootPath),
+            // onTap: () => context
+            //     .read<DriveDetailCubit>()
+            //     .openFolder(entities.rootPath),
             child: HoverText(
               text: driveName,
               style: segmentStyle(_pathSegments.length).copyWith(
@@ -138,9 +138,9 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
     final items = path.asMap().entries.expand((s) {
       return [
         ArDriveDropdownItem(
-          onClick: () => context.read<DriveDetailCubit>().openFolder(
-                path: '/${path.sublist(0, s.key + 1).join('/')}',
-              ),
+          // onClick: () => context.read<DriveDetailCubit>().openFolder(
+          //       path: '/${path.sublist(0, s.key + 1).join('/')}',
+          //     ),
           content: _buildDropdownItemContent(
             context,
             s.value,
@@ -152,9 +152,9 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
     items.insert(
       0,
       ArDriveDropdownItem(
-        onClick: () => context.read<DriveDetailCubit>().openFolder(
-              path: entities.rootPath,
-            ),
+        // onClick: () => context.read<DriveDetailCubit>().openFolder(
+        //       path: entities.rootPath,
+        //     ),
         content: _buildDropdownItemContent(
           context,
           driveName,

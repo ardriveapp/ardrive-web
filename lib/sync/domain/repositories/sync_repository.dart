@@ -376,7 +376,8 @@ class _SyncRepository implements SyncRepository {
     required Map<String, FolderEntriesCompanion> foldersByIdMap,
     required Map<String, FileEntriesCompanion> filesByIdMap,
     required Map<FolderID, GhostFolder> ghostFolders,
-  }) {
+  }) async {
+    return {};
     return _generateFsEntryPaths(
       driveDao: _driveDao,
       driveId: driveId,

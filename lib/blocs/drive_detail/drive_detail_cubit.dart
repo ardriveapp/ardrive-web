@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/activity_tracker.dart';
-import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
@@ -70,11 +69,15 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             .getSingleOrNull();
         // Open the root folder if the deep-linked folder could not be found.
 
-        openFolder(path: folder?.path ?? rootPath);
+        openFolder(folderId: folder?.id);
         // The empty string here is required to open the root folder
       });
     } else {
-      openFolder(path: rootPath);
+      Future.microtask(() async {
+        final drive =
+            await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+        openFolder(folderId: drive?.rootFolderId);
+      });
     }
   }
 
@@ -85,7 +88,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   }
 
   void openFolder({
-    required String path,
+    String? folderId,
     DriveOrder contentOrderBy = DriveOrder.name,
     OrderingMode contentOrderingMode = OrderingMode.asc,
   }) async {
@@ -111,7 +114,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         }
 
         try {
-          await _driveDao.getFolderTree(driveId, value.rootFolderId);
+          await _driveDao.getFolderTree(
+              driveId, folderId ?? value.rootFolderId);
         } catch (e) {
           logger.d('Folder with id ${value.rootFolderId} not found');
 
@@ -125,9 +129,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         _driveDao.driveById(driveId: driveId).watchSingle(),
         _driveDao.watchFolderContents(
           driveId,
-          folderPath: path,
           orderBy: contentOrderBy,
           orderingMode: contentOrderingMode,
+          folderId: folderId,
         ),
         _profileCubit.stream.startWith(ProfileCheckingAvailability()),
         (drive, folderContents, _) async {
@@ -393,7 +397,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   }) {
     final state = this.state as DriveDetailLoadSuccess;
     openFolder(
-      path: state.folderInView.folder.path,
+      folderId: state.folderInView.folder.id,
       contentOrderBy: contentOrderBy,
       contentOrderingMode: contentOrderingMode,
     );
