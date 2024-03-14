@@ -8,6 +8,7 @@ import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/sync/constants.dart';
 import 'package:ardrive/sync/domain/ghost_folder.dart';
 import 'package:ardrive/sync/domain/repositories/sync_repository.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
@@ -24,11 +25,6 @@ part 'sync_state.dart';
 // TODO: PE-2782: Abstract auto-generated GQL types
 typedef DriveHistoryTransaction
     = DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
-
-const kRequiredTxConfirmationPendingThreshold = 60 * 8;
-
-const kArConnectSyncTimerDuration = 2;
-const kBlockHeightLookBack = 240;
 
 /// The [SyncCubit] periodically syncs the user's owned and attached drives and their contents.
 /// It also checks the status of unconfirmed transactions made by revisions.
@@ -241,6 +237,7 @@ class SyncCubit extends Cubit<SyncState> {
         _syncProgress = syncProgress;
         syncProgressController.add(_syncProgress);
       }
+
       if (profile is ProfileLoggedIn) _profileCubit.refreshBalance();
 
       logger.i('Transaction statuses updated');

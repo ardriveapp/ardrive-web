@@ -32,6 +32,7 @@ abstract class DataBundler<T> {
     required ARFSUploadMetadata metadata,
     required Wallet wallet,
     SecretKey? driveKey,
+    List<DataItemFile>? dataItemFiles,
     Function? onStartMetadataCreation,
     Function? onFinishMetadataCreation,
     Function? onStartBundleCreation,
@@ -69,6 +70,7 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
     required IOFile file,
     required ARFSUploadMetadata metadata,
     required Wallet wallet,
+    List<DataItemFile>? dataItemFiles,
     SecretKey? driveKey,
     Function? onStartEncryption,
     Function? onStartBundling,
@@ -77,7 +79,7 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
     Function? onStartBundleCreation,
     Function? onFinishBundleCreation,
   }) async {
-    final dataItemFiles = await createDataItemsForFile(
+    dataItemFiles ??= await createDataItemsForFile(
       file: file,
       metadata: metadata,
       wallet: wallet,
@@ -336,6 +338,7 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
     required Wallet wallet,
     SecretKey? driveKey,
     Function? onStartBundling,
+    List<DataItemFile>? dataItemFiles,
     Function? onStartMetadataCreation,
     Function? onFinishMetadataCreation,
     Function? onStartBundleCreation,

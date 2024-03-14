@@ -3,6 +3,7 @@ import 'package:ardrive/models/license.dart';
 import 'package:ardrive/services/license/license_service.dart';
 import 'package:ardrive/services/license/license_state.dart';
 import 'package:ardrive/services/license/licenses/udl.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:drift/drift.dart';
@@ -16,6 +17,14 @@ Tag createTag(MapEntry<String, String> entry) {
 }
 
 void main() {
+  // Mock AppInfo
+  final appInfo = AppInfo(
+    version: '2.22.0',
+    platform: 'FlutterTest',
+    arfsVersion: '0.14',
+    appName: 'ardrive',
+  );
+
   const stubFileId = '00000000-0000-0000-0000-000000000000';
   const stubDriveId = 'FFFFFFFF-0000-0000-0000-000000000000';
   const stubLicenseDefinitionTxId =
@@ -46,8 +55,8 @@ void main() {
   group('LicenseAssertion Tests', () {
     group('asPreparedDataItem method', () {
       test('returns a DataItem with expected Tx Tag', () async {
-        final dataItem =
-            await stubLicenseAssertion.asPreparedDataItem(owner: stubOwner);
+        final dataItem = await stubLicenseAssertion.asPreparedDataItem(
+            owner: stubOwner, appInfo: appInfo);
 
         expect(
           dataItem.tags,

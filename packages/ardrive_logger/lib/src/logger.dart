@@ -4,6 +4,7 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_logger/src/untracked_exception.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -76,6 +77,12 @@ class Logger {
     }
 
     log(LogLevel.error, errorMessage);
+
+    if (error is UntrackedException) {
+      /// Do not send untracked exceptions to Sentry
+      return;
+    }
+
     Sentry.captureException(error ?? message, stackTrace: stackTrace);
   }
 

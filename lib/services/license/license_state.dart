@@ -52,6 +52,9 @@ class LicenseMeta extends Equatable {
     this.hasParams = false,
   });
 
+  String get nameWithShortName =>
+      licenseType == LicenseType.unknown ? name : '$name ($shortName)';
+
   @override
   List<Object?> get props => [
         licenseType,
@@ -65,6 +68,8 @@ class LicenseMeta extends Equatable {
 abstract class LicenseParams extends Equatable {
   Map<String, String> toAdditionalTags() => {};
 
+  bool get hasParams => toAdditionalTags().isNotEmpty;
+
   @override
   List<Object?> get props => [toAdditionalTags()];
 }
@@ -72,8 +77,8 @@ abstract class LicenseParams extends Equatable {
 class EmptyParams extends LicenseParams {}
 
 final licenseCategoryNames = {
-  LicenseCategory.udl: 'Universal Data License - UDL',
-  LicenseCategory.cc: 'Creative Commons - CC',
+  LicenseCategory.udl: 'Universal Data License (UDL)',
+  LicenseCategory.cc: 'Creative Commons (CC)',
 };
 
 class LicenseState extends Equatable {

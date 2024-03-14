@@ -2,11 +2,14 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/models/forms/cc.dart';
+import 'package:ardrive/models/forms/udl.dart';
 import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:drift/drift.dart';
@@ -48,8 +51,10 @@ class FsEntryLicenseBloc
   final String driveId;
   final List<ArDriveDataTableItem> selectedItems;
 
-  // We initialize with UDL license by default
-  LicenseMeta _selectedLicenseMeta = udlLicenseMeta;
+  LicenseCategory get selectedLicenseCategory =>
+      categoryForm.control('licenseCategory').value;
+
+  LicenseMeta _selectedLicenseMeta = udlLicenseDefault;
   LicenseMeta get selectedLicenseMeta => _selectedLicenseMeta;
 
   List<FileEntry>? filesToLicense;
@@ -65,50 +70,20 @@ class FsEntryLicenseBloc
   final List<String> errorLog = [];
 
   /// Form getters
-  FormGroup get selectForm => _selectForm;
-  FormGroup get udlForm => _udlForm;
-  FormGroup get ccForm => _ccForm;
+  FormGroup get categoryForm => _categoryForm;
+  FormGroup get udlParamsForm => _udlParamsForm;
+  FormGroup get ccTypeForm => _ccTypeForm;
 
   // Forms
-  final _selectForm = FormGroup({
-    'licenseType': FormControl<LicenseCategory>(
+  final _categoryForm = FormGroup({
+    'licenseCategory': FormControl<LicenseCategory>(
       validators: [Validators.required],
       value: LicenseCategory.udl,
     ),
   });
 
-  final _udlForm = FormGroup({
-    'licenseFeeAmount': FormControl<String>(
-      validators: [
-        Validators.composeOR([
-          Validators.pattern(
-            r'^\d+\.?\d*$',
-            validationMessage: 'Invalid amount',
-          ),
-          Validators.equals(''),
-        ]),
-      ],
-    ),
-    'licenseFeeCurrency': FormControl<UdlCurrency>(
-      validators: [Validators.required],
-      value: UdlCurrency.u,
-    ),
-    'commercialUse': FormControl<UdlCommercialUse>(
-      validators: [Validators.required],
-      value: UdlCommercialUse.unspecified,
-    ),
-    'derivations': FormControl<UdlDerivation>(
-      validators: [Validators.required],
-      value: UdlDerivation.unspecified,
-    ),
-  });
-
-  final _ccForm = FormGroup({
-    'ccAttributionField': FormControl<LicenseMeta>(
-      validators: [Validators.required],
-      value: cc0LicenseMeta,
-    ),
-  });
+  final _udlParamsForm = createUdlParamsForm();
+  final _ccTypeForm = createCcTypeForm();
 
   Future<void> _onEvent(
     FsEntryLicenseEvent event,
@@ -151,17 +126,6 @@ class FsEntryLicenseBloc
     FsEntryLicenseSelect event,
     Emitter<FsEntryLicenseState> emit,
   ) async {
-    final licenseType = selectForm.control('licenseType').value;
-
-    switch (licenseType) {
-      case LicenseCategory.udl:
-        _selectedLicenseMeta = udlLicenseMetaV2;
-        break;
-      case LicenseCategory.cc:
-        _selectedLicenseMeta = ccByLicenseMetaV2;
-        break;
-    }
-
     emit(const FsEntryLicenseConfiguring());
   }
 
@@ -169,17 +133,17 @@ class FsEntryLicenseBloc
     FsEntryLicenseConfigurationSubmit event,
     Emitter<FsEntryLicenseState> emit,
   ) async {
-    final licenseCategory = selectForm.control('licenseType').value;
-
-    if (licenseCategory == LicenseCategory.cc) {
-      _selectedLicenseMeta = ccForm.control('ccAttributionField').value;
-    }
-
-    if (_selectedLicenseMeta.licenseType == LicenseType.udlV2) {
-      licenseParams = await _udlFormToLicenseParams(udlForm);
-    } else {
-      addError(
-          'Unsupported license configuration: ${_selectedLicenseMeta.licenseType}');
+    switch (selectedLicenseCategory) {
+      case LicenseCategory.udl:
+        _selectedLicenseMeta = udlLicenseDefault;
+        licenseParams = udlFormToLicenseParams(udlParamsForm);
+        break;
+      case LicenseCategory.cc:
+        _selectedLicenseMeta = ccTypeForm.control('ccTypeField').value;
+        licenseParams = null;
+        break;
+      default:
+        addError('Unsupported license category: $selectedLicenseCategory');
     }
 
     emit(const FsEntryLicenseReviewing());
@@ -208,12 +172,9 @@ class FsEntryLicenseBloc
     FsEntryLicenseReviewBack event,
     Emitter<FsEntryLicenseState> emit,
   ) {
-    if (_selectedLicenseMeta.hasParams) {
-      licenseParams = null;
-      emit(const FsEntryLicenseConfiguring());
-    } else {
-      emit(const FsEntryLicenseSelecting());
-    }
+    // Every LicenseCategory has its own configure step
+    licenseParams = null;
+    emit(const FsEntryLicenseConfiguring());
   }
 
   void _handleConfigurationBack(
@@ -308,8 +269,10 @@ class FsEntryLicenseBloc
             dataTxId: dataTxId,
           )..ownerAddress = profile.walletAddress;
 
+          final owner = await profile.wallet.getOwner();
+          final appInfo = AppInfoServices().appInfo;
           final licenseAssertionDataItem = await licenseAssertionEntity
-              .asPreparedDataItem(owner: await profile.wallet.getOwner());
+              .asPreparedDataItem(owner: owner, appInfo: appInfo);
           await licenseAssertionDataItem.sign(profile.wallet);
           licenseAssertionTxDataItems.add(licenseAssertionDataItem);
 
@@ -367,27 +330,6 @@ class FsEntryLicenseBloc
       );
       await _arweave.postTx(dataBundle);
     }
-  }
-
-  Future<UdlLicenseParams> _udlFormToLicenseParams(FormGroup udlForm) async {
-    final String? licenseFeeAmountString =
-        udlForm.control('licenseFeeAmount').value;
-    final double? licenseFeeAmount = licenseFeeAmountString == null
-        ? null
-        : double.tryParse(licenseFeeAmountString);
-
-    final UdlCurrency licenseFeeCurrency =
-        udlForm.control('licenseFeeCurrency').value;
-    final UdlCommercialUse commercialUse =
-        udlForm.control('commercialUse').value;
-    final UdlDerivation derivations = udlForm.control('derivations').value;
-
-    return UdlLicenseParams(
-      licenseFeeAmount: licenseFeeAmount,
-      licenseFeeCurrency: licenseFeeCurrency,
-      commercialUse: commercialUse,
-      derivations: derivations,
-    );
   }
 
   @override

@@ -141,9 +141,10 @@ class _SyncRepository implements SyncRepository {
       _lastSync = DateTime.now();
     }
 
-    SyncProgress syncProgress = SyncProgress.initial();
+    final numberOfDrivesToSync = drives.length;
 
-    syncProgress = syncProgress.copyWith(drivesCount: drives.length);
+    SyncProgress syncProgress = SyncProgress.initial()
+      ..copyWith(drivesCount: numberOfDrivesToSync);
 
     yield syncProgress;
 
@@ -183,7 +184,7 @@ class _SyncRepository implements SyncRepository {
           double currentDriveProgress = 0;
           await for (var driveProgress in driveSyncProgress) {
             currentDriveProgress =
-                (totalProgress + driveProgress) / drives.length;
+                (totalProgress + driveProgress) / numberOfDrivesToSync;
             if (currentDriveProgress > syncProgress.progress) {
               syncProgress = syncProgress.copyWith(
                 progress: currentDriveProgress,
@@ -194,7 +195,7 @@ class _SyncRepository implements SyncRepository {
           totalProgress += 1;
           syncProgress = syncProgress.copyWith(
             drivesSynced: syncProgress.drivesSynced + 1,
-            progress: totalProgress / drives.length,
+            progress: totalProgress / numberOfDrivesToSync,
           );
           syncProgressController.add(syncProgress);
         },
@@ -296,7 +297,6 @@ class _SyncRepository implements SyncRepository {
         continue;
       }
 
-      // Add to database
       final drive =
           await driveDao.driveById(driveId: ghostFolder.driveId).getSingle();
 

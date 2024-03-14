@@ -11,6 +11,7 @@ import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
+import 'package:ardrive_logger/ardrive_logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
@@ -349,7 +350,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
   }
 }
 
-class AuthenticationFailedException implements Exception {
+class AuthenticationFailedException implements UntrackedException {
   final String message;
 
   AuthenticationFailedException(this.message);
@@ -358,7 +359,7 @@ class AuthenticationFailedException implements Exception {
   String toString() => message;
 }
 
-class WalletMismatchException implements Exception {
+class WalletMismatchException implements UntrackedException {
   const WalletMismatchException();
 }
 
@@ -368,6 +369,6 @@ class AuthenticationUnknownException implements Exception {
   AuthenticationUnknownException(this.message);
 }
 
-class AuthenticationUserIsNotLoggedInException implements Exception {
+class AuthenticationUserIsNotLoggedInException implements UntrackedException {
   const AuthenticationUserIsNotLoggedInException();
 }
