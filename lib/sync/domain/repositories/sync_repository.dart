@@ -326,19 +326,19 @@ class _SyncRepository implements SyncRepository {
         () => {folderEntry.id: folderEntry.toCompanion(false)},
       );
     }
-    await Future.wait(
-      [
-        ...ghostFoldersByDrive.entries.map(
-          (entry) => _generateFsEntryPaths(
-            driveDao: driveDao,
-            driveId: entry.key,
-            foldersByIdMap: entry.value,
-            ghostFolders: ghostFolders,
-            filesByIdMap: {},
-          ),
-        ),
-      ],
-    );
+    // await Future.wait(
+    //   [
+    //     ...ghostFoldersByDrive.entries.map(
+    //       (entry) => _generateFsEntryPaths(
+    //         driveDao: driveDao,
+    //         driveId: entry.key,
+    //         foldersByIdMap: entry.value,
+    //         ghostFolders: ghostFolders,
+    //         filesByIdMap: {},
+    //       ),
+    //     ),
+    //   ],
+    // );
   }
 
   @override
