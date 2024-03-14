@@ -54,7 +54,7 @@ class Logger {
   }
 
   void d(String message) {
-    // log(LogLevel.debug, message);
+    log(LogLevel.debug, message);
   }
 
   void i(String message) {
