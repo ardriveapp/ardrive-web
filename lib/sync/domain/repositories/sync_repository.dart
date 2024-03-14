@@ -378,13 +378,13 @@ class _SyncRepository implements SyncRepository {
     required Map<FolderID, GhostFolder> ghostFolders,
   }) async {
     return {};
-    return _generateFsEntryPaths(
-      driveDao: _driveDao,
-      driveId: driveId,
-      foldersByIdMap: foldersByIdMap,
-      filesByIdMap: filesByIdMap,
-      ghostFolders: ghostFolders,
-    );
+    // return _generateFsEntryPaths(
+    //   driveDao: _driveDao,
+    //   driveId: driveId,
+    //   foldersByIdMap: foldersByIdMap,
+    //   filesByIdMap: filesByIdMap,
+    //   ghostFolders: ghostFolders,
+    // );
   }
 
   int _calculateSyncLastBlockHeight(int lastBlockHeight) {

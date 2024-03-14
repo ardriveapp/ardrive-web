@@ -48,7 +48,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
     Widget buildSegment(int index) {
       return GestureDetector(
         onTap: () {
-          final path = _pathSegments.sublist(0, index + 1).join('/');
+          // final path = _pathSegments.sublist(0, index + 1).join('/');
           // context.read<DriveDetailCubit>().openFolder(path: '/$path');
         },
         child: HoverText(
