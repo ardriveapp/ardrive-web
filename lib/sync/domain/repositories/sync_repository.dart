@@ -844,7 +844,7 @@ class _SyncRepository implements SyncRepository {
 
     yield* _batchProcessor.batchProcess<DriveEntityHistoryTransactionModel>(
         list: transactions,
-        batchSize: 100,
+        batchSize: batchSize,
         endOfBatchCallback: (items) async* {
           final isReadingFromSnapshot = snapshotDriveHistory.items.isNotEmpty;
 
