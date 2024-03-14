@@ -1182,27 +1182,27 @@ Future<Map<FolderID, GhostFolder>> _generateFsEntryPaths({
 
   Future<void> updateFolderTree(FolderNode node, String parentPath) async {
     return;
-    final folderId = node.folder.id;
-    // If this is the root folder, we should not include its name as part of the path.
-    final folderPath = node.folder.parentFolderId != null
-        ? '$parentPath/${node.folder.name}'
-        : rootPath;
+    // final folderId = node.folder.id;
+    // // If this is the root folder, we should not include its name as part of the path.
+    // final folderPath = node.folder.parentFolderId != null
+    //     ? '$parentPath/${node.folder.name}'
+    //     : rootPath;
 
-    await driveDao
-        .updateFolderById(driveId, folderId)
-        .write(FolderEntriesCompanion(path: Value(folderPath)));
+    // await driveDao
+    //     .updateFolderById(driveId, folderId)
+    //     .write(FolderEntriesCompanion(path: Value(folderPath)));
 
-    for (final staleFileId in node.files.keys) {
-      final filePath = '$folderPath/${node.files[staleFileId]!.name}';
+    // for (final staleFileId in node.files.keys) {
+    //   final filePath = '$folderPath/${node.files[staleFileId]!.name}';
 
-      await driveDao
-          .updateFileById(driveId, staleFileId)
-          .write(FileEntriesCompanion(path: Value(filePath)));
-    }
+    //   await driveDao
+    //       .updateFileById(driveId, staleFileId)
+    //       .write(FileEntriesCompanion(path: Value(filePath)));
+    // }
 
-    for (final staleFolder in node.subfolders) {
-      await updateFolderTree(staleFolder, folderPath);
-    }
+    // for (final staleFolder in node.subfolders) {
+    //   await updateFolderTree(staleFolder, folderPath);
+    // }
   }
 
   for (final treeRoot in staleFolderTree) {
