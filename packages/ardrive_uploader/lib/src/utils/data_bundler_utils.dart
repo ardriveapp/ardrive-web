@@ -5,7 +5,7 @@ Future<List<DataItemResult>> createDataItemResultFromDataItemFiles(
   Wallet wallet,
 ) async {
   final List<DataItemResult> dataItemList = [];
-  final dataItemCount = 2;
+  final dataItemCount = dataItems.length;
   for (var i = 0; i < dataItemCount; i++) {
     final dataItem = dataItems[i];
     await createDataItemTaskEither(
