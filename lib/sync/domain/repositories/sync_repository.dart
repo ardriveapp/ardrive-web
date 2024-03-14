@@ -844,7 +844,7 @@ class _SyncRepository implements SyncRepository {
 
     yield* _batchProcessor.batchProcess<DriveEntityHistoryTransactionModel>(
         list: transactions,
-        batchSize: batchSize,
+        batchSize: 100,
         endOfBatchCallback: (items) async* {
           final isReadingFromSnapshot = snapshotDriveHistory.items.isNotEmpty;
 
@@ -1181,6 +1181,7 @@ Future<Map<FolderID, GhostFolder>> _generateFsEntryPaths({
   }
 
   Future<void> updateFolderTree(FolderNode node, String parentPath) async {
+    return;
     final folderId = node.folder.id;
     // If this is the root folder, we should not include its name as part of the path.
     final folderPath = node.folder.parentFolderId != null
