@@ -18,14 +18,9 @@ Future<void> _updateLicenses({
     final licenseAssertionEntities = licenseAssertionTxsBatch
         .map((tx) => LicenseAssertionEntity.fromTransaction(tx));
     final licenseCompanions = licenseAssertionEntities.map((entity) {
-      final revision = revisionsToSyncLicense.firstWhere(
-        (rev) => rev.licenseTxId == entity.txId,
-      );
       final licenseType =
           licenseService.licenseTypeByTxId(entity.licenseDefinitionTxId);
       return entity.toCompanion(
-        fileId: revision.fileId,
-        driveId: revision.driveId,
         licenseType: licenseType ?? LicenseType.unknown,
       );
     });
@@ -53,14 +48,9 @@ Future<void> _updateLicenses({
     final licenseComposedEntities = licenseComposedTxsBatch
         .map((tx) => LicenseComposedEntity.fromTransaction(tx));
     final licenseCompanions = licenseComposedEntities.map((entity) {
-      final revision = revisionsToSyncLicense.firstWhere(
-        (rev) => rev.licenseTxId == entity.txId,
-      );
       final licenseType =
           licenseService.licenseTypeByTxId(entity.licenseDefinitionTxId);
       return entity.toCompanion(
-        fileId: revision.fileId,
-        driveId: revision.driveId,
         licenseType: licenseType ?? LicenseType.unknown,
       );
     });

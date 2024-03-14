@@ -280,8 +280,6 @@ class FsEntryLicenseBloc
 
           await _driveDao.insertLicense(
             licenseAssertionEntity.toCompanion(
-              fileId: file.id,
-              driveId: driveId,
               licenseType: licenseMeta.licenseType,
             ),
           );
