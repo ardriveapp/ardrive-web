@@ -1,15 +1,16 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:arweave/arweave.dart';
 import 'package:webthree/credentials.dart';
 
 import '../ethereum_wallet.dart';
 
 class EthereumProviderWallet extends EthereumWallet {
   final CredentialsWithKnownAddress credentials;
-  final String address;
 
-  EthereumProviderWallet(this.credentials, this.address);
+  EthereumProviderWallet(this.credentials);
 
   // Ethereum Provider accepts an optional chainId parameter
   @override
@@ -23,13 +24,23 @@ class EthereumProviderWallet extends EthereumWallet {
   }
 
   @override
-  Future<String> getAddress() {
-    return Future.value(address);
+  SignatureConfig getSignatureConfig() {
+    return SignatureConfig.ethereum;
   }
 
   @override
-  Future<String> getOwner() {
-    return Future.value(address);
+  Future<String> getAddress() {
+    return Future.value(credentials.address.hex);
+  }
+
+  @override
+  Future<String> getOwner() async {
+    if (credentials is EthPrivateKey) {
+      EthPrivateKey ethPrivateKey = credentials as EthPrivateKey;
+      final pubKey = [0x04] + ethPrivateKey.encodedPublicKey;
+      return base64UrlEncode(pubKey);
+    }
+    throw UnimplementedError();
   }
 
   // JWK is not applicable for Ethereum Provider

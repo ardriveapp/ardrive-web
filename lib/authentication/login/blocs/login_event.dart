@@ -46,11 +46,13 @@ class CheckIfUserIsLoggedIn extends LoginEvent {
 class LoginWithPassword extends LoginEvent {
   final String password;
   final Wallet wallet;
+  final EthereumProviderWallet? derivedEthWallet;
   final bool showWalletCreated;
 
   const LoginWithPassword({
     required this.password,
     required this.wallet,
+    this.derivedEthWallet,
     required this.showWalletCreated,
   });
 
@@ -72,6 +74,7 @@ class UnlockUserWithPassword extends LoginEvent {
 class CreatePassword extends LoginEvent {
   final String password;
   final Wallet wallet;
+  final EthereumProviderWallet? derivedEthWallet;
   final String? mnemonic;
   final bool showTutorials;
   final bool showWalletCreated;
@@ -79,6 +82,7 @@ class CreatePassword extends LoginEvent {
   const CreatePassword(
       {required this.password,
       required this.wallet,
+      this.derivedEthWallet,
       this.mnemonic,
       required this.showTutorials,
       required this.showWalletCreated});

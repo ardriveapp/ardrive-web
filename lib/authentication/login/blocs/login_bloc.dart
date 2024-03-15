@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/authentication/login/blocs/ethereum_signer.dart';
 import 'package:ardrive/authentication/login/blocs/stub_web_wallet.dart' // stub implementation
     if (dart.library.html) 'package:ardrive/authentication/login/blocs/web_wallet.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
@@ -11,6 +13,7 @@ import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/ethereum/ethereum_wallet.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider.dart';
+import 'package:ardrive/services/ethereum/provider/ethereum_provider_wallet.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
@@ -20,10 +23,12 @@ import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.da
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
+import 'package:arweave/utils.dart';
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:webthree/credentials.dart' as web3credentials;
 
 part 'login_event.dart';
 part 'login_state.dart';
@@ -185,6 +190,14 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     String? mnemonic;
 
     if (wallet is EthereumWallet) {
+      final derivedEthWallet = event.derivedEthWallet;
+
+      if (derivedEthWallet == null) {
+        emit(previousState);
+        emit(const LoginFailure('Derived ETH wallet is null'));
+        return;
+      }
+
       late Uint8List fullEntropy;
       emit(const LoginShowBlockingDialog(
           message:
@@ -212,11 +225,20 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       final String? firstTxId =
           await _arweaveService.getFirstTxForWallet(await wallet.getAddress());
 
-      if (firstTxId != null) {
+      final arweaveNativeAddressForEth =
+          await ownerToAddress(await derivedEthWallet.getOwner());
+
+      final String? ethFirstTxId =
+          await _arweaveService.getFirstTxForWallet(arweaveNativeAddressForEth);
+
+      if (firstTxId != null && ethFirstTxId != null) {
         final recordedSignature =
             await _downloadService.download(firstTxId, false);
+        final ethRecordedSignature =
+            await _downloadService.download(ethFirstTxId, false);
 
-        if (!listEquals(recordedSignature, verifySignature)) {
+        if (!listEquals(recordedSignature, verifySignature) ||
+            !listEquals(ethRecordedSignature, verifySignature)) {
           emit(previousState);
           emit(const LoginFailure('Invalid password'));
           return;
@@ -340,6 +362,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     var mnemonic = event.mnemonic;
 
     if (wallet is EthereumWallet) {
+      if (event.derivedEthWallet == null) {
+        emit(previousState);
+        emit(const LoginFailure('Derived ETH wallet is null'));
+        return;
+      }
+      final derivedEthWallet = event.derivedEthWallet!;
+
       late Uint8List fullEntropy;
       emit(const LoginShowBlockingDialog(
           message:
@@ -359,18 +388,32 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       emit(LoginShowLoader());
       wallet = await generateWalletFromMnemonic(mnemonic);
-      emit(LoginCloseBlockingDialog());
 
       final verifySignature = await wallet.sign(fullEntropy);
 
+      // upload verification signature with derived Arweave wallet
       final dataItem = DataItem.withBlobData(
         data: verifySignature,
         owner: await wallet.getOwner(),
       );
-      await dataItem.sign(wallet);
+      await dataItem.sign(ArweaveSigner(wallet));
 
       await _turboUploadService.postDataItem(
           dataItem: dataItem, wallet: wallet);
+
+      // upload verification signature with derived ETH wallet
+      final ethSignedDataItem = DataItem.withBlobData(
+        data: verifySignature,
+        owner: await derivedEthWallet.getOwner(),
+      );
+
+      await ethSignedDataItem
+          .sign(EthereumSigner(derivedEthWallet.credentials));
+
+      await _turboUploadService.postDataItem(
+          dataItem: ethSignedDataItem, wallet: derivedEthWallet);
+
+      emit(LoginCloseBlockingDialog());
     }
 
     try {
@@ -446,10 +489,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     usingSeedphrase = false;
 
     emit(const LoginLanding());
-
-    // emit(LoginInitial(
-    //   isArConnectAvailable: _arConnectService.isExtensionPresent(),
-    // ));
   }
 
   Future<void> _handleFinishOnboardingEvent(
@@ -661,11 +700,49 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       return;
     }
 
+    // Sign message to verify user address and use signature to derive in-memory
+    // ETH wallet
+
+    const signMessage = 'Sign message to verify wallet address.';
+
+    emit(const LoginShowBlockingDialog(
+        message:
+            'Sign the following data with Metamask to verify your wallet address.'));
+
+    late EthereumProviderWallet derivedEthWallet;
+    try {
+      final signature =
+          await ethWallet.sign(Uint8List.fromList(signMessage.codeUnits));
+
+      var signatureSha256 = await sha256.hash(signature);
+
+      // FIXME: For testing, using double hash to generate temp eth wallet.
+      // Remove this when protocol finalized.
+      signatureSha256 = await sha256.hash(signatureSha256.bytes);
+
+      final privateKey = web3credentials.EthPrivateKey(
+          Uint8List.fromList(signatureSha256.bytes));
+
+      derivedEthWallet = EthereumProviderWallet(privateKey);
+    } catch (e) {
+      emit(LoginCloseBlockingDialog());
+      emit(LoginFailure(e));
+      return;
+    }
+
+    emit(LoginCloseBlockingDialog());
+
     if (existingUserFlow) {
-      emit(PromptPassword(wallet: ethWallet, showWalletCreated: false));
+      emit(PromptPassword(
+          wallet: ethWallet,
+          derivedEthWallet: derivedEthWallet,
+          showWalletCreated: false));
     } else {
       emit(CreateNewPassword(
-          wallet: ethWallet, showTutorials: true, showWalletCreated: true));
+          wallet: ethWallet,
+          derivedEthWallet: derivedEthWallet,
+          showTutorials: true,
+          showWalletCreated: true));
     }
   }
 }

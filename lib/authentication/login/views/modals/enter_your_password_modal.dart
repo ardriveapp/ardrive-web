@@ -4,6 +4,7 @@ import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/components/truncated_address_new.dart';
 import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/services/ethereum/provider/ethereum_provider_wallet.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -16,10 +17,12 @@ class EnterYourPasswordWidget extends StatefulWidget {
       {Key? key,
       required this.loginBloc,
       this.wallet,
+      this.derivedEthWallet,
       required this.showWalletCreated})
       : super(key: key);
 
   final Wallet? wallet;
+  final EthereumProviderWallet? derivedEthWallet;
   final LoginBloc loginBloc;
   final bool showWalletCreated;
 
@@ -145,6 +148,7 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
       widget.loginBloc.add(LoginWithPassword(
           password: _passwordController.text,
           wallet: widget.wallet!,
+          derivedEthWallet: widget.derivedEthWallet,
           showWalletCreated: widget.showWalletCreated));
     }
   }
@@ -154,6 +158,7 @@ void showEnterYourPasswordDialog(
     {required BuildContext context,
     required LoginBloc loginBloc,
     Wallet? wallet,
+    EthereumProviderWallet? derivedEthWallet,
     bool showWalletCreated = false}) {
   showArDriveDialog(context,
       barrierDismissible: false,
@@ -161,6 +166,7 @@ void showEnterYourPasswordDialog(
       content: EnterYourPasswordWidget(
         loginBloc: loginBloc,
         wallet: wallet,
+        derivedEthWallet: derivedEthWallet,
         showWalletCreated: showWalletCreated,
       ));
 }

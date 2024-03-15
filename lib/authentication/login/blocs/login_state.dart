@@ -45,10 +45,14 @@ class LoginTutorials extends LoginState {
 
 class PromptPassword extends LoginState {
   const PromptPassword(
-      {this.mnemonic, this.wallet, this.showWalletCreated = false});
+      {this.mnemonic,
+      this.wallet,
+      this.derivedEthWallet,
+      this.showWalletCreated = false});
 
   final String? mnemonic;
   final Wallet? wallet;
+  final EthereumProviderWallet? derivedEthWallet;
 
   /// Used to determine next screens to show on password success
   final bool showWalletCreated;
@@ -60,12 +64,14 @@ class PromptPassword extends LoginState {
 class CreateNewPassword extends LoginState {
   const CreateNewPassword(
       {required this.wallet,
+      this.derivedEthWallet,
       this.mnemonic,
       required this.showTutorials,
       required this.showWalletCreated});
 
   final String? mnemonic;
   final Wallet wallet;
+  final EthereumProviderWallet? derivedEthWallet;
 
   /// Used to determine next screens to show on password success
   final bool showTutorials;

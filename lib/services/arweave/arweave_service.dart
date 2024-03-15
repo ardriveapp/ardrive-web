@@ -1091,23 +1091,10 @@ class ArweaveService {
     );
 
     if (!skipSignature) {
-      await tx.sign(wallet);
+      await tx.sign(ArweaveSigner(wallet));
     }
 
     return tx;
-  }
-
-  Future<Uint8List> getSignatureData(
-    Entity entity,
-    Wallet wallet, [
-    SecretKey? key,
-  ]) async {
-    final tx = await client.transactions.prepare(
-      await entity.asTransaction(key: key),
-      wallet,
-    );
-
-    return await tx.getSignatureData();
   }
 
   /// Creates and signs a [DataItem] representing the provided entity.
@@ -1124,7 +1111,7 @@ class ArweaveService {
     item.setOwner(await wallet.getOwner());
 
     if (!skipSignature) {
-      await item.sign(wallet);
+      await item.sign(ArweaveSigner(wallet));
     }
 
     return item;
@@ -1146,7 +1133,7 @@ class ArweaveService {
       wallet,
     );
 
-    await bundleTx.sign(wallet);
+    await bundleTx.sign(ArweaveSigner(wallet));
 
     return bundleTx;
   }
@@ -1165,7 +1152,7 @@ class ArweaveService {
       )
       ..addBundleTags()
       ..setOwner(await wallet.getOwner());
-    await item.sign(wallet);
+    await item.sign(ArweaveSigner(wallet));
 
     logger.i('Prepared bundled data item with id ${item.id}'
         ' with tags ${item.tags}');
@@ -1184,7 +1171,7 @@ class ArweaveService {
       wallet,
     );
 
-    await bundleTx.sign(wallet);
+    await bundleTx.sign(ArweaveSigner(wallet));
 
     return bundleTx;
   }

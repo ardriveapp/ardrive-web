@@ -93,7 +93,8 @@ class _LoginPageState extends State<LoginPage> {
             showEnterYourPasswordDialog(
                 context: context,
                 loginBloc: context.read<LoginBloc>(),
-                wallet: loginState.wallet);
+                wallet: loginState.wallet,
+                derivedEthWallet: loginState.derivedEthWallet);
             return;
           } else if (loginState is CreateNewPassword) {
             showSecureYourPasswordDialog(
@@ -102,7 +103,8 @@ class _LoginPageState extends State<LoginPage> {
                 wallet: loginState.wallet,
                 mnemonic: loginState.mnemonic,
                 showTutorials: loginState.showTutorials,
-                showWalletCreated: loginState.showWalletCreated);
+                showWalletCreated: loginState.showWalletCreated,
+                derivedEthWallet: loginState.derivedEthWallet);
             return;
           } else if (loginState is LoginShowLoader) {
             showLoaderDialog(context: context);

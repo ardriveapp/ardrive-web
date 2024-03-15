@@ -3,6 +3,7 @@ import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/views/modals/common.dart';
 import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/services/ethereum/provider/ethereum_provider_wallet.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
@@ -15,12 +16,14 @@ class SecureYourWalletWidget extends StatefulWidget {
       {Key? key,
       required this.loginBloc,
       required this.wallet,
+      this.derivedEthWallet,
       this.mnemonic,
       required this.showTutorials,
       required this.showWalletCreated})
       : super(key: key);
 
   final Wallet wallet;
+  final EthereumProviderWallet? derivedEthWallet;
   final String? mnemonic;
   final LoginBloc loginBloc;
   final bool showTutorials;
@@ -192,6 +195,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
       CreatePassword(
           password: _passwordController.text,
           wallet: widget.wallet,
+          derivedEthWallet: widget.derivedEthWallet,
           mnemonic: widget.mnemonic,
           showTutorials: widget.showTutorials,
           showWalletCreated: widget.showWalletCreated),
@@ -203,6 +207,7 @@ void showSecureYourPasswordDialog(
     {required BuildContext context,
     required LoginBloc loginBloc,
     required Wallet wallet,
+    EthereumProviderWallet? derivedEthWallet,
     String? mnemonic,
     required bool showTutorials,
     required bool showWalletCreated}) {
@@ -212,6 +217,7 @@ void showSecureYourPasswordDialog(
       content: SecureYourWalletWidget(
           loginBloc: loginBloc,
           wallet: wallet,
+          derivedEthWallet: derivedEthWallet,
           mnemonic: mnemonic,
           showTutorials: showTutorials,
           showWalletCreated: showWalletCreated));

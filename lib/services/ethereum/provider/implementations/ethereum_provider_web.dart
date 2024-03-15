@@ -29,7 +29,6 @@ Future<EthereumProviderWallet?> connect() async {
   if (!eth.isConnected()) {
     return null;
   }
-  final address = credentials.address;
 
   // Ensure the user is on Ethereum chain
   await eth.rawRequest(
@@ -39,5 +38,5 @@ Future<EthereumProviderWallet?> connect() async {
     ],
   );
 
-  return EthereumProviderWallet(credentials, address.hex);
+  return EthereumProviderWallet(credentials);
 }
