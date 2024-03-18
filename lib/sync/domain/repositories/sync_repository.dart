@@ -645,11 +645,6 @@ class _SyncRepository implements SyncRepository {
               ((currentBlockHeight - block.height) /
                   totalBlockHeightDifference));
         }
-        logger.d(
-          'The transaction block is null. Transaction node id: ${t.transactionCommonMixin.id}',
-        );
-
-        logger.d('New fetch-phase percentage: $fetchPhasePercentage');
 
         /// if the block is null, we don't calculate and keep the same percentage
         return fetchPhasePercentage;
@@ -672,7 +667,6 @@ class _SyncRepository implements SyncRepository {
         }
       }
 
-      logger.d('Adding transaction ${t.transactionCommonMixin.id}');
       transactions.add(t);
 
       /// We can only calculate the fetch percentage if we have the `firstBlockHeight`
@@ -681,7 +675,7 @@ class _SyncRepository implements SyncRepository {
           fetchPhasePercentage = calculatePercentageBasedOnBlockHeights();
         } else {
           // If the difference is zero means that the first phase was concluded.
-          logger.d('The first phase just finished!');
+          logger.d('The syncs first phase just finished!');
           fetchPhasePercentage = 1;
         }
         final percentage =
@@ -846,12 +840,6 @@ class _SyncRepository implements SyncRepository {
         list: transactions,
         batchSize: batchSize,
         endOfBatchCallback: (items) async* {
-          final isReadingFromSnapshot = snapshotDriveHistory.items.isNotEmpty;
-
-          if (!isReadingFromSnapshot) {
-            logger.d('Getting metadata from drive ${drive.id}');
-          }
-
           final entityHistory =
               await _arweave.createDriveEntityHistoryFromTransactions(
             items,
