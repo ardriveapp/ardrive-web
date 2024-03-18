@@ -374,7 +374,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     }
 
     final folderStream =
-        folderById(driveId: driveId, folderId: folderId!).watchSingleOrNull();
+        folderById(driveId: driveId, folderId: folderId).watchSingleOrNull();
 
     final subfolderQuery = foldersInFolder(
       driveId: driveId,
