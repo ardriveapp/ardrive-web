@@ -113,15 +113,20 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           return;
         }
 
-        // try {
-        //   await _driveDao.getFolderTree(
-        //       driveId, folderId ?? value.rootFolderId);
-        // } catch (e) {
-        //   logger.d('Folder with id ${value.rootFolderId} not found');
+        try {
+          await _driveDao
+              .folderById(
+                driveId: driveId,
+                folderId: folderId ?? value.rootFolderId,
+              )
+              .getSingle();
+        } catch (e) {
+          logger
+              .d('Folder with id ${folderId ?? value.rootFolderId} not found');
 
-        //   emit(DriveInitialLoading());
-        //   return;
-        // }
+          emit(DriveInitialLoading());
+          return;
+        }
       });
 
       _folderSubscription =
@@ -145,14 +150,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
           final profile = _profileCubit.state;
 
-          var availableRowsPerPage = _defaultAvailableRowsPerPage;
-
-          availableRowsPerPage = calculateRowsPerPage(
+          final availableRowsPerPage = calculateRowsPerPage(
             folderContents.files.length + folderContents.subfolders.length,
           );
-
-          // final rootFolderNode =
-          //     await _driveDao.getFolderTree(driveId, drive.rootFolderId);
 
           if (_selectedItem != null && _refreshSelectedItem) {
             if (_selectedItem is FileDataTableItem) {
@@ -231,6 +231,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 currentFolderContents: currentFolderContents,
                 isShowingHiddenFiles: _showHiddenFiles,
                 pathSegments: pathSegments,
+                driveIsEmpty: folderContents.files.isEmpty &&
+                    folderContents.subfolders.isEmpty,
               ),
             );
           } else {
@@ -248,8 +250,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 contentOrderingMode: contentOrderingMode,
                 rowsPerPage: availableRowsPerPage.first,
                 availableRowsPerPage: availableRowsPerPage,
-                driveIsEmpty: false,
-                // driveIsEmpty: rootFolderNode.isEmpty(),
+                driveIsEmpty: folderContents.files.isEmpty &&
+                    folderContents.subfolders.isEmpty,
                 multiselect: false,
                 currentFolderContents: currentFolderContents,
                 columnVisibility: columnsVisibility,
