@@ -143,8 +143,8 @@ class _SyncRepository implements SyncRepository {
 
     final numberOfDrivesToSync = drives.length;
 
-    SyncProgress syncProgress = SyncProgress.initial()
-      ..copyWith(drivesCount: numberOfDrivesToSync);
+    SyncProgress syncProgress =
+        SyncProgress.initial().copyWith(drivesCount: numberOfDrivesToSync);
 
     yield syncProgress;
 
