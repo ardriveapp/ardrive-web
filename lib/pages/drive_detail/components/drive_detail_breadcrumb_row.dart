@@ -195,18 +195,6 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
     return ArDriveDropdownItemTile(
       name: text,
     );
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Padding(
-        padding: const EdgeInsets.only(left: 8.0),
-        child: Text(
-          text,
-          style: ArDriveTypography.body.captionBold(
-            color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-          ),
-        ),
-      ),
-    );
   }
 }
 
