@@ -60,7 +60,7 @@ class _LandingPageViewState extends State<LandingPageView> {
                         fontWeight: ArFontWeight.semiBold)),
                 const SizedBox(height: 72),
                 ArDriveButtonNew(
-                    text: 'Existing user',
+                    text: 'Log In',
                     typography: typography,
                     maxWidth: double.maxFinite,
                     onPressed: () {
@@ -70,9 +70,10 @@ class _LandingPageViewState extends State<LandingPageView> {
                     }),
                 const SizedBox(height: 16),
                 ArDriveButtonNew(
-                    text: 'New User',
+                    text: 'Sign Up',
                     typography: typography,
                     maxWidth: double.maxFinite,
+                    variant: ButtonVariant.primary,
                     onPressed: () {
                       context
                           .read<LoginBloc>()

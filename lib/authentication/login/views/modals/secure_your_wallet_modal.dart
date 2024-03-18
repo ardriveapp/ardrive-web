@@ -54,6 +54,9 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.desktop;
 
+    final showDerivedWalletNotYetCreated =
+        widget.derivedEthWallet != null && widget.loginBloc.existingUserFlow;
+
     return ArDriveLoginModal(
       width: 450,
       content: ArDriveFormNew(
@@ -77,7 +80,11 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
               ),
             ),
             const SizedBox(height: 12),
-            Text('Please enter and confirm a password to secure your wallet.',
+            Text(
+                showDerivedWalletNotYetCreated
+                    ? 'We could not find a wallet for that Ethereum address, but you can create one now by entering a password to secure the new wallet.'
+                    : 'Please enter and confirm a password to secure your wallet.',
+                textAlign: TextAlign.center,
                 style: typography.paragraphNormal(
                     color: colorTokens.textLow,
                     fontWeight: ArFontWeight.semiBold)),

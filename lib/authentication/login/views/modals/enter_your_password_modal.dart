@@ -41,6 +41,9 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.desktop;
 
+    final showDerivedWalletAlreadyCreated =
+        widget.derivedEthWallet != null && !widget.loginBloc.existingUserFlow;
+
     return ArDriveLoginModal(
       width: 450,
       content: Column(
@@ -62,22 +65,30 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(appLocalizationsOf(context).walletAddress,
+          showDerivedWalletAlreadyCreated
+              ? Text(
+                  'We found a wallet already created for this Ethereum address, please enter your password to continue.',
+                  textAlign: TextAlign.center,
                   style: typography.paragraphNormal(
                       color: colorTokens.textLow,
-                      fontWeight: ArFontWeight.semiBold)),
-              const SizedBox(width: 8),
-              FutureBuilder(
-                  future: _getWalletAddress(),
-                  builder: (context, address) => address.hasData
-                      ? TruncatedAddressNew(walletAddress: address.data!)
-                      : const Text(''))
-            ],
-          ),
+                      fontWeight: ArFontWeight.semiBold),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(appLocalizationsOf(context).walletAddress,
+                        style: typography.paragraphNormal(
+                            color: colorTokens.textLow,
+                            fontWeight: ArFontWeight.semiBold)),
+                    const SizedBox(width: 8),
+                    FutureBuilder(
+                        future: _getWalletAddress(),
+                        builder: (context, address) => address.hasData
+                            ? TruncatedAddressNew(walletAddress: address.data!)
+                            : const Text(''))
+                  ],
+                ),
           const SizedBox(height: 40),
           Text('Password',
               style: typography.paragraphNormal(

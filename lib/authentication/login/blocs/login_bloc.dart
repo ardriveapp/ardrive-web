@@ -730,9 +730,15 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       return;
     }
 
+    final arweaveNativeAddressForEth =
+        await ownerToAddress(await derivedEthWallet.getOwner());
+
+    final String? ethFirstTxId =
+        await _arweaveService.getFirstTxForWallet(arweaveNativeAddressForEth);
+
     emit(LoginCloseBlockingDialog());
 
-    if (existingUserFlow) {
+    if (ethFirstTxId != null) {
       emit(PromptPassword(
           wallet: ethWallet,
           derivedEthWallet: derivedEthWallet,
