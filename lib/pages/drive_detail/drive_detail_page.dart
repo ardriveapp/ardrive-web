@@ -287,8 +287,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                             content: Row(
                               children: [
                                 DriveDetailBreadcrumbRow(
-                                  path:
-                                      driveDetailState.folderInView.folder.path,
+                                  rootFolderId: driveDetailState
+                                      .currentDrive.rootFolderId,
+                                  path: driveDetailState.pathSegments,
                                   driveName: driveDetailState.currentDrive.name,
                                 ),
                                 const Spacer(),

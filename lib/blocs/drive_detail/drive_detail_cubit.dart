@@ -197,6 +197,25 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             isOwner: isDriveOwner(_auth, drive.ownerAddress),
           );
 
+          final List<BreadCrumbRowInfo> pathSegments = [];
+
+          if (folderContents.folder.id != drive.rootFolderId) {
+            await _getBreadcrumbsForFolder(
+              folderId: folderContents.folder.id,
+              parentFolderId: folderContents.folder.parentFolderId,
+              pathSegments: pathSegments,
+              rootFolderId: drive.rootFolderId,
+              driveId: driveId,
+            );
+
+            pathSegments.add(
+              BreadCrumbRowInfo(
+                text: folderContents.folder.name,
+                targedId: drive.id,
+              ),
+            );
+          }
+
           if (state != null) {
             emit(
               state.copyWith(
@@ -211,12 +230,15 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 availableRowsPerPage: availableRowsPerPage,
                 currentFolderContents: currentFolderContents,
                 isShowingHiddenFiles: _showHiddenFiles,
+                pathSegments: pathSegments,
               ),
             );
           } else {
             final columnsVisibility = await getTableColumnVisibility();
+
             emit(
               DriveDetailLoadSuccess(
+                pathSegments: pathSegments,
                 selectedItem: _selectedItem,
                 currentDrive: drive,
                 hasWritePermissions: profile is ProfileLoggedIn &&
@@ -239,6 +261,45 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     } catch (e, stacktrace) {
       logger.e('An error occured mouting the drive explorer', e, stacktrace);
     }
+  }
+
+  Future<List<BreadCrumbRowInfo>> _getBreadcrumbsForFolder({
+    required String folderId,
+    String? parentFolderId,
+    required List<BreadCrumbRowInfo> pathSegments,
+    required String rootFolderId,
+    required String driveId,
+  }) async {
+    if (parentFolderId == null || parentFolderId == rootFolderId) {
+      return pathSegments;
+    }
+
+    final parentFolder = await _driveDao
+        .latestFolderRevisionByFolderId(
+          driveId: driveId,
+          folderId: parentFolderId,
+        )
+        .getSingleOrNull();
+
+    if (parentFolder == null) {
+      return pathSegments;
+    }
+
+    pathSegments.insert(
+      0,
+      BreadCrumbRowInfo(
+        text: parentFolder.name,
+        targedId: parentFolder.folderId,
+      ),
+    );
+
+    return _getBreadcrumbsForFolder(
+      folderId: parentFolder.folderId,
+      parentFolderId: parentFolder.parentFolderId,
+      pathSegments: pathSegments,
+      rootFolderId: rootFolderId,
+      driveId: driveId,
+    );
   }
 
   List<ArDriveDataTableItem> parseEntitiesToDatatableItem({
