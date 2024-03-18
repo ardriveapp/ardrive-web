@@ -4,7 +4,6 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:equatable/equatable.dart';
@@ -20,7 +19,6 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
   final ArweaveService _arweave;
   final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
-  final SyncCubit _syncCubit;
 
   StreamSubscription? _selectedFolderSubscription;
 
@@ -30,12 +28,10 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
     required ArweaveService arweave,
     required TurboUploadService turboUploadService,
     required DriveDao driveDao,
-    required SyncCubit syncCubit,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
         _turboUploadService = turboUploadService,
         _driveDao = driveDao,
-        _syncCubit = syncCubit,
         super(GhostFixerInitial()) {
     _driveDao
         .driveById(driveId: ghostFolder.driveId)
@@ -164,8 +160,6 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
 
         await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
             performedAction: RevisionAction.create));
-        final folderMap = {folder.id: folder.toCompanion(false)};
-        await _syncCubit.generateFsEntryPaths(folder.driveId, folderMap, {});
       });
       emit(GhostFixerSuccess());
     } catch (err) {

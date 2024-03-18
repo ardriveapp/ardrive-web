@@ -245,9 +245,7 @@ void main() {
       );
       turboUploadService = DontUseUploadService();
       syncBloc = MockSyncBloc();
-      when(() => syncBloc.generateFsEntryPaths(any(), any(), any())).thenAnswer(
-        (_) async => Future.value(),
-      );
+
       profileCubit = MockProfileCubit();
 
       final keyBytes = Uint8List(32);

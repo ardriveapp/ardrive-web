@@ -6,7 +6,6 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/core/activity_tracker.dart';
-import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/constants.dart';
 import 'package:ardrive/sync/domain/ghost_folder.dart';
@@ -258,22 +257,6 @@ class SyncCubit extends Cubit<SyncState> {
     } else {
       return max(lastBlockHeight - kBlockHeightLookBack, 0);
     }
-  }
-
-  // Exposing this for use by create folder functions since they need to update
-  // folder tree
-  Future<void> generateFsEntryPaths(
-    String driveId,
-    Map<String, FolderEntriesCompanion> foldersByIdMap,
-    Map<String, FileEntriesCompanion> filesByIdMap,
-  ) async {
-    logger.i('Generating fs entry paths...');
-    ghostFolders = await _syncRepository.generateFsEntryPaths(
-      driveId: driveId,
-      foldersByIdMap: foldersByIdMap,
-      filesByIdMap: filesByIdMap,
-      ghostFolders: ghostFolders,
-    );
   }
 
   @override

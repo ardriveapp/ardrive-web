@@ -80,13 +80,6 @@ abstract class SyncRepository {
 
   Future<int> getCurrentBlockHeight();
 
-  Future<Map<FolderID, GhostFolder>> generateFsEntryPaths({
-    required String driveId,
-    required Map<String, FolderEntriesCompanion> foldersByIdMap,
-    required Map<String, FileEntriesCompanion> filesByIdMap,
-    required Map<FolderID, GhostFolder> ghostFolders,
-  });
-
   factory SyncRepository({
     required ArweaveService arweave,
     required DriveDao driveDao,
@@ -110,6 +103,9 @@ class _SyncRepository implements SyncRepository {
   final ConfigService _configService;
   final LicenseService _licenseService;
   final BatchProcessor _batchProcessor;
+
+  final Map<String, GhostFolder> _ghostFolders = {};
+  final Set<String> _folderIds = <String>{};
 
   DateTime? _lastSync;
 
@@ -155,13 +151,10 @@ class _SyncRepository implements SyncRepository {
       ),
     );
 
-    final ghostFolders = <FolderID, GhostFolder>{};
-
     final driveSyncProcesses = drives.map((drive) async* {
       yield* _syncDrive(
         drive.id,
         cipherKey: cipherKey,
-        ghostFolders: ghostFolders,
         lastBlockHeight: syncDeep
             ? 0
             : _calculateSyncLastBlockHeight(drive.lastBlockHeight!),
@@ -206,11 +199,14 @@ class _SyncRepository implements SyncRepository {
       await createGhosts(
         driveDao: _driveDao,
         ownerAddress: await wallet?.getAddress(),
-        ghostFolders: ghostFolders,
+        ghostFolders: _ghostFolders,
       );
 
       /// Clear the ghost folders after they are created
-      ghostFolders.clear();
+      _ghostFolders.clear();
+
+      /// Clear the folder ids after they are created
+      _folderIds.clear();
 
       logger.i('Ghosts created...');
 
@@ -270,7 +266,6 @@ class _SyncRepository implements SyncRepository {
       currentBlockHeight: 0,
       transactionParseBatchSize: 200,
       txFechedCallback: txFechedCallback,
-      ghostFolders: {}, // No ghost folders to start with
     );
   }
 
@@ -326,19 +321,6 @@ class _SyncRepository implements SyncRepository {
         () => {folderEntry.id: folderEntry.toCompanion(false)},
       );
     }
-    // await Future.wait(
-    //   [
-    //     ...ghostFoldersByDrive.entries.map(
-    //       (entry) => _generateFsEntryPaths(
-    //         driveDao: driveDao,
-    //         driveId: entry.key,
-    //         foldersByIdMap: entry.value,
-    //         ghostFolders: ghostFolders,
-    //         filesByIdMap: {},
-    //       ),
-    //     ),
-    //   ],
-    // );
   }
 
   @override
@@ -368,23 +350,6 @@ class _SyncRepository implements SyncRepository {
         'Retrying for get the current block height',
       ),
     );
-  }
-
-  @override
-  Future<Map<FolderID, GhostFolder>> generateFsEntryPaths({
-    required String driveId,
-    required Map<String, FolderEntriesCompanion> foldersByIdMap,
-    required Map<String, FileEntriesCompanion> filesByIdMap,
-    required Map<FolderID, GhostFolder> ghostFolders,
-  }) async {
-    return {};
-    // return _generateFsEntryPaths(
-    //   driveDao: _driveDao,
-    //   driveId: driveId,
-    //   foldersByIdMap: foldersByIdMap,
-    //   filesByIdMap: filesByIdMap,
-    //   ghostFolders: ghostFolders,
-    // );
   }
 
   int _calculateSyncLastBlockHeight(int lastBlockHeight) {
@@ -540,7 +505,6 @@ class _SyncRepository implements SyncRepository {
     required int currentBlockHeight,
     required int lastBlockHeight,
     required int transactionParseBatchSize,
-    required Map<FolderID, GhostFolder> ghostFolders,
     required String ownerAddress,
     Function(String driveId, int txCount)? txFechedCallback,
   }) async* {
@@ -696,7 +660,6 @@ class _SyncRepository implements SyncRepository {
 
     try {
       yield* _parseDriveTransactionsIntoDatabaseEntities(
-        ghostFolders: ghostFolders,
         transactions: transactions,
         drive: drive,
         driveKey: driveKey,
@@ -808,7 +771,7 @@ class _SyncRepository implements SyncRepository {
     required int currentBlockHeight,
     required int batchSize,
     required SnapshotDriveHistory snapshotDriveHistory,
-    required Map<FolderID, GhostFolder> ghostFolders,
+    // required Map<FolderID, GhostFolder> ghostFolders,
     required String ownerAddress,
   }) async* {
     final numberOfDriveEntitiesToParse = transactions.length;
@@ -882,6 +845,19 @@ class _SyncRepository implements SyncRepository {
               newEntities: newEntities.whereType<FileEntity>(),
             );
 
+            for (final entity in latestFileRevisions) {
+              if (!_folderIds.contains(entity.parentFolderId.value)) {
+                _ghostFolders.putIfAbsent(
+                  entity.parentFolderId.value,
+                  () => GhostFolder(
+                    driveId: drive.id,
+                    folderId: entity.parentFolderId.value,
+                    isHidden: false,
+                  ),
+                );
+              }
+            }
+
             // Check and handle cases where there's no more revisions
             final updatedDrive = latestDriveRevision != null
                 ? await _computeRefreshedDriveFromRevision(
@@ -919,7 +895,6 @@ class _SyncRepository implements SyncRepository {
             await _driveDao.updateFileEntries(updatedFilesById.values.toList());
 
             await _generateFsEntryPaths(
-              ghostFolders: ghostFolders,
               driveDao: _driveDao,
               driveId: drive.id,
               foldersByIdMap: updatedFoldersById,
@@ -1032,6 +1007,7 @@ class _SyncRepository implements SyncRepository {
     required String driveId,
     required Iterable<FolderEntity> newEntities,
   }) async {
+    _folderIds.addAll(newEntities.map((e) => e.id!));
     // The latest folder revisions, keyed by their entity ids.
     final latestRevisions = <String, FolderRevisionsCompanion>{};
 
@@ -1138,7 +1114,6 @@ Future<Map<FolderID, GhostFolder>> _generateFsEntryPaths({
   required String driveId,
   required Map<String, FolderEntriesCompanion> foldersByIdMap,
   required Map<String, FileEntriesCompanion> filesByIdMap,
-  required Map<FolderID, GhostFolder> ghostFolders,
 }) async {
   return {};
   // final staleFolderTree = <FolderNode>[];
