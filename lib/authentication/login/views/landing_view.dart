@@ -8,16 +8,16 @@ import '../../../misc/resources.dart';
 import '../../components/login_card.dart';
 import '../../components/max_device_sizes_constrained_box.dart';
 
-class LandingPageView extends StatefulWidget {
-  const LandingPageView({
+class LandingView extends StatefulWidget {
+  const LandingView({
     super.key,
   });
 
   @override
-  State<LandingPageView> createState() => _LandingPageViewState();
+  State<LandingView> createState() => _LandingViewState();
 }
 
-class _LandingPageViewState extends State<LandingPageView> {
+class _LandingViewState extends State<LandingView> {
   @override
   Widget build(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;

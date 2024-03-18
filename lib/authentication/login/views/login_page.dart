@@ -28,7 +28,7 @@ import 'package:responsive_builder/responsive_builder.dart';
 import '../../components/fadethrough_transition_switcher.dart';
 import '../../components/login_card.dart';
 import '../../components/max_device_sizes_constrained_box.dart';
-import 'landing_page.dart';
+import 'landing_view.dart';
 import 'modals/enter_your_password_modal.dart';
 import 'prompt_wallet_view.dart';
 
@@ -374,7 +374,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
             ),
           );
         } else if (loginState is LoginLanding) {
-          content = const LandingPageView(
+          content = const LandingView(
             key: Key('landingPageView'),
           );
         } else {
