@@ -353,11 +353,26 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Stream<FolderWithContents> watchFolderContents(
     String driveId, {
     String? folderId,
-    // String? folderPath,
     DriveOrder orderBy = DriveOrder.name,
     OrderingMode orderingMode = OrderingMode.asc,
   }) {
-    // assert(folderId != null || folderPath != null);
+    if (folderId == null) {
+      return driveById(driveId: driveId).watchSingleOrNull().switchMap((drive) {
+        if (drive == null) {
+          throw Exception('Drive with id $driveId not found');
+        }
+
+        return folderById(driveId: driveId, folderId: drive.rootFolderId)
+            .watchSingleOrNull()
+            .switchMap((folder) {
+          return watchFolderContents(driveId,
+              folderId: folder!.id,
+              orderBy: orderBy,
+              orderingMode: orderingMode);
+        });
+      });
+    }
+
     final folderStream =
         folderById(driveId: driveId, folderId: folderId!).watchSingleOrNull();
 

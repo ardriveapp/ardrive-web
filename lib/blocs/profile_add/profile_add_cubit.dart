@@ -184,8 +184,9 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         try {
           privateDrive = await _arweave.getLatestDriveEntityWithId(
             checkDriveId,
-            checkDriveKey,
-            profileQueryMaxRetries,
+            driveOwner: await _wallet.getAddress(),
+            driveKey: checkDriveKey,
+            maxRetries: profileQueryMaxRetries,
           );
         } catch (e) {
           emit(ProfileAddFailure());
