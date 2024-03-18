@@ -113,15 +113,15 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           return;
         }
 
-        try {
-          await _driveDao.getFolderTree(
-              driveId, folderId ?? value.rootFolderId);
-        } catch (e) {
-          logger.d('Folder with id ${value.rootFolderId} not found');
+        // try {
+        //   await _driveDao.getFolderTree(
+        //       driveId, folderId ?? value.rootFolderId);
+        // } catch (e) {
+        //   logger.d('Folder with id ${value.rootFolderId} not found');
 
-          emit(DriveInitialLoading());
-          return;
-        }
+        //   emit(DriveInitialLoading());
+        //   return;
+        // }
       });
 
       _folderSubscription =
@@ -151,8 +151,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             folderContents.files.length + folderContents.subfolders.length,
           );
 
-          final rootFolderNode =
-              await _driveDao.getFolderTree(driveId, drive.rootFolderId);
+          // final rootFolderNode =
+          //     await _driveDao.getFolderTree(driveId, drive.rootFolderId);
 
           if (_selectedItem != null && _refreshSelectedItem) {
             if (_selectedItem is FileDataTableItem) {
@@ -248,7 +248,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 contentOrderingMode: contentOrderingMode,
                 rowsPerPage: availableRowsPerPage.first,
                 availableRowsPerPage: availableRowsPerPage,
-                driveIsEmpty: rootFolderNode.isEmpty(),
+                driveIsEmpty: false,
+                // driveIsEmpty: rootFolderNode.isEmpty(),
                 multiselect: false,
                 currentFolderContents: currentFolderContents,
                 columnVisibility: columnsVisibility,
