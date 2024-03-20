@@ -211,7 +211,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             pathSegments.add(
               BreadCrumbRowInfo(
                 text: folderContents.folder.name,
-                targedId: drive.id,
+                targedId: drive.rootFolderId,
               ),
             );
           }

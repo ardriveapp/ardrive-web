@@ -926,9 +926,13 @@ class MobileFolderNavigation extends StatelessWidget {
           Expanded(
             child: InkWell(
               onTap: () {
-                context
-                    .read<DriveDetailCubit>()
-                    .openFolder(folderId: path[path.length - 2].targedId);
+                String? targetId;
+
+                if (path.isNotEmpty) {
+                  targetId = path.first.targedId;
+                }
+
+                context.read<DriveDetailCubit>().openFolder(folderId: targetId);
               },
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -949,7 +953,7 @@ class MobileFolderNavigation extends StatelessWidget {
                           : EdgeInsets.zero,
                       child: Text(
                         _pathToName(
-                          path[path.length - 2].text,
+                          path.isEmpty ? driveName : path.last.text,
                         ),
                         style: ArDriveTypography.body.buttonNormalBold(),
                       ),
