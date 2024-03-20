@@ -135,7 +135,6 @@ class TutorialsViewState extends State<TutorialsView> {
     final arrowRight = max<double>(32, ((width - 1168) / 2));
     final double arrowBottom =
         !phoneLayout ? max(95, ((height - 800) / 2)) - 5 : 22;
-    print('arrowBottom: $arrowBottom');
 
     return Material(
         color: colorTokens.containerL0,

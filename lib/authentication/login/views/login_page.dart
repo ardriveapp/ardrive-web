@@ -265,7 +265,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
                   child: SizedBox(
                       width: 381,
                       child: Padding(
-                          padding: EdgeInsets.fromLTRB(0, 16, 0, 16),
+                          padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
                           child: _buildContent(
                             context,
                             loginState: widget.loginState,
