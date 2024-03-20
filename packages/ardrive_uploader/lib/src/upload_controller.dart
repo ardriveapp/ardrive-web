@@ -582,7 +582,7 @@ class UploadWorker {
 
   UploadWorker({
     required this.onTaskCompleted,
-    this.maxTasks = 100,
+    this.maxTasks = 5,
     required this.upload,
     required this.onError,
     this.task,
@@ -632,11 +632,11 @@ class WorkerPool {
   }
 
   void _setWorkerCallbacks() {
-    workers = List<UploadWorker>.generate(50, (i) {
+    workers = List<UploadWorker>.generate(numWorkers, (i) {
       final worker = UploadWorker(
         upload: upload,
         onError: (task, exception) => onWorkerError(task),
-        maxTasks: 50,
+        maxTasks: maxTasksPerWorker,
         onTaskCompleted: () {
           if (_isCanceled) {
             return;

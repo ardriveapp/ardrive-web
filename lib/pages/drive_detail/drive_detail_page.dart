@@ -751,7 +751,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
               Flexible(
                 child: MobileFolderNavigation(
                   driveName: state.currentDrive.name,
-                  path: state.folderInView.folder.path,
+                  path: state.pathSegments,
                   isShowingHiddenFiles: isShowingHiddenFiles,
                 ),
               ),
@@ -905,7 +905,7 @@ class ArDriveItemListTile extends StatelessWidget {
 }
 
 class MobileFolderNavigation extends StatelessWidget {
-  final String path;
+  final List<BreadCrumbRowInfo> path;
   final String driveName;
   final bool isShowingHiddenFiles;
 
@@ -926,9 +926,9 @@ class MobileFolderNavigation extends StatelessWidget {
           Expanded(
             child: InkWell(
               onTap: () {
-                // context
-                //     .read<DriveDetailCubit>()
-                //     .openFolder(path: getParentFolderPath(path));
+                context
+                    .read<DriveDetailCubit>()
+                    .openFolder(folderId: path[path.length - 2].targedId);
               },
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -948,7 +948,9 @@ class MobileFolderNavigation extends StatelessWidget {
                           ? const EdgeInsets.only(left: 16, top: 6, bottom: 6)
                           : EdgeInsets.zero,
                       child: Text(
-                        _pathToName(path),
+                        _pathToName(
+                          path[path.length - 2].text,
+                        ),
                         style: ArDriveTypography.body.buttonNormalBold(),
                       ),
                     ),
