@@ -1,3 +1,6 @@
+import 'dart:math';
+
+import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -6,7 +9,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
-import 'package:responsive_builder/responsive_builder.dart';
 
 import '../../../utils/app_localizations_wrapper.dart';
 import '../../../utils/plausible_event_tracker/plausible_event_tracker.dart';
@@ -127,56 +129,51 @@ class TutorialsViewState extends State<TutorialsView> {
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    return ScreenTypeLayout.builder(
-      desktop: (context) => Material(
-          color: colorTokens.containerL0,
-          child: Stack(fit: StackFit.expand, children: [
-            Container(
-                decoration: BoxDecoration(
-                  border: Border(
-                      top: BorderSide(
-                          color: colorTokens.containerRed, width: 6)),
-                  color: colorTokens.containerL0,
-                ),
-                padding: const EdgeInsets.fromLTRB(140, 100, 140, 100),
-                child: Center(
-                    child: MaxDeviceSizesConstrainedBox(
-                        maxHeightPercent: 1.0,
-                        defaultMaxWidth: 1168,
-                        defaultMaxHeight: 800,
-                        child: _buildOnBoardingContent()))),
-            // Placing red arrow here as it has to be overlaying the padding area
-            // for the bottom buttons/page number to be vertically stable across
-            // screens
-            if (_currentPage >= _list.length - 1)
-              Positioned(
-                  right: 140,
-                  bottom: 95,
-                  child: SvgPicture.asset(Resources.images.login.arrowRed)),
-          ])),
-      mobile: (context) => Scaffold(
-        resizeToAvoidBottomInset: true,
-        body: Container(
-          color: colorTokens.containerL0,
-          child: Align(
-            child: MaxDeviceSizesConstrainedBox(
-              child: Padding(
-                padding: const EdgeInsets.all(80),
-                child: _buildOnBoardingContent(),
-              ),
+    final width = MediaQuery.of(context).size.width;
+    final height = MediaQuery.of(context).size.height;
+    final phoneLayout = width < TABLET;
+    final arrowRight = max<double>(32, ((width - 1168) / 2));
+    final double arrowBottom =
+        !phoneLayout ? max(95, ((height - 800) / 2)) - 5 : 22;
+    print('arrowBottom: $arrowBottom');
+
+    return Material(
+        color: colorTokens.containerL0,
+        child: Stack(fit: StackFit.expand, children: [
+          Container(
+            decoration: BoxDecoration(
+              border: Border(
+                  top: BorderSide(color: colorTokens.containerRed, width: 6)),
+              color: colorTokens.containerL0,
             ),
+            padding: phoneLayout
+                ? const EdgeInsets.all(32)
+                : const EdgeInsets.fromLTRB(32, 100, 32, 100),
+            child: Center(
+                child: MaxDeviceSizesConstrainedBox(
+                    maxHeightPercent: 1.0,
+                    defaultMaxWidth: 1168,
+                    defaultMaxHeight: phoneLayout ? double.maxFinite : 800,
+                    child: _buildOnBoardingContent(phoneLayout))),
           ),
-        ),
-      ),
-    );
+          // Placing red arrow here as it has to be overlaying the padding area
+          // for the bottom buttons/page number to be vertically stable across
+          // screens
+          if (_currentPage >= _list.length - 1)
+            Positioned(
+                right: arrowRight,
+                bottom: arrowBottom,
+                child: SvgPicture.asset(Resources.images.login.arrowRed)),
+        ]));
   }
 
-  Widget _buildOnBoardingContent() {
+  Widget _buildOnBoardingContent(bool phoneLayout) {
     return _TutorialContent(
       key: ValueKey(_currentPage),
       tutorialPage: _list[_currentPage],
       pageNumber: _currentPage + 1,
       totalPages: _list.length,
+      phoneLayout: phoneLayout,
     );
   }
 }
@@ -185,27 +182,35 @@ class _TutorialContent extends StatelessWidget {
   final _TutorialPage tutorialPage;
   final int pageNumber;
   final int totalPages;
+  final bool phoneLayout;
 
   const _TutorialContent({
     super.key,
     required this.tutorialPage,
     required this.pageNumber,
     required this.totalPages,
+    required this.phoneLayout,
   });
 
   @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.desktop;
+    final typography = ArDriveTypographyNew.of(context);
 
     return Container(
       color: colorTokens.containerL0,
       child: Column(
+        mainAxisSize: phoneLayout ? MainAxisSize.min : MainAxisSize.max,
         crossAxisAlignment: CrossAxisAlignment.center,
         // mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
+          if (pageNumber == 1 && phoneLayout)
+            ArDriveImage(
+              image: AssetImage(Resources.images.login.confetti),
+            ),
           Text(
             tutorialPage.title,
+            textAlign: TextAlign.center,
             style: typography.display(
               color: colorTokens.textHigh,
               fontWeight: ArFontWeight.bold,
@@ -213,7 +218,7 @@ class _TutorialContent extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            pageNumber == 1
+            pageNumber == 1 && !phoneLayout
                 ? SizedBox(
                     width: 200,
                     child: Container(
@@ -225,7 +230,7 @@ class _TutorialContent extends StatelessWidget {
                           fit: BoxFit.contain,
                         )),
                   )
-                : const SizedBox(width: 200),
+                : SizedBox(width: phoneLayout ? 0 : 200),
             Expanded(
               child: Text(tutorialPage.description,
                   textAlign: TextAlign.center,
@@ -234,7 +239,7 @@ class _TutorialContent extends StatelessWidget {
                     fontWeight: ArFontWeight.semiBold,
                   )),
             ),
-            pageNumber == 1
+            pageNumber == 1 && !phoneLayout
                 ? SizedBox(
                     width: 200,
                     child: Container(
@@ -246,7 +251,7 @@ class _TutorialContent extends StatelessWidget {
                           fit: BoxFit.contain,
                         )),
                   )
-                : const SizedBox(width: 200),
+                : SizedBox(width: phoneLayout ? 0 : 200),
           ]),
           const SizedBox(height: 60),
           Expanded(
@@ -261,7 +266,7 @@ class _TutorialContent extends StatelessWidget {
             children: [
               Container(
                   alignment: Alignment.centerLeft,
-                  width: 200,
+                  width: 128,
                   child: (tutorialPage.previousButtonText != null &&
                           tutorialPage.previousButtonAction != null)
                       ? Text.rich(
@@ -301,7 +306,7 @@ class _TutorialContent extends StatelessWidget {
               Container(
                   padding:
                       EdgeInsets.only(right: pageNumber >= totalPages ? 10 : 0),
-                  width: 200,
+                  width: 128,
                   alignment: Alignment.centerRight,
                   child: Text.rich(
                     TextSpan(

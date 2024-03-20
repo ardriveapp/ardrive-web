@@ -10,7 +10,7 @@ class LinedTextDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     // FIXME: add switching of typography based on screen size
-    final typography = ArDriveTypographyNew.desktop;
+    final typography = ArDriveTypographyNew.of(context);
 
     return Row(children: [
       Expanded(

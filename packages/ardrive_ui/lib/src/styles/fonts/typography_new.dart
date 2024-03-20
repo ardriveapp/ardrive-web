@@ -202,4 +202,9 @@ class ArDriveMobileTypography implements ArdriveTypographyNew {
 class ArDriveTypographyNew {
   static ArdriveTypographyNew desktop = ArDriveDesktopTypography();
   static ArdriveTypographyNew mobile = ArDriveMobileTypography();
+
+  static ArdriveTypographyNew of(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    return width < 834 ? mobile : desktop;
+  }
 }

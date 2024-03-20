@@ -49,7 +49,7 @@ void showBlockingMessageDialog(
               padding: const EdgeInsets.all(64),
               child: Text(message,
                   textAlign: TextAlign.center,
-                  style: ArDriveTypographyNew.desktop.paragraphNormal(
+                  style: ArDriveTypographyNew.of(context).paragraphNormal(
                       color: colorTokens.textLow,
                       fontWeight: ArFontWeight.semiBold)),
             ),

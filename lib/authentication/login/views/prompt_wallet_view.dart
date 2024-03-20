@@ -30,10 +30,8 @@ class _PromptWalletViewState extends State<PromptWalletView> {
   @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
     final existingUserFlow = widget.existingUserFlow;
-
-    // FIXME: add switching of typography based on screen size
-    final typography = ArDriveTypographyNew.desktop;
 
     return MaxDeviceSizesConstrainedBox(
       defaultMaxWidth: 512,

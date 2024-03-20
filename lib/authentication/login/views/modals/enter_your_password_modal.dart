@@ -39,7 +39,7 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
   @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.desktop;
+    final typography = ArDriveTypographyNew.of(context);
 
     final showDerivedWalletAlreadyCreated =
         widget.derivedEthWallet != null && !widget.loginBloc.existingUserFlow;

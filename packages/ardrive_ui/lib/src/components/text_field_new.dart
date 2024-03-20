@@ -279,8 +279,7 @@ class ArDriveTextFieldStateNew extends State<ArDriveTextFieldNew> {
   @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    // FIXME: switch for mobile
-    final typography = ArDriveTypographyNew.desktop;
+    final typography = ArDriveTypographyNew.of(context);
 
     final controller = widget.controller;
     final isMultline = (controller is ArDriveMultilineObscureTextControllerNew);

@@ -6,7 +6,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../misc/resources.dart';
 import '../../components/login_card.dart';
-import '../../components/max_device_sizes_constrained_box.dart';
 
 class LandingView extends StatefulWidget {
   const LandingView({
@@ -21,66 +20,59 @@ class _LandingViewState extends State<LandingView> {
   @override
   Widget build(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
 
-    // FIXME: add switching of typography based on screen size
-    final typography = ArDriveTypographyNew.desktop;
-
-    return MaxDeviceSizesConstrainedBox(
-      defaultMaxWidth: 512,
-      defaultMaxHeight: 798,
-      maxHeightPercent: 0.9,
-      child: SingleChildScrollView(
-        child: LoginCard(
-          content: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ArDriveImage(
-                  image: AssetImage(Resources.images.brand.logo1),
-                  height: 50,
+    return SingleChildScrollView(
+      child: LoginCard(
+        content: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ArDriveImage(
+                image: AssetImage(Resources.images.brand.logo1),
+                height: 50,
+              ),
+              heightSpacing(),
+              Align(
+                alignment: Alignment.topCenter,
+                child: Text(
+                  // FIXME: Add localization key
+                  'Welcome to ArDrive',
+                  textAlign: TextAlign.center,
+                  style: typography.heading1(
+                      color: colors.textHigh, fontWeight: ArFontWeight.bold),
                 ),
-                heightSpacing(),
-                Align(
-                  alignment: Alignment.topCenter,
-                  child: Text(
-                    // FIXME: Add localization key
-                    'Welcome to ArDrive',
-                    textAlign: TextAlign.center,
-                    style: typography.heading1(
-                        color: colors.textHigh, fontWeight: ArFontWeight.bold),
-                  ),
-                ),
-                heightSpacing(),
-                //FIXME: Add localization key
-                Text('Are you an existing user or a new user?',
-                    textAlign: TextAlign.center,
-                    style: typography.paragraphLarge(
-                        color: colors.textLow,
-                        fontWeight: ArFontWeight.semiBold)),
-                const SizedBox(height: 72),
-                ArDriveButtonNew(
-                    text: 'Log In',
-                    typography: typography,
-                    maxWidth: double.maxFinite,
-                    onPressed: () {
-                      context
-                          .read<LoginBloc>()
-                          .add(const SelectLoginFlow(existingUser: true));
-                    }),
-                const SizedBox(height: 16),
-                ArDriveButtonNew(
-                    text: 'Sign Up',
-                    typography: typography,
-                    maxWidth: double.maxFinite,
-                    variant: ButtonVariant.primary,
-                    onPressed: () {
-                      context
-                          .read<LoginBloc>()
-                          .add(const SelectLoginFlow(existingUser: false));
-                    }),
-              ]),
-        ),
+              ),
+              heightSpacing(),
+              //FIXME: Add localization key
+              Text('Are you an existing user or a new user?',
+                  textAlign: TextAlign.center,
+                  style: typography.paragraphLarge(
+                      color: colors.textLow,
+                      fontWeight: ArFontWeight.semiBold)),
+              const SizedBox(height: 72),
+              ArDriveButtonNew(
+                  text: 'Log In',
+                  typography: typography,
+                  maxWidth: double.maxFinite,
+                  onPressed: () {
+                    context
+                        .read<LoginBloc>()
+                        .add(const SelectLoginFlow(existingUser: true));
+                  }),
+              const SizedBox(height: 16),
+              ArDriveButtonNew(
+                  text: 'Sign Up',
+                  typography: typography,
+                  maxWidth: double.maxFinite,
+                  variant: ButtonVariant.primary,
+                  onPressed: () {
+                    context
+                        .read<LoginBloc>()
+                        .add(const SelectLoginFlow(existingUser: false));
+                  }),
+            ]),
       ),
     );
   }

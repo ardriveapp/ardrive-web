@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
 import 'package:ardrive/authentication/components/button.dart';
 import 'package:ardrive/authentication/components/login_card_new.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
@@ -67,241 +68,281 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
   @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.desktop;
+    final typography = ArDriveTypographyNew.of(context);
 
-    return Material(
-        child: Container(
-      color: colorTokens.containerL0,
-      alignment: Alignment.center,
-      child: Center(
-          child: IntrinsicHeight(
-              child: Row(
-        mainAxisSize: MainAxisSize.max,
+    final seedPhraseCard = LoginCardNew(
+      child: Column(
+        children: [
+          Container(
+            color: colorTokens.containerL3,
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Row(children: [
+                if (widget.mnemonic != null) ...[
+                  _tabLink(
+                    'Seed phrase',
+                    0,
+                    rightIcon: SvgPicture.asset(
+                      Resources.images.icons.encryptedLock,
+                      width: 20,
+                      height: 20,
+                      color: _currentPage == 0
+                          ? colorTokens.textHigh
+                          : colorTokens.textLow,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Spacer()
+                ],
+                _tabLink('Keyfile', 1),
+                const SizedBox(width: 16),
+                _tabLink('Security', 2)
+              ]),
+            ),
+          ),
+          _currentPage == 0
+              ? SizedBox(
+                  width: 450,
+                  height: 281,
+                  child: Stack(fit: StackFit.expand, children: [
+                    _blurred(450, widget.mnemonic!, _isBlurred),
+                    Positioned(
+                        right: 46,
+                        bottom: 16,
+                        child: _iconButton(
+                            _isBlurred
+                                ? Resources.images.icons.eyeClosed
+                                : Resources.images.icons.eyeOpen, () {
+                          setState(() {
+                            _isBlurred = !_isBlurred;
+                          });
+                        })),
+                    Positioned(
+                      right: 16,
+                      bottom: 16,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child: _showCheckSmallIcon
+                            ? ArDriveImage(
+                                width: 20,
+                                height: 20,
+                                image: AssetImage(
+                                    Resources.images.login.checkCircle),
+                                fit: BoxFit.contain)
+                            : ArDriveClickArea(
+                                child: GestureDetector(
+                                    onTap: () => _copy(true),
+                                    child: SvgPicture.asset(
+                                      Resources.images.icons.copy,
+                                      width: 20,
+                                      height: 20,
+                                      color: colorTokens.textMid,
+                                    ))),
+                      ),
+                    )
+                  ]))
+              : _currentPage == 1
+                  ? ArDriveImage(
+                      image: AssetImage(Resources.images.login.whatIsAKeyfile),
+                      fit: BoxFit.contain)
+                  : ArDriveImage(
+                      image: AssetImage(Resources.images.login.aboutSecurity),
+                      fit: BoxFit.contain),
+          Container(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(_pageInfo[_currentPage].title,
+                      style: typography.paragraphNormal()),
+                  const SizedBox(height: 12),
+                  Text(_pageInfo[_currentPage].description,
+                      style: typography.paragraphNormal(
+                          color: colorTokens.textLow,
+                          fontWeight: ArFontWeight.semiBold)),
+                ],
+              ))
+        ],
+      ),
+    );
+
+    final downloadWalletCard = LoginCardNew(
+        child: Padding(
+      padding: const EdgeInsets.fromLTRB(56, 64, 56, 64),
+      child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          LoginCardNew(
-            child: Column(
-              children: [
-                Container(
-                  color: colorTokens.containerL3,
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Row(children: [
-                      if (widget.mnemonic != null) ...[
-                        _tabLink(
-                          'Seed phrase',
-                          0,
-                          rightIcon: SvgPicture.asset(
-                            Resources.images.icons.encryptedLock,
-                            width: 20,
-                            height: 20,
-                            color: _currentPage == 0
-                                ? colorTokens.textHigh
-                                : colorTokens.textLow,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        const Spacer()
-                      ],
-                      _tabLink('Keyfile', 1),
-                      const SizedBox(width: 16),
-                      _tabLink('Security', 2)
-                    ]),
-                  ),
-                ),
-                _currentPage == 0
-                    ? SizedBox(
-                        width: 450,
-                        height: 281,
-                        child: Stack(fit: StackFit.expand, children: [
-                          _blurred(450, widget.mnemonic!, _isBlurred),
-                          Positioned(
-                              right: 46,
-                              bottom: 16,
-                              child: _iconButton(
-                                  _isBlurred
-                                      ? Resources.images.icons.eyeClosed
-                                      : Resources.images.icons.eyeOpen, () {
-                                setState(() {
-                                  _isBlurred = !_isBlurred;
-                                });
-                              })),
-                          Positioned(
-                            right: 16,
-                            bottom: 16,
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 200),
-                              child: _showCheckSmallIcon
-                                  ? ArDriveImage(
-                                      width: 20,
-                                      height: 20,
-                                      image: AssetImage(
-                                          Resources.images.login.checkCircle),
-                                      fit: BoxFit.contain)
-                                  : ArDriveClickArea(
-                                      child: GestureDetector(
-                                          onTap: () => _copy(true),
-                                          child: SvgPicture.asset(
-                                            Resources.images.icons.copy,
-                                            width: 20,
-                                            height: 20,
-                                            color: colorTokens.textMid,
-                                          ))),
-                            ),
-                          )
-                        ]))
-                    : _currentPage == 1
-                        ? ArDriveImage(
-                            image: AssetImage(
-                                Resources.images.login.whatIsAKeyfile),
-                            fit: BoxFit.contain)
-                        : ArDriveImage(
-                            image: AssetImage(
-                                Resources.images.login.aboutSecurity),
-                            fit: BoxFit.contain),
-                Container(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(_pageInfo[_currentPage].title,
-                            style: typography.paragraphNormal()),
-                        const SizedBox(height: 12),
-                        Text(_pageInfo[_currentPage].description,
-                            style: typography.paragraphNormal(
-                                color: colorTokens.textLow,
-                                fontWeight: ArFontWeight.semiBold)),
-                      ],
-                    ))
-              ],
+          Center(
+              child: ArDriveImage(
+            image: AssetImage(Resources.images.login.checkCircle),
+            height: 32,
+          )),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.topCenter,
+            child: Text(
+              // FIXME: Add localization key
+              'Wallet Created',
+              style: typography.heading2(
+                  color: colorTokens.textHigh, fontWeight: ArFontWeight.bold),
             ),
           ),
-          const SizedBox(width: 24),
-          LoginCardNew(
-              child: Padding(
-            padding: const EdgeInsets.fromLTRB(56, 64, 56, 64),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                    child: ArDriveImage(
-                  image: AssetImage(Resources.images.login.checkCircle),
-                  height: 32,
-                )),
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.topCenter,
-                  child: Text(
-                    // FIXME: Add localization key
-                    'Wallet Created',
-                    style: typography.heading2(
-                        color: colorTokens.textHigh,
-                        fontWeight: ArFontWeight.bold),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Please download your key file to continue. If you log out, you will need this to log back in.',
-                  style: ArDriveTypographyNew.desktop.paragraphNormal(
-                    color: colorTokens.textLow,
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 40),
-                if (widget.mnemonic != null) ...[
-                  ArDriveButtonNew(
-                    typography: typography,
-                    text: 'Copy Seed Phrase',
-                    variant: ButtonVariant.outline,
-                    onPressed: () => _copy(false),
-                    rightIcon: IgnorePointer(
-                        child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      child: _showCheck
-                          ? ArDriveImage(
-                              width: 20,
-                              height: 20,
-                              image: AssetImage(
-                                  Resources.images.login.checkCircle),
-                              fit: BoxFit.contain)
-                          : SvgPicture.asset(
-                              Resources.images.icons.copy,
-                              width: 20,
-                              height: 20,
-                              color: colorTokens.textMid,
-                            ),
-                      // onPressed: _copy,
-                    )),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                ArDriveButtonNew(
-                  typography: typography,
-                  text: 'Download Keyfile',
-                  variant: ButtonVariant.outline,
-                  onPressed: () async {
-                    final ioUtils = ArDriveIOUtils();
-
-                    await ioUtils.downloadWalletAsJsonFile(
-                      wallet: widget.wallet,
-                    );
-                  },
-                  rightIcon: IgnorePointer(
-                      child: SvgPicture.asset(
-                    Resources.images.icons.download,
-                    width: 20,
-                    height: 20,
-                    color: colorTokens.textMid,
-                  )),
-                ),
-                const SizedBox(height: 40),
-                ArDriveButtonNew(
-                  typography: typography,
-                  text: _isTermsChecked ? 'Go to App' : 'Check to Continue',
-                  isDisabled: !_isTermsChecked,
-                  variant: ButtonVariant.primary,
-                  onPressed: () async {
-                    context.read<LoginBloc>().add(
-                          FinishOnboarding(
-                            wallet: widget.wallet,
-                          ),
-                        );
-                  },
-                ),
-                const SizedBox(height: 12),
-                Row(children: [
-                  Checkbox(
-                    fillColor: MaterialStateProperty.all(Colors.transparent),
-                    checkColor: colorTokens.textLow,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(2.0),
-                    ),
-                    side: MaterialStateBorderSide.resolveWith((states) =>
-                        BorderSide(width: 1.0, color: colorTokens.textLow)),
-                    value: _isTermsChecked,
-                    onChanged: ((value) {
-                      setState(() => _isTermsChecked = value ?? false);
-                    }),
-                  ),
-                  Text('I have safely backed-up a copy of my wallet.',
-                      style: typography.paragraphNormal(
-                          color: colorTokens.textLow,
-                          fontWeight: ArFontWeight.semiBold))
-                ]),
-              ],
+          const SizedBox(height: 12),
+          Text(
+            'Please download your key file to continue. If you log out, you will need this to log back in.',
+            style: ArDriveTypographyNew.of(context).paragraphNormal(
+              color: colorTokens.textLow,
+              fontWeight: ArFontWeight.semiBold,
             ),
-          )),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 40),
+          if (widget.mnemonic != null) ...[
+            ArDriveButtonNew(
+              typography: typography,
+              text: 'Copy Seed Phrase',
+              variant: ButtonVariant.outline,
+              onPressed: () => _copy(false),
+              rightIcon: IgnorePointer(
+                  child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: _showCheck
+                    ? ArDriveImage(
+                        width: 20,
+                        height: 20,
+                        image: AssetImage(Resources.images.login.checkCircle),
+                        fit: BoxFit.contain)
+                    : SvgPicture.asset(
+                        Resources.images.icons.copy,
+                        width: 20,
+                        height: 20,
+                        color: colorTokens.textMid,
+                      ),
+                // onPressed: _copy,
+              )),
+            ),
+            const SizedBox(height: 12),
+          ],
+          ArDriveButtonNew(
+            typography: typography,
+            text: 'Download Keyfile',
+            variant: ButtonVariant.outline,
+            onPressed: () async {
+              final ioUtils = ArDriveIOUtils();
+
+              await ioUtils.downloadWalletAsJsonFile(
+                wallet: widget.wallet,
+              );
+            },
+            rightIcon: IgnorePointer(
+                child: SvgPicture.asset(
+              Resources.images.icons.download,
+              width: 20,
+              height: 20,
+              color: colorTokens.textMid,
+            )),
+          ),
+          const SizedBox(height: 40),
+          ArDriveButtonNew(
+            typography: typography,
+            text: _isTermsChecked ? 'Go to App' : 'Check to Continue',
+            isDisabled: !_isTermsChecked,
+            variant: ButtonVariant.primary,
+            onPressed: () async {
+              context.read<LoginBloc>().add(
+                    FinishOnboarding(
+                      wallet: widget.wallet,
+                    ),
+                  );
+            },
+          ),
+          const SizedBox(height: 12),
+          Row(children: [
+            Checkbox(
+              fillColor: MaterialStateProperty.all(Colors.transparent),
+              checkColor: colorTokens.textLow,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(2.0),
+              ),
+              side: MaterialStateBorderSide.resolveWith((states) =>
+                  BorderSide(width: 1.0, color: colorTokens.textLow)),
+              value: _isTermsChecked,
+              onChanged: ((value) {
+                setState(() => _isTermsChecked = value ?? false);
+              }),
+            ),
+            Expanded(
+                child: Text('I have safely backed-up a copy of my wallet.',
+                    maxLines: 2,
+                    style: typography.paragraphNormal(
+                        color: colorTokens.textLow,
+                        fontWeight: ArFontWeight.semiBold)))
+          ]),
         ],
-      ))),
+      ),
     ));
+    return BreakpointLayoutBuilder(
+      largeDesktop: (context) => Material(
+          child: Container(
+              color: colorTokens.containerL0,
+              alignment: Alignment.center,
+              child: Center(
+                  child: IntrinsicHeight(
+                      child: Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  seedPhraseCard,
+                  const SizedBox(width: 24),
+                  downloadWalletCard,
+                ],
+              ))))),
+      tablet: (context) => Scaffold(
+          resizeToAvoidBottomInset: true,
+          body: SingleChildScrollView(
+              child: Container(
+                  padding: const EdgeInsets.all(24),
+                  color: colorTokens.containerL0,
+                  alignment: Alignment.center,
+                  child: Center(
+                      child: IntrinsicWidth(
+                          child: Column(
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      downloadWalletCard,
+                      const SizedBox(height: 24),
+                      seedPhraseCard,
+                    ],
+                  )))))),
+      phone: (context) => Scaffold(
+          resizeToAvoidBottomInset: true,
+          body: SingleChildScrollView(
+              child: Container(
+                  padding: const EdgeInsets.all(24),
+                  color: colorTokens.containerL0,
+                  alignment: Alignment.center,
+                  child: Center(
+                      child: IntrinsicWidth(
+                          child: Column(
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      downloadWalletCard,
+                      const SizedBox(height: 24),
+                      seedPhraseCard,
+                    ],
+                  )))))),
+    );
   }
 
   Widget _blurred(double width, String seedPhrase, bool isBlurred) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.desktop;
+    final typography = ArDriveTypographyNew.of(context);
 
     var text = Container(
         width: width,
@@ -327,7 +368,7 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
 
   Widget _tabLink(String text, int index, {Widget? rightIcon}) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.desktop;
+    final typography = ArDriveTypographyNew.of(context);
 
     final textRow = Row(
       children: [

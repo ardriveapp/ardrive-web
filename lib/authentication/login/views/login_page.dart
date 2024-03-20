@@ -1,4 +1,5 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/views/modals/blocking_modals.dart';
 import 'package:ardrive/authentication/login/views/modals/common.dart';
@@ -23,7 +24,6 @@ import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:responsive_builder/responsive_builder.dart';
 
 import '../../components/fadethrough_transition_switcher.dart';
 import '../../components/login_card.dart';
@@ -156,7 +156,10 @@ class _LoginPageState extends State<LoginPage> {
                 wallet: loginState.wallet,
                 mnemonic: loginState.mnemonic,
                 showWalletCreated: loginState.showWalletCreated);
-            // view = TutorialsView(wallet: Wallet());
+            // view = TutorialsView(
+            //     wallet: Wallet(),
+            //     mnemonic: 'test 1 2 3',
+            //     showWalletCreated: true);
           } else if (loginState is LoginDownloadGeneratedWallet) {
             view = WalletCreatedView(
                 mnemonic: loginState.mnemonic, wallet: loginState.wallet);
@@ -206,77 +209,88 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
       );
     }
 
-    return ScreenTypeLayout.builder(
-      desktop: (context) => Material(
+    return BreakpointLayoutBuilder(
+      largeDesktop: (context) => Material(
         color: ArDriveTheme.of(context).themeData.backgroundColor,
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              child: Stack(
-                children: [
-                  const TilesView(),
-                  Positioned(
-                    bottom: 16,
-                    left: 16,
-                    child: AppVersionWidget(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgDefault,
+            _roundedBorderContainer(
+                padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
+                child: Stack(
+                  children: [
+                    const TilesView(),
+                    Positioned(
+                      bottom: 16,
+                      left: 16,
+                      child: AppVersionWidget(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDefault,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: FractionallySizedBox(
-                widthFactor: 0.75,
+                  ],
+                )),
+            _roundedBorderContainer(
+                padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
                 child: Center(
+                    child: SizedBox(
+                  width: 381,
                   child: _buildContent(
                     context,
                     loginState: widget.loginState,
                   ),
-                ),
-              ),
-            ),
+                ))),
           ],
         ),
       ),
-      mobile: (context) => Scaffold(
+      tablet: (context) => Material(
+        color: ArDriveTheme.of(context).themeData.backgroundColor,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisSize: MainAxisSize.max,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+                height: 298,
+                child: _roundedBorderContainer(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: const SizedBox(height: 266, child: TilesView()),
+                )),
+            _roundedBorderContainer(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Center(
+                  child: SizedBox(
+                      width: 381,
+                      child: Padding(
+                          padding: EdgeInsets.fromLTRB(0, 16, 0, 16),
+                          child: _buildContent(
+                            context,
+                            loginState: widget.loginState,
+                          ))),
+                )),
+          ],
+        ),
+      ),
+      phone: (context) => Scaffold(
         resizeToAvoidBottomInset: true,
-        body: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 8,
-            ),
-            child: Stack(
-              children: [
-                Center(
-                  child: Column(
+        body: SizedBox.expand(
+          child: _roundedBorderContainer(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _buildContent(
                         context,
                         loginState: widget.loginState,
-                      ),
-                    ],
-                  ),
-                ),
-                Positioned(
-                  bottom: 16,
-                  child: SizedBox(
-                    width: MediaQuery.of(context).size.width - 32,
-                    child: AppVersionWidget(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgDefault,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+                      )
+                    ]),
+              )),
         ),
       ),
     );
@@ -385,18 +399,28 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
           );
         }
 
-        return SizedBox(
-          height: MediaQuery.of(context).size.height,
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              content,
-            ],
-          ),
-        );
+        return content;
       },
+    );
+  }
+
+  Widget _roundedBorderContainer(
+      {required Widget child, required EdgeInsetsGeometry padding}) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    return Expanded(
+      child: Padding(
+        padding: padding,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: colorTokens.strokeLow,
+              width: 1,
+            ),
+          ),
+          child: child,
+        ),
+      ),
     );
   }
 }

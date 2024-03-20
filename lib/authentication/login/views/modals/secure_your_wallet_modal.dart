@@ -52,7 +52,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
   @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.desktop;
+    final typography = ArDriveTypographyNew.of(context);
 
     final showDerivedWalletNotYetCreated =
         widget.derivedEthWallet != null && widget.loginBloc.existingUserFlow;

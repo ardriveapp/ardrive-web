@@ -10,7 +10,7 @@ import 'package:flutter_svg/svg.dart';
 void showErrorDialog(
     {required BuildContext context, String? title, required String message}) {
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-  final typography = ArDriveTypographyNew.desktop;
+  final typography = ArDriveTypographyNew.of(context);
 
   showArDriveDialog(context,
       barrierDismissible: false,
