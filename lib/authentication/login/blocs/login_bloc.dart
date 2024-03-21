@@ -73,6 +73,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
   get isArConnectAvailable => _arConnectService.isExtensionPresent();
 
+  get isMetamaskAvailable => _ethereumProviderService.isExtensionPresent();
+
   Future<void> _onLoginEvent(LoginEvent event, Emitter<LoginState> emit) async {
     if (event is SelectLoginFlow) {
       await _handleSelectLoginFlowEvent(event, emit);

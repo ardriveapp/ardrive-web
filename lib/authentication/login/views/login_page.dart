@@ -399,6 +399,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
           content = PromptWalletView(
             key: const Key('promptWalletView'),
             isArConnectAvailable: loginBloc.isArConnectAvailable,
+            isMetamaskAvailable: loginBloc.isMetamaskAvailable,
             existingUserFlow: loginBloc.existingUserFlow,
           );
         }

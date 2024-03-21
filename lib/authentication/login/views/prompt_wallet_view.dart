@@ -14,11 +14,13 @@ import '../../components/max_device_sizes_constrained_box.dart';
 
 class PromptWalletView extends StatefulWidget {
   final bool isArConnectAvailable;
+  final bool isMetamaskAvailable;
   final bool existingUserFlow;
 
   const PromptWalletView({
     super.key,
     required this.isArConnectAvailable,
+    required this.isMetamaskAvailable,
     required this.existingUserFlow,
   });
 
@@ -69,43 +71,48 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 72),
-              // TODO: Check if we need to do the same for ArConnect as in the past
-
-              if (widget.isArConnectAvailable) ...[
-                ArDriveButtonNew(
-                    text: 'Continue with ArConnect',
-                    hoverIcon: Container(
-                        alignment: Alignment.center,
-                        child: ArDriveImage(
-                          width: 24,
-                          height: 24,
-                          image: SvgImage.asset(
-                              Resources.images.login.arconnectLogo),
-                        )),
-                    typography: typography,
-                    onPressed: () {
-                      context
-                          .read<LoginBloc>()
-                          .add(const AddWalletFromArConnect());
-                    })
+              if (widget.isArConnectAvailable ||
+                  widget.isMetamaskAvailable) ...[
+                if (widget.isArConnectAvailable) ...[
+                  ArDriveButtonNew(
+                      text: 'Continue with ArConnect',
+                      hoverIcon: Container(
+                          alignment: Alignment.center,
+                          child: ArDriveImage(
+                            width: 24,
+                            height: 24,
+                            image: SvgImage.asset(
+                                Resources.images.login.arconnectLogo),
+                          )),
+                      typography: typography,
+                      onPressed: () {
+                        context
+                            .read<LoginBloc>()
+                            .add(const AddWalletFromArConnect());
+                      }),
+                  const SizedBox(height: 16),
+                ],
+                if (widget.isMetamaskAvailable) ...[
+                  ArDriveButtonNew(
+                      text: 'Continue with MetaMask',
+                      hoverIcon: Container(
+                          alignment: Alignment.center,
+                          child: SvgPicture.asset(
+                            Resources.images.login.metamask,
+                            width: 24,
+                            height: 24,
+                            fit: BoxFit.contain,
+                          )),
+                      typography: typography,
+                      onPressed: () {
+                        context
+                            .read<LoginBloc>()
+                            .add(const LoginWithMetamask());
+                      }),
+                ],
+                const SizedBox(height: 40),
+                const LinedTextDivider(text: 'or'),
               ],
-              const SizedBox(height: 16),
-              ArDriveButtonNew(
-                  text: 'Continue with MetaMask',
-                  hoverIcon: Container(
-                      alignment: Alignment.center,
-                      child: SvgPicture.asset(
-                        Resources.images.login.metamask,
-                        width: 24,
-                        height: 24,
-                        fit: BoxFit.contain,
-                      )),
-                  typography: typography,
-                  onPressed: () {
-                    context.read<LoginBloc>().add(const LoginWithMetamask());
-                  }),
-              const SizedBox(height: 40),
-              const LinedTextDivider(text: 'or'),
               const SizedBox(height: 40),
               existingUserFlow
                   ? ArDriveButtonNew(
