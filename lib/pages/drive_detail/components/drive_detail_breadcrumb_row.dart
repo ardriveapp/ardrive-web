@@ -2,11 +2,11 @@ part of '../drive_detail_page.dart';
 
 class BreadCrumbRowInfo {
   final String text;
-  final String targedId;
+  final String targetId;
 
   BreadCrumbRowInfo({
     required this.text,
-    required this.targedId,
+    required this.targetId,
   });
 }
 
@@ -61,7 +61,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
       return GestureDetector(
         onTap: () {
           context.read<DriveDetailCubit>().openFolder(
-                folderId: _pathSegments[index].targedId,
+                folderId: _pathSegments[index].targetId,
               );
         },
         child: HoverText(
@@ -152,7 +152,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
       return [
         ArDriveDropdownItem(
           onClick: () => context.read<DriveDetailCubit>().openFolder(
-                folderId: s.value.targedId,
+                folderId: s.value.targetId,
               ),
           content: _buildDropdownItemContent(
             context,

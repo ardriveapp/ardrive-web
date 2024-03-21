@@ -929,7 +929,7 @@ class MobileFolderNavigation extends StatelessWidget {
                 String? targetId;
 
                 if (path.isNotEmpty) {
-                  targetId = path.first.targedId;
+                  targetId = path.first.targetId;
                 }
 
                 context.read<DriveDetailCubit>().openFolder(folderId: targetId);

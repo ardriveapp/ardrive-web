@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/drive_detail/utils/breadcrumb_builder.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
@@ -28,6 +29,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   final ConfigService _configService;
   final ArDriveAuth _auth;
   final ActivityTracker _activityTracker;
+  final BreadcrumbBuilder _breadcrumbBuilder;
 
   StreamSubscription? _folderSubscription;
   final _defaultAvailableRowsPerPage = [25, 50, 75, 100];
@@ -51,11 +53,13 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     required ConfigService configService,
     required ActivityTracker activityTracker,
     required ArDriveAuth auth,
+    required BreadcrumbBuilder breadcrumbBuilder,
   })  : _profileCubit = profileCubit,
         _activityTracker = activityTracker,
         _driveDao = driveDao,
         _auth = auth,
         _configService = configService,
+        _breadcrumbBuilder = breadcrumbBuilder,
         super(DriveDetailLoadInProgress()) {
     if (driveId.isEmpty) {
       return;
@@ -197,24 +201,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             isOwner: isDriveOwner(_auth, drive.ownerAddress),
           );
 
-          final List<BreadCrumbRowInfo> pathSegments = [];
-
-          if (folderContents.folder.id != drive.rootFolderId) {
-            await _getBreadcrumbsForFolder(
-              folderId: folderContents.folder.id,
-              parentFolderId: folderContents.folder.parentFolderId,
-              pathSegments: pathSegments,
-              rootFolderId: drive.rootFolderId,
-              driveId: driveId,
-            );
-
-            pathSegments.add(
-              BreadCrumbRowInfo(
-                text: folderContents.folder.name,
-                targedId: drive.rootFolderId,
-              ),
-            );
-          }
+          final List<BreadCrumbRowInfo> pathSegments =
+              await _breadcrumbBuilder.buildForFolder(
+            folderId: folderContents.folder.id,
+            rootFolderId: drive.rootFolderId,
+            driveId: driveId,
+          );
 
           if (state != null) {
             emit(
@@ -264,45 +256,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     } catch (e, stacktrace) {
       logger.e('An error occured mouting the drive explorer', e, stacktrace);
     }
-  }
-
-  Future<List<BreadCrumbRowInfo>> _getBreadcrumbsForFolder({
-    required String folderId,
-    String? parentFolderId,
-    required List<BreadCrumbRowInfo> pathSegments,
-    required String rootFolderId,
-    required String driveId,
-  }) async {
-    if (parentFolderId == null || parentFolderId == rootFolderId) {
-      return pathSegments;
-    }
-
-    final parentFolder = await _driveDao
-        .latestFolderRevisionByFolderId(
-          driveId: driveId,
-          folderId: parentFolderId,
-        )
-        .getSingleOrNull();
-
-    if (parentFolder == null) {
-      return pathSegments;
-    }
-
-    pathSegments.insert(
-      0,
-      BreadCrumbRowInfo(
-        text: parentFolder.name,
-        targedId: parentFolder.folderId,
-      ),
-    );
-
-    return _getBreadcrumbsForFolder(
-      folderId: parentFolder.folderId,
-      parentFolderId: parentFolder.parentFolderId,
-      pathSegments: pathSegments,
-      rootFolderId: rootFolderId,
-      driveId: driveId,
-    );
   }
 
   List<ArDriveDataTableItem> parseEntitiesToDatatableItem({

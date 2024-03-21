@@ -9,6 +9,7 @@ import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/keyboard_handler.dart';
 import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
@@ -417,6 +418,11 @@ class AppState extends State<App> {
             driveDao: _.read<DriveDao>(),
             licenseService: _.read<LicenseService>(),
             batchProcessor: BatchProcessor(),
+          ),
+        ),
+        RepositoryProvider(
+          create: (_) => FolderRepository(
+            _.read<DriveDao>(),
           ),
         ),
       ];
