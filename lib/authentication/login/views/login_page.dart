@@ -216,33 +216,37 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _roundedBorderContainer(
-                padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
-                child: Stack(
-                  children: [
-                    const TilesView(),
-                    Positioned(
-                      bottom: 16,
-                      left: 16,
-                      child: AppVersionWidget(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDefault,
+            Expanded(
+              child: _roundedBorderContainer(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
+                  child: Stack(
+                    children: [
+                      const TilesView(),
+                      Positioned(
+                        bottom: 16,
+                        left: 16,
+                        child: AppVersionWidget(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgDefault,
+                        ),
                       ),
+                    ],
+                  )),
+            ),
+            Expanded(
+              child: _roundedBorderContainer(
+                  padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
+                  child: Center(
+                      child: SizedBox(
+                    width: 381,
+                    child: _buildContent(
+                      context,
+                      loginState: widget.loginState,
                     ),
-                  ],
-                )),
-            _roundedBorderContainer(
-                padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
-                child: Center(
-                    child: SizedBox(
-                  width: 381,
-                  child: _buildContent(
-                    context,
-                    loginState: widget.loginState,
-                  ),
-                ))),
+                  ))),
+            ),
           ],
         ),
       ),
@@ -253,24 +257,24 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
           mainAxisSize: MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(
-                height: 298,
-                child: _roundedBorderContainer(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: const SizedBox(height: 266, child: TilesView()),
-                )),
             _roundedBorderContainer(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: Center(
-                  child: SizedBox(
-                      width: 381,
-                      child: Padding(
-                          padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
-                          child: _buildContent(
-                            context,
-                            loginState: widget.loginState,
-                          ))),
-                )),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: const SizedBox(height: 266, child: TilesView()),
+            ),
+            Expanded(
+              child: _roundedBorderContainer(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: Center(
+                    child: SizedBox(
+                        width: 381,
+                        child: Padding(
+                            padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
+                            child: _buildContent(
+                              context,
+                              loginState: widget.loginState,
+                            ))),
+                  )),
+            ),
           ],
         ),
       ),
@@ -407,19 +411,17 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
   Widget _roundedBorderContainer(
       {required Widget child, required EdgeInsetsGeometry padding}) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    return Expanded(
-      child: Padding(
-        padding: padding,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: colorTokens.strokeLow,
-              width: 1,
-            ),
+    return Padding(
+      padding: padding,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: colorTokens.strokeLow,
+            width: 1,
           ),
-          child: child,
         ),
+        child: child,
       ),
     );
   }
