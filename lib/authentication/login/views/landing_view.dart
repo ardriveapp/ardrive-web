@@ -1,5 +1,6 @@
 import 'package:ardrive/authentication/components/button.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
+import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,7 +20,7 @@ class LandingView extends StatefulWidget {
 class _LandingViewState extends State<LandingView> {
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return SingleChildScrollView(
@@ -41,7 +42,8 @@ class _LandingViewState extends State<LandingView> {
                   'Welcome to ArDrive',
                   textAlign: TextAlign.center,
                   style: typography.heading1(
-                      color: colors.textHigh, fontWeight: ArFontWeight.bold),
+                      color: colorTokens.textHigh,
+                      fontWeight: ArFontWeight.bold),
                 ),
               ),
               heightSpacing(),
@@ -49,7 +51,7 @@ class _LandingViewState extends State<LandingView> {
               Text('Are you an existing user or a new user?',
                   textAlign: TextAlign.center,
                   style: typography.paragraphLarge(
-                      color: colors.textLow,
+                      color: colorTokens.textLow,
                       fontWeight: ArFontWeight.semiBold)),
               const SizedBox(height: 72),
               ArDriveButtonNew(
@@ -72,6 +74,10 @@ class _LandingViewState extends State<LandingView> {
                         .read<LoginBloc>()
                         .add(const SelectLoginFlow(existingUser: false));
                   }),
+              const SizedBox(height: 72),
+              AppVersionWidget(
+                color: colorTokens.textLow,
+              ),
             ]),
       ),
     );

@@ -8,7 +8,6 @@ import 'package:ardrive/authentication/login/views/tiles/tiles_view.dart';
 import 'package:ardrive/authentication/login/views/tutorials_view.dart';
 import 'package:ardrive/authentication/login/views/wallet_created_view.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
-import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
@@ -217,24 +216,10 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: _roundedBorderContainer(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
-                  child: Stack(
-                    children: [
-                      const TilesView(),
-                      Positioned(
-                        bottom: 16,
-                        left: 16,
-                        child: AppVersionWidget(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeFgDefault,
-                        ),
-                      ),
-                    ],
-                  )),
-            ),
+                child: _roundedBorderContainer(
+              padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
+              child: const TilesView(),
+            )),
             Expanded(
               child: _roundedBorderContainer(
                   padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
