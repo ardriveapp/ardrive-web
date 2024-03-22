@@ -243,8 +243,6 @@ void showEnterYourPasswordDialog(
           final passwordFailed =
               state is LoginPasswordFailed || isPasswordInvalid;
 
-          print("Password failed: $passwordFailed");
-
           return EnterYourPasswordWidget(
             loginBloc: loginBloc,
             wallet: wallet,
