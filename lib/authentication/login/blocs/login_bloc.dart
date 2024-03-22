@@ -50,7 +50,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   ProfileType? profileType;
 
   bool usingSeedphrase = false;
-  bool existingUserFlow = false;
+  bool existingUserFlow = true;
 
   LoginBloc({
     required ArDriveAuth arDriveAuth,
@@ -312,7 +312,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           logger.e('Failed to unlock user with biometrics', e);
         }
       }
-      emit(const PromptPassword(showWalletCreated: false));
+      emit(const PromptPassword(alreadyLoggedIn: true));
       return;
     }
 

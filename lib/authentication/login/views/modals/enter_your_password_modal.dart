@@ -9,6 +9,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -18,13 +19,15 @@ class EnterYourPasswordWidget extends StatefulWidget {
       required this.loginBloc,
       this.wallet,
       this.derivedEthWallet,
-      required this.showWalletCreated})
+      required this.showWalletCreated,
+      required this.alreadyLoggedIn})
       : super(key: key);
 
   final Wallet? wallet;
   final EthereumProviderWallet? derivedEthWallet;
   final LoginBloc loginBloc;
   final bool showWalletCreated;
+  final bool alreadyLoggedIn;
 
   @override
   State<EnterYourPasswordWidget> createState() =>
@@ -46,6 +49,7 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
 
     return ArDriveLoginModal(
       width: 450,
+      hasCloseButton: !widget.alreadyLoggedIn,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -138,6 +142,28 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                 //   // showImportWalletDialog(context);
                 // }
               }),
+          if (widget.alreadyLoggedIn) ...[
+            const SizedBox(height: 40),
+            Text.rich(
+              textAlign: TextAlign.center,
+              TextSpan(
+                children: [
+                  TextSpan(
+                    // TODO: create/update localization key
+                    text: appLocalizationsOf(context).forgetWallet,
+                    style: typography.paragraphLarge(
+                        color: colorTokens.textLow,
+                        fontWeight: ArFontWeight.semiBold),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () {
+                        Navigator.of(context).pop();
+                        widget.loginBloc.add(const ForgetWallet());
+                      },
+                  ),
+                ],
+              ),
+            )
+          ]
         ],
       ),
     );
@@ -168,6 +194,7 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
 void showEnterYourPasswordDialog(
     {required BuildContext context,
     required LoginBloc loginBloc,
+    required bool alreadyLoggedIn,
     Wallet? wallet,
     EthereumProviderWallet? derivedEthWallet,
     bool showWalletCreated = false}) {
@@ -179,5 +206,6 @@ void showEnterYourPasswordDialog(
         wallet: wallet,
         derivedEthWallet: derivedEthWallet,
         showWalletCreated: showWalletCreated,
+        alreadyLoggedIn: alreadyLoggedIn,
       ));
 }

@@ -48,11 +48,13 @@ class PromptPassword extends LoginState {
       {this.mnemonic,
       this.wallet,
       this.derivedEthWallet,
+      this.alreadyLoggedIn = false,
       this.showWalletCreated = false});
 
   final String? mnemonic;
   final Wallet? wallet;
   final EthereumProviderWallet? derivedEthWallet;
+  final bool alreadyLoggedIn;
 
   /// Used to determine next screens to show on password success
   final bool showWalletCreated;

@@ -52,18 +52,20 @@ class ArDriveLoginModal extends StatelessWidget {
                 const Spacer(),
                 Padding(
                   padding: const EdgeInsets.all(22.0),
-                  child: ArDriveClickArea(
-                    child: GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: const Align(
-                        alignment: Alignment.centerRight,
-                        child: ArDriveIcon(
-                          icon: ArDriveIconsData.x,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ),
+                  child: hasCloseButton
+                      ? ArDriveClickArea(
+                          child: GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: const Align(
+                              alignment: Alignment.centerRight,
+                              child: ArDriveIcon(
+                                icon: ArDriveIconsData.x,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        )
+                      : Container(),
                 )
               ]),
               Padding(

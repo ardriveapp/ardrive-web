@@ -90,10 +90,12 @@ class _LoginPageState extends State<LoginPage> {
 
           if (loginState is PromptPassword) {
             showEnterYourPasswordDialog(
-                context: context,
-                loginBloc: context.read<LoginBloc>(),
-                wallet: loginState.wallet,
-                derivedEthWallet: loginState.derivedEthWallet);
+              context: context,
+              loginBloc: context.read<LoginBloc>(),
+              wallet: loginState.wallet,
+              derivedEthWallet: loginState.derivedEthWallet,
+              alreadyLoggedIn: loginState.alreadyLoggedIn,
+            );
             return;
           } else if (loginState is CreateNewPassword) {
             showSecureYourPasswordDialog(
