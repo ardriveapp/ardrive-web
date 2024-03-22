@@ -452,8 +452,8 @@ class ArDriveTextFieldStateNew extends State<ArDriveTextFieldNew> {
 
   InputBorder _getBorder(Color color) {
     return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(4),
-      borderSide: BorderSide(color: color, width: 2),
+      borderRadius: BorderRadius.circular(6),
+      borderSide: BorderSide(color: color, width: 1),
     );
   }
 

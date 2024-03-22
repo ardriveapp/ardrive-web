@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 enum ButtonVariant { primary, secondary, outline }
 
 // FIXME: using this from ardrive_ui; move this class to ardrive_ui and remove
-const double buttonDefaultHeight = 56;
+const double buttonDefaultHeight = 50;
 
 class ArDriveButtonNew extends StatefulWidget {
   const ArDriveButtonNew({
@@ -33,7 +33,7 @@ class ArDriveButtonNew extends StatefulWidget {
   final TextStyle? fontStyle;
   final double? maxHeight;
   final double? maxWidth;
-  final double? borderRadius;
+  final double borderRadius;
   final bool isDisabled;
 
   /// An optional icon to display to the left of the button text.
@@ -84,9 +84,9 @@ class _ArDriveButtonState extends State<ArDriveButtonNew> {
     }
 
     var style = ButtonStyle(
-      shape: const MaterialStatePropertyAll<RoundedRectangleBorder>(
+      shape: MaterialStatePropertyAll<RoundedRectangleBorder>(
           RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(6)),
+        borderRadius: BorderRadius.all(Radius.circular(widget.borderRadius)),
       )),
       alignment: Alignment.center,
       padding: MaterialStateProperty.all<EdgeInsetsGeometry>(
