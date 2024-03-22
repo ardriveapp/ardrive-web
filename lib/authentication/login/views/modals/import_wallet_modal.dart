@@ -2,7 +2,6 @@ import 'package:ardrive/authentication/components/button.dart';
 import 'package:ardrive/authentication/components/lined_text_divider.dart';
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
-import 'package:ardrive/authentication/login/views/modals/common.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -22,6 +21,7 @@ class ImportWalletModal extends StatefulWidget {
 
 class _ImportWalletModalState extends State<ImportWalletModal> {
   final _seedPhraseController = ArDriveMultilineObscureTextControllerNew();
+  bool showSeedPhraseError = false;
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +73,13 @@ class _ImportWalletModalState extends State<ImportWalletModal> {
               textInputAction: TextInputAction.next,
               minLines: 3,
               maxLines: 3,
+              errorMessage: 'The seed phrase provided is invalid.',
+              showErrorMessage: showSeedPhraseError,
+              onChanged: (value) {
+                setState(() {
+                  showSeedPhraseError = false;
+                });
+              },
             ),
             const SizedBox(height: 20),
             ArDriveButtonNew(
@@ -108,28 +115,15 @@ class _ImportWalletModalState extends State<ImportWalletModal> {
         bip39.validateMnemonic(_seedPhraseController.text);
 
     if (!isValid) {
-      showErrorDialog(
-          context: context,
-          message:
-              'The seed phrase you have provided is invalid. Please correct and retry.');
+      setState(() {
+        showSeedPhraseError = true;
+      });
       return;
     }
 
     Navigator.pop(context);
     widget.loginBloc
         .add(AddWalletFromSeedPhraseLogin(_seedPhraseController.text));
-
-    // // Navigator.pop(context);
-    // showLoaderDialog(context: context, loginBloc: widget.loginBloc);
-    // final wallet = await generateWalletFromMnemonic(_seedPhraseController.text);
-    // // FIXME: Trying to pop the current dialog before showLoaderDialog()
-    // // and then trying to pop the loader dialog caused problems with context
-    // // Revise this code for better UX
-
-    // // ignore: use_build_context_synchronously
-    // Navigator.pop(context);
-    // // ignore: use_build_context_synchronously
-    // Navigator.pop(context);
   }
 }
 

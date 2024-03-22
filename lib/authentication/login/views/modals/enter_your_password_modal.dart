@@ -137,10 +137,6 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                   Navigator.of(context).pop();
                   _onSubmit();
                 }
-                // if (_formKey.currentState!.validate()) {
-                //   Navigator.of(context).pop();
-                //   // showImportWalletDialog(context);
-                // }
               }),
           if (widget.alreadyLoggedIn) ...[
             const SizedBox(height: 40),
