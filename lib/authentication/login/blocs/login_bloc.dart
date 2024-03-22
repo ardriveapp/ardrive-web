@@ -209,14 +209,16 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       try {
         (mnemonic, fullEntropy) =
             await wallet.deriveArdriveSeedphrase(chainId, event.password);
-      } catch (e) {
-        // emit(LoginFailure(e));
-        emit(previousState);
-        return;
-      } finally {
         emit(LoginCloseBlockingDialog());
+      } catch (e) {
+        emit(LoginCloseBlockingDialog());
+        emit(PromptPassword(
+            wallet: event.wallet,
+            derivedEthWallet: event.derivedEthWallet,
+            showWalletCreated: false,
+            isPasswordInvalid: true));
+        return;
       }
-
       emit(LoginShowLoader());
       wallet = await generateWalletFromMnemonic(mnemonic);
       emit(LoginCloseBlockingDialog());
@@ -241,8 +243,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
         if (!listEquals(recordedSignature, verifySignature) ||
             !listEquals(ethRecordedSignature, verifySignature)) {
-          emit(previousState);
-          emit(const LoginFailure('Invalid password'));
+          emit(PromptPassword(
+              wallet: event.wallet,
+              derivedEthWallet: event.derivedEthWallet,
+              showWalletCreated: false,
+              isPasswordInvalid: true));
           return;
         }
 
@@ -262,17 +267,22 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
             showWalletCreated: false,
           );
         } catch (e) {
-          usingSeedphrase = false;
-          emit(previousState);
-          emit(LoginFailure(e));
+          emit(PromptPassword(
+              wallet: event.wallet,
+              derivedEthWallet: event.derivedEthWallet,
+              showWalletCreated: false,
+              isPasswordInvalid: true));
         }
       } else {
-        emit(previousState);
-        emit(const LoginFailure('No transactions found for wallet'));
+        emit(PromptPassword(
+            wallet: event.wallet,
+            derivedEthWallet: event.derivedEthWallet,
+            showWalletCreated: false,
+            isPasswordInvalid: true));
       }
     } else {
       try {
-        emit(LoginLoading());
+        emit(LoginCheckingPassword());
 
         await _verifyArConnectWalletAddressAndLogIn(
           wallet: wallet,
@@ -285,8 +295,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         );
       } catch (e) {
         usingSeedphrase = false;
-        emit(previousState);
-        emit(LoginFailure(e));
+        emit(LoginPasswordFailed());
       }
     }
   }
@@ -330,23 +339,19 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     UnlockUserWithPassword event,
     Emitter<LoginState> emit,
   ) async {
-    final previousState = state;
-
-    emit(LoginLoading());
+    emit(LoginCheckingPassword());
 
     try {
       final user = await _arDriveAuth.unlockUser(password: event.password);
 
       final type = usingSeedphrase ? LoginType.seedphrase : LoginType.json;
       PlausibleEventTracker.trackLogin(type: type);
-
       emit(LoginSuccess(user));
     } catch (e) {
       logger.e('Failed to unlock user with password', e);
 
       usingSeedphrase = false;
-      emit(previousState);
-      emit(LoginFailure(e));
+      emit(LoginPasswordFailed());
 
       return;
     }

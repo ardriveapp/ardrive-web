@@ -195,7 +195,8 @@ void main() {
         bloc.add(LoginWithPassword(
             wallet: wallet, password: 'password', showWalletCreated: false));
       },
-      expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
+      expect: () =>
+          [LoginCheckingPassword(), const TypeMatcher<LoginSuccess>()],
     );
 
     blocTest(
@@ -232,7 +233,8 @@ void main() {
           showWalletCreated: false,
         ));
       },
-      expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
+      expect: () =>
+          [LoginCheckingPassword(), const TypeMatcher<LoginSuccess>()],
     );
     blocTest(
       'should emit failure when wallet mismatch',
@@ -268,7 +270,7 @@ void main() {
       },
       expect: () => [
         const PromptPassword(),
-        LoginLoading(),
+        LoginCheckingPassword(),
         const TypeMatcher<LoginFailure>(),
         const PromptPassword()
       ],
@@ -306,9 +308,8 @@ void main() {
       },
       expect: () => [
         const PromptPassword(),
-        LoginLoading(),
-        const PromptPassword(),
-        const TypeMatcher<LoginFailure>(),
+        LoginCheckingPassword(),
+        LoginPasswordFailed(),
       ],
     );
   });
@@ -484,7 +485,8 @@ void main() {
         ));
         bloc.profileType = ProfileType.json;
       },
-      expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
+      expect: () =>
+          [LoginCheckingPassword(), const TypeMatcher<LoginSuccess>()],
     );
 
     blocTest(
@@ -517,9 +519,8 @@ void main() {
       },
       expect: () => [
         const PromptPassword(),
-        LoginLoading(),
-        const PromptPassword(),
-        const TypeMatcher<LoginFailure>(),
+        LoginCheckingPassword(),
+        LoginPasswordFailed(),
       ],
     );
   });

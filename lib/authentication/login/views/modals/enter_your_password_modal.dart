@@ -14,20 +14,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class EnterYourPasswordWidget extends StatefulWidget {
-  const EnterYourPasswordWidget(
-      {Key? key,
-      required this.loginBloc,
-      this.wallet,
-      this.derivedEthWallet,
-      required this.showWalletCreated,
-      required this.alreadyLoggedIn})
-      : super(key: key);
+  const EnterYourPasswordWidget({
+    Key? key,
+    required this.loginBloc,
+    this.wallet,
+    this.derivedEthWallet,
+    required this.showWalletCreated,
+    required this.alreadyLoggedIn,
+    required this.checkingPassword,
+    required this.passwordFailed,
+  }) : super(key: key);
 
   final Wallet? wallet;
   final EthereumProviderWallet? derivedEthWallet;
   final LoginBloc loginBloc;
   final bool showWalletCreated;
   final bool alreadyLoggedIn;
+  final bool checkingPassword;
+  final bool passwordFailed;
 
   @override
   State<EnterYourPasswordWidget> createState() =>
@@ -38,6 +42,21 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
   final _passwordController = TextEditingController();
   // final _formKey = GlobalKey<ArDriveFormState>();
   bool _isPasswordValid = false;
+  bool _isPasswordFailed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isPasswordFailed = widget.passwordFailed;
+  }
+
+  @override
+  void didUpdateWidget(EnterYourPasswordWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    setState(() {
+      _isPasswordFailed = widget.passwordFailed;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -100,41 +119,48 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                   fontWeight: ArFontWeight.semiBold)),
           const SizedBox(height: 8),
           ArDriveTextFieldNew(
-              controller: _passwordController,
-              hintText: 'Enter your password',
-              showObfuscationToggle: true,
-              obscureText: true,
-              autofocus: true,
-              autofillHints: const [AutofillHints.password],
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  setState(() {
-                    _isPasswordValid = false;
-                  });
-                  return appLocalizationsOf(context).validationRequired;
-                }
-
+            controller: _passwordController,
+            hintText: 'Enter your password',
+            showObfuscationToggle: true,
+            obscureText: true,
+            autofocus: true,
+            autofillHints: const [AutofillHints.password],
+            isEnabled: !widget.checkingPassword,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
                 setState(() {
-                  _isPasswordValid = true;
+                  _isPasswordValid = false;
                 });
+                return appLocalizationsOf(context).validationRequired;
+              }
 
-                return null;
-              },
-              onFieldSubmitted: (_) async {
-                if (_isPasswordValid) {
-                  Navigator.of(context).pop();
-                  _onSubmit();
-                }
-              }),
+              setState(() {
+                _isPasswordValid = true;
+              });
+
+              return null;
+            },
+            onFieldSubmitted: (_) async {
+              if (_isPasswordValid) {
+                _onSubmit();
+              }
+            },
+            onChanged: (_) {
+              setState(() {
+                _isPasswordFailed = false;
+              });
+            },
+            errorMessage: 'Invalid password. Please try again.',
+            showErrorMessage: _isPasswordFailed,
+          ),
           const SizedBox(height: 40),
           ArDriveButtonNew(
               text: 'Continue',
               typography: typography,
               variant: ButtonVariant.primary,
-              isDisabled: !_isPasswordValid,
+              isDisabled: !_isPasswordValid || widget.checkingPassword,
               onPressed: () {
                 if (_isPasswordValid) {
-                  Navigator.of(context).pop();
                   _onSubmit();
                 }
               }),
@@ -178,6 +204,9 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
         password: _passwordController.text,
       ));
     } else {
+      if (widget.wallet is EthereumProviderWallet) {
+        Navigator.of(context).pop();
+      }
       widget.loginBloc.add(LoginWithPassword(
           password: _passwordController.text,
           wallet: widget.wallet!,
@@ -193,15 +222,38 @@ void showEnterYourPasswordDialog(
     required bool alreadyLoggedIn,
     Wallet? wallet,
     EthereumProviderWallet? derivedEthWallet,
-    bool showWalletCreated = false}) {
+    bool showWalletCreated = false,
+    required bool isPasswordInvalid}) {
   showArDriveDialog(context,
       barrierDismissible: false,
       useRootNavigator: false,
-      content: EnterYourPasswordWidget(
-        loginBloc: loginBloc,
-        wallet: wallet,
-        derivedEthWallet: derivedEthWallet,
-        showWalletCreated: showWalletCreated,
-        alreadyLoggedIn: alreadyLoggedIn,
+      content: BlocBuilder(
+        bloc: loginBloc,
+        buildWhen: (previous, current) {
+          if (current is LoginSuccess) {
+            Navigator.of(context).pop();
+            return false;
+          }
+          return (current is LoginCheckingPassword ||
+              current is LoginPasswordFailed ||
+              current is LoginWithPassword);
+        },
+        builder: (context, state) {
+          final checkingPassword = state is LoginCheckingPassword;
+          final passwordFailed =
+              state is LoginPasswordFailed || isPasswordInvalid;
+
+          print("Password failed: $passwordFailed");
+
+          return EnterYourPasswordWidget(
+            loginBloc: loginBloc,
+            wallet: wallet,
+            derivedEthWallet: derivedEthWallet,
+            showWalletCreated: showWalletCreated,
+            alreadyLoggedIn: alreadyLoggedIn,
+            checkingPassword: checkingPassword,
+            passwordFailed: passwordFailed,
+          );
+        },
       ));
 }

@@ -49,12 +49,14 @@ class PromptPassword extends LoginState {
       this.wallet,
       this.derivedEthWallet,
       this.alreadyLoggedIn = false,
-      this.showWalletCreated = false});
+      this.showWalletCreated = false,
+      this.isPasswordInvalid = false});
 
   final String? mnemonic;
   final Wallet? wallet;
   final EthereumProviderWallet? derivedEthWallet;
   final bool alreadyLoggedIn;
+  final bool isPasswordInvalid;
 
   /// Used to determine next screens to show on password success
   final bool showWalletCreated;
@@ -100,3 +102,7 @@ class LoginDownloadGeneratedWallet extends LoginState {
   final String? mnemonic;
   final Wallet wallet;
 }
+
+class LoginCheckingPassword extends LoginState {}
+
+class LoginPasswordFailed extends LoginState {}

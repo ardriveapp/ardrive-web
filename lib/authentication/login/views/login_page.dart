@@ -95,6 +95,7 @@ class _LoginPageState extends State<LoginPage> {
               wallet: loginState.wallet,
               derivedEthWallet: loginState.derivedEthWallet,
               alreadyLoggedIn: loginState.alreadyLoggedIn,
+              isPasswordInvalid: loginState.isPasswordInvalid,
             );
             return;
           } else if (loginState is CreateNewPassword) {
@@ -363,8 +364,14 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
         final isLoading = current is LoginLoading ||
             current is LoginShowLoader ||
             current is LoginCloseBlockingDialog;
+        final isPasswordChecking =
+            current is LoginCheckingPassword || current is LoginPasswordFailed;
 
-        return !(isFailure || isSuccess || isOnBoarding || isLoading);
+        return !(isFailure ||
+            isSuccess ||
+            isOnBoarding ||
+            isLoading ||
+            isPasswordChecking);
       },
       builder: (context, loginState) {
         late Widget content;
