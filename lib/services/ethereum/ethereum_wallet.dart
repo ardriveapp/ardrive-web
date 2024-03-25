@@ -13,9 +13,7 @@ abstract class EthereumWallet extends Wallet {
   Future<(String, Uint8List)> deriveArdriveSeedphrase(
       int chainId, String password) async {
     final address = await getAddress();
-    // final messageText = '$chainId:$address:$password';
-    // FIXME: using 'test:' prefix until scheme is fully finalized
-    final messageText = 'test:$chainId:$address:$password';
+    final messageText = '$chainId:$address:$password';
     final messageHash = await sha256.hash(utf8.encode(messageText));
     final messageHex = hex.encode(messageHash.bytes);
 

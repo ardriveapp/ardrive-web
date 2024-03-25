@@ -721,11 +721,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       final signature =
           await ethWallet.sign(Uint8List.fromList(signMessage.codeUnits));
 
-      var signatureSha256 = await sha256.hash(signature);
-
-      // FIXME: For testing, using double hash to generate temp eth wallet.
-      // Remove this when protocol finalized.
-      signatureSha256 = await sha256.hash(signatureSha256.bytes);
+      final signatureSha256 = await sha256.hash(signature);
 
       final privateKey = web3credentials.EthPrivateKey(
           Uint8List.fromList(signatureSha256.bytes));
