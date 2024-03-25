@@ -42,3 +42,7 @@ class BreakpointLayoutBuilder extends StatelessWidget {
     });
   }
 }
+
+bool isMobile(BuildContext context) {
+  return MediaQuery.of(context).size.width < TABLET;
+}

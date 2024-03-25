@@ -1,3 +1,4 @@
+import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
@@ -130,7 +131,7 @@ class _ArDriveButtonState extends State<ArDriveButtonNew> {
         child: Stack(fit: StackFit.expand, children: [
           TextButton(
               onPressed: widget.isDisabled ? null : widget.onPressed,
-              onHover: widget.hoverIcon == null
+              onHover: widget.hoverIcon == null || isMobile(context)
                   ? null
                   : (hovering) {
                       setState(() {
@@ -138,7 +139,7 @@ class _ArDriveButtonState extends State<ArDriveButtonNew> {
                       });
                     },
               style: style,
-              child: widget.hoverIcon == null
+              child: widget.hoverIcon == null || isMobile(context)
                   ? text
                   : Stack(
                       fit: StackFit.expand,

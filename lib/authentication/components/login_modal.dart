@@ -1,3 +1,4 @@
+import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
@@ -27,6 +28,10 @@ class ArDriveLoginModal extends StatelessWidget {
     } else {
       maxWidth = modalStandardMaxWidthSize;
     }
+
+    final contentPadding = (deviceWidth < TABLET)
+        ? const EdgeInsets.fromLTRB(22, 0, 22, 32)
+        : const EdgeInsets.fromLTRB(56, 0, 56, 64);
 
     return ConstrainedBox(
         constraints: BoxConstraints(
@@ -69,7 +74,7 @@ class ArDriveLoginModal extends StatelessWidget {
                 )
               ]),
               Padding(
-                padding: const EdgeInsets.fromLTRB(56, 0, 56, 64),
+                padding: contentPadding,
                 child: content,
               ),
             ],
