@@ -6,16 +6,17 @@ import 'package:flutter/material.dart';
 const double modalStandardMaxWidthSize = 350;
 
 class ArDriveLoginModal extends StatelessWidget {
-  const ArDriveLoginModal({
-    super.key,
-    required this.content,
-    this.width,
-    this.hasCloseButton = true,
-  });
+  const ArDriveLoginModal(
+      {super.key,
+      required this.content,
+      this.width,
+      this.hasCloseButton = true,
+      this.onClose});
 
   final Widget content;
   final double? width;
   final bool hasCloseButton;
+  final Function()? onClose;
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +61,7 @@ class ArDriveLoginModal extends StatelessWidget {
                   child: hasCloseButton
                       ? ArDriveClickArea(
                           child: GestureDetector(
-                            onTap: () => Navigator.pop(context),
+                            onTap: onClose ?? () => Navigator.pop(context),
                             child: const Align(
                               alignment: Alignment.centerRight,
                               child: ArDriveIcon(

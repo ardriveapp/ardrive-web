@@ -69,6 +69,12 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
     return ArDriveLoginModal(
       width: 450,
       hasCloseButton: !widget.alreadyLoggedIn,
+      onClose: !widget.alreadyLoggedIn
+          ? () {
+              Navigator.of(context).pop();
+              widget.loginBloc.add(const ForgetWallet());
+            }
+          : null,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,

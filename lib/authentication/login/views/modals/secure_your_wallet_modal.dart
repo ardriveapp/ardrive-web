@@ -59,6 +59,10 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
 
     return ArDriveLoginModal(
       width: 450,
+      onClose: () {
+        Navigator.of(context).pop();
+        widget.loginBloc.add(const ForgetWallet());
+      },
       content: ArDriveFormNew(
         key: _formKey,
         child: Column(
