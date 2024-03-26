@@ -211,78 +211,143 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
       );
     }
 
+    final height = MediaQuery.of(context).size.height;
+
     return BreakpointLayoutBuilder(
       largeDesktop: (context) => Material(
         color: ArDriveTheme.of(context).themeData.backgroundColor,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-                child: _roundedBorderContainer(
-              padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
-              child: const TilesView(),
-            )),
-            Expanded(
-              child: _roundedBorderContainer(
-                  padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
-                  child: Center(
-                      child: SizedBox(
-                    width: 381,
-                    child: _buildContent(
-                      context,
-                      loginState: widget.loginState,
+        child: SizedBox.expand(
+          child: Center(
+            child: SingleChildScrollView(
+              child: Container(
+                height: height.clamp(800, 1024),
+                constraints: const BoxConstraints(
+                  maxWidth: 1440,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                        child: _roundedBorderContainer(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
+                      child: const TilesView(),
+                    )),
+                    Expanded(
+                      child: _roundedBorderContainer(
+                          padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
+                          child: Center(
+                              child: SizedBox(
+                            width: 381,
+                            child: _buildContent(
+                              context,
+                              loginState: widget.loginState,
+                            ),
+                          ))),
                     ),
-                  ))),
+                  ],
+                ),
+              ),
             ),
-          ],
+          ),
+        ),
+      ),
+      smallDesktop: (context) => Material(
+        color: ArDriveTheme.of(context).themeData.backgroundColor,
+        child: SizedBox.expand(
+          child: Center(
+            child: SingleChildScrollView(
+              child: SizedBox(
+                height: height.clamp(800, 832),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                        child: _roundedBorderContainer(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
+                      child: const TilesView(),
+                    )),
+                    Expanded(
+                      child: _roundedBorderContainer(
+                          padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
+                          child: Center(
+                              child: SizedBox(
+                            width: 381,
+                            child: _buildContent(
+                              context,
+                              loginState: widget.loginState,
+                            ),
+                          ))),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
       tablet: (context) => Material(
         color: ArDriveTheme.of(context).themeData.backgroundColor,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          mainAxisSize: MainAxisSize.max,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _roundedBorderContainer(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: const SizedBox(height: 266, child: TilesView()),
+        child: SingleChildScrollView(
+          child: SizedBox(
+            height: 1094,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              mainAxisSize: MainAxisSize.max,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _roundedBorderContainer(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: const SizedBox(height: 266, child: TilesView()),
+                ),
+                Container(
+                  constraints: const BoxConstraints(
+                    minHeight: 800,
+                  ),
+                  child: _roundedBorderContainer(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      child: Center(
+                        child: SizedBox(
+                            width: 381,
+                            child: Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(0, 16, 0, 16),
+                                child: _buildContent(
+                                  context,
+                                  loginState: widget.loginState,
+                                ))),
+                      )),
+                ),
+              ],
             ),
-            Expanded(
-              child: _roundedBorderContainer(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  child: Center(
-                    child: SizedBox(
-                        width: 381,
-                        child: Padding(
-                            padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
-                            child: _buildContent(
-                              context,
-                              loginState: widget.loginState,
-                            ))),
-                  )),
-            ),
-          ],
+          ),
         ),
       ),
       phone: (context) => Scaffold(
         resizeToAvoidBottomInset: true,
         body: SizedBox.expand(
-          child: _roundedBorderContainer(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildContent(
-                        context,
-                        loginState: widget.loginState,
-                      )
-                    ]),
-              )),
+          child: Center(
+            child: SingleChildScrollView(
+              child: SizedBox(
+                height: height < 600 ? 600 : height,
+                child: _roundedBorderContainer(
+                    padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                      child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildContent(
+                              context,
+                              loginState: widget.loginState,
+                            )
+                          ]),
+                    )),
+              ),
+            ),
+          ),
         ),
       ),
     );
