@@ -57,123 +57,127 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
     final showDerivedWalletNotYetCreated =
         widget.derivedEthWallet != null && widget.loginBloc.existingUserFlow;
 
-    return ArDriveLoginModal(
-      width: 450,
-      onClose: () {
-        Navigator.of(context).pop();
-        widget.loginBloc.add(const ForgetWallet());
-      },
-      content: ArDriveFormNew(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
+    return SingleChildScrollView(
+      child: ArDriveLoginModal(
+        width: 450,
+        onClose: () {
+          Navigator.of(context).pop();
+          widget.loginBloc.add(const ForgetWallet());
+        },
+        content: ArDriveFormNew(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
                 child: ArDriveImage(
-              image: AssetImage(Resources.images.brand.logo1),
-              height: 36,
-            )),
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.topCenter,
-              child: Text(
-                'Secure Your Wallet',
-                style: typography.heading2(
-                    color: colorTokens.textHigh, fontWeight: ArFontWeight.bold),
+                  image: AssetImage(Resources.images.brand.logo1),
+                  height: 36,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-                showDerivedWalletNotYetCreated
-                    ? 'We could not find a wallet for that Ethereum address, but you can create one now by entering a password to secure the new wallet.'
-                    : 'Please enter and confirm a password to secure your wallet.',
-                textAlign: TextAlign.center,
-                style: typography.paragraphNormal(
-                    color: colorTokens.textLow,
-                    fontWeight: ArFontWeight.semiBold)),
-            const SizedBox(height: 40),
-            Text('Password',
-                style: typography.paragraphNormal(
-                    color: colorTokens.textLow,
-                    fontWeight: ArFontWeight.semiBold)),
-            const SizedBox(height: 8),
-            ArDriveTextFieldNew(
-              controller: _passwordController,
-              hintText: 'Enter your password',
-              showObfuscationToggle: true,
-              obscureText: true,
-              autofocus: true,
-              autofillHints: const [AutofillHints.password],
-              onChanged: (s) {
-                _formKey.currentState?.validate();
-              },
-              textInputAction: TextInputAction.next,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  setState(() {
-                    _isPasswordValid = false;
-                  });
-                  return appLocalizationsOf(context).validationRequired;
-                }
-
-                setState(() {
-                  _isPasswordValid = true;
-                });
-
-                return null;
-              },
-            ),
-            const SizedBox(height: 20),
-            Text('Confirm Password',
-                style: typography.paragraphNormal(
-                    color: colorTokens.textLow,
-                    fontWeight: ArFontWeight.semiBold)),
-            const SizedBox(height: 8),
-            ArDriveTextFieldNew(
-                controller: _confirmPasswordController,
-                hintText: 'Re-enter your password',
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.topCenter,
+                child: Text(
+                  'Secure Your Wallet',
+                  style: typography.heading2(
+                      color: colorTokens.textHigh,
+                      fontWeight: ArFontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                  showDerivedWalletNotYetCreated
+                      ? 'We could not find a wallet for that Ethereum address, but you can create one now by entering a password to secure the new wallet.'
+                      : 'Please enter and confirm a password to secure your wallet.',
+                  textAlign: TextAlign.center,
+                  style: typography.paragraphNormal(
+                      color: colorTokens.textLow,
+                      fontWeight: ArFontWeight.semiBold)),
+              const SizedBox(height: 40),
+              Text('Password',
+                  style: typography.paragraphNormal(
+                      color: colorTokens.textLow,
+                      fontWeight: ArFontWeight.semiBold)),
+              const SizedBox(height: 8),
+              ArDriveTextFieldNew(
+                controller: _passwordController,
+                hintText: 'Enter your password',
                 showObfuscationToggle: true,
                 obscureText: true,
                 autofocus: true,
                 autofillHints: const [AutofillHints.password],
-                textInputAction: TextInputAction.done,
+                onChanged: (s) {
+                  _formKey.currentState?.validate();
+                },
+                textInputAction: TextInputAction.next,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     setState(() {
-                      _confirmPasswordIsValid = false;
+                      _isPasswordValid = false;
                     });
                     return appLocalizationsOf(context).validationRequired;
-                  } else if (value != _passwordController.text) {
-                    setState(() {
-                      _confirmPasswordIsValid = false;
-                    });
-                    return appLocalizationsOf(context).passwordMismatch;
                   }
 
                   setState(() {
-                    _confirmPasswordIsValid = true;
+                    _isPasswordValid = true;
                   });
 
                   return null;
                 },
-                onFieldSubmitted: (_) async {
-                  if (_isPasswordValid && _confirmPasswordIsValid) {
+              ),
+              const SizedBox(height: 20),
+              Text('Confirm Password',
+                  style: typography.paragraphNormal(
+                      color: colorTokens.textLow,
+                      fontWeight: ArFontWeight.semiBold)),
+              const SizedBox(height: 8),
+              ArDriveTextFieldNew(
+                  controller: _confirmPasswordController,
+                  hintText: 'Re-enter your password',
+                  showObfuscationToggle: true,
+                  obscureText: true,
+                  autofocus: true,
+                  autofillHints: const [AutofillHints.password],
+                  textInputAction: TextInputAction.done,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      setState(() {
+                        _confirmPasswordIsValid = false;
+                      });
+                      return appLocalizationsOf(context).validationRequired;
+                    } else if (value != _passwordController.text) {
+                      setState(() {
+                        _confirmPasswordIsValid = false;
+                      });
+                      return appLocalizationsOf(context).passwordMismatch;
+                    }
+
+                    setState(() {
+                      _confirmPasswordIsValid = true;
+                    });
+
+                    return null;
+                  },
+                  onFieldSubmitted: (_) async {
+                    if (_isPasswordValid && _confirmPasswordIsValid) {
+                      Navigator.of(context).pop();
+                      _onSubmit();
+                    }
+                  }),
+              const SizedBox(height: 40),
+              ArDriveButtonNew(
+                  text: 'Continue',
+                  typography: typography,
+                  variant: ButtonVariant.primary,
+                  isDisabled: !_isPasswordValid || !_confirmPasswordIsValid,
+                  onPressed: () {
                     Navigator.of(context).pop();
                     _onSubmit();
-                  }
-                }),
-            const SizedBox(height: 40),
-            ArDriveButtonNew(
-                text: 'Continue',
-                typography: typography,
-                variant: ButtonVariant.primary,
-                isDisabled: !_isPasswordValid || !_confirmPasswordIsValid,
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  _onSubmit();
-                }),
-          ],
+                  }),
+            ],
+          ),
         ),
       ),
     );

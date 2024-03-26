@@ -30,84 +30,87 @@ class _ImportWalletModalState extends State<ImportWalletModal> {
 
     final navigator = Navigator.of(context);
 
-    return ArDriveLoginModal(
-        width: 450,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-                child: ArDriveImage(
-              image: AssetImage(Resources.images.brand.logo1),
-              height: 36,
-            )),
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.topCenter,
-              child: Text(
-                // FIXME: Add localization key
-                'Import Wallet',
-                style: typography.heading2(
-                    color: colorTokens.textHigh, fontWeight: ArFontWeight.bold),
+    return SingleChildScrollView(
+      child: ArDriveLoginModal(
+          width: 450,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                  child: ArDriveImage(
+                image: AssetImage(Resources.images.brand.logo1),
+                height: 36,
+              )),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.topCenter,
+                child: Text(
+                  // FIXME: Add localization key
+                  'Import Wallet',
+                  style: typography.heading2(
+                      color: colorTokens.textHigh,
+                      fontWeight: ArFontWeight.bold),
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-                'You can import your wallet by entering an existing seed phrase or uploading a keyfile.',
-                style: typography.paragraphNormal(
-                    color: colorTokens.textLow,
-                    fontWeight: ArFontWeight.semiBold)),
-            const SizedBox(height: 40),
-            Text('Seed Phrase',
-                style: typography.paragraphNormal(
-                    color: colorTokens.textLow,
-                    fontWeight: ArFontWeight.semiBold)),
-            const SizedBox(height: 8),
-            ArDriveTextFieldNew(
-              autofocus: true,
-              controller: _seedPhraseController,
-              showObfuscationToggle: true,
-              obscureText: true,
-              // TODO: create/update localization key
-              hintText: 'Enter Seed Phrase',
-              textInputAction: TextInputAction.next,
-              minLines: 3,
-              maxLines: 3,
-              errorMessage: 'The seed phrase provided is invalid.',
-              showErrorMessage: showSeedPhraseError,
-              onChanged: (value) {
-                setState(() {
-                  showSeedPhraseError = false;
-                });
-              },
-            ),
-            const SizedBox(height: 20),
-            ArDriveButtonNew(
-                text: 'Continue',
-                typography: typography,
-                variant: ButtonVariant.primary,
-                onPressed: _onSubmitSeedPhrase),
-            const SizedBox(height: 40),
-            const LinedTextDivider(),
-            const SizedBox(height: 40),
-            ArDriveButtonNew(
-                text: 'Upload Keyfile',
-                typography: typography,
-                variant: ButtonVariant.outline,
-                onPressed: () async {
-                  final selectedFile = await ArDriveIO()
-                      .pickFile(fileSource: FileSource.fileSystem);
-                  final wallet = await widget.loginBloc
-                      .validateAndReturnWalletFile(selectedFile);
-                  if (wallet != null) {
-                    navigator.pop();
-                    widget.loginBloc.add(AddWalletFile(selectedFile));
-                  } else {
-                    // TODO: Add error message
-                  }
-                }),
-          ],
-        ));
+              const SizedBox(height: 12),
+              Text(
+                  'You can import your wallet by entering an existing seed phrase or uploading a keyfile.',
+                  style: typography.paragraphNormal(
+                      color: colorTokens.textLow,
+                      fontWeight: ArFontWeight.semiBold)),
+              const SizedBox(height: 40),
+              Text('Seed Phrase',
+                  style: typography.paragraphNormal(
+                      color: colorTokens.textLow,
+                      fontWeight: ArFontWeight.semiBold)),
+              const SizedBox(height: 8),
+              ArDriveTextFieldNew(
+                autofocus: true,
+                controller: _seedPhraseController,
+                showObfuscationToggle: true,
+                obscureText: true,
+                // TODO: create/update localization key
+                hintText: 'Enter Seed Phrase',
+                textInputAction: TextInputAction.next,
+                minLines: 3,
+                maxLines: 3,
+                errorMessage: 'The seed phrase provided is invalid.',
+                showErrorMessage: showSeedPhraseError,
+                onChanged: (value) {
+                  setState(() {
+                    showSeedPhraseError = false;
+                  });
+                },
+              ),
+              const SizedBox(height: 20),
+              ArDriveButtonNew(
+                  text: 'Continue',
+                  typography: typography,
+                  variant: ButtonVariant.primary,
+                  onPressed: _onSubmitSeedPhrase),
+              const SizedBox(height: 40),
+              const LinedTextDivider(),
+              const SizedBox(height: 40),
+              ArDriveButtonNew(
+                  text: 'Upload Keyfile',
+                  typography: typography,
+                  variant: ButtonVariant.outline,
+                  onPressed: () async {
+                    final selectedFile = await ArDriveIO()
+                        .pickFile(fileSource: FileSource.fileSystem);
+                    final wallet = await widget.loginBloc
+                        .validateAndReturnWalletFile(selectedFile);
+                    if (wallet != null) {
+                      navigator.pop();
+                      widget.loginBloc.add(AddWalletFile(selectedFile));
+                    } else {
+                      // TODO: Add error message
+                    }
+                  }),
+            ],
+          )),
+    );
   }
 
   void _onSubmitSeedPhrase() async {
