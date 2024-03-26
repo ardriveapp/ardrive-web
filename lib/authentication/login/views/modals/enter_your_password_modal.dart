@@ -66,133 +66,136 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
     final showDerivedWalletAlreadyCreated =
         widget.derivedEthWallet != null && !widget.loginBloc.existingUserFlow;
 
-    return ArDriveLoginModal(
-      width: 450,
-      hasCloseButton: !widget.alreadyLoggedIn,
-      onClose: !widget.alreadyLoggedIn
-          ? () {
-              Navigator.of(context).pop();
-              widget.loginBloc.add(const ForgetWallet());
-            }
-          : null,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Center(
-              child: ArDriveImage(
-            image: AssetImage(Resources.images.brand.logo1),
-            height: 36,
-          )),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.topCenter,
-            child: Text(
-              'Enter Your Password',
-              style: typography.heading2(
-                  color: colorTokens.textHigh, fontWeight: ArFontWeight.bold),
+    return SingleChildScrollView(
+      child: ArDriveLoginModal(
+        width: 450,
+        hasCloseButton: !widget.alreadyLoggedIn,
+        onClose: !widget.alreadyLoggedIn
+            ? () {
+                Navigator.of(context).pop();
+                widget.loginBloc.add(const ForgetWallet());
+              }
+            : null,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+                child: ArDriveImage(
+              image: AssetImage(Resources.images.brand.logo1),
+              height: 36,
+            )),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.topCenter,
+              child: Text(
+                'Enter Your Password',
+                style: typography.heading2(
+                    color: colorTokens.textHigh, fontWeight: ArFontWeight.bold),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          showDerivedWalletAlreadyCreated
-              ? Text(
-                  'We found a wallet already created for this Ethereum address, please enter your password to continue.',
-                  textAlign: TextAlign.center,
-                  style: typography.paragraphNormal(
-                      color: colorTokens.textLow,
-                      fontWeight: ArFontWeight.semiBold),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(appLocalizationsOf(context).walletAddress,
-                        style: typography.paragraphNormal(
-                            color: colorTokens.textLow,
-                            fontWeight: ArFontWeight.semiBold)),
-                    const SizedBox(width: 8),
-                    FutureBuilder(
-                        future: _getWalletAddress(),
-                        builder: (context, address) => address.hasData
-                            ? TruncatedAddressNew(walletAddress: address.data!)
-                            : const Text(''))
-                  ],
-                ),
-          const SizedBox(height: 40),
-          Text('Password',
-              style: typography.paragraphNormal(
-                  color: colorTokens.textLow,
-                  fontWeight: ArFontWeight.semiBold)),
-          const SizedBox(height: 8),
-          ArDriveTextFieldNew(
-            controller: _passwordController,
-            hintText: 'Enter your password',
-            showObfuscationToggle: true,
-            obscureText: true,
-            autofocus: true,
-            autofillHints: const [AutofillHints.password],
-            isEnabled: !widget.checkingPassword,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
+            const SizedBox(height: 12),
+            showDerivedWalletAlreadyCreated
+                ? Text(
+                    'We found a wallet already created for this Ethereum address, please enter your password to continue.',
+                    textAlign: TextAlign.center,
+                    style: typography.paragraphNormal(
+                        color: colorTokens.textLow,
+                        fontWeight: ArFontWeight.semiBold),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(appLocalizationsOf(context).walletAddress,
+                          style: typography.paragraphNormal(
+                              color: colorTokens.textLow,
+                              fontWeight: ArFontWeight.semiBold)),
+                      const SizedBox(width: 8),
+                      FutureBuilder(
+                          future: _getWalletAddress(),
+                          builder: (context, address) => address.hasData
+                              ? TruncatedAddressNew(
+                                  walletAddress: address.data!)
+                              : const Text(''))
+                    ],
+                  ),
+            const SizedBox(height: 40),
+            Text('Password',
+                style: typography.paragraphNormal(
+                    color: colorTokens.textLow,
+                    fontWeight: ArFontWeight.semiBold)),
+            const SizedBox(height: 8),
+            ArDriveTextFieldNew(
+              controller: _passwordController,
+              hintText: 'Enter your password',
+              showObfuscationToggle: true,
+              obscureText: true,
+              autofocus: true,
+              autofillHints: const [AutofillHints.password],
+              isEnabled: !widget.checkingPassword,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  setState(() {
+                    _isPasswordValid = false;
+                  });
+                  return appLocalizationsOf(context).validationRequired;
+                }
+
                 setState(() {
-                  _isPasswordValid = false;
+                  _isPasswordValid = true;
                 });
-                return appLocalizationsOf(context).validationRequired;
-              }
 
-              setState(() {
-                _isPasswordValid = true;
-              });
-
-              return null;
-            },
-            onFieldSubmitted: (_) async {
-              if (_isPasswordValid) {
-                _onSubmit();
-              }
-            },
-            onChanged: (_) {
-              setState(() {
-                _isPasswordFailed = false;
-              });
-            },
-            errorMessage: 'Invalid password. Please try again.',
-            showErrorMessage: _isPasswordFailed,
-          ),
-          const SizedBox(height: 40),
-          ArDriveButtonNew(
-              text: 'Continue',
-              typography: typography,
-              variant: ButtonVariant.primary,
-              isDisabled: !_isPasswordValid || widget.checkingPassword,
-              onPressed: () {
+                return null;
+              },
+              onFieldSubmitted: (_) async {
                 if (_isPasswordValid) {
                   _onSubmit();
                 }
-              }),
-          if (widget.alreadyLoggedIn) ...[
+              },
+              onChanged: (_) {
+                setState(() {
+                  _isPasswordFailed = false;
+                });
+              },
+              errorMessage: 'Invalid password. Please try again.',
+              showErrorMessage: _isPasswordFailed,
+            ),
             const SizedBox(height: 40),
-            Text.rich(
-              textAlign: TextAlign.center,
-              TextSpan(
-                children: [
-                  TextSpan(
-                    // TODO: create/update localization key
-                    text: appLocalizationsOf(context).forgetWallet,
-                    style: typography.paragraphLarge(
-                        color: colorTokens.textLow,
-                        fontWeight: ArFontWeight.semiBold),
-                    recognizer: TapGestureRecognizer()
-                      ..onTap = () {
-                        Navigator.of(context).pop();
-                        widget.loginBloc.add(const ForgetWallet());
-                      },
-                  ),
-                ],
-              ),
-            )
-          ]
-        ],
+            ArDriveButtonNew(
+                text: 'Continue',
+                typography: typography,
+                variant: ButtonVariant.primary,
+                isDisabled: !_isPasswordValid || widget.checkingPassword,
+                onPressed: () {
+                  if (_isPasswordValid) {
+                    _onSubmit();
+                  }
+                }),
+            if (widget.alreadyLoggedIn) ...[
+              const SizedBox(height: 40),
+              Text.rich(
+                textAlign: TextAlign.center,
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      // TODO: create/update localization key
+                      text: appLocalizationsOf(context).forgetWallet,
+                      style: typography.paragraphLarge(
+                          color: colorTokens.textLow,
+                          fontWeight: ArFontWeight.semiBold),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () {
+                          Navigator.of(context).pop();
+                          widget.loginBloc.add(const ForgetWallet());
+                        },
+                    ),
+                  ],
+                ),
+              )
+            ]
+          ],
+        ),
       ),
     );
   }
