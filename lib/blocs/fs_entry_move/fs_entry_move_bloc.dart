@@ -27,7 +27,6 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
   final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
-  final SyncCubit _syncCubit;
   final ArDriveCrypto _crypto;
   final DriveDetailCubit _driveDetailCubit;
 
@@ -48,7 +47,6 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _driveDetailCubit = driveDetailCubit,
-        _syncCubit = syncCubit,
         _crypto = crypto,
         super(const FsEntryMoveLoadInProgress()) {
     if (_selectedItems.isEmpty) {
@@ -296,7 +294,5 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
       );
       await _arweave.postTx(moveTx);
     }
-
-    await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
   }
 }

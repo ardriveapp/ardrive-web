@@ -240,7 +240,7 @@ Widget _buildDataListContent(
         final cubit = context.read<DriveDetailCubit>();
         if (item is FolderDataTableItem) {
           if (item.id == cubit.selectedItem?.id) {
-            cubit.openFolder(path: item.path);
+            cubit.openFolder(folderId: item.id);
           } else {
             cubit.selectDataItem(item);
           }
@@ -290,7 +290,7 @@ Widget _buildDataListContent(
             final cubit = context.read<DriveDetailCubit>();
             if (row is FolderDataTableItem) {
               if (row.id == cubit.selectedItem?.id) {
-                cubit.openFolder(path: folder.path);
+                cubit.openFolder(folderId: row.id);
               } else {
                 cubit.selectDataItem(row);
               }

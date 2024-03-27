@@ -586,11 +586,13 @@ class ArweaveService {
   ///
   /// Returns `null` if no valid drive is found or the provided `driveKey` is incorrect.
   Future<DriveEntity?> getLatestDriveEntityWithId(
-    String driveId, [
+    String driveId, {
+    String? driveOwner,
     SecretKey? driveKey,
     int maxRetries = defaultMaxRetries,
-  ]) async {
-    final driveOwner = await getOwnerForDriveEntityWithId(driveId);
+  }) async {
+    driveOwner ??= await getOwnerForDriveEntityWithId(driveId);
+
     if (driveOwner == null) {
       return null;
     }
@@ -737,7 +739,9 @@ class ArweaveService {
 
   /// Gets the owner of the drive sorted by blockheight.
   /// Returns `null` if no valid drive is found or the provided `driveKey` is incorrect.
-  Future<String?> getOwnerForDriveEntityWithId(String driveId) async {
+  Future<String?> getOwnerForDriveEntityWithId(
+    String driveId,
+  ) async {
     String cursor = '';
 
     while (true) {
@@ -803,7 +807,8 @@ class ArweaveService {
 
     return await getLatestDriveEntityWithId(
       checkDriveId,
-      checkDriveKey,
+      driveOwner: await wallet.getAddress(),
+      driveKey: checkDriveKey,
     );
   }
 

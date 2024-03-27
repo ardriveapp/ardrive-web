@@ -68,7 +68,7 @@ void main() {
 
       when(() => arweave.getLatestDriveEntityWithId(
             validPrivateDriveId,
-            validPrivateDriveKey,
+            driveKey: validPrivateDriveKey,
           )).thenAnswer(
         (_) => Future.value(
           DriveEntity(
@@ -145,7 +145,7 @@ void main() {
       setUp(() async {
         when(() => arweave.getLatestDriveEntityWithId(
               validPrivateDriveId,
-              invalidDriveKey,
+              driveKey: invalidDriveKey,
             )).thenAnswer((_) => Future.value(null));
       });
 

@@ -283,8 +283,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
       final privateDrive = await _arweave.getLatestDriveEntityWithId(
         firstDrivePrivateDriveTxId,
-        checkDriveKey,
-        profileQueryMaxRetries,
+        driveKey: checkDriveKey,
+        driveOwner: await wallet.getAddress(),
+        maxRetries: profileQueryMaxRetries,
       );
 
       return privateDrive != null;
