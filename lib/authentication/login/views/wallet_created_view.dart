@@ -284,21 +284,28 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
     ));
     return BreakpointLayoutBuilder(
       largeDesktop: (context) => Material(
-          child: Container(
-              color: colorTokens.containerL0,
-              alignment: Alignment.center,
-              child: Center(
-                  child: IntrinsicHeight(
-                      child: Row(
-                mainAxisSize: MainAxisSize.max,
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  seedPhraseCard,
-                  const SizedBox(width: 24),
-                  downloadWalletCard,
-                ],
-              ))))),
+          color: ArDriveTheme.of(context).themeData.backgroundColor,
+          child: SizedBox.expand(
+            child: Center(
+              child: SingleChildScrollView(
+                child: Container(
+                    color: colorTokens.containerL0,
+                    alignment: Alignment.center,
+                    child: Center(
+                        child: IntrinsicHeight(
+                            child: Row(
+                      mainAxisSize: MainAxisSize.max,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        seedPhraseCard,
+                        const SizedBox(width: 24),
+                        downloadWalletCard,
+                      ],
+                    )))),
+              ),
+            ),
+          )),
       tablet: (context) => Scaffold(
           resizeToAvoidBottomInset: true,
           body: SingleChildScrollView(
