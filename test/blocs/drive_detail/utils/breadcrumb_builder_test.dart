@@ -1,11 +1,10 @@
 import 'package:ardrive/blocs/drive_detail/utils/breadcrumb_builder.dart';
-import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart'; // Adjust if necessary
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockFolderRepository extends Mock implements FolderRepository {}
+import '../../../test_utils/mocks.dart';
 
 class FakeBreadCrumbRowInfo extends Fake implements BreadCrumbRowInfo {}
 

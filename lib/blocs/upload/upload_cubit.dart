@@ -373,9 +373,6 @@ class UploadCubit extends Cubit<UploadState> {
       if (existingFileId != null) {
         conflictingFolders.add(folder.name);
       }
-      folder.path = folder.parentFolderPath.isNotEmpty
-          ? '${_targetFolder.path}/${folder.parentFolderPath}/${folder.name}'
-          : '${_targetFolder.path}/${folder.name}';
     }
     final filesToUpload = <UploadFile>[];
     for (var file in files) {
@@ -858,8 +855,7 @@ class UploadCubit extends Cubit<UploadState> {
           entity.txId = fileMetadata.metadataTxId!;
 
           _driveDao.transaction(() async {
-            final filePath = '${_targetFolder.path}/${metadata.name}';
-            await _driveDao.writeFileEntity(entity, filePath);
+            await _driveDao.writeFileEntity(entity);
             await _driveDao.insertFileRevision(
               entity.toRevisionCompanion(
                 performedAction: revisionAction,
@@ -888,18 +884,11 @@ class UploadCubit extends Cubit<UploadState> {
 
           entity.txId = metadata.metadataTxId!;
 
-          final folderPath = foldersByPath.values
-              .firstWhere((element) =>
-                  element.name == metadata.name &&
-                  element.parentFolderId == metadata.parentFolderId)
-              .path;
-
           await _driveDao.transaction(() async {
             await _driveDao.createFolder(
               driveId: _targetDrive.id,
               parentFolderId: metadata.parentFolderId,
               folderName: metadata.name,
-              path: folderPath,
               folderId: metadata.id,
             );
             await _driveDao.insertFolderRevision(

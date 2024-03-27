@@ -169,7 +169,6 @@ void main() {
       for (var i = 0; i < filesInFolderTree.length; i++) {
         final file = filesInFolderTree[i];
         expect(file.id, equals(expectedTreeResults[i][0]));
-        expect(file.path, equals(expectedTreeResults[i][1]));
       }
     });
   });

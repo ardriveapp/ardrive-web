@@ -65,7 +65,6 @@ Future<void> addTestFilesToDb(
           id: rootFolderId,
           driveId: driveId,
           name: 'fake-drive-name',
-          path: '',
           isHidden: const Value(false),
         ),
         FolderEntriesCompanion.insert(
@@ -73,7 +72,6 @@ Future<void> addTestFilesToDb(
           driveId: driveId,
           parentFolderId: Value(rootFolderId),
           name: nestedFolderId,
-          path: '/$nestedFolderId',
           isHidden: const Value(false),
         ),
         ...List.generate(
@@ -85,7 +83,6 @@ Future<void> addTestFilesToDb(
               driveId: driveId,
               parentFolderId: Value(rootFolderId),
               name: folderId,
-              path: '/$folderId',
               isHidden: const Value(false),
             );
           },
@@ -105,7 +102,6 @@ Future<void> addTestFilesToDb(
               driveId: driveId,
               parentFolderId: rootFolderId,
               name: fileId,
-              path: '/$fileId',
               dataTxId: '${fileId}Data',
               size: 500,
               dateCreated: Value(defaultDate),
@@ -124,7 +120,6 @@ Future<void> addTestFilesToDb(
               driveId: driveId,
               parentFolderId: nestedFolderId,
               name: fileId,
-              path: '/$nestedFolderId/$fileId',
               dataTxId: '${fileId}Data',
               size: 500,
               dateCreated: Value(defaultDate),

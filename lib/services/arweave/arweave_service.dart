@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:ardrive/core/crypto/crypto.dart';
@@ -267,12 +268,20 @@ class ArweaveService {
       entityTxs.map(
         (model) async {
           final entity = model.transactionCommonMixin;
-          final tags = entity.tags;
-          final isSnapshot = tags.any(
-            (tag) =>
-                tag.name == EntityTag.entityType &&
-                tag.value == EntityTypeTag.snapshot.toString(),
+
+          final tags = HashMap.fromIterable(
+            entity.tags,
+            key: (tag) => tag.name,
+            value: (tag) => tag.value,
           );
+
+          if (driveKey != null && tags[EntityTag.cipherIv] == null) {
+            logger.d('skipping unnecessary request for a broken entity');
+            return Uint8List(0);
+          }
+
+          final isSnapshot =
+              tags[EntityTag.entityType] == EntityTypeTag.snapshot;
 
           // don't fetch data for snapshots
           if (isSnapshot) {
@@ -297,6 +306,18 @@ class ArweaveService {
 
     for (var i = 0; i < entityTxs.length; i++) {
       final transaction = entityTxs[i].transactionCommonMixin;
+
+      final tags = HashMap.fromIterable(
+        transaction.tags,
+        key: (tag) => tag.name,
+        value: (tag) => tag.value,
+      );
+
+      if (driveKey != null && tags[EntityTag.cipherIv] == null) {
+        logger.d('skipping unnecessary request for a broken entity');
+        continue;
+      }
+
       // If we encounter a transaction that has yet to be mined, we stop moving through history.
       // We can continue once the transaction is mined.
       if (transaction.block == null) {
@@ -310,7 +331,7 @@ class ArweaveService {
       }
 
       try {
-        final entityType = transaction.getTag(EntityTag.entityType);
+        final entityType = tags[EntityTag.entityType];
         final rawEntityData = entityDatas[i];
 
         await metadataCache.put(transaction.id, rawEntityData);

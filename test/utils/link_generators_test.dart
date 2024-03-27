@@ -87,7 +87,6 @@ void main() {
           driveId: 'driveId',
           parentFolderId: 'parentFolderId',
           name: 'testFile',
-          path: '/test/test',
           dataTxId: 'Data',
           size: 500,
           dateCreated: DateTime.now(),
