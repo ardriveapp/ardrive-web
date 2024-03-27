@@ -65,7 +65,7 @@ class ArweaveBundleTransactionSigner implements BundleTransactionSigner {
 
     logger.i('Signing bundle...');
 
-    await bundleTx.sign(wallet);
+    await bundleTx.sign(ArweaveSigner(wallet));
 
     logger.i('Bundle signed');
 

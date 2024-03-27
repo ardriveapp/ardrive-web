@@ -7,6 +7,15 @@ abstract class LoginEvent extends Equatable {
   List<Object> get props => [];
 }
 
+class SelectLoginFlow extends LoginEvent {
+  const SelectLoginFlow({required this.existingUser});
+
+  final bool existingUser;
+
+  @override
+  List<Object> get props => [existingUser];
+}
+
 class AddWalletFile extends LoginEvent {
   const AddWalletFile(this.walletFile);
 
@@ -31,20 +40,24 @@ class CheckIfUserIsLoggedIn extends LoginEvent {
   });
 
   @override
-  List<Object> get props => [];
+  List<Object> get props => [gettingStarted];
 }
 
 class LoginWithPassword extends LoginEvent {
   final String password;
   final Wallet wallet;
+  final EthereumProviderWallet? derivedEthWallet;
+  final bool showWalletCreated;
 
   const LoginWithPassword({
     required this.password,
     required this.wallet,
+    this.derivedEthWallet,
+    required this.showWalletCreated,
   });
 
   @override
-  List<Object> get props => [password];
+  List<Object> get props => [password, wallet, showWalletCreated];
 }
 
 class UnlockUserWithPassword extends LoginEvent {
@@ -61,11 +74,22 @@ class UnlockUserWithPassword extends LoginEvent {
 class CreatePassword extends LoginEvent {
   final String password;
   final Wallet wallet;
+  final EthereumProviderWallet? derivedEthWallet;
+  final String? mnemonic;
+  final bool showTutorials;
+  final bool showWalletCreated;
 
-  const CreatePassword({required this.password, required this.wallet});
+  const CreatePassword(
+      {required this.password,
+      required this.wallet,
+      this.derivedEthWallet,
+      this.mnemonic,
+      required this.showTutorials,
+      required this.showWalletCreated});
 
   @override
-  List<Object> get props => [password];
+  List<Object> get props =>
+      [password, wallet, showTutorials, showWalletCreated];
 }
 
 class ForgetWallet extends LoginEvent {
@@ -76,6 +100,9 @@ class FinishOnboarding extends LoginEvent {
   const FinishOnboarding({required this.wallet});
 
   final Wallet wallet;
+
+  @override
+  List<Object> get props => [wallet];
 }
 
 class UnLockWithBiometrics extends LoginEvent {
@@ -86,8 +113,8 @@ class EnterSeedPhrase extends LoginEvent {
   const EnterSeedPhrase();
 }
 
-class AddWalletFromMnemonic extends LoginEvent {
-  const AddWalletFromMnemonic(this.mnemonic);
+class AddWalletFromSeedPhraseLogin extends LoginEvent {
+  const AddWalletFromSeedPhraseLogin(this.mnemonic);
 
   final String mnemonic;
 
@@ -114,10 +141,15 @@ class CreateNewWallet extends LoginEvent {
 }
 
 class CompleteWalletGeneration extends LoginEvent {
-  const CompleteWalletGeneration(this.wallet);
+  const CompleteWalletGeneration({required this.wallet, this.mnemonic});
 
   final Wallet wallet;
+  final String? mnemonic;
 
   @override
   List<Object> get props => [wallet];
+}
+
+class LoginWithMetamask extends LoginEvent {
+  const LoginWithMetamask();
 }

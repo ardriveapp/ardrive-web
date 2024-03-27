@@ -11,6 +11,7 @@ import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:arweave/arweave.dart';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
@@ -281,6 +282,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
     final stateAsPinFileFieldsValid = state as PinFileFieldsValid;
     final profileState = _profileCubit.state as ProfileLoggedIn;
     final wallet = profileState.wallet;
+    final signer = ArweaveSigner(wallet);
 
     emit(PinFileCreating(
       id: stateAsPinFileFieldsValid.id,
@@ -334,7 +336,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
           );
         }
 
-        await fileDataItem.sign(wallet);
+        await fileDataItem.sign(signer);
 
         await _turboUploadService.postDataItem(
           dataItem: fileDataItem,
@@ -360,7 +362,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
           );
         }
 
-        await fileDataItem.sign(wallet);
+        await fileDataItem.sign(signer);
 
         await _arweave.postTx(fileDataItem);
         newFileEntity.txId = fileDataItem.id;

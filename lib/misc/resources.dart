@@ -35,6 +35,7 @@ class Images {
   final brand = const Brand();
   final profile = const Profile();
   final Login login = const Login();
+  final icons = const _Icons();
 }
 
 class Brand {
@@ -87,12 +88,36 @@ class Login {
 
   final String gridImage = 'assets/images/login/grid_images.jpg';
   final String ardriveLogoOnboarding = 'assets/images/brand/2x.png';
-  final String arconnectLogo = 'assets/images/login/arconnect_logo.png';
+  final String arconnectLogo = 'assets/images/login/arconnect_logo_flat.svg';
   final String lattice = 'assets/images/login/lattice.svg';
   final String latticeLight = 'assets/images/login/lattice_light.svg';
   final String latticeLarge = 'assets/images/login/lattice_large.svg';
   final String latticeLargeLight =
       'assets/images/login/lattice_large_light.svg';
+  final String placeholder1 = 'assets/images/login/placeholder1.gif';
+  final String placeholder2 = 'assets/images/login/placeholder2.gif';
+  final String confetti = 'assets/images/login/confetti.png';
+  final String confettiLeft = 'assets/images/login/confetti_left.png';
+  final String confettiRight = 'assets/images/login/confetti_right.png';
+  final String arrowRed = 'assets/images/login/arrow_red.svg';
+  final String ardriveLoader = 'assets/images/login/ardrive_loader.gif';
+  final String checkCircle = 'assets/images/login/check_circle.png';
+  final String whatIsAKeyfile = 'assets/images/login/what_is_a_keyfile.png';
+  final String aboutSecurity = 'assets/images/login/about_security.png';
+
+  final String metamask = 'assets/images/login/metamask_logo_flat.svg';
+  final String walletUpload = 'assets/images/login/wallet_upload.svg';
+}
+
+class _Icons {
+  const _Icons();
+
+  final String alert = 'assets/images/icons/iconAlert.svg';
+  final String copy = 'assets/images/icons/iconCopy.svg';
+  final String download = 'assets/images/icons/iconDownload.svg';
+  final String encryptedLock = 'assets/images/icons/iconEncryptedLock.svg';
+  final String eyeOpen = 'assets/images/icons/iconEyeOpen.svg';
+  final String eyeClosed = 'assets/images/icons/iconEyeClosed.svg';
 }
 
 const String discord = 'Discord';

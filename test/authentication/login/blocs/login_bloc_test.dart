@@ -1,7 +1,9 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
+import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -16,7 +18,12 @@ import '../../../test_utils/utils.dart';
 void main() {
   late ArDriveAuth mockArDriveAuth;
   late ArConnectService mockArConnectService;
+  late EthereumProviderService mockEthereumProviderService;
   late UserRepository mockUserRepository;
+  late TurboUploadService mockTurboUploadService;
+
+  late DownloadService mockDownloadService;
+  late ArweaveService mockArweaveService;
 
   final wallet = getTestWallet();
 
@@ -26,7 +33,11 @@ void main() {
   setUp(() {
     mockArDriveAuth = MockArDriveAuth();
     mockArConnectService = MockArConnectService();
+    mockEthereumProviderService = MockEthereumProviderService();
+    mockTurboUploadService = MockTurboUploadService();
     mockUserRepository = MockUserRepository();
+    mockDownloadService = MockDownloadService();
+    mockArweaveService = MockArweaveService();
   });
 
   group('AddWalletFile', () {
@@ -41,11 +52,17 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
       setUp: () {
         when(() => mockArDriveAuth.userHasPassword(any()))
+            .thenAnswer((_) async => true);
+        when(() => mockArDriveAuth.isExistingUser(any()))
             .thenAnswer((_) async => true);
       },
       act: (bloc) async {
@@ -57,21 +74,30 @@ void main() {
       },
       expect: () => [
         LoginLoading(),
-        PromptPassword(walletFile: wallet),
+        predicate<PromptPassword>((p) {
+          return p.showWalletCreated == false && p.mnemonic == null;
+        })
       ],
     );
+
     blocTest(
-      'should emit the event to show onboarding when user is not an existing one',
+      'should emit the event to secure wallet and show tutorials when user is not an existing one',
       build: () {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
       setUp: () {
         // user doesn't exist
         when(() => mockArDriveAuth.userHasPassword(any()))
+            .thenAnswer((_) async => false);
+        when(() => mockArDriveAuth.isExistingUser(any()))
             .thenAnswer((_) async => false);
       },
       act: (bloc) async {
@@ -83,7 +109,47 @@ void main() {
       },
       expect: () => [
         LoginLoading(),
-        LoginOnBoarding(wallet),
+        predicate<CreateNewPassword>((cnp) {
+          return cnp.showWalletCreated == false &&
+              cnp.mnemonic == null &&
+              cnp.showTutorials == true;
+        })
+      ],
+    );
+    blocTest(
+      'should emit the event to secure wallet and skip tutorials when user is an existing one with no private drives',
+      build: () {
+        return LoginBloc(
+          arDriveAuth: mockArDriveAuth,
+          arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
+          userRepository: mockUserRepository,
+        );
+      },
+      setUp: () {
+        // user doesn't exist
+        when(() => mockArDriveAuth.userHasPassword(any()))
+            .thenAnswer((_) async => false);
+        when(() => mockArDriveAuth.isExistingUser(any()))
+            .thenAnswer((_) async => true);
+      },
+      act: (bloc) async {
+        bloc.add(AddWalletFile(await IOFile.fromData(
+          Uint8List.fromList(getWalletString.codeUnits),
+          name: 'name',
+          lastModifiedDate: DateTime.now(),
+        )));
+      },
+      expect: () => [
+        LoginLoading(),
+        predicate<CreateNewPassword>((cnp) {
+          return cnp.showTutorials == false &&
+              cnp.showWalletCreated == false &&
+              cnp.mnemonic == null;
+        })
       ],
     );
   });
@@ -108,6 +174,10 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -123,11 +193,10 @@ void main() {
         bloc.profileType = ProfileType.json;
 
         bloc.add(LoginWithPassword(
-          wallet: wallet,
-          password: 'password',
-        ));
+            wallet: wallet, password: 'password', showWalletCreated: false));
       },
-      expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
+      expect: () =>
+          [LoginCheckingPassword(), const TypeMatcher<LoginSuccess>()],
     );
 
     blocTest(
@@ -136,6 +205,10 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -157,9 +230,11 @@ void main() {
         bloc.add(LoginWithPassword(
           wallet: wallet,
           password: 'password',
+          showWalletCreated: false,
         ));
       },
-      expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
+      expect: () =>
+          [LoginCheckingPassword(), const TypeMatcher<LoginSuccess>()],
     );
     blocTest(
       'should emit failure when wallet mismatch',
@@ -167,6 +242,10 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -186,14 +265,12 @@ void main() {
         bloc.emit(const PromptPassword());
 
         bloc.add(LoginWithPassword(
-          wallet: wallet,
-          password: 'password',
-        ));
+            wallet: wallet, password: 'password', showWalletCreated: false));
         bloc.profileType = ProfileType.arConnect;
       },
       expect: () => [
         const PromptPassword(),
-        LoginLoading(),
+        LoginCheckingPassword(),
         const TypeMatcher<LoginFailure>(),
         const PromptPassword()
       ],
@@ -205,6 +282,10 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -222,13 +303,13 @@ void main() {
         bloc.add(LoginWithPassword(
           wallet: wallet,
           password: 'password',
+          showWalletCreated: false,
         ));
       },
       expect: () => [
         const PromptPassword(),
-        LoginLoading(),
-        const TypeMatcher<LoginFailure>(),
-        const PromptPassword()
+        LoginCheckingPassword(),
+        LoginPasswordFailed(),
       ],
     );
   });
@@ -245,6 +326,10 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -267,6 +352,10 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -301,6 +390,10 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -327,6 +420,10 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -343,7 +440,7 @@ void main() {
       },
       expect: () => [
         LoginLoading(),
-        const LoginInitial(isArConnectAvailable: false),
+        const LoginLanding(),
       ],
     );
   });
@@ -369,6 +466,10 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -384,7 +485,8 @@ void main() {
         ));
         bloc.profileType = ProfileType.json;
       },
-      expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
+      expect: () =>
+          [LoginCheckingPassword(), const TypeMatcher<LoginSuccess>()],
     );
 
     blocTest(
@@ -393,6 +495,10 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -413,9 +519,8 @@ void main() {
       },
       expect: () => [
         const PromptPassword(),
-        LoginLoading(),
-        const TypeMatcher<LoginFailure>(),
-        const PromptPassword()
+        LoginCheckingPassword(),
+        LoginPasswordFailed(),
       ],
     );
   });
@@ -441,6 +546,10 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -454,9 +563,10 @@ void main() {
       },
       act: (bloc) async {
         bloc.add(CreatePassword(
-          wallet: wallet,
-          password: 'password',
-        ));
+            wallet: wallet,
+            password: 'password',
+            showTutorials: false,
+            showWalletCreated: false));
         bloc.profileType = ProfileType.json;
       },
       expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
@@ -468,6 +578,10 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -484,16 +598,17 @@ void main() {
         bloc.emit(const PromptPassword());
 
         bloc.add(CreatePassword(
-          wallet: wallet,
-          password: 'password',
-        ));
+            wallet: wallet,
+            password: 'password',
+            showTutorials: false,
+            showWalletCreated: false));
         bloc.profileType = ProfileType.json;
       },
       expect: () => [
         const PromptPassword(),
         LoginLoading(),
+        const PromptPassword(),
         const TypeMatcher<LoginFailure>(),
-        const PromptPassword()
       ],
     );
 
@@ -503,6 +618,10 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -522,6 +641,8 @@ void main() {
         bloc.add(CreatePassword(
           wallet: wallet,
           password: 'password',
+          showTutorials: false,
+          showWalletCreated: false,
         ));
       },
       expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
@@ -533,6 +654,10 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -555,14 +680,16 @@ void main() {
         bloc.add(CreatePassword(
           wallet: wallet,
           password: 'password',
+          showWalletCreated: false,
+          showTutorials: false,
         ));
         bloc.profileType = ProfileType.json;
       },
       expect: () => [
         const PromptPassword(),
         LoginLoading(),
+        const PromptPassword(),
         const TypeMatcher<LoginFailure>(),
-        const PromptPassword()
       ],
     );
   });
@@ -579,6 +706,10 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -604,6 +735,10 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -621,7 +756,14 @@ void main() {
       act: (bloc) async {
         bloc.add(const AddWalletFromArConnect());
       },
-      expect: () => [LoginLoading(), const TypeMatcher<LoginOnBoarding>()],
+      expect: () => [
+        LoginLoading(),
+        predicate<CreateNewPassword>((cnp) {
+          return cnp.showWalletCreated == false &&
+              cnp.mnemonic == null &&
+              cnp.showTutorials == true;
+        })
+      ],
     );
 
     blocTest(
@@ -630,6 +772,10 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -649,8 +795,8 @@ void main() {
       expect: () => [
         const PromptPassword(),
         LoginLoading(),
+        const PromptPassword(),
         const TypeMatcher<LoginFailure>(),
-        const PromptPassword()
       ],
     );
   });
@@ -667,6 +813,10 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -683,7 +833,7 @@ void main() {
       act: (bloc) async {
         bloc.add(const ForgetWallet());
       },
-      expect: () => [const LoginInitial(isArConnectAvailable: false)],
+      expect: () => [const LoginLanding()],
     );
     blocTest(
       'should emit the initial login state and not call logout when user is not logged in',
@@ -691,6 +841,10 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -709,7 +863,7 @@ void main() {
         bloc.add(const ForgetWallet());
       },
       verify: (bloc) => verifyNever(() => mockArDriveAuth.logout()),
-      expect: () => [const LoginInitial(isArConnectAvailable: false)],
+      expect: () => [const LoginLanding()],
     );
   });
 
@@ -725,13 +879,32 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
+        );
+      },
+      setUp: () {
+        // not logged in
+        when(() => mockArDriveAuth.isUserLoggedIn())
+            .thenAnswer((invocation) => Future.value(true));
+        when(() => mockArDriveAuth.currentUser).thenAnswer(
+          (_) => User(
+            password: 'password',
+            wallet: getTestWallet(),
+            walletAddress: 'walletAddress',
+            walletBalance: BigInt.one,
+            cipherKey: SecretKey([]),
+            profileType: ProfileType.json,
+          ),
         );
       },
       act: (bloc) async {
         bloc.add(FinishOnboarding(wallet: wallet));
       },
-      expect: () => [const TypeMatcher<CreatingNewPassword>()],
+      expect: () => [const TypeMatcher<LoginSuccess>()],
     );
   });
 
@@ -757,6 +930,10 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -783,6 +960,10 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
         );
       },
@@ -804,7 +985,7 @@ void main() {
         const PromptPassword(),
         LoginLoading(),
         const TypeMatcher<LoginFailure>(),
-        const PromptPassword()
+        const PromptPassword(),
       ],
     );
   });

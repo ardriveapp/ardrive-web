@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "default": "ardrive-web"
+  },
+  "targets": {
+    "ardrive-web": {
+      "hosting": {
+        "ardrive-ui": [
+          "ardrive-ui-release"
+        ],
+        "ardrive-ui-staging": [
+          "ardrive-ui-release-staging"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

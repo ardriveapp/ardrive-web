@@ -284,6 +284,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   Future<void> signTx(bool isArConnectProfile) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
     final wallet = profile.wallet;
+    final signer = ArweaveSigner(wallet);
 
     try {
       logger.i(
@@ -297,9 +298,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       }
 
       if (_useTurboUpload) {
-        await _preparedDataItem!.sign(wallet);
+        await _preparedDataItem!.sign(signer);
       } else {
-        await _preparedTx!.sign(wallet);
+        await _preparedTx!.sign(signer);
       }
     } catch (e) {
       final isTabFocused = _tabVisibility.isTabFocused();

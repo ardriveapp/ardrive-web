@@ -75,7 +75,7 @@ class ArweaveTransactionSigner implements TransactionSigner {
       );
     }
 
-    await dataTx.sign(wallet);
+    await dataTx.sign(ArweaveSigner(wallet));
 
     entity.dataTxId = dataTx.id;
     entityTx = await arweaveService.prepareEntityTx(entity, wallet, fileKey);

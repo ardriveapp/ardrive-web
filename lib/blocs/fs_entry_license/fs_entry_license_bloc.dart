@@ -253,6 +253,8 @@ class FsEntryLicenseBloc
     final licenseAssertionTxDataItems = <DataItem>[];
     final fileRevisionTxDataItems = <DataItem>[];
 
+    final signer = ArweaveSigner(profile.wallet);
+
     await _driveDao.transaction(() async {
       for (var file in filesToLicense!) {
         final allRevisions = await _driveDao
@@ -273,7 +275,7 @@ class FsEntryLicenseBloc
           final appInfo = AppInfoServices().appInfo;
           final licenseAssertionDataItem = await licenseAssertionEntity
               .asPreparedDataItem(owner: owner, appInfo: appInfo);
-          await licenseAssertionDataItem.sign(profile.wallet);
+          await licenseAssertionDataItem.sign(signer);
           licenseAssertionTxDataItems.add(licenseAssertionDataItem);
 
           licenseAssertionEntity.txId = licenseAssertionDataItem.id;
