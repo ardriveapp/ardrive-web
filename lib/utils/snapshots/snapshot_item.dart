@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/services/arweave/arweave.dart';
+import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
@@ -174,7 +175,7 @@ class SnapshotItemOnChain implements SnapshotItem {
   }
 
   @override
-  Stream<DriveHistoryTransaction> getNextStream() {
+  Stream<DriveEntityHistoryTransactionModel> getNextStream() {
     _currentIndex++;
     if (currentIndex >= subRanges.rangeSegments.length) {
       throw SubRangeIndexOverflow(index: currentIndex);
@@ -183,7 +184,7 @@ class SnapshotItemOnChain implements SnapshotItem {
     return _getNextStream();
   }
 
-  Stream<DriveHistoryTransaction> _getNextStream() async* {
+  Stream<DriveEntityHistoryTransactionModel> _getNextStream() async* {
     final Range range = subRanges.rangeSegments[currentIndex];
 
     final Map dataJson = jsonDecode(await _source());
@@ -204,7 +205,7 @@ class SnapshotItemOnChain implements SnapshotItem {
 
       final isInRange = range.isInRange(node.block?.height ?? -1);
       if (isInRange) {
-        yield node;
+        yield DriveEntityHistoryTransactionModel(transactionCommonMixin: node);
 
         final String? data = item['jsonMetadata'];
         if (data != null) {

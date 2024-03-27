@@ -1,4 +1,4 @@
-import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
+import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
 import 'package:ardrive/utils/snapshots/gql_drive_history.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
@@ -22,6 +22,7 @@ void main() {
           minBlockHeight: captureAny(named: 'minBlockHeight'),
           maxBlockHeight: captureAny(named: 'maxBlockHeight'),
           ownerAddress: 'owner',
+          strategy: any(named: 'strategy'),
         ),
       ).thenAnswer(
         (invocation) => fakeNodesStream(
@@ -29,19 +30,14 @@ void main() {
             start: invocation.namedArguments[const Symbol('minBlockHeight')],
             end: invocation.namedArguments[const Symbol('maxBlockHeight')],
           ),
-        )
-            .map(
-              (event) =>
-                  DriveEntityHistory$Query$TransactionConnection$TransactionEdge()
-                    ..node = event
-                    ..cursor = 'mi cursor',
-            )
-            .map((event) => [event]),
+        ).map((event) => [event]),
       );
 
       when(() => arweave.getOwnerForDriveEntityWithId('DRIVE_ID')).thenAnswer(
         (invocation) => Future.value('owner'),
       );
+
+      when(() => arweave.graphQLRetry).thenReturn(MockGraphQLRetry());
     });
 
     test('getStreamForIndex returns a valid stream of nodes', () async {
@@ -53,7 +49,8 @@ void main() {
       );
       expect(gqlDriveHistory.subRanges.rangeSegments.length, 1);
       expect(gqlDriveHistory.currentIndex, -1);
-      Stream stream = gqlDriveHistory.getNextStream();
+      Stream<DriveEntityHistoryTransactionModel> stream =
+          gqlDriveHistory.getNextStream();
       expect(gqlDriveHistory.currentIndex, 0);
       expect(await countStreamItems(stream), 11);
 

@@ -1,11 +1,10 @@
-import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
+import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class SegmentedGQLData {
   abstract final HeightRange subRanges;
-  Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
-      getNextStream();
+  Stream<DriveEntityHistoryTransactionModel> getNextStream();
   int get currentIndex;
 }
 

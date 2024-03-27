@@ -1,4 +1,5 @@
-import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
+import 'package:ardrive/services/arweave/get_segmented_transaction_from_drive_strategy.dart';
+import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/segmented_gql_data.dart';
@@ -30,8 +31,7 @@ class GQLDriveHistory implements SegmentedGQLData {
   }) : _arweave = arweave;
 
   @override
-  Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
-      getNextStream() {
+  Stream<DriveEntityHistoryTransactionModel> getNextStream() {
     _currentIndex++;
     if (currentIndex >= subRanges.rangeSegments.length) {
       throw SubRangeIndexOverflow(index: currentIndex);
@@ -40,8 +40,7 @@ class GQLDriveHistory implements SegmentedGQLData {
     return _getNextStream();
   }
 
-  Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
-      _getNextStream() async* {
+  Stream<DriveEntityHistoryTransactionModel> _getNextStream() async* {
     Range subRangeForIndex = subRanges.rangeSegments[currentIndex];
 
     final txsStream = _arweave.getSegmentedTransactionsFromDrive(
@@ -49,12 +48,18 @@ class GQLDriveHistory implements SegmentedGQLData {
       minBlockHeight: subRangeForIndex.start,
       maxBlockHeight: subRangeForIndex.end,
       ownerAddress: ownerAddress,
+      strategy: GetSegmentedTransactionFromDriveFilteringByEntityTypeStrategy(
+        _arweave.graphQLRetry,
+      ),
     );
 
     await for (final multipleEdges in txsStream) {
       for (final edge in multipleEdges) {
         _txCount++;
-        yield edge.node;
+        yield DriveEntityHistoryTransactionModel(
+          transactionCommonMixin: edge.transactionCommonMixin,
+          cursor: edge.cursor,
+        );
       }
     }
   }
