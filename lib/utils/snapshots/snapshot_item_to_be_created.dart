@@ -45,8 +45,6 @@ class SnapshotItemToBeCreated {
   }) : _jsonMetadataOfTxId = jsonMetadataOfTxId;
 
   Stream<Uint8List> getSnapshotData() async* {
-    List<Future<TxSnapshot>> tasks = [];
-
     // Convert the source Stream into a List to get all elements at once
     final nodes = await source.toList();
 
@@ -55,6 +53,8 @@ class SnapshotItemToBeCreated {
     final stream = processor.batchProcess<DriveEntityHistoryTransactionModel>(
       list: nodes,
       endOfBatchCallback: (items) async* {
+        List<Future<TxSnapshot>> tasks = [];
+
         // Process each node concurrently
         for (var node in items) {
           tasks.add(_processNode(node.transactionCommonMixin));
