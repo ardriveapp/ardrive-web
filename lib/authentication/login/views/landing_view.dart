@@ -23,7 +23,8 @@ class _LandingViewState extends State<LandingView> {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
-    return SingleChildScrollView(
+    return SizedBox(
+      width: 381,
       child: LoginCard(
         content: Column(
             mainAxisSize: MainAxisSize.min,

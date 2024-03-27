@@ -1,7 +1,9 @@
+import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
 import 'package:ardrive/authentication/components/button.dart';
 import 'package:ardrive/authentication/components/lined_text_divider.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/views/modals/import_wallet_modal.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +13,8 @@ import 'package:flutter_svg/svg.dart';
 import '../../../misc/resources.dart';
 import '../../components/login_card.dart';
 import '../../components/max_device_sizes_constrained_box.dart';
+
+const String termsOfServiceUrl = 'https://ardrive.io/tos-and-privacy/';
 
 class PromptWalletView extends StatefulWidget {
   final bool isArConnectAvailable;
@@ -35,133 +39,186 @@ class _PromptWalletViewState extends State<PromptWalletView> {
     final typography = ArDriveTypographyNew.of(context);
     final existingUserFlow = widget.existingUserFlow;
 
-    return MaxDeviceSizesConstrainedBox(
-      defaultMaxWidth: 512,
-      defaultMaxHeight: 798,
-      maxHeightPercent: 0.9,
-      child: LoginCard(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ArDriveImage(
-              image: AssetImage(Resources.images.brand.logo1),
-              height: 50,
-            ),
-            heightSpacing(),
-            Text(
-              // FIXME: Add localization key
-              'Welcome to ArDrive',
-              textAlign: TextAlign.center,
-              style: typography.heading1(
-                  color: colorTokens.textHigh, fontWeight: ArFontWeight.bold),
-            ),
+    final width = MediaQuery.of(context).size.width;
 
-            heightSpacing(),
-            //FIXME: Add localization key
-            Text(
-              widget.existingUserFlow
-                  ? 'Sign in using one of the options below.'
-                  : 'To use ArDrive you need a wallet. A wallet is a new way to log in. Instead of creating usernames and passwords, just connect your wallet.',
-              style: typography.paragraphLarge(
-                  color: colorTokens.textLow,
-                  fontWeight: ArFontWeight.semiBold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 72),
-            if (widget.isArConnectAvailable || widget.isMetamaskAvailable) ...[
-              if (widget.isArConnectAvailable) ...[
-                ArDriveButtonNew(
-                    text: 'Continue with ArConnect',
-                    hoverIcon: Container(
-                        alignment: Alignment.center,
-                        child: ArDriveImage(
-                          width: 24,
-                          height: 24,
-                          image: SvgImage.asset(
-                              Resources.images.login.arconnectLogo),
-                        )),
-                    typography: typography,
-                    onPressed: () {
-                      context
-                          .read<LoginBloc>()
-                          .add(const AddWalletFromArConnect());
-                    }),
-                const SizedBox(height: 16),
-              ],
-              if (widget.isMetamaskAvailable) ...[
-                ArDriveButtonNew(
-                    text: 'Continue with MetaMask',
-                    hoverIcon: Container(
-                        alignment: Alignment.center,
-                        child: SvgPicture.asset(
-                          Resources.images.login.metamask,
-                          width: 24,
-                          height: 24,
-                          fit: BoxFit.contain,
-                        )),
-                    typography: typography,
-                    onPressed: () {
-                      context.read<LoginBloc>().add(const LoginWithMetamask());
-                    }),
-              ],
-              const SizedBox(height: 40),
-              const LinedTextDivider(text: 'or'),
-            ],
-            const SizedBox(height: 40),
-            existingUserFlow
-                ? ArDriveButtonNew(
-                    text: 'Import Wallet',
-                    hoverIcon: Container(
-                        alignment: Alignment.center,
-                        child: SvgPicture.asset(
-                          Resources.images.login.walletUpload,
-                          width: 24,
-                          height: 24,
-                          fit: BoxFit.contain,
-                        )),
-                    typography: typography,
-                    maxWidth: double.maxFinite,
-                    onPressed: () {
-                      showImportWalletDialog(
-                          context: context,
-                          loginBloc: context.read<LoginBloc>());
-                    })
-                : ArDriveButtonNew(
-                    text: 'Create a Wallet',
-                    typography: typography,
-                    variant: ButtonVariant.primary,
-                    maxWidth: double.maxFinite,
-                    onPressed: () {
-                      context.read<LoginBloc>().add(const CreateNewWallet());
-                    }),
-            const SizedBox(height: 72),
-            // TODO:  make this into a reusable component
-            Text.rich(
-              textAlign: TextAlign.center,
-              TextSpan(
-                children: [
-                  TextSpan(
-                    // TODO: create/update localization key
-                    text: widget.existingUserFlow
-                        ? "I'm a new user"
-                        : 'I already have a wallet',
-                    style: typography.paragraphLarge(
-                        color: colorTokens.textLink,
-                        fontWeight: ArFontWeight.semiBold),
-                    recognizer: TapGestureRecognizer()
-                      ..onTap = () {
-                        context.read<LoginBloc>().add(SelectLoginFlow(
-                            existingUser: !widget.existingUserFlow));
-                      },
-                  ),
+    return SizedBox.expand(
+      child: Stack(alignment: Alignment.center, children: [
+        MaxDeviceSizesConstrainedBox(
+          defaultMaxWidth: 381,
+          defaultMaxHeight: 798,
+          maxHeightPercent: 1.0,
+          child: LoginCard(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ArDriveImage(
+                  image: AssetImage(Resources.images.brand.logo1),
+                  height: 50,
+                ),
+                heightSpacing(),
+                Text(
+                  // FIXME: Add localization key
+                  'Welcome to ArDrive',
+                  textAlign: TextAlign.center,
+                  style: typography.heading1(
+                      color: colorTokens.textHigh,
+                      fontWeight: ArFontWeight.bold),
+                ),
+
+                heightSpacing(),
+                //FIXME: Add localization key
+                Text(
+                  widget.existingUserFlow
+                      ? 'Sign in using one of the options below.'
+                      : 'To use ArDrive you need a wallet. A wallet is a new way to log in. Instead of creating usernames and passwords, just connect your wallet.',
+                  style: typography.paragraphLarge(
+                      color: colorTokens.textLow,
+                      fontWeight: ArFontWeight.semiBold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 72),
+                if (widget.isArConnectAvailable ||
+                    widget.isMetamaskAvailable) ...[
+                  if (widget.isArConnectAvailable) ...[
+                    ArDriveButtonNew(
+                        text: 'Continue with ArConnect',
+                        hoverIcon: Container(
+                            alignment: Alignment.center,
+                            child: ArDriveImage(
+                              width: 24,
+                              height: 24,
+                              image: SvgImage.asset(
+                                  Resources.images.login.arconnectLogo),
+                            )),
+                        typography: typography,
+                        onPressed: () {
+                          context
+                              .read<LoginBloc>()
+                              .add(const AddWalletFromArConnect());
+                        }),
+                    const SizedBox(height: 16),
+                  ],
+                  if (widget.isMetamaskAvailable) ...[
+                    ArDriveButtonNew(
+                        text: 'Continue with MetaMask',
+                        hoverIcon: Container(
+                            alignment: Alignment.center,
+                            child: SvgPicture.asset(
+                              Resources.images.login.metamask,
+                              width: 24,
+                              height: 24,
+                              fit: BoxFit.contain,
+                            )),
+                        typography: typography,
+                        onPressed: () {
+                          context
+                              .read<LoginBloc>()
+                              .add(const LoginWithMetamask());
+                        }),
+                  ],
+                  const SizedBox(height: 40),
+                  const LinedTextDivider(text: 'or'),
                 ],
-              ),
+                const SizedBox(height: 40),
+                existingUserFlow
+                    ? ArDriveButtonNew(
+                        text: 'Import Wallet',
+                        hoverIcon: Container(
+                            alignment: Alignment.center,
+                            child: SvgPicture.asset(
+                              Resources.images.login.walletUpload,
+                              width: 24,
+                              height: 24,
+                              fit: BoxFit.contain,
+                            )),
+                        typography: typography,
+                        maxWidth: double.maxFinite,
+                        onPressed: () {
+                          showImportWalletDialog(
+                              context: context,
+                              loginBloc: context.read<LoginBloc>());
+                        })
+                    : ArDriveButtonNew(
+                        text: 'Create a Wallet',
+                        typography: typography,
+                        variant: ButtonVariant.primary,
+                        maxWidth: double.maxFinite,
+                        onPressed: () {
+                          context
+                              .read<LoginBloc>()
+                              .add(const CreateNewWallet());
+                        }),
+                const SizedBox(height: 72),
+                // TODO:  make this into a reusable component
+                Text.rich(
+                  textAlign: TextAlign.center,
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        // TODO: create/update localization key
+                        text: widget.existingUserFlow
+                            ? "I'm a new user"
+                            : 'I already have a wallet',
+                        style: typography.paragraphLarge(
+                            color: colorTokens.textLink,
+                            fontWeight: ArFontWeight.semiBold),
+                        recognizer: TapGestureRecognizer()
+                          ..onTap = () {
+                            context.read<LoginBloc>().add(SelectLoginFlow(
+                                existingUser: !widget.existingUserFlow));
+                          },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+        Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ArDriveClickArea(
+                  child: GestureDetector(
+                      onTap: () {
+                        openUrl(url: termsOfServiceUrl);
+                      },
+                      child: Text(
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        style: typography.paragraphNormal(
+                            color: colorTokens.textLow,
+                            fontWeight: ArFontWeight.semiBold),
+                        width < TABLET
+                            ? 'By connecting your wallet, you agree to our\nTerms of Service'
+                            : 'By connecting your wallet, you agree to our Terms of Service',
+                      ))),
+              const SizedBox(height: 16),
+            ]),
+        // Positioned(
+        //     bottom: 16,
+        //     child: Text(
+        //         textAlign: TextAlign.center,
+        //         maxLines: 2,
+        //         'By connecting your wallet, you agree to our Terms of Service'
+        //         // TextSpan(
+        //         //   children: [
+        //         //     TextSpan(
+        //         //       // TODO: create/update localization key
+        //         //       text:
+        //         //           ,
+        //         //       style: typography.paragraphSmall(
+        //         //           color: colorTokens.textLink,
+        //         //           fontWeight: ArFontWeight.semiBold),
+        //         //       recognizer: TapGestureRecognizer()..onTap = () {},
+        //         //     ),
+        //         //   ],
+        //         // ),
+        //         ))
+      ]),
     );
   }
 
