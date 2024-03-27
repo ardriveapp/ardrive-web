@@ -93,12 +93,15 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   void openFolder({
     String? folderId,
+    String? otherDriveId,
     DriveOrder contentOrderBy = DriveOrder.name,
     OrderingMode contentOrderingMode = OrderingMode.asc,
   }) async {
     try {
       _selectedItem = null;
       _allImagesOfCurrentFolder = null;
+
+      String driveId = otherDriveId ?? this.driveId;
 
       emit(DriveDetailLoadInProgress());
 

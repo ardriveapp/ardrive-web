@@ -428,6 +428,68 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     });
   }
 
+  Future<List<SearchResult>> searchFiles(String name) async {
+    final resultFiles = await (select(fileRevisions)
+          ..where((tbl) => tbl.name.like('%$name%')))
+        .get();
+    final resultFolders = await (select(folderRevisions)
+          ..where((tbl) => tbl.name.like('%$name%')))
+        .get();
+    final resultDrives = await (select(driveRevisions)
+          ..where((tbl) => tbl.name.like('%$name%')))
+        .get();
+
+    resultFolders.removeWhere((element) => element.parentFolderId == null);
+
+    final List<SearchResult> results = [];
+    final fileResults = await Future.wait(resultFiles.map((file) async {
+      final folder = await folderById(
+        driveId: file.driveId,
+        folderId: file.parentFolderId,
+      ).getSingle();
+
+      final drive = await driveById(driveId: file.driveId).getSingle();
+
+      return SearchResult<FileRevision>(
+        result: file,
+        folder: folder,
+        drive: drive,
+      );
+    }));
+
+    final folderResults = await Future.wait(resultFolders.map((folder) async {
+      FolderEntry? parentFolder;
+
+      if (folder.parentFolderId != null) {
+        final parentFolderEntry = await folderById(
+          driveId: folder.driveId,
+          folderId: folder.parentFolderId!,
+        ).getSingle();
+        parentFolder = parentFolderEntry;
+      }
+
+      final drive = await driveById(driveId: folder.driveId).getSingle();
+
+      return SearchResult<FolderRevision>(
+        result: folder,
+        folder: parentFolder,
+        drive: drive,
+      );
+    }));
+
+    final driveResults = await Future.wait(resultDrives.map((drive) async {
+      return SearchResult<DriveRevision>(
+        result: drive,
+        drive: await driveById(driveId: drive.driveId).getSingle(),
+      );
+    }));
+    results.addAll(driveResults);
+    results.addAll(folderResults);
+    results.addAll(fileResults);
+
+    return results;
+  }
+
   /// Create a new folder entry.
   /// Returns the id of the created folder.
   Future<FolderID> createFolder({
@@ -568,4 +630,16 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       await delete(networkTransactions).go();
     });
   }
+}
+
+class SearchResult<T> {
+  final T result;
+  final FolderEntry? folder;
+  final Drive drive;
+
+  SearchResult({
+    required this.result,
+    this.folder,
+    required this.drive,
+  });
 }
