@@ -69,7 +69,6 @@ void main() {
             id: rootFolderId,
             driveId: driveId,
             name: 'fake-drive-name',
-            path: '',
             isHidden: const Value(false),
           ),
           FolderEntriesCompanion.insert(
@@ -77,7 +76,6 @@ void main() {
             driveId: driveId,
             parentFolderId: Value(rootFolderId),
             name: nestedFolderId,
-            path: '/$nestedFolderId',
             isHidden: const Value(false),
           ),
           FolderEntriesCompanion.insert(
@@ -85,7 +83,6 @@ void main() {
             driveId: driveId,
             parentFolderId: Value(rootFolderId),
             name: conflictTestFolderId,
-            path: '/$conflictTestFolderId',
             isHidden: const Value(false),
           ),
         ]);
@@ -102,7 +99,6 @@ void main() {
                   driveId: driveId,
                   parentFolderId: rootFolderId,
                   name: fileId,
-                  path: '/$fileId',
                   dataTxId: '${fileId}Data',
                   size: 500,
                   dateCreated: Value(defaultDate),
@@ -121,7 +117,6 @@ void main() {
                   driveId: driveId,
                   parentFolderId: conflictTestFolderId,
                   name: fileId,
-                  path: '/$fileId',
                   dataTxId: '${fileId}Data',
                   size: 500,
                   dateCreated: Value(defaultDate),

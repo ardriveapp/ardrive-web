@@ -20,7 +20,6 @@ const fileDataItemEntityCount = 2;
 class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
   final FileEntity entity;
   final UploadFile file;
-  final String path;
   final SecretKey? driveKey;
   final SecretKey? fileKey;
   final String revisionAction;
@@ -47,7 +46,6 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
 
   FileDataItemUploadHandle({
     required this.entity,
-    required this.path,
     required this.file,
     required this.revisionAction,
     required this.arweave,
@@ -64,7 +62,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
   }) async {
     entity.bundledIn = bundledInTxId;
     await driveDao.transaction(() async {
-      await driveDao.writeFileEntity(entity, path);
+      await driveDao.writeFileEntity(entity);
       await driveDao.insertFileRevision(
         entity.toRevisionCompanion(performedAction: revisionAction),
       );

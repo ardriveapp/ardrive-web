@@ -17,7 +17,6 @@ extension FolderRevisionCompanionExtensions on FolderRevisionsCompanion {
         driveId: driveId.value,
         parentFolderId: parentFolderId,
         name: name.value,
-        path: rootPath,
         lastUpdated: dateCreated,
         customGQLTags: customGQLTags,
         customJsonMetadata: customJsonMetadata,

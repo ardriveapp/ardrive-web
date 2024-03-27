@@ -221,9 +221,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
             .fileById(driveId: driveId, fileId: fileToMove.id)
             .getSingle();
         file = file.copyWith(
-            parentFolderId: parentFolder.id,
-            path: '${parentFolder.path}/${file.name}',
-            lastUpdated: DateTime.now());
+            parentFolderId: parentFolder.id, lastUpdated: DateTime.now());
         final fileKey = driveKey != null
             ? await _crypto.deriveFileKey(driveKey, file.id)
             : null;
@@ -252,7 +250,6 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
             .getSingle();
         folder = folder.copyWith(
           parentFolderId: Value(parentFolder.id),
-          path: '${parentFolder.path}/${folder.name}',
           lastUpdated: DateTime.now(),
         );
 

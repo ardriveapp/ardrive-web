@@ -106,7 +106,6 @@ void main() {
       lastUpdated: tDefaultDate,
       name: '',
       parentFolderId: '',
-      path: '',
       isHidden: false,
     ));
 

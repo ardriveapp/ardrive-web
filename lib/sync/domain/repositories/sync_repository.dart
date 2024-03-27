@@ -309,7 +309,6 @@ class _SyncRepository implements SyncRepository {
         driveId: drive.id,
         parentFolderId: drive.rootFolderId,
         name: ghostFolder.folderId,
-        path: rootPath,
         lastUpdated: DateTime.now(),
         isGhost: true,
         dateCreated: DateTime.now(),
