@@ -252,6 +252,9 @@ class _FileSearchModalState extends State<FileSearchModal> {
                             ),
                           );
                         } else if (search.result is FolderRevision) {
+                          context
+                              .read<DrivesCubit>()
+                              .selectDrive(search.drive.id);
                           widget.driveDetailCubit.openFolder(
                             otherDriveId: search.folder!.driveId,
                             folderId:
