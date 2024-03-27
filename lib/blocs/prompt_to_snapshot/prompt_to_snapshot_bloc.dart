@@ -96,9 +96,6 @@ class PromptToSnapshotBloc
     Emitter<PromptToSnapshotState> emit,
   ) async {
     if (_isSyncRunning) {
-      logger.d(
-        '[PROMPT TO SNAPSHOT] The sync is running, so we won\'t prompt to snapshot',
-      );
       _debouncer.cancel();
       return;
     }
@@ -133,14 +130,7 @@ class PromptToSnapshotBloc
       return;
     }
 
-    logger.d('[PROMPT TO SNAPSHOT] Selected drive ${event.driveId}');
-
     final shouldAskAgain = await _shouldAskToSnapshotAgain();
-
-    logger.d(
-      '[PROMPT TO SNAPSHOT] Will attempt to prompt for drive ${event.driveId}'
-      ' in ${_durationBeforePrompting.inSeconds}s',
-    );
 
     await _debouncer.run(() async {
       final stateIsIdle = state is PromptToSnapshotIdle;
@@ -159,16 +149,6 @@ class PromptToSnapshotBloc
         logger.d(
             '[PROMPT TO SNAPSHOT] Prompting to snapshot for ${event.driveId}');
         emit(PromptToSnapshotPrompting(driveId: event.driveId!));
-      } else {
-        logger.d(
-          '[PROMPT TO SNAPSHOT] Didn\'t prompt for ${event.driveId}.'
-          ' isSyncRunning: $_isSyncRunning'
-          ' shoudAskAgain: $shouldAskAgain'
-          ' wouldDriveBenefitFromSnapshot: $wouldDriveBenefitFromSnapshot'
-          ' hasWritePermissions: $hasWritePermissions'
-          ' isBlocClosed: $isClosed'
-          ' stateIsIdle: $stateIsIdle - ${state.runtimeType}',
-        );
       }
     }).catchError((e) {
       logger.d('[PROMPT TO SNAPSHOT] Debuncer cancelled for ${event.driveId}');
@@ -273,12 +253,6 @@ abstract class CountOfTxsSyncedWithGql {
   ) {
     final count = _getForDrive(driveId);
     final wouldBenefit = count >= numberOfTxsBeforeSnapshot;
-
-    logger.d(
-      '[PROMPT TO SNAPSHOT] Would drive $driveId'
-      ' ($count / $numberOfTxsBeforeSnapshot TXs) benefit from a snapshot:'
-      ' $wouldBenefit',
-    );
 
     return wouldBenefit;
   }

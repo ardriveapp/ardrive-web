@@ -15,7 +15,6 @@ extension FileRevisionsCompanionExtensions on FileRevisionsCompanion {
         dataTxId: dataTxId.value,
         licenseTxId: Value(licenseTxId.value),
         size: size.value,
-        path: rootPath,
         lastUpdated: dateCreated,
         lastModifiedDate: lastModifiedDate.value,
         dataContentType: dataContentType,

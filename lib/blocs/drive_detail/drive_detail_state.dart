@@ -17,6 +17,8 @@ class DriveDetailLoadSuccess extends DriveDetailState {
 
   final FolderWithContents folderInView;
 
+  final List<BreadCrumbRowInfo> pathSegments;
+
   final DriveOrder contentOrderBy;
   final OrderingMode contentOrderingMode;
 
@@ -59,6 +61,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     required this.columnVisibility,
     this.forceRebuildKey,
     required this.isShowingHiddenFiles,
+    required this.pathSegments,
   });
 
   DriveDetailLoadSuccess copyWith({
@@ -79,6 +82,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     List<ArDriveDataTableItem>? currentFolderContents,
     Key? forceRebuildKey,
     bool? isShowingHiddenFiles,
+    List<BreadCrumbRowInfo>? pathSegments,
   }) =>
       DriveDetailLoadSuccess(
         columnVisibility: columnVisibility,
@@ -102,6 +106,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         currentFolderContents:
             currentFolderContents ?? this.currentFolderContents,
         isShowingHiddenFiles: isShowingHiddenFiles ?? this.isShowingHiddenFiles,
+        pathSegments: pathSegments ?? this.pathSegments,
       );
 
   @override

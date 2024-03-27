@@ -9,7 +9,6 @@ void main() {
 
   group('DriveDao', () {
     const driveId = 'drive-id';
-    const rootPath = '';
     const rootFolderId = 'root-folder-id';
     const rootFolderFileCount = 5;
 
@@ -40,21 +39,22 @@ void main() {
       await db.close();
     });
     // Any empty string is a root path
-    test("watchFolder() with root path ('') returns root folder", () async {
+    test(
+        'watchFolder() with root path (no folderId provided) returns root folder',
+        () async {
       final folderStream = driveDao.watchFolderContents(
         driveId,
-        folderPath: rootPath,
       );
 
       await Future.wait([
         expectLater(folderStream.map((f) => f.folder.id), emits(rootFolderId)),
       ]);
     });
-    test('watchFolder() returns correct number of files in root folder',
+    test('watchFolder() returns correcta number of files in root folder',
         () async {
       final folderStream = driveDao.watchFolderContents(
         driveId,
-        folderPath: rootPath,
+        folderId: rootFolderId,
       );
 
       await Future.wait([
@@ -70,7 +70,7 @@ void main() {
         () async {
       final folderStream = driveDao.watchFolderContents(
         driveId,
-        folderPath: rootPath,
+        folderId: rootFolderId,
       );
 
       await Future.wait([
@@ -82,11 +82,10 @@ void main() {
       ]);
     });
 
-    test('watchFolder() with subfolder path returns correct subfolder',
-        () async {
+    test('watchFolder() with subfolder id returns correct subfolder', () async {
       final folderStream = driveDao.watchFolderContents(
         driveId,
-        folderPath: '/$emptyNestedFolderIdPrefix' '0',
+        folderId: '${emptyNestedFolderIdPrefix}0',
       );
 
       await Future.wait([
@@ -97,7 +96,7 @@ void main() {
     test('watchFolder() returns correct folders inside empty folder', () async {
       final folderStream = driveDao.watchFolderContents(
         driveId,
-        folderPath: '/$emptyNestedFolderIdPrefix' '0',
+        folderId: '${emptyNestedFolderIdPrefix}0',
       );
 
       await Future.wait([
@@ -110,7 +109,7 @@ void main() {
     test('watchFolder() returns correct files inside empty folder', () async {
       final folderStream = driveDao.watchFolderContents(
         driveId,
-        folderPath: '/$emptyNestedFolderIdPrefix' '0',
+        folderId: '${emptyNestedFolderIdPrefix}0',
       );
 
       await Future.wait([
@@ -170,29 +169,8 @@ void main() {
       for (var i = 0; i < filesInFolderTree.length; i++) {
         final file = filesInFolderTree[i];
         expect(file.id, equals(expectedTreeResults[i][0]));
-        expect(file.path, equals(expectedTreeResults[i][1]));
       }
     });
-
-    //   test('getRecursiveFiles with a maxDepth of 0 returns just the files in the root folder',
-    //       () async {
-    //     final treeRoot = await driveDao.getFolderTree(driveId, rootFolderId);
-    //     final filesInFolderTree = treeRoot.getRecursiveFiles(maxDepth: 1);
-
-    //     expect(filesInFolderTree.length, equals(5));
-    //     for (var i = 0; i < filesInFolderTree.length; i++) {
-    //       final file = filesInFolderTree[i];
-    //       expect(file.id, equals(expectedTreeResults[i][0]));
-    //       expect(file.path, equals(expectedTreeResults[i][1]));
-    //     }
-    //   });
-
-    //   test('getRecursiveFiles with a maxDepth of -1 returns no files', () async {
-    //     final treeRoot = await driveDao.getFolderTree(driveId, rootFolderId);
-    //     final filesInFolderTree = treeRoot.getRecursiveFiles(maxDepth: -1);
-
-    //     expect(filesInFolderTree.length, equals(0));
-    //   });
   });
 }
 

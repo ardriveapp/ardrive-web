@@ -6,7 +6,6 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/core/activity_tracker.dart';
-import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/constants.dart';
 import 'package:ardrive/sync/domain/ghost_folder.dart';
@@ -103,13 +102,6 @@ class SyncCubit extends Cubit<SyncState> {
       final isTimerDurationReadyToSync = minutesSinceLastSync >= syncInterval;
 
       if (!isTimerDurationReadyToSync) {
-        logger.d(
-          'Cannot restart sync when the window is focused. Is it currently'
-          ' active? ${!isClosed}.'
-          ' Last sync occurred $minutesSinceLastSync seconds ago, but it'
-          ' should be at least $syncInterval seconds.',
-        );
-
         return;
       }
     }
@@ -260,28 +252,11 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   int calculateSyncLastBlockHeight(int lastBlockHeight) {
-    logger.d('Calculating sync last block height: $lastBlockHeight');
     if (_lastSync != null) {
       return lastBlockHeight;
     } else {
       return max(lastBlockHeight - kBlockHeightLookBack, 0);
     }
-  }
-
-  // Exposing this for use by create folder functions since they need to update
-  // folder tree
-  Future<void> generateFsEntryPaths(
-    String driveId,
-    Map<String, FolderEntriesCompanion> foldersByIdMap,
-    Map<String, FileEntriesCompanion> filesByIdMap,
-  ) async {
-    logger.i('Generating fs entry paths...');
-    ghostFolders = await _syncRepository.generateFsEntryPaths(
-      driveId: driveId,
-      foldersByIdMap: foldersByIdMap,
-      filesByIdMap: filesByIdMap,
-      ghostFolders: ghostFolders,
-    );
   }
 
   @override
@@ -301,7 +276,7 @@ class SyncCubit extends Cubit<SyncState> {
 
   @override
   Future<void> close() async {
-    logger.d('Closing SyncCubit instance');
+    logger.i('Closing SyncCubit instance');
     await _syncSub?.cancel();
     await _arconnectSyncSub?.cancel();
     await _restartOnFocusStreamSubscription?.cancel();
@@ -314,6 +289,6 @@ class SyncCubit extends Cubit<SyncState> {
 
     await super.close();
 
-    logger.d('SyncCubit closed');
+    logger.i('SyncCubit closed');
   }
 }

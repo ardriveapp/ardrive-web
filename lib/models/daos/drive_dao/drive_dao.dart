@@ -195,7 +195,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           id: rootFolderId,
           driveId: driveId,
           name: name,
-          path: rootPath,
           isHidden: const Value(false),
         ),
       );
@@ -353,63 +352,52 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Stream<FolderWithContents> watchFolderContents(
     String driveId, {
     String? folderId,
-    String? folderPath,
     DriveOrder orderBy = DriveOrder.name,
     OrderingMode orderingMode = OrderingMode.asc,
   }) {
-    assert(folderId != null || folderPath != null);
-    final folderStream = (folderId != null
-            ? folderById(driveId: driveId, folderId: folderId)
-            : folderWithPath(driveId: driveId, path: folderPath!))
-        .watchSingleOrNull();
+    if (folderId == null) {
+      return driveById(driveId: driveId).watchSingleOrNull().switchMap((drive) {
+        if (drive == null) {
+          throw Exception('Drive with id $driveId not found');
+        }
 
-    final subfolderQuery = (folderId != null
-        ? foldersInFolder(
-            driveId: driveId,
-            parentFolderId: folderId,
-            order: (folderEntries) {
-              return enumToFolderOrderByClause(
-                folderEntries,
-                orderBy,
-                orderingMode,
-              );
-            },
-          )
-        : foldersInFolderAtPath(
-            driveId: driveId,
-            path: folderPath!,
-            order: (folderEntries) {
-              return enumToFolderOrderByClause(
-                folderEntries,
-                orderBy,
-                orderingMode,
-              );
-            },
-          ));
+        return folderById(driveId: driveId, folderId: drive.rootFolderId)
+            .watchSingleOrNull()
+            .switchMap((folder) {
+          return watchFolderContents(driveId,
+              folderId: folder!.id,
+              orderBy: orderBy,
+              orderingMode: orderingMode);
+        });
+      });
+    }
 
-    final filesQuery = folderId != null
-        ? filesInFolderWithLicenseAndRevisionTransactions(
-            driveId: driveId,
-            parentFolderId: folderId,
-            order: (fileEntries, _, __, ___) {
-              return enumToFileOrderByClause(
-                fileEntries,
-                orderBy,
-                orderingMode,
-              );
-            },
-          )
-        : filesInFolderAtPathWithLicenseAndRevisionTransactions(
-            driveId: driveId,
-            path: folderPath!,
-            order: (fileEntries, _, __, ___) {
-              return enumToFileOrderByClause(
-                fileEntries,
-                orderBy,
-                orderingMode,
-              );
-            },
-          );
+    final folderStream =
+        folderById(driveId: driveId, folderId: folderId).watchSingleOrNull();
+
+    final subfolderQuery = foldersInFolder(
+      driveId: driveId,
+      parentFolderId: folderId,
+      order: (folderEntries) {
+        return enumToFolderOrderByClause(
+          folderEntries,
+          orderBy,
+          orderingMode,
+        );
+      },
+    );
+
+    final filesQuery = filesInFolderWithLicenseAndRevisionTransactions(
+      driveId: driveId,
+      parentFolderId: folderId,
+      order: (fileEntries, _, __, ___) {
+        return enumToFileOrderByClause(
+          fileEntries,
+          orderBy,
+          orderingMode,
+        );
+      },
+    );
 
     return Rx.combineLatest3(
         folderStream.where((folder) => folder != null).map((folder) => folder!),
@@ -440,6 +428,68 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     });
   }
 
+  Future<List<SearchResult>> searchFiles(String name) async {
+    final resultFiles = await (select(fileRevisions)
+          ..where((tbl) => tbl.name.like('%$name%')))
+        .get();
+    final resultFolders = await (select(folderRevisions)
+          ..where((tbl) => tbl.name.like('%$name%')))
+        .get();
+    final resultDrives = await (select(driveRevisions)
+          ..where((tbl) => tbl.name.like('%$name%')))
+        .get();
+
+    resultFolders.removeWhere((element) => element.parentFolderId == null);
+
+    final List<SearchResult> results = [];
+    final fileResults = await Future.wait(resultFiles.map((file) async {
+      final folder = await folderById(
+        driveId: file.driveId,
+        folderId: file.parentFolderId,
+      ).getSingle();
+
+      final drive = await driveById(driveId: file.driveId).getSingle();
+
+      return SearchResult<FileRevision>(
+        result: file,
+        folder: folder,
+        drive: drive,
+      );
+    }));
+
+    final folderResults = await Future.wait(resultFolders.map((folder) async {
+      FolderEntry? parentFolder;
+
+      if (folder.parentFolderId != null) {
+        final parentFolderEntry = await folderById(
+          driveId: folder.driveId,
+          folderId: folder.parentFolderId!,
+        ).getSingle();
+        parentFolder = parentFolderEntry;
+      }
+
+      final drive = await driveById(driveId: folder.driveId).getSingle();
+
+      return SearchResult<FolderRevision>(
+        result: folder,
+        folder: parentFolder,
+        drive: drive,
+      );
+    }));
+
+    final driveResults = await Future.wait(resultDrives.map((drive) async {
+      return SearchResult<DriveRevision>(
+        result: drive,
+        drive: await driveById(driveId: drive.driveId).getSingle(),
+      );
+    }));
+    results.addAll(driveResults);
+    results.addAll(folderResults);
+    results.addAll(fileResults);
+
+    return results;
+  }
+
   /// Create a new folder entry.
   /// Returns the id of the created folder.
   Future<FolderID> createFolder({
@@ -447,7 +497,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     FolderID? parentFolderId,
     FolderID? folderId,
     required String folderName,
-    required String path,
   }) async {
     final id = folderId ?? _uuid.v4();
     final folderEntriesCompanion = FolderEntriesCompanion.insert(
@@ -455,7 +504,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       driveId: driveId,
       parentFolderId: Value(parentFolderId),
       name: folderName,
-      path: path,
       isHidden: const Value(false),
     );
     await into(folderEntries).insert(folderEntriesCompanion);
@@ -510,14 +558,12 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   Future<void> writeFileEntity(
     FileEntity entity,
-    String path,
   ) {
     final companion = FileEntriesCompanion.insert(
       id: entity.id!,
       driveId: entity.driveId!,
       parentFolderId: entity.parentFolderId!,
       name: entity.name!,
-      path: path,
       dataTxId: entity.dataTxId!,
       size: entity.size!,
       lastModifiedDate: entity.lastModifiedDate ?? DateTime.now(),
@@ -584,4 +630,16 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       await delete(networkTransactions).go();
     });
   }
+}
+
+class SearchResult<T> {
+  final T result;
+  final FolderEntry? folder;
+  final Drive drive;
+
+  SearchResult({
+    required this.result,
+    this.folder,
+    required this.drive,
+  });
 }

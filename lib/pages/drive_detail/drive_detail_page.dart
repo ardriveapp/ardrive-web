@@ -287,8 +287,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                             content: Row(
                               children: [
                                 DriveDetailBreadcrumbRow(
-                                  path:
-                                      driveDetailState.folderInView.folder.path,
+                                  rootFolderId: driveDetailState
+                                      .currentDrive.rootFolderId,
+                                  path: driveDetailState.pathSegments,
                                   driveName: driveDetailState.currentDrive.name,
                                 ),
                                 const Spacer(),
@@ -750,7 +751,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
               Flexible(
                 child: MobileFolderNavigation(
                   driveName: state.currentDrive.name,
-                  path: state.folderInView.folder.path,
+                  path: state.pathSegments,
                   isShowingHiddenFiles: isShowingHiddenFiles,
                 ),
               ),
@@ -813,7 +814,7 @@ class ArDriveItemListTile extends StatelessWidget {
         onTap: () {
           final cubit = context.read<DriveDetailCubit>();
           if (item is FolderDataTableItem) {
-            cubit.openFolder(path: item.path);
+            cubit.openFolder(folderId: item.id);
           } else if (item is FileDataTableItem) {
             if (item.id == cubit.selectedItem?.id) {
               cubit.toggleSelectedItemDetails();
@@ -904,7 +905,7 @@ class ArDriveItemListTile extends StatelessWidget {
 }
 
 class MobileFolderNavigation extends StatelessWidget {
-  final String path;
+  final List<BreadCrumbRowInfo> path;
   final String driveName;
   final bool isShowingHiddenFiles;
 
@@ -925,9 +926,13 @@ class MobileFolderNavigation extends StatelessWidget {
           Expanded(
             child: InkWell(
               onTap: () {
-                context
-                    .read<DriveDetailCubit>()
-                    .openFolder(path: getParentFolderPath(path));
+                String? targetId;
+
+                if (path.isNotEmpty) {
+                  targetId = path.first.targetId;
+                }
+
+                context.read<DriveDetailCubit>().openFolder(folderId: targetId);
               },
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -947,7 +952,9 @@ class MobileFolderNavigation extends StatelessWidget {
                           ? const EdgeInsets.only(left: 16, top: 6, bottom: 6)
                           : EdgeInsets.zero,
                       child: Text(
-                        _pathToName(path),
+                        _pathToName(
+                          path.isEmpty ? driveName : path.last.text,
+                        ),
                         style: ArDriveTypography.body.buttonNormalBold(),
                       ),
                     ),
