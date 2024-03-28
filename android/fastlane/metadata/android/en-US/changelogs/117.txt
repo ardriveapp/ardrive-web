@@ -1,2 +1,2 @@
-- Optimized sync load time
-- Fixes an issue when creating huge drives on Firefox
+- Optimizes sync load time
+- Fixes an issue when creating large snapshots on Firefox
