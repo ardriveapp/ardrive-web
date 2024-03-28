@@ -1,0 +1,1 @@
+- Optimized sync load time
