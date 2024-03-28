@@ -1,10 +1,11 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
+import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item_to_be_created.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'snapshot_test_helpers.dart';
@@ -67,20 +68,23 @@ void main() {
           subRanges: HeightRange(rangeSegments: [Range(start: 0, end: 10)]),
           source: Stream.fromIterable(
             [
-              DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
-                  .fromJson(
-                {
-                  'id': 'tx-7',
-                  'bundledIn': {'id': 'ASDASDASDASDASDASD'},
-                  'owner': {'address': '1234567890'},
-                  'tags': [
-                    {'name': 'Entity-Type', 'value': 'snapshot'},
-                  ],
-                  'block': {
-                    'height': 7,
-                    'timestamp': 700,
-                  }
-                },
+              DriveEntityHistoryTransactionModel(
+                transactionCommonMixin:
+                    DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+                        .fromJson(
+                  {
+                    'id': 'tx-7',
+                    'bundledIn': {'id': 'ASDASDASDASDASDASD'},
+                    'owner': {'address': '1234567890'},
+                    'tags': [
+                      {'name': 'Entity-Type', 'value': 'snapshot'},
+                    ],
+                    'block': {
+                      'height': 7,
+                      'timestamp': 700,
+                    }
+                  },
+                ),
               ),
             ],
           ),
@@ -109,31 +113,37 @@ void main() {
             subRanges: HeightRange(rangeSegments: [Range(start: 0, end: 10)]),
             source: Stream.fromIterable(
               [
-                DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
-                    .fromJson(
-                  {
-                    'id': '0',
-                    'bundledIn': {'id': 'ASDASDASDASDASDASD'},
-                    'owner': {'address': '1234567890'},
-                    'tags': [],
-                    'block': {
-                      'height': 7,
-                      'timestamp': 700,
-                    }
-                  },
+                DriveEntityHistoryTransactionModel(
+                  transactionCommonMixin:
+                      DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+                          .fromJson(
+                    {
+                      'id': '0',
+                      'bundledIn': {'id': 'ASDASDASDASDASDASD'},
+                      'owner': {'address': '1234567890'},
+                      'tags': [],
+                      'block': {
+                        'height': 7,
+                        'timestamp': 700,
+                      }
+                    },
+                  ),
                 ),
-                DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
-                    .fromJson(
-                  {
-                    'id': '5',
-                    'bundledIn': {'id': 'ASDASDASDASDASDASD'},
-                    'owner': {'address': '1234567890'},
-                    'tags': [],
-                    'block': {
-                      'height': 7,
-                      'timestamp': 700,
-                    }
-                  },
+                DriveEntityHistoryTransactionModel(
+                  transactionCommonMixin:
+                      DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+                          .fromJson(
+                    {
+                      'id': '5',
+                      'bundledIn': {'id': 'ASDASDASDASDASDASD'},
+                      'owner': {'address': '1234567890'},
+                      'tags': [],
+                      'block': {
+                        'height': 7,
+                        'timestamp': 700,
+                      }
+                    },
+                  ),
                 ),
               ],
             ),

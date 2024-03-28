@@ -12,8 +12,10 @@ import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
+import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -25,6 +27,8 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pst/pst.dart';
+
+class MockGraphQLRetry extends Mock implements GraphQLRetry {}
 
 class MockArweave extends Mock implements Arweave {}
 

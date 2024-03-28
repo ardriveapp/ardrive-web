@@ -6,8 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pst/pst.dart';
 import 'package:test/test.dart';
 
-// We start by creating mocks for the services that will be used
-class MockArweaveService extends Mock implements ArweaveService {}
+import '../../test_utils/mocks.dart';
 
 class MockPstService extends Mock implements PstService {}
 
