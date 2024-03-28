@@ -1,1 +1,2 @@
 - Optimized sync load time
+- Fixes an issue when creating huge drives on Firefox
