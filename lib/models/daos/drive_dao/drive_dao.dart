@@ -92,6 +92,66 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return await _previewVault.put(dataTxId, bytes);
   }
 
+  Future<void> insertNewDriveRevisions(
+    List<DriveRevisionsCompanion> revisions,
+  ) async {
+    await db.batch((b) async {
+      b.insertAllOnConflictUpdate(db.driveRevisions, revisions);
+    });
+  }
+
+  Future<void> insertNewFileRevisions(
+    List<FileRevisionsCompanion> revisions,
+  ) async {
+    await db.batch((b) async {
+      b.insertAllOnConflictUpdate(db.fileRevisions, revisions);
+    });
+  }
+
+  Future<void> insertNewFolderRevisions(
+    List<FolderRevisionsCompanion> revisions,
+  ) async {
+    await db.batch((b) async {
+      b.insertAllOnConflictUpdate(db.folderRevisions, revisions);
+    });
+  }
+
+  Future<void> insertNewNetworkTransactions(
+    List<NetworkTransactionsCompanion> transactions,
+  ) async {
+    await db.batch((b) async {
+      b.insertAllOnConflictUpdate(db.networkTransactions, transactions);
+    });
+  }
+
+  Future<void> updateFolderEntries(
+    List<FolderEntriesCompanion> entries,
+  ) async {
+    await db.batch((b) async {
+      b.insertAllOnConflictUpdate(db.folderEntries, entries);
+    });
+  }
+
+  Future<void> updateFileEntries(
+    List<FileEntriesCompanion> entries,
+  ) async {
+    await db.batch((b) async {
+      b.insertAllOnConflictUpdate(db.fileEntries, entries);
+    });
+  }
+
+  Future<void> updateDrive(
+    DrivesCompanion drive,
+  ) async {
+    await (db.update(drives)..whereSamePrimaryKey(drive)).write(drive);
+  }
+
+  Future<void> runTransaction(
+    Future<void> Function() transaction,
+  ) async {
+    await db.transaction(transaction);
+  }
+
   /// Creates a drive with its accompanying root folder.
   Future<CreateDriveResult> createDrive({
     required String name,
@@ -101,6 +161,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     required String password,
     required SecretKey profileKey,
   }) async {
+    // TODO: A DAO object should not be responsible for generating UUIDs.
     final driveId = _uuid.v4();
     final rootFolderId = _uuid.v4();
 
@@ -112,6 +173,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       privacy: privacy,
     );
 
+    // TODO: A DAO object should not be responsible for deriving keys.
     SecretKey? driveKey;
     switch (privacy) {
       case DrivePrivacyTag.private:

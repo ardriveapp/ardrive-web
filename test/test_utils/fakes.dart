@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:mocktail/mocktail.dart';
 
 class SyncStateFake extends Fake implements SyncState {}

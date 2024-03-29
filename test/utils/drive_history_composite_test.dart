@@ -1,4 +1,3 @@
-import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/utils/snapshots/drive_history_composite.dart';
 import 'package:ardrive/utils/snapshots/gql_drive_history.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
@@ -27,6 +26,7 @@ void main() {
           minBlockHeight: captureAny(named: 'minBlockHeight'),
           maxBlockHeight: captureAny(named: 'maxBlockHeight'),
           ownerAddress: any(named: 'ownerAddress'),
+          strategy: any(named: 'strategy'),
         ),
       ).thenAnswer(
         (invocation) => fakeNodesStream(
@@ -34,19 +34,14 @@ void main() {
             start: invocation.namedArguments[const Symbol('minBlockHeight')],
             end: invocation.namedArguments[const Symbol('maxBlockHeight')],
           ),
-        )
-            .map(
-              (event) =>
-                  DriveEntityHistory$Query$TransactionConnection$TransactionEdge()
-                    ..node = event
-                    ..cursor = 'mi cursor',
-            )
-            .map((event) => [event]),
+        ).map((event) => [event]),
       );
 
       when(() => arweave.getOwnerForDriveEntityWithId('DRIVE_ID')).thenAnswer(
         (invocation) => Future.value('owner'),
       );
+
+      when(() => arweave.graphQLRetry).thenReturn(MockGraphQLRetry());
     });
 
     test('constructor throws with invalid sub-ranges amount', () async {
@@ -121,7 +116,7 @@ void main() {
 
       expect(driveHistoryComposite.subRanges.rangeSegments.length, 1);
       expect(driveHistoryComposite.currentIndex, -1);
-      Stream stream = driveHistoryComposite.getNextStream();
+      final stream = driveHistoryComposite.getNextStream();
       expect(driveHistoryComposite.currentIndex, 0);
       expect(await countStreamItems(stream), 101);
 
