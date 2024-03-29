@@ -12,7 +12,6 @@ import 'package:provider/provider.dart';
 
 import '../../../utils/app_localizations_wrapper.dart';
 import '../../../utils/plausible_event_tracker/plausible_event_tracker.dart';
-import '../../components/max_device_sizes_constrained_box.dart';
 
 class TutorialsView extends StatefulWidget {
   const TutorialsView(
@@ -132,38 +131,47 @@ class TutorialsViewState extends State<TutorialsView> {
     final width = MediaQuery.of(context).size.width;
     final height = MediaQuery.of(context).size.height;
     final phoneLayout = width < TABLET;
-    final arrowRight = max<double>(32, ((width - 1168) / 2));
+
+    final minHeight = phoneLayout ? 700.0 : 800.0;
+    final containerHeight = height < minHeight ? minHeight : min(height, 924.0);
+
+    final arrowRight = min<double>(32, (width - min(width, 1164) / 2.0 - 32));
     final double arrowBottom =
-        !phoneLayout ? max(95, ((height - 800) / 2)) - 5 : 22;
+        !phoneLayout ? max(95, ((containerHeight - 924) / 2)) - 5 : 22;
 
     return Material(
         color: colorTokens.containerL0,
-        child: Stack(fit: StackFit.expand, children: [
-          Container(
-            decoration: BoxDecoration(
+        child: Container(
+          decoration: BoxDecoration(
               border: Border(
-                  top: BorderSide(color: colorTokens.containerRed, width: 6)),
-              color: colorTokens.containerL0,
+                  top: BorderSide(color: colorTokens.containerRed, width: 6))),
+          child: Center(
+            child: SingleChildScrollView(
+              child: Container(
+                height: containerHeight,
+                constraints: const BoxConstraints(maxWidth: 1164),
+                child: Stack(fit: StackFit.expand, children: [
+                  Container(
+                    color: colorTokens.containerL0,
+                    padding: phoneLayout
+                        ? const EdgeInsets.all(32)
+                        : const EdgeInsets.fromLTRB(32, 100, 32, 100),
+                    child: _buildOnBoardingContent(phoneLayout),
+                  ),
+                  // Placing red arrow here as it has to be overlaying the padding area
+                  // for the bottom buttons/page number to be vertically stable across
+                  // screens
+                  if (_currentPage >= _list.length - 1)
+                    Positioned(
+                        right: arrowRight,
+                        bottom: arrowBottom,
+                        child:
+                            SvgPicture.asset(Resources.images.login.arrowRed)),
+                ]),
+              ),
             ),
-            padding: phoneLayout
-                ? const EdgeInsets.all(32)
-                : const EdgeInsets.fromLTRB(32, 100, 32, 100),
-            child: Center(
-                child: MaxDeviceSizesConstrainedBox(
-                    maxHeightPercent: 1.0,
-                    defaultMaxWidth: 1168,
-                    defaultMaxHeight: phoneLayout ? double.maxFinite : 800,
-                    child: _buildOnBoardingContent(phoneLayout))),
           ),
-          // Placing red arrow here as it has to be overlaying the padding area
-          // for the bottom buttons/page number to be vertically stable across
-          // screens
-          if (_currentPage >= _list.length - 1)
-            Positioned(
-                right: arrowRight,
-                bottom: arrowBottom,
-                child: SvgPicture.asset(Resources.images.login.arrowRed)),
-        ]));
+        ));
   }
 
   Widget _buildOnBoardingContent(bool phoneLayout) {
@@ -196,12 +204,14 @@ class _TutorialContent extends StatelessWidget {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
+    final twoRowButtons = MediaQuery.of(context).size.width < 386;
+
     return Container(
       color: colorTokens.containerL0,
       child: Column(
-        mainAxisSize: phoneLayout ? MainAxisSize.min : MainAxisSize.max,
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
-        // mainAxisAlignment: MainAxisAlignment.spaceAround,
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           if (pageNumber == 1 && phoneLayout)
             ArDriveImage(
@@ -254,73 +264,113 @@ class _TutorialContent extends StatelessWidget {
           ]),
           const SizedBox(height: 60),
           Expanded(
-            child: ArDriveImage(
-              image: tutorialPage.illustration,
-              fit: BoxFit.contain,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.all(1),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: colorTokens.strokeLow,
+                    width: 1,
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: ArDriveImage(
+                    image: tutorialPage.illustration,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 56),
-          Row(
-            key: const ValueKey('buttons'),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                  alignment: Alignment.centerLeft,
-                  width: 128,
-                  child: (tutorialPage.previousButtonText != null &&
-                          tutorialPage.previousButtonAction != null)
-                      ? Text.rich(
+              if (twoRowButtons)
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: colorTokens.textXLow,
+                      ),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: Text(
+                      '$pageNumber/$totalPages',
+                      style: typography.paragraphLarge(
+                          color: colorTokens.textLow,
+                          fontWeight: ArFontWeight.semiBold),
+                    ),
+                  ),
+                ),
+              Row(
+                key: const ValueKey('buttons'),
+                children: [
+                  Expanded(
+                    child: Container(
+                        alignment: Alignment.centerLeft,
+                        child: (tutorialPage.previousButtonText != null &&
+                                tutorialPage.previousButtonAction != null)
+                            ? Text.rich(
+                                TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: tutorialPage.previousButtonText!,
+                                      style: typography.paragraphLarge(
+                                          color: colorTokens.textLink,
+                                          fontWeight: ArFontWeight.semiBold),
+                                      recognizer: TapGestureRecognizer()
+                                        ..onTap = () => tutorialPage
+                                            .previousButtonAction!(),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : null),
+                  ),
+                  twoRowButtons
+                      ? const SizedBox()
+                      : Container(
+                          padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: colorTokens.textXLow,
+                            ),
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                          child: Text(
+                            '$pageNumber/$totalPages',
+                            style: typography.paragraphLarge(
+                                color: colorTokens.textLow,
+                                fontWeight: ArFontWeight.semiBold),
+                          ),
+                        ),
+                  Expanded(
+                    child: Container(
+                        padding: EdgeInsets.only(
+                            right: pageNumber >= totalPages ? 10 : 0),
+                        alignment: Alignment.centerRight,
+                        child: Text.rich(
                           TextSpan(
                             children: [
                               TextSpan(
-                                text: tutorialPage.previousButtonText!,
+                                text: tutorialPage.nextButtonText,
                                 style: typography.paragraphLarge(
                                     color: colorTokens.textLink,
                                     fontWeight: ArFontWeight.semiBold),
                                 recognizer: TapGestureRecognizer()
-                                  ..onTap = () =>
-                                      tutorialPage.previousButtonAction!(),
+                                  ..onTap =
+                                      () => tutorialPage.nextButtonAction(),
                               ),
                             ],
                           ),
-                        )
-                      : null),
-              Expanded(
-                  child: Container(
-                      alignment: Alignment.center,
-                      child: Container(
-                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: colorTokens.textXLow,
-                          ),
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                        child: Text(
-                          '$pageNumber/$totalPages',
-                          style: typography.paragraphLarge(
-                              color: colorTokens.textLow,
-                              fontWeight: ArFontWeight.semiBold),
-                        ),
-                      ))),
-              Container(
-                  padding:
-                      EdgeInsets.only(right: pageNumber >= totalPages ? 10 : 0),
-                  width: 128,
-                  alignment: Alignment.centerRight,
-                  child: Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                          text: tutorialPage.nextButtonText,
-                          style: typography.paragraphLarge(
-                              color: colorTokens.textLink,
-                              fontWeight: ArFontWeight.semiBold),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () => tutorialPage.nextButtonAction(),
-                        ),
-                      ],
-                    ),
-                  ))
+                        )),
+                  )
+                ],
+              )
             ],
           ),
         ],
