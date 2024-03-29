@@ -1036,7 +1036,7 @@ class ArweaveService {
   }
 
   Future<String?> getFirstTxForWallet(String owner) async {
-    final firstTxQuery = await _graphQLRetry.execute(
+    final firstTxQuery = await graphQLRetry.execute(
       FirstTxForWalletQuery(
         variables: FirstTxForWalletArguments(owner: owner),
       ),
