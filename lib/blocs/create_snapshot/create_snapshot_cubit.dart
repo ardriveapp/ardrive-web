@@ -110,39 +110,58 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       await _reset(driveId);
     } catch (e) {
       emit(ComputeSnapshotDataFailure(errorMessage: e.toString()));
+      logger.e('Error while resetting snapshot creation parameters', e);
       return;
     }
 
-    final profileState = _profileCubit.state as ProfileLoggedIn;
-    _ownerAddress = profileState.walletAddress;
-
-    _setTrustedRange(range);
-
     late Uint8List data;
     try {
+      final profileState = _profileCubit.state as ProfileLoggedIn;
+      _ownerAddress = profileState.walletAddress;
+
+      _setTrustedRange(range);
+
       data = await _getSnapshotData();
 
       if (_wasCancelled()) return;
+
+      _setupSnapshotEntityWithBlob(data);
+
+      logger.d('Computed snapshot data size: ${data.length} bytes');
+      logger.d('Computing cost and balance estimate');
+
+      await _computeCost();
+      await _computeBalanceEstimate();
+      _computeIsSufficientBalance();
+      _computeIsTurboEnabled();
+      _computeIsFreeThanksToTurbo();
+      _computeIsButtonEnabled();
+
+      logger.d('Computed cost and balance estimate');
+
+      emit(
+        ConfirmingSnapshotCreation(
+          snapshotSize: data.length,
+          costEstimateAr: _costEstimateAr,
+          costEstimateTurbo: _costEstimateTurbo,
+          hasNoTurboBalance: _hasNoTurboBalance,
+          isTurboUploadPossible: _isTurboUploadPossible,
+          arBalance: _arBalance,
+          turboCredits: _turboCredits,
+          uploadMethod: _uploadMethod,
+          isButtonToUploadEnabled: _isButtonToUploadEnabled,
+          sufficientBalanceToPayWithAr: _sufficientArBalance,
+          sufficientBalanceToPayWithTurbo: _sufficentCreditsBalance,
+          isFreeThanksToTurbo: _isFreeThanksToTurbo,
+        ),
+      );
     } catch (e) {
       if (_wasCancelled()) return;
 
       // If it was not cancelled, then there was a failure.
       emit(ComputeSnapshotDataFailure(errorMessage: e.toString()));
-      return;
+      logger.e('Error while getting snapshot data', e);
     }
-
-    _setupSnapshotEntityWithBlob(data);
-
-    await _computeCost();
-    await _computeBalanceEstimate();
-    _computeIsSufficientBalance();
-    _computeIsTurboEnabled();
-    _computeIsFreeThanksToTurbo();
-    _computeIsButtonEnabled();
-
-    await _emitConfirming(
-      dataSize: data.length,
-    );
   }
 
   bool _wasCancelled() {
@@ -491,23 +510,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final isFreeThanksToTurbo =
         _snapshotEntity!.data!.length <= allowedDataItemSizeForTurbo;
     _isFreeThanksToTurbo = isFreeThanksToTurbo && !forceNoFreeThanksToTurbo;
-  }
-
-  Future<void> _emitConfirming({required int dataSize}) async {
-    emit(ConfirmingSnapshotCreation(
-      snapshotSize: dataSize,
-      costEstimateAr: _costEstimateAr,
-      costEstimateTurbo: _costEstimateTurbo,
-      hasNoTurboBalance: _hasNoTurboBalance,
-      isTurboUploadPossible: _isTurboUploadPossible,
-      arBalance: _arBalance,
-      turboCredits: _turboCredits,
-      uploadMethod: _uploadMethod,
-      isButtonToUploadEnabled: _isButtonToUploadEnabled,
-      sufficientBalanceToPayWithAr: _sufficientArBalance,
-      sufficientBalanceToPayWithTurbo: _sufficentCreditsBalance,
-      isFreeThanksToTurbo: _isFreeThanksToTurbo,
-    ));
   }
 
   void setUploadMethod(UploadMethod method) {
