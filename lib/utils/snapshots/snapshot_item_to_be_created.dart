@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
+import 'package:ardrive/sync/utils/batch_processor.dart';
 import 'package:ardrive/utils/snapshots/snapshot_types.dart';
 import 'package:ardrive/utils/snapshots/tx_snapshot_to_snapshot_data.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -44,18 +45,29 @@ class SnapshotItemToBeCreated {
   }) : _jsonMetadataOfTxId = jsonMetadataOfTxId;
 
   Stream<Uint8List> getSnapshotData() async* {
-    List<Future<TxSnapshot>> tasks = [];
-
     // Convert the source Stream into a List to get all elements at once
     final nodes = await source.toList();
 
-    // Process each node concurrently
-    for (var node in nodes) {
-      tasks.add(_processNode(node.transactionCommonMixin));
-    }
+    final processor = BatchProcessor();
+    List<TxSnapshot> results = [];
+    final stream = processor.batchProcess<DriveEntityHistoryTransactionModel>(
+      list: nodes,
+      endOfBatchCallback: (items) async* {
+        List<Future<TxSnapshot>> tasks = [];
 
-    // Wait for all tasks to finish in their original order
-    List<TxSnapshot> results = await Future.wait(tasks);
+        // Process each node concurrently
+        for (var node in items) {
+          tasks.add(_processNode(node.transactionCommonMixin));
+        }
+
+        results.addAll(await Future.wait(tasks));
+
+        yield 1;
+      },
+      batchSize: 100,
+    );
+
+    await for (var _ in stream) {}
 
     // Create a stream that emits each TxSnapshot in their original order
     Stream<TxSnapshot> snapshotStream = Stream.fromIterable(results);
