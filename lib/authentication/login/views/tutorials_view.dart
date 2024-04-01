@@ -198,7 +198,7 @@ class _TutorialContent extends StatefulWidget {
   final int totalPages;
   final bool phoneLayout;
 
-  _TutorialContent({
+  const _TutorialContent({
     super.key,
     required this.tutorialPage,
     required this.pageNumber,
