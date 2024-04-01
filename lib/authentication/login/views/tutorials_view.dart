@@ -9,6 +9,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../../utils/app_localizations_wrapper.dart';
 import '../../../utils/plausible_event_tracker/plausible_event_tracker.dart';
@@ -54,6 +55,8 @@ class TutorialsViewState extends State<TutorialsView> {
               'The permaweb is just like the currently existing web, but everything published on it is available forever - meaning that you will never risk losing a file ever again.',
           // secondaryButtonHasIcon: false,
           illustration: AssetImage(Resources.images.login.placeholder1),
+          videoUrl:
+              'https://arweave.net/XlXBGS_njmMLZh-z_c8hHkNeRIRsWd87bwYf7uh-R24',
         ),
         _TutorialPage(
           nextButtonText: appLocalizationsOf(context).next,
@@ -68,6 +71,8 @@ class TutorialsViewState extends State<TutorialsView> {
           description:
               'When you upload content, you can choose to make it public or private. Private content is encrypted, and viewable only to you and those you share it with.',
           illustration: AssetImage(Resources.images.login.placeholder2),
+          videoUrl:
+              'https://arweave.net/XlXBGS_njmMLZh-z_c8hHkNeRIRsWd87bwYf7uh-R24',
         ),
         _TutorialPage(
           nextButtonText:
@@ -96,6 +101,8 @@ class TutorialsViewState extends State<TutorialsView> {
           description:
               'When you upload a file, you will pay for it once and never again. You can access it forever without requiring a subscription, as with standard cloud storage.',
           illustration: AssetImage(Resources.images.login.placeholder1),
+          videoUrl:
+              'https://arweave.net/XlXBGS_njmMLZh-z_c8hHkNeRIRsWd87bwYf7uh-R24',
         ),
       ];
 
@@ -185,19 +192,45 @@ class TutorialsViewState extends State<TutorialsView> {
   }
 }
 
-class _TutorialContent extends StatelessWidget {
+class _TutorialContent extends StatefulWidget {
   final _TutorialPage tutorialPage;
   final int pageNumber;
   final int totalPages;
   final bool phoneLayout;
 
-  const _TutorialContent({
+  _TutorialContent({
     super.key,
     required this.tutorialPage,
     required this.pageNumber,
     required this.totalPages,
     required this.phoneLayout,
   });
+
+  @override
+  State<_TutorialContent> createState() => _TutorialContentState();
+}
+
+class _TutorialContentState extends State<_TutorialContent> {
+  late VideoPlayerController _videoPlayerController;
+
+  @override
+  void initState() {
+    super.initState();
+    _videoPlayerController = VideoPlayerController.networkUrl(
+        Uri.parse(widget.tutorialPage.videoUrl),
+        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
+    _videoPlayerController.setLooping(true);
+    _videoPlayerController.initialize().then((_) {
+      setState(() {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          // mutes the video
+          _videoPlayerController.setVolume(0);
+          // Plays the video once the widget is build and loaded.
+          _videoPlayerController.play();
+        });
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -213,12 +246,12 @@ class _TutorialContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          if (pageNumber == 1 && phoneLayout)
+          if (widget.pageNumber == 1 && widget.phoneLayout)
             ArDriveImage(
               image: AssetImage(Resources.images.login.confetti),
             ),
           Text(
-            tutorialPage.title,
+            widget.tutorialPage.title,
             textAlign: TextAlign.center,
             style: typography.display(
               color: colorTokens.textHigh,
@@ -227,7 +260,7 @@ class _TutorialContent extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            pageNumber == 1 && !phoneLayout
+            widget.pageNumber == 1 && !widget.phoneLayout
                 ? SizedBox(
                     width: 200,
                     child: Container(
@@ -239,16 +272,16 @@ class _TutorialContent extends StatelessWidget {
                           fit: BoxFit.contain,
                         )),
                   )
-                : SizedBox(width: phoneLayout ? 0 : 200),
+                : SizedBox(width: widget.phoneLayout ? 0 : 200),
             Expanded(
-              child: Text(tutorialPage.description,
+              child: Text(widget.tutorialPage.description,
                   textAlign: TextAlign.center,
                   style: typography.heading5(
                     color: colorTokens.textLow,
                     fontWeight: ArFontWeight.semiBold,
                   )),
             ),
-            pageNumber == 1 && !phoneLayout
+            widget.pageNumber == 1 && !widget.phoneLayout
                 ? SizedBox(
                     width: 200,
                     child: Container(
@@ -260,7 +293,7 @@ class _TutorialContent extends StatelessWidget {
                           fit: BoxFit.contain,
                         )),
                   )
-                : SizedBox(width: phoneLayout ? 0 : 200),
+                : SizedBox(width: widget.phoneLayout ? 0 : 200),
           ]),
           const SizedBox(height: 60),
           Expanded(
@@ -276,9 +309,8 @@ class _TutorialContent extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: ArDriveImage(
-                    image: tutorialPage.illustration,
-                    fit: BoxFit.contain,
+                  child: VideoPlayer(
+                    _videoPlayerController,
                   ),
                 ),
               ),
@@ -299,7 +331,7 @@ class _TutorialContent extends StatelessWidget {
                       borderRadius: BorderRadius.circular(100),
                     ),
                     child: Text(
-                      '$pageNumber/$totalPages',
+                      '${widget.pageNumber}/${widget.totalPages}',
                       style: typography.paragraphLarge(
                           color: colorTokens.textLow,
                           fontWeight: ArFontWeight.semiBold),
@@ -312,18 +344,21 @@ class _TutorialContent extends StatelessWidget {
                   Expanded(
                     child: Container(
                         alignment: Alignment.centerLeft,
-                        child: (tutorialPage.previousButtonText != null &&
-                                tutorialPage.previousButtonAction != null)
+                        child: (widget.tutorialPage.previousButtonText !=
+                                    null &&
+                                widget.tutorialPage.previousButtonAction !=
+                                    null)
                             ? Text.rich(
                                 TextSpan(
                                   children: [
                                     TextSpan(
-                                      text: tutorialPage.previousButtonText!,
+                                      text: widget
+                                          .tutorialPage.previousButtonText!,
                                       style: typography.paragraphLarge(
                                           color: colorTokens.textLink,
                                           fontWeight: ArFontWeight.semiBold),
                                       recognizer: TapGestureRecognizer()
-                                        ..onTap = () => tutorialPage
+                                        ..onTap = () => widget.tutorialPage
                                             .previousButtonAction!(),
                                     ),
                                   ],
@@ -342,7 +377,7 @@ class _TutorialContent extends StatelessWidget {
                             borderRadius: BorderRadius.circular(100),
                           ),
                           child: Text(
-                            '$pageNumber/$totalPages',
+                            '${widget.pageNumber}/${widget.totalPages}',
                             style: typography.paragraphLarge(
                                 color: colorTokens.textLow,
                                 fontWeight: ArFontWeight.semiBold),
@@ -351,19 +386,21 @@ class _TutorialContent extends StatelessWidget {
                   Expanded(
                     child: Container(
                         padding: EdgeInsets.only(
-                            right: pageNumber >= totalPages ? 10 : 0),
+                            right: widget.pageNumber >= widget.totalPages
+                                ? 10
+                                : 0),
                         alignment: Alignment.centerRight,
                         child: Text.rich(
                           TextSpan(
                             children: [
                               TextSpan(
-                                text: tutorialPage.nextButtonText,
+                                text: widget.tutorialPage.nextButtonText,
                                 style: typography.paragraphLarge(
                                     color: colorTokens.textLink,
                                     fontWeight: ArFontWeight.semiBold),
                                 recognizer: TapGestureRecognizer()
-                                  ..onTap =
-                                      () => tutorialPage.nextButtonAction(),
+                                  ..onTap = () =>
+                                      widget.tutorialPage.nextButtonAction(),
                               ),
                             ],
                           ),
@@ -388,6 +425,7 @@ class _TutorialPage {
   final Function? previousButtonAction;
   // final bool secondaryButtonHasIcon;
   final ImageProvider illustration;
+  final String videoUrl;
 
   _TutorialPage({
     required this.title,
@@ -395,6 +433,7 @@ class _TutorialPage {
     required this.nextButtonText,
     required this.nextButtonAction,
     required this.illustration,
+    required this.videoUrl,
     this.previousButtonText,
     this.previousButtonAction,
     // required this.illustration,
