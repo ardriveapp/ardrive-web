@@ -23,6 +23,8 @@ extension FileRevisionsCompanionExtensions on FileRevisionsCompanion {
         customJsonMetadata: customJsonMetadata,
         pinnedDataOwnerAddress: pinnedDataOwnerAddress,
         isHidden: isHidden,
+        // TODO: path is not used in the app, so it's not necessary to set it
+        path: '',
       );
 
   /// Returns a list of [NetworkTransactionsCompanion] representing the metadata and data transactions

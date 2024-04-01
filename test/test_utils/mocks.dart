@@ -303,6 +303,7 @@ FolderEntry createMockFolderEntry(
     parentFolderId: parentFolderId,
     isGhost: isGhost,
     isHidden: false,
+    path: '',
   );
 }
 
@@ -336,5 +337,6 @@ FileEntry createMockFileEntry(
     parentFolderId: parentFolderId,
     bundledIn: bundledIn,
     isHidden: false,
+    path: '',
   );
 }

@@ -4,6 +4,7 @@ CREATE TABLE file_entries (
 
     name TEXT NOT NULL,
     parentFolderId TEXT NOT NULL,
+    path TEXT NOT NULL,
 
     size INTEGER NOT NULL,
     lastModifiedDate DATETIME NOT NULL,

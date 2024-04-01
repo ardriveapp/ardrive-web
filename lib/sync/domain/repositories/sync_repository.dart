@@ -313,6 +313,7 @@ class _SyncRepository implements SyncRepository {
         isGhost: true,
         dateCreated: DateTime.now(),
         isHidden: ghostFolder.isHidden,
+        path: '',
       );
       await driveDao.into(driveDao.folderEntries).insert(folderEntry);
       ghostFoldersByDrive.putIfAbsent(

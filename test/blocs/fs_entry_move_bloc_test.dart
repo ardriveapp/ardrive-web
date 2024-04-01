@@ -70,6 +70,7 @@ void main() {
             driveId: driveId,
             name: 'fake-drive-name',
             isHidden: const Value(false),
+            path: '',
           ),
           FolderEntriesCompanion.insert(
             id: nestedFolderId,
@@ -77,6 +78,7 @@ void main() {
             parentFolderId: Value(rootFolderId),
             name: nestedFolderId,
             isHidden: const Value(false),
+            path: '',
           ),
           FolderEntriesCompanion.insert(
             id: conflictTestFolderId,
@@ -84,6 +86,7 @@ void main() {
             parentFolderId: Value(rootFolderId),
             name: conflictTestFolderId,
             isHidden: const Value(false),
+            path: '',
           ),
         ]);
         // Insert fake files
@@ -105,6 +108,7 @@ void main() {
                   lastModifiedDate: defaultDate,
                   dataContentType: const Value(''),
                   isHidden: const Value(false),
+                  path: '',
                 );
               },
             ),
@@ -123,6 +127,7 @@ void main() {
                   lastModifiedDate: defaultDate,
                   dataContentType: const Value(''),
                   isHidden: const Value(false),
+                  path: '',
                 );
               },
             ),

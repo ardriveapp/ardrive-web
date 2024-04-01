@@ -129,6 +129,8 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
           lastUpdated: ghostFolder.lastUpdated,
           dateCreated: ghostFolder.dateCreated,
           isHidden: ghostFolder.isHidden,
+          // TODO: path is not used in the app, so it's not necessary to set it
+          path: '',
         );
 
         final folderEntity = folder.asEntity();
