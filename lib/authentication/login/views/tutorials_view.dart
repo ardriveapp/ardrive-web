@@ -56,7 +56,7 @@ class TutorialsViewState extends State<TutorialsView> {
           // secondaryButtonHasIcon: false,
           illustration: AssetImage(Resources.images.login.placeholder1),
           videoUrl:
-              'https://arweave.net/XlXBGS_njmMLZh-z_c8hHkNeRIRsWd87bwYf7uh-R24',
+              'https://arweave.net/Xnp-iOOaQ9DbOvAxt3GK5vUNNG2iJF45W3YMmSvS6xw',
         ),
         _TutorialPage(
           nextButtonText: appLocalizationsOf(context).next,
@@ -72,7 +72,7 @@ class TutorialsViewState extends State<TutorialsView> {
               'When you upload content, you can choose to make it public or private. Private content is encrypted, and viewable only to you and those you share it with.',
           illustration: AssetImage(Resources.images.login.placeholder2),
           videoUrl:
-              'https://arweave.net/XlXBGS_njmMLZh-z_c8hHkNeRIRsWd87bwYf7uh-R24',
+              'https://arweave.net/XSDiTs8Q9e7h0tNPKLnIuVXIXd4qIU8pSYzHhHvqfJw',
         ),
         _TutorialPage(
           nextButtonText:
@@ -102,7 +102,7 @@ class TutorialsViewState extends State<TutorialsView> {
               'When you upload a file, you will pay for it once and never again. You can access it forever without requiring a subscription, as with standard cloud storage.',
           illustration: AssetImage(Resources.images.login.placeholder1),
           videoUrl:
-              'https://arweave.net/XlXBGS_njmMLZh-z_c8hHkNeRIRsWd87bwYf7uh-R24',
+              'https://arweave.net/i00UAiAXh0Vu7P8SZyW2nZNDyPZj9mGbEVwpAj6vVvg',
         ),
       ];
 
@@ -262,7 +262,7 @@ class _TutorialContentState extends State<_TutorialContent> {
           Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             widget.pageNumber == 1 && !widget.phoneLayout
                 ? SizedBox(
-                    width: 200,
+                    width: 160,
                     child: Container(
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.fromLTRB(0, 0, 46, 0),
@@ -272,7 +272,7 @@ class _TutorialContentState extends State<_TutorialContent> {
                           fit: BoxFit.contain,
                         )),
                   )
-                : SizedBox(width: widget.phoneLayout ? 0 : 200),
+                : SizedBox(width: widget.phoneLayout ? 0 : 160),
             Expanded(
               child: Text(widget.tutorialPage.description,
                   textAlign: TextAlign.center,
@@ -283,7 +283,7 @@ class _TutorialContentState extends State<_TutorialContent> {
             ),
             widget.pageNumber == 1 && !widget.phoneLayout
                 ? SizedBox(
-                    width: 200,
+                    width: 160,
                     child: Container(
                         alignment: Alignment.centerLeft,
                         padding: const EdgeInsets.fromLTRB(46, 0, 0, 0),
@@ -293,9 +293,9 @@ class _TutorialContentState extends State<_TutorialContent> {
                           fit: BoxFit.contain,
                         )),
                   )
-                : SizedBox(width: widget.phoneLayout ? 0 : 200),
+                : SizedBox(width: widget.phoneLayout ? 0 : 160),
           ]),
-          const SizedBox(height: 60),
+          const SizedBox(height: 30),
           Expanded(
             child: Center(
               child: Container(
@@ -307,10 +307,13 @@ class _TutorialContentState extends State<_TutorialContent> {
                     width: 1,
                   ),
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: VideoPlayer(
-                    _videoPlayerController,
+                child: AspectRatio(
+                  aspectRatio: 4196 / 2160,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: VideoPlayer(
+                      _videoPlayerController,
+                    ),
                   ),
                 ),
               ),
