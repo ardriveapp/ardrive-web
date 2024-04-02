@@ -211,12 +211,13 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
       );
     }
 
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final height = MediaQuery.of(context).size.height;
 
     // TODO: refactor to reduce code repetition
     return BreakpointLayoutBuilder(
       largeDesktop: (context) => Material(
-        color: ArDriveTheme.of(context).themeData.backgroundColor,
+        color: colorTokens.containerL0,
         child: SizedBox.expand(
           child: Center(
             child: SingleChildScrollView(
@@ -251,7 +252,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
         ),
       ),
       smallDesktop: (context) => Material(
-        color: ArDriveTheme.of(context).themeData.backgroundColor,
+        color: colorTokens.containerL0,
         child: SizedBox.expand(
           child: Center(
             child: SingleChildScrollView(
@@ -286,7 +287,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
         ),
       ),
       tablet: (context) => Material(
-        color: ArDriveTheme.of(context).themeData.backgroundColor,
+        color: colorTokens.containerL0,
         child: SingleChildScrollView(
           child: SizedBox(
             height: 1096,
