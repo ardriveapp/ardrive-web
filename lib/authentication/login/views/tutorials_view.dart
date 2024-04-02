@@ -329,7 +329,7 @@ class _TutorialContentState extends State<_TutorialContent> {
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: colorTokens.textXLow,
+                        color: colorTokens.buttonSecondaryHover,
                       ),
                       borderRadius: BorderRadius.circular(100),
                     ),
@@ -357,7 +357,7 @@ class _TutorialContentState extends State<_TutorialContent> {
                                     TextSpan(
                                       text: widget
                                           .tutorialPage.previousButtonText!,
-                                      style: typography.paragraphLarge(
+                                      style: typography.heading5(
                                           color: colorTokens.textLink,
                                           fontWeight: ArFontWeight.semiBold),
                                       recognizer: TapGestureRecognizer()
@@ -375,7 +375,7 @@ class _TutorialContentState extends State<_TutorialContent> {
                           padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
                           decoration: BoxDecoration(
                             border: Border.all(
-                              color: colorTokens.textXLow,
+                              color: colorTokens.buttonSecondaryHover,
                             ),
                             borderRadius: BorderRadius.circular(100),
                           ),
@@ -398,7 +398,7 @@ class _TutorialContentState extends State<_TutorialContent> {
                             children: [
                               TextSpan(
                                 text: widget.tutorialPage.nextButtonText,
-                                style: typography.paragraphLarge(
+                                style: typography.heading5(
                                     color: colorTokens.textLink,
                                     fontWeight: ArFontWeight.semiBold),
                                 recognizer: TapGestureRecognizer()

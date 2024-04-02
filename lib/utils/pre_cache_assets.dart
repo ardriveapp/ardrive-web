@@ -24,8 +24,6 @@ void preCacheOnBoardingAssets(BuildContext context) {
     Resources.images.login.confetti,
     Resources.images.login.confettiLeft,
     Resources.images.login.confettiRight,
-    Resources.images.login.placeholder1,
-    Resources.images.login.placeholder2,
   ];
 
   for (String assetPath in assetPaths) {
