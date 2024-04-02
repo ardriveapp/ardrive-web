@@ -6,6 +6,7 @@ import 'package:ardrive/authentication/login/views/modals/common.dart';
 import 'package:ardrive/authentication/login/views/modals/secure_your_wallet_modal.dart';
 import 'package:ardrive/authentication/login/views/tiles/tiles_view.dart';
 import 'package:ardrive/authentication/login/views/tutorials_view.dart';
+import 'package:ardrive/authentication/login/views/wallet_created_view.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
@@ -20,7 +21,6 @@ import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -153,25 +153,25 @@ class _LoginPageState extends State<LoginPage> {
         },
         builder: (context, loginState) {
           late Widget view;
-          // if (loginState is LoginTutorials) {
-          //   view = TutorialsView(
-          //       wallet: loginState.wallet,
-          //       mnemonic: loginState.mnemonic,
-          //       showWalletCreated: loginState.showWalletCreated);
-          view = TutorialsView(
-              wallet: Wallet(),
-              mnemonic: 'test 1 2 3',
-              showWalletCreated: true);
-          // } else if (loginState is LoginDownloadGeneratedWallet) {
-          //   view = WalletCreatedView(
-          //       mnemonic: loginState.mnemonic, wallet: loginState.wallet);
-          //   // view = WalletCreatedView(mnemonic: 'test 1 2 3', wallet: Wallet());
-          // } else {
-          //   view = LoginPageScaffold(
-          //     loginState: loginState,
-          //     isGettingStartedLoading: isGettingStartedLoading,
-          //   );
-          // }
+          if (loginState is LoginTutorials) {
+            view = TutorialsView(
+                wallet: loginState.wallet,
+                mnemonic: loginState.mnemonic,
+                showWalletCreated: loginState.showWalletCreated);
+            // view = TutorialsView(
+            //     wallet: Wallet(),
+            //     mnemonic: 'test 1 2 3',
+            //     showWalletCreated: true);
+          } else if (loginState is LoginDownloadGeneratedWallet) {
+            view = WalletCreatedView(
+                mnemonic: loginState.mnemonic, wallet: loginState.wallet);
+            // view = WalletCreatedView(mnemonic: 'test 1 2 3', wallet: Wallet());
+          } else {
+            view = LoginPageScaffold(
+              loginState: loginState,
+              isGettingStartedLoading: isGettingStartedLoading,
+            );
+          }
 
           return FadeThroughTransitionSwitcher(
             fillColor: Colors.transparent,
@@ -211,13 +211,12 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
       );
     }
 
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final height = MediaQuery.of(context).size.height;
 
     // TODO: refactor to reduce code repetition
     return BreakpointLayoutBuilder(
       largeDesktop: (context) => Material(
-        color: colorTokens.containerL0,
+        color: ArDriveTheme.of(context).themeData.backgroundColor,
         child: SizedBox.expand(
           child: Center(
             child: SingleChildScrollView(
@@ -252,7 +251,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
         ),
       ),
       smallDesktop: (context) => Material(
-        color: colorTokens.containerL0,
+        color: ArDriveTheme.of(context).themeData.backgroundColor,
         child: SizedBox.expand(
           child: Center(
             child: SingleChildScrollView(
@@ -287,7 +286,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
         ),
       ),
       tablet: (context) => Material(
-        color: colorTokens.containerL0,
+        color: ArDriveTheme.of(context).themeData.backgroundColor,
         child: SingleChildScrollView(
           child: SizedBox(
             height: 1096,
