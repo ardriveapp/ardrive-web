@@ -54,7 +54,6 @@ class TutorialsViewState extends State<TutorialsView> {
           description:
               'The permaweb is just like the currently existing web, but everything published on it is available forever - meaning that you will never risk losing a file ever again.',
           // secondaryButtonHasIcon: false,
-          illustration: AssetImage(Resources.images.login.placeholder1),
           videoUrl:
               'https://arweave.net/Xnp-iOOaQ9DbOvAxt3GK5vUNNG2iJF45W3YMmSvS6xw',
         ),
@@ -70,7 +69,6 @@ class TutorialsViewState extends State<TutorialsView> {
           title: 'Complete Privacy Control',
           description:
               'When you upload content, you can choose to make it public or private. Private content is encrypted, and viewable only to you and those you share it with.',
-          illustration: AssetImage(Resources.images.login.placeholder2),
           videoUrl:
               'https://arweave.net/XSDiTs8Q9e7h0tNPKLnIuVXIXd4qIU8pSYzHhHvqfJw',
         ),
@@ -100,7 +98,6 @@ class TutorialsViewState extends State<TutorialsView> {
           title: 'Pay-as-you-go Using a Credit Card',
           description:
               'When you upload a file, you will pay for it once and never again. You can access it forever without requiring a subscription, as with standard cloud storage.',
-          illustration: AssetImage(Resources.images.login.placeholder1),
           videoUrl:
               'https://arweave.net/i00UAiAXh0Vu7P8SZyW2nZNDyPZj9mGbEVwpAj6vVvg',
         ),
@@ -427,7 +424,6 @@ class _TutorialPage {
   final String? previousButtonText;
   final Function? previousButtonAction;
   // final bool secondaryButtonHasIcon;
-  final ImageProvider illustration;
   final String videoUrl;
 
   _TutorialPage({
@@ -435,11 +431,9 @@ class _TutorialPage {
     required this.description,
     required this.nextButtonText,
     required this.nextButtonAction,
-    required this.illustration,
     required this.videoUrl,
     this.previousButtonText,
     this.previousButtonAction,
-    // required this.illustration,
     // this.secondaryButtonHasIcon = true,
   });
 }
