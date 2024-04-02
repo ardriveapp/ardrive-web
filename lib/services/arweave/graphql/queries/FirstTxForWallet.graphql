@@ -1,5 +1,5 @@
 query FirstTxForWallet($owner: String!) {
-  transactions(owners: [$owner], first: 1) {
+  transactions(owners: [$owner], first: 1, sort: HEIGHT_ASC) {
     edges {
       node {
         id
