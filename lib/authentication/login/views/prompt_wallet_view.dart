@@ -154,27 +154,44 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                           }),
                   const SizedBox(height: 72),
                   // TODO:  make this into a reusable component
-                  Text.rich(
-                    textAlign: TextAlign.center,
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                          // TODO: create/update localization key
-                          text: widget.existingUserFlow
-                              ? "I'm a new user"
-                              : 'I already have a wallet',
-                          style: typography.paragraphLarge(
-                              color: colorTokens.textLink,
-                              fontWeight: ArFontWeight.semiBold),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () {
-                              context.read<LoginBloc>().add(SelectLoginFlow(
-                                  existingUser: !widget.existingUserFlow));
-                            },
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IntrinsicWidth(
+                        child: Column(
+                          children: [
+                            Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: widget.existingUserFlow
+                                        ? "I'm a new user"
+                                        : 'I already have a wallet',
+                                    // Your TextStyle here
+                                    style: typography.paragraphLarge(
+                                        color: colorTokens.textLink,
+                                        fontWeight: ArFontWeight.semiBold),
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () {
+                                        context.read<LoginBloc>().add(
+                                            SelectLoginFlow(
+                                                existingUser:
+                                                    !widget.existingUserFlow));
+                                      },
+                                  ),
+                                ],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            Container(
+                              height: 1,
+                              color: colorTokens.buttonPrimaryDefault,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
+                      ),
+                    ],
+                  )
                 ],
               ),
             ),
