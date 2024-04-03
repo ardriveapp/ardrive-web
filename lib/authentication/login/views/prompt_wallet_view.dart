@@ -36,6 +36,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
   @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final colors = ArDriveTheme.of(context).themeData.colors;
     final typography = ArDriveTypographyNew.of(context);
     final existingUserFlow = widget.existingUserFlow;
 
@@ -200,32 +201,42 @@ class _PromptWalletViewState extends State<PromptWalletView> {
             mainAxisAlignment: MainAxisAlignment.end,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              RichText(
-                textAlign: TextAlign.center,
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text:
-                          'By connecting your wallet, you agree to our ${width < TABLET ? '\n' : ''}',
-                      style: typography.paragraphNormal(
-                          color: colorTokens.textLow,
-                          fontWeight: ArFontWeight.semiBold),
-                    ),
-                    TextSpan(
-                      text: 'Terms of Service',
-                      style: typography.paragraphNormal(
-                        color: colorTokens.textLink,
-                        fontWeight: ArFontWeight.bold,
+              Container(
+                decoration: BoxDecoration(
+                  color: colors.shadow,
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(8),
+                    bottomRight: Radius.circular(8),
+                  ),
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: RichText(
+                  textAlign: TextAlign.center,
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text:
+                            'By connecting your wallet, you agree to our ${width < TABLET ? '\n' : ''}',
+                        style: typography.paragraphNormal(
+                            color: colorTokens.textLow,
+                            fontWeight: ArFontWeight.semiBold),
                       ),
-                      recognizer: TapGestureRecognizer()
-                        ..onTap = () {
-                          openUrl(url: termsOfServiceUrl);
-                        },
-                    ),
-                  ],
+                      TextSpan(
+                        text: 'Terms of Service',
+                        style: typography.paragraphNormal(
+                          color: colorTokens.textLink,
+                          fontWeight: ArFontWeight.bold,
+                        ),
+                        recognizer: TapGestureRecognizer()
+                          ..onTap = () {
+                            openUrl(url: termsOfServiceUrl);
+                          },
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
             ],
           ),
         ],
