@@ -196,12 +196,10 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                     ),
                     TextSpan(
                       text: 'Terms of Service',
-                      style: typography
-                          .paragraphNormal(
-                            color: colorTokens.textLink,
-                            fontWeight: ArFontWeight.bold,
-                          )
-                          .copyWith(decoration: TextDecoration.underline),
+                      style: typography.paragraphNormal(
+                        color: colorTokens.textLink,
+                        fontWeight: ArFontWeight.bold,
+                      ),
                       recognizer: TapGestureRecognizer()
                         ..onTap = () {
                           openUrl(url: termsOfServiceUrl);
