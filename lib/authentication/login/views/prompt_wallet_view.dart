@@ -199,7 +199,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                       style: typography
                           .paragraphNormal(
                             color: colorTokens.textLink,
-                            fontWeight: ArFontWeight.semiBold,
+                            fontWeight: ArFontWeight.bold,
                           )
                           .copyWith(decoration: TextDecoration.underline),
                       recognizer: TapGestureRecognizer()
