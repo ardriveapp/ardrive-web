@@ -284,7 +284,7 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
     ));
     return BreakpointLayoutBuilder(
       largeDesktop: (context) => Material(
-          color: ArDriveTheme.of(context).themeData.backgroundColor,
+          color: colorTokens.containerL0,
           child: SizedBox.expand(
             child: Center(
               child: SingleChildScrollView(

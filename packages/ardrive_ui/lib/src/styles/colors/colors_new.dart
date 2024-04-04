@@ -236,8 +236,8 @@ class ArDriveColorTokens {
 
     return ArDriveColorTokens(
         primitives: primitives,
-        containerL0: primitives.solidGrey100,
-        containerL1: primitives.solidGrey50,
+        containerL0: primitives.solidGrey50,
+        containerL1: primitives.solidGrey100,
         containerL2: primitives.solidGrey200,
         containerL3: primitives.solidGrey300,
         containerRed: primitives.solidRed700,
