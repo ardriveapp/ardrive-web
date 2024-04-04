@@ -138,10 +138,6 @@ class TutorialsViewState extends State<TutorialsView> {
     final minHeight = phoneLayout ? 700.0 : 800.0;
     final containerHeight = height < minHeight ? minHeight : min(height, 924.0);
 
-    final arrowRight = min<double>(32, (width - min(width, 1164) / 2.0 - 32));
-    final double arrowBottom =
-        !phoneLayout ? max(95, ((containerHeight - 924) / 2)) - 5 : 22;
-
     return Material(
         color: colorTokens.containerL0,
         child: Container(
