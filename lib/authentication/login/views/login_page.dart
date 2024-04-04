@@ -8,6 +8,7 @@ import 'package:ardrive/authentication/login/views/tiles/tiles_view.dart';
 import 'package:ardrive/authentication/login/views/tutorials_view.dart';
 import 'package:ardrive/authentication/login/views/wallet_created_view.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/components/icon_theme_switcher.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
@@ -158,14 +159,9 @@ class _LoginPageState extends State<LoginPage> {
                 wallet: loginState.wallet,
                 mnemonic: loginState.mnemonic,
                 showWalletCreated: loginState.showWalletCreated);
-            // view = TutorialsView(
-            //     wallet: Wallet(),
-            //     mnemonic: 'test 1 2 3',
-            //     showWalletCreated: true);
           } else if (loginState is LoginDownloadGeneratedWallet) {
             view = WalletCreatedView(
                 mnemonic: loginState.mnemonic, wallet: loginState.wallet);
-            // view = WalletCreatedView(mnemonic: 'test 1 2 3', wallet: Wallet());
           } else {
             view = LoginPageScaffold(
               loginState: loginState,
@@ -211,130 +207,151 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
       );
     }
 
-    final height = MediaQuery.of(context).size.height;
-
     // TODO: refactor to reduce code repetition
     return BreakpointLayoutBuilder(
-      largeDesktop: (context) => Material(
-        color: ArDriveTheme.of(context).themeData.backgroundColor,
-        child: SizedBox.expand(
-          child: Center(
-            child: SingleChildScrollView(
-              child: Container(
-                height: height.clamp(832, 1024),
-                constraints: const BoxConstraints(
-                  maxWidth: 1440,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                        child: _roundedBorderContainer(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
-                      child: const TilesView(),
-                    )),
-                    Expanded(
-                      child: _roundedBorderContainer(
-                          padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
-                          child: Center(
-                              child: _buildContent(
-                            context,
-                            loginState: widget.loginState,
-                          ))),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
+      largeDesktop: (context) => _LargeDesktopView(
+        loginState: widget.loginState,
+        globalKey: globalKey,
       ),
-      smallDesktop: (context) => Material(
-        color: ArDriveTheme.of(context).themeData.backgroundColor,
-        child: SizedBox.expand(
-          child: Center(
-            child: SingleChildScrollView(
-              child: SizedBox(
-                height: 832,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                        child: _roundedBorderContainer(
+      smallDesktop: (context) => _SmallDesktopView(
+        globalKey: globalKey,
+        loginState: widget.loginState,
+      ),
+      tablet: (context) => _TabletView(
+        globalKey: globalKey,
+        loginState: widget.loginState,
+      ),
+      phone: (context) => _PhoneView(
+        globalKey: globalKey,
+        loginState: widget.loginState,
+      ),
+    );
+  }
+}
+
+class _LargeDesktopView extends StatelessWidget {
+  final LoginState loginState;
+  final GlobalKey globalKey;
+
+  const _LargeDesktopView({
+    required this.loginState,
+    required this.globalKey,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final height = MediaQuery.of(context).size.height;
+
+    return Material(
+      color: ArDriveTheme.of(context).themeData.backgroundColor,
+      child: SizedBox.expand(
+        child: Center(
+          child: SingleChildScrollView(
+            child: Container(
+              height: height.clamp(832, 1024),
+              constraints: const BoxConstraints(
+                maxWidth: 1440,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: _roundedBorderContainer(
+                      context: context,
                       padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
                       child: const TilesView(),
-                    )),
-                    Expanded(
-                      child: _roundedBorderContainer(
-                          padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
-                          child: Center(
-                              child: SizedBox(
-                            width: 381,
+                    ),
+                  ),
+                  Expanded(
+                    child: _roundedBorderContainer(
+                      context: context,
+                      padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Center(
                             child: _buildContent(
                               context,
-                              loginState: widget.loginState,
+                              loginState: loginState,
+                              globalKey: globalKey,
                             ),
-                          ))),
+                          ),
+                          const Positioned(
+                            right: 24,
+                            top: 24,
+                            child: IconThemeSwitcher(),
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
         ),
       ),
-      tablet: (context) => Material(
-        color: ArDriveTheme.of(context).themeData.backgroundColor,
-        child: SingleChildScrollView(
-          child: SizedBox(
-            height: 1096,
-            child: Column(
-              // mainAxisAlignment: MainAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _roundedBorderContainer(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: const SizedBox(height: 266, child: TilesView()),
-                ),
-                SizedBox(
-                  height: height < 1096 ? 800 : height - 298,
-                  child: _roundedBorderContainer(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                      child: Center(
-                        child: Padding(
-                            padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
-                            child: _buildContent(
-                              context,
-                              loginState: widget.loginState,
-                            )),
-                      )),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-      phone: (context) => Scaffold(
-        resizeToAvoidBottomInset: true,
-        body: SizedBox.expand(
-          child: Center(
-            child: SingleChildScrollView(
-              child: SizedBox(
-                height: height < 600 ? 600 : height,
-                child: _roundedBorderContainer(
-                    padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                      child: SizedBox.expand(
-                          child: Center(
+    );
+  }
+}
+
+class _SmallDesktopView extends StatelessWidget {
+  final GlobalKey globalKey;
+  final LoginState loginState;
+
+  const _SmallDesktopView({
+    required this.globalKey,
+    required this.loginState,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: ArDriveTheme.of(context).themeData.backgroundColor,
+      child: SizedBox.expand(
+        child: Center(
+          child: SingleChildScrollView(
+            child: SizedBox(
+              height: 832,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: _roundedBorderContainer(
+                      context: context,
+                      padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
+                      child: const TilesView(),
+                    ),
+                  ),
+                  Expanded(
+                    child: _roundedBorderContainer(
+                      context: context,
+                      padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Center(
+                            child: SizedBox(
+                              width: 381,
                               child: _buildContent(
-                        context,
-                        loginState: widget.loginState,
-                      ))),
-                    )),
+                                context,
+                                loginState: loginState,
+                                globalKey: globalKey,
+                              ),
+                            ),
+                          ),
+                          const Positioned(
+                            right: 24,
+                            top: 24,
+                            child: IconThemeSwitcher(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -342,137 +359,195 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
       ),
     );
   }
+}
 
-  // Widget _buildIllustration(BuildContext context, String image) {
-  //   return Stack(
-  //     fit: StackFit.expand,
-  //     children: [
-  //       Opacity(
-  //         opacity: 1,
-  //         child: Stack(
-  //           fit: StackFit.expand,
-  //           children: [
-  //             ArDriveImage(
-  //               key: const Key('loginPageIllustration'),
-  //               image: AssetImage(
-  //                 image,
-  //               ),
-  //               height: 600,
-  //               width: 600,
-  //               fit: BoxFit.cover,
-  //             ),
-  //             Container(
-  //               color: ArDriveTheme.of(context)
-  //                   .themeData
-  //                   .colors
-  //                   .themeBgCanvas
-  //                   .withOpacity(0.8),
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //       Center(
-  //         child: Column(
-  //           crossAxisAlignment: CrossAxisAlignment.start,
-  //           mainAxisSize: MainAxisSize.min,
-  //           children: [
-  //             ArDriveImage(
-  //               image: AssetImage(
-  //                 ArDriveTheme.of(context).themeData.name == 'light'
-  //                     ? Resources.images.brand.blackLogo2
-  //                     : Resources.images.brand.whiteLogo2,
-  //               ),
-  //               height: 65,
-  //               fit: BoxFit.contain,
-  //             ),
-  //             Padding(
-  //               padding: const EdgeInsets.only(top: 42),
-  //               child: SizedBox(
-  //                 width: MediaQuery.of(context).size.width * 0.32,
-  //                 child: Text(
-  //                   appLocalizationsOf(context)
-  //                       .yourPrivateSecureAndPermanentDrive,
-  //                   textAlign: TextAlign.start,
-  //                   style: ArDriveTypography.headline.headline3Regular(
-  //                     color: ArDriveTheme.of(context)
-  //                         .themeData
-  //                         .colors
-  //                         .themeFgDefault,
-  //                   ),
-  //                 ),
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //       )
-  //     ],
-  //   );
-  // }
+class _TabletView extends StatelessWidget {
+  final GlobalKey globalKey;
+  final LoginState loginState;
 
-  Widget _buildContent(BuildContext context, {required LoginState loginState}) {
-    return BlocBuilder<LoginBloc, LoginState>(
-      key: globalKey,
-      buildWhen: (previous, current) {
-        final isFailure = current is LoginFailure;
-        final isSuccess = current is LoginSuccess;
-        final isOnBoarding = current is LoginTutorials;
-        final isLoading = current is LoginLoading ||
-            current is LoginShowLoader ||
-            current is LoginCloseBlockingDialog;
-        final isPasswordChecking =
-            current is LoginCheckingPassword || current is LoginPasswordFailed;
+  const _TabletView({
+    required this.globalKey,
+    required this.loginState,
+  });
 
-        return !(isFailure ||
-            isSuccess ||
-            isOnBoarding ||
-            isLoading ||
-            isPasswordChecking);
-      },
-      builder: (context, loginState) {
-        late Widget content;
-        final loginBloc = context.read<LoginBloc>();
+  @override
+  Widget build(BuildContext context) {
+    final height = MediaQuery.of(context).size.height;
 
-        if (loginState is LoginLoading || loginState is LoginSuccess) {
-          content = const MaxDeviceSizesConstrainedBox(
-            child: LoginCard(
-              content: Center(
-                child: CircularProgressIndicator(),
+    return Material(
+      color: ArDriveTheme.of(context).themeData.backgroundColor,
+      child: SingleChildScrollView(
+        child: SizedBox(
+          height: 1096,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _roundedBorderContainer(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: const SizedBox(
+                  height: 266,
+                  child: TilesView(),
+                ),
+                context: context,
               ),
-            ),
-          );
-        } else if (loginState is LoginLanding) {
-          content = const LandingView(
-            key: Key('landingPageView'),
-          );
-        } else {
-          content = PromptWalletView(
-            key: const Key('promptWalletView'),
-            isArConnectAvailable: loginBloc.isArConnectAvailable,
-            isMetamaskAvailable: loginBloc.isMetamaskAvailable,
-            existingUserFlow: loginBloc.existingUserFlow,
-          );
-        }
-
-        return content;
-      },
-    );
-  }
-
-  Widget _roundedBorderContainer(
-      {required Widget child, required EdgeInsetsGeometry padding}) {
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    return Padding(
-      padding: padding,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: colorTokens.strokeLow,
-            width: 1,
+              SizedBox(
+                height: height < 1096 ? 800 : height - 298,
+                child: _roundedBorderContainer(
+                  context: context,
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: Stack(
+                    children: [
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
+                          child: _buildContent(
+                            context,
+                            loginState: loginState,
+                            globalKey: globalKey,
+                          ),
+                        ),
+                      ),
+                      const Positioned(
+                        right: 24,
+                        top: 24,
+                        child: IconThemeSwitcher(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        child: child,
       ),
     );
   }
+}
+
+class _PhoneView extends StatelessWidget {
+  const _PhoneView({
+    required this.globalKey,
+    required this.loginState,
+  });
+
+  final GlobalKey globalKey;
+  final LoginState loginState;
+
+  @override
+  Widget build(BuildContext context) {
+    final height = MediaQuery.of(context).size.height;
+
+    return Scaffold(
+      resizeToAvoidBottomInset: true,
+      body: SizedBox.expand(
+        child: Center(
+          child: SingleChildScrollView(
+            child: SizedBox(
+              height: height < 600 ? 600 : height,
+              child: _roundedBorderContainer(
+                context: context,
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                  child: SizedBox.expand(
+                    child: Stack(
+                      children: [
+                        Center(
+                          child: _buildContent(
+                            context,
+                            loginState: loginState,
+                            globalKey: globalKey,
+                          ),
+                        ),
+                        const Positioned(
+                          right: 0,
+                          top: 0,
+                          child: IconThemeSwitcher(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Widget _buildContent(
+  BuildContext context, {
+  required LoginState loginState,
+  required GlobalKey globalKey,
+}) {
+  return BlocBuilder<LoginBloc, LoginState>(
+    key: globalKey,
+    buildWhen: (previous, current) {
+      final isFailure = current is LoginFailure;
+      final isSuccess = current is LoginSuccess;
+      final isOnBoarding = current is LoginTutorials;
+      final isLoading = current is LoginLoading ||
+          current is LoginShowLoader ||
+          current is LoginCloseBlockingDialog;
+      final isPasswordChecking =
+          current is LoginCheckingPassword || current is LoginPasswordFailed;
+
+      return !(isFailure ||
+          isSuccess ||
+          isOnBoarding ||
+          isLoading ||
+          isPasswordChecking);
+    },
+    builder: (context, loginState) {
+      late Widget content;
+      final loginBloc = context.read<LoginBloc>();
+
+      if (loginState is LoginLoading || loginState is LoginSuccess) {
+        content = const MaxDeviceSizesConstrainedBox(
+          child: LoginCard(
+            content: Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
+        );
+      } else if (loginState is LoginLanding) {
+        content = const LandingView(
+          key: Key('landingPageView'),
+        );
+      } else {
+        content = PromptWalletView(
+          key: const Key('promptWalletView'),
+          isArConnectAvailable: loginBloc.isArConnectAvailable,
+          isMetamaskAvailable: loginBloc.isMetamaskAvailable,
+          existingUserFlow: loginBloc.existingUserFlow,
+        );
+      }
+
+      return content;
+    },
+  );
+}
+
+Widget _roundedBorderContainer({
+  required Widget child,
+  required EdgeInsetsGeometry padding,
+  required BuildContext context,
+}) {
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+  return Padding(
+    padding: padding,
+    child: Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colorTokens.strokeLow,
+          width: 1,
+        ),
+      ),
+      child: child,
+    ),
+  );
 }

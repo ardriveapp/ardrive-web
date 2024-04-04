@@ -457,4 +457,16 @@ class ArDriveIcons {
         size: size ?? 26,
         color: color,
       );
+
+  static ArDriveIcon moon({double? size, Color? color}) => ArDriveIcon(
+        icon: ArDriveIconsData.moon,
+        size: size ?? 26,
+        color: color,
+      );
+
+  static ArDriveIcon sun({double? size, Color? color}) => ArDriveIcon(
+        icon: ArDriveIconsData.sun,
+        size: size ?? 26,
+        color: color,
+      );
 }

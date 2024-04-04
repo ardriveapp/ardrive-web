@@ -7,7 +7,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ThemeSwitcher extends StatelessWidget {
-  const ThemeSwitcher({super.key});
+  const ThemeSwitcher({
+    super.key,
+    this.customLightModeContent,
+    this.customDarkModeContent,
+  });
+
+  final Widget? customLightModeContent;
+  final Widget? customDarkModeContent;
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +28,15 @@ class ThemeSwitcher extends StatelessWidget {
           builder: (context, state) {
             if (state is ThemeSwitcherInProgress) {
               return const SizedBox.shrink();
+            }
+
+            if (customLightModeContent != null &&
+                customDarkModeContent != null) {
+              if (state is ThemeSwitcherDarkTheme) {
+                return customDarkModeContent!;
+              } else {
+                return customLightModeContent!;
+              }
             }
 
             return Text(
