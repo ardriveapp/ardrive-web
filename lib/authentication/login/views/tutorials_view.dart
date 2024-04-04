@@ -7,7 +7,6 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
@@ -139,10 +138,6 @@ class TutorialsViewState extends State<TutorialsView> {
     final minHeight = phoneLayout ? 700.0 : 800.0;
     final containerHeight = height < minHeight ? minHeight : min(height, 924.0);
 
-    final arrowRight = min<double>(32, (width - min(width, 1164) / 2.0 - 32));
-    final double arrowBottom =
-        !phoneLayout ? max(95, ((containerHeight - 924) / 2)) - 5 : 22;
-
     return Material(
         color: colorTokens.containerL0,
         child: Container(
@@ -150,29 +145,18 @@ class TutorialsViewState extends State<TutorialsView> {
               border: Border(
                   top: BorderSide(color: colorTokens.containerRed, width: 6))),
           child: Center(
-            child: SingleChildScrollView(
-              child: Container(
-                height: containerHeight,
-                constraints: const BoxConstraints(maxWidth: 1164),
-                child: Stack(fit: StackFit.expand, children: [
-                  Container(
-                    color: colorTokens.containerL0,
-                    padding: phoneLayout
-                        ? const EdgeInsets.all(32)
-                        : const EdgeInsets.fromLTRB(32, 100, 32, 100),
-                    child: _buildOnBoardingContent(phoneLayout),
-                  ),
-                  // Placing red arrow here as it has to be overlaying the padding area
-                  // for the bottom buttons/page number to be vertically stable across
-                  // screens
-                  if (_currentPage >= _list.length - 1)
-                    Positioned(
-                        right: arrowRight,
-                        bottom: arrowBottom,
-                        child:
-                            SvgPicture.asset(Resources.images.login.arrowRed)),
-                ]),
-              ),
+            child: Container(
+              height: containerHeight,
+              constraints: const BoxConstraints(maxWidth: 1164),
+              child: Stack(fit: StackFit.expand, children: [
+                Container(
+                  color: colorTokens.containerL0,
+                  padding: phoneLayout
+                      ? const EdgeInsets.all(32)
+                      : const EdgeInsets.fromLTRB(32, 20, 32, 20),
+                  child: _buildOnBoardingContent(phoneLayout),
+                ),
+              ]),
             ),
           ),
         ));
@@ -241,7 +225,7 @@ class _TutorialContentState extends State<_TutorialContent> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (widget.pageNumber == 1 && widget.phoneLayout)
             ArDriveImage(
@@ -255,45 +239,51 @@ class _TutorialContentState extends State<_TutorialContent> {
               fontWeight: ArFontWeight.bold,
             ),
           ),
-          const SizedBox(height: 16),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            widget.pageNumber == 1 && !widget.phoneLayout
-                ? SizedBox(
-                    width: 160,
-                    child: Container(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              widget.pageNumber == 1 && !widget.phoneLayout
+                  ? SizedBox(
+                      width: 160,
+                      child: Container(
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.fromLTRB(0, 0, 46, 0),
                         child: ArDriveImage(
                           image:
                               AssetImage(Resources.images.login.confettiLeft),
                           fit: BoxFit.contain,
-                        )),
-                  )
-                : SizedBox(width: widget.phoneLayout ? 0 : 160),
-            Expanded(
-              child: Text(widget.tutorialPage.description,
+                        ),
+                      ),
+                    )
+                  : SizedBox(
+                      width: widget.phoneLayout ? 0 : 160,
+                    ),
+              Expanded(
+                child: Text(
+                  widget.tutorialPage.description,
                   textAlign: TextAlign.center,
                   style: typography.heading5(
                     color: colorTokens.textLow,
                     fontWeight: ArFontWeight.semiBold,
-                  )),
-            ),
-            widget.pageNumber == 1 && !widget.phoneLayout
-                ? SizedBox(
-                    width: 160,
-                    child: Container(
-                        alignment: Alignment.centerLeft,
-                        padding: const EdgeInsets.fromLTRB(46, 0, 0, 0),
-                        child: ArDriveImage(
-                          image:
-                              AssetImage(Resources.images.login.confettiRight),
-                          fit: BoxFit.contain,
-                        )),
-                  )
-                : SizedBox(width: widget.phoneLayout ? 0 : 160),
-          ]),
-          const SizedBox(height: 30),
-          Expanded(
+                  ),
+                ),
+              ),
+              widget.pageNumber == 1 && !widget.phoneLayout
+                  ? SizedBox(
+                      width: 160,
+                      child: Container(
+                          alignment: Alignment.centerLeft,
+                          padding: const EdgeInsets.fromLTRB(46, 0, 0, 0),
+                          child: ArDriveImage(
+                            image: AssetImage(
+                                Resources.images.login.confettiRight),
+                            fit: BoxFit.contain,
+                          )),
+                    )
+                  : SizedBox(width: widget.phoneLayout ? 0 : 160),
+            ],
+          ),
+          Flexible(
             child: Center(
               child: Container(
                 padding: const EdgeInsets.all(1),
@@ -316,7 +306,6 @@ class _TutorialContentState extends State<_TutorialContent> {
               ),
             ),
           ),
-          const SizedBox(height: 56),
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

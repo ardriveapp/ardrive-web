@@ -55,10 +55,13 @@ class _ImportWalletModalState extends State<ImportWalletModal> {
               ),
               const SizedBox(height: 12),
               Text(
-                  'You can import your wallet by entering an existing seed phrase or uploading a keyfile.',
-                  style: typography.paragraphNormal(
-                      color: colorTokens.textLow,
-                      fontWeight: ArFontWeight.semiBold)),
+                'You can import your wallet by entering an existing seed phrase or uploading a keyfile.',
+                style: typography.paragraphNormal(
+                  color: colorTokens.textLow,
+                  fontWeight: ArFontWeight.semiBold,
+                ),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 40),
               Text('Seed Phrase',
                   style: typography.paragraphNormal(
