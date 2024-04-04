@@ -169,8 +169,7 @@ dependency_overrides:
   ardrive_ui:
     git:
       url: https://github.com/ardriveapp/ardrive_ui
-      ref: v1.18.0
-
+      ref: PE-5913-null-error-no-such-method-error-method-not-found-get-render-object-on-null
 dev_dependencies:
   integration_test:
     sdk: flutter
