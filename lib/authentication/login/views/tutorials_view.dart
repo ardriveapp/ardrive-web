@@ -7,7 +7,6 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
@@ -161,14 +160,6 @@ class TutorialsViewState extends State<TutorialsView> {
                       : const EdgeInsets.fromLTRB(32, 20, 32, 20),
                   child: _buildOnBoardingContent(phoneLayout),
                 ),
-                // Placing red arrow here as it has to be overlaying the padding area
-                // for the bottom buttons/page number to be vertically stable across
-                // screens
-                if (_currentPage >= _list.length - 1)
-                  Positioned(
-                      right: arrowRight,
-                      bottom: arrowBottom,
-                      child: SvgPicture.asset(Resources.images.login.arrowRed)),
               ]),
             ),
           ),
