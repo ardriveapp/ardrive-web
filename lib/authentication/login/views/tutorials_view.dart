@@ -256,7 +256,7 @@ class _TutorialContentState extends State<_TutorialContent> {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
-    final twoRowButtons = MediaQuery.of(context).size.width < 386;
+    final twoRowButtons = MediaQuery.of(context).size.width < TABLET;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -407,9 +407,6 @@ class _TutorialContentState extends State<_TutorialContent> {
                       ),
                 Expanded(
                   child: Container(
-                      padding: EdgeInsets.only(
-                          right:
-                              widget.pageNumber >= widget.totalPages ? 10 : 0),
                       alignment: Alignment.centerRight,
                       child: Text.rich(
                         TextSpan(
