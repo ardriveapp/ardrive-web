@@ -1,10 +1,11 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:ardrive_logger/src/untracked_exception.dart';
+import 'package:ardrive_logger/ardrive_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -31,6 +32,10 @@ enum LogLevel {
   error,
 }
 
+/// A callback that determines whether an error should be logged to Sentry.
+/// If the callback returns false, the error will not be logged to Sentry.
+typedef ShouldLogErrorCallback = bool Function(Object? error);
+
 class Logger {
   final LogLevel _logLevel;
   final bool _storeLogsInMemory;
@@ -39,16 +44,21 @@ class Logger {
   final LogExporter _logExporter;
   late ListQueue<String> inMemoryLogs;
 
+  /// A null value means that all errors will be logged to Sentry.
+  final ShouldLogErrorCallback? _shouldLogErrorCallback;
+
   Logger({
     LogLevel logLevel = LogLevel.debug,
     bool storeLogsInMemory = false,
     LogLevel memoryLogLevel = LogLevel.debug,
     int memoryLogSize = 500,
     required LogExporter logExporter,
+    ShouldLogErrorCallback? shouldLogErrorCallback,
   })  : _logLevel = logLevel,
         _logExporter = logExporter,
         _storeLogsInMemory = storeLogsInMemory,
         _memoryLogLevel = memoryLogLevel,
+        _shouldLogErrorCallback = shouldLogErrorCallback,
         _memoryLogSize = memoryLogSize {
     inMemoryLogs = ListQueue(storeLogsInMemory ? memoryLogSize : 0);
   }
@@ -78,11 +88,6 @@ class Logger {
 
     log(LogLevel.error, errorMessage);
 
-    if (error is UntrackedException) {
-      /// Do not send untracked exceptions to Sentry
-      return;
-    }
-
     Sentry.captureException(error ?? message, stackTrace: stackTrace);
   }
 
@@ -111,6 +116,78 @@ class Logger {
         inMemoryLogs.add(finalMessage);
       }
     }
+  }
+
+  Future<void> initSentry() async {
+    String dsn = const String.fromEnvironment('SENTRY_DSN');
+
+    await SentryFlutter.init(
+      (options) {
+        options.beforeSend = _beforeSendEvent;
+        options.beforeSendTransaction = _beforeSendTransaction;
+        options.tracesSampleRate = 1.0;
+        options.dsn = dsn;
+      },
+    );
+  }
+
+  FutureOr<SentryEvent?> _beforeSendEvent(SentryEvent event, {Hint? hint}) async {
+    if (event.throwable != null && !_shouldLogError(event.throwable)) {
+      return null;
+    }
+
+    event = event.copyWith(
+      user: SentryUser(
+        id: null,
+        username: null,
+        email: null,
+        ipAddress: null,
+        geo: null,
+        name: null,
+        data: null,
+      ),
+    );
+
+    return event;
+  }
+
+  FutureOr<SentryTransaction?> _beforeSendTransaction(
+    SentryTransaction transaction,
+  ) async {
+    if (transaction.throwable != null &&
+        !_shouldLogError(transaction.throwable)) {
+      return null;
+    }
+
+    transaction = transaction.copyWith(
+      user: SentryUser(
+        id: null,
+        username: null,
+        email: null,
+        ipAddress: null,
+        geo: null,
+        name: null,
+        data: null,
+      ),
+    );
+
+    return transaction;
+  }
+
+  bool _shouldLogError(Object throwable) {
+    if (throwable is UntrackedException) {
+      return false;
+    }
+
+    if (_shouldLogErrorCallback != null) {
+      // Invoke the callback. If it returns false, do not log to Sentry.
+      bool shouldLogToSentry = _shouldLogErrorCallback!(throwable);
+      if (!shouldLogToSentry) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   Future<void> exportLogs({
