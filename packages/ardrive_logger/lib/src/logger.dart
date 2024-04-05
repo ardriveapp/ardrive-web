@@ -131,7 +131,8 @@ class Logger {
     );
   }
 
-  FutureOr<SentryEvent?> _beforeSendEvent(SentryEvent event, {Hint? hint}) async {
+  FutureOr<SentryEvent?> _beforeSendEvent(SentryEvent event,
+      {Hint? hint}) async {
     if (event.throwable != null && !_shouldLogError(event.throwable)) {
       return null;
     }
@@ -180,11 +181,7 @@ class Logger {
     }
 
     if (_shouldLogErrorCallback != null) {
-      // Invoke the callback. If it returns false, do not log to Sentry.
-      bool shouldLogToSentry = _shouldLogErrorCallback!(throwable);
-      if (!shouldLogToSentry) {
-        return false;
-      }
+      return _shouldLogErrorCallback!(throwable);
     }
 
     return true;
