@@ -150,14 +150,11 @@ class _ArDriveDownloader implements ArDriveDownloader {
     });
 
     subscription.onError((e, s) {
-      if (e is! ActionCanceledException) {
-        logger.e(
-          'Failed to download of save the file. Closing progressController...',
-          e,
-          s,
-        );
-      }
-
+      logger.e(
+        'Failed to download of save the file. Closing progressController...',
+        e,
+        s,
+      );
       // TODO: we can show a different message for different errors e.g. when `e` is ActionCanceledException
       progressController.addError(e);
       progressController.close();
