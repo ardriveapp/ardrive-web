@@ -133,50 +133,49 @@ class Logger {
 
   FutureOr<SentryEvent?> _beforeSendEvent(SentryEvent event,
       {Hint? hint}) async {
-    if (event.throwable != null && !_shouldLogError(event.throwable)) {
-      return null;
+    if (_shouldLogError(event.throwable)) {
+      event = event.copyWith(
+        user: SentryUser(
+          id: null,
+          username: null,
+          email: null,
+          ipAddress: null,
+          geo: null,
+          name: null,
+          data: null,
+        ),
+      );
+
+      return event;
     }
 
-    event = event.copyWith(
-      user: SentryUser(
-        id: null,
-        username: null,
-        email: null,
-        ipAddress: null,
-        geo: null,
-        name: null,
-        data: null,
-      ),
-    );
-
-    return event;
+    return null;
   }
 
   FutureOr<SentryTransaction?> _beforeSendTransaction(
     SentryTransaction transaction,
   ) async {
-    if (transaction.throwable != null &&
-        !_shouldLogError(transaction.throwable)) {
-      return null;
+    if (_shouldLogError(transaction.throwable)) {
+      transaction = transaction.copyWith(
+        user: SentryUser(
+          id: null,
+          username: null,
+          email: null,
+          ipAddress: null,
+          geo: null,
+          name: null,
+          data: null,
+        ),
+      );
+
+      return transaction;
     }
 
-    transaction = transaction.copyWith(
-      user: SentryUser(
-        id: null,
-        username: null,
-        email: null,
-        ipAddress: null,
-        geo: null,
-        name: null,
-        data: null,
-      ),
-    );
-
-    return transaction;
+    return null;
   }
 
-  bool _shouldLogError(Object throwable) {
-    if (throwable is UntrackedException) {
+  bool _shouldLogError(Object? throwable) {
+    if (throwable == null || throwable is UntrackedException) {
       return false;
     }
 
