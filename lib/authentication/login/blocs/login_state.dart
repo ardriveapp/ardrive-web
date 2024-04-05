@@ -106,3 +106,5 @@ class LoginDownloadGeneratedWallet extends LoginState {
 class LoginCheckingPassword extends LoginState {}
 
 class LoginPasswordFailed extends LoginState {}
+
+class LoginCreatePasswordComplete extends LoginState {}

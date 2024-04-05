@@ -152,6 +152,9 @@ class _LoginPageState extends State<LoginPage> {
                 );
           }
         },
+        buildWhen: (previous, current) {
+          return current is! LoginCreatePasswordComplete;
+        },
         builder: (context, loginState) {
           late Widget view;
           if (loginState is LoginTutorials) {
