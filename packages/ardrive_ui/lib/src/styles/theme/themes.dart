@@ -120,11 +120,11 @@ class ArDriveThemeData {
     this.toggleTheme = toggleTheme ??
         ArDriveToggleTheme(
           backgroundOffDisabled: this.colors.themeFgDisabled,
-          backgroundOffColor: this.colors.themeFgDefault,
-          backgroundOnColor: this.colors.themeFgDefault,
+          backgroundOffColor: colorTokens.containerL0,
+          backgroundOnColor: const Color(0xff139310),
           indicatorColorDisabled: this.colors.themeFgOnDisabled,
-          indicatorColorOff: this.colors.themeAccentDefault,
-          indicatorColorOn: this.colors.themeAccentSubtle,
+          indicatorColorOff: colorTokens.iconMid,
+          indicatorColorOn: colorTokens.iconHigh,
         );
     this.tableTheme = tableTheme ??
         ArDriveTableTheme(
