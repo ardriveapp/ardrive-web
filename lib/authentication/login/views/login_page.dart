@@ -437,18 +437,20 @@ class _PhoneView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final height = MediaQuery.of(context).size.height;
-
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      body: SizedBox.expand(
-        child: Center(
-          child: SizedBox(
-            height: height < 600 ? 600 : height,
+      body: LayoutBuilder(builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: constraints.maxHeight,
+            ),
             child: _roundedBorderContainer(
               context: context,
               padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-              child: SizedBox.expand(
+              child: SizedBox(
+                width: constraints.maxWidth,
+                height: 300,
                 child: Stack(
                   children: [
                     Center(
@@ -459,8 +461,8 @@ class _PhoneView extends StatelessWidget {
                       ),
                     ),
                     const Positioned(
-                      right: 16,
-                      top: 16,
+                      right: 0,
+                      top: 0,
                       child: IconThemeSwitcher(),
                     ),
                   ],
@@ -468,8 +470,8 @@ class _PhoneView extends StatelessWidget {
               ),
             ),
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 }
