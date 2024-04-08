@@ -67,8 +67,13 @@ class _BiometricToggleState extends State<BiometricToggle> {
             return const SizedBox();
           }
 
+          final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+          final typography = ArDriveTypographyNew.of(context);
+
           return ArDriveToggleSwitch(
             text: biometricText,
+            textStyle: typography.paragraphLarge(
+                color: colorTokens.textLow, fontWeight: ArFontWeight.semiBold),
             value: _isEnabled,
             onChanged: (value) async {
               _isEnabled = value;

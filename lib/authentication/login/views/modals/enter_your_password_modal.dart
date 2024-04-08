@@ -1,4 +1,5 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/authentication/components/biometric_toggle.dart';
 import 'package:ardrive/authentication/components/button.dart';
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
@@ -161,7 +162,16 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
               errorMessage: 'Invalid password. Please try again.',
               showErrorMessage: _isPasswordFailed,
             ),
-            const SizedBox(height: 40),
+            const Flexible(child: SizedBox(height: 40)),
+            Align(
+              alignment: Alignment.center,
+              child: BiometricToggle(
+                onEnableBiometric: () {
+                  context.read<LoginBloc>().add(const UnLockWithBiometrics());
+                },
+              ),
+            ),
+            const Flexible(child: SizedBox(height: 40)),
             ArDriveButtonNew(
                 text: 'Continue',
                 typography: typography,
