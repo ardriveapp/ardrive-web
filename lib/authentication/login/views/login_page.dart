@@ -401,7 +401,7 @@ class _TabletView extends StatelessWidget {
                     children: [
                       Center(
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
+                          padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
                           child: _buildContent(
                             context,
                             loginState: loginState,
@@ -448,25 +448,22 @@ class _PhoneView extends StatelessWidget {
             child: _roundedBorderContainer(
               context: context,
               padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                child: SizedBox.expand(
-                  child: Stack(
-                    children: [
-                      Center(
-                        child: _buildContent(
-                          context,
-                          loginState: loginState,
-                          globalKey: globalKey,
-                        ),
+              child: SizedBox.expand(
+                child: Stack(
+                  children: [
+                    Center(
+                      child: _buildContent(
+                        context,
+                        loginState: loginState,
+                        globalKey: globalKey,
                       ),
-                      const Positioned(
-                        right: 0,
-                        top: 0,
-                        child: IconThemeSwitcher(),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const Positioned(
+                      right: 16,
+                      top: 16,
+                      child: IconThemeSwitcher(),
+                    ),
+                  ],
                 ),
               ),
             ),
