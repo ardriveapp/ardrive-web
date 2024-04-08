@@ -251,48 +251,46 @@ class _LargeDesktopView extends StatelessWidget {
       color: ArDriveTheme.of(context).themeData.backgroundColor,
       child: SizedBox.expand(
         child: Center(
-          child: SingleChildScrollView(
-            child: Container(
-              height: height.clamp(832, 1024),
-              constraints: const BoxConstraints(
-                maxWidth: 1440,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: _roundedBorderContainer(
-                      context: context,
-                      padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
-                      child: const TilesView(),
+          child: Container(
+            height: height.clamp(832, 1024),
+            constraints: const BoxConstraints(
+              maxWidth: 1440,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: _roundedBorderContainer(
+                    context: context,
+                    padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
+                    child: const TilesView(),
+                  ),
+                ),
+                Expanded(
+                  child: _roundedBorderContainer(
+                    context: context,
+                    padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Center(
+                          child: _buildContent(
+                            context,
+                            loginState: loginState,
+                            globalKey: globalKey,
+                          ),
+                        ),
+                        const Positioned(
+                          right: 24,
+                          top: 24,
+                          child: IconThemeSwitcher(),
+                        ),
+                      ],
                     ),
                   ),
-                  Expanded(
-                    child: _roundedBorderContainer(
-                      context: context,
-                      padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Center(
-                            child: _buildContent(
-                              context,
-                              loginState: loginState,
-                              globalKey: globalKey,
-                            ),
-                          ),
-                          const Positioned(
-                            right: 24,
-                            top: 24,
-                            child: IconThemeSwitcher(),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -405,7 +403,7 @@ class _TabletView extends StatelessWidget {
                     children: [
                       Center(
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
+                          padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
                           child: _buildContent(
                             context,
                             loginState: loginState,
@@ -441,44 +439,41 @@ class _PhoneView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final height = MediaQuery.of(context).size.height;
-
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      body: SizedBox.expand(
-        child: Center(
-          child: SingleChildScrollView(
-            child: SizedBox(
-              height: height < 600 ? 600 : height,
-              child: _roundedBorderContainer(
-                context: context,
-                padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                  child: SizedBox.expand(
-                    child: Stack(
-                      children: [
-                        Center(
-                          child: _buildContent(
-                            context,
-                            loginState: loginState,
-                            globalKey: globalKey,
-                          ),
-                        ),
-                        const Positioned(
-                          right: 0,
-                          top: 0,
-                          child: IconThemeSwitcher(),
-                        ),
-                      ],
+      body: LayoutBuilder(builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: constraints.maxHeight,
+            ),
+            child: _roundedBorderContainer(
+              context: context,
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+              child: SizedBox(
+                width: constraints.maxWidth,
+                height: 300,
+                child: Stack(
+                  children: [
+                    Center(
+                      child: _buildContent(
+                        context,
+                        loginState: loginState,
+                        globalKey: globalKey,
+                      ),
                     ),
-                  ),
+                    const Positioned(
+                      right: 0,
+                      top: 0,
+                      child: IconThemeSwitcher(),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 }
