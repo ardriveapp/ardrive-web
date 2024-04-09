@@ -164,7 +164,7 @@ class TutorialsViewState extends State<TutorialsView> {
                 left: 0,
                 right: 0,
                 child: SizedBox(
-                    height: 300,
+                    height: 264,
                     child: ShaderMask(
                       shaderCallback: (Rect bounds) {
                         return RadialGradient(
@@ -256,17 +256,19 @@ class _TutorialContentState extends State<_TutorialContent> {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
-    final twoRowButtons = MediaQuery.of(context).size.width < TABLET;
+    final phoneLayout = MediaQuery.of(context).size.width < TABLET;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (widget.pageNumber == 1 && widget.phoneLayout)
+        if (widget.phoneLayout) ...[
+          const Expanded(child: SizedBox()),
           ArDriveImage(
             image: AssetImage(Resources.images.login.confetti),
-          ),
+          )
+        ],
         Text(
           widget.tutorialPage.title,
           textAlign: TextAlign.center,
@@ -318,113 +320,113 @@ class _TutorialContentState extends State<_TutorialContent> {
                 : SizedBox(width: widget.phoneLayout ? 0 : 160),
           ],
         ),
-        Flexible(
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.all(1),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: colorTokens.strokeLow,
-                  width: 1,
-                ),
-              ),
-              child: AspectRatio(
-                aspectRatio: 4196 / 2160,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: VideoPlayer(
-                    _videoPlayerController,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (twoRowButtons)
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: colorTokens.buttonSecondaryHover,
-                    ),
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                  child: Text(
-                    '${widget.pageNumber}/${widget.totalPages}',
-                    style: typography.paragraphLarge(
-                        color: colorTokens.textLow,
-                        fontWeight: ArFontWeight.semiBold),
-                  ),
-                ),
-              ),
-            Row(
-              key: const ValueKey('buttons'),
-              children: [
-                Expanded(
-                  child: Container(
-                      alignment: Alignment.centerLeft,
-                      child: (widget.tutorialPage.previousButtonText != null &&
-                              widget.tutorialPage.previousButtonAction != null)
-                          ? Text.rich(
-                              TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text:
-                                        widget.tutorialPage.previousButtonText!,
-                                    style: typography.heading5(
-                                        color: colorTokens.textLink,
-                                        fontWeight: ArFontWeight.semiBold),
-                                    recognizer: TapGestureRecognizer()
-                                      ..onTap = () => widget
-                                          .tutorialPage.previousButtonAction!(),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : null),
-                ),
-                twoRowButtons
-                    ? const SizedBox()
-                    : Container(
-                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: colorTokens.buttonSecondaryHover,
-                          ),
-                          borderRadius: BorderRadius.circular(100),
+        phoneLayout
+            ? Expanded(
+                child: Column(children: [
+                  const SizedBox(height: 20),
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: colorTokens.buttonSecondaryHover,
                         ),
-                        child: Text(
-                          '${widget.pageNumber}/${widget.totalPages}',
-                          style: typography.paragraphLarge(
-                              color: colorTokens.textLow,
-                              fontWeight: ArFontWeight.semiBold),
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Text(
+                        '${widget.pageNumber}/${widget.totalPages}',
+                        style: typography.paragraphLarge(
+                            color: colorTokens.textLow,
+                            fontWeight: ArFontWeight.semiBold),
+                      ),
+                    ),
+                  ),
+                  const Expanded(child: SizedBox())
+                ]),
+              )
+            : Flexible(
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(1),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: colorTokens.strokeLow,
+                        width: 1,
+                      ),
+                    ),
+                    child: AspectRatio(
+                      aspectRatio: 4196 / 2160,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: VideoPlayer(
+                          _videoPlayerController,
                         ),
                       ),
-                Expanded(
-                  child: Container(
-                      alignment: Alignment.centerRight,
-                      child: Text.rich(
+                    ),
+                  ),
+                ),
+              ),
+        Row(
+          key: const ValueKey('buttons'),
+          children: [
+            Expanded(
+              child: Container(
+                  alignment: Alignment.centerLeft,
+                  child: (widget.tutorialPage.previousButtonText != null &&
+                          widget.tutorialPage.previousButtonAction != null)
+                      ? Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: widget.tutorialPage.previousButtonText!,
+                                style: typography.heading5(
+                                    color: colorTokens.textLink,
+                                    fontWeight: ArFontWeight.semiBold),
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = () => widget
+                                      .tutorialPage.previousButtonAction!(),
+                              ),
+                            ],
+                          ),
+                        )
+                      : null),
+            ),
+            phoneLayout
+                ? const SizedBox()
+                : Container(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: colorTokens.buttonSecondaryHover,
+                      ),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: Text(
+                      '${widget.pageNumber}/${widget.totalPages}',
+                      style: typography.paragraphLarge(
+                          color: colorTokens.textLow,
+                          fontWeight: ArFontWeight.semiBold),
+                    ),
+                  ),
+            Expanded(
+              child: Container(
+                  alignment: Alignment.centerRight,
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
                         TextSpan(
-                          children: [
-                            TextSpan(
-                              text: widget.tutorialPage.nextButtonText,
-                              style: typography.heading5(
-                                  color: colorTokens.textLink,
-                                  fontWeight: ArFontWeight.semiBold),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () =>
-                                    widget.tutorialPage.nextButtonAction(),
-                            ),
-                          ],
+                          text: widget.tutorialPage.nextButtonText,
+                          style: typography.heading5(
+                              color: colorTokens.textLink,
+                              fontWeight: ArFontWeight.semiBold),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap =
+                                () => widget.tutorialPage.nextButtonAction(),
                         ),
-                      )),
-                )
-              ],
+                      ],
+                    ),
+                  )),
             )
           ],
         ),
