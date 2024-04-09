@@ -105,6 +105,33 @@ class Login {
 
   final String metamask = 'assets/images/login/metamask_logo_flat.svg';
   final String walletUpload = 'assets/images/login/wallet_upload.svg';
+
+  final String particleSpace = 'assets/images/login/particle_space.png';
+  final String dataStorage = 'assets/images/login/data_storage.svg';
+  final String bento2 = 'assets/images/login/bento_box/Bento-2.svg';
+
+  final BentoBox bentoBox = const BentoBox();
+}
+
+class BentoBox {
+  final String profile1 = 'assets/images/login/bento_box/profile_1.png';
+  final String profile2 = 'assets/images/login/bento_box/profile_2.png';
+  final String profile3 = 'assets/images/login/bento_box/profile_3.png';
+  final String profile4 = 'assets/images/login/bento_box/profile_4.png';
+  final String profile5 = 'assets/images/login/bento_box/profile_5.png';
+  final String profile6 = 'assets/images/login/bento_box/profile_6.png';
+  final String noSubscription =
+      'assets/images/login/bento_box/no_subscription.svg';
+  final String decentralized =
+      'assets/images/login/bento_box/decentralized.svg';
+  final String permanentAccessibleData =
+      'assets/images/login/bento_box/permanent_accesible_data.svg';
+  final String priceCalculator =
+      'assets/images/login/bento_box/price_calculator.svg';
+  final String dots = 'assets/images/login/bento_box/dots.png';
+  final String bg = 'assets/images/login/bento_box/Bg.svg';
+
+  const BentoBox();
 }
 
 class _Icons {

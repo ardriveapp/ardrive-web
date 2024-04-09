@@ -137,6 +137,8 @@ dependencies:
       ref: 5f4f2e66c02580105ba89b3fec5a7be907d5466f
   sentry_flutter: ^7.14.0
   webthree: ^2.5.7+2
+  carousel_slider: ^4.2.1
+  dots_indicator: ^3.0.0
 
 dependency_overrides:
   stripe_js:
@@ -197,6 +199,7 @@ flutter:
     - assets/images/brand/
     - assets/images/profile/
     - assets/images/login/
+    - assets/images/login/bento_box/
     - assets/images/icons/
     - assets/animations/
 

@@ -7,6 +7,7 @@ class ArDriveImage extends StatelessWidget {
   final double? width;
   final BoxFit? fit;
   final Color? color;
+  final Animation<double>? opacity;
   const ArDriveImage({
     super.key,
     required this.image,
@@ -15,6 +16,7 @@ class ArDriveImage extends StatelessWidget {
     this.width,
     this.fit = BoxFit.contain,
     this.color,
+    this.opacity,
   });
 
   @override
@@ -36,6 +38,7 @@ class ArDriveImage extends StatelessWidget {
       height: height,
       width: width,
       filterQuality: FilterQuality.high,
+      opacity: opacity,
     );
   }
 }
