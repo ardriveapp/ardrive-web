@@ -124,7 +124,6 @@ class ArDriveThemeData {
           backgroundOnColor: const Color(0xff139310),
           indicatorColorDisabled: this.colors.themeFgOnDisabled,
           indicatorColorOff: colorTokens.iconMid,
-          indicatorColorOn: colorTokens.iconHigh,
         );
     this.tableTheme = tableTheme ??
         ArDriveTableTheme(
@@ -276,7 +275,7 @@ class ArDriveTheme extends InheritedWidget {
 
 class ArDriveToggleTheme {
   ArDriveToggleTheme({
-    required this.indicatorColorOn,
+    this.indicatorColorOn = Colors.white,
     required this.indicatorColorOff,
     required this.indicatorColorDisabled,
     required this.backgroundOnColor,

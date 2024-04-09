@@ -266,7 +266,7 @@ class ArDriveColorTokens {
       inputDisabled: primitives.solidGrey300,
       iconLow: primitives.solidGrey500,
       iconMid: primitives.solidGrey600,
-      iconHigh: const Color(0xffffffff),
+      iconHigh: primitives.solidGrey700, 
     );
   }
 
