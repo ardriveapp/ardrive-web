@@ -273,7 +273,7 @@ class __ArDriveIsForEveryOneState extends State<_ArDriveIsForEveryOne> {
                   ' ${_hoveredProfile != null ? _hoveredProfile!.name : 'everyone'}',
                   style: ArDriveTypographyNew.of(context).paragraphXLarge(
                     color: _hoveredProfile != null
-                        ? colorTokens.textRed.withOpacity(0.5)
+                        ? colorTokens.textRed
                         : colorTokens.textMid,
                     fontWeight: ArFontWeight.semiBold,
                   ),
