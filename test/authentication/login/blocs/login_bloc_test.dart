@@ -21,6 +21,7 @@ void main() {
   late EthereumProviderService mockEthereumProviderService;
   late UserRepository mockUserRepository;
   late TurboUploadService mockTurboUploadService;
+  late ConfigService mockConfigService;
 
   late DownloadService mockDownloadService;
   late ArweaveService mockArweaveService;
@@ -30,6 +31,18 @@ void main() {
   registerFallbackValue(wallet);
   registerFallbackValue(Uint8List(10));
 
+  LoginBloc createBloc() {
+    return LoginBloc(
+        arDriveAuth: mockArDriveAuth,
+        arConnectService: mockArConnectService,
+        ethereumProviderService: mockEthereumProviderService,
+        turboUploadService: mockTurboUploadService,
+        arweaveService: mockArweaveService,
+        downloadService: mockDownloadService,
+        userRepository: mockUserRepository,
+        configService: mockConfigService);
+  }
+
   setUp(() {
     mockArDriveAuth = MockArDriveAuth();
     mockArConnectService = MockArConnectService();
@@ -38,6 +51,7 @@ void main() {
     mockUserRepository = MockUserRepository();
     mockDownloadService = MockDownloadService();
     mockArweaveService = MockArweaveService();
+    mockConfigService = MockConfigService();
   });
 
   group('AddWalletFile', () {
@@ -57,6 +71,7 @@ void main() {
           arweaveService: mockArweaveService,
           downloadService: mockDownloadService,
           userRepository: mockUserRepository,
+          configService: mockConfigService,
         );
       },
       setUp: () {
@@ -91,6 +106,7 @@ void main() {
           arweaveService: mockArweaveService,
           downloadService: mockDownloadService,
           userRepository: mockUserRepository,
+          configService: mockConfigService,
         );
       },
       setUp: () {
@@ -127,6 +143,7 @@ void main() {
           arweaveService: mockArweaveService,
           downloadService: mockDownloadService,
           userRepository: mockUserRepository,
+          configService: mockConfigService,
         );
       },
       setUp: () {
@@ -171,15 +188,7 @@ void main() {
     blocTest(
       'should emit the event to show onboarding when user is not an existing one',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          ethereumProviderService: mockEthereumProviderService,
-          turboUploadService: mockTurboUploadService,
-          arweaveService: mockArweaveService,
-          downloadService: mockDownloadService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         // login with success
@@ -202,15 +211,7 @@ void main() {
     blocTest(
       'should emit success when arconnect and wallet doesnt mismatch',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          ethereumProviderService: mockEthereumProviderService,
-          turboUploadService: mockTurboUploadService,
-          arweaveService: mockArweaveService,
-          downloadService: mockDownloadService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         // login with success
@@ -247,6 +248,7 @@ void main() {
           arweaveService: mockArweaveService,
           downloadService: mockDownloadService,
           userRepository: mockUserRepository,
+          configService: mockConfigService,
         );
       },
       setUp: () {
@@ -279,15 +281,7 @@ void main() {
     blocTest(
       'should emit failure when an unknown error occurs',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          ethereumProviderService: mockEthereumProviderService,
-          turboUploadService: mockTurboUploadService,
-          arweaveService: mockArweaveService,
-          downloadService: mockDownloadService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         // login with success
@@ -323,15 +317,7 @@ void main() {
     blocTest(
       'should emit the event to prompt password when user is an existing one and biometrics are disabled',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          ethereumProviderService: mockEthereumProviderService,
-          turboUploadService: mockTurboUploadService,
-          arweaveService: mockArweaveService,
-          downloadService: mockDownloadService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         when(() => mockArDriveAuth.isUserLoggedIn())
@@ -349,15 +335,7 @@ void main() {
     blocTest(
       'should login with biometrics when user is an existing one and biometrics are enabled',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          ethereumProviderService: mockEthereumProviderService,
-          turboUploadService: mockTurboUploadService,
-          arweaveService: mockArweaveService,
-          downloadService: mockDownloadService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         when(() => mockArDriveAuth.isUserLoggedIn())
@@ -387,15 +365,7 @@ void main() {
     blocTest(
       'should emit PromptPassword when user is an existing one and biometrics are enabled but login with biometrics fails',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          ethereumProviderService: mockEthereumProviderService,
-          turboUploadService: mockTurboUploadService,
-          arweaveService: mockArweaveService,
-          downloadService: mockDownloadService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         when(() => mockArDriveAuth.isUserLoggedIn())
@@ -417,15 +387,7 @@ void main() {
     blocTest(
       'should emit the initial event when user is not logged in',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          ethereumProviderService: mockEthereumProviderService,
-          turboUploadService: mockTurboUploadService,
-          arweaveService: mockArweaveService,
-          downloadService: mockDownloadService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         // user doesn't exist
@@ -463,15 +425,7 @@ void main() {
     blocTest(
       'should emit success when user unlocks with success',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          ethereumProviderService: mockEthereumProviderService,
-          turboUploadService: mockTurboUploadService,
-          arweaveService: mockArweaveService,
-          downloadService: mockDownloadService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         // user doesn't exist
@@ -492,15 +446,7 @@ void main() {
     blocTest(
       'should emit failure when unlock fails',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          ethereumProviderService: mockEthereumProviderService,
-          turboUploadService: mockTurboUploadService,
-          arweaveService: mockArweaveService,
-          downloadService: mockDownloadService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         // user doesn't exist
@@ -543,15 +489,7 @@ void main() {
     blocTest(
       'should emit success when user is created with success',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          ethereumProviderService: mockEthereumProviderService,
-          turboUploadService: mockTurboUploadService,
-          arweaveService: mockArweaveService,
-          downloadService: mockDownloadService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         // user doesn't exist
@@ -579,15 +517,7 @@ void main() {
     blocTest(
       'should emit failure when user creation fails',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          ethereumProviderService: mockEthereumProviderService,
-          turboUploadService: mockTurboUploadService,
-          arweaveService: mockArweaveService,
-          downloadService: mockDownloadService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         // user doesn't exist
@@ -619,15 +549,7 @@ void main() {
     blocTest(
       'should emit success when user is created with success with ar connect',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          ethereumProviderService: mockEthereumProviderService,
-          turboUploadService: mockTurboUploadService,
-          arweaveService: mockArweaveService,
-          downloadService: mockDownloadService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         when(() => mockArDriveAuth.login(
@@ -659,15 +581,7 @@ void main() {
     blocTest(
       'should emit failure when wallet mismatch',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          ethereumProviderService: mockEthereumProviderService,
-          turboUploadService: mockTurboUploadService,
-          arweaveService: mockArweaveService,
-          downloadService: mockDownloadService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         // user doesn't exist
@@ -711,15 +625,7 @@ void main() {
     blocTest(
       'should get the wallet from arconnect and emit prompt password',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          ethereumProviderService: mockEthereumProviderService,
-          turboUploadService: mockTurboUploadService,
-          arweaveService: mockArweaveService,
-          downloadService: mockDownloadService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         when(() => mockArConnectService.connect())
@@ -740,15 +646,7 @@ void main() {
     blocTest(
       'should emit a state to create new password when user never logged on ardrive',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          ethereumProviderService: mockEthereumProviderService,
-          turboUploadService: mockTurboUploadService,
-          arweaveService: mockArweaveService,
-          downloadService: mockDownloadService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         when(() => mockArConnectService.connect())
@@ -777,15 +675,7 @@ void main() {
     blocTest(
       'should emit a failure when user doesnt have permissions',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          ethereumProviderService: mockEthereumProviderService,
-          turboUploadService: mockTurboUploadService,
-          arweaveService: mockArweaveService,
-          downloadService: mockDownloadService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         when(() => mockArConnectService.connect())
@@ -818,15 +708,7 @@ void main() {
     blocTest(
       'should emit the initial login state and call logout when user is logged in',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          ethereumProviderService: mockEthereumProviderService,
-          turboUploadService: mockTurboUploadService,
-          arweaveService: mockArweaveService,
-          downloadService: mockDownloadService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         when(() => mockArDriveAuth.isUserLoggedIn())
@@ -846,15 +728,7 @@ void main() {
     blocTest(
       'should emit the initial login state and not call logout when user is not logged in',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          ethereumProviderService: mockEthereumProviderService,
-          turboUploadService: mockTurboUploadService,
-          arweaveService: mockArweaveService,
-          downloadService: mockDownloadService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         // not logged in
@@ -884,15 +758,7 @@ void main() {
     blocTest(
       'should emit the state to create password',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          ethereumProviderService: mockEthereumProviderService,
-          turboUploadService: mockTurboUploadService,
-          arweaveService: mockArweaveService,
-          downloadService: mockDownloadService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         // not logged in
@@ -935,15 +801,7 @@ void main() {
     blocTest(
       'should emit the state to create password',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          ethereumProviderService: mockEthereumProviderService,
-          turboUploadService: mockTurboUploadService,
-          arweaveService: mockArweaveService,
-          downloadService: mockDownloadService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         when(() => mockArDriveAuth.isUserLoggedIn())
@@ -965,15 +823,7 @@ void main() {
     blocTest(
       'should emit a failure when biometrics fails',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          ethereumProviderService: mockEthereumProviderService,
-          turboUploadService: mockTurboUploadService,
-          arweaveService: mockArweaveService,
-          downloadService: mockDownloadService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         when(() => mockArDriveAuth.isUserLoggedIn())

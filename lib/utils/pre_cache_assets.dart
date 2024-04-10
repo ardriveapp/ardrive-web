@@ -6,7 +6,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 void preCacheLoginAssets(BuildContext context) {
   List<String> assetPaths = [
     Resources.images.login.gridImage,
-    Resources.images.login.ardriveLoader,
     Resources.images.login.whatIsAKeyfile,
     Resources.images.login.aboutSecurity,
     Resources.images.login.bentoBox.profile2,

@@ -9,12 +9,14 @@ class ArDriveToggleSwitch extends StatefulWidget {
   const ArDriveToggleSwitch({
     super.key,
     required this.text,
+    this.textStyle,
     this.onChanged,
     this.value = false,
     this.isEnabled = true,
   });
 
   final String text;
+  final TextStyle? textStyle;
   final bool value;
   final bool isEnabled;
   final FutureOr Function(bool value)? onChanged;
@@ -143,7 +145,7 @@ class ArDriveToggleSwitchState extends State<ArDriveToggleSwitch> {
             ),
             Text(
               widget.text,
-              style: ArDriveTypography.body.bodyRegular(),
+              style: widget.textStyle ?? ArDriveTypography.body.bodyRegular(),
             ),
           ],
         ),

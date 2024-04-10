@@ -120,11 +120,10 @@ class ArDriveThemeData {
     this.toggleTheme = toggleTheme ??
         ArDriveToggleTheme(
           backgroundOffDisabled: this.colors.themeFgDisabled,
-          backgroundOffColor: this.colors.themeFgDefault,
-          backgroundOnColor: this.colors.themeFgDefault,
+          backgroundOffColor: colorTokens.containerL0,
+          backgroundOnColor: const Color(0xff139310),
           indicatorColorDisabled: this.colors.themeFgOnDisabled,
-          indicatorColorOff: this.colors.themeAccentDefault,
-          indicatorColorOn: this.colors.themeAccentSubtle,
+          indicatorColorOff: colorTokens.iconMid,
         );
     this.tableTheme = tableTheme ??
         ArDriveTableTheme(
@@ -276,7 +275,7 @@ class ArDriveTheme extends InheritedWidget {
 
 class ArDriveToggleTheme {
   ArDriveToggleTheme({
-    required this.indicatorColorOn,
+    this.indicatorColorOn = Colors.white,
     required this.indicatorColorOff,
     required this.indicatorColorDisabled,
     required this.backgroundOnColor,
