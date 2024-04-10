@@ -22,6 +22,7 @@ void preCacheLoginAssets(BuildContext context) {
     Resources.images.login.bentoBox.decentralized,
     Resources.images.login.bentoBox.permanentAccessibleData,
     Resources.images.login.bentoBox.priceCalculator,
+    Resources.images.login.bentoBox.dataStorage,
   ];
 
   for (String assetPath in assetPaths) {
