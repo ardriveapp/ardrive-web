@@ -109,7 +109,7 @@ class Login {
 
   final String particleSpace = 'assets/images/login/particle_space.png';
   final String dataStorage = 'assets/images/login/data_storage.svg';
-  final String bento2 = 'assets/images/login/bento_box/Bento-2.svg';
+  final String bento2 = 'assets/images/login/bento_box/bento-2.svg';
 
   final BentoBox bentoBox = const BentoBox();
 }
