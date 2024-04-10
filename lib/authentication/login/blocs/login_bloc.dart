@@ -11,6 +11,7 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
+import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/services/ethereum/ethereum_wallet.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider_wallet.dart';
@@ -40,6 +41,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   final TurboUploadService _turboUploadService;
   final ArweaveService _arweaveService;
   final DownloadService _downloadService;
+  final ConfigService _configService;
 
   bool ignoreNextWaletSwitch = false;
 
@@ -60,12 +62,14 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     required ArweaveService arweaveService,
     required DownloadService downloadService,
     required UserRepository userRepository,
+    required ConfigService configService,
   })  : _arDriveAuth = arDriveAuth,
         _arConnectService = arConnectService,
         _ethereumProviderService = ethereumProviderService,
         _arweaveService = arweaveService,
         _turboUploadService = turboUploadService,
         _downloadService = downloadService,
+        _configService = configService,
         super(LoginLoading()) {
     on<LoginEvent>(_onLoginEvent);
     _listenToWalletChange();
@@ -73,7 +77,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
   get isArConnectAvailable => _arConnectService.isExtensionPresent();
 
-  get isMetamaskAvailable => _ethereumProviderService.isExtensionPresent();
+  get isMetamaskAvailable =>
+      _configService.config.enableMetamaskLogin &&
+      _ethereumProviderService.isExtensionPresent();
 
   Future<void> _onLoginEvent(LoginEvent event, Emitter<LoginState> emit) async {
     if (event is SelectLoginFlow) {

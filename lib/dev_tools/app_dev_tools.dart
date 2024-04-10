@@ -431,6 +431,24 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
                         },
                       ),
                       ArDriveButton(
+                        text: 'staging env',
+                        onPressed: () {
+                          setState(() {
+                            _windowTitle.value = 'Reloading...';
+
+                            configService.updateAppConfig(
+                              AppConfig.fromJson(snapshot.data![2]),
+                            );
+                          });
+
+                          Future.delayed(const Duration(seconds: 1), () {
+                            setState(() {
+                              _windowTitle.value = 'Dev config';
+                            });
+                          });
+                        },
+                      ),
+                      ArDriveButton(
                         text: 'prod env',
                         onPressed: () {
                           setState(() {
@@ -470,10 +488,13 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
         await rootBundle.loadString('assets/config/dev.json');
     final String prodConfig =
         await rootBundle.loadString('assets/config/prod.json');
+    final String stagingConfig =
+        await rootBundle.loadString('assets/config/staging.json');
 
     final List<Map<String, dynamic>> configs = [
       jsonDecode(devConfig),
-      jsonDecode(prodConfig)
+      jsonDecode(prodConfig),
+      jsonDecode(stagingConfig),
     ];
 
     return configs;
