@@ -253,46 +253,47 @@ class _LargeDesktopView extends StatelessWidget {
       color: ArDriveTheme.of(context).themeData.backgroundColor,
       child: SizedBox.expand(
         child: Center(
-          child: Container(
-            height: height.clamp(832, 1024),
-            constraints: const BoxConstraints(
-              maxWidth: 1440,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: _roundedBorderContainer(
-                    context: context,
-                    padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
-                    child: const TilesView(),
-                  ),
-                ),
-                Expanded(
-                  child: _roundedBorderContainer(
-                    context: context,
-                    padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Center(
-                          child: _buildContent(
-                            context,
-                            loginState: loginState,
-                            globalKey: globalKey,
-                          ),
-                        ),
-                        const Positioned(
-                          right: 24,
-                          top: 24,
-                          child: IconThemeSwitcher(),
-                        ),
-                      ],
+          child: SingleChildScrollView(
+            child: Container(
+              height: height.clamp(832, 1024),
+              constraints: const BoxConstraints(
+                maxWidth: 1440,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(8, 8, 0, 8),
+                      child: TilesView(),
                     ),
                   ),
-                ),
-              ],
+                  Expanded(
+                    child: _roundedBorderContainer(
+                      context: context,
+                      padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Center(
+                            child: _buildContent(
+                              context,
+                              loginState: loginState,
+                              globalKey: globalKey,
+                            ),
+                          ),
+                          const Positioned(
+                            right: 24,
+                            top: 24,
+                            child: IconThemeSwitcher(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                ],
+              ),
             ),
           ),
         ),
@@ -323,11 +324,10 @@ class _SmallDesktopView extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: _roundedBorderContainer(
-                      context: context,
-                      padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
-                      child: const TilesView(),
+                  const Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(8, 8, 0, 8),
+                      child: TilesView(),
                     ),
                   ),
                   Expanded(
@@ -388,13 +388,12 @@ class _TabletView extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _roundedBorderContainer(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: const SizedBox(
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: SizedBox(
                   height: 266,
                   child: TilesView(),
                 ),
-                context: context,
               ),
               SizedBox(
                 height: height < 1096 ? 800 : height - 298,
