@@ -255,16 +255,39 @@ class _LargeDesktopView extends StatelessWidget {
               constraints: const BoxConstraints(
                 maxWidth: 1440,
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
+                  const Expanded(
                     child: Padding(
                       padding: EdgeInsets.fromLTRB(8, 8, 0, 8),
                       child: TilesView(),
                     ),
                   ),
+                  Expanded(
+                    child: _roundedBorderContainer(
+                      context: context,
+                      padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Center(
+                            child: _buildContent(
+                              context,
+                              loginState: loginState,
+                              globalKey: globalKey,
+                            ),
+                          ),
+                          const Positioned(
+                            right: 24,
+                            top: 24,
+                            child: IconThemeSwitcher(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
                 ],
               ),
             ),
