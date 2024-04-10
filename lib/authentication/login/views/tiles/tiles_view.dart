@@ -857,7 +857,7 @@ class _PriceCalculatorState extends State<_PriceCalculator> {
     final color = ArDriveTheme.of(context).themeData.colorTokens.textLow;
     return GestureDetector(
       onTap: () {
-        openUrl(url: 'https://ardrive.io/pricing');
+        openUrl(url: Resources.priceCalculatorLink);
       },
       child: ArDriveClickArea(
         child: MouseRegion(

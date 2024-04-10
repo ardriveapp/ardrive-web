@@ -27,6 +27,7 @@ class Resources {
 
   static const ardriveAppLimits =
       'https://help.ardrive.io/hc/en-us/articles/5300389777179-ArDrive-App-';
+  static const priceCalculatorLink = 'https://ardrive.io/pricing';
 }
 
 class Images {
