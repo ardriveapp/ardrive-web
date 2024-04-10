@@ -129,7 +129,7 @@ class BentoBox {
   final String priceCalculator =
       'assets/images/login/bento_box/price_calculator.svg';
   final String dots = 'assets/images/login/bento_box/dots.png';
-  final String bg = 'assets/images/login/bento_box/Bg.svg';
+  final String bg = 'assets/images/login/bento_box/Bg.png';
 
   const BentoBox();
 }

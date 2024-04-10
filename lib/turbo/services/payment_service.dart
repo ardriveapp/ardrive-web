@@ -210,12 +210,12 @@ Future<ArDriveHTTPResponse> _requestPriceForFiat(
 
     return result;
   } catch (error) {
-    if (error is ArDriveHTTPException) {
-      if (error.statusCode == 400) {
-        logger.e('Invalid promo code: $promoCode');
-        throw PaymentServiceInvalidPromoCode(promoCode: promoCode);
-      }
+    // TODO: `statusCode` equals to 400 could be som
+    if (error is ArDriveHTTPException && error.statusCode == 400) {
+      logger.e('Invalid promo code: $promoCode');
+      throw PaymentServiceInvalidPromoCode(promoCode: promoCode);
     }
+    
     throw PaymentServiceException(
       'Turbo price fetch failed with exception: $error',
     );

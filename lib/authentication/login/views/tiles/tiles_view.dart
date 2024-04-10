@@ -1,9 +1,13 @@
+// ignore_for_file: library_private_types_in_public_api
+
 import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/svg.dart';
 
 class TilesView extends StatelessWidget {
@@ -25,7 +29,7 @@ class TilesView extends StatelessWidget {
   }
 
   Widget _tablet() {
-    return const _PermanentStorageTile();
+    return const _RoundContainer(child: _PermanentStorageTile());
   }
 
   Widget _largeDesktop() {
@@ -35,20 +39,23 @@ class TilesView extends StatelessWidget {
           child: Row(
             children: [
               const Flexible(
-                  flex: 2,
-                  child: Padding(
-                      padding: const EdgeInsets.only(
-                          left: 8, right: 8, top: 8, bottom: 8),
-                      child: _RoundContainer(child: _ArDriveIsForEveryOne()))),
+                flex: 2,
+                child: Padding(
+                  padding:
+                      EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 8),
+                  child: _RoundContainer(child: _ArDriveIsForEveryOne()),
+                ),
+              ),
               Flexible(
                 child: Padding(
-                  padding: const EdgeInsets.only(
-                    right: 8,
-                    top: 8,
-                    bottom: 8,
-                  ),
-                  child: _MilitareGradeEncryption(),
-                ),
+                    padding: const EdgeInsets.only(
+                      right: 8,
+                      top: 8,
+                      bottom: 8,
+                    ),
+                    child: _RoundContainer(
+                      child: _MilitareGradeEncryption(),
+                    )),
               )
             ],
           ),
@@ -69,10 +76,10 @@ class TilesView extends StatelessWidget {
             ),
           ),
         ),
-        Flexible(
+        const Flexible(
           child: Row(
             children: [
-              const Flexible(
+              Flexible(
                 flex: 2,
                 child: Padding(
                   padding: EdgeInsets.only(
@@ -85,13 +92,15 @@ class TilesView extends StatelessWidget {
               Flexible(
                 flex: 3,
                 child: Padding(
-                  padding: const EdgeInsets.only(
+                  padding: EdgeInsets.only(
                     left: 8,
                     bottom: 8,
                     right: 8,
                   ),
                   child: _RoundContainer(
-                    child: Center(child: _PriceCalculator()),
+                    child: Center(
+                      child: _PriceCalculator(),
+                    ),
                   ),
                 ),
               ),
@@ -103,9 +112,9 @@ class TilesView extends StatelessWidget {
   }
 
   Widget _smallDesktop() {
-    return Column(
+    return const Column(
       children: [
-        const Flexible(
+        Flexible(
           flex: 1,
           child: Padding(
             padding: EdgeInsets.only(
@@ -119,7 +128,7 @@ class TilesView extends StatelessWidget {
         Flexible(
           flex: 1,
           child: Padding(
-            padding: const EdgeInsets.only(
+            padding: EdgeInsets.only(
               left: 8,
               right: 8,
               top: 8,
@@ -127,7 +136,7 @@ class TilesView extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Flexible(
+                Flexible(
                   flex: 1,
                   child: Padding(
                     padding: EdgeInsets.only(right: 8.0),
@@ -156,11 +165,14 @@ class _MilitareGradeEncryption extends StatelessWidget {
       mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          'Military-grade encryption',
-          style: ArDriveTypographyNew.of(context).paragraphXLarge(
-            color: ArDriveTheme.of(context).themeData.colorTokens.textLow,
-            fontWeight: ArFontWeight.semiBold,
+        Padding(
+          padding: const EdgeInsets.only(left: 18, top: 14),
+          child: Text(
+            'Military-grade encryption',
+            style: ArDriveTypographyNew.of(context).paragraphXLarge(
+              color: ArDriveTheme.of(context).themeData.colorTokens.textLow,
+              fontWeight: ArFontWeight.semiBold,
+            ),
           ),
         ),
         Align(
@@ -178,29 +190,43 @@ class _MilitareGradeEncryption extends StatelessWidget {
   }
 }
 
-class _RoundContainer extends StatelessWidget {
-  const _RoundContainer({super.key, required this.child});
+class _RoundContainer extends StatefulWidget {
+  const _RoundContainer({required this.child});
   final Widget child;
+
+  @override
+  State<_RoundContainer> createState() => _RoundContainerState();
+}
+
+class _RoundContainerState extends State<_RoundContainer> {
+  bool _isHovering = false;
 
   @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    return Container(
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: colorTokens.strokeLow.withOpacity(0.08),
-          width: 0.5,
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      child: Container(
+        padding: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: _isHovering
+                ? colorTokens.textRed
+                : colorTokens.strokeLow.withOpacity(0.08),
+            width: 1,
+          ),
+          borderRadius: BorderRadius.circular(8),
+          color: colorTokens.containerL1,
         ),
-        borderRadius: BorderRadius.circular(8),
+        child: widget.child,
       ),
-      child: child,
     );
   }
 }
 
 class _ArDriveIsForEveryOne extends StatefulWidget {
-  const _ArDriveIsForEveryOne({super.key});
+  const _ArDriveIsForEveryOne();
 
   @override
   State<_ArDriveIsForEveryOne> createState() => __ArDriveIsForEveryOneState();
@@ -222,7 +248,7 @@ class __ArDriveIsForEveryOneState extends State<_ArDriveIsForEveryOne> {
         Padding(
           padding: const EdgeInsets.only(top: 8.0, left: 28),
           child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
+            duration: const Duration(milliseconds: 150),
             transitionBuilder: (child, animation) {
               return FadeTransition(
                 opacity: animation,
@@ -240,6 +266,7 @@ class __ArDriveIsForEveryOneState extends State<_ArDriveIsForEveryOne> {
                         .colorTokens
                         .textMid
                         .withOpacity(0.5),
+                    fontWeight: ArFontWeight.semiBold,
                   ),
                 ),
                 Text(
@@ -258,7 +285,7 @@ class __ArDriveIsForEveryOneState extends State<_ArDriveIsForEveryOne> {
         Padding(
           padding: const EdgeInsets.only(top: 8.0, left: 28),
           child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
+            duration: const Duration(milliseconds: 150),
             transitionBuilder: (child, animation) {
               return FadeTransition(
                 opacity: animation,
@@ -274,6 +301,7 @@ class __ArDriveIsForEveryOneState extends State<_ArDriveIsForEveryOne> {
                   style: ArDriveTypographyNew.of(context).paragraphNormal(
                     color:
                         ArDriveTheme.of(context).themeData.colorTokens.textLow,
+                    fontWeight: ArFontWeight.semiBold,
                   ),
                 ),
               ],
@@ -301,7 +329,6 @@ class __ArDriveIsForEveryOneState extends State<_ArDriveIsForEveryOne> {
 
 class _ProfileImageTile extends StatefulWidget {
   const _ProfileImageTile({
-    super.key,
     required this.model,
     required this.onHover,
     required this.onEndHover,
@@ -335,6 +362,7 @@ class _ProfileImageTileState extends State<_ProfileImageTile> {
         topLeft: Radius.circular(8),
         topRight: Radius.circular(8),
       ),
+      clipBehavior: Clip.hardEdge,
       child: MouseRegion(
         onHover: (_) {
           setState(() => _isHovering = true);
@@ -350,8 +378,9 @@ class _ProfileImageTileState extends State<_ProfileImageTile> {
               color: colorTokens.strokeLow.withOpacity(0.08),
               width: 1,
             ),
+            color: colorTokens.containerL0,
             borderRadius: const BorderRadius.all(
-              Radius.circular(8),
+              Radius.circular(8.5),
             ),
           ),
           padding: const EdgeInsets.all(4),
@@ -362,7 +391,7 @@ class _ProfileImageTileState extends State<_ProfileImageTile> {
             children: [
               ClipRRect(
                 borderRadius: const BorderRadius.all(
-                  Radius.circular(8),
+                  Radius.circular(8.5),
                 ),
                 child: ArDriveImage(
                   image: AssetImage(widget.model.image),
@@ -376,14 +405,12 @@ class _ProfileImageTileState extends State<_ProfileImageTile> {
                   height: 106,
                   width: 107,
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.75),
-                    borderRadius: const BorderRadius.all(
-                      Radius.circular(8),
-                    ),
+                    color: colorTokens.containerL0.withOpacity(0.75),
                   ),
                   child: Center(
                     child: Text(
                       widget.model.name,
+                      textAlign: TextAlign.center,
                       style: ArDriveTypographyNew.of(context).paragraphNormal(
                         color: colorTokens.textLow,
                         fontWeight: ArFontWeight.bold,
@@ -399,74 +426,88 @@ class _ProfileImageTileState extends State<_ProfileImageTile> {
   }
 }
 
-class _PermanentStorageTile extends StatelessWidget {
-  const _PermanentStorageTile({super.key});
+class _PermanentStorageTile extends StatefulWidget {
+  const _PermanentStorageTile();
+
+  @override
+  State<_PermanentStorageTile> createState() => _PermanentStorageTileState();
+}
+
+class _PermanentStorageTileState extends State<_PermanentStorageTile> {
+  bool _isHovering = false;
 
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Stack(
-          fit: StackFit.expand,
-          children: [
-            ArDriveImage(
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.all(
+              Radius.circular(8),
+            ),
+            child: ArDriveImage(
               image: AssetImage(
                 Resources.images.login.particleSpace,
               ),
               fit: BoxFit.cover,
+              color: colorTokens.containerL0,
+              colorBlendMode: BlendMode.color,
             ),
-            Opacity(
-              opacity: 0.5,
-              child: Container(color: const Color(0xff141414)),
-            )
-          ],
-        ),
-        Align(
-          alignment: Alignment.center,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              SvgPicture.asset(
-                Resources.images.login.dataStorage,
-                height: 133,
-                width: 133,
-              ),
-              const SizedBox(width: 29),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Permanent',
-                    style: typography.heading2(
-                        color: const Color(0xffDB323B),
-                        fontWeight: ArFontWeight.semiBold),
-                  ),
-                  Text(
-                    'data storage',
-                    style: typography.heading2(
-                      color: colorTokens.textOnPrimary,
-                      fontWeight: ArFontWeight.semiBold,
-                    ),
-                  ),
-                ],
-              )
-            ],
           ),
-        ),
-      ],
+          Align(
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                AnimatedScale(
+                  scale: _isHovering ? 1.05 : 1.0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  child: SvgPicture.asset(
+                    Resources.images.login.dataStorage,
+                    height: 133,
+                    width: 133,
+                  ),
+                ),
+                const SizedBox(width: 29),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Permanent',
+                      style: typography.heading2(
+                          color: const Color(0xffDB323B),
+                          fontWeight: ArFontWeight.semiBold),
+                    ),
+                    Text(
+                      'data storage',
+                      style: typography.heading2(
+                        color: colorTokens.textMid,
+                        fontWeight: ArFontWeight.semiBold,
+                      ),
+                    ),
+                  ],
+                )
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class CarouselWithGroups extends StatefulWidget {
-  final Function(_ProfileImageTileModel) onHover;
+  final Function(_ProfileImageTileModel model) onHover;
   final Function() onEndHover;
 
   const CarouselWithGroups({
@@ -518,7 +559,6 @@ class _CarouselWithGroupsState extends State<CarouselWithGroups> {
 
   @override
   Widget build(BuildContext context) {
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return Column(
       mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -651,7 +691,7 @@ class _CustomIndicatorState extends State<CustomIndicator>
         width: indicatorWidth,
         height: 9.0,
         decoration: BoxDecoration(
-          color: const Color(0xff3D3D3D),
+          color: const Color(0xffC4C4C4),
           borderRadius: BorderRadius.circular(4.5),
         ),
       );
@@ -663,7 +703,7 @@ class _CustomIndicatorState extends State<CustomIndicator>
       height: 9.0,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(4.5),
-        color: const Color(0xff3D3D3D),
+        color: const Color(0xffC4C4C4),
       ),
       child: Stack(
         children: [
@@ -674,7 +714,7 @@ class _CustomIndicatorState extends State<CustomIndicator>
             width: indicatorWidth * _animation.value,
             child: Container(
               decoration: BoxDecoration(
-                color: colorTokens.textLow,
+                color: colorTokens.iconMid,
                 borderRadius: BorderRadius.circular(4.5),
               ),
             ),
@@ -686,7 +726,7 @@ class _CustomIndicatorState extends State<CustomIndicator>
 }
 
 class _Bento5 extends StatefulWidget {
-  const _Bento5({super.key});
+  const _Bento5();
 
   @override
   State<_Bento5> createState() => __Bento5State();
@@ -697,7 +737,7 @@ class __Bento5State extends State<_Bento5> {
     _BentoBox5Model(Resources.images.login.bentoBox.noSubscription,
         'No monthly subscriptions.'),
     _BentoBox5Model(Resources.images.login.bentoBox.permanentAccessibleData,
-        'Permanently accessible data.'),
+        'Permanent storage'),
     _BentoBox5Model(Resources.images.login.bentoBox.decentralized,
         'Decentralized and open sourced.'),
   ];
@@ -708,59 +748,63 @@ class __Bento5State extends State<_Bento5> {
   @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
-    return _RoundContainer(
-      child: Center(
-        child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                CarouselSlider.builder(
-                  carouselController: _mainCarouselController,
-                  itemCount: _bentoBox5Models.length,
-                  itemBuilder:
-                      (BuildContext context, int itemIndex, int pageViewIndex) {
-                    return _Bento5Tile(
-                      model: _bentoBox5Models[itemIndex],
-                    );
-                  },
-                  options: CarouselOptions(
-                    height: 200,
-                    enlargeCenterPage: false,
-                    viewportFraction: 1,
-                    enableInfiniteScroll: true,
-                    autoPlayAnimationDuration:
-                        const Duration(milliseconds: 300),
-                    pauseAutoPlayOnManualNavigate: true,
-                    autoPlayInterval: const Duration(seconds: 5),
-                    autoPlayCurve: Curves.easeInOut,
-                    autoPlay: true,
-                    aspectRatio: 1 / 1,
-                    onPageChanged: (index, reason) => setState(() {
-                      _currentGroupIndex = index;
+    ArDriveTypographyNew.of(context);
+    return Container(
+      color: colorTokens.containerL0,
+      child: _RoundContainer(
+        child: Center(
+          child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(vertical: 14.0, horizontal: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  CarouselSlider.builder(
+                    carouselController: _mainCarouselController,
+                    itemCount: _bentoBox5Models.length,
+                    itemBuilder: (BuildContext context, int itemIndex,
+                        int pageViewIndex) {
+                      return _Bento5Tile(
+                        model: _bentoBox5Models[itemIndex],
+                      );
+                    },
+                    options: CarouselOptions(
+                      height: 200,
+                      enlargeCenterPage: false,
+                      viewportFraction: 1,
+                      enableInfiniteScroll: true,
+                      autoPlayAnimationDuration:
+                          const Duration(milliseconds: 300),
+                      pauseAutoPlayOnManualNavigate: true,
+                      autoPlayInterval: const Duration(seconds: 5),
+                      autoPlayCurve: Curves.easeInOut,
+                      autoPlay: true,
+                      aspectRatio: 1 / 1,
+                      onPageChanged: (index, reason) => setState(() {
+                        _currentGroupIndex = index;
+                      }),
+                    ),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(_bentoBox5Models.length, (index) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                        child: CustomIndicator(
+                          index: index,
+                          currentPage: _currentGroupIndex,
+                          duration: const Duration(seconds: 5),
+                          onPageAnimationEnd: (index) {
+                            // _mainCarouselController.animateToPage(index);
+                          },
+                        ),
+                      );
                     }),
                   ),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(_bentoBox5Models.length, (index) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                      child: CustomIndicator(
-                        index: index,
-                        currentPage: _currentGroupIndex,
-                        duration: const Duration(seconds: 5),
-                        onPageAnimationEnd: (index) {
-                          // _mainCarouselController.animateToPage(index);
-                        },
-                      ),
-                    );
-                  }),
-                ),
-              ],
-            )),
+                ],
+              )),
+        ),
       ),
     );
   }
@@ -774,7 +818,7 @@ class _BentoBox5Model {
 }
 
 class _Bento5Tile extends StatelessWidget {
-  const _Bento5Tile({super.key, required this.model});
+  const _Bento5Tile({required this.model});
 
   final _BentoBox5Model model;
 
@@ -784,29 +828,26 @@ class _Bento5Tile extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     return Column(
       children: [
-        Text(model.title,
-            style: typography.heading6(
-              color: colorTokens.textLow,
-              fontWeight: ArFontWeight.semiBold,
-            )),
+        Text(
+          model.title,
+          style: typography.heading6(
+            color: colorTokens.textLow,
+            fontWeight: ArFontWeight.semiBold,
+          ),
+        ),
         Expanded(
           child: SvgPicture.asset(
             model.image,
             color: colorTokens.textRed,
           ),
         ),
-        // SvgPicture.asset(
-        //   Resources.images.login.bentoBox.bg,
-        //   height: 100,
-        //   width: 100,
-        // ),
       ],
     );
   }
 }
 
 class _PriceCalculator extends StatefulWidget {
-  _PriceCalculator({super.key});
+  const _PriceCalculator();
 
   @override
   State<_PriceCalculator> createState() => _PriceCalculatorState();

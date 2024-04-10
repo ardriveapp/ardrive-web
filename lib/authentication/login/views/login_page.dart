@@ -256,11 +256,10 @@ class _LargeDesktopView extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: _roundedBorderContainer(
-                      context: context,
-                      padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
-                      child: const TilesView(),
+                  const Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(8, 8, 0, 8),
+                      child: TilesView(),
                     ),
                   ),
                   Expanded(
@@ -318,11 +317,10 @@ class _SmallDesktopView extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: _roundedBorderContainer(
-                      context: context,
-                      padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
-                      child: const TilesView(),
+                  const Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(8, 8, 0, 8),
+                      child: TilesView(),
                     ),
                   ),
                   Expanded(
@@ -383,13 +381,12 @@ class _TabletView extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _roundedBorderContainer(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: const SizedBox(
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: SizedBox(
                   height: 266,
                   child: TilesView(),
                 ),
-                context: context,
               ),
               SizedBox(
                 height: height < 1096 ? 800 : height - 298,
