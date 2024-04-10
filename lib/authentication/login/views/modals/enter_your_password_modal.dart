@@ -2,6 +2,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/components/button.dart';
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
+import 'package:ardrive/authentication/login/views/modals/import_wallet_modal.dart';
 import 'package:ardrive/components/truncated_address_new.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider_wallet.dart';
@@ -9,6 +10,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -113,11 +115,40 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                               fontWeight: ArFontWeight.semiBold)),
                       const SizedBox(width: 8),
                       FutureBuilder(
-                          future: _getWalletAddress(),
-                          builder: (context, address) => address.hasData
-                              ? TruncatedAddressNew(
-                                  walletAddress: address.data!)
-                              : const Text(''))
+                        future: _getWalletAddress(),
+                        builder: (context, address) => address.hasData
+                            ? TruncatedAddressNew(walletAddress: address.data!)
+                            : const Text(''),
+                      ),
+                      const SizedBox(width: 8),
+                      MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: GestureDetector(
+                          onTap: () async {
+                            widget.loginBloc.add(const ForgetWallet());
+                            Navigator.of(context).pop();
+                            showImportWalletDialog(
+                              context: context,
+                              loginBloc: widget.loginBloc,
+                            );
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(4),
+                              color: colorTokens.containerL1,
+                            ),
+                            padding: const EdgeInsets.only(
+                                left: 4, right: 4, top: 1, bottom: 2),
+                            child: Text(
+                              'Change',
+                              style: typography.paragraphNormal(
+                                color: colorTokens.textLow,
+                                fontWeight: ArFontWeight.semiBold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
                     ],
                   ),
             const SizedBox(height: 40),
