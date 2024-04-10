@@ -58,14 +58,11 @@ class _LoginPageState extends State<LoginPage> {
     ).then(
       (value) => PlausibleEventTracker.trackAppLoaded(),
     );
-  }
 
-  @override
-  Widget build(BuildContext context) {
     final arweaveService = context.read<ArweaveService>();
     final downloadService = DownloadService(arweaveService);
 
-    final loginBloc = LoginBloc(
+    _loginBloc = LoginBloc(
       arConnectService: ArConnectService(),
       ethereumProviderService: EthereumProviderService(),
       turboUploadService: context.read<TurboUploadService>(),
@@ -78,9 +75,14 @@ class _LoginPageState extends State<LoginPage> {
           gettingStarted: widget.gettingStarted,
         ),
       );
+  }
 
+  late LoginBloc _loginBloc;
+
+  @override
+  Widget build(BuildContext context) {
     return BlocProvider<LoginBloc>(
-      create: (context) => loginBloc,
+      create: (context) => _loginBloc,
       child: BlocConsumer<LoginBloc, LoginState>(
         listener: (context, loginState) {
           if (loginState is! LoginLoading && loginState is! LoginInitial) {
