@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 void preCacheLoginAssets(BuildContext context) {
   List<String> assetPaths = [
     Resources.images.login.gridImage,
-    Resources.images.login.ardriveLoader,
     Resources.images.login.whatIsAKeyfile,
     Resources.images.login.aboutSecurity,
   ];

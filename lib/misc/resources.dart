@@ -98,7 +98,9 @@ class Login {
   final String confettiLeft = 'assets/images/login/confetti_left.png';
   final String confettiRight = 'assets/images/login/confetti_right.png';
   final String arrowRed = 'assets/images/login/arrow_red.svg';
-  final String ardriveLoader = 'assets/images/login/ardrive_loader.gif';
+  final String ardriveLoader =
+      'assets/animations/ardrive_plates_animation.json';
+
   final String checkCircle = 'assets/images/login/check_circle.png';
   final String whatIsAKeyfile = 'assets/images/login/what_is_a_keyfile.png';
   final String aboutSecurity = 'assets/images/login/about_security.png';
