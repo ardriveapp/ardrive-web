@@ -10,6 +10,7 @@ import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SecureYourWalletWidget extends StatefulWidget {
   const SecureYourWalletWidget(
@@ -39,6 +40,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
   final _formKey = GlobalKey<ArDriveFormNewState>();
   bool _isPasswordValid = false;
   bool _confirmPasswordIsValid = false;
+  bool _isProcessing = false;
 
   @override
   void initState() {
@@ -61,6 +63,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
       child: ArDriveLoginModal(
         width: 450,
         onClose: () {
+          if (_isProcessing) return;
           Navigator.of(context).pop();
           widget.loginBloc.add(const ForgetWallet());
         },
@@ -112,6 +115,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                   _formKey.currentState?.validate();
                 },
                 textInputAction: TextInputAction.next,
+                isEnabled: !_isProcessing,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     setState(() {
@@ -141,6 +145,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                   autofocus: true,
                   autofillHints: const [AutofillHints.password],
                   textInputAction: TextInputAction.done,
+                  isEnabled: !_isProcessing,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       setState(() {
@@ -162,7 +167,6 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                   },
                   onFieldSubmitted: (_) async {
                     if (_isPasswordValid && _confirmPasswordIsValid) {
-                      Navigator.of(context).pop();
                       _onSubmit();
                     }
                   }),
@@ -171,9 +175,10 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                   text: 'Continue',
                   typography: typography,
                   variant: ButtonVariant.primary,
-                  isDisabled: !_isPasswordValid || !_confirmPasswordIsValid,
+                  isDisabled: !_isPasswordValid ||
+                      !_confirmPasswordIsValid ||
+                      _isProcessing,
                   onPressed: () {
-                    Navigator.of(context).pop();
                     _onSubmit();
                   }),
             ],
@@ -206,6 +211,14 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
       page: PlausiblePageView.createdAndConfirmedPassword,
     );
 
+    setState(() {
+      _isProcessing = true;
+    });
+
+    if (widget.wallet is EthereumProviderWallet) {
+      Navigator.of(context).pop();
+    }
+
     widget.loginBloc.add(
       CreatePassword(
           password: _passwordController.text,
@@ -229,11 +242,23 @@ void showSecureYourPasswordDialog(
   showArDriveDialog(context,
       barrierDismissible: false,
       useRootNavigator: false,
-      content: SecureYourWalletWidget(
-          loginBloc: loginBloc,
-          wallet: wallet,
-          derivedEthWallet: derivedEthWallet,
-          mnemonic: mnemonic,
-          showTutorials: showTutorials,
-          showWalletCreated: showWalletCreated));
+      content: BlocBuilder(
+        bloc: loginBloc,
+        buildWhen: (previous, current) {
+          if (current is LoginCreatePasswordComplete) {
+            Navigator.of(context).pop();
+            return false;
+          }
+          return true;
+        },
+        builder: (context, state) {
+          return SecureYourWalletWidget(
+              loginBloc: loginBloc,
+              wallet: wallet,
+              derivedEthWallet: derivedEthWallet,
+              mnemonic: mnemonic,
+              showTutorials: showTutorials,
+              showWalletCreated: showWalletCreated);
+        },
+      ));
 }

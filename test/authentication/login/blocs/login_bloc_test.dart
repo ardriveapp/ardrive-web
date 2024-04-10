@@ -569,7 +569,11 @@ void main() {
             showWalletCreated: false));
         bloc.profileType = ProfileType.json;
       },
-      expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
+      expect: () => [
+        LoginLoading(),
+        const TypeMatcher<LoginSuccess>(),
+        const TypeMatcher<LoginCreatePasswordComplete>()
+      ],
     );
 
     blocTest(
@@ -645,7 +649,11 @@ void main() {
           showWalletCreated: false,
         ));
       },
-      expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
+      expect: () => [
+        LoginLoading(),
+        const TypeMatcher<LoginSuccess>(),
+        const TypeMatcher<LoginCreatePasswordComplete>()
+      ],
     );
 
     blocTest(

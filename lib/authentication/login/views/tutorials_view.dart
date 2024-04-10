@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
+import 'package:ardrive/authentication/components/dot_pattern_painter.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -54,7 +55,7 @@ class TutorialsViewState extends State<TutorialsView> {
               'The permaweb is just like the currently existing web, but everything published on it is available forever - meaning that you will never risk losing a file ever again.',
           // secondaryButtonHasIcon: false,
           videoUrl:
-              'https://arweave.net/Xnp-iOOaQ9DbOvAxt3GK5vUNNG2iJF45W3YMmSvS6xw',
+              'https://arweave.net/KynB0c5IBqk66gO2E6W9lqD92sfxZXIuiWT08cmwWzc',
         ),
         _TutorialPage(
           nextButtonText: appLocalizationsOf(context).next,
@@ -69,7 +70,7 @@ class TutorialsViewState extends State<TutorialsView> {
           description:
               'When you upload content, you can choose to make it public or private. Private content is encrypted, and viewable only to you and those you share it with.',
           videoUrl:
-              'https://arweave.net/XSDiTs8Q9e7h0tNPKLnIuVXIXd4qIU8pSYzHhHvqfJw',
+              'https://arweave.net/IDxtPlhnBBdXSOSeIwSjFlywc18ZZ2p-QMxtaPT3pZs',
         ),
         _TutorialPage(
           nextButtonText:
@@ -98,7 +99,7 @@ class TutorialsViewState extends State<TutorialsView> {
           description:
               'When you upload a file, you will pay for it once and never again. You can access it forever without requiring a subscription, as with standard cloud storage.',
           videoUrl:
-              'https://arweave.net/i00UAiAXh0Vu7P8SZyW2nZNDyPZj9mGbEVwpAj6vVvg',
+              'https://arweave.net/vhrQJSssEMi2UWx8W6BDijZxT82u2qD_BamI_1NmgRw',
         ),
       ];
 
@@ -136,30 +137,67 @@ class TutorialsViewState extends State<TutorialsView> {
     final phoneLayout = width < TABLET;
 
     final minHeight = phoneLayout ? 700.0 : 800.0;
-    final containerHeight = height < minHeight ? minHeight : min(height, 924.0);
+    final containerHeight =
+        (height < minHeight ? minHeight : min(height, 924.0)) - 6;
+
+    final isDarkMode = ArDriveTheme.of(context).themeData.name == 'dark';
+    final List<Color> radialColors = isDarkMode
+        ? [
+            const Color(0x66d9d9d9),
+            const Color(0x00d9d9d9),
+          ]
+        : [
+            const Color(0x11d9d9d9),
+            const Color(0x00d9d9d9),
+          ];
 
     return Material(
-        color: colorTokens.containerL0,
-        child: Container(
+      color: colorTokens.containerL0,
+      child: Container(
           decoration: BoxDecoration(
               border: Border(
                   top: BorderSide(color: colorTokens.containerRed, width: 6))),
-          child: Center(
-            child: Container(
-              height: containerHeight,
-              constraints: const BoxConstraints(maxWidth: 1164),
-              child: Stack(fit: StackFit.expand, children: [
-                Container(
-                  color: colorTokens.containerL0,
-                  padding: phoneLayout
-                      ? const EdgeInsets.all(32)
-                      : const EdgeInsets.fromLTRB(32, 20, 32, 20),
-                  child: _buildOnBoardingContent(phoneLayout),
-                ),
-              ]),
-            ),
-          ),
-        ));
+          child: SizedBox.expand(
+            child: Stack(children: [
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: SizedBox(
+                    height: 264,
+                    child: ShaderMask(
+                      shaderCallback: (Rect bounds) {
+                        return RadialGradient(
+                          center: Alignment.topCenter,
+                          radius: 2.5,
+                          colors: radialColors,
+                          tileMode: TileMode.clamp,
+                        ).createShader(bounds);
+                      },
+                      child: ClipRect(
+                        child: CustomPaint(
+                          painter: DotPatternPainter(
+                              dotColor: colorTokens.strokeLow),
+                        ),
+                      ),
+                    )),
+              ),
+              Center(
+                  child: SingleChildScrollView(
+                      child: Center(
+                child: Container(
+                    height: containerHeight,
+                    constraints: const BoxConstraints(maxWidth: 1164),
+                    child: Container(
+                      padding: phoneLayout
+                          ? const EdgeInsets.all(32)
+                          : const EdgeInsets.fromLTRB(32, 20, 32, 20),
+                      child: _buildOnBoardingContent(phoneLayout),
+                    )),
+              ))),
+            ]),
+          )),
+    );
   }
 
   Widget _buildOnBoardingContent(bool phoneLayout) {
@@ -218,100 +256,145 @@ class _TutorialContentState extends State<_TutorialContent> {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
-    final twoRowButtons = MediaQuery.of(context).size.width < 386;
+    final phoneLayout = MediaQuery.of(context).size.width < TABLET;
 
-    return Container(
-      color: colorTokens.containerL0,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (widget.pageNumber == 1 && widget.phoneLayout)
-            ArDriveImage(
-              image: AssetImage(Resources.images.login.confetti),
-            ),
-          Text(
-            widget.tutorialPage.title,
-            textAlign: TextAlign.center,
-            style: typography.display(
-              color: colorTokens.textHigh,
-              fontWeight: ArFontWeight.bold,
-            ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (widget.phoneLayout) ...[
+          const Expanded(child: SizedBox()),
+          ArDriveImage(
+            image: AssetImage(Resources.images.login.confetti),
+          )
+        ],
+        Text(
+          widget.tutorialPage.title,
+          textAlign: TextAlign.center,
+          style: typography.display(
+            color: colorTokens.textHigh,
+            fontWeight: ArFontWeight.bold,
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              widget.pageNumber == 1 && !widget.phoneLayout
-                  ? SizedBox(
-                      width: 160,
-                      child: Container(
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.fromLTRB(0, 0, 46, 0),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            widget.pageNumber == 1 && !widget.phoneLayout
+                ? SizedBox(
+                    width: 160,
+                    child: Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.fromLTRB(0, 0, 46, 0),
+                      child: ArDriveImage(
+                        image: AssetImage(Resources.images.login.confettiLeft),
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  )
+                : SizedBox(
+                    width: widget.phoneLayout ? 0 : 160,
+                  ),
+            Expanded(
+              child: Text(
+                widget.tutorialPage.description,
+                textAlign: TextAlign.center,
+                style: typography.heading5(
+                  color: colorTokens.textLow,
+                  fontWeight: ArFontWeight.semiBold,
+                ),
+              ),
+            ),
+            widget.pageNumber == 1 && !widget.phoneLayout
+                ? SizedBox(
+                    width: 160,
+                    child: Container(
+                        alignment: Alignment.centerLeft,
+                        padding: const EdgeInsets.fromLTRB(46, 0, 0, 0),
                         child: ArDriveImage(
                           image:
-                              AssetImage(Resources.images.login.confettiLeft),
+                              AssetImage(Resources.images.login.confettiRight),
                           fit: BoxFit.contain,
+                        )),
+                  )
+                : SizedBox(width: widget.phoneLayout ? 0 : 160),
+          ],
+        ),
+        phoneLayout
+            ? Expanded(
+                child: Column(children: [
+                  const SizedBox(height: 20),
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: colorTokens.buttonSecondaryHover,
+                        ),
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Text(
+                        '${widget.pageNumber}/${widget.totalPages}',
+                        style: typography.paragraphLarge(
+                            color: colorTokens.textLow,
+                            fontWeight: ArFontWeight.semiBold),
+                      ),
+                    ),
+                  ),
+                  const Expanded(child: SizedBox())
+                ]),
+              )
+            : Flexible(
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(1),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: colorTokens.strokeLow,
+                        width: 1,
+                      ),
+                    ),
+                    child: AspectRatio(
+                      aspectRatio: 4196 / 2160,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: VideoPlayer(
+                          _videoPlayerController,
                         ),
                       ),
-                    )
-                  : SizedBox(
-                      width: widget.phoneLayout ? 0 : 160,
                     ),
-              Expanded(
-                child: Text(
-                  widget.tutorialPage.description,
-                  textAlign: TextAlign.center,
-                  style: typography.heading5(
-                    color: colorTokens.textLow,
-                    fontWeight: ArFontWeight.semiBold,
                   ),
                 ),
               ),
-              widget.pageNumber == 1 && !widget.phoneLayout
-                  ? SizedBox(
-                      width: 160,
-                      child: Container(
-                          alignment: Alignment.centerLeft,
-                          padding: const EdgeInsets.fromLTRB(46, 0, 0, 0),
-                          child: ArDriveImage(
-                            image: AssetImage(
-                                Resources.images.login.confettiRight),
-                            fit: BoxFit.contain,
-                          )),
-                    )
-                  : SizedBox(width: widget.phoneLayout ? 0 : 160),
-            ],
-          ),
-          Flexible(
-            child: Center(
+        Row(
+          key: const ValueKey('buttons'),
+          children: [
+            Expanded(
               child: Container(
-                padding: const EdgeInsets.all(1),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: colorTokens.strokeLow,
-                    width: 1,
-                  ),
-                ),
-                child: AspectRatio(
-                  aspectRatio: 4196 / 2160,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: VideoPlayer(
-                      _videoPlayerController,
-                    ),
-                  ),
-                ),
-              ),
+                  alignment: Alignment.centerLeft,
+                  child: (widget.tutorialPage.previousButtonText != null &&
+                          widget.tutorialPage.previousButtonAction != null)
+                      ? Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: widget.tutorialPage.previousButtonText!,
+                                style: typography.heading5(
+                                    color: colorTokens.textLink,
+                                    fontWeight: ArFontWeight.semiBold),
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = () => widget
+                                      .tutorialPage.previousButtonAction!(),
+                              ),
+                            ],
+                          ),
+                        )
+                      : null),
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (twoRowButtons)
-                Center(
-                  child: Container(
+            phoneLayout
+                ? const SizedBox()
+                : Container(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
                     decoration: BoxDecoration(
                       border: Border.all(
@@ -326,81 +409,28 @@ class _TutorialContentState extends State<_TutorialContent> {
                           fontWeight: ArFontWeight.semiBold),
                     ),
                   ),
-                ),
-              Row(
-                key: const ValueKey('buttons'),
-                children: [
-                  Expanded(
-                    child: Container(
-                        alignment: Alignment.centerLeft,
-                        child: (widget.tutorialPage.previousButtonText !=
-                                    null &&
-                                widget.tutorialPage.previousButtonAction !=
-                                    null)
-                            ? Text.rich(
-                                TextSpan(
-                                  children: [
-                                    TextSpan(
-                                      text: widget
-                                          .tutorialPage.previousButtonText!,
-                                      style: typography.heading5(
-                                          color: colorTokens.textLink,
-                                          fontWeight: ArFontWeight.semiBold),
-                                      recognizer: TapGestureRecognizer()
-                                        ..onTap = () => widget.tutorialPage
-                                            .previousButtonAction!(),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : null),
-                  ),
-                  twoRowButtons
-                      ? const SizedBox()
-                      : Container(
-                          padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: colorTokens.buttonSecondaryHover,
-                            ),
-                            borderRadius: BorderRadius.circular(100),
-                          ),
-                          child: Text(
-                            '${widget.pageNumber}/${widget.totalPages}',
-                            style: typography.paragraphLarge(
-                                color: colorTokens.textLow,
-                                fontWeight: ArFontWeight.semiBold),
-                          ),
+            Expanded(
+              child: Container(
+                  alignment: Alignment.centerRight,
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: widget.tutorialPage.nextButtonText,
+                          style: typography.heading5(
+                              color: colorTokens.textLink,
+                              fontWeight: ArFontWeight.semiBold),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap =
+                                () => widget.tutorialPage.nextButtonAction(),
                         ),
-                  Expanded(
-                    child: Container(
-                        padding: EdgeInsets.only(
-                            right: widget.pageNumber >= widget.totalPages
-                                ? 10
-                                : 0),
-                        alignment: Alignment.centerRight,
-                        child: Text.rich(
-                          TextSpan(
-                            children: [
-                              TextSpan(
-                                text: widget.tutorialPage.nextButtonText,
-                                style: typography.heading5(
-                                    color: colorTokens.textLink,
-                                    fontWeight: ArFontWeight.semiBold),
-                                recognizer: TapGestureRecognizer()
-                                  ..onTap = () =>
-                                      widget.tutorialPage.nextButtonAction(),
-                              ),
-                            ],
-                          ),
-                        )),
-                  )
-                ],
-              )
-            ],
-          ),
-        ],
-      ),
+                      ],
+                    ),
+                  )),
+            )
+          ],
+        ),
+      ],
     );
   }
 }

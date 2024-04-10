@@ -433,6 +433,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           mnemonic: mnemonic,
           showTutorials: event.showTutorials,
           showWalletCreated: event.showWalletCreated);
+
+      emit(LoginCreatePasswordComplete());
     } catch (e) {
       usingSeedphrase = false;
       emit(previousState);

@@ -166,9 +166,18 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
       ),
     );
 
+    late EdgeInsets padding;
+
+    final width = MediaQuery.of(context).size.width;
+    if (width < TABLET) {
+      padding = const EdgeInsets.fromLTRB(24, 64, 24, 64);
+    } else {
+      padding = const EdgeInsets.fromLTRB(56, 64, 56, 64);
+    }
+
     final downloadWalletCard = LoginCardNew(
         child: Padding(
-      padding: const EdgeInsets.fromLTRB(56, 64, 56, 64),
+      padding: padding,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
