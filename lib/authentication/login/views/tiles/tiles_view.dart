@@ -178,7 +178,7 @@ class _MilitareGradeEncryption extends StatelessWidget {
         Align(
           alignment: Alignment.center,
           child: SvgPicture.asset(
-            Resources.images.login.bento2,
+            Resources.images.login.bentoBox.bento2,
             fit: BoxFit.cover,
             height: 120,
             width: 120,
@@ -453,7 +453,7 @@ class _PermanentStorageTileState extends State<_PermanentStorageTile> {
             ),
             child: ArDriveImage(
               image: AssetImage(
-                Resources.images.login.particleSpace,
+                Resources.images.login.bentoBox.particleSpace,
               ),
               fit: BoxFit.cover,
               color: colorTokens.containerL0,
@@ -471,7 +471,7 @@ class _PermanentStorageTileState extends State<_PermanentStorageTile> {
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOut,
                   child: SvgPicture.asset(
-                    Resources.images.login.dataStorage,
+                    Resources.images.login.bentoBox.dataStorage,
                     height: 133,
                     width: 133,
                   ),

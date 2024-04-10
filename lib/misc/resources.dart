@@ -107,10 +107,6 @@ class Login {
   final String metamask = 'assets/images/login/metamask_logo_flat.svg';
   final String walletUpload = 'assets/images/login/wallet_upload.svg';
 
-  final String particleSpace = 'assets/images/login/particle_space.png';
-  final String dataStorage = 'assets/images/login/data_storage.svg';
-  final String bento2 = 'assets/images/login/bento_box/bento-2.svg';
-
   final BentoBox bentoBox = const BentoBox();
 }
 
@@ -131,6 +127,10 @@ class BentoBox {
       'assets/images/login/bento_box/price_calculator.svg';
   final String dots = 'assets/images/login/bento_box/dots.png';
   final String bg = 'assets/images/login/bento_box/Bg.png';
+  final String particleSpace =
+      'assets/images/login/bento_box/particle_space.png';
+  final String dataStorage = 'assets/images/login/bento_box/data_storage.svg';
+  final String bento2 = 'assets/images/login/bento_box/bento-2.svg';
 
   const BentoBox();
 }
