@@ -54,7 +54,7 @@ class TilesView extends StatelessWidget {
                       bottom: 8,
                     ),
                     child: _RoundContainer(
-                      child: _MilitareGradeEncryption(),
+                      child: _MilitaryGradeEncryption(),
                     )),
               )
             ],
@@ -156,7 +156,7 @@ class TilesView extends StatelessWidget {
   }
 }
 
-class _MilitareGradeEncryption extends StatelessWidget {
+class _MilitaryGradeEncryption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     ArDriveTypographyNew.of(context);
@@ -380,7 +380,7 @@ class _ProfileImageTileState extends State<_ProfileImageTile> {
             ),
             color: colorTokens.containerL0,
             borderRadius: const BorderRadius.all(
-              Radius.circular(8.5),
+              Radius.circular(8),
             ),
           ),
           padding: const EdgeInsets.all(4),
@@ -391,7 +391,7 @@ class _ProfileImageTileState extends State<_ProfileImageTile> {
             children: [
               ClipRRect(
                 borderRadius: const BorderRadius.all(
-                  Radius.circular(8.5),
+                  Radius.circular(8),
                 ),
                 child: ArDriveImage(
                   image: AssetImage(widget.model.image),
