@@ -280,11 +280,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       onChange: (value) async {
         await context.read<ConfigService>().resetDevToolsPrefs();
 
-        _windowTitle.value = 'Reloading...';
-
-        Future.delayed(const Duration(seconds: 1), () {
-          html.window.location.reload();
-        });
+        reloadPage();
       },
       type: ArDriveDevToolOptionType.buttonTertiary,
     );
@@ -426,6 +422,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
                           Future.delayed(const Duration(seconds: 1), () {
                             setState(() {
                               _windowTitle.value = 'Dev config';
+                              reloadPage();
                             });
                           });
                         },
@@ -443,7 +440,8 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
 
                           Future.delayed(const Duration(seconds: 1), () {
                             setState(() {
-                              _windowTitle.value = 'Dev config';
+                              _windowTitle.value = 'Staging config';
+                              reloadPage();
                             });
                           });
                         },
@@ -580,6 +578,14 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
 
     Future.delayed(const Duration(seconds: 2), () {
       _windowTitle.value = 'ArDrive Dev Tools';
+    });
+  }
+
+  void reloadPage() {
+    _windowTitle.value = 'Reloading...';
+
+    Future.delayed(const Duration(seconds: 1), () {
+      html.window.location.reload();
     });
   }
 }
