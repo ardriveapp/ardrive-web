@@ -13,6 +13,7 @@ void preCacheLoginAssets(BuildContext context) {
     Resources.images.login.bentoBox.profile4,
     Resources.images.login.bentoBox.profile5,
     Resources.images.login.bentoBox.profile6,
+    Resources.images.login.bentoBox.dots,
   ];
 
   List<String> svgAssets = [
