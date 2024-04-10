@@ -54,6 +54,7 @@ class TilesView extends StatelessWidget {
                       bottom: 8,
                     ),
                     child: _RoundContainer(
+                      padding: const EdgeInsets.all(0),
                       child: _MilitaryGradeEncryption(),
                     )),
               )
@@ -159,40 +160,32 @@ class TilesView extends StatelessWidget {
 class _MilitaryGradeEncryption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    ArDriveTypographyNew.of(context);
-
-    return Column(
-      mainAxisSize: MainAxisSize.max,
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 18, top: 14),
-          child: Text(
-            'Military-grade encryption',
-            style: ArDriveTypographyNew.of(context).paragraphXLarge(
-              color: ArDriveTheme.of(context).themeData.colorTokens.textLow,
-              fontWeight: ArFontWeight.semiBold,
-            ),
-          ),
-        ),
-        Align(
-          alignment: Alignment.center,
-          child: SvgPicture.asset(
-            Resources.images.login.bentoBox.bento2,
-            fit: BoxFit.cover,
-            height: 120,
-            width: 120,
-          ),
-        ),
-        const SizedBox.shrink(),
-      ],
+    final isLightMode = ArDriveTheme.of(context).themeData.name == 'light';
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(8),
+        topRight: Radius.circular(8),
+        bottomLeft: Radius.circular(8),
+        bottomRight: Radius.circular(8),
+      ),
+      child: SvgPicture.asset(
+        isLightMode
+            ? Resources.images.login.bentoBox.bentoBox2LightMode
+            : Resources.images.login.bentoBox.bentoBox2DarkMode,
+        fit: BoxFit.cover,
+        clipBehavior: Clip.antiAliasWithSaveLayer,
+      ),
     );
   }
 }
 
 class _RoundContainer extends StatefulWidget {
-  const _RoundContainer({required this.child});
+  const _RoundContainer({
+    required this.child,
+    this.padding,
+  });
   final Widget child;
+  final EdgeInsets? padding;
 
   @override
   State<_RoundContainer> createState() => _RoundContainerState();
@@ -208,7 +201,7 @@ class _RoundContainerState extends State<_RoundContainer> {
       onEnter: (_) => setState(() => _isHovering = true),
       onExit: (_) => setState(() => _isHovering = false),
       child: Container(
-        padding: const EdgeInsets.all(2),
+        padding: widget.padding ?? const EdgeInsets.all(2),
         decoration: BoxDecoration(
           border: Border.all(
             color: _isHovering

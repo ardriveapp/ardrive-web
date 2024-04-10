@@ -131,6 +131,11 @@ class BentoBox {
       'assets/images/login/bento_box/particle_space.png';
   final String dataStorage = 'assets/images/login/bento_box/data_storage.svg';
   final String bento2 = 'assets/images/login/bento_box/bento-2.svg';
+  final String bento2Bg = 'assets/images/login/bento_box/bento-2-bg.svg';
+  final String bentoBox2LightMode =
+      'assets/images/login/bento_box/bento-box-2-light-mode.svg';
+  final String bentoBox2DarkMode =
+      'assets/images/login/bento_box/bento-box-2-dark-mode.svg';
 
   const BentoBox();
 }
