@@ -6,6 +6,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive_logger/ardrive_logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
@@ -15,7 +16,7 @@ part 'profile_dao.g.dart';
 
 const keyByteLength = 256 ~/ 8;
 
-class ProfilePasswordIncorrectException implements Exception {}
+class ProfilePasswordIncorrectException implements UntrackedException {}
 
 @DriftAccessor(include: {'../queries/profile_queries.drift'})
 class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {

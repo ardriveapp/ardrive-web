@@ -42,7 +42,7 @@ jobs:
         run: |
           scr setup
           flutter config --enable-web
-          flutter build web --dart-define=environment=development --release --pwa-strategy=none --no-web-resources-cdn --source-maps
+          flutter build web --dart-define=environment=development --release --pwa-strategy=none --no-web-resources-cdn  --dart2js-optimization=O1
 
       # JS files cache invalidation
       - name: main.dart.js and service worker cache invalidation
