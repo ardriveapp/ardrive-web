@@ -121,34 +121,35 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                             : const Text(''),
                       ),
                       const SizedBox(width: 8),
-                      MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: GestureDetector(
-                          onTap: () async {
-                            widget.loginBloc.add(const ForgetWallet());
-                            Navigator.of(context).pop();
-                            showImportWalletDialog(
-                              context: context,
-                              loginBloc: widget.loginBloc,
-                            );
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(4),
-                              color: colorTokens.containerL1,
-                            ),
-                            padding: const EdgeInsets.only(
-                                left: 4, right: 4, top: 1, bottom: 2),
-                            child: Text(
-                              'Change',
-                              style: typography.paragraphNormal(
-                                color: colorTokens.textLow,
-                                fontWeight: ArFontWeight.semiBold,
+                      if (!widget.alreadyLoggedIn)
+                        MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            onTap: () async {
+                              widget.loginBloc.add(const ForgetWallet());
+                              Navigator.of(context).pop();
+                              showImportWalletDialog(
+                                context: context,
+                                loginBloc: widget.loginBloc,
+                              );
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(4),
+                                color: colorTokens.containerL1,
+                              ),
+                              padding: const EdgeInsets.only(
+                                  left: 4, right: 4, top: 1, bottom: 2),
+                              child: Text(
+                                'Change',
+                                style: typography.paragraphNormal(
+                                  color: colorTokens.textLow,
+                                  fontWeight: ArFontWeight.semiBold,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      )
+                        )
                     ],
                   ),
             const SizedBox(height: 40),
