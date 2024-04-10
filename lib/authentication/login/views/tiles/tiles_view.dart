@@ -526,27 +526,25 @@ class _CarouselWithGroupsState extends State<CarouselWithGroups> {
   final List<List<_ProfileImageTileModel>> groupImages = [
     // Group 1 images
     [
-      _ProfileImageTileModel(
-          Resources.images.login.bentoBox.profile1,
-          'Educators',
-          'Educators can store their educational content on ArDrive.'),
+      _ProfileImageTileModel(Resources.images.login.bentoBox.profile1,
+          'Educators', 'Students and educators can preserve work forever.'),
       _ProfileImageTileModel(
           Resources.images.login.bentoBox.profile2,
           'Journalists',
-          'Journalists can store their articles and research on ArDrive.'),
-      _ProfileImageTileModel(Resources.images.login.bentoBox.profile3,
-          'Podcasters', 'Podcasters can store their podcasts on ArDrive.'),
+          'Unleash journalistic freedom with censorship-resistant storage.'),
+      _ProfileImageTileModel(
+          Resources.images.login.bentoBox.profile3,
+          'Podcasters',
+          'Store episodes and research reliably and cost-effectively.'),
     ],
     // Group 2 images
     [
       _ProfileImageTileModel(Resources.images.login.bentoBox.profile4,
-          'Artists', 'Artists can store their art on ArDrive.'),
+          'Artists', 'Store and share your art with the world.'),
       _ProfileImageTileModel(Resources.images.login.bentoBox.profile5,
-          'Creators', 'Creators can store their creations on ArDrive.'),
-      _ProfileImageTileModel(
-          Resources.images.login.bentoBox.profile6,
-          'Sound Engineers',
-          'Sound engineers can store their music on ArDrive.'),
+          'Creators', 'Preserve your creations for future generations.'),
+      _ProfileImageTileModel(Resources.images.login.bentoBox.profile6,
+          'Sound Engineers', 'Store and share your music and sound projects.'),
     ],
   ];
 
@@ -607,9 +605,7 @@ class _CarouselWithGroupsState extends State<CarouselWithGroups> {
               child: CustomIndicator(
                 index: index,
                 currentPage: _currentGroupIndex,
-                onPageAnimationEnd: (index) {
-                  // _mainCarouselController.animateToPage(index);
-                },
+                onPageAnimationEnd: (index) {},
               ),
             );
           }),
@@ -737,7 +733,7 @@ class __Bento5State extends State<_Bento5> {
     _BentoBox5Model(Resources.images.login.bentoBox.noSubscription,
         'No monthly subscriptions.'),
     _BentoBox5Model(Resources.images.login.bentoBox.permanentAccessibleData,
-        'Permanent storage'),
+        'Permanently archived'),
     _BentoBox5Model(Resources.images.login.bentoBox.decentralized,
         'Decentralized and open sourced.'),
   ];
