@@ -195,8 +195,9 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           id: rootFolderId,
           driveId: driveId,
           name: name,
-          path: rootPath,
           isHidden: const Value(false),
+          // TODO: path is not used in the app, so it's not necessary to set it
+          path: '',
         ),
       );
     });
@@ -436,7 +437,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     FolderID? parentFolderId,
     FolderID? folderId,
     required String folderName,
-    required String path,
   }) async {
     final id = folderId ?? _uuid.v4();
     final folderEntriesCompanion = FolderEntriesCompanion.insert(
@@ -444,8 +444,9 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       driveId: driveId,
       parentFolderId: Value(parentFolderId),
       name: folderName,
-      path: path,
       isHidden: const Value(false),
+      // TODO: path is not used in the app, so it's not necessary to set it
+      path: '',
     );
     await into(folderEntries).insert(folderEntriesCompanion);
 
@@ -499,20 +500,20 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   Future<void> writeFileEntity(
     FileEntity entity,
-    String path,
   ) {
     final companion = FileEntriesCompanion.insert(
       id: entity.id!,
       driveId: entity.driveId!,
       parentFolderId: entity.parentFolderId!,
       name: entity.name!,
-      path: path,
       dataTxId: entity.dataTxId!,
       size: entity.size!,
       lastModifiedDate: entity.lastModifiedDate ?? DateTime.now(),
       dataContentType: Value(entity.dataContentType),
       pinnedDataOwnerAddress: Value(entity.pinnedDataOwnerAddress),
       isHidden: Value(entity.isHidden ?? false),
+      // TODO: path is not used in the app, so it's not necessary to set it
+      path: '',
     );
 
     return into(fileEntries).insert(

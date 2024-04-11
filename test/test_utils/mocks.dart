@@ -4,6 +4,8 @@ import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
+import 'package:ardrive/core/arfs/repository/file_repository.dart';
+import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
@@ -100,6 +102,10 @@ class MockDeviceInfoPlugin extends Mock implements DeviceInfoPlugin {}
 class MockLicenseService extends Mock implements LicenseService {}
 
 class MockPromptToSnapshotBloc extends Mock implements PromptToSnapshotBloc {}
+
+class MockFolderRepository extends Mock implements FolderRepository {}
+
+class MockFileRepository extends Mock implements FileRepository {}
 
 class MockARFSFile extends ARFSFileEntity {
   MockARFSFile({
@@ -220,7 +226,6 @@ FileDataTableItem createMockFileDataTableItem(
     size: size,
     dateCreated: dateCreated ?? DateTime.now(),
     contentType: 'contentType',
-    path: path,
     index: index,
     pinnedDataOwnerAddress: pinnedDataOwnerAddress,
     isOwner: isOwner,
@@ -250,7 +255,6 @@ FolderDataTableItem createMockFolderDataTableItem(
     lastUpdated: lastUpdated ?? DateTime.now(),
     dateCreated: dateCreated ?? DateTime.now(),
     contentType: contentType,
-    path: path,
     fileStatusFromTransactions: fileStatusFromTransactions,
     parentFolderId: parentFolderId,
     isGhostFolder: isGhostFolder,
@@ -296,10 +300,10 @@ FolderEntry createMockFolderEntry(
     driveId: driveId,
     lastUpdated: DateTime.now(),
     dateCreated: DateTime.now(),
-    path: path,
     parentFolderId: parentFolderId,
     isGhost: isGhost,
     isHidden: false,
+    path: '',
   );
 }
 
@@ -330,9 +334,9 @@ FileEntry createMockFileEntry(
     lastModifiedDate: lastModifiedDate ?? DateTime.now(),
     dateCreated: dateCreated ?? DateTime.now(),
     lastUpdated: lastUpdated ?? DateTime.now(),
-    path: path,
     parentFolderId: parentFolderId,
     bundledIn: bundledIn,
     isHidden: false,
+    path: '',
   );
 }

@@ -309,11 +309,11 @@ class _SyncRepository implements SyncRepository {
         driveId: drive.id,
         parentFolderId: drive.rootFolderId,
         name: ghostFolder.folderId,
-        path: rootPath,
         lastUpdated: DateTime.now(),
         isGhost: true,
         dateCreated: DateTime.now(),
         isHidden: ghostFolder.isHidden,
+        path: '',
       );
       await driveDao.into(driveDao.folderEntries).insert(folderEntry);
       ghostFoldersByDrive.putIfAbsent(
@@ -896,6 +896,9 @@ class _SyncRepository implements SyncRepository {
 
             numberOfDriveEntitiesParsed +=
                 updatedFoldersById.length + updatedFilesById.length;
+            
+            latestFolderRevisions.clear();
+            latestFileRevisions.clear();
           });
           yield driveEntityParseProgress();
         });

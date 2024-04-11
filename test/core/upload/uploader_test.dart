@@ -1012,11 +1012,11 @@ FolderEntry getFakeFolder() => FolderEntry(
       id: 'id',
       driveId: 'drive id',
       name: 'name',
-      path: 'path',
       dateCreated: DateTime.now(),
       lastUpdated: DateTime.now(),
       isGhost: false,
       isHidden: false,
+      path: '',
     );
 
 Drive getFakeDrive() => Drive(

@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:ardrive/core/arfs/repository/file_repository.dart';
+import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -73,9 +75,11 @@ class ManifestData {
     return manifestDataItem;
   }
 
-  static ManifestData fromFolderNode({
+  static Future<ManifestData> fromFolderNode({
     required FolderNode folderNode,
-  }) {
+    required FolderRepository folderRepository,
+    required FileRepository fileRepository,
+  }) async {
     final fileList = folderNode
         .getRecursiveFiles()
         // We will not include any existing manifests in the new manifest
@@ -96,16 +100,22 @@ class ManifestData {
       return fileList.first;
     }();
 
-    final rootFolderPath = folderNode.folder.path;
+    final rootFolderPath = await folderRepository.getFolderPath(
+      folderNode.folder.driveId,
+      folderNode.folder.id,
+    );
+    
+    final indexPath =
+        await fileRepository.getFilePath(indexFile.driveId, indexFile.id);
+
     final index = ManifestIndex(
-      prepareManifestPath(
-          filePath: indexFile.path, rootFolderPath: rootFolderPath),
+      prepareManifestPath(filePath: indexPath, rootFolderPath: rootFolderPath),
     );
 
     final paths = {
       for (final file in fileList)
         prepareManifestPath(
-          filePath: file.path,
+          filePath: await fileRepository.getFilePath(file.driveId, file.id),
           rootFolderPath: rootFolderPath,
         ): ManifestPath(file.dataTxId, fileId: file.id)
     };

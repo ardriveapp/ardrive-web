@@ -125,11 +125,12 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
           driveId: ghostFolder.driveId,
           name: folderName,
           parentFolderId: parentFolder.id,
-          path: '${parentFolder.path}/$folderName',
           isGhost: false,
           lastUpdated: ghostFolder.lastUpdated,
           dateCreated: ghostFolder.dateCreated,
           isHidden: ghostFolder.isHidden,
+          // TODO: path is not used in the app, so it's not necessary to set it
+          path: '',
         );
 
         final folderEntity = folder.asEntity();

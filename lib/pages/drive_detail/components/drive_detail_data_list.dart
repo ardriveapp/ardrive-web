@@ -27,7 +27,6 @@ abstract class ArDriveDataTableItem extends IndexedItem {
   final String? fileStatusFromTransactions;
   final String id;
   final String driveId;
-  final String path;
   final bool isOwner;
   final bool isHidden;
 
@@ -41,7 +40,6 @@ abstract class ArDriveDataTableItem extends IndexedItem {
     this.licenseType,
     required this.contentType,
     this.fileStatusFromTransactions,
-    required this.path,
     required int index,
     required this.isOwner,
     this.isHidden = false,
@@ -56,7 +54,6 @@ class DriveDataItem extends ArDriveDataTableItem {
     required super.lastUpdated,
     required super.dateCreated,
     super.contentType = 'drive',
-    super.path = '',
     required super.index,
     required super.isOwner,
     super.isHidden,
@@ -77,7 +74,6 @@ class FolderDataTableItem extends ArDriveDataTableItem {
     required super.lastUpdated,
     required super.dateCreated,
     required super.contentType,
-    required super.path,
     super.fileStatusFromTransactions,
     super.isHidden,
     required super.index,
@@ -108,7 +104,6 @@ class FileDataTableItem extends ArDriveDataTableItem {
       required super.size,
       required super.dateCreated,
       required super.contentType,
-      required super.path,
       super.isHidden,
       super.fileStatusFromTransactions,
       required super.index,
@@ -384,7 +379,6 @@ class DriveDataTableItemMapper {
   ) {
     return FileDataTableItem(
       isOwner: isOwner,
-      path: file.path,
       lastModifiedDate: file.lastModifiedDate,
       name: file.name,
       size: file.size,
@@ -419,7 +413,6 @@ class DriveDataTableItemMapper {
       isOwner: isOwner,
       isGhostFolder: folderEntry.isGhost,
       index: index,
-      path: folderEntry.path,
       driveId: folderEntry.driveId,
       folderId: folderEntry.id,
       parentFolderId: folderEntry.parentFolderId,
@@ -454,7 +447,6 @@ class DriveDataTableItemMapper {
   static FileDataTableItem fromRevision(FileRevision revision, bool isOwner) {
     return FileDataTableItem(
       isOwner: isOwner,
-      path: '',
       lastModifiedDate: revision.lastModifiedDate,
       name: revision.name,
       size: revision.size,
