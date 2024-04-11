@@ -26,5 +26,7 @@ class BatchProcessor {
 
       yield* endOfBatchCallback(currentBatch);
     }
+
+    list.clear();
   }
 }

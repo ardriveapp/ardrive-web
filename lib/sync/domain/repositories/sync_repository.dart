@@ -896,6 +896,9 @@ class _SyncRepository implements SyncRepository {
 
             numberOfDriveEntitiesParsed +=
                 updatedFoldersById.length + updatedFilesById.length;
+            
+            latestFolderRevisions.clear();
+            latestFileRevisions.clear();
           });
           yield driveEntityParseProgress();
         });
