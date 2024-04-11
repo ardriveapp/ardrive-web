@@ -164,13 +164,11 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
             ),
             Align(
               alignment: Alignment.center,
-              child: Padding(
+              child: BiometricToggle(
                 padding: const EdgeInsets.only(top: 40),
-                child: BiometricToggle(
-                  onEnableBiometric: () {
-                    context.read<LoginBloc>().add(const UnLockWithBiometrics());
-                  },
-                ),
+                onEnableBiometric: () {
+                  context.read<LoginBloc>().add(const UnLockWithBiometrics());
+                },
               ),
             ),
             const Flexible(child: SizedBox(height: 40)),
