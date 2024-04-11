@@ -9,7 +9,9 @@
 #include <file_saver/file_saver_plugin.h>
 #include <file_selector_windows/file_selector_windows.h>
 #include <permission_handler_windows/permission_handler_windows_plugin.h>
-#include <webcrypto/webcrypto_plugin.h>
+#include <sentry_flutter/sentry_flutter_plugin.h>
+#include <share_plus/share_plus_windows_plugin_c_api.h>
+#include <url_launcher_windows/url_launcher_windows.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
   FileSaverPluginRegisterWithRegistrar(
@@ -18,6 +20,10 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
       registry->GetRegistrarForPlugin("FileSelectorWindows"));
   PermissionHandlerWindowsPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("PermissionHandlerWindowsPlugin"));
-  WebcryptoPluginRegisterWithRegistrar(
-      registry->GetRegistrarForPlugin("WebcryptoPlugin"));
+  SentryFlutterPluginRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("SentryFlutterPlugin"));
+  SharePlusWindowsPluginCApiRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("SharePlusWindowsPluginCApi"));
+  UrlLauncherWindowsRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("UrlLauncherWindows"));
 }

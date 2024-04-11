@@ -6,7 +6,7 @@ import '../ethereum_provider_wallet.dart';
 
 bool isExtensionPresent() => window.ethereum != null;
 
-Ethereum _getProvider() {
+Ethereum getProvider() {
   if (isExtensionPresent()) {
     return window.ethereum!;
   } else {
@@ -23,20 +23,28 @@ class JSrawRequestParams {
 }
 
 Future<EthereumProviderWallet?> connect() async {
-  final eth = _getProvider();
+  final eth = getProvider();
 
-  final credentials = await eth.requestAccount();
-  if (!eth.isConnected()) {
+  print('test');
+  try {
+    final credentials = await eth.requestAccounts();
+    print('credentials: ${credentials[0].address}');
+
+    if (!eth.isConnected()) {
+      return null;
+    }
+
+    // Ensure the user is on Ethereum chain
+    await eth.rawRequest(
+      'wallet_switchEthereumChain',
+      params: [
+        JSrawRequestParams(chainId: '0x1'),
+      ],
+    );
+
+    return EthereumProviderWallet(credentials[0]);
+  } catch (e) {
+    print('error: $e');
     return null;
   }
-
-  // Ensure the user is on Ethereum chain
-  await eth.rawRequest(
-    'wallet_switchEthereumChain',
-    params: [
-      JSrawRequestParams(chainId: '0x1'),
-    ],
-  );
-
-  return EthereumProviderWallet(credentials);
 }

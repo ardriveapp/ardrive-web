@@ -27,7 +27,7 @@ dependencies:
     path: ../arfs
   pst:
     path: ../pst
-  uuid: ^3.0.4
+  uuid: ^4.4.0
   cryptography: ^2.5.0
   rxdart: ^0.27.7
   dio: ^5.4.0
