@@ -563,7 +563,7 @@ class _CarouselWithGroupsState extends State<CarouselWithGroups> {
               children: groupImages[itemIndex]
                   .map(
                     (item) => Padding(
-                      padding: const EdgeInsets.all(8.0),
+                      padding: const EdgeInsets.all(4.0),
                       child: _ProfileImageTile(
                         model: item,
                         onEndHover: widget.onEndHover,
@@ -577,7 +577,7 @@ class _CarouselWithGroupsState extends State<CarouselWithGroups> {
           options: CarouselOptions(
             height: 125,
             enlargeCenterPage: false,
-            viewportFraction: 0.9,
+            viewportFraction: 0.76,
             enableInfiniteScroll: true,
             autoPlayAnimationDuration: const Duration(milliseconds: 300),
             pauseAutoPlayOnManualNavigate: true,
@@ -789,9 +789,7 @@ class __Bento5State extends State<_Bento5> {
                           index: index,
                           currentPage: _currentGroupIndex,
                           duration: const Duration(seconds: 5),
-                          onPageAnimationEnd: (index) {
-                            // _mainCarouselController.animateToPage(index);
-                          },
+                          onPageAnimationEnd: (index) {},
                         ),
                       );
                     }),
