@@ -338,13 +338,10 @@ class _SmallDesktopView extends StatelessWidget {
                         fit: StackFit.expand,
                         children: [
                           Center(
-                            child: SizedBox(
-                              width: 381,
-                              child: _buildContent(
-                                context,
-                                loginState: loginState,
-                                globalKey: globalKey,
-                              ),
+                            child: _buildContent(
+                              context,
+                              loginState: loginState,
+                              globalKey: globalKey,
                             ),
                           ),
                           const Positioned(
