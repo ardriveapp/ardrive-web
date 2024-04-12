@@ -37,13 +37,14 @@ class ShortcutHandlerState extends State<ShortcutHandler> {
 
   @override
   Widget build(BuildContext context) {
-    return RawKeyboardListener(
+    return KeyboardListener(
       focusNode: _focusNode,
       autofocus: true,
-      onKey: (RawKeyEvent event) {
+      onKeyEvent: (KeyEvent event) {
         for (var shortcut in widget.shortcuts) {
-          if (event.isKeyPressed(shortcut.modifier) &&
-              event.isKeyPressed(shortcut.key)) {
+          if (HardwareKeyboard.instance
+                  .isLogicalKeyPressed(shortcut.modifier) &&
+              HardwareKeyboard.instance.isLogicalKeyPressed(shortcut.key)) {
             shortcut.action();
           }
         }

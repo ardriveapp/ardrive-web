@@ -1,3 +1,4 @@
+import 'package:ardrive/utils/logger.dart';
 import 'package:js/js.dart';
 import 'package:universal_html/html.dart';
 import 'package:webthree/browser.dart';
@@ -25,10 +26,8 @@ class JSrawRequestParams {
 Future<EthereumProviderWallet?> connect() async {
   final eth = getProvider();
 
-  print('test');
   try {
     final credentials = await eth.requestAccounts();
-    print('credentials: ${credentials[0].address}');
 
     if (!eth.isConnected()) {
       return null;
@@ -44,7 +43,7 @@ Future<EthereumProviderWallet?> connect() async {
 
     return EthereumProviderWallet(credentials[0]);
   } catch (e) {
-    print('error: $e');
+    logger.d('Error connecting to Ethereum provider: $e');
     return null;
   }
 }

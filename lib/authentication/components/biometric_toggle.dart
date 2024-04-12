@@ -96,8 +96,8 @@ class _BiometricToggleState extends State<BiometricToggle> {
                 } catch (e) {
                   widget.onError?.call();
                   if (e is BiometricException) {
-                    // ignore: use_build_context_synchronously
                     showBiometricExceptionDialogForException(
+                      // ignore: use_build_context_synchronously
                       context,
                       e,
                       () => widget.onDisableBiometric?.call(),

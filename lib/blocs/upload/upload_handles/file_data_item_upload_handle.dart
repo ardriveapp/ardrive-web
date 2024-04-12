@@ -141,7 +141,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
       parentFolderId: entity.parentFolderId,
       size: entity.size,
     );
-    return (utf8.encode(json.encode(entityFake)) as Uint8List).lengthInBytes;
+    return utf8.encode(json.encode(entityFake)).lengthInBytes;
   }
 
   Future<int> _estimateDataTxSize() async {
