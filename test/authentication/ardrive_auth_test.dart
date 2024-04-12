@@ -356,6 +356,8 @@ void main() {
         test(
             'should unlock user when biometric authentication succeeds and user is logged in',
             () async {
+          when(() => mockBiometricAuthentication.isEnabled())
+              .thenAnswer((_) async => false);
           when(() => mockBiometricAuthentication.authenticate(
                 localizedReason: localizedReason,
                 useCached: true,
@@ -467,6 +469,9 @@ void main() {
         when(() => mockUserRepository.getUser('password'))
             .thenAnswer((invocation) async => unlockedUser);
 
+        when(() => mockBiometricAuthentication.isEnabled())
+            .thenAnswer((_) async => false);
+
         final user = await arDriveAuth.unlockUser(password: 'password');
 
         expect(user, isNotNull);
@@ -504,6 +509,8 @@ void main() {
             .thenAnswer((invocation) => Future.value(true));
         when(() => mockUserRepository.getUser('password'))
             .thenAnswer((invocation) async => unlockedUser);
+        when(() => mockBiometricAuthentication.isEnabled())
+            .thenAnswer((_) async => false);
 
         await arDriveAuth.unlockUser(password: 'password');
 
@@ -648,6 +655,9 @@ void main() {
 
         when(() => mockUserRepository.getUser('password'))
             .thenAnswer((invocation) async => loggedUser);
+
+        when(() => mockBiometricAuthentication.isEnabled())
+            .thenAnswer((_) async => false);
       });
       test('should change the state when user logs in', () async {
         when(() => mockBiometricAuthentication.isEnabled())
