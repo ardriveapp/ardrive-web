@@ -55,7 +55,7 @@ class _ImportWalletModalState extends State<ImportWalletModal> {
               ),
               const SizedBox(height: 12),
               Text(
-                'You can import your wallet by entering an existing seed phrase or uploading a keyfile.',
+                'You can import your wallet by entering an existing seed phrase or keyfile.',
                 style: typography.paragraphNormal(
                   color: colorTokens.textLow,
                   fontWeight: ArFontWeight.semiBold,
@@ -96,7 +96,7 @@ class _ImportWalletModalState extends State<ImportWalletModal> {
               const LinedTextDivider(),
               const SizedBox(height: 40),
               ArDriveButtonNew(
-                  text: 'Upload Keyfile',
+                  text: 'Use Keyfile',
                   typography: typography,
                   variant: ButtonVariant.outline,
                   onPressed: () async {
