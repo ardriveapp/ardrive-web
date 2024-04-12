@@ -239,7 +239,7 @@ class __ArDriveIsForEveryOneState extends State<_ArDriveIsForEveryOne> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 8.0, left: 28),
+          padding: const EdgeInsets.only(top: 0, left: 28),
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 150),
             transitionBuilder: (child, animation) {
@@ -276,7 +276,7 @@ class __ArDriveIsForEveryOneState extends State<_ArDriveIsForEveryOne> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.only(top: 8.0, left: 28),
+          padding: const EdgeInsets.only(left: 28),
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 150),
             transitionBuilder: (child, animation) {
