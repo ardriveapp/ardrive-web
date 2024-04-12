@@ -754,8 +754,13 @@ class __Bento5State extends State<_Bento5> {
                     itemCount: _bentoBox5Models.length,
                     itemBuilder: (BuildContext context, int itemIndex,
                         int pageViewIndex) {
-                      return _Bento5Tile(
-                        model: _bentoBox5Models[itemIndex],
+                      return GestureDetector(
+                        onTap: () {
+                          _mainCarouselController.nextPage();
+                        },
+                        child: _Bento5Tile(
+                          model: _bentoBox5Models[itemIndex],
+                        ),
                       );
                     },
                     options: CarouselOptions(
