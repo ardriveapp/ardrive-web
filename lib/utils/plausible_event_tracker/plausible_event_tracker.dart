@@ -229,6 +229,21 @@ abstract class PlausibleEventTracker {
     return props;
   }
 
+  /// New Onboarding Events
+  static Future<void> trackClickSignUp() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.welcomePage,
+      event: PlausibleCustomEvent.clickSignUp,
+    );
+  }
+
+  static Future<void> trackClickLogin() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.welcomePage,
+      event: PlausibleCustomEvent.clickLogin,
+    );
+  }
+
   static Future<void> _track({
     required PlausibleApiData data,
     required PlausibleEventData eventData,
