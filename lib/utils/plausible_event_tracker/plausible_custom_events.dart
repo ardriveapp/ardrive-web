@@ -20,8 +20,8 @@ enum PlausibleCustomEvent {
   clickLogin,
 
   /// SignUp Page Events
-  clickContinueWithArconnect,
-  clickContinueWithMetamask,
+  clickContinueWithArconnectButton,
+  clickContinueWithMetamaskButton,
   clickCreateWallet,
   clickAlreadyHaveAWallet,
   clickConfirmPassword,
@@ -98,9 +98,9 @@ extension PlausibleCustomEventNames on PlausibleCustomEvent {
         return 'clickLogin';
 
       /// SignUp Page Events
-      case PlausibleCustomEvent.clickContinueWithArconnect:
+      case PlausibleCustomEvent.clickContinueWithArconnectButton:
         return 'clickContinueWithArconnect';
-      case PlausibleCustomEvent.clickContinueWithMetamask:
+      case PlausibleCustomEvent.clickContinueWithMetamaskButton:
         return 'clickContinueWithMetamask';
       case PlausibleCustomEvent.clickCreateWallet:
         return 'clickCreateWallet';

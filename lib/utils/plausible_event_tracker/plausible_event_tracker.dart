@@ -264,8 +264,64 @@ abstract class PlausibleEventTracker {
   /// Login
   static Future<void> trackClickContinueLoginButton() {
     return _trackCustomEvent(
-      page: PlausiblePageView.loginPage,
+      page: PlausiblePageView.importWalletPage,
       event: PlausibleCustomEvent.clickContinueLoginButton,
+    );
+  }
+
+  static Future<void> trackClickContinueWithArconnectButton(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickContinueWithArconnectButton,
+    );
+  }
+
+  static Future<void> trackClickContinueWithMetamaskButton(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickContinueWithMetamaskButton,
+    );
+  }
+
+  static Future<void> trackClickImANewUserLinkButton() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.loginPage,
+      event: PlausibleCustomEvent.clickImANewUserLinkButton,
+    );
+  }
+
+  static Future<void> trackClickUseKeyfileButton() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.importWalletPage,
+      event: PlausibleCustomEvent.clickUseKeyfileButton,
+    );
+  }
+
+  static Future<void> trackClickContinueWithSeedphraseButton() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.importWalletPage,
+      event: PlausibleCustomEvent.clickContinueWithSeedphraseButton,
+    );
+  }
+
+  static Future<void> trackClickDismissLoginModalIcon(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickDismissLoginModalIcon,
+    );
+  }
+
+  // Sign Up
+  static Future<void> trackClickAlreadyHaveAWallet() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.signUpPage,
+      event: PlausibleCustomEvent.clickAlreadyHaveAWallet,
     );
   }
 

@@ -50,11 +50,16 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
   void initState() {
     super.initState();
     _isPasswordFailed = widget.passwordFailed;
+    PlausibleEventTracker.trackPageview(
+      page: _getPlausiblePageView(),
+    );
+  }
 
+  PlausiblePageView _getPlausiblePageView() {
     if (widget.alreadyLoggedIn) {
-      PlausibleEventTracker.trackPageview(
-        page: PlausiblePageView.returnUserPage,
-      );
+      return PlausiblePageView.returnUserPage;
+    } else {
+      return PlausiblePageView.enterPasswordPage;
     }
   }
 
@@ -80,6 +85,9 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
         hasCloseButton: !widget.alreadyLoggedIn,
         onClose: !widget.alreadyLoggedIn
             ? () {
+                PlausibleEventTracker.trackClickDismissLoginModalIcon(
+                  _getPlausiblePageView(),
+                );
                 Navigator.of(context).pop();
                 widget.loginBloc.add(const ForgetWallet());
               }

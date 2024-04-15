@@ -4,6 +4,7 @@ import 'package:ardrive/authentication/components/lined_text_divider.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/views/modals/import_wallet_modal.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -34,6 +35,16 @@ class PromptWalletView extends StatefulWidget {
 
 class _PromptWalletViewState extends State<PromptWalletView> {
   @override
+  void initState() {
+    super.initState();
+    if (widget.existingUserFlow) {
+      PlausibleEventTracker.trackPageview(page: PlausiblePageView.loginPage);
+    } else {
+      PlausibleEventTracker.trackPageview(page: PlausiblePageView.signUpPage);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final colors = ArDriveTheme.of(context).themeData.colors;
@@ -41,6 +52,10 @@ class _PromptWalletViewState extends State<PromptWalletView> {
     final existingUserFlow = widget.existingUserFlow;
 
     final width = MediaQuery.of(context).size.width;
+
+    final pageView = existingUserFlow
+        ? PlausiblePageView.loginPage
+        : PlausiblePageView.signUpPage;
 
     return SizedBox.expand(
       child: Stack(
@@ -88,40 +103,53 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                         widget.isMetamaskAvailable) ...[
                       if (widget.isArConnectAvailable) ...[
                         ArDriveButtonNew(
-                            text: 'Continue with ArConnect',
-                            hoverIcon: Container(
-                                alignment: Alignment.center,
-                                child: ArDriveImage(
-                                  width: 24,
-                                  height: 24,
-                                  image: SvgImage.asset(
-                                      Resources.images.login.arconnectLogo),
-                                )),
-                            typography: typography,
-                            onPressed: () {
-                              context
-                                  .read<LoginBloc>()
-                                  .add(const AddWalletFromArConnect());
-                            }),
+                          text: 'Continue with ArConnect',
+                          hoverIcon: Container(
+                              alignment: Alignment.center,
+                              child: ArDriveImage(
+                                width: 24,
+                                height: 24,
+                                image: SvgImage.asset(
+                                    Resources.images.login.arconnectLogo),
+                              )),
+                          typography: typography,
+                          onPressed: () {
+                            PlausibleEventTracker
+                                .trackClickContinueWithArconnectButton(
+                              pageView,
+                            );
+
+                            context
+                                .read<LoginBloc>()
+                                .add(const AddWalletFromArConnect());
+                          },
+                        ),
                         const SizedBox(height: 16),
                       ],
                       if (widget.isMetamaskAvailable) ...[
                         ArDriveButtonNew(
-                            text: 'Continue with MetaMask',
-                            hoverIcon: Container(
-                                alignment: Alignment.center,
-                                child: SvgPicture.asset(
-                                  Resources.images.login.metamask,
-                                  width: 24,
-                                  height: 24,
-                                  fit: BoxFit.contain,
-                                )),
-                            typography: typography,
-                            onPressed: () {
-                              context
-                                  .read<LoginBloc>()
-                                  .add(const LoginWithMetamask());
-                            }),
+                          text: 'Continue with MetaMask',
+                          hoverIcon: Container(
+                            alignment: Alignment.center,
+                            child: SvgPicture.asset(
+                              Resources.images.login.metamask,
+                              width: 24,
+                              height: 24,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                          typography: typography,
+                          onPressed: () {
+                            PlausibleEventTracker
+                                .trackClickContinueWithMetamaskButton(
+                              pageView,
+                            );
+
+                            context
+                                .read<LoginBloc>()
+                                .add(const LoginWithMetamask());
+                          },
+                        ),
                       ],
                       const SizedBox(height: 40),
                       const LinedTextDivider(text: 'or'),
@@ -176,6 +204,14 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                                           fontWeight: ArFontWeight.semiBold),
                                       recognizer: TapGestureRecognizer()
                                         ..onTap = () {
+                                          if (widget.existingUserFlow) {
+                                            PlausibleEventTracker
+                                                .trackClickImANewUserLinkButton();
+                                          } else {
+                                            PlausibleEventTracker
+                                                .trackClickAlreadyHaveAWallet();
+                                          }
+
                                           context.read<LoginBloc>().add(
                                               SelectLoginFlow(
                                                   existingUser: !widget
