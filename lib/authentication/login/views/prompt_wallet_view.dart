@@ -169,6 +169,9 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                             typography: typography,
                             maxWidth: double.maxFinite,
                             onPressed: () {
+                              PlausibleEventTracker
+                                  .trackClickImportWalletButton();
+
                               showImportWalletDialog(
                                   context: context,
                                   loginBloc: context.read<LoginBloc>());
@@ -179,6 +182,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                             variant: ButtonVariant.primary,
                             maxWidth: double.maxFinite,
                             onPressed: () {
+                              PlausibleEventTracker.trackClickCreateWallet();
                               context
                                   .read<LoginBloc>()
                                   .add(const CreateNewWallet());
@@ -269,6 +273,9 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                         ),
                         recognizer: TapGestureRecognizer()
                           ..onTap = () {
+                            PlausibleEventTracker.trackClickTermsOfServices(
+                              pageView,
+                            );
                             openUrl(url: termsOfServiceUrl);
                           },
                       ),

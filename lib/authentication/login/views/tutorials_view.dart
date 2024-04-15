@@ -35,19 +35,17 @@ class TutorialsViewState extends State<TutorialsView> {
   void initState() {
     super.initState();
 
-    PlausibleEventTracker.trackPageview(page: PlausiblePageView.onboardingPage)
-        .then(
-      (value) {
-        PlausibleEventTracker.trackPageview(
-            page: PlausiblePageView.tutorialsPage1);
-      },
-    );
+    PlausibleEventTracker.trackPageview(page: PlausiblePageView.tutorialsPage1);
   }
 
   List<_TutorialPage> get _list => [
         _TutorialPage(
           nextButtonText: appLocalizationsOf(context).next,
           nextButtonAction: () {
+            PlausibleEventTracker.trackClickTutorialNextButton(
+              PlausiblePageView.tutorialsPage1,
+            );
+
             _goToNextPage();
           },
           title: appLocalizationsOf(context).onboarding1Title,
@@ -60,10 +58,17 @@ class TutorialsViewState extends State<TutorialsView> {
         _TutorialPage(
           nextButtonText: appLocalizationsOf(context).next,
           nextButtonAction: () {
+            PlausibleEventTracker.trackClickTutorialNextButton(
+              PlausiblePageView.tutorialsPage2,
+            );
+
             _goToNextPage();
           },
           previousButtonText: appLocalizationsOf(context).backButtonOnboarding,
           previousButtonAction: () {
+            PlausibleEventTracker.trackClickTutorialBackButton(
+              PlausiblePageView.tutorialsPage2,
+            );
             _goToPreviousPage();
           },
           title: 'Complete Privacy Control',
@@ -77,6 +82,8 @@ class TutorialsViewState extends State<TutorialsView> {
               widget.showWalletCreated ? 'Get your wallet' : 'Go to app',
           nextButtonAction: () {
             if (widget.showWalletCreated) {
+              PlausibleEventTracker.trackClickTutorialGetYourWallet();
+
               context.read<LoginBloc>().add(
                     CompleteWalletGeneration(
                       wallet: widget.wallet,
@@ -84,6 +91,8 @@ class TutorialsViewState extends State<TutorialsView> {
                     ),
                   );
             } else {
+              PlausibleEventTracker.trackClickTutorialGoToAppLink();
+
               context.read<LoginBloc>().add(
                     FinishOnboarding(
                       wallet: widget.wallet,
@@ -93,6 +102,9 @@ class TutorialsViewState extends State<TutorialsView> {
           },
           previousButtonText: appLocalizationsOf(context).backButtonOnboarding,
           previousButtonAction: () {
+            PlausibleEventTracker.trackClickTutorialBackButton(
+              PlausiblePageView.tutorialsPage3,
+            );
             _goToPreviousPage();
           },
           title: 'Pay-as-you-go Using a Credit Card',
@@ -435,8 +447,9 @@ class _TutorialContentState extends State<_TutorialContent> {
                               color: colorTokens.textLink,
                               fontWeight: ArFontWeight.semiBold),
                           recognizer: TapGestureRecognizer()
-                            ..onTap =
-                                () => widget.tutorialPage.nextButtonAction(),
+                            ..onTap = () {
+                              widget.tutorialPage.nextButtonAction();
+                            },
                         ),
                       ],
                     ),

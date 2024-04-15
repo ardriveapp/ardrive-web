@@ -261,6 +261,14 @@ abstract class PlausibleEventTracker {
     );
   }
 
+  // pressEnterContinueReturnUser
+  static Future<void> trackPressEnterContinueReturnUser() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.returnUserPage,
+      event: PlausibleCustomEvent.pressEnterContinueReturnUser,
+    );
+  }
+
   /// Login
   static Future<void> trackClickContinueLoginButton() {
     return _trackCustomEvent(
@@ -294,6 +302,13 @@ abstract class PlausibleEventTracker {
     );
   }
 
+  static Future<void> trackClickImportWalletButton() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.loginPage,
+      event: PlausibleCustomEvent.clickImportWalletButton,
+    );
+  }
+
   static Future<void> trackClickUseKeyfileButton() {
     return _trackCustomEvent(
       page: PlausiblePageView.importWalletPage,
@@ -322,6 +337,127 @@ abstract class PlausibleEventTracker {
     return _trackCustomEvent(
       page: PlausiblePageView.signUpPage,
       event: PlausibleCustomEvent.clickAlreadyHaveAWallet,
+    );
+  }
+
+  static Future<void> trackClickCreateWallet() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.signUpPage,
+      event: PlausibleCustomEvent.clickCreateWallet,
+    );
+  }
+
+  static Future<void> trackClickTermsOfServices(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickTermsOfServices,
+    );
+  }
+
+  static Future<void> trackClickConfirmPassword() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.createAndConfirmPasswordPage,
+      event: PlausibleCustomEvent.clickConfirmPassword,
+    );
+  }
+
+  static Future<void> trackClickTutorialNextButton(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickTutorialNextButton,
+    );
+  }
+
+  static Future<void> trackClickTutorialBackButton(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickTutorialBackButton,
+    );
+  }
+
+  static Future<void> trackClickTutorialGetYourWallet() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.tutorialsPage3,
+      event: PlausibleCustomEvent.clickTutorialGetYourWallet,
+    );
+  }
+
+  static Future<void> trackClickTutorialGoToAppLink() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.tutorialsPage3,
+      event: PlausibleCustomEvent.clickTutorialGoToAppLink,
+    );
+  }
+
+  static Future<void> trackClickGoToAppButton() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.walletCreatedPage,
+      event: PlausibleCustomEvent.clickGoToAppButton,
+    );
+  }
+
+  // Theme Switcher
+  static Future<void> trackClickThemeSwitcherLight(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickThemeSwitcherLight,
+    );
+  }
+
+  static Future<void> trackClickThemeSwitcherDark(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickThemeSwitcherDark,
+    );
+  }
+
+  // clickKeyfileInfo
+  static Future<void> trackClickKeyfileInfo() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.walletCreatedPage,
+      event: PlausibleCustomEvent.clickKeyfileInfo,
+    );
+  }
+
+  // clickCopySeedPhraseButton
+  static Future<void> trackClickCopySeedPhraseButton() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.walletCreatedPage,
+      event: PlausibleCustomEvent.clickCopySeedPhraseButton,
+    );
+  }
+
+  // clickDownloadKeyfileButton
+  static Future<void> trackClickDownloadKeyfileButton() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.walletCreatedPage,
+      event: PlausibleCustomEvent.clickDownloadKeyfileButton,
+    );
+  }
+
+  // clickCopySeedPhraseIcon
+  static Future<void> trackClickCopySeedPhraseIcon() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.walletCreatedPage,
+      event: PlausibleCustomEvent.clickCopySeedPhraseIcon,
+    );
+  }
+
+  // clickBackedUpSeedPhraseCheckBox
+  static Future<void> trackClickBackedUpSeedPhraseCheckBox() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.walletCreatedPage,
+      event: PlausibleCustomEvent.clickBackedUpSeedPhraseCheckBox,
     );
   }
 

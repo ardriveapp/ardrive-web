@@ -25,8 +25,8 @@ enum PlausibleCustomEvent {
   clickCreateWallet,
   clickAlreadyHaveAWallet,
   clickConfirmPassword,
-  clickTutorialNext,
-  clickTutorialBack,
+  clickTutorialNextButton,
+  clickTutorialBackButton,
   clickKeyfileInfo,
   clickSeedPhraseInfo,
   clickSecurityInfo,
@@ -48,10 +48,12 @@ enum PlausibleCustomEvent {
   clickLoginRevealPassword,
   clickDismissLoginModalIcon,
   clickContinueLoginButton,
+  clickImportWalletButton,
 
   /// Returning User
   clickContinueReturnUserButton,
   clickForgetWalletTextButton,
+  pressEnterContinueReturnUser,
 
   /// Theme Switcher
   clickThemeSwitcherLight,
@@ -108,9 +110,9 @@ extension PlausibleCustomEventNames on PlausibleCustomEvent {
         return 'clickAlreadyHaveAWallet';
       case PlausibleCustomEvent.clickConfirmPassword:
         return 'clickConfirmPassword';
-      case PlausibleCustomEvent.clickTutorialNext:
+      case PlausibleCustomEvent.clickTutorialNextButton:
         return 'clickTutorialNext';
-      case PlausibleCustomEvent.clickTutorialBack:
+      case PlausibleCustomEvent.clickTutorialBackButton:
         return 'clickTutorialBack';
       case PlausibleCustomEvent.clickKeyfileInfo:
         return 'clickKeyfileInfo';
@@ -142,10 +144,14 @@ extension PlausibleCustomEventNames on PlausibleCustomEvent {
         return 'clickContinueReturnUserButton';
       case PlausibleCustomEvent.clickForgetWalletTextButton:
         return 'clickForgetWalletTextButton';
+      case PlausibleCustomEvent.pressEnterContinueReturnUser:
+        return 'pressEnterContinueReturnUser';
 
       /// Login
       case PlausibleCustomEvent.clickImANewUserLinkButton:
         return 'clickImANewUserLinkButton';
+      case PlausibleCustomEvent.clickImportWalletButton:
+        return 'clickImportWalletButton';
       case PlausibleCustomEvent.clickUseKeyfileButton:
         return 'clickUseKeyfileButton';
       case PlausibleCustomEvent.clickContinueWithSeedphraseButton:
