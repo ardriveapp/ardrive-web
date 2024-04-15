@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 2.39.2
+version: 2.40.0
 
 environment:
   sdk: '>=3.0.2 <4.0.0'
@@ -37,9 +37,7 @@ dependencies:
       url: https://github.com/ardriveapp/ardrive_io.git
       ref: v1.4.5
   ardrive_ui:
-    git:
-      url: https://github.com/elliotsayes/ardrive_ui.git
-      ref: license
+    path: ./packages/ardrive_ui
   ardrive_utils:
     path: ./packages/ardrive_utils
   ardrive_uploader:
@@ -54,9 +52,10 @@ dependencies:
   pst:
     path: ./packages/pst
   arweave:
+    # path: ../arweave-dart
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v3.8.3
+      ref: ac2c39a81e819d106544975ca3e2c9c06ec7d448
   cryptography: ^2.0.5
   flutter_bloc: ^8.1.1
   intersperse: ^2.0.0
@@ -137,6 +136,9 @@ dependencies:
       url: https://github.com/bhagat-techind/flutter_sharing_intent
       ref: 5f4f2e66c02580105ba89b3fec5a7be907d5466f
   sentry_flutter: ^7.14.0
+  webthree: ^2.5.7+2
+  carousel_slider: ^4.2.1
+  dots_indicator: ^3.0.0
 
 dependency_overrides:
   stripe_js:
@@ -161,15 +163,15 @@ dependency_overrides:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v3.8.3
+      ref: v3.9.0
+
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
       ref: v1.4.6
   ardrive_ui:
-    git:
-      url: https://github.com/ardriveapp/ardrive_ui
-      ref: v1.18.0
+    path: ./packages/ardrive_ui
+
 
 dev_dependencies:
   integration_test:
@@ -194,8 +196,9 @@ flutter:
     - assets/fonts/
     - assets/images/
     - assets/images/brand/
-    - assets/images/profile/
     - assets/images/login/
+    - assets/images/login/bento_box/
+    - assets/images/icons/
     - assets/animations/
 
 sentry:

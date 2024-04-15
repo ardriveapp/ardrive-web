@@ -356,6 +356,8 @@ void main() {
         test(
             'should unlock user when biometric authentication succeeds and user is logged in',
             () async {
+          when(() => mockBiometricAuthentication.isEnabled())
+              .thenAnswer((_) async => false);
           when(() => mockBiometricAuthentication.authenticate(
                 localizedReason: localizedReason,
                 useCached: true,
@@ -464,6 +466,8 @@ void main() {
       );
 
       test('should return the user when password is correct', () async {
+        when(() => mockBiometricAuthentication.isEnabled())
+            .thenAnswer((_) async => false);
         when(() => mockUserRepository.getUser('password'))
             .thenAnswer((invocation) async => unlockedUser);
 
@@ -500,6 +504,8 @@ void main() {
       test(
           'should delete the current user and delete it when user is logged in',
           () async {
+        when(() => mockBiometricAuthentication.isEnabled())
+            .thenAnswer((_) async => false);
         when(() => mockUserRepository.hasUser())
             .thenAnswer((invocation) => Future.value(true));
         when(() => mockUserRepository.getUser('password'))
@@ -622,6 +628,8 @@ void main() {
           cipherKey: SecretKey([]),
           profileType: ProfileType.json,
         );
+        when(() => mockBiometricAuthentication.isEnabled())
+            .thenAnswer((_) async => false);
         when(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
                 maxRetries: any(named: 'maxRetries')))
             .thenAnswer((_) async => 'some_id');
@@ -676,6 +684,8 @@ void main() {
       });
 
       test('should change the state when user logs out', () async {
+        when(() => mockBiometricAuthentication.isEnabled())
+            .thenAnswer((_) async => false);
         when(() => mockUserRepository.hasUser())
             .thenAnswer((invocation) => Future.value(true));
         when(() => mockUserRepository.getUser('password'))
