@@ -16,7 +16,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class EnterYourPasswordWidget extends StatefulWidget {
   const EnterYourPasswordWidget({
-    Key? key,
+    super.key,
     required this.loginBloc,
     this.wallet,
     this.derivedEthWallet,
@@ -24,7 +24,7 @@ class EnterYourPasswordWidget extends StatefulWidget {
     required this.alreadyLoggedIn,
     required this.checkingPassword,
     required this.passwordFailed,
-  }) : super(key: key);
+  });
 
   final Wallet? wallet;
   final EthereumProviderWallet? derivedEthWallet;

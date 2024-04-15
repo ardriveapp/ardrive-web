@@ -30,7 +30,7 @@ Future<void> promptToShareFile({
 
 /// Depends on a provided [FileShareCubit] for business logic.
 class FileShareDialog extends StatefulWidget {
-  const FileShareDialog({Key? key}) : super(key: key);
+  const FileShareDialog({super.key});
 
   @override
   FileShareDialogState createState() => FileShareDialogState();

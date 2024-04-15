@@ -57,10 +57,9 @@ class FsEntryDriveInfoSuccess extends FsEntryInfoSuccess<Drive> {
     required this.drive,
     required this.rootFolderRevision,
     required this.rootFolderTree,
-    required String metadataTxId,
+    required super.metadataTxId,
   }) : super(
           entry: drive,
-          metadataTxId: metadataTxId,
         );
 
   @override

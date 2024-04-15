@@ -17,9 +17,9 @@ class NoDrivesPage extends StatelessWidget {
   final bool anonymouslyShowDriveDetail;
 
   NoDrivesPage({
-    Key? key,
+    super.key,
     required this.anonymouslyShowDriveDetail,
-  }) : super(key: key) {
+  }) {
     if (anonymouslyShowDriveDetail) {
       PlausibleEventTracker.trackPageview(
         page: PlausiblePageView.fileExplorerNonLoggedInUser,

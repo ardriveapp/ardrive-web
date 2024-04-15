@@ -22,7 +22,7 @@ import '../drive_detail/components/drive_explorer_item_tile.dart';
 class SharedFilePage extends StatelessWidget {
   final _fileKeyController = TextEditingController();
 
-  SharedFilePage({Key? key}) : super(key: key) {
+  SharedFilePage({super.key}) {
     PlausibleEventTracker.trackPageview(page: PlausiblePageView.sharedFilePage);
   }
 

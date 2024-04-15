@@ -11,14 +11,14 @@ class FsEntryPreviewWidget extends StatefulWidget {
   final FsEntryPreviewCubit previewCubit;
 
   const FsEntryPreviewWidget({
-    Key? key,
+    super.key,
     required this.state,
     required this.isSharePage,
     this.onPreviousImageNavigation,
     this.onNextImageNavigation,
     required this.canNavigateThroughImages,
     required this.previewCubit,
-  }) : super(key: key);
+  });
 
   @override
   State<FsEntryPreviewWidget> createState() => _FsEntryPreviewWidgetState();
@@ -29,13 +29,13 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
   Widget build(BuildContext context) {
     final stateType = widget.state.runtimeType;
     switch (stateType) {
-      case FsEntryPreviewUnavailable:
+      case const (FsEntryPreviewUnavailable):
         return const Center(
           child: Text('Preview unavailable'),
         );
 
-      case FsEntryPreviewLoading:
-      case FsEntryPreviewInitial:
+      case const (FsEntryPreviewLoading):
+      case const (FsEntryPreviewInitial):
         return const Center(
           child: SizedBox(
             height: 24,
@@ -44,7 +44,7 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
           ),
         );
 
-      case FsEntryPreviewImage:
+      case const (FsEntryPreviewImage):
         return ImagePreviewWidget(
           isSharePage: widget.isSharePage,
           isFullScreen: false,
@@ -54,7 +54,7 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
           previewCubit: widget.previewCubit,
         );
 
-      case FsEntryPreviewAudio:
+      case const (FsEntryPreviewAudio):
         return AudioPlayerWidget(
           filename: (widget.state as FsEntryPreviewAudio).filename,
           audioUrl: (widget.state as FsEntryPreviewAudio).previewUrl,
@@ -100,11 +100,11 @@ class VideoPlayerWidget extends StatefulWidget {
   final bool isSharePage;
 
   const VideoPlayerWidget({
-    Key? key,
+    super.key,
     required this.filename,
     required this.videoUrl,
     required this.isSharePage,
-  }) : super(key: key);
+  });
 
   @override
   // ignore: library_private_types_in_public_api
@@ -647,7 +647,7 @@ class FullScreenVideoPlayerWidget extends StatefulWidget {
   final bool isSharePage;
 
   const FullScreenVideoPlayerWidget({
-    Key? key,
+    super.key,
     required this.filename,
     required this.videoUrl,
     required this.initialPosition,
@@ -655,7 +655,7 @@ class FullScreenVideoPlayerWidget extends StatefulWidget {
     required this.initialVolume,
     required this.onClose,
     required this.isSharePage,
-  }) : super(key: key);
+  });
 
   @override
   // ignore: library_private_types_in_public_api
@@ -1698,11 +1698,11 @@ class AudioPlayerWidget extends StatefulWidget {
   final bool isSharePage;
 
   const AudioPlayerWidget({
-    Key? key,
+    super.key,
     required this.filename,
     required this.audioUrl,
     required this.isSharePage,
-  }) : super(key: key);
+  });
 
   @override
   // ignore: library_private_types_in_public_api
@@ -2016,12 +2016,12 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
 
 class VolumeSliderWidget extends StatefulWidget {
   const VolumeSliderWidget({
-    Key? key,
+    super.key,
     required this.volume,
     required this.setVolume,
     required this.sliderVisible,
     required this.setSliderVisible,
-  }) : super(key: key);
+  });
 
   final double volume;
   final Function(double) setVolume;

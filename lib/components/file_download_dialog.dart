@@ -122,7 +122,7 @@ Future<void> promptToDownloadSharedFile({
 }
 
 class FileDownloadDialog extends StatelessWidget {
-  const FileDownloadDialog({Key? key}) : super(key: key);
+  const FileDownloadDialog({super.key});
 
   @override
   Widget build(BuildContext context) =>

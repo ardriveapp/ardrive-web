@@ -132,7 +132,7 @@ abstract class EntityWithCustomMetadata extends Entity {
     'Bundle-Version',
   ];
 
-  EntityWithCustomMetadata(ArDriveCrypto crypto) : super(crypto);
+  EntityWithCustomMetadata(super.crypto);
 
   @override
   Future<Transaction> asTransaction({

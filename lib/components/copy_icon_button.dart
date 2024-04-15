@@ -11,12 +11,12 @@ class CopyIconButton extends StatelessWidget {
   final String? tooltip;
 
   const CopyIconButton({
-    Key? key,
+    super.key,
     required this.value,
     this.size,
     this.tooltip,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

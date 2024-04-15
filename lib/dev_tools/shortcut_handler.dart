@@ -23,10 +23,10 @@ class ShortcutHandler extends StatefulWidget {
   final List<Shortcut> shortcuts;
 
   const ShortcutHandler({
-    Key? key,
+    super.key,
     required this.child,
     required this.shortcuts,
-  }) : super(key: key);
+  });
 
   @override
   ShortcutHandlerState createState() => ShortcutHandlerState();

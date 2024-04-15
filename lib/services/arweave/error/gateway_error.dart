@@ -41,11 +41,9 @@ abstract class GatewayError extends Equatable implements Exception {
 
 class UnexpectedRedirection extends GatewayError {
   const UnexpectedRedirection(
-      {required String reasonPhrase, String? requestUrl})
+      {required super.reasonPhrase, super.requestUrl})
       : super(
-            statusCode: UNEXPECTED_REDIRECTION,
-            reasonPhrase: reasonPhrase,
-            requestUrl: requestUrl);
+            statusCode: UNEXPECTED_REDIRECTION);
 
   @override
   List<Object?> get props => [statusCode, reasonPhrase, requestUrl];
@@ -54,25 +52,19 @@ class UnexpectedRedirection extends GatewayError {
 /// 5xx Errors
 class ServerError extends GatewayError {
   const ServerError(
-      {required int statusCode,
-      required String reasonPhrase,
-      String? requestUrl})
-      : assert(statusCode >= 500),
-        super(
-            reasonPhrase: reasonPhrase,
-            statusCode: statusCode,
-            requestUrl: requestUrl);
+      {required super.statusCode,
+      required super.reasonPhrase,
+      super.requestUrl})
+      : assert(statusCode >= 500);
   @override
   List<Object?> get props => [statusCode, reasonPhrase, requestUrl];
 }
 
 /// 429s Errors
 class RateLimitError extends GatewayError {
-  const RateLimitError({required String reasonPhrase, String? requestUrl})
+  const RateLimitError({required super.reasonPhrase, super.requestUrl})
       : super(
-            reasonPhrase: reasonPhrase,
-            statusCode: RATE_LIMIT_ERROR,
-            requestUrl: requestUrl);
+            statusCode: RATE_LIMIT_ERROR);
 
   @override
   List<Object?> get props => [statusCode, reasonPhrase, requestUrl];
@@ -80,13 +72,9 @@ class RateLimitError extends GatewayError {
 
 class UnknownNetworkError extends GatewayError {
   const UnknownNetworkError(
-      {required int statusCode,
-      required String reasonPhrase,
-      String? requestUrl})
-      : super(
-            reasonPhrase: reasonPhrase,
-            statusCode: statusCode,
-            requestUrl: requestUrl);
+      {required super.statusCode,
+      required super.reasonPhrase,
+      super.requestUrl});
 
   @override
   List<Object?> get props => [statusCode, reasonPhrase, requestUrl];

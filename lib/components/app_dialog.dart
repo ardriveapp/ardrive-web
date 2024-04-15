@@ -21,8 +21,8 @@ class AppDialog extends StatelessWidget {
     required this.content,
     this.actions = const [],
     this.dismissable = true,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) => PopScope(

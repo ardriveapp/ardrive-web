@@ -12,8 +12,8 @@ import 'package:flutter_svg/svg.dart';
 
 class TilesView extends StatelessWidget {
   const TilesView({
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -504,10 +504,10 @@ class CarouselWithGroups extends StatefulWidget {
   final Function() onEndHover;
 
   const CarouselWithGroups({
-    Key? key,
+    super.key,
     required this.onHover,
     required this.onEndHover,
-  }) : super(key: key);
+  });
 
   @override
   _CarouselWithGroupsState createState() => _CarouselWithGroupsState();
@@ -615,12 +615,12 @@ class CustomIndicator extends StatefulWidget {
   final Duration duration;
 
   const CustomIndicator({
-    Key? key,
+    super.key,
     required this.index,
     required this.currentPage,
     required this.onPageAnimationEnd,
     this.duration = const Duration(seconds: 10),
-  }) : super(key: key);
+  });
 
   @override
   _CustomIndicatorState createState() => _CustomIndicatorState();

@@ -55,7 +55,7 @@ Future<void> attachDrive({
 
 /// Depends on a provided [DriveAttachCubit] for business logic.
 class DriveAttachForm extends StatefulWidget {
-  const DriveAttachForm({Key? key}) : super(key: key);
+  const DriveAttachForm({super.key});
 
   @override
   State<DriveAttachForm> createState() => _DriveAttachFormState();

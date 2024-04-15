@@ -665,12 +665,12 @@ class DriveListTile extends StatelessWidget {
   final VoidCallback onTap;
 
   const DriveListTile({
-    Key? key,
+    super.key,
     required this.drive,
     required this.isSelected,
     required this.onTap,
     this.hasAlert = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

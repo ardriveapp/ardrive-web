@@ -189,7 +189,7 @@ Future<void> promptToUpload(
 }
 
 class UploadForm extends StatefulWidget {
-  const UploadForm({Key? key}) : super(key: key);
+  const UploadForm({super.key});
 
   @override
   State<UploadForm> createState() => _UploadFormState();

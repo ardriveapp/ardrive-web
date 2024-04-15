@@ -855,8 +855,7 @@ class UnitItem extends InputDropdownItem {
 class AnimatedFeedbackMessage extends StatefulWidget {
   final String text;
 
-  const AnimatedFeedbackMessage({Key? key, required this.text})
-      : super(key: key);
+  const AnimatedFeedbackMessage({super.key, required this.text});
 
   @override
   AnimatedFeedbackMessageState createState() => AnimatedFeedbackMessageState();

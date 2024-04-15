@@ -12,7 +12,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class KeyboardHandler extends StatefulWidget {
   final Widget child;
-  const KeyboardHandler({Key? key, required this.child}) : super(key: key);
+  const KeyboardHandler({super.key, required this.child});
 
   @override
   State<KeyboardHandler> createState() => _KeyboardHandlerState();
@@ -99,10 +99,10 @@ class ArDriveDevToolsShortcuts extends StatelessWidget {
   final List<Shortcut>? customShortcuts;
 
   const ArDriveDevToolsShortcuts({
-    Key? key,
+    super.key,
     required this.child,
     this.customShortcuts,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

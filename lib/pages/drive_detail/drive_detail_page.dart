@@ -72,9 +72,9 @@ class DriveDetailPage extends StatefulWidget {
 
   const DriveDetailPage({
     required this.context,
-    Key? key,
+    super.key,
     required this.anonymouslyShowDriveDetail,
-  }) : super(key: key);
+  });
 
   @override
   State<DriveDetailPage> createState() => _DriveDetailPageState();
