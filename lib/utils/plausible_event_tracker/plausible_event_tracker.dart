@@ -230,6 +230,8 @@ abstract class PlausibleEventTracker {
   }
 
   /// New Onboarding Events
+  ///
+  /// Welcome Page
   static Future<void> trackClickSignUp() {
     return _trackCustomEvent(
       page: PlausiblePageView.welcomePage,
@@ -241,6 +243,29 @@ abstract class PlausibleEventTracker {
     return _trackCustomEvent(
       page: PlausiblePageView.welcomePage,
       event: PlausibleCustomEvent.clickLogin,
+    );
+  }
+
+  /// Return User Page
+  static Future<void> trackClickContinueReturnUserButton() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.returnUserPage,
+      event: PlausibleCustomEvent.clickContinueReturnUserButton,
+    );
+  }
+
+  static Future<void> trackClickForgetWalletTextButton() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.returnUserPage,
+      event: PlausibleCustomEvent.clickForgetWalletTextButton,
+    );
+  }
+
+  /// Login
+  static Future<void> trackClickContinueLoginButton() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.loginPage,
+      event: PlausibleCustomEvent.clickContinueLoginButton,
     );
   }
 

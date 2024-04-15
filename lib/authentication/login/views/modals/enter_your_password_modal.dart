@@ -7,6 +7,7 @@ import 'package:ardrive/components/truncated_address_new.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider_wallet.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
@@ -49,6 +50,12 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
   void initState() {
     super.initState();
     _isPasswordFailed = widget.passwordFailed;
+
+    if (widget.alreadyLoggedIn) {
+      PlausibleEventTracker.trackPageview(
+        page: PlausiblePageView.returnUserPage,
+      );
+    }
   }
 
   @override
@@ -179,6 +186,13 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                 isDisabled: !_isPasswordValid || widget.checkingPassword,
                 onPressed: () {
                   if (_isPasswordValid) {
+                    if (widget.alreadyLoggedIn) {
+                      PlausibleEventTracker
+                          .trackClickContinueReturnUserButton();
+                    } else {
+                      PlausibleEventTracker.trackClickContinueLoginButton();
+                    }
+
                     _onSubmit();
                   }
                 }),
@@ -198,6 +212,8 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                         ..onTap = () {
                           Navigator.of(context).pop();
                           widget.loginBloc.add(const ForgetWallet());
+                          PlausibleEventTracker
+                              .trackClickForgetWalletTextButton();
                         },
                     ),
                   ],
