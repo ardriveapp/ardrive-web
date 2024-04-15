@@ -219,6 +219,7 @@ ThemeData lightMaterialTheme() {
       surface: colors.themeBgSurface,
       onSurface: colors.themeBgSurface,
     ),
+    useMaterial3: false,
     textTheme: theme.textTheme.apply(
       fontFamily: _fontFamily,
       bodyColor: colors.themeFgDefault,
@@ -328,6 +329,7 @@ ThemeData darkMaterialTheme() {
       surface: colors.themeBgSurface,
       onSurface: colors.themeBgSurface,
     ),
+    useMaterial3: false,
     textTheme: theme.textTheme.apply(
       fontFamily: _fontFamily,
       bodyColor: colors.themeFgDefault,
