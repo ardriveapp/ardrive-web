@@ -239,7 +239,7 @@ class __ArDriveIsForEveryOneState extends State<_ArDriveIsForEveryOne> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 8.0, left: 28),
+          padding: const EdgeInsets.only(top: 0, left: 28),
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 150),
             transitionBuilder: (child, animation) {
@@ -276,7 +276,7 @@ class __ArDriveIsForEveryOneState extends State<_ArDriveIsForEveryOne> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.only(top: 8.0, left: 28),
+          padding: const EdgeInsets.only(left: 28),
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 150),
             transitionBuilder: (child, animation) {
@@ -563,7 +563,7 @@ class _CarouselWithGroupsState extends State<CarouselWithGroups> {
               children: groupImages[itemIndex]
                   .map(
                     (item) => Padding(
-                      padding: const EdgeInsets.all(8.0),
+                      padding: const EdgeInsets.all(4.0),
                       child: _ProfileImageTile(
                         model: item,
                         onEndHover: widget.onEndHover,
@@ -577,7 +577,7 @@ class _CarouselWithGroupsState extends State<CarouselWithGroups> {
           options: CarouselOptions(
             height: 125,
             enlargeCenterPage: false,
-            viewportFraction: 0.9,
+            viewportFraction: 0.76,
             enableInfiniteScroll: true,
             autoPlayAnimationDuration: const Duration(milliseconds: 300),
             pauseAutoPlayOnManualNavigate: true,
@@ -599,6 +599,13 @@ class _CarouselWithGroupsState extends State<CarouselWithGroups> {
                 index: index,
                 currentPage: _currentGroupIndex,
                 onPageAnimationEnd: (index) {},
+                onClickDot: (index) {
+                  _mainCarouselController.animateToPage(
+                    index,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
               ),
             );
           }),
@@ -613,12 +620,14 @@ class CustomIndicator extends StatefulWidget {
   final int currentPage;
   final Function(int) onPageAnimationEnd;
   final Duration duration;
+  final Function(int) onClickDot;
 
   const CustomIndicator({
     super.key,
     required this.index,
     required this.currentPage,
     required this.onPageAnimationEnd,
+    required this.onClickDot,
     this.duration = const Duration(seconds: 10),
   });
 
@@ -673,42 +682,54 @@ class _CustomIndicatorState extends State<CustomIndicator>
 
   @override
   Widget build(BuildContext context) {
-    double indicatorWidth = widget.index == widget.currentPage ? 48.0 : 9.0;
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    if (widget.index != widget.currentPage) {
-      return Container(
-        width: indicatorWidth,
-        height: 9.0,
-        decoration: BoxDecoration(
-          color: const Color(0xffC4C4C4),
-          borderRadius: BorderRadius.circular(4.5),
-        ),
-      );
-    }
+    return ArDriveClickArea(
+      child: GestureDetector(
+        onTap: () {
+          widget.onClickDot(widget.index);
+        },
+        child: Builder(
+          builder: (context) {
+            double indicatorWidth =
+                widget.index == widget.currentPage ? 48.0 : 9.0;
+            final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+            if (widget.index != widget.currentPage) {
+              return Container(
+                width: indicatorWidth,
+                height: 9.0,
+                decoration: BoxDecoration(
+                  color: const Color(0xffC4C4C4),
+                  borderRadius: BorderRadius.circular(4.5),
+                ),
+              );
+            }
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 100),
-      width: indicatorWidth,
-      height: 9.0,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4.5),
-        color: const Color(0xffC4C4C4),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: indicatorWidth * _animation.value,
-            child: Container(
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 100),
+              width: indicatorWidth,
+              height: 9.0,
               decoration: BoxDecoration(
-                color: colorTokens.iconMid,
                 borderRadius: BorderRadius.circular(4.5),
+                color: const Color(0xffC4C4C4),
               ),
-            ),
-          ),
-        ],
+              child: Stack(
+                children: [
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: indicatorWidth * _animation.value,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: colorTokens.iconMid,
+                        borderRadius: BorderRadius.circular(4.5),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -754,8 +775,13 @@ class __Bento5State extends State<_Bento5> {
                     itemCount: _bentoBox5Models.length,
                     itemBuilder: (BuildContext context, int itemIndex,
                         int pageViewIndex) {
-                      return _Bento5Tile(
-                        model: _bentoBox5Models[itemIndex],
+                      return GestureDetector(
+                        onTap: () {
+                          _mainCarouselController.nextPage();
+                        },
+                        child: _Bento5Tile(
+                          model: _bentoBox5Models[itemIndex],
+                        ),
                       );
                     },
                     options: CarouselOptions(
@@ -784,8 +810,13 @@ class __Bento5State extends State<_Bento5> {
                           index: index,
                           currentPage: _currentGroupIndex,
                           duration: const Duration(seconds: 5),
-                          onPageAnimationEnd: (index) {
-                            // _mainCarouselController.animateToPage(index);
+                          onPageAnimationEnd: (index) {},
+                          onClickDot: (index) {
+                            _mainCarouselController.animateToPage(
+                              index,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
                           },
                         ),
                       );

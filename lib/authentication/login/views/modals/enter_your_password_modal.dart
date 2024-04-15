@@ -162,10 +162,10 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
               errorMessage: 'Invalid password. Please try again.',
               showErrorMessage: _isPasswordFailed,
             ),
-            const Flexible(child: SizedBox(height: 40)),
             Align(
               alignment: Alignment.center,
               child: BiometricToggle(
+                padding: const EdgeInsets.only(top: 40),
                 onEnableBiometric: () {
                   context.read<LoginBloc>().add(const UnLockWithBiometrics());
                 },

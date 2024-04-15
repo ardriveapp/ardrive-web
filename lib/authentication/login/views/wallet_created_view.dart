@@ -198,7 +198,7 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Please download your key file to continue. If you log out, you will need this to log back in.',
+            'Please store your seedphrase and download your keyfile to secure locations to continue. If you log out, you will need at least one of these to log back in.',
             style: ArDriveTypographyNew.of(context).paragraphNormal(
               color: colorTokens.textLow,
               fontWeight: ArFontWeight.semiBold,
