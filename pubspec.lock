@@ -152,11 +152,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: ac2c39a81e819d106544975ca3e2c9c06ec7d448
-      resolved-ref: ac2c39a81e819d106544975ca3e2c9c06ec7d448
+      ref: PE-5747-ethareum-login
+      resolved-ref: "79701f70103e93c38d718bfd8a0ecf16ddf31c1f"
       url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
-    version: "3.8.3"
+    version: "3.9.0"
   async:
     dependency: "direct main"
     description:
@@ -1662,10 +1662,10 @@ packages:
     dependency: transitive
     description:
       name: pointycastle
-      sha256: "7c1e5f0d23c9016c5bbd8b1473d0d3fb3fc851b876046039509e18e0c7485f2c"
+      sha256: "43ac87de6e10afabc85c445745a7b799e04de84cebaa4fd7bf55a5e1e9604d29"
       url: "https://pub.dev"
     source: hosted
-    version: "3.7.3"
+    version: "3.7.4"
   pool:
     dependency: transitive
     description:
