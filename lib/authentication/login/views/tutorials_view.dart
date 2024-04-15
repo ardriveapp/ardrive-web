@@ -232,6 +232,8 @@ class _TutorialContent extends StatefulWidget {
 class _TutorialContentState extends State<_TutorialContent> {
   late VideoPlayerController _videoPlayerController;
 
+  bool _loadingVideo = true;
+
   @override
   void initState() {
     super.initState();
@@ -248,6 +250,14 @@ class _TutorialContentState extends State<_TutorialContent> {
           _videoPlayerController.play();
         });
       });
+    });
+
+    _videoPlayerController.addListener(() {
+      if (_videoPlayerController.value.isInitialized) {
+        setState(() {
+          _loadingVideo = false;
+        });
+      }
     });
   }
 
@@ -346,25 +356,29 @@ class _TutorialContentState extends State<_TutorialContent> {
               )
             : Flexible(
                 child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(1),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: colorTokens.strokeLow,
-                        width: 1,
-                      ),
-                    ),
-                    child: AspectRatio(
-                      aspectRatio: 4196 / 2160,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: VideoPlayer(
-                          _videoPlayerController,
+                  child: _loadingVideo
+                      ? const Center(
+                          child: CircularProgressIndicator(),
+                        )
+                      : Container(
+                          padding: const EdgeInsets.all(1),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: colorTokens.strokeLow,
+                              width: 1,
+                            ),
+                          ),
+                          child: AspectRatio(
+                            aspectRatio: 4196 / 2160,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: VideoPlayer(
+                                _videoPlayerController,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  ),
                 ),
               ),
         Row(
