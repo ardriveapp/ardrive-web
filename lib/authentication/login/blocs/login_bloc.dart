@@ -19,8 +19,6 @@ import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/logger.dart';
-import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
-import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -350,8 +348,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     try {
       final user = await _arDriveAuth.unlockUser(password: event.password);
 
-      final type = usingSeedphrase ? LoginType.seedphrase : LoginType.json;
-      PlausibleEventTracker.trackLogin(type: type);
       emit(LoginSuccess(user));
     } catch (e) {
       logger.e('Failed to unlock user with password', e);
@@ -547,13 +543,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       profileType,
     );
 
-    final type = profileType == ProfileType.arConnect
-        ? LoginType.arConnect
-        : usingSeedphrase
-            ? LoginType.seedphrase
-            : LoginType.json;
-    PlausibleEventTracker.trackLogin(type: type);
-
     if (showTutorials) {
       emit(LoginTutorials(
           wallet: wallet,
@@ -604,8 +593,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     final user = await _arDriveAuth.unlockWithBiometrics(
         localizedReason: 'Login using credentials stored on this device');
 
-    const type = LoginType.json;
-    PlausibleEventTracker.trackLogin(type: type);
     emit(LoginSuccess(user));
 
     return;
