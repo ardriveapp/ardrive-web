@@ -24,11 +24,11 @@ class ArDriveAccordion extends StatefulWidget {
   final EdgeInsetsGeometry? contentPadding;
 
   const ArDriveAccordion({
-    Key? key,
+    super.key,
     required this.children,
     this.backgroundColor,
     this.contentPadding,
-  }) : super(key: key);
+  });
 
   @override
   State<ArDriveAccordion> createState() => _ArDriveAccordionState();
