@@ -152,8 +152,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-5747-ethareum-login
-      resolved-ref: "79701f70103e93c38d718bfd8a0ecf16ddf31c1f"
+      ref: "v3.9.0"
+      resolved-ref: ed5f497ef264e8591317d4a48fda9740ac90d1a2
       url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
     version: "3.9.0"
@@ -834,10 +834,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_email_sender
-      sha256: "5001e9158f91a8799140fb30a11ad89cd587244f30b4f848d87085985c49b60f"
+      sha256: fb515d4e073d238d0daf1d765e5318487b6396d46b96e0ae9745dbc9a133f97a
       url: "https://pub.dev"
     source: hosted
-    version: "6.0.2"
+    version: "6.0.3"
   flutter_hooks:
     dependency: "direct main"
     description:
@@ -1177,10 +1177,10 @@ packages:
     dependency: transitive
     description:
       name: image_picker_for_web
-      sha256: "6a1704fdd75022272e7e7a897a9068e9c2ff3cd6a66820bf3ded810633eac954"
+      sha256: "5d6eb13048cd47b60dbf1a5495424dea226c5faf3950e20bf8120a58efb5b5f3"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.3"
+    version: "3.0.4"
   image_picker_ios:
     dependency: transitive
     description:
@@ -1398,10 +1398,10 @@ packages:
     dependency: transitive
     description:
       name: local_auth_android
-      sha256: "3bcd732dda7c75fcb7ddaef12e131230f53dcc8c00790d0d6efb3aa0fbbeda57"
+      sha256: e0e5b1ea247c5a0951c13a7ee13dc1beae69750e6a2e1910d1ed6a3cd4d56943
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.37"
+    version: "1.0.38"
   local_auth_darwin:
     dependency: transitive
     description:
@@ -1694,17 +1694,10 @@ packages:
     dependency: transitive
     description:
       name: pointycastle
-<<<<<<< HEAD
-      sha256: "70fe966348fe08c34bf929582f1d8247d9d9408130723206472b4687227e4333"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.8.0"
-=======
       sha256: "43ac87de6e10afabc85c445745a7b799e04de84cebaa4fd7bf55a5e1e9604d29"
       url: "https://pub.dev"
     source: hosted
     version: "3.7.4"
->>>>>>> dev
   pool:
     dependency: transitive
     description:
@@ -2283,10 +2276,10 @@ packages:
     dependency: transitive
     description:
       name: url_launcher_web
-      sha256: "3692a459204a33e04bc94f5fb91158faf4f2c8903281ddd82915adecdb1a901d"
+      sha256: "8d9e750d8c9338601e709cd0885f95825086bd8b642547f26bda435aade95d8a"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.0"
+    version: "2.3.1"
   url_launcher_windows:
     dependency: transitive
     description:
@@ -2323,10 +2316,10 @@ packages:
     dependency: transitive
     description:
       name: video_player_android
-      sha256: "821cff3446bbde255e8d03c12fe1f9810c69fee2c26c394545b13d824ba63c2e"
+      sha256: "134e1ad410d67e18a19486ed9512c72dfc6d8ffb284d0e8f2e99e903d1ba8fa3"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.13"
+    version: "2.4.14"
   video_player_avfoundation:
     dependency: transitive
     description:
