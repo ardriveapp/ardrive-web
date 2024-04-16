@@ -263,12 +263,25 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
 
         _previousState = state;
 
+        final animation = Tween<double>(
+          begin: 0.01,
+          end: 1.0,
+        ).animate(
+          CurvedAnimation(parent: _opacityController, curve: Curves.easeInOut),
+        );
+
         return Container(
           color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
           child: AnimatedSize(
             duration: const Duration(milliseconds: 300),
-            child: FadeTransition(
-              opacity: _opacityController,
+            child: AnimatedBuilder(
+              animation: animation,
+              builder: (context, child) {
+                return Opacity(
+                  opacity: isOpacityTransitionDelayed ? animation.value : 1,
+                  child: child,
+                );
+              },
               child: view,
             ),
           ),
