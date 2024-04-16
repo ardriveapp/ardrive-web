@@ -1,14 +1,27 @@
 part of '../drive_detail_page.dart';
 
-class DriveDetailBreadcrumbRow extends StatelessWidget {
-  final List<String> _pathSegments;
-  final String driveName;
+class BreadCrumbRowInfo {
+  final String text;
+  final String targetId;
 
-  DriveDetailBreadcrumbRow({
-    super.key,
-    required String path,
+  BreadCrumbRowInfo({
+    required this.text,
+    required this.targetId,
+  });
+}
+
+class DriveDetailBreadcrumbRow extends StatelessWidget {
+  final List<BreadCrumbRowInfo> _pathSegments;
+  final String driveName;
+  final String rootFolderId;
+
+  const DriveDetailBreadcrumbRow({
+    Key? key,
+    required List<BreadCrumbRowInfo> path,
     required this.driveName,
-  })  : _pathSegments = path.split('/').where((s) => s != '').toList();
+    required this.rootFolderId,
+  })  : _pathSegments = path,
+        super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -47,11 +60,12 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
     Widget buildSegment(int index) {
       return GestureDetector(
         onTap: () {
-          final path = _pathSegments.sublist(0, index + 1).join('/');
-          context.read<DriveDetailCubit>().openFolder(path: '/$path');
+          context.read<DriveDetailCubit>().openFolder(
+                folderId: _pathSegments[index].targetId,
+              );
         },
         child: HoverText(
-          text: _pathSegments[index],
+          text: _pathSegments[index].text,
           style: segmentStyle(index),
         ),
       );
@@ -96,7 +110,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
           GestureDetector(
             onTap: () => context
                 .read<DriveDetailCubit>()
-                .openFolder(path: entities.rootPath),
+                .openFolder(folderId: rootFolderId),
             child: HoverText(
               text: driveName,
               style: segmentStyle(_pathSegments.length).copyWith(
@@ -138,11 +152,11 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
       return [
         ArDriveDropdownItem(
           onClick: () => context.read<DriveDetailCubit>().openFolder(
-                path: '/${path.sublist(0, s.key + 1).join('/')}',
+                folderId: s.value.targetId,
               ),
           content: _buildDropdownItemContent(
             context,
-            s.value,
+            s.value.text,
             false,
           ),
         ),
@@ -152,7 +166,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
       0,
       ArDriveDropdownItem(
         onClick: () => context.read<DriveDetailCubit>().openFolder(
-              path: entities.rootPath,
+              folderId: rootFolderId,
             ),
         content: _buildDropdownItemContent(
           context,
@@ -178,17 +192,8 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
     String text,
     bool isDrive,
   ) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Padding(
-        padding: const EdgeInsets.only(left: 8.0),
-        child: Text(
-          text,
-          style: ArDriveTypography.body.captionBold(
-            color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-          ),
-        ),
-      ),
+    return ArDriveDropdownItemTile(
+      name: text,
     );
   }
 }

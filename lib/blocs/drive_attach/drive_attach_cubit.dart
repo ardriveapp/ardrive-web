@@ -125,7 +125,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
       final driveEntity = await _arweave.getLatestDriveEntityWithId(
         driveId,
-        _driveKey,
+        driveKey: _driveKey,
       );
 
       if (driveEntity == null) {
@@ -188,7 +188,8 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       }
     }
 
-    final drive = await _arweave.getLatestDriveEntityWithId(driveId, _driveKey);
+    final drive =
+        await _arweave.getLatestDriveEntityWithId(driveId, driveKey: _driveKey);
 
     if (drive == null) {
       return false;
@@ -208,7 +209,8 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
     _driveKey = await getDriveKey(promptedDriveKey);
 
-    final drive = await _arweave.getLatestDriveEntityWithId(driveId, _driveKey);
+    final drive =
+        await _arweave.getLatestDriveEntityWithId(driveId, driveKey: _driveKey);
 
     if (drive == null) {
       return 'Invalid drive key';

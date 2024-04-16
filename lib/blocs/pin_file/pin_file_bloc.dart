@@ -311,10 +311,6 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
           ? await _crypto.deriveFileKey(driveKey, newFileEntity.id!)
           : null;
 
-      final parentFolder = await _driveDao
-          .folderById(driveId: _driveId, folderId: _parentFolderId)
-          .getSingle();
-
       final isAPublicPin = fileKey == null;
 
       if (_turboUploadService.useTurboUpload) {
@@ -368,10 +364,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
         newFileEntity.txId = fileDataItem.id;
       }
 
-      final parentFolderPath = parentFolder.path;
-      final filePath = '$parentFolderPath/${newFileEntity.name}';
-
-      await _driveDao.writeFileEntity(newFileEntity, filePath);
+      await _driveDao.writeFileEntity(newFileEntity);
       await _driveDao.insertFileRevision(newFileEntity.toRevisionCompanion(
         // FIXME: this is gonna change when we allow to ovewrite an existing file
         performedAction: RevisionAction.create,

@@ -106,8 +106,8 @@ void main() {
       lastUpdated: tDefaultDate,
       name: '',
       parentFolderId: '',
-      path: '',
       isHidden: false,
+      path: '',
     ));
 
     registerFallbackValue(Drive(

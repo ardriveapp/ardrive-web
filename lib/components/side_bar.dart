@@ -304,7 +304,7 @@ class _AppSideBarState extends State<AppSideBar> {
                     onTap: () {
                       if (state.selectedDriveId == d.id) {
                         // opens the root folder
-                        context.read<DriveDetailCubit>().openFolder(path: '');
+                        context.read<DriveDetailCubit>().openFolder();
                         return;
                       }
                       context.read<DrivesCubit>().selectDrive(d.id);

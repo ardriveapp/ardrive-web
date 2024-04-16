@@ -79,7 +79,6 @@ class FolderDataItemUploadHandle implements UploadHandle, DataItemHandle {
         driveId: targetDriveId,
         parentFolderId: folder.parentFolderId,
         folderName: folder.name,
-        path: folder.path,
         folderId: folder.id,
       );
 
