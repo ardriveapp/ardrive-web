@@ -80,13 +80,6 @@ abstract class SyncRepository {
 
   Future<int> getCurrentBlockHeight();
 
-  Future<Map<FolderID, GhostFolder>> generateFsEntryPaths({
-    required String driveId,
-    required Map<String, FolderEntriesCompanion> foldersByIdMap,
-    required Map<String, FileEntriesCompanion> filesByIdMap,
-    required Map<FolderID, GhostFolder> ghostFolders,
-  });
-
   factory SyncRepository({
     required ArweaveService arweave,
     required DriveDao driveDao,
@@ -110,6 +103,9 @@ class _SyncRepository implements SyncRepository {
   final ConfigService _configService;
   final LicenseService _licenseService;
   final BatchProcessor _batchProcessor;
+
+  final Map<String, GhostFolder> _ghostFolders = {};
+  final Set<String> _folderIds = <String>{};
 
   DateTime? _lastSync;
 
@@ -155,13 +151,10 @@ class _SyncRepository implements SyncRepository {
       ),
     );
 
-    final ghostFolders = <FolderID, GhostFolder>{};
-
     final driveSyncProcesses = drives.map((drive) async* {
       yield* _syncDrive(
         drive.id,
         cipherKey: cipherKey,
-        ghostFolders: ghostFolders,
         lastBlockHeight: syncDeep
             ? 0
             : _calculateSyncLastBlockHeight(drive.lastBlockHeight!),
@@ -206,11 +199,14 @@ class _SyncRepository implements SyncRepository {
       await createGhosts(
         driveDao: _driveDao,
         ownerAddress: await wallet?.getAddress(),
-        ghostFolders: ghostFolders,
+        ghostFolders: _ghostFolders,
       );
 
       /// Clear the ghost folders after they are created
-      ghostFolders.clear();
+      _ghostFolders.clear();
+
+      /// Clear the folder ids after they are created
+      _folderIds.clear();
 
       logger.i('Ghosts created...');
 
@@ -270,7 +266,6 @@ class _SyncRepository implements SyncRepository {
       currentBlockHeight: 0,
       transactionParseBatchSize: 200,
       txFechedCallback: txFechedCallback,
-      ghostFolders: {}, // No ghost folders to start with
     );
   }
 
@@ -314,11 +309,11 @@ class _SyncRepository implements SyncRepository {
         driveId: drive.id,
         parentFolderId: drive.rootFolderId,
         name: ghostFolder.folderId,
-        path: rootPath,
         lastUpdated: DateTime.now(),
         isGhost: true,
         dateCreated: DateTime.now(),
         isHidden: ghostFolder.isHidden,
+        path: '',
       );
       await driveDao.into(driveDao.folderEntries).insert(folderEntry);
       ghostFoldersByDrive.putIfAbsent(
@@ -326,19 +321,6 @@ class _SyncRepository implements SyncRepository {
         () => {folderEntry.id: folderEntry.toCompanion(false)},
       );
     }
-    await Future.wait(
-      [
-        ...ghostFoldersByDrive.entries.map(
-          (entry) => _generateFsEntryPaths(
-            driveDao: driveDao,
-            driveId: entry.key,
-            foldersByIdMap: entry.value,
-            ghostFolders: ghostFolders,
-            filesByIdMap: {},
-          ),
-        ),
-      ],
-    );
   }
 
   @override
@@ -367,22 +349,6 @@ class _SyncRepository implements SyncRepository {
       onRetry: (exception) => logger.w(
         'Retrying for get the current block height',
       ),
-    );
-  }
-
-  @override
-  Future<Map<FolderID, GhostFolder>> generateFsEntryPaths({
-    required String driveId,
-    required Map<String, FolderEntriesCompanion> foldersByIdMap,
-    required Map<String, FileEntriesCompanion> filesByIdMap,
-    required Map<FolderID, GhostFolder> ghostFolders,
-  }) {
-    return _generateFsEntryPaths(
-      driveDao: _driveDao,
-      driveId: driveId,
-      foldersByIdMap: foldersByIdMap,
-      filesByIdMap: filesByIdMap,
-      ghostFolders: ghostFolders,
     );
   }
 
@@ -539,7 +505,6 @@ class _SyncRepository implements SyncRepository {
     required int currentBlockHeight,
     required int lastBlockHeight,
     required int transactionParseBatchSize,
-    required Map<FolderID, GhostFolder> ghostFolders,
     required String ownerAddress,
     Function(String driveId, int txCount)? txFechedCallback,
   }) async* {
@@ -644,11 +609,6 @@ class _SyncRepository implements SyncRepository {
               ((currentBlockHeight - block.height) /
                   totalBlockHeightDifference));
         }
-        logger.d(
-          'The transaction block is null. Transaction node id: ${t.transactionCommonMixin.id}',
-        );
-
-        logger.d('New fetch-phase percentage: $fetchPhasePercentage');
 
         /// if the block is null, we don't calculate and keep the same percentage
         return fetchPhasePercentage;
@@ -671,7 +631,6 @@ class _SyncRepository implements SyncRepository {
         }
       }
 
-      logger.d('Adding transaction ${t.transactionCommonMixin.id}');
       transactions.add(t);
 
       /// We can only calculate the fetch percentage if we have the `firstBlockHeight`
@@ -680,7 +639,7 @@ class _SyncRepository implements SyncRepository {
           fetchPhasePercentage = calculatePercentageBasedOnBlockHeights();
         } else {
           // If the difference is zero means that the first phase was concluded.
-          logger.d('The first phase just finished!');
+          logger.d('The syncs first phase just finished!');
           fetchPhasePercentage = 1;
         }
         final percentage =
@@ -701,7 +660,6 @@ class _SyncRepository implements SyncRepository {
 
     try {
       yield* _parseDriveTransactionsIntoDatabaseEntities(
-        ghostFolders: ghostFolders,
         transactions: transactions,
         drive: drive,
         driveKey: driveKey,
@@ -813,7 +771,7 @@ class _SyncRepository implements SyncRepository {
     required int currentBlockHeight,
     required int batchSize,
     required SnapshotDriveHistory snapshotDriveHistory,
-    required Map<FolderID, GhostFolder> ghostFolders,
+    // required Map<FolderID, GhostFolder> ghostFolders,
     required String ownerAddress,
   }) async* {
     final numberOfDriveEntitiesToParse = transactions.length;
@@ -845,12 +803,6 @@ class _SyncRepository implements SyncRepository {
         list: transactions,
         batchSize: batchSize,
         endOfBatchCallback: (items) async* {
-          final isReadingFromSnapshot = snapshotDriveHistory.items.isNotEmpty;
-
-          if (!isReadingFromSnapshot) {
-            logger.d('Getting metadata from drive ${drive.id}');
-          }
-
           final entityHistory =
               await _arweave.createDriveEntityHistoryFromTransactions(
             items,
@@ -893,6 +845,19 @@ class _SyncRepository implements SyncRepository {
               newEntities: newEntities.whereType<FileEntity>(),
             );
 
+            for (final entity in latestFileRevisions) {
+              if (!_folderIds.contains(entity.parentFolderId.value)) {
+                _ghostFolders.putIfAbsent(
+                  entity.parentFolderId.value,
+                  () => GhostFolder(
+                    driveId: drive.id,
+                    folderId: entity.parentFolderId.value,
+                    isHidden: false,
+                  ),
+                );
+              }
+            }
+
             // Check and handle cases where there's no more revisions
             final updatedDrive = latestDriveRevision != null
                 ? await _computeRefreshedDriveFromRevision(
@@ -929,16 +894,11 @@ class _SyncRepository implements SyncRepository {
                 .updateFolderEntries(updatedFoldersById.values.toList());
             await _driveDao.updateFileEntries(updatedFilesById.values.toList());
 
-            await _generateFsEntryPaths(
-              ghostFolders: ghostFolders,
-              driveDao: _driveDao,
-              driveId: drive.id,
-              foldersByIdMap: updatedFoldersById,
-              filesByIdMap: updatedFilesById,
-            );
-
             numberOfDriveEntitiesParsed +=
                 updatedFoldersById.length + updatedFilesById.length;
+            
+            latestFolderRevisions.clear();
+            latestFileRevisions.clear();
           });
           yield driveEntityParseProgress();
         });
@@ -1043,6 +1003,7 @@ class _SyncRepository implements SyncRepository {
     required String driveId,
     required Iterable<FolderEntity> newEntities,
   }) async {
+    _folderIds.addAll(newEntities.map((e) => e.id!));
     // The latest folder revisions, keyed by their entity ids.
     final latestRevisions = <String, FolderRevisionsCompanion>{};
 
@@ -1141,117 +1102,6 @@ Future<Map<String, FolderEntriesCompanion>>
   }
 
   return updatedFoldersById;
-}
-
-/// Generates paths for the folders (and their children) and files provided.
-Future<Map<FolderID, GhostFolder>> _generateFsEntryPaths({
-  required DriveDao driveDao,
-  required String driveId,
-  required Map<String, FolderEntriesCompanion> foldersByIdMap,
-  required Map<String, FileEntriesCompanion> filesByIdMap,
-  required Map<FolderID, GhostFolder> ghostFolders,
-}) async {
-  final staleFolderTree = <FolderNode>[];
-  for (final folder in foldersByIdMap.values) {
-    // Get trees of the updated folders and files for path generation.
-    final tree = await driveDao.getFolderTree(driveId, folder.id.value);
-
-    // Remove any trees that are a subset of another.
-    var newTreeIsSubsetOfExisting = false;
-    var newTreeIsSupersetOfExisting = false;
-    for (final existingTree in staleFolderTree) {
-      if (existingTree.searchForFolder(tree.folder.id) != null) {
-        newTreeIsSubsetOfExisting = true;
-      } else if (tree.searchForFolder(existingTree.folder.id) != null) {
-        staleFolderTree.remove(existingTree);
-        staleFolderTree.add(tree);
-        newTreeIsSupersetOfExisting = true;
-      }
-    }
-
-    if (!newTreeIsSubsetOfExisting && !newTreeIsSupersetOfExisting) {
-      staleFolderTree.add(tree);
-    }
-  }
-
-  Future<void> addMissingFolder(String folderId) async {
-    ghostFolders.putIfAbsent(
-        folderId, () => GhostFolder(folderId: folderId, driveId: driveId));
-  }
-
-  Future<void> updateFolderTree(FolderNode node, String parentPath) async {
-    final folderId = node.folder.id;
-    // If this is the root folder, we should not include its name as part of the path.
-    final folderPath = node.folder.parentFolderId != null
-        ? '$parentPath/${node.folder.name}'
-        : rootPath;
-
-    await driveDao
-        .updateFolderById(driveId, folderId)
-        .write(FolderEntriesCompanion(path: Value(folderPath)));
-
-    for (final staleFileId in node.files.keys) {
-      final filePath = '$folderPath/${node.files[staleFileId]!.name}';
-
-      await driveDao
-          .updateFileById(driveId, staleFileId)
-          .write(FileEntriesCompanion(path: Value(filePath)));
-    }
-
-    for (final staleFolder in node.subfolders) {
-      await updateFolderTree(staleFolder, folderPath);
-    }
-  }
-
-  for (final treeRoot in staleFolderTree) {
-    // Get the path of this folder's parent.
-    String? parentPath;
-    if (treeRoot.folder.parentFolderId == null) {
-      parentPath = rootPath;
-    } else {
-      parentPath = (await driveDao
-          .folderById(
-              driveId: driveId, folderId: treeRoot.folder.parentFolderId!)
-          .map((f) => f.path)
-          .getSingleOrNull());
-    }
-    if (parentPath != null) {
-      await updateFolderTree(treeRoot, parentPath);
-    } else {
-      await addMissingFolder(
-        treeRoot.folder.parentFolderId!,
-      );
-    }
-  }
-  // Update paths of files whose parent folders were not updated.
-  final staleOrphanFiles = filesByIdMap.values
-      .where((f) => !foldersByIdMap.containsKey(f.parentFolderId));
-  for (final staleOrphanFile in staleOrphanFiles) {
-    if (staleOrphanFile.parentFolderId.value.isNotEmpty) {
-      final parentPath = await driveDao
-          .folderById(
-              driveId: driveId, folderId: staleOrphanFile.parentFolderId.value)
-          .map((f) => f.path)
-          .getSingleOrNull();
-
-      if (parentPath != null) {
-        final filePath = '$parentPath/${staleOrphanFile.name.value}';
-
-        await driveDao.writeToFile(FileEntriesCompanion(
-            id: staleOrphanFile.id,
-            driveId: staleOrphanFile.driveId,
-            path: Value(filePath)));
-      } else {
-        logger.d(
-            'Add missing folder to file with id ${staleOrphanFile.parentFolderId}');
-
-        await addMissingFolder(
-          staleOrphanFile.parentFolderId.value,
-        );
-      }
-    }
-  }
-  return ghostFolders;
 }
 
 /// Computes the refreshed drive entries from the provided revisions and returns them as a map keyed by their ids.

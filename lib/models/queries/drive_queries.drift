@@ -31,23 +31,10 @@ latestDriveRevisionsByDriveIdWithTransactions AS DriveRevisionWithTransaction:
 folderById:
     SELECT * FROM folder_entries
     WHERE driveId = :driveId AND id = :folderId;
-folderWithPath:
-    SELECT * FROM folder_entries
-    WHERE driveId = :driveId AND path = :path
-    LIMIT 1;
 
 foldersInFolder ($order = ''):
     SELECT * FROM folder_entries
     WHERE driveId = :driveId AND parentFolderId = :parentFolderId
-    ORDER BY $order;
-
-foldersInFolderAtPath ($order = ''):
-    SELECT * FROM folder_entries
-    WHERE parentFolderId IN (
-        SELECT id FROM folder_entries
-        WHERE driveId = :driveId AND path = :path
-        LIMIT 1
-    )
     ORDER BY $order;
 
 ghostFolders:
@@ -92,14 +79,6 @@ filesInFolder ($order = ''):
 filesInFolderWithName:
     SELECT * FROM file_entries
     WHERE driveId = :driveId AND parentFolderId = :parentFolderId AND name = :name;
-filesInFolderAtPath ($order = ''):
-    SELECT * FROM file_entries
-    WHERE parentFolderId IN (
-        SELECT id FROM folder_entries
-        WHERE driveId = :driveId AND path = :path
-        LIMIT 1
-    )
-    ORDER BY $order;
 
 filesInFolderWithLicenseAndRevisionTransactions ($order = '') AS FileWithLicenseAndLatestRevisionTransactions:
     SELECT file_entries.*, license.**, metadataTx.**, dataTx.** FROM file_entries
@@ -120,30 +99,6 @@ filesInFolderWithLicenseAndRevisionTransactions ($order = '') AS FileWithLicense
         LIMIT 1)
     WHERE file_entries.driveId = :driveId AND file_entries.parentFolderId = :parentFolderId
     ORDER BY $order;
-filesInFolderAtPathWithLicenseAndRevisionTransactions ($order = '') AS FileWithLicenseAndLatestRevisionTransactions:
-    SELECT file_entries.*, license.**, metadataTx.**, dataTx.** FROM file_entries
-    LEFT JOIN licenses AS license ON license.licenseTxId = (
-        SELECT licenseTxId FROM file_revisions AS rev
-        WHERE rev.driveId = :driveId AND rev.fileId = file_entries.id
-        ORDER BY rev.dateCreated DESC
-        LIMIT 1)
-    JOIN network_transactions AS metadataTx ON metadataTx.id = (
-        SELECT metadataTxId FROM file_revisions AS rev
-        WHERE driveId = :driveId AND fileId = file_entries.id
-        ORDER BY rev.dateCreated DESC
-        LIMIT 1)
-    JOIN network_transactions AS dataTx ON dataTx.id = (
-        SELECT dataTxId FROM file_revisions AS rev
-        WHERE driveId = :driveId AND fileId = file_entries.id
-        ORDER BY rev.dateCreated DESC
-        LIMIT 1)
-     WHERE parentFolderId IN (
-        SELECT id FROM folder_entries
-        WHERE folder_entries.driveId = :driveId AND folder_entries.path = :path
-        LIMIT 1
-    )
-    ORDER BY $order;
-
 filesInDriveWithRevisionTransactions ($order = '') AS FileWithLatestRevisionTransactions:
 SELECT file_entries.*, metadataTx.**, dataTx.** FROM file_entries
 JOIN network_transactions AS metadataTx ON metadataTx.id = (

@@ -53,9 +53,6 @@ class UploadPlanUtils {
     for (var file in files) {
       final fileName = file.ioFile.name;
 
-      // If path is a blob from drag and drop, use file name. Else use the path field from folder upload
-      final filePath = '${targetFolder.path}/${file.getIdentifier()}';
-
       final parentFolderId = foldersByPath[getDirname(file.getIdentifier())];
 
       final fileSize = await file.ioFile.length;
@@ -90,7 +87,6 @@ class UploadPlanUtils {
       if (fileSize < bundleSizeLimit) {
         fileDataItemUploadHandles[fileEntity.id!] = FileDataItemUploadHandle(
           entity: fileEntity,
-          path: filePath,
           file: file,
           driveKey: driveKey,
           fileKey: fileKey,
@@ -102,7 +98,6 @@ class UploadPlanUtils {
       } else {
         fileV2UploadHandles[fileEntity.id!] = FileV2UploadHandle(
           entity: fileEntity,
-          path: filePath,
           file: file,
           driveKey: driveKey,
           fileKey: fileKey,
