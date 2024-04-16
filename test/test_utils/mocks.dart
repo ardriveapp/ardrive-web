@@ -13,6 +13,7 @@ import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
@@ -76,6 +77,11 @@ class MockUserRepository extends Mock implements UserRepository {}
 class MockArDriveAuth extends Mock implements ArDriveAuth {}
 
 class MockArConnectService extends Mock implements ArConnectService {}
+
+class MockEthereumProviderService extends Mock
+    implements EthereumProviderService {}
+
+class MockTurboUploadService extends Mock implements TurboUploadService {}
 
 class MockTabVisibilitySingleton extends Mock
     implements TabVisibilitySingleton {}

@@ -217,6 +217,7 @@ Future<ArDriveHTTPResponse> _requestPriceForFiat(
         throw PaymentServiceInvalidPromoCode(promoCode: promoCode);
       }
     }
+
     throw PaymentServiceException(
       'Turbo price fetch failed with exception: $error',
     );
