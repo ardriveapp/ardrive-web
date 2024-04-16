@@ -5,11 +5,10 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
   final String driveName;
 
   DriveDetailBreadcrumbRow({
-    Key? key,
+    super.key,
     required String path,
     required this.driveName,
-  })  : _pathSegments = path.split('/').where((s) => s != '').toList(),
-        super(key: key);
+  })  : _pathSegments = path.split('/').where((s) => s != '').toList();
 
   @override
   Widget build(BuildContext context) {

@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:ui';
 
 import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
@@ -15,8 +17,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class WalletCreatedView extends StatefulWidget {
-  const WalletCreatedView({Key? key, this.mnemonic, required this.wallet})
-      : super(key: key);
+  const WalletCreatedView({super.key, this.mnemonic, required this.wallet});
 
   final String? mnemonic;
   final Wallet wallet;

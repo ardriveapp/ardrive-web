@@ -302,7 +302,6 @@ class _ArDriveDataTableState<T extends IndexedItem>
           _isCtrlPressed = HardwareKeyboard.instance.isMetaPressed;
           widget.onChangeMultiSelecting!(_isMultiSelecting);
         });
-        return true;
       }
     }
     return false;

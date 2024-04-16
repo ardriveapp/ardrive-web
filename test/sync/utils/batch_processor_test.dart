@@ -22,7 +22,7 @@ void main() {
       final processor = BatchProcessor();
       expect(
           processor.batchProcess<int>(
-              list: [], endOfBatchCallback: mockCallback, batchSize: 5),
+              list: [], endOfBatchCallback: mockCallback.call, batchSize: 5),
           emitsDone);
     });
 
@@ -33,7 +33,7 @@ void main() {
       expect(
           processor.batchProcess<int>(
               list: list,
-              endOfBatchCallback: mockCallback,
+              endOfBatchCallback: mockCallback.call,
               batchSize: batchSize),
           emitsInOrder([1.0, emitsDone]));
     });
@@ -48,7 +48,7 @@ void main() {
       expect(
           processor.batchProcess<int>(
               list: list,
-              endOfBatchCallback: mockCallback,
+              endOfBatchCallback: mockCallback.call,
               batchSize: batchSize),
           emitsInOrder([1.0, 1.0, 1.0, 1.0, 1.0, emitsDone]));
     });
@@ -61,7 +61,7 @@ void main() {
       expect(
           processor.batchProcess<int>(
               list: list,
-              endOfBatchCallback: mockCallback,
+              endOfBatchCallback: mockCallback.call,
               batchSize: batchSize),
           emitsInOrder([1.0, 1.0, emitsDone]));
     });
@@ -74,7 +74,7 @@ void main() {
       expect(
           processor.batchProcess<int>(
               list: list,
-              endOfBatchCallback: mockCallback,
+              endOfBatchCallback: mockCallback.call,
               batchSize: batchSize),
           emitsInOrder([1.0, 1.0, 1.0, emitsDone]));
     });
@@ -86,7 +86,7 @@ void main() {
 
       expect(
         processor.batchProcess<int>(
-            list: list, endOfBatchCallback: mockCallback, batchSize: batchSize),
+            list: list, endOfBatchCallback: mockCallback.call, batchSize: batchSize),
         emitsError(
           isA<ArgumentError>(),
         ),

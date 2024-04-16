@@ -45,7 +45,7 @@ Future<void> promptToCreateManifest(
 }
 
 class CreateManifestForm extends StatefulWidget {
-  const CreateManifestForm({Key? key}) : super(key: key);
+  const CreateManifestForm({super.key});
 
   @override
   State<CreateManifestForm> createState() => _CreateManifestFormState();
@@ -504,7 +504,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
               ),
             ),
           )
-          .toList(),
+          ,
     ];
 
     return ArDriveCard(

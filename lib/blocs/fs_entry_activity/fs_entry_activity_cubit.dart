@@ -25,7 +25,7 @@ class FsEntryActivityCubit extends Cubit<FsEntryActivityState> {
     final selectedItem = maybeSelectedItem;
     if (selectedItem != null) {
       switch (selectedItem.runtimeType) {
-        case FolderDataTableItem:
+        case const (FolderDataTableItem):
           _entrySubscription = _driveDao
               .latestFolderRevisionsByFolderIdWithTransactions(
                 driveId: driveId,
@@ -36,7 +36,7 @@ class FsEntryActivityCubit extends Cubit<FsEntryActivityState> {
                   FsEntryActivitySuccess<FolderRevisionWithTransaction>(
                       revisions: r)));
           break;
-        case FileDataTableItem:
+        case const (FileDataTableItem):
           _entrySubscription = _driveDao
               .latestFileRevisionsByFileIdWithLicenseAndTransactions(
                 driveId: driveId,

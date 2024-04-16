@@ -1225,7 +1225,7 @@ Future<Map<FolderID, GhostFolder>> _generateFsEntryPaths({
   }
   // Update paths of files whose parent folders were not updated.
   final staleOrphanFiles = filesByIdMap.values
-      .where((f) => !foldersByIdMap.containsKey(f.parentFolderId));
+      .where((f) => !foldersByIdMap.containsKey(f.parentFolderId.value));
   for (final staleOrphanFile in staleOrphanFiles) {
     if (staleOrphanFile.parentFolderId.value.isNotEmpty) {
       final parentPath = await driveDao

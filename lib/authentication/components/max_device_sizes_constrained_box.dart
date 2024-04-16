@@ -10,12 +10,12 @@ class MaxDeviceSizesConstrainedBox extends StatelessWidget {
   final Widget child;
 
   const MaxDeviceSizesConstrainedBox({
-    Key? key,
+    super.key,
     this.maxHeightPercent = 0.8,
     this.defaultMaxWidth = _defaultLoginCardMaxWidth,
     this.defaultMaxHeight = _defaultLoginCardMaxHeight,
     required this.child,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

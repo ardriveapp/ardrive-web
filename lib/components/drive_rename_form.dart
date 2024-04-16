@@ -49,9 +49,9 @@ Future<void> promptToRenameDrive(
 
 class DriveRenameForm extends StatefulWidget {
   const DriveRenameForm({
-    Key? key,
+    super.key,
     required this.driveName,
-  }) : super(key: key);
+  });
 
   final String driveName;
 
