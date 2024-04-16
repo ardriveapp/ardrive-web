@@ -11,11 +11,13 @@ class BiometricToggle extends StatefulWidget {
     this.onDisableBiometric,
     this.onEnableBiometric,
     this.onError,
+    this.padding,
   });
 
   final Function()? onEnableBiometric;
   final Function()? onDisableBiometric;
   final Function()? onError;
+  final EdgeInsets? padding;
 
   @override
   State<BiometricToggle> createState() => _BiometricToggleState();
@@ -67,47 +69,56 @@ class _BiometricToggleState extends State<BiometricToggle> {
             return const SizedBox();
           }
 
-          return ArDriveToggleSwitch(
-            text: biometricText,
-            value: _isEnabled,
-            onChanged: (value) async {
-              _isEnabled = value;
+          final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+          final typography = ArDriveTypographyNew.of(context);
 
-              if (_isEnabled) {
-                final auth = context.read<BiometricAuthentication>();
+          return Padding(
+            padding: widget.padding ?? const EdgeInsets.all(0),
+            child: ArDriveToggleSwitch(
+              text: biometricText,
+              textStyle: typography.paragraphLarge(
+                  color: colorTokens.textLow,
+                  fontWeight: ArFontWeight.semiBold),
+              value: _isEnabled,
+              onChanged: (value) async {
+                _isEnabled = value;
 
-                try {
-                  if (await auth.authenticate(
-                      localizedReason: appLocalizationsOf(context)
-                          .loginUsingBiometricCredential)) {
-                    setState(() {
-                      _isEnabled = true;
-                    });
-                    // ignore: use_build_context_synchronously
-                    context.read<BiometricAuthentication>().enable();
-                    widget.onEnableBiometric?.call();
-                    return;
+                if (_isEnabled) {
+                  final auth = context.read<BiometricAuthentication>();
+
+                  try {
+                    if (await auth.authenticate(
+                        localizedReason: appLocalizationsOf(context)
+                            .loginUsingBiometricCredential)) {
+                      setState(() {
+                        _isEnabled = true;
+                      });
+                      // ignore: use_build_context_synchronously
+                      context.read<BiometricAuthentication>().enable();
+                      widget.onEnableBiometric?.call();
+                      return;
+                    }
+                  } catch (e) {
+                    widget.onError?.call();
+                    if (e is BiometricException) {
+                      // ignore: use_build_context_synchronously
+                      showBiometricExceptionDialogForException(
+                        context,
+                        e,
+                        () => widget.onDisableBiometric?.call(),
+                      );
+                    }
                   }
-                } catch (e) {
-                  widget.onError?.call();
-                  if (e is BiometricException) {
-                    // ignore: use_build_context_synchronously
-                    showBiometricExceptionDialogForException(
-                      context,
-                      e,
-                      () => widget.onDisableBiometric?.call(),
-                    );
-                  }
+                } else {
+                  context.read<BiometricAuthentication>().disable();
+
+                  widget.onDisableBiometric?.call();
                 }
-              } else {
-                context.read<BiometricAuthentication>().disable();
-
-                widget.onDisableBiometric?.call();
-              }
-              setState(() {
-                _isEnabled = false;
-              });
-            },
+                setState(() {
+                  _isEnabled = false;
+                });
+              },
+            ),
           );
         });
   }

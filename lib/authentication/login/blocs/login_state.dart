@@ -4,33 +4,86 @@ abstract class LoginState extends Equatable {
   const LoginState();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
+}
+
+class LoginLanding extends LoginState {
+  const LoginLanding();
 }
 
 class LoginInitial extends LoginState {
   final bool isArConnectAvailable;
+  final bool existingUserFlow;
 
-  const LoginInitial({required this.isArConnectAvailable});
+  const LoginInitial(
+      {required this.isArConnectAvailable, required this.existingUserFlow});
+
+  @override
+  List<Object> get props => [isArConnectAvailable, existingUserFlow];
 }
 
 class LoginLoading extends LoginState {}
 
-class LoginOnBoarding extends LoginState {
-  const LoginOnBoarding(this.walletFile);
+class LoginShowLoader extends LoginState {}
 
-  final Wallet walletFile;
+class LoginShowBlockingDialog extends LoginState {
+  const LoginShowBlockingDialog({required this.message});
+
+  final String message;
+}
+
+class LoginCloseBlockingDialog extends LoginState {}
+
+class LoginTutorials extends LoginState {
+  const LoginTutorials(
+      {required this.wallet, this.mnemonic, required this.showWalletCreated});
+
+  final Wallet wallet;
+  final String? mnemonic;
+  final bool showWalletCreated;
 }
 
 class PromptPassword extends LoginState {
-  const PromptPassword({this.walletFile});
+  const PromptPassword(
+      {this.mnemonic,
+      this.wallet,
+      this.derivedEthWallet,
+      this.alreadyLoggedIn = false,
+      this.showWalletCreated = false,
+      this.isPasswordInvalid = false});
 
-  final Wallet? walletFile;
+  final String? mnemonic;
+  final Wallet? wallet;
+  final EthereumProviderWallet? derivedEthWallet;
+  final bool alreadyLoggedIn;
+  final bool isPasswordInvalid;
+
+  /// Used to determine next screens to show on password success
+  final bool showWalletCreated;
+
+  @override
+  List<Object?> get props => [mnemonic, wallet, showWalletCreated];
 }
 
-class CreatingNewPassword extends LoginState {
-  const CreatingNewPassword({required this.walletFile});
+class CreateNewPassword extends LoginState {
+  const CreateNewPassword(
+      {required this.wallet,
+      this.derivedEthWallet,
+      this.mnemonic,
+      required this.showTutorials,
+      required this.showWalletCreated});
 
-  final Wallet walletFile;
+  final String? mnemonic;
+  final Wallet wallet;
+  final EthereumProviderWallet? derivedEthWallet;
+
+  /// Used to determine next screens to show on password success
+  final bool showTutorials;
+  final bool showWalletCreated;
+
+  @override
+  List<Object?> get props =>
+      [mnemonic, wallet, showTutorials, showWalletCreated];
 }
 
 class LoginFailure extends LoginState {
@@ -44,25 +97,14 @@ class LoginSuccess extends LoginState {
   final User user;
 }
 
-class LoginEnterSeedPhrase extends LoginState {}
-
-class LoginGenerateWallet extends LoginState {
-  const LoginGenerateWallet();
-}
-
 class LoginDownloadGeneratedWallet extends LoginState {
-  const LoginDownloadGeneratedWallet(this.mnemonic, this.walletFile);
-  final String mnemonic;
-  final Wallet walletFile;
+  const LoginDownloadGeneratedWallet({this.mnemonic, required this.wallet});
+  final String? mnemonic;
+  final Wallet wallet;
 }
 
-class LoginCreateNewWallet extends LoginState {
-  const LoginCreateNewWallet(this.mnemonic);
-  final String mnemonic;
-}
+class LoginCheckingPassword extends LoginState {}
 
-class LoginConfirmMnemonic extends LoginState {
-  const LoginConfirmMnemonic(this.mnemonic, this.walletFile);
-  final String mnemonic;
-  final Wallet walletFile;
-}
+class LoginPasswordFailed extends LoginState {}
+
+class LoginCreatePasswordComplete extends LoginState {}

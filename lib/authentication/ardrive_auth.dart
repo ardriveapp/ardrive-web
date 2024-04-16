@@ -171,6 +171,12 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
       currentUser = await _userRepository.getUser(password);
 
+      if (await _biometricAuthentication.isEnabled()) {
+        logger.i('Saving password in secure storage');
+
+        _savePasswordInSecureStorage(password);
+      }
+
       logger.d('User unlocked with password');
 
       _userStreamController.add(_currentUser);

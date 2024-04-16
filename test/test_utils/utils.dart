@@ -244,6 +244,6 @@ Future<DataItem> getTestDataItem(String path) async {
     owner: await wallet.getOwner(),
     data: json.decode(await File(path).readAsString()),
   );
-  await dataItem.sign(getTestWallet());
+  await dataItem.sign(ArweaveSigner(getTestWallet()));
   return dataItem;
 }

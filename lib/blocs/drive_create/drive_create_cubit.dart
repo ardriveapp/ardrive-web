@@ -106,8 +106,10 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         key: createRes.driveKey,
       );
 
-      await rootFolderDataItem.sign(profile.wallet);
-      await driveDataItem.sign(profile.wallet);
+      final signer = ArweaveSigner(profile.wallet);
+
+      await rootFolderDataItem.sign(signer);
+      await driveDataItem.sign(signer);
       late TransactionBase createTx;
       if (_turboUploadService.useTurboUpload) {
         createTx = await _arweave.prepareBundledDataItem(

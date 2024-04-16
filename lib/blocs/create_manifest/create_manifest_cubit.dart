@@ -237,11 +237,12 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
       final profile = _profileCubit.state as ProfileLoggedIn;
       final wallet = profile.wallet;
+      final signer = ArweaveSigner(wallet);
 
       final manifestDataItem = await arweaveManifest.asPreparedDataItem(
         owner: await wallet.getOwner(),
       );
-      await manifestDataItem.sign(wallet);
+      await manifestDataItem.sign(signer);
 
       /// Assemble data JSON of the metadata tx for the manifest
       final manifestFileEntity = FileEntity(
@@ -261,7 +262,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       );
 
       // Sign data item and preserve meta data tx ID on entity
-      await manifestMetaDataItem.sign(wallet);
+      await manifestMetaDataItem.sign(signer);
       manifestFileEntity.txId = manifestMetaDataItem.id;
 
       addManifestToDatabase() => _driveDao.transaction(
@@ -322,7 +323,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
           .convertForUSD(double.parse(arUploadCost));
 
       // Sign bundle tx and preserve bundle tx ID on entity
-      await bundleTx.sign(wallet);
+      await bundleTx.sign(ArweaveSigner(wallet));
       manifestFileEntity.bundledIn = bundleTx.id;
 
       final uploadManifestParams = UploadManifestParams(

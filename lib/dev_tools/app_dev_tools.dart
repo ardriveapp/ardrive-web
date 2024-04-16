@@ -280,11 +280,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       onChange: (value) async {
         await context.read<ConfigService>().resetDevToolsPrefs();
 
-        _windowTitle.value = 'Reloading...';
-
-        Future.delayed(const Duration(seconds: 1), () {
-          html.window.location.reload();
-        });
+        reloadPage();
       },
       type: ArDriveDevToolOptionType.buttonTertiary,
     );
@@ -426,6 +422,26 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
                           Future.delayed(const Duration(seconds: 1), () {
                             setState(() {
                               _windowTitle.value = 'Dev config';
+                              reloadPage();
+                            });
+                          });
+                        },
+                      ),
+                      ArDriveButton(
+                        text: 'staging env',
+                        onPressed: () {
+                          setState(() {
+                            _windowTitle.value = 'Reloading...';
+
+                            configService.updateAppConfig(
+                              AppConfig.fromJson(snapshot.data![2]),
+                            );
+                          });
+
+                          Future.delayed(const Duration(seconds: 1), () {
+                            setState(() {
+                              _windowTitle.value = 'Staging config';
+                              reloadPage();
                             });
                           });
                         },
@@ -470,10 +486,13 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
         await rootBundle.loadString('assets/config/dev.json');
     final String prodConfig =
         await rootBundle.loadString('assets/config/prod.json');
+    final String stagingConfig =
+        await rootBundle.loadString('assets/config/staging.json');
 
     final List<Map<String, dynamic>> configs = [
       jsonDecode(devConfig),
-      jsonDecode(prodConfig)
+      jsonDecode(prodConfig),
+      jsonDecode(stagingConfig),
     ];
 
     return configs;
@@ -559,6 +578,14 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
 
     Future.delayed(const Duration(seconds: 2), () {
       _windowTitle.value = 'ArDrive Dev Tools';
+    });
+  }
+
+  void reloadPage() {
+    _windowTitle.value = 'Reloading...';
+
+    Future.delayed(const Duration(seconds: 1), () {
+      html.window.location.reload();
     });
   }
 }

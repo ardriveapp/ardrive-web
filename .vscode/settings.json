@@ -5,5 +5,11 @@
   "bloc.newBlocTemplate": "equatable",
   "bloc.newCubitTemplate": "equatable",
   "dart.additionalAnalyzerFileExtensions": ["drift"],
-  "cSpell.words": ["Hkdf", "hmac", "sublist", "Widgetbook"]
+  "cSpell.words": [
+    "bento",
+    "Hkdf",
+    "hmac",
+    "sublist",
+    "Widgetbook"
+  ]
 }
