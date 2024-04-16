@@ -261,6 +261,7 @@ class _AppSideBarState extends State<AppSideBar> {
             ? Padding(
                 padding: EdgeInsets.all(isMobile ? 0 : 16.0),
                 child: Image.asset(
+                  // TODO: replace with ArDriveTheme .isLight method
                   ArDriveTheme.of(context).themeData.name == 'light'
                       ? Resources.images.brand.blackLogo1
                       : Resources.images.brand.whiteLogo1,

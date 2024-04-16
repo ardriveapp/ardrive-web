@@ -160,6 +160,7 @@ class TilesView extends StatelessWidget {
 class _MilitaryGradeEncryption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    // TODO: replace with ArDriveTheme .isLight method
     final isLightMode = ArDriveTheme.of(context).themeData.name == 'light';
     return ClipRRect(
       borderRadius: const BorderRadius.only(

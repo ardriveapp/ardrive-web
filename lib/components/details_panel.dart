@@ -257,6 +257,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                     children: [
                       ArDriveImage(
                         image: AssetImage(
+                          // TODO: replace with ArDriveTheme .isLight method
                           ArDriveTheme.of(context).themeData.name == 'light'
                               ? Resources.images.brand.blackLogo2
                               : Resources.images.brand.whiteLogo2,
