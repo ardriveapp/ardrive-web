@@ -565,7 +565,6 @@ class UploadCubit extends Cubit<UploadState> {
         UploadFolder(
           lastModifiedDate: DateTime.now(),
           name: folder.name,
-          path: folder.path,
         ),
       ));
     }
@@ -1022,7 +1021,6 @@ class UploadCubit extends Cubit<UploadState> {
 class UploadFolder extends IOFolder {
   UploadFolder({
     required this.name,
-    required this.path,
     required this.lastModifiedDate,
   });
 
@@ -1048,8 +1046,8 @@ class UploadFolder extends IOFolder {
   final String name;
 
   @override
-  // TODO: implement path
-  final String path;
+  // We dont need to use the path for the upload
+  final String path = '';
 
   @override
   List<Object?> get props => [name, path, lastModifiedDate];

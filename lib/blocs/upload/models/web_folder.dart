@@ -4,7 +4,7 @@ class WebFolder {
 
   String id;
   late String parentFolderId;
-  late String path;
+
   WebFolder({
     required this.name,
     required this.id,
