@@ -22,7 +22,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v3.8.3
+      ref: v3.9.0
   js: ^0.6.7
   equatable: ^2.0.5
 

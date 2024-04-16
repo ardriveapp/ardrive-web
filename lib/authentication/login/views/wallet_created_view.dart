@@ -61,7 +61,8 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
     _currentPage = widget.mnemonic != null ? 0 : 1;
 
     PlausibleEventTracker.trackPageview(
-        page: PlausiblePageView.walletGenerationPage);
+      page: PlausiblePageView.walletCreatedPage,
+    );
   }
 
   @override
@@ -130,13 +131,14 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
                                 fit: BoxFit.contain)
                             : ArDriveClickArea(
                                 child: GestureDetector(
-                                    onTap: () => _copy(true),
-                                    child: SvgPicture.asset(
-                                      Resources.images.icons.copy,
-                                      width: 20,
-                                      height: 20,
-                                      color: colorTokens.textMid,
-                                    ))),
+                                onTap: () => _copy(true),
+                                child: SvgPicture.asset(
+                                  Resources.images.icons.copy,
+                                  width: 20,
+                                  height: 20,
+                                  color: colorTokens.textMid,
+                                ),
+                              )),
                       ),
                     )
                   ]))
@@ -211,7 +213,10 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
               typography: typography,
               text: 'Copy Seed Phrase',
               variant: ButtonVariant.outline,
-              onPressed: () => _copy(false),
+              onPressed: () {
+                PlausibleEventTracker.trackClickCopySeedPhraseButton();
+                _copy(false);
+              },
               rightIcon: IgnorePointer(
                   child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
@@ -227,7 +232,6 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
                         height: 20,
                         color: colorTokens.textMid,
                       ),
-                // onPressed: _copy,
               )),
             ),
             const SizedBox(height: 12),
@@ -238,6 +242,8 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
             variant: ButtonVariant.outline,
             onPressed: () async {
               final ioUtils = ArDriveIOUtils();
+
+              PlausibleEventTracker.trackClickDownloadKeyfileButton();
 
               await ioUtils.downloadWalletAsJsonFile(
                 wallet: widget.wallet,
@@ -258,6 +264,8 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
             isDisabled: !_isTermsChecked,
             variant: ButtonVariant.primary,
             onPressed: () async {
+              PlausibleEventTracker.trackClickGoToAppButton();
+
               context.read<LoginBloc>().add(
                     FinishOnboarding(
                       wallet: widget.wallet,
@@ -277,6 +285,9 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
                   BorderSide(width: 1.0, color: colorTokens.textLow)),
               value: _isTermsChecked,
               onChanged: ((value) {
+                if (value ?? false) {
+                  PlausibleEventTracker.trackClickBackedUpSeedPhraseCheckBox();
+                }
                 setState(() => _isTermsChecked = value ?? false);
               }),
             ),
@@ -401,7 +412,9 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
         ? textRow
         : ArDriveClickArea(
             child: GestureDetector(
-            onTap: () => setState(() => _currentPage = index),
+            onTap: () {
+              setState(() => _currentPage = index);
+            },
             child: textRow,
           ));
   }

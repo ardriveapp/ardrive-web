@@ -3,6 +3,7 @@ import 'package:ardrive/authentication/components/lined_text_divider.dart';
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -21,6 +22,14 @@ class ImportWalletModal extends StatefulWidget {
 class _ImportWalletModalState extends State<ImportWalletModal> {
   final _seedPhraseController = ArDriveMultilineObscureTextControllerNew();
   bool showSeedPhraseError = false;
+
+  @override
+  initState() {
+    super.initState();
+    PlausibleEventTracker.trackPageview(
+      page: PlausiblePageView.importWalletPage,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,6 +114,7 @@ class _ImportWalletModalState extends State<ImportWalletModal> {
                         .validateAndReturnWalletFile(selectedFile);
                     if (wallet != null) {
                       navigator.pop();
+                      PlausibleEventTracker.trackClickUseKeyfileButton();
                       widget.loginBloc.add(AddWalletFile(selectedFile));
                     } else {
                       // TODO: Add error message
@@ -125,7 +135,7 @@ class _ImportWalletModalState extends State<ImportWalletModal> {
       });
       return;
     }
-
+    PlausibleEventTracker.trackClickContinueWithSeedphraseButton();
     Navigator.pop(context);
     widget.loginBloc
         .add(AddWalletFromSeedPhraseLogin(_seedPhraseController.text));

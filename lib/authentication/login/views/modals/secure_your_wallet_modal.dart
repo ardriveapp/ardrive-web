@@ -178,6 +178,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                       !_confirmPasswordIsValid ||
                       _isProcessing,
                   onPressed: () {
+                    PlausibleEventTracker.trackClickConfirmPassword();
                     _onSubmit();
                   }),
             ],
