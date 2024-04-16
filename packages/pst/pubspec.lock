@@ -21,11 +21,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v3.8.3"
-      resolved-ref: "41d590687cecafc316b3c83da20274a29d3e2833"
+      ref: "v3.9.0"
+      resolved-ref: ed5f497ef264e8591317d4a48fda9740ac90d1a2
       url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
-    version: "3.8.3"
+    version: "3.9.0"
   async:
     dependency: transitive
     description:
@@ -462,10 +462,10 @@ packages:
     dependency: transitive
     description:
       name: pointycastle
-      sha256: "7c1e5f0d23c9016c5bbd8b1473d0d3fb3fc851b876046039509e18e0c7485f2c"
+      sha256: "43ac87de6e10afabc85c445745a7b799e04de84cebaa4fd7bf55a5e1e9604d29"
       url: "https://pub.dev"
     source: hosted
-    version: "3.7.3"
+    version: "3.7.4"
   retry:
     dependency: "direct main"
     description:

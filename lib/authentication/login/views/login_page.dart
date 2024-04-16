@@ -338,13 +338,10 @@ class _SmallDesktopView extends StatelessWidget {
                         fit: StackFit.expand,
                         children: [
                           Center(
-                            child: SizedBox(
-                              width: 381,
-                              child: _buildContent(
-                                context,
-                                loginState: loginState,
-                                globalKey: globalKey,
-                              ),
+                            child: _buildContent(
+                              context,
+                              loginState: loginState,
+                              globalKey: globalKey,
                             ),
                           ),
                           const Positioned(
@@ -382,47 +379,44 @@ class _TabletView extends StatelessWidget {
     return Material(
       color: ArDriveTheme.of(context).themeData.backgroundColor,
       child: SingleChildScrollView(
-        child: SizedBox(
-          height: 1096,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: SizedBox(
-                  height: 266,
-                  child: TilesView(),
-                ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: SizedBox(
+                height: 266,
+                child: TilesView(),
               ),
-              SizedBox(
-                height: height < 1096 ? 800 : height - 298,
-                child: _roundedBorderContainer(
-                  context: context,
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  child: Stack(
-                    children: [
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
-                          child: _buildContent(
-                            context,
-                            loginState: loginState,
-                            globalKey: globalKey,
-                          ),
+            ),
+            SizedBox(
+              height: height < 1096 ? 800 : height - 298,
+              child: _roundedBorderContainer(
+                context: context,
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Stack(
+                  children: [
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
+                        child: _buildContent(
+                          context,
+                          loginState: loginState,
+                          globalKey: globalKey,
                         ),
                       ),
-                      const Positioned(
-                        right: 24,
-                        top: 24,
-                        child: IconThemeSwitcher(),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const Positioned(
+                      right: 24,
+                      top: 24,
+                      child: IconThemeSwitcher(),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

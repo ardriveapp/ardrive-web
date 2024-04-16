@@ -1,4 +1,5 @@
 import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +7,9 @@ import 'package:lottie/lottie.dart';
 
 void showLoaderDialog({required BuildContext context}) {
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+  PlausibleEventTracker.trackPageview(
+    page: PlausiblePageView.generateWalletLoader,
+  );
   showArDriveDialog(
     context,
     barrierDismissible: false,

@@ -7,6 +7,7 @@ import 'package:ardrive/components/truncated_address_new.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider_wallet.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
@@ -49,6 +50,17 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
   void initState() {
     super.initState();
     _isPasswordFailed = widget.passwordFailed;
+    PlausibleEventTracker.trackPageview(
+      page: _getPlausiblePageView(),
+    );
+  }
+
+  PlausiblePageView _getPlausiblePageView() {
+    if (widget.alreadyLoggedIn) {
+      return PlausiblePageView.returnUserPage;
+    } else {
+      return PlausiblePageView.enterPasswordPage;
+    }
   }
 
   @override
@@ -73,6 +85,9 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
         hasCloseButton: !widget.alreadyLoggedIn,
         onClose: !widget.alreadyLoggedIn
             ? () {
+                PlausibleEventTracker.trackClickDismissLoginModalIcon(
+                  _getPlausiblePageView(),
+                );
                 Navigator.of(context).pop();
                 widget.loginBloc.add(const ForgetWallet());
               }
@@ -151,6 +166,7 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
               },
               onFieldSubmitted: (_) async {
                 if (_isPasswordValid) {
+                  PlausibleEventTracker.trackPressEnterContinueReturnUser();
                   _onSubmit();
                 }
               },
@@ -162,10 +178,10 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
               errorMessage: 'Invalid password. Please try again.',
               showErrorMessage: _isPasswordFailed,
             ),
-            const Flexible(child: SizedBox(height: 40)),
             Align(
               alignment: Alignment.center,
               child: BiometricToggle(
+                padding: const EdgeInsets.only(top: 40),
                 onEnableBiometric: () {
                   context.read<LoginBloc>().add(const UnLockWithBiometrics());
                 },
@@ -179,6 +195,13 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                 isDisabled: !_isPasswordValid || widget.checkingPassword,
                 onPressed: () {
                   if (_isPasswordValid) {
+                    if (widget.alreadyLoggedIn) {
+                      PlausibleEventTracker
+                          .trackClickContinueReturnUserButton();
+                    } else {
+                      PlausibleEventTracker.trackClickContinueLoginButton();
+                    }
+
                     _onSubmit();
                   }
                 }),
@@ -198,6 +221,8 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                         ..onTap = () {
                           Navigator.of(context).pop();
                           widget.loginBloc.add(const ForgetWallet());
+                          PlausibleEventTracker
+                              .trackClickForgetWalletTextButton();
                         },
                     ),
                   ],

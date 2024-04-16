@@ -1,6 +1,7 @@
 import 'package:ardrive/authentication/components/button.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/components/app_version_widget.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -60,6 +61,8 @@ class _LandingViewState extends State<LandingView> {
                   typography: typography,
                   maxWidth: double.maxFinite,
                   onPressed: () {
+                    PlausibleEventTracker.trackClickLogin();
+
                     context
                         .read<LoginBloc>()
                         .add(const SelectLoginFlow(existingUser: true));
@@ -71,6 +74,8 @@ class _LandingViewState extends State<LandingView> {
                   maxWidth: double.maxFinite,
                   variant: ButtonVariant.primary,
                   onPressed: () {
+                    PlausibleEventTracker.trackClickSignUp();
+
                     context
                         .read<LoginBloc>()
                         .add(const SelectLoginFlow(existingUser: false));
