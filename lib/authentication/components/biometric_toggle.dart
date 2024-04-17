@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/authentication/biometric_permission_dialog.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -93,7 +95,6 @@ class _BiometricToggleState extends State<BiometricToggle> {
                       setState(() {
                         _isEnabled = true;
                       });
-                      // ignore: use_build_context_synchronously
                       context.read<BiometricAuthentication>().enable();
                       widget.onEnableBiometric?.call();
                       return;
@@ -101,7 +102,6 @@ class _BiometricToggleState extends State<BiometricToggle> {
                   } catch (e) {
                     widget.onError?.call();
                     if (e is BiometricException) {
-                      // ignore: use_build_context_synchronously
                       showBiometricExceptionDialogForException(
                         context,
                         e,

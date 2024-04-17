@@ -301,17 +301,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     return availableRowsPerPage;
   }
 
-  void setRowsPerPage(int rowsPerPage) {
-    switch (state.runtimeType) {
-      case DriveDetailLoadSuccess:
-        emit(
-          (state as DriveDetailLoadSuccess).copyWith(
-            rowsPerPage: rowsPerPage,
-          ),
-        );
-    }
-  }
-
   Future<void> selectDataItem(ArDriveDataTableItem item) async {
     var state = this.state as DriveDetailLoadSuccess;
 

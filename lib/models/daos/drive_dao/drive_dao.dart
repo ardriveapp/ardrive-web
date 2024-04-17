@@ -33,8 +33,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   final ArDriveCrypto _crypto = ArDriveCrypto();
 
   DriveDao(
-    Database db,
-  ) : super(db) {
+    super.db,
+  ) {
     initVaults();
   }
 

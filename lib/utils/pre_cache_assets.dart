@@ -1,7 +1,7 @@
 import 'package:ardrive/misc/resources.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_svg/svg.dart';
 
 void preCacheLoginAssets(BuildContext context) {
   List<String> assetPaths = [
@@ -34,10 +34,9 @@ void preCacheLoginAssets(BuildContext context) {
 
   if (kIsWeb) {
     for (String svgAsset in svgAssets) {
-      precachePicture(
-        ExactAssetPicture(SvgPicture.svgStringDecoderBuilder, svgAsset),
-        context,
-      );
+      final loader = SvgAssetLoader(svgAsset);
+      svg.cache
+          .putIfAbsent(loader.cacheKey(null), () => loader.loadBytes(null));
     }
   }
 }

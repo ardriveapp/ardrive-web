@@ -13,12 +13,12 @@ class BreakpointLayoutBuilder extends StatelessWidget {
   final WidgetBuilder phone;
 
   const BreakpointLayoutBuilder({
-    Key? key,
+    super.key,
     this.largeDesktop,
     this.smallDesktop,
     this.tablet,
     required this.phone,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

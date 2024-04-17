@@ -11,10 +11,10 @@ class FeedbackSurveyCubit extends Cubit<FeedbackSurveyState> {
   bool _hasAlreadyBeenOpened = false;
 
   FeedbackSurveyCubit(
-    FeedbackSurveyState initialState, {
+    super.initialState, {
     /// takes a KeyValueStore for testing purposes
     KeyValueStore? store,
-  }) : super(initialState) {
+  }) {
     _maybeStore ??= store;
   }
 

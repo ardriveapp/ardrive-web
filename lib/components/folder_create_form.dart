@@ -57,7 +57,7 @@ Future<void> promptToCreateFolderWithoutCongestionWarning(
     );
 
 class FolderCreateForm extends StatefulWidget {
-  const FolderCreateForm({Key? key}) : super(key: key);
+  const FolderCreateForm({super.key});
 
   @override
   State<FolderCreateForm> createState() => _FolderCreateFormState();

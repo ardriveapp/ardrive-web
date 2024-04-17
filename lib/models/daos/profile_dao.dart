@@ -20,7 +20,7 @@ class ProfilePasswordIncorrectException implements UntrackedException {}
 
 @DriftAccessor(include: {'../queries/profile_queries.drift'})
 class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
-  ProfileDao(Database db) : super(db);
+  ProfileDao(super.db);
 
   /// Loads the default profile with the provided password.
   ///

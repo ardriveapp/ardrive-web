@@ -182,10 +182,9 @@ class ArDriveToggleSwitchState extends State<ArDriveToggleSwitch> {
 
 class _ToggleCircle extends StatefulWidget {
   const _ToggleCircle({
-    Key? key,
     required this.color,
     required this.checked,
-  }) : super(key: key);
+  });
 
   final Color color;
   final bool checked;

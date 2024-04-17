@@ -55,9 +55,9 @@ class FsEntryLicenseForm extends StatefulWidget {
   final List<ArDriveDataTableItem> selectedItems;
 
   const FsEntryLicenseForm({
-    Key? key,
+    super.key,
     required this.selectedItems,
-  }) : super(key: key);
+  });
 
   @override
   State<FsEntryLicenseForm> createState() => _FsEntryLicenseFormState();

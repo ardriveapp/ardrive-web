@@ -42,9 +42,9 @@ Future<void> promptToReCreateFolder(BuildContext context,
 
 class GhostFixerForm extends StatefulWidget {
   const GhostFixerForm({
-    Key? key,
+    super.key,
     required this.driveDetailCubit,
-  }) : super(key: key);
+  });
 
   final DriveDetailCubit driveDetailCubit;
 

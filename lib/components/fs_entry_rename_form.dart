@@ -49,9 +49,9 @@ void promptToRenameModal(
 
 class FsEntryRenameForm extends StatefulWidget {
   const FsEntryRenameForm({
-    Key? key,
+    super.key,
     required this.entryName,
-  }) : super(key: key);
+  });
 
   final String entryName;
 

@@ -21,7 +21,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class KeyboardHandler extends StatefulWidget {
   final Widget child;
-  const KeyboardHandler({Key? key, required this.child}) : super(key: key);
+  const KeyboardHandler({super.key, required this.child});
 
   @override
   State<KeyboardHandler> createState() => _KeyboardHandlerState();
@@ -37,13 +37,14 @@ class _KeyboardHandlerState extends State<KeyboardHandler> {
       create: (context) => KeyboardListenerBloc(),
       child: BlocBuilder<KeyboardListenerBloc, KeyboardListenerState>(
         builder: (context, state) {
-          return RawKeyboardListener(
+          final keyboardListenerBloc = context.read<KeyboardListenerBloc>();
+          return KeyboardListener(
             focusNode: _focusTable,
             autofocus: true,
-            onKey: (event) async {
+            onKeyEvent: (event) async {
               // detect if ctrl + v or cmd + v is pressed
               if (await isCtrlOrMetaKeyPressed(event)) {
-                if (event is RawKeyDownEvent) {
+                if (event is KeyDownEvent) {
                   setState(() => ctrlMetaPressed = true);
                 }
               } else {
@@ -51,11 +52,11 @@ class _KeyboardHandlerState extends State<KeyboardHandler> {
               }
 
               if (!mounted) return;
-              context.read<KeyboardListenerBloc>().add(
-                    KeyboardListenerUpdateCtrlMetaPressed(
-                      isPressed: ctrlMetaPressed,
-                    ),
-                  );
+              keyboardListenerBloc.add(
+                KeyboardListenerUpdateCtrlMetaPressed(
+                  isPressed: ctrlMetaPressed,
+                ),
+              );
             },
             child: widget.child,
           );
@@ -65,16 +66,14 @@ class _KeyboardHandlerState extends State<KeyboardHandler> {
   }
 }
 
-Future<bool> isCtrlOrMetaKeyPressed(RawKeyEvent event) async {
+Future<bool> isCtrlOrMetaKeyPressed(KeyEvent event) async {
   try {
     final userAgent = (await DeviceInfoPlugin().webBrowserInfo).userAgent;
     late bool ctrlMetaKeyPressed;
     if (userAgent != null && isApple(userAgent)) {
-      ctrlMetaKeyPressed = event.isKeyPressed(LogicalKeyboardKey.metaLeft) ||
-          event.isKeyPressed(LogicalKeyboardKey.metaRight);
+      ctrlMetaKeyPressed = HardwareKeyboard.instance.isMetaPressed;
     } else {
-      ctrlMetaKeyPressed = event.isKeyPressed(LogicalKeyboardKey.controlLeft) ||
-          event.isKeyPressed(LogicalKeyboardKey.controlRight);
+      ctrlMetaKeyPressed = HardwareKeyboard.instance.isControlPressed;
     }
     return ctrlMetaKeyPressed;
   } catch (e) {
@@ -109,10 +108,10 @@ class ArDriveDevToolsShortcuts extends StatelessWidget {
   final List<Shortcut>? customShortcuts;
 
   const ArDriveDevToolsShortcuts({
-    Key? key,
+    super.key,
     required this.child,
     this.customShortcuts,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

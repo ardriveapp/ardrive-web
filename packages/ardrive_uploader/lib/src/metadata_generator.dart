@@ -89,11 +89,9 @@ class ARFSUploadMetadataGenerator
           contentType: contentType,
           isPrivate: arguments.isPrivate,
           licenseDefinitionTxId: arguments.licenseDefinitionTxId,
-          licenseAdditionalTags: arguments.licenseAdditionalTags == null
-              ? null
-              : arguments.licenseAdditionalTags!.entries
-                  .map((e) => Tag(e.key, e.value))
-                  .toList(),
+          licenseAdditionalTags: arguments.licenseAdditionalTags?.entries
+              .map((e) => Tag(e.key, e.value))
+              .toList(),
           customBundleTags: customBundleTags,
         ),
       );

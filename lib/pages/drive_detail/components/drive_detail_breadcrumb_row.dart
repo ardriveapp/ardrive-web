@@ -16,12 +16,11 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
   final String rootFolderId;
 
   const DriveDetailBreadcrumbRow({
-    Key? key,
+    super.key,
     required List<BreadCrumbRowInfo> path,
     required this.driveName,
     required this.rootFolderId,
-  })  : _pathSegments = path,
-        super(key: key);
+  }) : _pathSegments = path;
 
   @override
   Widget build(BuildContext context) {

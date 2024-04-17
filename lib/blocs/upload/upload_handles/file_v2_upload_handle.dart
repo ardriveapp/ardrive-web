@@ -107,7 +107,7 @@ class FileV2UploadHandle implements UploadHandle {
       parentFolderId: entity.parentFolderId,
       size: entity.size,
     );
-    return (utf8.encode(json.encode(entityFake)) as Uint8List).lengthInBytes;
+    return utf8.encode(json.encode(entityFake)).lengthInBytes;
   }
 
   void dispose() {

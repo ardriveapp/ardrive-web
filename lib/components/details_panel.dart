@@ -257,6 +257,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                     children: [
                       ArDriveImage(
                         image: AssetImage(
+                          // TODO: replace with ArDriveTheme .isLight method
                           ArDriveTheme.of(context).themeData.name == 'light'
                               ? Resources.images.brand.blackLogo2
                               : Resources.images.brand.whiteLogo2,
@@ -1092,7 +1093,7 @@ class CopyButton extends StatefulWidget {
   final Color? copyMessageColor;
 
   const CopyButton({
-    Key? key,
+    super.key,
     required this.text,
     this.size = 20,
     this.showCopyText = true,
@@ -1100,7 +1101,7 @@ class CopyButton extends StatefulWidget {
     this.positionY = 40,
     this.positionX = 20,
     this.copyMessageColor,
-  }) : super(key: key);
+  });
 
   @override
   // ignore: library_private_types_in_public_api
@@ -1206,12 +1207,11 @@ class _CopyButtonState extends State<CopyButton> {
 
 class _DownloadOrPreview extends StatelessWidget {
   const _DownloadOrPreview({
-    Key? key,
     required this.privacy,
     required this.fileRevision,
     this.fileKey,
     this.isSharedFile = false,
-  }) : super(key: key);
+  });
 
   final String privacy;
   final ARFSFileEntity fileRevision;

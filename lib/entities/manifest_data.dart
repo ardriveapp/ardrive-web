@@ -60,7 +60,7 @@ class ManifestData {
   );
 
   int get size => jsonData.lengthInBytes;
-  Uint8List get jsonData => utf8.encode(json.encode(this)) as Uint8List;
+  Uint8List get jsonData => utf8.encode(json.encode(this));
 
   Future<DataItem> asPreparedDataItem({
     required ArweaveAddressString owner,
