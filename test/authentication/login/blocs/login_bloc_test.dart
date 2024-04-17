@@ -1,7 +1,9 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
+import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -16,17 +18,40 @@ import '../../../test_utils/utils.dart';
 void main() {
   late ArDriveAuth mockArDriveAuth;
   late ArConnectService mockArConnectService;
+  late EthereumProviderService mockEthereumProviderService;
   late UserRepository mockUserRepository;
+  late TurboUploadService mockTurboUploadService;
+  late ConfigService mockConfigService;
+
+  late DownloadService mockDownloadService;
+  late ArweaveService mockArweaveService;
 
   final wallet = getTestWallet();
 
   registerFallbackValue(wallet);
   registerFallbackValue(Uint8List(10));
 
+  LoginBloc createBloc() {
+    return LoginBloc(
+        arDriveAuth: mockArDriveAuth,
+        arConnectService: mockArConnectService,
+        ethereumProviderService: mockEthereumProviderService,
+        turboUploadService: mockTurboUploadService,
+        arweaveService: mockArweaveService,
+        downloadService: mockDownloadService,
+        userRepository: mockUserRepository,
+        configService: mockConfigService);
+  }
+
   setUp(() {
     mockArDriveAuth = MockArDriveAuth();
     mockArConnectService = MockArConnectService();
+    mockEthereumProviderService = MockEthereumProviderService();
+    mockTurboUploadService = MockTurboUploadService();
     mockUserRepository = MockUserRepository();
+    mockDownloadService = MockDownloadService();
+    mockArweaveService = MockArweaveService();
+    mockConfigService = MockConfigService();
   });
 
   group('AddWalletFile', () {
@@ -41,11 +66,18 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
+          configService: mockConfigService,
         );
       },
       setUp: () {
         when(() => mockArDriveAuth.userHasPassword(any()))
+            .thenAnswer((_) async => true);
+        when(() => mockArDriveAuth.isExistingUser(any()))
             .thenAnswer((_) async => true);
       },
       act: (bloc) async {
@@ -57,21 +89,31 @@ void main() {
       },
       expect: () => [
         LoginLoading(),
-        PromptPassword(walletFile: wallet),
+        predicate<PromptPassword>((p) {
+          return p.showWalletCreated == false && p.mnemonic == null;
+        })
       ],
     );
+
     blocTest(
-      'should emit the event to show onboarding when user is not an existing one',
+      'should emit the event to secure wallet and show tutorials when user is not an existing one',
       build: () {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
+          configService: mockConfigService,
         );
       },
       setUp: () {
         // user doesn't exist
         when(() => mockArDriveAuth.userHasPassword(any()))
+            .thenAnswer((_) async => false);
+        when(() => mockArDriveAuth.isExistingUser(any()))
             .thenAnswer((_) async => false);
       },
       act: (bloc) async {
@@ -83,7 +125,48 @@ void main() {
       },
       expect: () => [
         LoginLoading(),
-        LoginOnBoarding(wallet),
+        predicate<CreateNewPassword>((cnp) {
+          return cnp.showWalletCreated == false &&
+              cnp.mnemonic == null &&
+              cnp.showTutorials == true;
+        })
+      ],
+    );
+    blocTest(
+      'should emit the event to secure wallet and skip tutorials when user is an existing one with no private drives',
+      build: () {
+        return LoginBloc(
+          arDriveAuth: mockArDriveAuth,
+          arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
+          userRepository: mockUserRepository,
+          configService: mockConfigService,
+        );
+      },
+      setUp: () {
+        // user doesn't exist
+        when(() => mockArDriveAuth.userHasPassword(any()))
+            .thenAnswer((_) async => false);
+        when(() => mockArDriveAuth.isExistingUser(any()))
+            .thenAnswer((_) async => true);
+      },
+      act: (bloc) async {
+        bloc.add(AddWalletFile(await IOFile.fromData(
+          Uint8List.fromList(getWalletString.codeUnits),
+          name: 'name',
+          lastModifiedDate: DateTime.now(),
+        )));
+      },
+      expect: () => [
+        LoginLoading(),
+        predicate<CreateNewPassword>((cnp) {
+          return cnp.showTutorials == false &&
+              cnp.showWalletCreated == false &&
+              cnp.mnemonic == null;
+        })
       ],
     );
   });
@@ -105,11 +188,7 @@ void main() {
     blocTest(
       'should emit the event to show onboarding when user is not an existing one',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         // login with success
@@ -123,21 +202,16 @@ void main() {
         bloc.profileType = ProfileType.json;
 
         bloc.add(LoginWithPassword(
-          wallet: wallet,
-          password: 'password',
-        ));
+            wallet: wallet, password: 'password', showWalletCreated: false));
       },
-      expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
+      expect: () =>
+          [LoginCheckingPassword(), const TypeMatcher<LoginSuccess>()],
     );
 
     blocTest(
       'should emit success when arconnect and wallet doesnt mismatch',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         // login with success
@@ -157,9 +231,11 @@ void main() {
         bloc.add(LoginWithPassword(
           wallet: wallet,
           password: 'password',
+          showWalletCreated: false,
         ));
       },
-      expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
+      expect: () =>
+          [LoginCheckingPassword(), const TypeMatcher<LoginSuccess>()],
     );
     blocTest(
       'should emit failure when wallet mismatch',
@@ -167,7 +243,12 @@ void main() {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
+          ethereumProviderService: mockEthereumProviderService,
+          turboUploadService: mockTurboUploadService,
+          arweaveService: mockArweaveService,
+          downloadService: mockDownloadService,
           userRepository: mockUserRepository,
+          configService: mockConfigService,
         );
       },
       setUp: () {
@@ -186,14 +267,12 @@ void main() {
         bloc.emit(const PromptPassword());
 
         bloc.add(LoginWithPassword(
-          wallet: wallet,
-          password: 'password',
-        ));
+            wallet: wallet, password: 'password', showWalletCreated: false));
         bloc.profileType = ProfileType.arConnect;
       },
       expect: () => [
         const PromptPassword(),
-        LoginLoading(),
+        LoginCheckingPassword(),
         const TypeMatcher<LoginFailure>(),
         const PromptPassword()
       ],
@@ -202,11 +281,7 @@ void main() {
     blocTest(
       'should emit failure when an unknown error occurs',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         // login with success
@@ -222,13 +297,13 @@ void main() {
         bloc.add(LoginWithPassword(
           wallet: wallet,
           password: 'password',
+          showWalletCreated: false,
         ));
       },
       expect: () => [
         const PromptPassword(),
-        LoginLoading(),
-        const TypeMatcher<LoginFailure>(),
-        const PromptPassword()
+        LoginCheckingPassword(),
+        LoginPasswordFailed(),
       ],
     );
   });
@@ -242,11 +317,7 @@ void main() {
     blocTest(
       'should emit the event to prompt password when user is an existing one and biometrics are disabled',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         when(() => mockArDriveAuth.isUserLoggedIn())
@@ -264,11 +335,7 @@ void main() {
     blocTest(
       'should login with biometrics when user is an existing one and biometrics are enabled',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         when(() => mockArDriveAuth.isUserLoggedIn())
@@ -298,11 +365,7 @@ void main() {
     blocTest(
       'should emit PromptPassword when user is an existing one and biometrics are enabled but login with biometrics fails',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         when(() => mockArDriveAuth.isUserLoggedIn())
@@ -324,11 +387,7 @@ void main() {
     blocTest(
       'should emit the initial event when user is not logged in',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         // user doesn't exist
@@ -343,7 +402,7 @@ void main() {
       },
       expect: () => [
         LoginLoading(),
-        const LoginInitial(isArConnectAvailable: false),
+        const LoginLanding(),
       ],
     );
   });
@@ -366,11 +425,7 @@ void main() {
     blocTest(
       'should emit success when user unlocks with success',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         // user doesn't exist
@@ -384,17 +439,14 @@ void main() {
         ));
         bloc.profileType = ProfileType.json;
       },
-      expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
+      expect: () =>
+          [LoginCheckingPassword(), const TypeMatcher<LoginSuccess>()],
     );
 
     blocTest(
       'should emit failure when unlock fails',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         // user doesn't exist
@@ -413,9 +465,8 @@ void main() {
       },
       expect: () => [
         const PromptPassword(),
-        LoginLoading(),
-        const TypeMatcher<LoginFailure>(),
-        const PromptPassword()
+        LoginCheckingPassword(),
+        LoginPasswordFailed(),
       ],
     );
   });
@@ -438,11 +489,7 @@ void main() {
     blocTest(
       'should emit success when user is created with success',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         // user doesn't exist
@@ -454,22 +501,23 @@ void main() {
       },
       act: (bloc) async {
         bloc.add(CreatePassword(
-          wallet: wallet,
-          password: 'password',
-        ));
+            wallet: wallet,
+            password: 'password',
+            showTutorials: false,
+            showWalletCreated: false));
         bloc.profileType = ProfileType.json;
       },
-      expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
+      expect: () => [
+        LoginLoading(),
+        const TypeMatcher<LoginSuccess>(),
+        const TypeMatcher<LoginCreatePasswordComplete>()
+      ],
     );
 
     blocTest(
       'should emit failure when user creation fails',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         // user doesn't exist
@@ -484,27 +532,24 @@ void main() {
         bloc.emit(const PromptPassword());
 
         bloc.add(CreatePassword(
-          wallet: wallet,
-          password: 'password',
-        ));
+            wallet: wallet,
+            password: 'password',
+            showTutorials: false,
+            showWalletCreated: false));
         bloc.profileType = ProfileType.json;
       },
       expect: () => [
         const PromptPassword(),
         LoginLoading(),
+        const PromptPassword(),
         const TypeMatcher<LoginFailure>(),
-        const PromptPassword()
       ],
     );
 
     blocTest(
       'should emit success when user is created with success with ar connect',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         when(() => mockArDriveAuth.login(
@@ -522,19 +567,21 @@ void main() {
         bloc.add(CreatePassword(
           wallet: wallet,
           password: 'password',
+          showTutorials: false,
+          showWalletCreated: false,
         ));
       },
-      expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
+      expect: () => [
+        LoginLoading(),
+        const TypeMatcher<LoginSuccess>(),
+        const TypeMatcher<LoginCreatePasswordComplete>()
+      ],
     );
 
     blocTest(
       'should emit failure when wallet mismatch',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         // user doesn't exist
@@ -555,14 +602,16 @@ void main() {
         bloc.add(CreatePassword(
           wallet: wallet,
           password: 'password',
+          showWalletCreated: false,
+          showTutorials: false,
         ));
         bloc.profileType = ProfileType.json;
       },
       expect: () => [
         const PromptPassword(),
         LoginLoading(),
+        const PromptPassword(),
         const TypeMatcher<LoginFailure>(),
-        const PromptPassword()
       ],
     );
   });
@@ -576,11 +625,7 @@ void main() {
     blocTest(
       'should get the wallet from arconnect and emit prompt password',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         when(() => mockArConnectService.connect())
@@ -601,11 +646,7 @@ void main() {
     blocTest(
       'should emit a state to create new password when user never logged on ardrive',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         when(() => mockArConnectService.connect())
@@ -621,17 +662,20 @@ void main() {
       act: (bloc) async {
         bloc.add(const AddWalletFromArConnect());
       },
-      expect: () => [LoginLoading(), const TypeMatcher<LoginOnBoarding>()],
+      expect: () => [
+        LoginLoading(),
+        predicate<CreateNewPassword>((cnp) {
+          return cnp.showWalletCreated == false &&
+              cnp.mnemonic == null &&
+              cnp.showTutorials == true;
+        })
+      ],
     );
 
     blocTest(
       'should emit a failure when user doesnt have permissions',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         when(() => mockArConnectService.connect())
@@ -649,8 +693,8 @@ void main() {
       expect: () => [
         const PromptPassword(),
         LoginLoading(),
+        const PromptPassword(),
         const TypeMatcher<LoginFailure>(),
-        const PromptPassword()
       ],
     );
   });
@@ -664,11 +708,7 @@ void main() {
     blocTest(
       'should emit the initial login state and call logout when user is logged in',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         when(() => mockArDriveAuth.isUserLoggedIn())
@@ -683,16 +723,12 @@ void main() {
       act: (bloc) async {
         bloc.add(const ForgetWallet());
       },
-      expect: () => [const LoginInitial(isArConnectAvailable: false)],
+      expect: () => [const LoginLanding()],
     );
     blocTest(
       'should emit the initial login state and not call logout when user is not logged in',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         // not logged in
@@ -709,7 +745,7 @@ void main() {
         bloc.add(const ForgetWallet());
       },
       verify: (bloc) => verifyNever(() => mockArDriveAuth.logout()),
-      expect: () => [const LoginInitial(isArConnectAvailable: false)],
+      expect: () => [const LoginLanding()],
     );
   });
 
@@ -722,16 +758,27 @@ void main() {
     blocTest(
       'should emit the state to create password',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          userRepository: mockUserRepository,
+        return createBloc();
+      },
+      setUp: () {
+        // not logged in
+        when(() => mockArDriveAuth.isUserLoggedIn())
+            .thenAnswer((invocation) => Future.value(true));
+        when(() => mockArDriveAuth.currentUser).thenAnswer(
+          (_) => User(
+            password: 'password',
+            wallet: getTestWallet(),
+            walletAddress: 'walletAddress',
+            walletBalance: BigInt.one,
+            cipherKey: SecretKey([]),
+            profileType: ProfileType.json,
+          ),
         );
       },
       act: (bloc) async {
         bloc.add(FinishOnboarding(wallet: wallet));
       },
-      expect: () => [const TypeMatcher<CreatingNewPassword>()],
+      expect: () => [const TypeMatcher<LoginSuccess>()],
     );
   });
 
@@ -754,11 +801,7 @@ void main() {
     blocTest(
       'should emit the state to create password',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         when(() => mockArDriveAuth.isUserLoggedIn())
@@ -780,11 +823,7 @@ void main() {
     blocTest(
       'should emit a failure when biometrics fails',
       build: () {
-        return LoginBloc(
-          arDriveAuth: mockArDriveAuth,
-          arConnectService: mockArConnectService,
-          userRepository: mockUserRepository,
-        );
+        return createBloc();
       },
       setUp: () {
         when(() => mockArDriveAuth.isUserLoggedIn())
@@ -804,7 +843,7 @@ void main() {
         const PromptPassword(),
         LoginLoading(),
         const TypeMatcher<LoginFailure>(),
-        const PromptPassword()
+        const PromptPassword(),
       ],
     );
   });

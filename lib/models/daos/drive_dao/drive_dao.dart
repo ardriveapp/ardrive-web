@@ -196,6 +196,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           driveId: driveId,
           name: name,
           isHidden: const Value(false),
+          // TODO: path is not used in the app, so it's not necessary to set it
+          path: '',
         ),
       );
     });
@@ -505,6 +507,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       parentFolderId: Value(parentFolderId),
       name: folderName,
       isHidden: const Value(false),
+      // TODO: path is not used in the app, so it's not necessary to set it
+      path: '',
     );
     await into(folderEntries).insert(folderEntriesCompanion);
 
@@ -570,6 +574,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       dataContentType: Value(entity.dataContentType),
       pinnedDataOwnerAddress: Value(entity.pinnedDataOwnerAddress),
       isHidden: Value(entity.isHidden ?? false),
+      // TODO: path is not used in the app, so it's not necessary to set it
+      path: '',
     );
 
     return into(fileEntries).insert(

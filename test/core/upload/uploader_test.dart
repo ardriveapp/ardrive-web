@@ -1016,6 +1016,7 @@ FolderEntry getFakeFolder() => FolderEntry(
       lastUpdated: DateTime.now(),
       isGhost: false,
       isHidden: false,
+      path: '',
     );
 
 Drive getFakeDrive() => Drive(

@@ -1061,6 +1061,20 @@ class ArweaveService {
     return transactionConfirmations;
   }
 
+  Future<String?> getFirstTxForWallet(String owner) async {
+    final firstTxQuery = await graphQLRetry.execute(
+      FirstTxForWalletQuery(
+        variables: FirstTxForWalletArguments(owner: owner),
+      ),
+    );
+
+    if (firstTxQuery.data!.transactions.edges.isEmpty) {
+      return null;
+    }
+
+    return firstTxQuery.data!.transactions.edges.first.node.id;
+  }
+
   /// Creates and signs a [Transaction] representing the provided entity.
   ///
   /// Optionally provide a [SecretKey] to encrypt the entity data.
@@ -1077,23 +1091,10 @@ class ArweaveService {
     );
 
     if (!skipSignature) {
-      await tx.sign(wallet);
+      await tx.sign(ArweaveSigner(wallet));
     }
 
     return tx;
-  }
-
-  Future<Uint8List> getSignatureData(
-    Entity entity,
-    Wallet wallet, [
-    SecretKey? key,
-  ]) async {
-    final tx = await client.transactions.prepare(
-      await entity.asTransaction(key: key),
-      wallet,
-    );
-
-    return await tx.getSignatureData();
   }
 
   /// Creates and signs a [DataItem] representing the provided entity.
@@ -1110,7 +1111,7 @@ class ArweaveService {
     item.setOwner(await wallet.getOwner());
 
     if (!skipSignature) {
-      await item.sign(wallet);
+      await item.sign(ArweaveSigner(wallet));
     }
 
     return item;
@@ -1132,7 +1133,7 @@ class ArweaveService {
       wallet,
     );
 
-    await bundleTx.sign(wallet);
+    await bundleTx.sign(ArweaveSigner(wallet));
 
     return bundleTx;
   }
@@ -1151,7 +1152,7 @@ class ArweaveService {
       )
       ..addBundleTags()
       ..setOwner(await wallet.getOwner());
-    await item.sign(wallet);
+    await item.sign(ArweaveSigner(wallet));
 
     logger.i('Prepared bundled data item with id ${item.id}'
         ' with tags ${item.tags}');
@@ -1170,7 +1171,7 @@ class ArweaveService {
       wallet,
     );
 
-    await bundleTx.sign(wallet);
+    await bundleTx.sign(ArweaveSigner(wallet));
 
     return bundleTx;
   }

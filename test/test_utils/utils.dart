@@ -66,6 +66,7 @@ Future<void> addTestFilesToDb(
           driveId: driveId,
           name: 'fake-drive-name',
           isHidden: const Value(false),
+          path: '',
         ),
         FolderEntriesCompanion.insert(
           id: nestedFolderId,
@@ -73,6 +74,7 @@ Future<void> addTestFilesToDb(
           parentFolderId: Value(rootFolderId),
           name: nestedFolderId,
           isHidden: const Value(false),
+          path: '',
         ),
         ...List.generate(
           emptyNestedFolderCount,
@@ -84,6 +86,7 @@ Future<void> addTestFilesToDb(
               parentFolderId: Value(rootFolderId),
               name: folderId,
               isHidden: const Value(false),
+              path: '',
             );
           },
         )..shuffle(Random(0)),
@@ -108,6 +111,7 @@ Future<void> addTestFilesToDb(
               lastModifiedDate: defaultDate,
               dataContentType: const Value(''),
               isHidden: const Value(false),
+              path: '',
             );
           },
         )..shuffle(Random(0)),
@@ -126,6 +130,7 @@ Future<void> addTestFilesToDb(
               lastModifiedDate: defaultDate,
               dataContentType: const Value(''),
               isHidden: const Value(false),
+              path: '',
             );
           },
         )..shuffle(Random(0)),
@@ -239,6 +244,6 @@ Future<DataItem> getTestDataItem(String path) async {
     owner: await wallet.getOwner(),
     data: json.decode(await File(path).readAsString()),
   );
-  await dataItem.sign(getTestWallet());
+  await dataItem.sign(ArweaveSigner(getTestWallet()));
   return dataItem;
 }

@@ -30,6 +30,7 @@ void main() {
     name: 'root-folder',
     lastUpdated: stubCurrentDate,
     isHidden: false,
+    path: '',
   );
 
   final stubParentFolderEntry = FolderEntry(
@@ -41,6 +42,7 @@ void main() {
     name: 'parent-folder',
     lastUpdated: stubCurrentDate,
     isHidden: false,
+    path: '',
   );
 
   final stubChildFolderEntry = FolderEntry(
@@ -52,6 +54,7 @@ void main() {
     name: 'child-folder',
     lastUpdated: stubCurrentDate,
     isHidden: false,
+    path: '',
   );
 
   final stubFileInRoot1 = FileEntry(
@@ -65,6 +68,7 @@ void main() {
     id: 'file-in-root-1-entity-id',
     driveId: stubEntityId,
     isHidden: false,
+    path: '',
   );
 
   final stubFileInRoot2 = FileEntry(
@@ -78,6 +82,7 @@ void main() {
     id: 'file-in-root-2-entity-id',
     driveId: stubEntityId,
     isHidden: false,
+    path: '',
   );
 
   final stubFileInParent1 = FileEntry(
@@ -91,6 +96,7 @@ void main() {
     id: 'file-in-parent-1-entity-id',
     driveId: stubEntityId,
     isHidden: false,
+    path: '',
   );
 
   final stubFileInParent2 = FileEntry(
@@ -104,6 +110,7 @@ void main() {
     id: 'file-in-parent-2-entity-id',
     driveId: stubEntityId,
     isHidden: false,
+    path: '',
   );
 
   final stubFileInChild1 = FileEntry(
@@ -117,6 +124,7 @@ void main() {
     id: 'file-in-child-1-entity-id',
     driveId: stubEntityId,
     isHidden: false,
+    path: '',
   );
 
   final stubFileInChild2 = FileEntry(
@@ -130,6 +138,7 @@ void main() {
     id: 'file-in-child-2-entity-id',
     driveId: stubEntityId,
     isHidden: false,
+    path: '',
   );
 
   final stubManifestFileInChild = FileEntry(
@@ -144,6 +153,7 @@ void main() {
     driveId: stubEntityId,
     dataContentType: ContentType.manifest,
     isHidden: false,
+    path: '',
   );
 
   final stubChildFolderNode =

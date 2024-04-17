@@ -66,22 +66,28 @@ void main() {
         // Create fake root folder for drive and sub folders
         batch.insertAll(db.folderEntries, [
           FolderEntriesCompanion.insert(
-              id: rootFolderId,
-              driveId: driveId,
-              name: 'fake-drive-name',
-              isHidden: const Value(false)),
+            id: rootFolderId,
+            driveId: driveId,
+            name: 'fake-drive-name',
+            isHidden: const Value(false),
+            path: '',
+          ),
           FolderEntriesCompanion.insert(
-              id: nestedFolderId,
-              driveId: driveId,
-              parentFolderId: Value(rootFolderId),
-              name: nestedFolderId,
-              isHidden: const Value(false)),
+            id: nestedFolderId,
+            driveId: driveId,
+            parentFolderId: Value(rootFolderId),
+            name: nestedFolderId,
+            isHidden: const Value(false),
+            path: '',
+          ),
           FolderEntriesCompanion.insert(
-              id: conflictTestFolderId,
-              driveId: driveId,
-              parentFolderId: Value(rootFolderId),
-              name: conflictTestFolderId,
-              isHidden: const Value(false)),
+            id: conflictTestFolderId,
+            driveId: driveId,
+            parentFolderId: Value(rootFolderId),
+            name: conflictTestFolderId,
+            isHidden: const Value(false),
+            path: '',
+          ),
         ]);
         // Insert fake files
         batch.insertAll(
@@ -92,16 +98,18 @@ void main() {
               (i) {
                 final fileId = '$rootFolderId$i';
                 return FileEntriesCompanion.insert(
-                    id: fileId,
-                    driveId: driveId,
-                    parentFolderId: rootFolderId,
-                    name: fileId,
-                    dataTxId: '${fileId}Data',
-                    size: 500,
-                    dateCreated: Value(defaultDate),
-                    lastModifiedDate: defaultDate,
-                    dataContentType: const Value(''),
-                    isHidden: const Value(false));
+                  id: fileId,
+                  driveId: driveId,
+                  parentFolderId: rootFolderId,
+                  name: fileId,
+                  dataTxId: '${fileId}Data',
+                  size: 500,
+                  dateCreated: Value(defaultDate),
+                  lastModifiedDate: defaultDate,
+                  dataContentType: const Value(''),
+                  isHidden: const Value(false),
+                  path: '',
+                );
               },
             ),
             ...List.generate(
@@ -109,16 +117,18 @@ void main() {
               (i) {
                 final fileId = '$conflictTestFolderId$i';
                 return FileEntriesCompanion.insert(
-                    id: fileId,
-                    driveId: driveId,
-                    parentFolderId: conflictTestFolderId,
-                    name: fileId,
-                    dataTxId: '${fileId}Data',
-                    size: 500,
-                    dateCreated: Value(defaultDate),
-                    lastModifiedDate: defaultDate,
-                    dataContentType: const Value(''),
-                    isHidden: const Value(false));
+                  id: fileId,
+                  driveId: driveId,
+                  parentFolderId: conflictTestFolderId,
+                  name: fileId,
+                  dataTxId: '${fileId}Data',
+                  size: 500,
+                  dateCreated: Value(defaultDate),
+                  lastModifiedDate: defaultDate,
+                  dataContentType: const Value(''),
+                  isHidden: const Value(false),
+                  path: '',
+                );
               },
             ),
           ],

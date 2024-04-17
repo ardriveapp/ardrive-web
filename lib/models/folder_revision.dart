@@ -21,6 +21,8 @@ extension FolderRevisionCompanionExtensions on FolderRevisionsCompanion {
         customGQLTags: customGQLTags,
         customJsonMetadata: customJsonMetadata,
         isHidden: isHidden,
+        // TODO: path is not used in the app, so it's not necessary to set it
+        path: '',
       );
 
   /// Returns a [NetworkTransactionsCompanion] representing the metadata transaction

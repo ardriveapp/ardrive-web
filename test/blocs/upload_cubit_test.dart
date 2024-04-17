@@ -107,6 +107,7 @@ void main() {
       name: '',
       parentFolderId: '',
       isHidden: false,
+      path: '',
     ));
 
     registerFallbackValue(Drive(

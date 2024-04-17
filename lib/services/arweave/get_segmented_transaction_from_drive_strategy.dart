@@ -40,6 +40,8 @@ class GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy
       driveId: driveId,
       ownerAddress: ownerAddress,
       graphQLRetry: _graphQLRetry,
+      maxBlockHeight: maxBlockHeight,
+      minBlockHeight: minBlockHeight,
     );
   }
 
