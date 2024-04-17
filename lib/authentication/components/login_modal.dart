@@ -6,12 +6,13 @@ import 'package:flutter/material.dart';
 const double modalStandardMaxWidthSize = 350;
 
 class ArDriveLoginModal extends StatelessWidget {
-  const ArDriveLoginModal(
-      {super.key,
-      required this.content,
-      this.width,
-      this.hasCloseButton = true,
-      this.onClose});
+  const ArDriveLoginModal({
+    super.key,
+    required this.content,
+    this.width,
+    this.hasCloseButton = true,
+    this.onClose,
+  });
 
   final Widget content;
   final double? width;

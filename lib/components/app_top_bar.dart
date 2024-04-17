@@ -54,7 +54,7 @@ class AppTopBar extends StatelessWidget {
             Flexible(
               child: ArDriveTheme(
                 themeData: textTheme,
-                child: ArDriveTextField(
+                child: ArDriveTextFieldNew(
                   hintText: 'Search',
                   suffixIcon: const Icon(Icons.search),
                   onFieldSubmitted: (s) {
@@ -64,11 +64,14 @@ class AppTopBar extends StatelessWidget {
                         initialQuery: s,
                         driveDetailCubit: context.read<DriveDetailCubit>(),
                       ),
+                      // blur effect
+                      barrierColor: theme.colors.themeBgCanvas.withOpacity(0.5),
                     );
                   },
                 ),
               ),
             ),
+            const SizedBox(width: 24),
             const SyncButton(),
             const SizedBox(width: 24),
             const RedeemButton(),

@@ -1,3 +1,5 @@
+import 'package:ardrive/authentication/components/button.dart';
+import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
@@ -9,7 +11,6 @@ import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.d
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/config/config_service.dart';
-import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -182,36 +183,43 @@ class _FileSearchModalState extends State<FileSearchModal> {
 
   @override
   Widget build(BuildContext context) {
-    return ArDriveStandardModal(
-      width: kLargeDialogWidth,
-      title: 'Search Files',
+    final typography = ArDriveTypographyNew.of(context);
+    final colortokens = ArDriveTheme.of(context).themeData.colorTokens;
+    return ArDriveLoginModal(
+      width: MediaQuery.of(context).size.width * 0.6,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          Text(
+            'Search Files',
+            style: typography.heading1(
+                color: colortokens.textHigh, fontWeight: ArFontWeight.bold),
+          ),
           const SizedBox(height: 16),
-          ArDriveTextField(
+          ArDriveTextFieldNew(
             controller: controller,
             label: 'Search',
             hintText: 'Search for files',
             onFieldSubmitted: (p0) => searchFiles(controller.text),
           ),
           const SizedBox(height: 16),
-          ArDriveButton(
+          ArDriveButtonNew(
             text: 'Search',
             onPressed: () => searchFiles(controller.text),
+            typography: typography,
+            variant: ButtonVariant.primary,
           ),
           const SizedBox(height: 16),
           if (searchResults != null)
             SizedBox(
               height: MediaQuery.of(context).size.height * 0.5,
-              width: MediaQuery.of(context).size.width * 0.5,
               child: ListView.builder(
                 itemCount: searchResults!.length,
                 itemBuilder: (context, index) {
                   final search = searchResults![index];
 
                   Widget leading;
-                  ArDriveIcon trailingIcon;
+                  Widget trailing;
                   String name;
 
                   if (search.result is FileRevision) {
@@ -220,26 +228,84 @@ class _FileSearchModalState extends State<FileSearchModal> {
                           ContentType.octetStream,
                     );
                     name = (search.result as FileRevision).name;
-                    trailingIcon = ArDriveIcons.download2();
+
+                    final trailingIcon = ArDriveIcons.download2(
+                      color: colortokens.iconHigh,
+                    );
+                    trailing = Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ArDriveIconButton(
+                          icon: ArDriveIcons.newWindow(),
+                          onPressed: () {
+                            final drivesCubit = context.read<DrivesCubit>();
+                            final file = DriveDataTableItemMapper.fromRevision(
+                              search.result as FileRevision,
+                              true,
+                            );
+                            Future.delayed(const Duration(milliseconds: 300))
+                                .then((value) async {
+                              context
+                                  .read<DrivesCubit>()
+                                  .selectDrive(search.drive.id);
+                              widget.driveDetailCubit.openFolder(
+                                otherDriveId: file.driveId,
+                                folderId: file.parentFolderId,
+                              );
+                              Future.delayed(const Duration(milliseconds: 500))
+                                  .then(
+                                (value) {
+                                  widget.driveDetailCubit.selectDataItem(
+                                    file,
+                                    openSelectedPage: true,
+                                  );
+                                  Navigator.of(context).pop();
+                                },
+                              );
+                            });
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        ArDriveIconButton(
+                          icon: trailingIcon,
+                          onPressed: () {
+                            if (search.result is FileRevision) {
+                              promptToDownloadProfileFile(
+                                context: context,
+                                file: DriveDataTableItemMapper.fromRevision(
+                                  search.result as FileRevision,
+                                  true,
+                                ),
+                              );
+                            } else if (search.result is FolderRevision) {
+                              context
+                                  .read<DrivesCubit>()
+                                  .selectDrive(search.drive.id);
+                              widget.driveDetailCubit.openFolder(
+                                otherDriveId: search.folder!.driveId,
+                                folderId:
+                                    (search.result as FolderRevision).folderId,
+                              );
+                              Navigator.of(context).pop();
+                            } else if (search.result is DriveRevision) {
+                              context.read<DrivesCubit>().selectDrive(
+                                  (search.result as DriveRevision).driveId);
+                              Navigator.of(context).pop();
+                            }
+                          },
+                        ),
+                      ],
+                    );
                   } else if (search.result is FolderRevision) {
                     name = (search.result as FolderRevision).name;
-                    leading = const Icon(Icons.folder);
-                    trailingIcon = ArDriveIcons.newWindow();
-                  } else if (search.result is DriveRevision) {
-                    name = (search.result as DriveRevision).name;
-                    leading = ArDriveIcons.addDrive();
-                    trailingIcon = ArDriveIcons.newWindow();
-                  } else {
-                    throw Exception('Unknown search result type');
-                  }
-
-                  return ListTile(
-                    leading: leading,
-                    title: Text(
-                      name,
-                      style: ArDriveTypography.body.bodyBold(),
-                    ),
-                    trailing: ArDriveIconButton(
+                    leading = Icon(
+                      Icons.folder,
+                      color: colortokens.iconHigh,
+                    );
+                    final trailingIcon = ArDriveIcons.newWindow(
+                      color: colortokens.iconHigh,
+                    );
+                    trailing = ArDriveIconButton(
                       icon: trailingIcon,
                       onPressed: () {
                         if (search.result is FileRevision) {
@@ -266,16 +332,115 @@ class _FileSearchModalState extends State<FileSearchModal> {
                           Navigator.of(context).pop();
                         }
                       },
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Drive: ${search.drive.name}',
-                            style: ArDriveTypography.body.buttonNormalBold()),
-                        if (search.folder != null)
-                          Text('Folder: ${search.folder!.name}',
-                              style: ArDriveTypography.body.buttonNormalBold()),
-                      ],
+                    );
+                  } else if (search.result is DriveRevision) {
+                    name = (search.result as DriveRevision).name;
+                    leading = ArDriveIcons.addDrive(
+                      color: colortokens.iconHigh,
+                    );
+                    final trailingIcon = ArDriveIcons.newWindow(
+                      color: colortokens.iconHigh,
+                    );
+                    trailing = ArDriveIconButton(
+                      icon: trailingIcon,
+                      onPressed: () {
+                        if (search.result is FileRevision) {
+                          promptToDownloadProfileFile(
+                            context: context,
+                            file: DriveDataTableItemMapper.fromRevision(
+                              search.result as FileRevision,
+                              true,
+                            ),
+                          );
+                        } else if (search.result is FolderRevision) {
+                          context
+                              .read<DrivesCubit>()
+                              .selectDrive(search.drive.id);
+                          widget.driveDetailCubit.openFolder(
+                            otherDriveId: search.folder!.driveId,
+                            folderId:
+                                (search.result as FolderRevision).folderId,
+                          );
+                          Navigator.of(context).pop();
+                        } else if (search.result is DriveRevision) {
+                          context.read<DrivesCubit>().selectDrive(
+                              (search.result as DriveRevision).driveId);
+                          Navigator.of(context).pop();
+                        }
+                      },
+                    );
+                  } else {
+                    throw Exception('Unknown search result type');
+                  }
+
+                  return HoverWidget(
+                    hoverScale: 1,
+                    child: SizedBox(
+                      child: ArDriveClickArea(
+                        child: ListTile(
+                          onTap: () {
+                            if (search.result is FileRevision) {
+                              promptToDownloadProfileFile(
+                                context: context,
+                                file: DriveDataTableItemMapper.fromRevision(
+                                  search.result as FileRevision,
+                                  true,
+                                ),
+                              );
+                            } else if (search.result is FolderRevision) {
+                              final drivesCubit = context.read<DrivesCubit>();
+                              Navigator.pop(context);
+                              Future.delayed(const Duration(milliseconds: 300))
+                                  .then((value) {
+                                drivesCubit.selectDrive(search.drive.id);
+                                widget.driveDetailCubit.openFolder(
+                                  otherDriveId: search.folder!.driveId,
+                                  folderId: (search.result as FolderRevision)
+                                      .folderId,
+                                );
+                              });
+                            } else if (search.result is DriveRevision) {
+                              final drivesCubit = context.read<DrivesCubit>();
+                              Navigator.of(context).pop();
+
+                              Future.delayed(const Duration(milliseconds: 300))
+                                  .then((value) {
+                                drivesCubit.selectDrive(
+                                    (search.result as DriveRevision).driveId);
+                              });
+                            }
+                          },
+                          leading: leading,
+                          title: Text(
+                            name,
+                            style: typography.paragraphXLarge(
+                              color: colortokens.textHigh,
+                              fontWeight: ArFontWeight.bold,
+                            ),
+                          ),
+                          trailing: trailing,
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Drive: ${search.drive.name}',
+                                style: typography.paragraphNormal(
+                                  color: colortokens.textLow,
+                                  fontWeight: ArFontWeight.semiBold,
+                                ),
+                              ),
+                              if (search.folder != null)
+                                Text(
+                                  'Folder: ${search.folder!.name}',
+                                  style: typography.paragraphNormal(
+                                    color: colortokens.textLow,
+                                    fontWeight: ArFontWeight.semiBold,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   );
                 },

@@ -301,7 +301,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     return availableRowsPerPage;
   }
 
-  Future<void> selectDataItem(ArDriveDataTableItem item) async {
+  Future<void> selectDataItem(ArDriveDataTableItem item,
+      {bool openSelectedPage = false}) async {
     var state = this.state as DriveDetailLoadSuccess;
 
     if (state.currentDrive.isPublic && item is FileDataTableItem) {
@@ -317,7 +318,17 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     _selectedItem = item;
 
-    emit(state.copyWith(selectedItem: item, showSelectedItemDetails: true));
+    int? selectedPage;
+
+    if (openSelectedPage) {
+      selectedPage =
+          state.currentFolderContents.indexOf(item) ~/ state.rowsPerPage;
+    }
+
+    emit(state.copyWith(
+        selectedItem: item,
+        showSelectedItemDetails: true,
+        selectedPage: selectedPage));
   }
 
   ArDriveDataTableItem? _selectedItem;
