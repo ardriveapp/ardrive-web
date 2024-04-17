@@ -36,7 +36,7 @@ Future<void> promptToCreateDrive(BuildContext context) =>
     );
 
 class DriveCreateForm extends StatefulWidget {
-  const DriveCreateForm({Key? key}) : super(key: key);
+  const DriveCreateForm({super.key});
 
   @override
   State<DriveCreateForm> createState() => _DriveCreateFormState();

@@ -322,11 +322,11 @@ class _ArDriveOverlayState extends State<ArDriveOverlay> {
 
 class Barrier extends StatelessWidget {
   const Barrier({
-    Key? key,
+    super.key,
     required this.onClose,
     required this.visible,
     required this.child,
-  }) : super(key: key);
+  });
 
   final Widget child;
   final VoidCallback onClose;

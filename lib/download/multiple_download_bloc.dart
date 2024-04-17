@@ -116,7 +116,7 @@ class MultipleDownloadBloc
       if (_cipherKey != null) {
         _driveKey = await _driveDao.getDriveKey(
           _drive!.driveId,
-          _cipherKey!,
+          _cipherKey,
         );
       } else {
         _driveKey = await _driveDao.getDriveKeyFromMemory(_drive!.driveId);

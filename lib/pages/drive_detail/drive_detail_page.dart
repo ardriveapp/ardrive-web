@@ -72,9 +72,9 @@ class DriveDetailPage extends StatefulWidget {
 
   const DriveDetailPage({
     required this.context,
-    Key? key,
+    super.key,
     required this.anonymouslyShowDriveDetail,
-  }) : super(key: key);
+  });
 
   @override
   State<DriveDetailPage> createState() => _DriveDetailPageState();
@@ -661,10 +661,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     if (driveDetailLoadSuccessState.showSelectedItemDetails &&
         context.read<DriveDetailCubit>().selectedItem != null) {
       return Material(
-        child: WillPopScope(
-          onWillPop: () async {
+        child: PopScope(
+          canPop: false,
+          onPopInvoked: (didPop) {
             context.read<DriveDetailCubit>().toggleSelectedItemDetails();
-            return false;
           },
           child: DetailsPanel(
             currentDrive: driveDetailLoadSuccessState.currentDrive,

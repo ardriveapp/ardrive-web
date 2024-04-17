@@ -128,9 +128,9 @@ class _ArDriveDataTableState<T extends IndexedItem>
 
     selectPage(0);
 
-    RawKeyboard.instance.addListener(_handleKeyDownEvent);
-    RawKeyboard.instance.addListener(_handleEscapeKey);
-    RawKeyboard.instance.addListener(_handleSelectAllShortcut);
+    HardwareKeyboard.instance.addHandler(_handleKeyDownEvent);
+    HardwareKeyboard.instance.addHandler(_handleEscapeKey);
+    HardwareKeyboard.instance.addHandler(_handleSelectAllShortcut);
 
     _columns = widget.columns;
   }
@@ -267,9 +267,10 @@ class _ArDriveDataTableState<T extends IndexedItem>
     }
   }
 
-  void _handleEscapeKey(RawKeyEvent event) {
+  bool _handleEscapeKey(KeyEvent event) {
     if (mounted) {
-      if (event.isKeyPressed(LogicalKeyboardKey.escape)) {
+      if (HardwareKeyboard.instance
+          .isLogicalKeyPressed(LogicalKeyboardKey.escape)) {
         setState(() {
           clearSelection();
 
@@ -277,36 +278,33 @@ class _ArDriveDataTableState<T extends IndexedItem>
             widget.onChangeMultiSelecting!(false);
           }
         });
+        return true;
       }
     }
+    return false;
   }
 
   /// Selects all items c=with ctrl / command + a
-  void _handleSelectAllShortcut(RawKeyEvent event) {
-    if (event.isKeyPressed(LogicalKeyboardKey.keyA) && _isCtrlPressed) {
+  bool _handleSelectAllShortcut(KeyEvent event) {
+    if (HardwareKeyboard.instance
+            .isLogicalKeyPressed(LogicalKeyboardKey.keyA) &&
+        _isCtrlPressed) {
       _selectAllItemsInPage();
+      return true;
     }
+    return false;
   }
 
-  void _handleKeyDownEvent(RawKeyEvent event) {
-    if (mounted) {
-      if (widget.lockMultiSelect) {
-        return;
-      }
-
-      setState(() {
-        if (event.isKeyPressed(LogicalKeyboardKey.metaLeft) ||
-            event.isKeyPressed(LogicalKeyboardKey.controlLeft)) {
-          _isCtrlPressed = true;
-        } else {
-          _isCtrlPressed = false;
-        }
-
-        if (widget.onChangeMultiSelecting != null) {
+  bool _handleKeyDownEvent(KeyEvent event) {
+    if (mounted && !widget.lockMultiSelect) {
+      if (widget.onChangeMultiSelecting != null) {
+        setState(() {
+          _isCtrlPressed = HardwareKeyboard.instance.isMetaPressed;
           widget.onChangeMultiSelecting!(_isMultiSelecting);
-        }
-      });
+        });
+      }
     }
+    return false;
   }
 
   void _selectMultiSelectItem(T item, int index, bool select) {
@@ -332,7 +330,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
         } else {
           multiselectBox.add(item);
         }
-      } else if (RawKeyboard.instance.keysPressed
+      } else if (HardwareKeyboard.instance.logicalKeysPressed
           .contains(LogicalKeyboardKey.shiftLeft)) {
         if (_shiftSelectionStartIndex != null) {
           final startIndex = _shiftSelectionStartIndex!;

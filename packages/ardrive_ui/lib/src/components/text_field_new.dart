@@ -14,9 +14,9 @@ class ArDriveFormNew extends StatefulWidget {
   ///
   /// The [child] argument must not be null.
   const ArDriveFormNew({
-    Key? key,
+    super.key,
     required this.child,
-  }) : super(key: key);
+  });
 
   @override
   State<ArDriveFormNew> createState() => ArDriveFormNewState();
@@ -126,7 +126,7 @@ class ArDriveMultilineObscureTextControllerNew extends TextEditingController {
   bool _showLastCharacter = false;
   Timer? _timer;
 
-  ArDriveMultilineObscureTextControllerNew({String? text}) : super(text: text);
+  ArDriveMultilineObscureTextControllerNew({super.text});
 
   // use same default obscuring character as EditableText
   final obscuringCharacter = '\u2022';

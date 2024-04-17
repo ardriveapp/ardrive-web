@@ -89,7 +89,7 @@ class _ArDriveDropZoneState extends State<ArDriveDropZone> {
 ///
 class ArDriveDropAreaSingleInput extends StatefulWidget {
   const ArDriveDropAreaSingleInput({
-    Key? key,
+    super.key,
     this.height,
     this.width,
     required this.dragAndDropDescription,
@@ -99,7 +99,7 @@ class ArDriveDropAreaSingleInput extends StatefulWidget {
     this.platformSupportsDragAndDrop = true,
     this.keepButtonVisible = false,
     required this.controller,
-  }) : super(key: key);
+  });
 
   final double? height;
   final double? width;

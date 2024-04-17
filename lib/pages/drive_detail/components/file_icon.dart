@@ -9,11 +9,11 @@ class ArDriveFileIcon extends StatelessWidget {
   final double size;
 
   const ArDriveFileIcon({
-    Key? key,
+    super.key,
     required this.contentType,
     this.fileStatus,
     this.size = 30,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

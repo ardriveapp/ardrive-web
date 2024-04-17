@@ -16,7 +16,7 @@ Future<IOFile> _convertTextToIOFile({
   required String filePrefix,
 }) {
   final fileName = '${filePrefix}_${DateTime.now().toIso8601String()}.txt';
-  final dataBytes = utf8.encode(text) as Uint8List;
+  final dataBytes = utf8.encode(text);
 
   return IOFile.fromData(
     dataBytes,

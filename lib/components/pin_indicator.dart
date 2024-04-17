@@ -5,9 +5,9 @@ class PinIndicator extends StatelessWidget {
   final double size;
 
   const PinIndicator({
-    Key? key,
+    super.key,
     required this.size,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -150,7 +150,7 @@ Future<void> _initializeServices() async {
 }
 
 class App extends StatefulWidget {
-  const App({Key? key}) : super(key: key);
+  const App({super.key});
 
   @override
   AppState createState() => AppState();

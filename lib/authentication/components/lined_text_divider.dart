@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 class LinedTextDivider extends StatelessWidget {
   final String text;
 
-  const LinedTextDivider({Key? key, this.text = 'or'}) : super(key: key);
+  const LinedTextDivider({super.key, this.text = 'or'});
 
   @override
   Widget build(BuildContext context) {

@@ -6,8 +6,8 @@ class FadeThroughTransitionSwitcher extends StatelessWidget {
   const FadeThroughTransitionSwitcher({
     required this.fillColor,
     required this.child,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   final Widget child;
   final Color fillColor;

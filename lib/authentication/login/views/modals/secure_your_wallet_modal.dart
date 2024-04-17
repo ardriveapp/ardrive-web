@@ -14,14 +14,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SecureYourWalletWidget extends StatefulWidget {
   const SecureYourWalletWidget(
-      {Key? key,
+      {super.key,
       required this.loginBloc,
       required this.wallet,
       this.derivedEthWallet,
       this.mnemonic,
       required this.showTutorials,
-      required this.showWalletCreated})
-      : super(key: key);
+      required this.showWalletCreated});
 
   final Wallet wallet;
   final EthereumProviderWallet? derivedEthWallet;

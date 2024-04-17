@@ -5,7 +5,7 @@ enum ArrowSide { left, right, bottomLeft }
 
 class FeedbackMessage extends StatelessWidget {
   const FeedbackMessage({
-    Key? key,
+    super.key,
     required this.text,
     this.textStyle,
     this.backgroundColor,
@@ -13,7 +13,7 @@ class FeedbackMessage extends StatelessWidget {
     this.width,
     this.height = 50,
     this.arrowSide = ArrowSide.left,
-  }) : super(key: key);
+  });
 
   final String text;
   final TextStyle? textStyle;
