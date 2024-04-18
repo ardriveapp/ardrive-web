@@ -228,6 +228,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 pathSegments: pathSegments,
                 driveIsEmpty: folderContents.files.isEmpty &&
                     folderContents.subfolders.isEmpty,
+                
               ),
             );
           } else {

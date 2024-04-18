@@ -200,6 +200,7 @@ Widget _buildDataListContent(
           !context.watch<ActivityTracker>().isMultiSelectEnabled,
       rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
       maxItemsPerPage: 100,
+      
       pageItemsDivisorFactor: 25,
       onSelectedRows: (boxes) {
         final bloc = context.read<DriveDetailCubit>();

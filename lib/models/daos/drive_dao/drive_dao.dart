@@ -444,20 +444,24 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     resultFolders.removeWhere((element) => element.parentFolderId == null);
 
     final List<SearchResult> results = [];
-    final fileResults = await Future.wait(resultFiles.map((file) async {
-      final folder = await folderById(
-        driveId: file.driveId,
-        folderId: file.parentFolderId,
-      ).getSingle();
+    final fileResults = await Future.wait(
+      resultFiles.map(
+        (file) async {
+          final folder = await folderById(
+            driveId: file.driveId,
+            folderId: file.parentFolderId,
+          ).getSingle();
 
-      final drive = await driveById(driveId: file.driveId).getSingle();
+          final drive = await driveById(driveId: file.driveId).getSingle();
 
-      return SearchResult<FileRevision>(
-        result: file,
-        folder: folder,
-        drive: drive,
-      );
-    }));
+          return SearchResult<FileRevision>(
+            result: file,
+            folder: folder,
+            drive: drive,
+          );
+        },
+      ),
+    );
 
     final folderResults = await Future.wait(resultFolders.map((folder) async {
       FolderEntry? parentFolder;

@@ -245,10 +245,10 @@ class _FileSearchModalState extends State<FileSearchModal> {
                             );
                             Future.delayed(const Duration(milliseconds: 300))
                                 .then((value) async {
-                              context
-                                  .read<DrivesCubit>()
-                                  .selectDrive(search.drive.id);
-                              widget.driveDetailCubit.openFolder(
+                              // context
+                              //     .read<DrivesCubit>()
+                              //     .selectDrive(search.drive.id);
+                              widget.driveDetailCubit.openFolder  (
                                 otherDriveId: file.driveId,
                                 folderId: file.parentFolderId,
                               );
