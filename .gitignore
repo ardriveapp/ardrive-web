@@ -70,8 +70,8 @@ app.*.map.json
 # scan temporary files
 **/fastlane/test_output
 
-# fvm
-/.fvm/flutter_sdk
-
 # direnv
 .direnv
+
+# FVM Version Cache
+.fvm/

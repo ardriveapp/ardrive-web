@@ -4,12 +4,15 @@
   },
   "bloc.newBlocTemplate": "equatable",
   "bloc.newCubitTemplate": "equatable",
-  "dart.additionalAnalyzerFileExtensions": ["drift"],
+  "dart.additionalAnalyzerFileExtensions": [
+    "drift"
+  ],
   "cSpell.words": [
     "bento",
     "Hkdf",
     "hmac",
     "sublist",
     "Widgetbook"
-  ]
+  ],
+  "dart.flutterSdkPath": ".fvm/versions/3.19.6"
 }

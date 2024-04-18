@@ -1130,22 +1130,16 @@ class CountryItem implements InputDropdownItem {
 
 class CountryInputDropdown extends InputDropdownMenu<CountryItem> {
   CountryInputDropdown({
-    Key? key,
-    required List<CountryItem> items,
-    required Widget Function(CountryItem?) buildSelectedItem,
+    super.key,
+    required super.items,
+    required super.buildSelectedItem,
     required ArDriveTextFieldTheme theme,
-    CountryItem? selectedItem,
-    required Function(CountryItem) onChanged,
-    Function()? onClick,
+    super.selectedItem,
+    required Function(CountryItem) super.onChanged,
+    super.onClick,
     required BuildContext context,
   }) : super(
-          key: key,
-          items: items,
-          onClick: onClick,
-          selectedItem: selectedItem,
-          buildSelectedItem: buildSelectedItem,
           label: '${appLocalizationsOf(context).country} *',
-          onChanged: onChanged,
           itemsTextStyle: theme.inputTextStyle,
           backgroundColor: theme.inputBackgroundColor,
         );

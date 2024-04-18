@@ -37,16 +37,11 @@ abstract class PaymentUserInformation extends Equatable {
 
 class _PaymentUserInformation extends PaymentUserInformation {
   const _PaymentUserInformation({
-    String? email,
-    required String country,
-    required String name,
-    required bool userAcceptedToReceiveEmails,
-  }) : super(
-          email: email,
-          name: name,
-          country: country,
-          userAcceptedToReceiveEmails: userAcceptedToReceiveEmails,
-        );
+    super.email,
+    required super.country,
+    required super.name,
+    required super.userAcceptedToReceiveEmails,
+  });
 
   @override
   List<Object?> get props => [

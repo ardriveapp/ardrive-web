@@ -97,17 +97,15 @@ class SafeArConnectSigner<T> extends BundleSigner<T> {
 }
 
 class SafeArConnectBDISigner extends SafeArConnectSigner<DataItem> {
-  SafeArConnectBDISigner(BDISigner bundleSigner) : super(bundleSigner);
+  SafeArConnectBDISigner(BDISigner super.bundleSigner);
 }
 
 class SafeArConnectTransactionSigner extends SafeArConnectSigner<Transaction> {
-  SafeArConnectTransactionSigner(BundleSigner bundleSigner)
-      : super(bundleSigner);
+  SafeArConnectTransactionSigner(super.bundleSigner);
 }
 
 class SafeArConnectArweaveBundleTransactionSigner
     extends SafeArConnectSigner<Transaction> {
   SafeArConnectArweaveBundleTransactionSigner(
-      BundleTransactionSigner bundleSigner)
-      : super(bundleSigner);
+      BundleTransactionSigner super.bundleSigner);
 }

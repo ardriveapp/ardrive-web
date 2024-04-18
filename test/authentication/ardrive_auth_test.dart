@@ -155,12 +155,21 @@ void main() {
           when(() => mockUserRepository.hasUser())
               .thenAnswer((invocation) => Future.value(true));
 
-          when(() => mockArweaveService.getLatestDriveEntityWithId(
-                  any(), any(), any()))
-              .thenAnswer((invocation) => Future.value(DriveEntity(
-                    id: 'some_id',
-                    rootFolderId: 'some_id',
-                  )));
+          when(
+            () => mockArweaveService.getLatestDriveEntityWithId(
+              any(),
+              driveKey: any(named: 'driveKey'),
+              maxRetries: any(named: 'maxRetries'),
+              driveOwner: any(named: 'driveOwner'),
+            ),
+          ).thenAnswer(
+            (invocation) => Future.value(
+              DriveEntity(
+                id: 'some_id',
+                rootFolderId: 'some_id',
+              ),
+            ),
+          );
 
           when(() => mockUserRepository.deleteUser())
               .thenAnswer((invocation) async {});
@@ -188,9 +197,12 @@ void main() {
         test(
             'should return the user, and save the password on secure storage when has private drives and login with sucess.',
             () async {
-          when(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
-                  maxRetries: any(named: 'maxRetries')))
-              .thenAnswer((_) async => 'some_id');
+          when(
+            () => mockArweaveService.getFirstPrivateDriveTxId(
+              wallet,
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer((_) async => 'some_id');
 
           when(() => mockBiometricAuthentication.isEnabled())
               .thenAnswer((_) async => true);
@@ -211,12 +223,21 @@ void main() {
           when(() => mockUserRepository.hasUser())
               .thenAnswer((invocation) => Future.value(true));
 
-          when(() => mockArweaveService.getLatestDriveEntityWithId(
-                  any(), any(), any()))
-              .thenAnswer((invocation) => Future.value(DriveEntity(
-                    id: 'some_id',
-                    rootFolderId: 'some_id',
-                  )));
+          when(
+            () => mockArweaveService.getLatestDriveEntityWithId(
+              any(),
+              driveKey: any(named: 'driveKey'),
+              maxRetries: any(named: 'maxRetries'),
+              driveOwner: any(named: 'driveOwner'),
+            ),
+          ).thenAnswer(
+            (invocation) => Future.value(
+              DriveEntity(
+                id: 'some_id',
+                rootFolderId: 'some_id',
+              ),
+            ),
+          );
 
           when(() => mockUserRepository.deleteUser())
               .thenAnswer((invocation) async {});
@@ -471,6 +492,9 @@ void main() {
         when(() => mockUserRepository.getUser('password'))
             .thenAnswer((invocation) async => unlockedUser);
 
+        when(() => mockBiometricAuthentication.isEnabled())
+            .thenAnswer((_) async => false);
+
         final user = await arDriveAuth.unlockUser(password: 'password');
 
         expect(user, isNotNull);
@@ -510,6 +534,8 @@ void main() {
             .thenAnswer((invocation) => Future.value(true));
         when(() => mockUserRepository.getUser('password'))
             .thenAnswer((invocation) async => unlockedUser);
+        when(() => mockBiometricAuthentication.isEnabled())
+            .thenAnswer((_) async => false);
 
         await arDriveAuth.unlockUser(password: 'password');
 
@@ -564,9 +590,12 @@ void main() {
           cipherKey: SecretKey([]),
           profileType: ProfileType.json,
         );
-        when(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
-                maxRetries: any(named: 'maxRetries')))
-            .thenAnswer((_) async => 'some_id');
+        when(
+          () => mockArweaveService.getFirstPrivateDriveTxId(
+            wallet,
+            maxRetries: any(named: 'maxRetries'),
+          ),
+        ).thenAnswer((_) async => 'some_id');
         when(() => mockBiometricAuthentication.isEnabled())
             .thenAnswer((_) async => false);
         when(
@@ -578,12 +607,17 @@ void main() {
         ).thenAnswer((invocation) => Future.value(SecretKey([])));
         when(() => mockUserRepository.hasUser())
             .thenAnswer((invocation) => Future.value(true));
-        when(() => mockArweaveService.getLatestDriveEntityWithId(
-                any(), any(), any()))
-            .thenAnswer((invocation) => Future.value(DriveEntity(
-                  id: 'some_id',
-                  rootFolderId: 'some_id',
-                )));
+        when(
+          () => mockArweaveService.getLatestDriveEntityWithId(
+            any(),
+            driveKey: any(named: 'driveKey'),
+            maxRetries: any(named: 'maxRetries'),
+            driveOwner: any(named: 'driveOwner'),
+          ),
+        ).thenAnswer((invocation) => Future.value(DriveEntity(
+              id: 'some_id',
+              rootFolderId: 'some_id',
+            )));
         when(() => mockUserRepository.deleteUser())
             .thenAnswer((invocation) async {});
         when(() => mockUserRepository.saveUser(
@@ -642,12 +676,17 @@ void main() {
         ).thenAnswer((invocation) => Future.value(SecretKey([])));
         when(() => mockUserRepository.hasUser())
             .thenAnswer((invocation) => Future.value(true));
-        when(() => mockArweaveService.getLatestDriveEntityWithId(
-                any(), any(), any()))
-            .thenAnswer((invocation) => Future.value(DriveEntity(
-                  id: 'some_id',
-                  rootFolderId: 'some_id',
-                )));
+        when(
+          () => mockArweaveService.getLatestDriveEntityWithId(
+            any(),
+            driveKey: any(named: 'driveKey'),
+            maxRetries: any(named: 'maxRetries'),
+            driveOwner: any(named: 'driveOwner'),
+          ),
+        ).thenAnswer((invocation) => Future.value(DriveEntity(
+              id: 'some_id',
+              rootFolderId: 'some_id',
+            )));
         when(() => mockUserRepository.deleteUser())
             .thenAnswer((invocation) async {});
         when(() => mockUserRepository.saveUser(
@@ -656,6 +695,9 @@ void main() {
 
         when(() => mockUserRepository.getUser('password'))
             .thenAnswer((invocation) async => loggedUser);
+
+        when(() => mockBiometricAuthentication.isEnabled())
+            .thenAnswer((_) async => false);
       });
       test('should change the state when user logs in', () async {
         when(() => mockBiometricAuthentication.isEnabled())
@@ -726,9 +768,10 @@ void main() {
           'should call getFirstPrivateDriveTxId only once when has private drives and login with sucess. ',
           () async {
         // arrange
-        when(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
-                maxRetries: any(named: 'maxRetries')))
-            .thenAnswer((_) async => 'some_id');
+        when(() => mockArweaveService.getFirstPrivateDriveTxId(
+              wallet,
+              maxRetries: any(named: 'maxRetries'),
+            )).thenAnswer((_) async => 'some_id');
 
         when(() => mockBiometricAuthentication.isEnabled())
             .thenAnswer((_) async => false);
@@ -744,8 +787,10 @@ void main() {
         when(() => mockUserRepository.hasUser())
             .thenAnswer((invocation) => Future.value(true));
 
-        when(() => mockArweaveService.getLatestDriveEntityWithId(
-                any(), any(), any()))
+        when(() => mockArweaveService.getLatestDriveEntityWithId(any(),
+                driveKey: any(named: 'driveKey'),
+                maxRetries: any(named: 'maxRetries'),
+                driveOwner: any(named: 'driveOwner')))
             .thenAnswer((invocation) => Future.value(DriveEntity(
                   id: 'some_id',
                   rootFolderId: 'some_id',
@@ -764,8 +809,12 @@ void main() {
         await arDriveAuth.login(wallet, 'password', ProfileType.json);
         await arDriveAuth.login(wallet, 'password', ProfileType.json);
 
-        verify(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
-            maxRetries: any(named: 'maxRetries'))).called(1);
+        verify(
+          () => mockArweaveService.getFirstPrivateDriveTxId(
+            wallet,
+            maxRetries: any(named: 'maxRetries'),
+          ),
+        ).called(1);
       });
 
       test(

@@ -15,11 +15,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class TurboBalance extends StatefulWidget {
   const TurboBalance({
-    Key? key,
+    super.key,
     required this.paymentService,
     required this.wallet,
     this.onTapAddButton,
-  }) : super(key: key);
+  });
 
   final Wallet wallet;
   final PaymentService paymentService;

@@ -158,7 +158,7 @@ class ArDriveThemeData {
     this.backgroundColor = backgroundColor ?? const Color(0xff010905);
     this.primaryColor = primaryColor ?? this.colors.themeAccentBrand;
     this.materialThemeData = materialThemeData ?? darkMaterialTheme();
-    this.name = name ?? 'dark';
+    this.name = name ?? _darkTheme;
   }
 
   late Color backgroundColor;
@@ -219,6 +219,7 @@ ThemeData lightMaterialTheme() {
       surface: colors.themeBgSurface,
       onSurface: colors.themeBgSurface,
     ),
+    useMaterial3: false,
     textTheme: theme.textTheme.apply(
       fontFamily: _fontFamily,
       bodyColor: colors.themeFgDefault,
@@ -242,7 +243,7 @@ ArDriveThemeData lightTheme() {
         hoverColor: const Color(0xffF1EFF0),
       ),
       materialThemeData: lightMaterialTheme(),
-      name: 'light',
+      name: _lightTheme,
       colorTokens: ArDriveColorTokens.lightMode());
 }
 
@@ -270,6 +271,14 @@ class ArDriveTheme extends InheritedWidget {
     }
 
     throw Exception('Not found a ArDriveTheme in the widget tree');
+  }
+
+  bool isDark() {
+    return themeData.name == _darkTheme;
+  }
+
+  bool isLight() {
+    return themeData.name == _lightTheme;
   }
 }
 
@@ -328,6 +337,7 @@ ThemeData darkMaterialTheme() {
       surface: colors.themeBgSurface,
       onSurface: colors.themeBgSurface,
     ),
+    useMaterial3: false,
     textTheme: theme.textTheme.apply(
       fontFamily: _fontFamily,
       bodyColor: colors.themeFgDefault,
@@ -336,3 +346,6 @@ ThemeData darkMaterialTheme() {
 }
 
 const _fontFamily = 'packages/ardrive_ui/Wavehaus';
+
+const _lightTheme = 'light';
+const _darkTheme = 'dark';

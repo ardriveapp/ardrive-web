@@ -108,9 +108,11 @@ Future<void> promptToUpload(
   }
 
   // ignore: use_build_context_synchronously
-  await showCongestionDependentModalDialog(
-    context,
-    () => showArDriveDialog(
+  await showCongestionDependentModalDialog(context, () {
+    if (!context.mounted) {
+      return;
+    }
+    showArDriveDialog(
       context,
       content: RepositoryProvider(
         create: (context) => ArDriveUploadPreparationManager(
@@ -182,12 +184,12 @@ Future<void> promptToUpload(
         ),
       ),
       barrierDismissible: false,
-    ),
-  );
+    );
+  });
 }
 
 class UploadForm extends StatefulWidget {
-  const UploadForm({Key? key}) : super(key: key);
+  const UploadForm({super.key});
 
   @override
   State<UploadForm> createState() => _UploadFormState();

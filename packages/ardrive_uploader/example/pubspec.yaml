@@ -47,7 +47,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   ardrive_crypto:
     path: ../../ardrive_crypto
-  uuid: ^3.0.4
+  uuid: ^4.4.0
   cryptography: ^2.5.0
   dio: ^5.3.2
   http:
@@ -62,7 +62,7 @@ dependency_overrides:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^2.0.0
+  flutter_lints: ^3.0.2
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

@@ -46,7 +46,7 @@ Future<void> promptToMove(
 }
 
 class FsEntryMoveForm extends StatelessWidget {
-  const FsEntryMoveForm({Key? key}) : super(key: key);
+  const FsEntryMoveForm({super.key});
 
   @override
   Widget build(BuildContext context) {

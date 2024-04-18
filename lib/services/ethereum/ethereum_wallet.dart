@@ -17,7 +17,7 @@ abstract class EthereumWallet extends Wallet {
     final messageHash = await sha256.hash(utf8.encode(messageText));
     final messageHex = hex.encode(messageHash.bytes);
 
-    final messageData = utf8.encode(messageHex) as Uint8List;
+    final messageData = utf8.encode(messageHex);
     final signature = await sign(messageData);
 
     final signatureSha256 = await sha256.hash(signature);

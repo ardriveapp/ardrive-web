@@ -12,8 +12,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class WalletSwitchDialog extends StatelessWidget {
   final bool fromAuthPage;
 
-  const WalletSwitchDialog({Key? key, this.fromAuthPage = false})
-      : super(key: key);
+  const WalletSwitchDialog({super.key, this.fromAuthPage = false});
   @override
   Widget build(BuildContext context) => AppDialog(
         dismissable: false,

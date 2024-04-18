@@ -1,9 +1,12 @@
+import 'package:ardrive/core/arfs/repository/file_repository.dart';
+import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/manifest_data.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/utils.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:test/test.dart';
 
@@ -15,47 +18,49 @@ void main() {
   const stubTxId = '0000000000000000000000000000000000000000001';
   final stubCurrentDate = DateTime.now();
 
+  late final FileRepository fileRepository;
+  late final FolderRepository folderRepository;
+
   final stubRootFolderEntry = FolderEntry(
-    id: stubEntityId,
+    id: 'stubRootFolderEntry',
     dateCreated: stubCurrentDate,
     driveId: stubEntityId,
     isGhost: false,
     parentFolderId: stubEntityId,
-    path: '/root-folder',
     name: 'root-folder',
     lastUpdated: stubCurrentDate,
     isHidden: false,
+    path: '',
   );
 
   final stubParentFolderEntry = FolderEntry(
-    id: stubEntityId,
+    id: 'stubParentFolderEntry',
     dateCreated: stubCurrentDate,
     driveId: stubEntityId,
     isGhost: false,
     parentFolderId: stubEntityId,
-    path: '/root-folder/parent-folder',
     name: 'parent-folder',
     lastUpdated: stubCurrentDate,
     isHidden: false,
+    path: '',
   );
 
   final stubChildFolderEntry = FolderEntry(
-    id: stubEntityId,
+    id: 'stubChildFolderEntry',
     dateCreated: stubCurrentDate,
     driveId: stubEntityId,
     isGhost: false,
     parentFolderId: stubEntityId,
-    path: '/root-folder/parent-folder/child-folder',
     name: 'child-folder',
     lastUpdated: stubCurrentDate,
     isHidden: false,
+    path: '',
   );
 
   final stubFileInRoot1 = FileEntry(
     dataTxId: stubTxId,
     dateCreated: stubCurrentDate,
     size: 10,
-    path: '/root-folder/file-in-root-1',
     name: 'file-in-root-1',
     parentFolderId: stubEntityId,
     lastUpdated: stubCurrentDate,
@@ -63,13 +68,13 @@ void main() {
     id: 'file-in-root-1-entity-id',
     driveId: stubEntityId,
     isHidden: false,
+    path: '',
   );
 
   final stubFileInRoot2 = FileEntry(
     dataTxId: stubTxId,
     dateCreated: stubCurrentDate,
     size: 10,
-    path: '/root-folder/file-in-root-2',
     name: 'file-in-root-2',
     parentFolderId: stubEntityId,
     lastUpdated: stubCurrentDate,
@@ -77,13 +82,13 @@ void main() {
     id: 'file-in-root-2-entity-id',
     driveId: stubEntityId,
     isHidden: false,
+    path: '',
   );
 
   final stubFileInParent1 = FileEntry(
     dataTxId: stubTxId,
     dateCreated: stubCurrentDate,
     size: 10,
-    path: '/root-folder/parent-folder/file-in-parent-1',
     name: 'file-in-parent-1',
     parentFolderId: stubEntityId,
     lastUpdated: stubCurrentDate,
@@ -91,13 +96,13 @@ void main() {
     id: 'file-in-parent-1-entity-id',
     driveId: stubEntityId,
     isHidden: false,
+    path: '',
   );
 
   final stubFileInParent2 = FileEntry(
     dataTxId: stubTxId,
     dateCreated: stubCurrentDate,
     size: 10,
-    path: '/root-folder/parent-folder/file-in-parent-2',
     name: 'file-in-parent-2',
     parentFolderId: stubEntityId,
     lastUpdated: stubCurrentDate,
@@ -105,13 +110,13 @@ void main() {
     id: 'file-in-parent-2-entity-id',
     driveId: stubEntityId,
     isHidden: false,
+    path: '',
   );
 
   final stubFileInChild1 = FileEntry(
     dataTxId: stubTxId,
     dateCreated: stubCurrentDate,
     size: 10,
-    path: '/root-folder/parent-folder/child-folder/file-in-child-1',
     name: 'file-in-child-1',
     parentFolderId: stubEntityId,
     lastUpdated: stubCurrentDate,
@@ -119,13 +124,13 @@ void main() {
     id: 'file-in-child-1-entity-id',
     driveId: stubEntityId,
     isHidden: false,
+    path: '',
   );
 
   final stubFileInChild2 = FileEntry(
     dataTxId: stubTxId,
     dateCreated: stubCurrentDate,
     size: 10,
-    path: '/root-folder/parent-folder/child-folder/file-in-child-2',
     name: 'file-in-child-2',
     parentFolderId: stubEntityId,
     lastUpdated: stubCurrentDate,
@@ -133,13 +138,13 @@ void main() {
     id: 'file-in-child-2-entity-id',
     driveId: stubEntityId,
     isHidden: false,
+    path: '',
   );
 
   final stubManifestFileInChild = FileEntry(
     dataTxId: stubTxId,
     dateCreated: stubCurrentDate,
     size: 10,
-    path: '/root-folder/parent-folder/child-folder/file-in-child-2',
     name: 'manifest-file-in-child',
     parentFolderId: stubEntityId,
     lastUpdated: stubCurrentDate,
@@ -148,6 +153,7 @@ void main() {
     driveId: stubEntityId,
     dataContentType: ContentType.manifest,
     isHidden: false,
+    path: '',
   );
 
   final stubChildFolderNode =
@@ -173,66 +179,103 @@ void main() {
     stubFileInRoot2.id: stubFileInRoot2,
   });
 
+  setUpAll(() {
+    fileRepository = MockFileRepository();
+    folderRepository = MockFolderRepository();
+
+    when(() => folderRepository.getFolderPath(
+            stubRootFolderNode.folder.driveId, stubRootFolderNode.folder.id))
+        .thenAnswer((_) async => 'root-folder');
+    when(() => folderRepository.getFolderPath(
+            stubParentFolderEntry.driveId, stubParentFolderEntry.id))
+        .thenAnswer((_) async => 'root-folder/parent-folder');
+    when(() => folderRepository.getFolderPath(
+            stubChildFolderEntry.driveId, stubChildFolderEntry.id))
+        .thenAnswer((_) async => 'root-folder/parent-folder/child-folder');
+
+    when(() => fileRepository.getFilePath(
+            stubFileInRoot1.driveId, stubFileInRoot1.id))
+        .thenAnswer((_) async => 'root-folder/file-in-root-1');
+    when(() => fileRepository.getFilePath(
+            stubFileInRoot2.driveId, stubFileInRoot2.id))
+        .thenAnswer((_) async => 'root-folder/file-in-root-2');
+    when(() => fileRepository.getFilePath(
+            stubFileInParent1.driveId, stubFileInParent1.id))
+        .thenAnswer((_) async => 'root-folder/parent-folder/file-in-parent-1');
+    when(() => fileRepository.getFilePath(
+            stubFileInParent2.driveId, stubFileInParent2.id))
+        .thenAnswer((_) async => 'root-folder/parent-folder/file-in-parent-2');
+    when(() =>
+        fileRepository.getFilePath(
+            stubFileInChild1.driveId, stubFileInChild1.id)).thenAnswer(
+        (_) async => 'root-folder/parent-folder/child-folder/file-in-child-1');
+    when(() =>
+        fileRepository.getFilePath(
+            stubFileInChild2.driveId, stubFileInChild2.id)).thenAnswer(
+        (_) async => 'root-folder/parent-folder/child-folder/file-in-child-2');
+  });
   group('ManifestEntity Tests', () {
-    group('fromFolderNode static method', () {
-      test('returns a ManifestEntity with a valid expected manifest shape',
-          () async {
-        final manifest = ManifestData.fromFolderNode(
-          folderNode: stubRootFolderNode,
-        );
+    test('returns a ManifestEntity with a valid expected manifest shape',
+        () async {
+      final manifest = await ManifestData.fromFolderNode(
+        folderNode: stubRootFolderNode,
+        fileRepository: fileRepository,
+        folderRepository: folderRepository,
+      );
 
-        expect(
-            manifest.toJson(),
-            equals({
-              'manifest': 'arweave/paths',
-              'version': '0.1.0',
-              'index': {'path': 'file-in-root-1'},
-              'paths': {
-                'file-in-root-1': {
-                  'id': '0000000000000000000000000000000000000000001'
-                },
-                'file-in-root-2': {
-                  'id': '0000000000000000000000000000000000000000001'
-                },
-                'parent-folder/file-in-parent-1': {
-                  'id': '0000000000000000000000000000000000000000001'
-                },
-                'parent-folder/file-in-parent-2': {
-                  'id': '0000000000000000000000000000000000000000001'
-                },
-                'parent-folder/child-folder/file-in-child-1': {
-                  'id': '0000000000000000000000000000000000000000001'
-                },
-                'parent-folder/child-folder/file-in-child-2': {
-                  'id': '0000000000000000000000000000000000000000001'
-                }
+      expect(
+          manifest.toJson(),
+          equals({
+            'manifest': 'arweave/paths',
+            'version': '0.1.0',
+            'index': {'path': 'file-in-root-1'},
+            'paths': {
+              'file-in-root-1': {
+                'id': '0000000000000000000000000000000000000000001'
+              },
+              'file-in-root-2': {
+                'id': '0000000000000000000000000000000000000000001'
+              },
+              'parent-folder/file-in-parent-1': {
+                'id': '0000000000000000000000000000000000000000001'
+              },
+              'parent-folder/file-in-parent-2': {
+                'id': '0000000000000000000000000000000000000000001'
+              },
+              'parent-folder/child-folder/file-in-child-1': {
+                'id': '0000000000000000000000000000000000000000001'
+              },
+              'parent-folder/child-folder/file-in-child-2': {
+                'id': '0000000000000000000000000000000000000000001'
               }
-            }));
-      });
+            }
+          }));
+    });
 
-      test(
-          'returns a ManifestEntity with a valid expected manifest shape with a nested child folder',
-          () async {
-        final manifest = ManifestData.fromFolderNode(
-          folderNode: stubChildFolderNode,
-        );
+    test(
+        'returns a ManifestEntity with a valid expected manifest shape with a nested child folder',
+        () async {
+      final manifest = await ManifestData.fromFolderNode(
+        folderNode: stubChildFolderNode,
+        fileRepository: fileRepository,
+        folderRepository: folderRepository,
+      );
 
-        expect(
-            manifest.toJson(),
-            equals({
-              'manifest': 'arweave/paths',
-              'version': '0.1.0',
-              'index': {'path': 'file-in-child-1'},
-              'paths': {
-                'file-in-child-1': {
-                  'id': '0000000000000000000000000000000000000000001'
-                },
-                'file-in-child-2': {
-                  'id': '0000000000000000000000000000000000000000001'
-                }
+      expect(
+          manifest.toJson(),
+          equals({
+            'manifest': 'arweave/paths',
+            'version': '0.1.0',
+            'index': {'path': 'file-in-child-1'},
+            'paths': {
+              'file-in-child-1': {
+                'id': '0000000000000000000000000000000000000000001'
+              },
+              'file-in-child-2': {
+                'id': '0000000000000000000000000000000000000000001'
               }
-            }));
-      });
+            }
+          }));
     });
 
     group('asPreparedDataItem method', () {
@@ -246,8 +289,10 @@ void main() {
 
       test('returns a DataItem with the expected tags, owner, and data',
           () async {
-        final manifest = ManifestData.fromFolderNode(
+        final manifest = await ManifestData.fromFolderNode(
           folderNode: stubRootFolderNode,
+          fileRepository: fileRepository,
+          folderRepository: folderRepository,
         );
         final wallet = getTestWallet();
 

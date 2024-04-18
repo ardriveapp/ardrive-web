@@ -14,13 +14,13 @@ class ArDriveDropdownItemTile extends StatelessWidget {
   final ArDriveArDriveDropdownItemTileIconAlignment iconAlignment;
 
   const ArDriveDropdownItemTile({
-    Key? key,
+    super.key,
     required this.name,
     this.icon,
     this.isDisabled = false,
     this.fontStyle,
     this.iconAlignment = ArDriveArDriveDropdownItemTileIconAlignment.left,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

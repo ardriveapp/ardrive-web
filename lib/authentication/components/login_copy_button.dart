@@ -12,7 +12,7 @@ class LoginCopyButton extends StatefulWidget {
   final Color? copyMessageColor;
 
   const LoginCopyButton({
-    Key? key,
+    super.key,
     required this.text,
     this.size = 20,
     this.showCopyText = true,
@@ -20,7 +20,7 @@ class LoginCopyButton extends StatefulWidget {
     this.positionY = 40,
     this.positionX = 20,
     this.copyMessageColor,
-  }) : super(key: key);
+  });
 
   @override
   // ignore: library_private_types_in_public_api

@@ -11,8 +11,7 @@ import 'package:bip39/bip39.dart' as bip39;
 import 'package:flutter/material.dart';
 
 class ImportWalletModal extends StatefulWidget {
-  const ImportWalletModal({Key? key, required this.loginBloc})
-      : super(key: key);
+  const ImportWalletModal({super.key, required this.loginBloc});
 
   final LoginBloc loginBloc;
 

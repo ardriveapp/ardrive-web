@@ -1,4 +1,4 @@
-// ignore_for_file: library_private_types_in_public_api
+// ignore_for_file: library_private_types_in_public_api, deprecated_member_use
 
 import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
 import 'package:ardrive/misc/misc.dart';
@@ -12,8 +12,8 @@ import 'package:flutter_svg/svg.dart';
 
 class TilesView extends StatelessWidget {
   const TilesView({
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -160,6 +160,7 @@ class TilesView extends StatelessWidget {
 class _MilitaryGradeEncryption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    // TODO: replace with ArDriveTheme .isLight method
     final isLightMode = ArDriveTheme.of(context).themeData.name == 'light';
     return ClipRRect(
       borderRadius: const BorderRadius.only(
@@ -504,10 +505,10 @@ class CarouselWithGroups extends StatefulWidget {
   final Function() onEndHover;
 
   const CarouselWithGroups({
-    Key? key,
+    super.key,
     required this.onHover,
     required this.onEndHover,
-  }) : super(key: key);
+  });
 
   @override
   _CarouselWithGroupsState createState() => _CarouselWithGroupsState();
@@ -623,13 +624,13 @@ class CustomIndicator extends StatefulWidget {
   final Function(int) onClickDot;
 
   const CustomIndicator({
-    Key? key,
+    super.key,
     required this.index,
     required this.currentPage,
     required this.onPageAnimationEnd,
     required this.onClickDot,
     this.duration = const Duration(seconds: 10),
-  }) : super(key: key);
+  });
 
   @override
   _CustomIndicatorState createState() => _CustomIndicatorState();

@@ -6,11 +6,11 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
   final String parentFolderId;
 
   const DriveDetailFolderEmptyCard({
-    Key? key,
+    super.key,
     this.promptToAddFiles = false,
     required this.driveId,
     required this.parentFolderId,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) => buildArDriveCard(context);

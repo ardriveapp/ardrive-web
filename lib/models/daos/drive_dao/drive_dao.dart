@@ -33,8 +33,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   final ArDriveCrypto _crypto = ArDriveCrypto();
 
   DriveDao(
-    Database db,
-  ) : super(db) {
+    super.db,
+  ) {
     initVaults();
   }
 
@@ -195,8 +195,9 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           id: rootFolderId,
           driveId: driveId,
           name: name,
-          path: rootPath,
           isHidden: const Value(false),
+          // TODO: path is not used in the app, so it's not necessary to set it
+          path: '',
         ),
       );
     });
@@ -353,63 +354,52 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Stream<FolderWithContents> watchFolderContents(
     String driveId, {
     String? folderId,
-    String? folderPath,
     DriveOrder orderBy = DriveOrder.name,
     OrderingMode orderingMode = OrderingMode.asc,
   }) {
-    assert(folderId != null || folderPath != null);
-    final folderStream = (folderId != null
-            ? folderById(driveId: driveId, folderId: folderId)
-            : folderWithPath(driveId: driveId, path: folderPath!))
-        .watchSingleOrNull();
+    if (folderId == null) {
+      return driveById(driveId: driveId).watchSingleOrNull().switchMap((drive) {
+        if (drive == null) {
+          throw Exception('Drive with id $driveId not found');
+        }
 
-    final subfolderQuery = (folderId != null
-        ? foldersInFolder(
-            driveId: driveId,
-            parentFolderId: folderId,
-            order: (folderEntries) {
-              return enumToFolderOrderByClause(
-                folderEntries,
-                orderBy,
-                orderingMode,
-              );
-            },
-          )
-        : foldersInFolderAtPath(
-            driveId: driveId,
-            path: folderPath!,
-            order: (folderEntries) {
-              return enumToFolderOrderByClause(
-                folderEntries,
-                orderBy,
-                orderingMode,
-              );
-            },
-          ));
+        return folderById(driveId: driveId, folderId: drive.rootFolderId)
+            .watchSingleOrNull()
+            .switchMap((folder) {
+          return watchFolderContents(driveId,
+              folderId: folder!.id,
+              orderBy: orderBy,
+              orderingMode: orderingMode);
+        });
+      });
+    }
 
-    final filesQuery = folderId != null
-        ? filesInFolderWithLicenseAndRevisionTransactions(
-            driveId: driveId,
-            parentFolderId: folderId,
-            order: (fileEntries, _, __, ___) {
-              return enumToFileOrderByClause(
-                fileEntries,
-                orderBy,
-                orderingMode,
-              );
-            },
-          )
-        : filesInFolderAtPathWithLicenseAndRevisionTransactions(
-            driveId: driveId,
-            path: folderPath!,
-            order: (fileEntries, _, __, ___) {
-              return enumToFileOrderByClause(
-                fileEntries,
-                orderBy,
-                orderingMode,
-              );
-            },
-          );
+    final folderStream =
+        folderById(driveId: driveId, folderId: folderId).watchSingleOrNull();
+
+    final subfolderQuery = foldersInFolder(
+      driveId: driveId,
+      parentFolderId: folderId,
+      order: (folderEntries) {
+        return enumToFolderOrderByClause(
+          folderEntries,
+          orderBy,
+          orderingMode,
+        );
+      },
+    );
+
+    final filesQuery = filesInFolderWithLicenseAndRevisionTransactions(
+      driveId: driveId,
+      parentFolderId: folderId,
+      order: (fileEntries, _, __, ___) {
+        return enumToFileOrderByClause(
+          fileEntries,
+          orderBy,
+          orderingMode,
+        );
+      },
+    );
 
     return Rx.combineLatest3(
         folderStream.where((folder) => folder != null).map((folder) => folder!),
@@ -447,7 +437,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     FolderID? parentFolderId,
     FolderID? folderId,
     required String folderName,
-    required String path,
   }) async {
     final id = folderId ?? _uuid.v4();
     final folderEntriesCompanion = FolderEntriesCompanion.insert(
@@ -455,8 +444,9 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       driveId: driveId,
       parentFolderId: Value(parentFolderId),
       name: folderName,
-      path: path,
       isHidden: const Value(false),
+      // TODO: path is not used in the app, so it's not necessary to set it
+      path: '',
     );
     await into(folderEntries).insert(folderEntriesCompanion);
 
@@ -510,20 +500,20 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   Future<void> writeFileEntity(
     FileEntity entity,
-    String path,
   ) {
     final companion = FileEntriesCompanion.insert(
       id: entity.id!,
       driveId: entity.driveId!,
       parentFolderId: entity.parentFolderId!,
       name: entity.name!,
-      path: path,
       dataTxId: entity.dataTxId!,
       size: entity.size!,
       lastModifiedDate: entity.lastModifiedDate ?? DateTime.now(),
       dataContentType: Value(entity.dataContentType),
       pinnedDataOwnerAddress: Value(entity.pinnedDataOwnerAddress),
       isHidden: Value(entity.isHidden ?? false),
+      // TODO: path is not used in the app, so it's not necessary to set it
+      path: '',
     );
 
     return into(fileEntries).insert(

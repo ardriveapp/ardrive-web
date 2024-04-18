@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/arfs/repository/file_repository.dart';
+import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/manifest_data.dart';
 import 'package:ardrive/models/models.dart';
@@ -31,6 +33,10 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final PstService _pst;
+
+  final FolderRepository _folderRepository;
+  final FileRepository _fileRepository;
+
   bool _hasPendingFiles = false;
 
   StreamSubscription? _selectedFolderSubscription;
@@ -43,12 +49,16 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     required DriveDao driveDao,
     required PstService pst,
     required bool hasPendingFiles,
+    required FileRepository fileRepository,
+    required FolderRepository folderRepository,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
         _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _pst = pst,
         _hasPendingFiles = hasPendingFiles,
+        _fileRepository = fileRepository,
+        _folderRepository = folderRepository,
         super(CreateManifestInitial()) {
     if (drive.isPrivate) {
       // Extra guardrail to prevent private drives from creating manifests
@@ -215,10 +225,14 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     try {
       final parentFolder =
           (state as CreateManifestPreparingManifest).parentFolder;
+
       final folderNode = rootFolderNode.searchForFolder(parentFolder.id) ??
           await _driveDao.getFolderTree(drive.id, parentFolder.id);
-      final arweaveManifest = ManifestData.fromFolderNode(
+
+      final arweaveManifest = await ManifestData.fromFolderNode(
         folderNode: folderNode,
+        fileRepository: _fileRepository,
+        folderRepository: _folderRepository,
       );
 
       final profile = _profileCubit.state as ProfileLoggedIn;
@@ -253,10 +267,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
       addManifestToDatabase() => _driveDao.transaction(
             () async {
-              await _driveDao.writeFileEntity(
-                manifestFileEntity,
-                '${parentFolder.path}/$manifestName',
-              );
+              await _driveDao.writeFileEntity(manifestFileEntity);
               await _driveDao.insertFileRevision(
                 manifestFileEntity.toRevisionCompanion(
                   performedAction: existingManifestFileId == null

@@ -12,14 +12,14 @@ class ArDriveTabView extends StatefulWidget {
   final Color? unselectedTabColor;
 
   const ArDriveTabView({
-    Key? key,
+    super.key,
     required this.tabs,
     this.backgroundColor,
     this.selectedLabelColor,
     this.unselectedLabelColor,
     this.selectedTabColor,
     this.unselectedTabColor,
-  }) : super(key: key);
+  });
 
   @override
   State<ArDriveTabView> createState() => _ArDriveTabViewState();

@@ -25,9 +25,9 @@ class AppShell extends StatefulWidget {
   final Widget page;
 
   const AppShell({
-    Key? key,
+    super.key,
     required this.page,
-  }) : super(key: key);
+  });
 
   @override
   AppShellState createState() => AppShellState();
