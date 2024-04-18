@@ -1,0 +1,2 @@
+- New Feature: Login with Metamask
+- Speed and memory performance improvements synchronizing drives

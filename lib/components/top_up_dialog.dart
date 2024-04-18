@@ -153,7 +153,10 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
           maxWidth: maxWidth,
           maxHeight: maxHeight,
           fontStyle: ArDriveTypography.body
-              .buttonLargeBold()
+              .buttonLargeBold(
+                color:
+                    ArDriveTheme.of(context).themeData.colors.themeFgOnAccent,
+              )
               .copyWith(fontWeight: FontWeight.w700),
           text: appLocalizationsOf(context).next,
           onPressed: () {
