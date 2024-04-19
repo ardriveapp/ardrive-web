@@ -76,6 +76,8 @@ class Login {
   final String walletUpload = 'assets/images/login/wallet_upload.svg';
 
   final BentoBox bentoBox = const BentoBox();
+
+  final String bannerLightMode = 'assets/images/login/banner_light_mode.svg';
 }
 
 class BentoBox {

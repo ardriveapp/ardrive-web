@@ -3,7 +3,6 @@
 import 'dart:ui';
 
 import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
-import 'package:ardrive/authentication/components/button.dart';
 import 'package:ardrive/authentication/components/login_card_new.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/misc/resources.dart';

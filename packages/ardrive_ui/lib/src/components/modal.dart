@@ -9,12 +9,14 @@ class ArDriveModal extends StatelessWidget {
     required this.constraints,
     this.contentPadding = const EdgeInsets.all(16),
     this.action,
+    this.backgroundColor,
   });
 
   final Widget content;
   final BoxConstraints constraints;
   final EdgeInsets contentPadding;
   final ModalAction? action;
+  final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +26,54 @@ class ArDriveModal extends StatelessWidget {
         contentPadding: contentPadding,
         content: content,
         boxShadow: BoxShadowCard.shadow80,
+        backgroundColor: backgroundColor,
+      ),
+    );
+  }
+}
+
+class ArDriveModalNew extends StatelessWidget {
+  const ArDriveModalNew({
+    super.key,
+    required this.content,
+    required this.constraints,
+    this.contentPadding = const EdgeInsets.all(16),
+    this.action,
+    this.backgroundColor,
+  });
+
+  final Widget content;
+  final BoxConstraints constraints;
+  final EdgeInsets contentPadding;
+  final ModalAction? action;
+  final Color? backgroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    return ConstrainedBox(
+      constraints: constraints,
+      child: ArDriveCard(
+        contentPadding: EdgeInsets.zero,
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: 6,
+              child: Container(
+                color: colorTokens.containerRed,
+              ),
+            ),
+            Padding(
+              padding: contentPadding,
+              child: content,
+            ),
+          ],
+        ),
+        boxShadow: BoxShadowCard.shadow80,
+        backgroundColor: backgroundColor ?? colorTokens.containerL3,
+        borderRadius: 9,
       ),
     );
   }
@@ -591,4 +641,199 @@ Future<void> showStandardDialog(
       actions: actions,
     ),
   );
+}
+
+class ArDriveStandardModalNew extends StatelessWidget {
+  const ArDriveStandardModalNew({
+    super.key,
+    this.title,
+    this.description,
+    this.content,
+    this.actions,
+    this.width,
+    this.hasCloseButton = false,
+  });
+
+  final String? title;
+  final String? description;
+  final List<ModalAction>? actions;
+  final Widget? content;
+  final double? width;
+  final bool hasCloseButton;
+
+  @override
+  Widget build(BuildContext context) {
+    late double maxWidth;
+    final deviceWidth = MediaQuery.of(context).size.width;
+
+    final typography = ArDriveTypographyNew.of(context);
+
+    if (deviceWidth < modalStandardMaxWidthSize) {
+      maxWidth = deviceWidth;
+    } else {
+      maxWidth = modalStandardMaxWidthSize;
+    }
+
+    return ArDriveModalNew(
+      constraints: BoxConstraints(
+        minHeight: 100,
+        maxWidth: width ?? maxWidth,
+        minWidth: 250,
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (title != null) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text(
+                      title!,
+                      style: typography.heading3(
+                        fontWeight: ArFontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  if (hasCloseButton)
+                    ArDriveClickArea(
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: const Align(
+                          alignment: Alignment.centerRight,
+                          child: ArDriveIcon(
+                            icon: ArDriveIconsData.x,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    )
+                ],
+              ),
+              const SizedBox(
+                height: 24,
+              ),
+            ],
+            if (content != null) ...[
+              content!,
+              const SizedBox(
+                height: 24,
+              ),
+            ],
+            if (content == null) ...[
+              if (description != null) ...[
+                Text(
+                  description!,
+                  style: ArDriveTypography.body.smallRegular(),
+                  textAlign: TextAlign.left,
+                ),
+              ],
+            ],
+            if (actions != null) ...[
+              const SizedBox(
+                height: 24,
+              ),
+              Align(
+                alignment: Alignment.bottomRight,
+                child: _buildActions(
+                  actions!,
+                  context,
+                ),
+              )
+            ]
+          ]),
+    );
+  }
+
+  Widget _buildActions(List<ModalAction> actions, BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    return Wrap(
+      alignment: WrapAlignment.end,
+      runSpacing: 8,
+      children: [
+        if (actions.isNotEmpty)
+          ArDriveButtonNew(
+            maxHeight: buttonActionHeight,
+            maxWidth: 100,
+            typography: typography,
+            variant: ButtonVariant.secondary,
+            // backgroundColor:
+            //     ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+            // fontStyle: ArDriveTypography.body
+            //     .buttonNormalBold(
+            //       color:
+            //           ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+            //     )
+            //     .copyWith(
+            //       fontWeight: FontWeight.w700,
+            //     ),
+            text: actions.first.title,
+            onPressed: actions.first.action,
+          ),
+        if (actions.length > 1)
+          Padding(
+            padding: const EdgeInsets.only(left: 16),
+            child: ArDriveButtonNew(
+              maxWidth: 100,
+              variant: actions.length > 2
+                  ? ButtonVariant.secondary
+                  : ButtonVariant.primary,
+              maxHeight: buttonActionHeight,
+              // backgroundColor:
+              //     ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+              // fontStyle: ArDriveTypography.body
+              //     .buttonNormalRegular(
+              //       color: actions.length > 2
+              //           ? ArDriveTheme.of(context)
+              //               .themeData
+              //               .colors
+              //               .themeFgDefault
+              //           : ArDriveTheme.of(context)
+              //               .themeData
+              //               .colors
+              //               .themeAccentSubtle,
+              //     )
+              //     .copyWith(
+              //       fontWeight: FontWeight.w700,
+              //     ),
+              isDisabled: !actions[1].isEnable,
+              text: actions[1].title,
+              onPressed: actions[1].action,
+              typography: typography,
+            ),
+          ),
+        if (actions.length > 2)
+          Padding(
+            padding: const EdgeInsets.only(left: 16),
+            child: ArDriveButtonNew(
+              typography: typography,
+              variant: ButtonVariant.secondary,
+              maxHeight: buttonActionHeight,
+              backgroundColor:
+                  ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+              fontStyle: ArDriveTypography.body
+                  .buttonNormalRegular(
+                    color: actions.length > 2
+                        ? ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeFgDefault
+                        : ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeAccentSubtle,
+                  )
+                  .copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+              isDisabled: !actions[2].isEnable,
+              text: actions[2].title,
+              onPressed: actions[2].action,
+            ),
+          ),
+      ],
+    );
+  }
 }

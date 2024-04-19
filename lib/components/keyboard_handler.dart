@@ -1,4 +1,3 @@
-import 'package:ardrive/authentication/components/button.dart';
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
@@ -238,7 +237,6 @@ class _FileSearchModalState extends State<FileSearchModal> {
                         ArDriveIconButton(
                           icon: ArDriveIcons.newWindow(),
                           onPressed: () {
-                            final drivesCubit = context.read<DrivesCubit>();
                             final file = DriveDataTableItemMapper.fromRevision(
                               search.result as FileRevision,
                               true,
@@ -248,7 +246,7 @@ class _FileSearchModalState extends State<FileSearchModal> {
                               // context
                               //     .read<DrivesCubit>()
                               //     .selectDrive(search.drive.id);
-                              widget.driveDetailCubit.openFolder  (
+                              widget.driveDetailCubit.openFolder(
                                 otherDriveId: file.driveId,
                                 folderId: file.parentFolderId,
                               );

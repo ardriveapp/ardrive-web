@@ -1,6 +1,5 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/components/biometric_toggle.dart';
-import 'package:ardrive/authentication/components/button.dart';
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/components/truncated_address_new.dart';

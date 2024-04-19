@@ -1,4 +1,3 @@
-import 'package:ardrive/authentication/components/button.dart';
 import 'package:ardrive/authentication/components/lined_text_divider.dart';
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
