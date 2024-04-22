@@ -755,7 +755,7 @@ class ArDriveStandardModalNew extends StatelessWidget {
       children: [
         if (actions.isNotEmpty)
           ArDriveButtonNew(
-            maxHeight: buttonActionHeight,
+            maxHeight: 40,
             maxWidth: 100,
             typography: typography,
             variant: ButtonVariant.secondary,
@@ -770,7 +770,7 @@ class ArDriveStandardModalNew extends StatelessWidget {
               variant: actions.length > 2
                   ? ButtonVariant.secondary
                   : ButtonVariant.primary,
-              maxHeight: buttonActionHeight,
+              maxHeight: 40,
               isDisabled: !actions[1].isEnable,
               text: actions[1].title,
               onPressed: actions[1].action,
@@ -783,7 +783,7 @@ class ArDriveStandardModalNew extends StatelessWidget {
             child: ArDriveButtonNew(
               typography: typography,
               variant: ButtonVariant.secondary,
-              maxHeight: buttonActionHeight,
+              maxHeight: 40,
               backgroundColor:
                   ArDriveTheme.of(context).themeData.colors.themeFgDefault,
               fontStyle: ArDriveTypography.body
