@@ -469,4 +469,16 @@ class ArDriveIcons {
         size: size ?? 26,
         color: color,
       );
+
+  // private drive
+  static ArDriveIcon privateDrive({double? size, Color? color}) => ArDriveIcon(
+        icon: ArDriveIconsData.private_drive,
+        size: size,
+        color: color,
+      );
+  static ArDriveIcon publicDrive({double? size, Color? color}) => ArDriveIcon(
+        icon: ArDriveIconsData.public_drive,
+        size: size,
+        color: color,
+      );
 }

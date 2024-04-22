@@ -1,6 +1,5 @@
 // ignore_for_file: deprecated_member_use
 
-import 'package:ardrive/authentication/components/button.dart';
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';

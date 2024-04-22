@@ -891,10 +891,22 @@ class _PriceCalculatorState extends State<_PriceCalculator> {
           child: Stack(
             fit: StackFit.expand,
             children: [
+              Positioned(
+                top: 24,
+                left: 24,
+                child: Text(
+                  'Price Calculator',
+                  style: ArDriveTypographyNew.of(context).heading6(
+                    color: color,
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                ),
+              ),
               Padding(
-                padding: const EdgeInsets.only(left: 24.0, right: 24, top: 24),
+                padding: const EdgeInsets.only(left: 24.0, right: 24),
                 child: SvgPicture.asset(
                   Resources.images.login.bentoBox.priceCalculator,
+                  width: 328,
                 ),
               ),
               Positioned(

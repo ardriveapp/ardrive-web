@@ -23,6 +23,7 @@ class AppConfig {
   final BigInt? fakeTurboCredits;
   final bool topUpDryRun;
   final bool enableMetamaskLogin;
+  final bool enableSearch;
 
   AppConfig({
     this.defaultArweaveGatewayUrl,
@@ -43,6 +44,7 @@ class AppConfig {
     this.fakeTurboCredits,
     this.topUpDryRun = false,
     this.enableMetamaskLogin = false,
+    this.enableSearch = false,
   });
 
   AppConfig copyWith({
@@ -66,6 +68,7 @@ class AppConfig {
     bool? topUpDryRun,
     bool? unsetFakeTurboCredits,
     bool? enableMetamaskLogin,
+    bool? enableSearch,
   }) {
     final theFakeTurboCredits = unsetFakeTurboCredits == true
         ? null
@@ -100,6 +103,7 @@ class AppConfig {
       fakeTurboCredits: theFakeTurboCredits,
       topUpDryRun: topUpDryRun ?? this.topUpDryRun,
       enableMetamaskLogin: enableMetamaskLogin ?? this.enableMetamaskLogin,
+      enableSearch: enableSearch ?? this.enableSearch,
     );
   }
 

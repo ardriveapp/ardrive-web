@@ -14,6 +14,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   final bool driveIsEmpty;
   final bool multiselect;
   final bool hasFoldersSelected;
+  final int? selectedPage;
 
   final FolderWithContents folderInView;
 
@@ -62,6 +63,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     this.forceRebuildKey,
     required this.isShowingHiddenFiles,
     required this.pathSegments,
+    this.selectedPage,
   });
 
   DriveDetailLoadSuccess copyWith({
@@ -83,8 +85,10 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     Key? forceRebuildKey,
     bool? isShowingHiddenFiles,
     List<BreadCrumbRowInfo>? pathSegments,
+    int? selectedPage,
   }) =>
       DriveDetailLoadSuccess(
+        selectedPage: selectedPage ?? this.selectedPage,
         columnVisibility: columnVisibility,
         forceRebuildKey: forceRebuildKey ?? this.forceRebuildKey,
         selectedItem: selectedItem ?? this.selectedItem,

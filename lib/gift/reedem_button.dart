@@ -17,6 +17,7 @@ class RedeemButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return ArDriveDropdown(
       anchor: const Aligned(
         follower: Alignment.topRight,
@@ -51,7 +52,7 @@ class RedeemButton extends StatelessWidget {
       child: ArDriveIconButton(
         icon: ArDriveIcons.gift(
           size: 20,
-          color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+          color: colorTokens.textMid,
         ),
         tooltip: appLocalizationsOf(context).giftCredits,
       ),
