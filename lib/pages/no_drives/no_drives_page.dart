@@ -6,7 +6,6 @@ import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
-import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -60,23 +59,23 @@ class NoDrivesPage extends StatelessWidget {
     return ScreenTypeLayout.builder(
       desktop: (context) => Padding(
         padding: const EdgeInsets.only(top: 32, right: 16),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  RedeemButton(),
-                  SizedBox(width: 24),
-                  ProfileCard(),
-                ],
-              ),
-              const SizedBox(
-                height: 24,
-              ),
-              Expanded(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                RedeemButton(),
+                SizedBox(width: 24),
+                ProfileCard(),
+              ],
+            ),
+            const SizedBox(
+              height: 24,
+            ),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   mainAxisSize: MainAxisSize.max,
@@ -103,7 +102,7 @@ class NoDrivesPage extends StatelessWidget {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    'Getting Stated',
+                                    'Getting Started',
                                     style: typography.heading2(
                                       color: colorTokens.textHigh,
                                     ),
@@ -122,104 +121,41 @@ class NoDrivesPage extends StatelessWidget {
                         ),
                       );
                     }),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ArDriveLoginModal(
-                            padding: const EdgeInsets.all(40),
-                            hasCloseButton: false,
-                            content: Column(
-                              children: [
-                                ArDriveIcons.addDrive(),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Public Drive',
-                                  style: typography.paragraphXLarge(
-                                    fontWeight: ArFontWeight.semiBold,
-                                    color: colorTokens.textHigh,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Public Drives are discoverable, meaning that others can find and view the contents.',
-                                  style: typography.paragraphNormal(
-                                    fontWeight: ArFontWeight.semiBold,
-                                    color: colorTokens.textLow,
-                                  ),
-                                ),
-                                const SizedBox(height: 32),
-                                ArDriveButtonNew(
-                                  text: 'Create Public Drive',
-                                  typography: typography,
-                                  variant: ButtonVariant.primary,
-                                  onPressed: () {
-                                    promptToCreateDrive(context,
-                                        privacy: DrivePrivacy.public);
-                                  },
-                                ),
-                              ],
-                            )),
-                        const SizedBox(width: 35),
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(4),
-                            color: colorTokens.containerL2,
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          child: Text(
-                            'Or',
-                            style: typography.paragraphNormal(
-                              fontWeight: ArFontWeight.semiBold,
-                              color: colorTokens.textHigh,
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _publicDrivesCard(context: context),
+                          const SizedBox(width: 35),
+                          Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(4),
+                              color: colorTokens.containerL2,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            child: Text(
+                              'Or',
+                              style: typography.paragraphNormal(
+                                fontWeight: ArFontWeight.semiBold,
+                                color: colorTokens.textHigh,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 35),
-                        ArDriveLoginModal(
-                            padding: const EdgeInsets.all(40),
-                            hasCloseButton: false,
-                            content: Column(
-                              children: [
-                                ArDriveIcons.addDrive(),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Private Drive',
-                                  style: typography.paragraphXLarge(
-                                    fontWeight: ArFontWeight.semiBold,
-                                    color: colorTokens.textHigh,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Private Drives offer state-of-the-art security, so you can control who can access the content.',
-                                  style: typography.paragraphNormal(
-                                    fontWeight: ArFontWeight.semiBold,
-                                    color: colorTokens.textLow,
-                                  ),
-                                ),
-                                const SizedBox(height: 32),
-                                ArDriveButtonNew(
-                                  text: 'Create new private drive',
-                                  typography: typography,
-                                  variant: ButtonVariant.primary,
-                                  onPressed: () {
-                                    promptToCreateDrive(context,
-                                        privacy: DrivePrivacy.private);
-                                  },
-                                ),
-                              ],
-                            )),
-                      ],
+                          const SizedBox(width: 35),
+                          _privateDrivesCard(context: context),
+                        ],
+                      ),
                     ),
                     const SizedBox.shrink()
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       mobile: (context) => Scaffold(
@@ -231,17 +167,132 @@ class NoDrivesPage extends StatelessWidget {
         appBar: const MobileAppBar(
           showDrawerButton: false,
         ),
-        body: Stack(
-          children: [
-            Center(
-              child: Text(
-                appLocalizationsOf(context).noDrives,
-                textAlign: TextAlign.center,
-                style: ArDriveTypography.headline.headline5Regular(),
-              ),
+        body: SingleChildScrollView(
+          child: Center(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 24),
+                Text(
+                  'Getting Started',
+                  style: typography.heading2(
+                    color: colorTokens.textHigh,
+                  ),
+                ),
+                Text(
+                  'Create a new drive to start uploading your files.',
+                  style: typography.paragraphLarge(
+                    fontWeight: ArFontWeight.semiBold,
+                    color: colorTokens.textLow,
+                  ),
+                ),
+                const SizedBox(height: 40),
+                _publicDrivesCard(context: context),
+                const SizedBox(height: 20),
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: colorTokens.containerL2,
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    'Or',
+                    style: typography.paragraphNormal(
+                      fontWeight: ArFontWeight.semiBold,
+                      color: colorTokens.textHigh,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                _privateDrivesCard(context: context),
+              ],
             ),
-          ],
+          ),
         ),
+      ),
+    );
+  }
+
+  ArDriveLoginModal _privateDrivesCard({
+    required BuildContext context,
+  }) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
+
+    return ArDriveLoginModal(
+      padding: const EdgeInsets.all(40),
+      hasCloseButton: false,
+      content: Column(
+        children: [
+          ArDriveIcons.addDrive(),
+          const SizedBox(height: 12),
+          Text(
+            'Private Drive',
+            style: typography.paragraphXLarge(
+              fontWeight: ArFontWeight.semiBold,
+              color: colorTokens.textHigh,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Private Drives offer state-of-the-art security, so you can control who can access the content.',
+            style: typography.paragraphNormal(
+              fontWeight: ArFontWeight.semiBold,
+              color: colorTokens.textLow,
+            ),
+          ),
+          const SizedBox(height: 32),
+          ArDriveButtonNew(
+            text: 'Create new private drive',
+            typography: typography,
+            variant: ButtonVariant.primary,
+            onPressed: () {
+              promptToCreateDrive(context, privacy: DrivePrivacy.private);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  ArDriveLoginModal _publicDrivesCard({
+    required BuildContext context,
+  }) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
+
+    return ArDriveLoginModal(
+      padding: const EdgeInsets.all(40),
+      hasCloseButton: false,
+      content: Column(
+        children: [
+          ArDriveIcons.addDrive(),
+          const SizedBox(height: 12),
+          Text(
+            'Public Drive',
+            style: typography.paragraphXLarge(
+              fontWeight: ArFontWeight.semiBold,
+              color: colorTokens.textHigh,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Public Drives are discoverable, meaning that others can find and view the contents.',
+            style: typography.paragraphNormal(
+              fontWeight: ArFontWeight.semiBold,
+              color: colorTokens.textLow,
+            ),
+          ),
+          const SizedBox(height: 32),
+          ArDriveButtonNew(
+            text: 'Create Public Drive',
+            typography: typography,
+            variant: ButtonVariant.primary,
+            onPressed: () {
+              promptToCreateDrive(context, privacy: DrivePrivacy.public);
+            },
+          ),
+        ],
       ),
     );
   }

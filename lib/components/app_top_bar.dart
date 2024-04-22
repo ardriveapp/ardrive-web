@@ -1,9 +1,10 @@
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
-import 'package:ardrive/components/keyboard_handler.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/gift/reedem_button.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
+import 'package:ardrive/search/search_modal.dart';
+import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
@@ -18,6 +19,8 @@ class AppTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final enableSearch = context.read<ConfigService>().config.enableSearch;
+
     final theme = ArDriveTheme.of(context).themeData;
     final textTheme = theme.copyWith(
       textFieldTheme: theme.textFieldTheme.copyWith(
@@ -51,26 +54,29 @@ class AppTopBar extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            Flexible(
-              child: ArDriveTheme(
-                themeData: textTheme,
-                child: ArDriveTextFieldNew(
-                  hintText: 'Search',
-                  suffixIcon: const Icon(Icons.search),
-                  onFieldSubmitted: (s) {
-                    showArDriveDialog(
-                      context,
-                      content: FileSearchModal(
-                        initialQuery: s,
-                        driveDetailCubit: context.read<DriveDetailCubit>(),
-                      ),
-                      // blur effect
-                      barrierColor: theme.colors.themeBgCanvas.withOpacity(0.5),
-                    );
-                  },
+            if (enableSearch) ...[
+              Flexible(
+                child: ArDriveTheme(
+                  themeData: textTheme,
+                  child: ArDriveTextFieldNew(
+                    hintText: 'Search',
+                    suffixIcon: const Icon(Icons.search),
+                    onFieldSubmitted: (s) {
+                      showArDriveDialog(
+                        context,
+                        content: FileSearchModal(
+                          initialQuery: s,
+                          driveDetailCubit: context.read<DriveDetailCubit>(),
+                        ),
+                        // blur effect
+                        barrierColor:
+                            theme.colors.themeBgCanvas.withOpacity(0.5),
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
+            ],
             const SizedBox(width: 24),
             const SyncButton(),
             const SizedBox(width: 24),
@@ -89,6 +95,7 @@ class SyncButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return HoverWidget(
       tooltip: appLocalizationsOf(context).resyncTooltip,
       child: ArDriveDropdown(
@@ -123,7 +130,7 @@ class SyncButton extends StatelessWidget {
               )),
         ],
         child: ArDriveIcons.refresh(
-          color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+          color: colorTokens.textMid,
         ),
       ),
     );
