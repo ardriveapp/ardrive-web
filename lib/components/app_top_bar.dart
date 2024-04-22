@@ -20,31 +20,8 @@ class AppTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enableSearch = context.read<ConfigService>().config.enableSearch;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    final theme = ArDriveTheme.of(context).themeData;
-    final textTheme = theme.copyWith(
-      textFieldTheme: theme.textFieldTheme.copyWith(
-        inputBackgroundColor: theme.colors.themeBgCanvas,
-        labelColor: theme.colors.themeFgDefault,
-        requiredLabelColor: theme.colors.themeFgDefault,
-        inputTextStyle: theme.textFieldTheme.inputTextStyle.copyWith(
-          color: theme.colors.themeFgMuted,
-          fontWeight: FontWeight.w600,
-          height: 1.5,
-          fontSize: 16,
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 13,
-          vertical: 8,
-        ),
-        labelStyle: TextStyle(
-          color: theme.colors.themeFgDefault,
-          fontWeight: FontWeight.w600,
-          height: 1.5,
-          fontSize: 16,
-        ),
-      ),
-    );
     return SizedBox(
       height: 110,
       width: double.maxFinite,
@@ -56,28 +33,24 @@ class AppTopBar extends StatelessWidget {
           children: [
             if (enableSearch) ...[
               Flexible(
-                child: ArDriveTheme(
-                  themeData: textTheme,
-                  child: ArDriveTextFieldNew(
-                    hintText: 'Search',
-                    suffixIcon: const Icon(Icons.search),
-                    onFieldSubmitted: (s) {
-                      showArDriveDialog(
-                        context,
-                        content: FileSearchModal(
-                          initialQuery: s,
-                          driveDetailCubit: context.read<DriveDetailCubit>(),
-                        ),
-                        // blur effect
-                        barrierColor:
-                            theme.colors.themeBgCanvas.withOpacity(0.5),
-                      );
-                    },
-                  ),
+                child: ArDriveTextFieldNew(
+                  hintText: 'Search',
+                  suffixIcon: const Icon(Icons.search),
+                  onFieldSubmitted: (s) {
+                    showArDriveDialog(
+                      context,
+                      content: FileSearchModal(
+                        initialQuery: s,
+                        driveDetailCubit: context.read<DriveDetailCubit>(),
+                      ),
+                      // blur effect
+                      barrierColor: colorTokens.containerL0.withOpacity(0.7),
+                    );
+                  },
                 ),
               ),
+              const SizedBox(width: 24),
             ],
-            const SizedBox(width: 24),
             const SyncButton(),
             const SizedBox(width: 24),
             const RedeemButton(),
@@ -117,17 +90,17 @@ class SyncButton extends StatelessWidget {
             ),
           ),
           ArDriveDropdownItem(
-              onClick: () {
-                context.read<SyncCubit>().startSync(deepSync: true);
-                PlausibleEventTracker.trackResync(type: ResyncType.deepResync);
-              },
-              content: ArDriveDropdownItemTile(
-                name: appLocalizationsOf(context).deepResync,
-                icon: ArDriveIcons.cloudSync(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-                ),
-              )),
+            onClick: () {
+              context.read<SyncCubit>().startSync(deepSync: true);
+              PlausibleEventTracker.trackResync(type: ResyncType.deepResync);
+            },
+            content: ArDriveDropdownItemTile(
+              name: appLocalizationsOf(context).deepResync,
+              icon: ArDriveIcons.cloudSync(
+                color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+              ),
+            ),
+          ),
         ],
         child: ArDriveIcons.refresh(
           color: colorTokens.textMid,
