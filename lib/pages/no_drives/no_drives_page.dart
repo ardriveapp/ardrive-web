@@ -105,6 +105,7 @@ class NoDrivesPage extends StatelessWidget {
                                     'Getting Started',
                                     style: typography.heading2(
                                       color: colorTokens.textHigh,
+                                      fontWeight: ArFontWeight.semiBold,
                                     ),
                                   ),
                                   Text(
@@ -138,7 +139,7 @@ class NoDrivesPage extends StatelessWidget {
                               vertical: 8,
                             ),
                             child: Text(
-                              'Or',
+                              'or',
                               style: typography.paragraphNormal(
                                 fontWeight: ArFontWeight.semiBold,
                                 color: colorTokens.textHigh,
@@ -167,47 +168,61 @@ class NoDrivesPage extends StatelessWidget {
         appBar: const MobileAppBar(
           showDrawerButton: false,
         ),
-        body: SingleChildScrollView(
-          child: Center(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 24),
-                Text(
-                  'Getting Started',
-                  style: typography.heading2(
-                    color: colorTokens.textHigh,
-                  ),
-                ),
-                Text(
-                  'Create a new drive to start uploading your files.',
-                  style: typography.paragraphLarge(
-                    fontWeight: ArFontWeight.semiBold,
-                    color: colorTokens.textLow,
-                  ),
-                ),
-                const SizedBox(height: 40),
-                _publicDrivesCard(context: context),
-                const SizedBox(height: 20),
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: colorTokens.containerL2,
-                  ),
-                  padding: const EdgeInsets.all(12),
-                  child: Text(
-                    'Or',
-                    style: typography.paragraphNormal(
-                      fontWeight: ArFontWeight.semiBold,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: SvgPicture.asset(
+                Resources.images.login.bannerLightMode,
+                fit: BoxFit.cover,
+              ),
+            ),
+            SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  const SizedBox(height: 24),
+                  Text(
+                    'Getting Started',
+                    style: typography.heading2(
                       color: colorTokens.textHigh,
+                      fontWeight: ArFontWeight.semiBold,
                     ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                _privateDrivesCard(context: context),
-              ],
+                  Text(
+                    'Create a new drive to start uploading your files.',
+                    style: typography.paragraphLarge(
+                      fontWeight: ArFontWeight.semiBold,
+                      color: colorTokens.textLow,
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  _publicDrivesCard(context: context),
+                  const SizedBox(height: 20),
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: colorTokens.containerL2,
+                    ),
+                    padding: const EdgeInsets.all(12),
+                    child: Text(
+                      'or',
+                      style: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colorTokens.textHigh,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _privateDrivesCard(context: context),
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -240,6 +255,7 @@ class NoDrivesPage extends StatelessWidget {
               fontWeight: ArFontWeight.semiBold,
               color: colorTokens.textLow,
             ),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
           ArDriveButtonNew(
@@ -282,10 +298,11 @@ class NoDrivesPage extends StatelessWidget {
               fontWeight: ArFontWeight.semiBold,
               color: colorTokens.textLow,
             ),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
           ArDriveButtonNew(
-            text: 'Create Public Drive',
+            text: 'Create new public drive',
             typography: typography,
             variant: ButtonVariant.primary,
             onPressed: () {
