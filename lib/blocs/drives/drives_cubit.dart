@@ -59,6 +59,11 @@ class DrivesCubit extends Cubit<DrivesState> {
 
       final profileState = _profileCubit.state;
 
+      if (profileState is ProfileLoggingIn) {
+        emit(DrivesLoadInProgress());
+        return;
+      }
+
       String? selectedDriveId;
 
       if (state is DrivesLoadSuccess && state.selectedDriveId != null) {
@@ -119,15 +124,6 @@ class DrivesCubit extends Cubit<DrivesState> {
     initialSelectedDriveId = null;
 
     _promptToSnapshotBloc.add(const SelectedDrive(driveId: null));
-
-    final state = DrivesLoadSuccess(
-        selectedDriveId: null,
-        userDrives: const [],
-        sharedDrives: const [],
-        drivesWithAlerts: const [],
-        canCreateNewDrive: false);
-
-    emit(state);
   }
 
   void _resetDriveSelection(DriveID detachedDriveId) {
