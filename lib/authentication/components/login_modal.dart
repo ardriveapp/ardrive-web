@@ -34,8 +34,8 @@ class ArDriveLoginModal extends StatelessWidget {
     }
 
     final contentPadding = (deviceWidth < TABLET)
-        ? const EdgeInsets.fromLTRB(22, 0, 22, 32)
-        : const EdgeInsets.fromLTRB(56, 0, 56, 64);
+        ? EdgeInsets.fromLTRB(22, hasCloseButton ? 0 : 44, 22, 32)
+        : EdgeInsets.fromLTRB(56, hasCloseButton ? 0 : 44, 56, 64);
 
     return ConstrainedBox(
       constraints: BoxConstraints(
