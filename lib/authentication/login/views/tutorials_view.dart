@@ -254,20 +254,19 @@ class _TutorialContentState extends State<_TutorialContent> {
         videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
     _videoPlayerController.setLooping(true);
     _videoPlayerController.initialize().then((_) {
-      setState(() {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          // mutes the video
-          _videoPlayerController.setVolume(0);
-          // Plays the video once the widget is build and loaded.
-          _videoPlayerController.play();
-        });
-      });
-    });
-
-    _videoPlayerController.addListener(() {
-      if (_videoPlayerController.value.isInitialized) {
+      if (mounted) {
         setState(() {
-          _loadingVideo = false;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              // mutes the video
+              _videoPlayerController.setVolume(0);
+              // Plays the video once the widget is build and loaded.
+              _videoPlayerController.play();
+              setState(() {
+                _loadingVideo = false;
+              });
+            }
+          });
         });
       }
     });
