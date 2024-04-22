@@ -239,7 +239,7 @@ class NoDrivesPage extends StatelessWidget {
       hasCloseButton: false,
       content: Column(
         children: [
-          ArDriveIcons.addDrive(),
+          ArDriveIcons.privateDrive(),
           const SizedBox(height: 12),
           Text(
             'Private Drive',
@@ -282,7 +282,7 @@ class NoDrivesPage extends StatelessWidget {
       hasCloseButton: false,
       content: Column(
         children: [
-          ArDriveIcons.addDrive(),
+          ArDriveIcons.publicDrive(),
           const SizedBox(height: 12),
           Text(
             'Public Drive',
