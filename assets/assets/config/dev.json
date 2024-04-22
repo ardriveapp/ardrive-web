@@ -12,5 +12,6 @@
   "stripePublishableKey": "pk_test_51JUAtwC8apPOWkDLh2FPZkQkiKZEkTo6wqgLCtQoClL6S4l2jlbbc5MgOdwOUdU9Tn93NNvqAGbu115lkJChMikG00XUfTmo2z",
   "enablePins": true,
   "useNewUploader": true,
-  "enableMetamaskLogin": true
+  "enableMetamaskLogin": true,
+  "enableSearch": true
 }
