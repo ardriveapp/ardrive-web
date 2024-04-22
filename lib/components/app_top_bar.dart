@@ -44,7 +44,7 @@ class AppTopBar extends StatelessWidget {
                         driveDetailCubit: context.read<DriveDetailCubit>(),
                       ),
                       // blur effect
-                      barrierColor: colorTokens.containerL0.withOpacity(0.7),
+                      barrierColor: colorTokens.containerL1.withOpacity(0.8),
                     );
                   },
                 ),
