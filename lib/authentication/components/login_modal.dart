@@ -6,17 +6,20 @@ import 'package:flutter/material.dart';
 const double modalStandardMaxWidthSize = 350;
 
 class ArDriveLoginModal extends StatelessWidget {
-  const ArDriveLoginModal(
-      {super.key,
-      required this.content,
-      this.width,
-      this.hasCloseButton = true,
-      this.onClose});
+  const ArDriveLoginModal({
+    super.key,
+    required this.content,
+    this.width,
+    this.hasCloseButton = true,
+    this.onClose,
+    this.padding,
+  });
 
   final Widget content;
   final double? width;
   final bool hasCloseButton;
   final Function()? onClose;
+  final EdgeInsets? padding;
 
   @override
   Widget build(BuildContext context) {
@@ -31,31 +34,32 @@ class ArDriveLoginModal extends StatelessWidget {
     }
 
     final contentPadding = (deviceWidth < TABLET)
-        ? const EdgeInsets.fromLTRB(22, 0, 22, 32)
-        : const EdgeInsets.fromLTRB(56, 0, 56, 64);
+        ? EdgeInsets.fromLTRB(22, hasCloseButton ? 0 : 44, 22, 32)
+        : EdgeInsets.fromLTRB(56, hasCloseButton ? 0 : 44, 56, 64);
 
     return ConstrainedBox(
-        constraints: BoxConstraints(
-          minHeight: 100,
-          maxWidth: width ?? maxWidth,
-          minWidth: 250,
+      constraints: BoxConstraints(
+        minHeight: 100,
+        maxWidth: width ?? maxWidth,
+        minWidth: 250,
+      ),
+      child: Container(
+        clipBehavior: Clip.hardEdge,
+        decoration: BoxDecoration(
+          color: colorTokens.containerL3,
+          borderRadius: BorderRadius.circular(9),
         ),
-        child: Container(
-          clipBehavior: Clip.hardEdge,
-          decoration: BoxDecoration(
-            color: colorTokens.containerL3,
-            borderRadius: BorderRadius.circular(9),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                  height: 6,
-                  child: Container(
-                    color: colorTokens.containerRed,
-                  )),
-              Row(children: [
-                const Spacer(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+                height: 6,
+                child: Container(
+                  color: colorTokens.containerRed,
+                )),
+            Row(children: [
+              const Spacer(),
+              if (hasCloseButton)
                 Padding(
                   padding: const EdgeInsets.all(22.0),
                   child: hasCloseButton
@@ -73,13 +77,14 @@ class ArDriveLoginModal extends StatelessWidget {
                         )
                       : Container(),
                 )
-              ]),
-              Padding(
-                padding: contentPadding,
-                child: content,
-              ),
-            ],
-          ),
-        ));
+            ]),
+            Padding(
+              padding: padding ?? contentPadding,
+              child: content,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

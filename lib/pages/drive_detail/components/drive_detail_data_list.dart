@@ -14,6 +14,7 @@ Widget _buildDataList(
     columnVisibility: state.columnVisibility,
     isShowingHiddenFiles: state.isShowingHiddenFiles,
     emptyState: emptyState,
+    selectedPage: state.selectedPage,
   );
 }
 
@@ -133,6 +134,7 @@ Widget _buildDataListContent(
   required Map<int, bool> columnVisibility,
   required bool isShowingHiddenFiles,
   required Widget emptyState,
+  int? selectedPage,
 }) {
   final List<ArDriveDataTableItem> filteredItems;
 
@@ -193,10 +195,12 @@ Widget _buildDataListContent(
     return ArDriveDataTable<ArDriveDataTableItem>(
       key: ValueKey(
           '${folder.id}-${forceRebuildKey.toString()}${columns.length}'),
+      initialPage: selectedPage,
       lockMultiSelect: context.watch<SyncCubit>().state is SyncInProgress ||
           !context.watch<ActivityTracker>().isMultiSelectEnabled,
       rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
       maxItemsPerPage: 100,
+      
       pageItemsDivisorFactor: 25,
       onSelectedRows: (boxes) {
         final bloc = context.read<DriveDetailCubit>();

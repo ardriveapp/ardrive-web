@@ -43,26 +43,11 @@ class _ProfileCardState extends State<ProfileCard> {
       onTap: () {
         context.read<ProfileCubit>().logoutProfile();
       },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-            width: 2,
-          ),
-        ),
-        width: 101,
-        height: 40,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Text(
-              appLocalizationsOf(context).login,
-              style: ArDriveTypography.body.buttonNormalBold(),
-            ),
-          ],
-        ),
+      child: ArDriveButtonNew(
+        text: appLocalizationsOf(context).login,
+        typography: ArDriveTypographyNew.of(context),
+        variant: ButtonVariant.outline,
+        maxWidth: 100,
       ),
     );
   }
@@ -307,37 +292,17 @@ class _ProfileCardState extends State<ProfileCard> {
   }
 
   Widget _buildProfileCardHeader(BuildContext context, String walletAddress) {
-    return GestureDetector(
-      onTap: () {
+    final typography = ArDriveTypographyNew.of(context);
+    return ArDriveButtonNew(
+      text: truncateString(walletAddress, offsetStart: 2, offsetEnd: 2),
+      typography: typography,
+      variant: ButtonVariant.outline,
+      maxWidth: 100,
+      onPressed: () {
         setState(() {
           _showProfileCard = !_showProfileCard;
         });
       },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-            width: 2,
-          ),
-        ),
-        width: 101,
-        height: 40,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            ArDriveIcons.user(size: 14),
-            if (walletAddress.isNotEmpty)
-              Text(
-                truncateString(walletAddress, offsetStart: 2, offsetEnd: 2),
-                style: ArDriveTypography.body.buttonNormalBold().copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-              ),
-          ],
-        ),
-      ),
     );
   }
 }

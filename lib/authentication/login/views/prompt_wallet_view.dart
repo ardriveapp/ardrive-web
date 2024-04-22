@@ -1,5 +1,4 @@
 import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
-import 'package:ardrive/authentication/components/button.dart';
 import 'package:ardrive/authentication/components/lined_text_divider.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/views/modals/import_wallet_modal.dart';

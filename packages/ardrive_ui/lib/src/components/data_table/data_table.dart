@@ -47,6 +47,7 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
   final bool lockMultiSelect;
   final T? selectedRow;
   final Function(TableColumn)? onChangeColumnVisibility;
+  final int? initialPage;
 
   const ArDriveDataTable({
     super.key,
@@ -68,6 +69,7 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
     this.lockMultiSelect = false,
     this.selectedRow,
     this.onChangeColumnVisibility,
+    this.initialPage,
   });
 
   @override
@@ -126,7 +128,13 @@ class _ArDriveDataTableState<T extends IndexedItem>
       _numberOfPages++;
     }
 
-    selectPage(0);
+    if (widget.initialPage != null) {
+      _selectedPage = widget.initialPage!;
+    } else {
+      _selectedPage = 0;
+    }
+
+    selectPage(_selectedPage);
 
     HardwareKeyboard.instance.addHandler(_handleKeyDownEvent);
     HardwareKeyboard.instance.addHandler(_handleEscapeKey);

@@ -1,4 +1,3 @@
-import 'package:ardrive/authentication/components/button.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
