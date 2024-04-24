@@ -85,9 +85,6 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
   User? _currentUser;
 
-  @visibleForTesting
-  String? firstPrivateDriveTxId;
-
   // getters and setters
   @override
   User get currentUser {
@@ -233,7 +230,6 @@ class ArDriveAuthImpl implements ArDriveAuth {
         await _secureKeyValueStore.remove('password');
         await _secureKeyValueStore.remove('biometricEnabled');
         currentUser = null;
-        firstPrivateDriveTxId = null;
         await _disconnectFromArConnect();
         _userStreamController.add(null);
       }
@@ -339,12 +335,10 @@ class ArDriveAuthImpl implements ArDriveAuth {
   }
 
   Future<String?> _getFirstPrivateDriveTxId(Wallet wallet) async {
-    firstPrivateDriveTxId ??= await _arweave.getFirstPrivateDriveTxId(
+    return _arweave.getFirstPrivateDriveTxId(
       wallet,
       maxRetries: profileQueryMaxRetries,
     );
-
-    return firstPrivateDriveTxId;
   }
 
   @override
