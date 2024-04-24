@@ -552,7 +552,6 @@ void main() {
 
         expect(() => arDriveAuth.currentUser,
             throwsA(isA<AuthenticationUserIsNotLoggedInException>()));
-        expect(arDriveAuth.firstPrivateDriveTxId, isNull);
         verify(() => mockSecureKeyValueStore.remove('password')).called(1);
         verify(() => mockSecureKeyValueStore.remove('biometricEnabled'))
             .called(1);
@@ -640,7 +639,6 @@ void main() {
 
         await arDriveAuth.logout();
 
-        expect(arDriveAuth.firstPrivateDriveTxId, isNull);
         expect(() => arDriveAuth.currentUser,
             throwsA(isA<AuthenticationUserIsNotLoggedInException>()));
         verify(() => mockSecureKeyValueStore.remove('password')).called(1);
@@ -749,86 +747,6 @@ void main() {
         });
 
         await arDriveAuth.logout();
-      });
-    });
-    group('getFirstPrivateDriveTxId method', () {
-      final loggedUser = User(
-        password: 'password',
-        wallet: wallet,
-        walletAddress: 'walletAddress',
-        walletBalance: BigInt.one,
-        cipherKey: SecretKey([]),
-        profileType: ProfileType.json,
-      );
-
-      /// For this test we'll call the same method twice to validate if the
-      /// getFirstPrivateDriveTxId is called only once
-
-      test(
-          'should call getFirstPrivateDriveTxId only once when has private drives and login with sucess. ',
-          () async {
-        // arrange
-        when(() => mockArweaveService.getFirstPrivateDriveTxId(
-              wallet,
-              maxRetries: any(named: 'maxRetries'),
-            )).thenAnswer((_) async => 'some_id');
-
-        when(() => mockBiometricAuthentication.isEnabled())
-            .thenAnswer((_) async => false);
-
-        when(
-          () => mockArDriveCrypto.deriveDriveKey(
-            wallet,
-            any(),
-            any(),
-          ),
-        ).thenAnswer((invocation) => Future.value(SecretKey([])));
-
-        when(() => mockUserRepository.hasUser())
-            .thenAnswer((invocation) => Future.value(true));
-
-        when(() => mockArweaveService.getLatestDriveEntityWithId(any(),
-                driveKey: any(named: 'driveKey'),
-                maxRetries: any(named: 'maxRetries'),
-                driveOwner: any(named: 'driveOwner')))
-            .thenAnswer((invocation) => Future.value(DriveEntity(
-                  id: 'some_id',
-                  rootFolderId: 'some_id',
-                )));
-
-        when(() => mockUserRepository.deleteUser())
-            .thenAnswer((invocation) async {});
-
-        when(() => mockUserRepository.saveUser(
-                'password', ProfileType.json, wallet))
-            .thenAnswer((invocation) => Future.value(null));
-
-        when(() => mockUserRepository.getUser('password'))
-            .thenAnswer((invocation) async => loggedUser);
-
-        await arDriveAuth.login(wallet, 'password', ProfileType.json);
-        await arDriveAuth.login(wallet, 'password', ProfileType.json);
-
-        verify(
-          () => mockArweaveService.getFirstPrivateDriveTxId(
-            wallet,
-            maxRetries: any(named: 'maxRetries'),
-          ),
-        ).called(1);
-      });
-
-      test(
-          'should call getFirstPrivateDriveTxId only once when has private drives and login with sucess. ',
-          () async {
-        when(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
-                maxRetries: any(named: 'maxRetries')))
-            .thenAnswer((_) async => 'some_id');
-
-        await arDriveAuth.userHasPassword(wallet);
-        await arDriveAuth.userHasPassword(wallet);
-
-        verify(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
-            maxRetries: any(named: 'maxRetries'))).called(1);
       });
     });
   });
