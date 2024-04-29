@@ -32,25 +32,37 @@ class AppTopBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             if (enableSearch) ...[
-              Flexible(
-                child: ArDriveTextFieldNew(
-                  hintText: 'Search',
-                  suffixIcon: const Icon(Icons.search),
-                  onFieldSubmitted: (s) {
-                    showArDriveDialog(
-                      context,
-                      content: FileSearchModal(
-                        initialQuery: s,
-                        driveDetailCubit: context.read<DriveDetailCubit>(),
+              Expanded(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  child: ArDriveTextFieldNew(
+                    hintText: 'Search',
+                    suffixIcon: Transform(
+                      transform:
+                          // 4 pixels bottom padding
+                          Matrix4.translationValues(0.0, 4.0, 0.0),
+                      child: const Icon(
+                        Icons.search,
+                        size: 20,
                       ),
-                      // blur effect
-                      barrierColor: colorTokens.containerL1.withOpacity(0.8),
-                    );
-                  },
+                    ),
+                    onFieldSubmitted: (s) {
+                      showArDriveDialog(
+                        context,
+                        content: FileSearchModal(
+                          initialQuery: s,
+                          driveDetailCubit: context.read<DriveDetailCubit>(),
+                        ),
+                        // blur effect
+                        barrierColor: colorTokens.containerL1.withOpacity(0.8),
+                      );
+                    },
+                  ),
                 ),
               ),
               const SizedBox(width: 24),
             ],
+            const Spacer(),
             const SyncButton(),
             const SizedBox(width: 24),
             const RedeemButton(),
