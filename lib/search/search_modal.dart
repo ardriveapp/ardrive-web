@@ -245,12 +245,10 @@ class _FileSearchModalState extends State<_FileSearchModal> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (searchResult.result is FileEntry ||
-            searchResult.result is FolderEntry)
-          ArDriveIconButton(
-            icon: ArDriveIcons.arrowRightOutline(color: colorTokens.iconHigh),
-            onPressed: () => _handleTap(context, searchResult),
-          ),
+        ArDriveIconButton(
+          icon: ArDriveIcons.arrowRightOutline(color: colorTokens.iconHigh),
+          onPressed: () => _handleNavigation(context, searchResult),
+        ),
         const SizedBox(width: 8),
         if (searchResult.result is FileEntry)
           ArDriveIconButton(
@@ -291,6 +289,41 @@ class _FileSearchModalState extends State<_FileSearchModal> {
           ),
       ],
     );
+  }
+
+  void _handleNavigation(BuildContext context, SearchResult searchResult) {
+    if (searchResult.result is FileEntry) {
+      final file = DriveDataTableItemMapper.fromFileEntryForSearchModal(
+        searchResult.result as FileEntry,
+      );
+      Future.delayed(const Duration(milliseconds: 300)).then((value) async {
+        widget.driveDetailCubit.openFolder(
+          otherDriveId: file.driveId,
+          folderId: file.parentFolderId,
+        );
+        Future.delayed(const Duration(milliseconds: 500)).then(
+          (value) {
+            widget.driveDetailCubit.selectDataItem(
+              file,
+              openSelectedPage: true,
+            );
+            Navigator.of(context).pop();
+          },
+        );
+      });
+    } else if (searchResult.result is FolderEntry) {
+      context.read<DrivesCubit>().selectDrive(searchResult.drive.id);
+      widget.driveDetailCubit.openFolder(
+        otherDriveId: searchResult.folder!.driveId,
+        folderId: (searchResult.result as FolderEntry).id,
+      );
+      Navigator.of(context).pop();
+    } else if (searchResult.result is Drive) {
+      context
+          .read<DrivesCubit>()
+          .selectDrive((searchResult.result as Drive).id);
+      Navigator.of(context).pop();
+    }
   }
 
   void _handleTap(BuildContext context, SearchResult searchResult) {
