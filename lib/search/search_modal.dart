@@ -22,10 +22,12 @@ class FileSearchModal extends StatelessWidget {
     super.key,
     required this.driveDetailCubit,
     this.initialQuery,
+    this.onSearch,
   });
 
   final DriveDetailCubit driveDetailCubit;
   final String? initialQuery;
+  final Function(String)? onSearch;
 
   @override
   Widget build(BuildContext context) {
@@ -41,16 +43,24 @@ class FileSearchModal extends StatelessWidget {
         ),
       ],
       child: _FileSearchModal(
-          driveDetailCubit: driveDetailCubit, initialQuery: initialQuery),
+        driveDetailCubit: driveDetailCubit,
+        initialQuery: initialQuery,
+        onSearch: onSearch,
+      ),
     );
   }
 }
 
 class _FileSearchModal extends StatefulWidget {
-  const _FileSearchModal({required this.driveDetailCubit, this.initialQuery});
+  const _FileSearchModal({
+    required this.driveDetailCubit,
+    this.initialQuery,
+    this.onSearch,
+  });
 
   final String? initialQuery;
   final DriveDetailCubit driveDetailCubit;
+  final Function(String)? onSearch;
 
   @override
   _FileSearchModalState createState() => _FileSearchModalState();
@@ -64,7 +74,10 @@ class _FileSearchModalState extends State<_FileSearchModal> {
     super.initState();
     if (widget.initialQuery != null) {
       controller.text = widget.initialQuery!;
-      controller.addListener(() => debounceSearch(controller.text));
+      controller.addListener(() {
+        widget.onSearch?.call(controller.text);
+        debounceSearch(controller.text);
+      });
     }
   }
 

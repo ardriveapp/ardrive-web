@@ -22,6 +22,7 @@ class AppTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final enableSearch = context.read<ConfigService>().config.enableSearch;
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final controller = TextEditingController();
 
     return SizedBox(
       height: 110,
@@ -37,13 +38,16 @@ class AppTopBar extends StatelessWidget {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 400),
                   child: SearchTextField(
-                    controller: TextEditingController(),
+                    controller: controller,
                     onFieldSubmitted: (query) {
                       showArDriveDialog(
                         context,
                         content: FileSearchModal(
                           initialQuery: query,
                           driveDetailCubit: context.read<DriveDetailCubit>(),
+                          onSearch: (query) {
+                            controller.text = query;
+                          },
                         ),
                         barrierColor: colorTokens.containerL1.withOpacity(0.8),
                       );
