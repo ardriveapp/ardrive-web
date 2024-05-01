@@ -10,6 +10,7 @@ class SearchTextField extends StatelessWidget {
 
   final TextEditingController controller;
   final Function(String text) onFieldSubmitted;
+
   @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
@@ -24,6 +25,22 @@ class SearchTextField extends StatelessWidget {
           Icons.search,
           size: 20,
           color: colorTokens.textMid,
+        ),
+      ),
+      suffixIcon: Transform(
+        // move 4 pixels bottom
+        transform: Matrix4.translationValues(0.0, 4.0, 0.0),
+        child: ArDriveClickArea(
+          child: GestureDetector(
+            child: Icon(
+              Icons.close,
+              size: 20,
+              color: colorTokens.textMid,
+            ),
+            onTap: () {
+              controller.clear();
+            },
+          ),
         ),
       ),
       hintStyle: typography.paragraphNormal(
