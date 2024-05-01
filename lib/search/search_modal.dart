@@ -121,13 +121,16 @@ class _FileSearchModalState extends State<_FileSearchModal> {
       child: BlocBuilder<SearchBloc, SearchState>(
         builder: (context, state) {
           if (state is SearchSuccess) {
-            return ListView.builder(
-              itemCount: state.results.length,
-              itemBuilder: (_, index) => _buildSearchResultItem(
-                context,
-                state.results[index],
-                typography,
-                colorTokens,
+            return ArDriveScrollBar(
+              alwaysVisible: true,
+              child: ListView.builder(
+                itemCount: state.results.length,
+                itemBuilder: (_, index) => _buildSearchResultItem(
+                  context,
+                  state.results[index],
+                  typography,
+                  colorTokens,
+                ),
               ),
             );
           } else if (state is SearchQueryEmpty) {
