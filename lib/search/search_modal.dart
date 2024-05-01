@@ -302,24 +302,7 @@ class _FileSearchModalState extends State<_FileSearchModal> {
 
   void _handleNavigation(BuildContext context, SearchResult searchResult) {
     if (searchResult.result is FileEntry) {
-      final file = DriveDataTableItemMapper.fromFileEntryForSearchModal(
-        searchResult.result as FileEntry,
-      );
-      Future.delayed(const Duration(milliseconds: 300)).then((value) async {
-        widget.driveDetailCubit.openFolder(
-          otherDriveId: file.driveId,
-          folderId: file.parentFolderId,
-        );
-        Future.delayed(const Duration(milliseconds: 500)).then(
-          (value) {
-            widget.driveDetailCubit.selectDataItem(
-              file,
-              openSelectedPage: true,
-            );
-            Navigator.of(context).pop();
-          },
-        );
-      });
+      _navigateToFile(context, searchResult.result as FileEntry);
     } else if (searchResult.result is FolderEntry) {
       context.read<DrivesCubit>().selectDrive(searchResult.drive.id);
       widget.driveDetailCubit.openFolder(
@@ -333,5 +316,31 @@ class _FileSearchModalState extends State<_FileSearchModal> {
           .selectDrive((searchResult.result as Drive).id);
       Navigator.of(context).pop();
     }
+  }
+
+  Future<void> _navigateToFile(
+    BuildContext context,
+    FileEntry result,
+  ) async {
+    final file = DriveDataTableItemMapper.fromFileEntryForSearchModal(
+      result,
+    );
+
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    widget.driveDetailCubit.openFolder(
+      otherDriveId: file.driveId,
+      folderId: file.parentFolderId,
+    );
+
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    widget.driveDetailCubit.selectDataItem(
+      file,
+      openSelectedPage: true,
+    );
+
+    // ignore: use_build_context_synchronously
+    Navigator.of(context).pop();
   }
 }
