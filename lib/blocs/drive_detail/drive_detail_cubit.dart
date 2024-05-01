@@ -306,11 +306,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     var state = this.state as DriveDetailLoadSuccess;
 
     if (state.currentDrive.isPublic && item is FileDataTableItem) {
-      final fileWithRevisions = _driveDao.latestFileRevisionByFileId(
-        driveId: driveId,
-        fileId: item.id,
-      );
-      final dataTxId = (await fileWithRevisions.getSingle()).dataTxId;
+      final dataTxId = item.dataTxId;
       state = state.copyWith(
           selectedFilePreviewUrl:
               '${_configService.config.defaultArweaveGatewayUrl}/$dataTxId');

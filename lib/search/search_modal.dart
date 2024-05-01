@@ -117,13 +117,16 @@ class _FileSearchModalState extends State<_FileSearchModal> {
     ArdriveTypographyNew typography,
     ArDriveColorTokens colorTokens,
   ) {
+    final scrollController = ScrollController();
     return Expanded(
       child: BlocBuilder<SearchBloc, SearchState>(
         builder: (context, state) {
           if (state is SearchSuccess) {
             return ArDriveScrollBar(
+              controller: scrollController,
               alwaysVisible: true,
               child: ListView.builder(
+                controller: scrollController,
                 itemCount: state.results.length,
                 itemBuilder: (_, index) => _buildSearchResultItem(
                   context,
