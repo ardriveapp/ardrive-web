@@ -139,17 +139,23 @@ class _FileSearchModalState extends State<_FileSearchModal> {
           } else if (state is SearchQueryEmpty) {
             return Center(
               child: Text(
-                'Please search for files',
-                style: typography.paragraphNormal(
+                'Nothing here yet! Start by searching for a file name, folder, or drive above.',
+                style: typography.paragraphXLarge(
                   color: colorTokens.textHigh,
+                  fontWeight: ArFontWeight.semiBold,
                 ),
+                textAlign: TextAlign.center,
               ),
             );
           }
           return Center(
             child: Text(
-              'No results found. Please try again.',
-              style: typography.paragraphNormal(),
+              'We couldn\'t find any files, folders, or drives matching your search. Please check your spelling or try searching with a different keyword.',
+              style: typography.paragraphXLarge(
+                fontWeight: ArFontWeight.semiBold,
+                color: colorTokens.textHigh,
+              ),
+              textAlign: TextAlign.center,
             ),
           );
         },
@@ -172,7 +178,7 @@ class _FileSearchModalState extends State<_FileSearchModal> {
       hoverScale: 1,
       child: ArDriveClickArea(
         child: ListTile(
-          onTap: () => _handleTap(context, searchResult),
+          onTap: () => _handleNavigation(context, searchResult),
           leading: leadingIcon,
           title: Row(
             mainAxisSize: MainAxisSize.min,
@@ -314,28 +320,6 @@ class _FileSearchModalState extends State<_FileSearchModal> {
           },
         );
       });
-    } else if (searchResult.result is FolderEntry) {
-      context.read<DrivesCubit>().selectDrive(searchResult.drive.id);
-      widget.driveDetailCubit.openFolder(
-        otherDriveId: searchResult.folder!.driveId,
-        folderId: (searchResult.result as FolderEntry).id,
-      );
-      Navigator.of(context).pop();
-    } else if (searchResult.result is Drive) {
-      context
-          .read<DrivesCubit>()
-          .selectDrive((searchResult.result as Drive).id);
-      Navigator.of(context).pop();
-    }
-  }
-
-  void _handleTap(BuildContext context, SearchResult searchResult) {
-    if (searchResult.result is FileEntry) {
-      promptToDownloadProfileFile(
-        context: context,
-        file: DriveDataTableItemMapper.fromFileEntryForSearchModal(
-            searchResult.result as FileEntry),
-      );
     } else if (searchResult.result is FolderEntry) {
       context.read<DrivesCubit>().selectDrive(searchResult.drive.id);
       widget.driveDetailCubit.openFolder(
