@@ -159,11 +159,7 @@ class _FileSearchModalState extends State<_FileSearchModal> {
   ) {
     final name = _resolveName(searchResult.result);
     final isHidden = _isHidden(searchResult.result);
-    final leadingIcon = _getLeadingIcon(
-      searchResult.result,
-      colorTokens,
-      isHidden,
-    );
+    final leadingIcon = _getLeadingIcon(searchResult.result, colorTokens);
     final trailingIcons = _getTrailingIcons(context, searchResult, colorTokens);
 
     return HoverWidget(
@@ -178,7 +174,7 @@ class _FileSearchModalState extends State<_FileSearchModal> {
               Text(
                 name,
                 style: typography.paragraphXLarge(
-                  color: isHidden ? colorTokens.textXLow : colorTokens.textHigh,
+                  color: colorTokens.textHigh,
                   fontWeight: ArFontWeight.bold,
                 ),
               ),
@@ -186,19 +182,13 @@ class _FileSearchModalState extends State<_FileSearchModal> {
                 Padding(
                   padding: const EdgeInsets.only(left: 8),
                   child: ArDriveIcons.eyeClosed(
-                    color: colorTokens.textXLow,
                     size: 20,
                   ),
                 ),
             ],
           ),
           trailing: trailingIcons,
-          subtitle: _buildSubtitle(
-            searchResult,
-            typography,
-            colorTokens,
-            isHidden,
-          ),
+          subtitle: _buildSubtitle(searchResult, typography, colorTokens),
         ),
       ),
     );
@@ -224,17 +214,16 @@ class _FileSearchModalState extends State<_FileSearchModal> {
   Widget _getLeadingIcon(
     dynamic result,
     ArDriveColorTokens colorTokens,
-    bool isHidden,
   ) {
     if (result is FileEntry) {
       return getIconForContentType(
         result.dataContentType ?? ContentType.octetStream,
         size: 24,
-        color: isHidden ? colorTokens.textXLow : colorTokens.textHigh,
+        color: colorTokens.textHigh,
       );
     } else if (result is FolderEntry) {
       return ArDriveIcons.folderOutline(
-        color: isHidden ? colorTokens.textXLow : colorTokens.textHigh,
+        color: colorTokens.textHigh,
       );
     } else if (result is Drive) {
       return result.privacy == DrivePrivacy.private.name
@@ -278,7 +267,6 @@ class _FileSearchModalState extends State<_FileSearchModal> {
     SearchResult searchResult,
     ArdriveTypographyNew typography,
     ArDriveColorTokens colorTokens,
-    bool isHidden,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,7 +274,7 @@ class _FileSearchModalState extends State<_FileSearchModal> {
         Text(
           'Drive: ${searchResult.drive.name}',
           style: typography.paragraphNormal(
-            color: isHidden ? colorTokens.textXLow : colorTokens.textLow,
+            color: colorTokens.textLow,
             fontWeight: ArFontWeight.semiBold,
           ),
         ),
@@ -294,7 +282,7 @@ class _FileSearchModalState extends State<_FileSearchModal> {
           Text(
             'Folder: ${searchResult.folder!.name}',
             style: typography.paragraphNormal(
-              color: isHidden ? colorTokens.textXLow : colorTokens.textLow,
+              color: colorTokens.textLow,
               fontWeight: ArFontWeight.semiBold,
             ),
           ),
