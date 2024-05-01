@@ -655,7 +655,40 @@ void main() {
             .thenAnswer((invocation) => Future.value(true));
         when(() => mockArConnectService.getWalletAddress())
             .thenAnswer((invocation) => Future.value('walletAddress'));
-        // new user
+        // new user but has public drives
+        when(() => mockArDriveAuth.isExistingUser(any()))
+            .thenAnswer((invocation) => Future.value(true));
+        when(() => mockArDriveAuth.userHasPassword(any()))
+            .thenAnswer((invocation) => Future.value(false));
+      },
+      act: (bloc) async {
+        bloc.add(const AddWalletFromArConnect());
+      },
+      expect: () => [
+        LoginLoading(),
+        predicate<CreateNewPassword>((cnp) {
+          return cnp.showWalletCreated == false &&
+              cnp.mnemonic == null &&
+              cnp.showTutorials == false;
+        })
+      ],
+    );
+
+    blocTest(
+      'should emit a state to create new password when user never logged on ardrive and show tutorials if user has no drives',
+      build: () {
+        return createBloc();
+      },
+      setUp: () {
+        when(() => mockArConnectService.connect())
+            .thenAnswer((invocation) => Future.value(null));
+        when(() => mockArConnectService.checkPermissions())
+            .thenAnswer((invocation) => Future.value(true));
+        when(() => mockArConnectService.getWalletAddress())
+            .thenAnswer((invocation) => Future.value('walletAddress'));
+        // new user and no drives
+        when(() => mockArDriveAuth.isExistingUser(any()))
+            .thenAnswer((invocation) => Future.value(false));
         when(() => mockArDriveAuth.userHasPassword(any()))
             .thenAnswer((invocation) => Future.value(false));
       },
