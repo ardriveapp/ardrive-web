@@ -434,74 +434,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     required String query,
     required SearchQueryType type,
   }) async {
-    if (type == SearchQueryType.uuid) {
-      final fileResults = await (select(fileEntries)
-            ..where((tbl) => tbl.id.equals(query)))
-          .get();
-      final folderResults = await (select(folderEntries)
-            ..where((tbl) => tbl.id.equals(query)))
-          .get();
-      final driveResults =
-          await (select(drives)..where((tbl) => tbl.id.equals(query))).get();
-
-      final List<SearchResult> results = [];
-
-      final fileSearchResults = await Future.wait(
-        fileResults.map(
-          (file) async {
-            final folder = await folderById(
-              driveId: file.driveId,
-              folderId: file.parentFolderId,
-            ).getSingle();
-
-            final drive = await driveById(driveId: file.driveId).getSingle();
-
-            return SearchResult<FileEntry>(
-              result: file,
-              folder: folder,
-              drive: drive,
-            );
-          },
-        ),
-      );
-
-      final folderSearchResults = await Future.wait(
-        folderResults.map(
-          (folder) async {
-            final parentFolder = await folderById(
-              driveId: folder.driveId,
-              folderId: folder.parentFolderId!,
-            ).getSingle();
-
-            final drive = await driveById(driveId: folder.driveId).getSingle();
-
-            return SearchResult<FolderEntry>(
-              result: folder,
-              folder: parentFolder,
-              drive: drive,
-            );
-          },
-        ),
-      );
-
-      final driveSearchResults = await Future.wait(
-        driveResults.map(
-          (drive) async {
-            return SearchResult<Drive>(
-              result: drive,
-              drive: await driveById(driveId: drive.id).getSingle(),
-            );
-          },
-        ),
-      );
-
-      results.addAll(driveSearchResults);
-      results.addAll(folderSearchResults);
-      results.addAll(fileSearchResults);
-
-      return results;
-    }
-
     final resultFiles = await (select(fileEntries)
           ..where((tbl) => tbl.name.like('%$query%')))
         .get();
@@ -724,4 +656,4 @@ class SearchResult<T> {
   });
 }
 
-enum SearchQueryType { uuid, name, txId }
+enum SearchQueryType { name }
