@@ -4,6 +4,7 @@ import 'package:ardrive/gift/reedem_button.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/search/search_modal.dart';
+import 'package:ardrive/search/search_text_field.dart';
 import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -35,25 +36,15 @@ class AppTopBar extends StatelessWidget {
               Expanded(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 400),
-                  child: ArDriveTextFieldNew(
-                    hintText: 'Search',
-                    suffixIcon: Transform(
-                      transform:
-                          // 4 pixels bottom padding
-                          Matrix4.translationValues(0.0, 4.0, 0.0),
-                      child: const Icon(
-                        Icons.search,
-                        size: 20,
-                      ),
-                    ),
-                    onFieldSubmitted: (s) {
+                  child: SearchTextField(
+                    controller: TextEditingController(),
+                    onFieldSubmitted: (query) {
                       showArDriveDialog(
                         context,
                         content: FileSearchModal(
-                          initialQuery: s,
+                          initialQuery: query,
                           driveDetailCubit: context.read<DriveDetailCubit>(),
                         ),
-                        // blur effect
                         barrierColor: colorTokens.containerL1.withOpacity(0.8),
                       );
                     },
