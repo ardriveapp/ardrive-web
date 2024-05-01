@@ -449,41 +449,48 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     final fileResults = await Future.wait(
       resultFiles.map(
         (file) async {
-          final folder = await folderById(
-            driveId: file.driveId,
-            folderId: file.parentFolderId,
-          ).getSingle();
-
           final drive = await driveById(driveId: file.driveId).getSingle();
+          FolderEntry? folder;
+
+          if (file.parentFolderId != drive.rootFolderId) {
+            folder = await folderById(
+              driveId: file.driveId,
+              folderId: file.parentFolderId,
+            ).getSingle();
+          }
 
           return SearchResult<FileEntry>(
             result: file,
-            folder: folder,
+            parentFolder: folder,
             drive: drive,
           );
         },
       ),
     );
 
-    final folderResults = await Future.wait(resultFolders.map((folder) async {
-      FolderEntry? parentFolder;
+    final folderResults = await Future.wait(
+      resultFolders.map(
+        (folder) async {
+          FolderEntry? parentFolder;
+          final drive = await driveById(driveId: folder.driveId).getSingle();
 
-      if (folder.parentFolderId != null) {
-        final parentFolderEntry = await folderById(
-          driveId: folder.driveId,
-          folderId: folder.parentFolderId!,
-        ).getSingle();
-        parentFolder = parentFolderEntry;
-      }
+          if (folder.parentFolderId != null &&
+              folder.parentFolderId! != drive.rootFolderId) {
+            final parentFolderEntry = await folderById(
+              driveId: folder.driveId,
+              folderId: folder.parentFolderId!,
+            ).getSingle();
+            parentFolder = parentFolderEntry;
+          }
 
-      final drive = await driveById(driveId: folder.driveId).getSingle();
-
-      return SearchResult<FolderEntry>(
-        result: folder,
-        folder: parentFolder,
-        drive: drive,
-      );
-    }));
+          return SearchResult<FolderEntry>(
+            result: folder,
+            parentFolder: parentFolder,
+            drive: drive,
+          );
+        },
+      ),
+    );
 
     final driveResults = await Future.wait(resultDrives.map((drive) async {
       return SearchResult<Drive>(
@@ -491,6 +498,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         drive: await driveById(driveId: drive.id).getSingle(),
       );
     }));
+
     results.addAll(driveResults);
     results.addAll(folderResults);
     results.addAll(fileResults);
@@ -646,13 +654,15 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
 class SearchResult<T> {
   final T result;
-  final FolderEntry? folder;
+  final FolderEntry? parentFolder;
   final Drive drive;
+  final bool? isRootFolder;
 
   SearchResult({
     required this.result,
-    this.folder,
+    this.parentFolder,
     required this.drive,
+    this.isRootFolder,
   });
 }
 

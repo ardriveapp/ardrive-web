@@ -288,9 +288,9 @@ class _FileSearchModalState extends State<_FileSearchModal> {
             fontWeight: ArFontWeight.semiBold,
           ),
         ),
-        if (searchResult.folder != null)
+        if (searchResult.parentFolder != null)
           Text(
-            'Folder: ${searchResult.folder!.name}',
+            'Folder: ${searchResult.parentFolder!.name}',
             style: typography.paragraphNormal(
               color: colorTokens.textLow,
               fontWeight: ArFontWeight.semiBold,
@@ -306,7 +306,7 @@ class _FileSearchModalState extends State<_FileSearchModal> {
     } else if (searchResult.result is FolderEntry) {
       context.read<DrivesCubit>().selectDrive(searchResult.drive.id);
       widget.driveDetailCubit.openFolder(
-        otherDriveId: searchResult.folder!.driveId,
+        otherDriveId: searchResult.parentFolder!.driveId,
         folderId: (searchResult.result as FolderEntry).id,
       );
       Navigator.of(context).pop();
