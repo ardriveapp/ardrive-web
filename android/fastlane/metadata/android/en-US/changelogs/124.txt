@@ -1,1 +1,2 @@
-- Introduced Search: Quickly locate files, navigate through folders and drives.
+- Fixes an issue where the tutorial is incorrectly displayed for users with existing public drives when logging in via ArConnect.
+- Fixes a login failure issue that occurred when switching wallets on the login page.

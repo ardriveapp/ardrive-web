@@ -4,6 +4,7 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/search/search_result.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -651,19 +652,3 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     });
   }
 }
-
-class SearchResult<T> {
-  final T result;
-  final FolderEntry? parentFolder;
-  final Drive drive;
-  final bool? isRootFolder;
-
-  SearchResult({
-    required this.result,
-    this.parentFolder,
-    required this.drive,
-    this.isRootFolder,
-  });
-}
-
-enum SearchQueryType { name }

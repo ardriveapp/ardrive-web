@@ -9,6 +9,7 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/search/domain/bloc/search_bloc.dart';
 import 'package:ardrive/search/domain/repository/search_repository.dart';
+import 'package:ardrive/search/search_result.dart';
 import 'package:ardrive/search/search_text_field.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -22,12 +23,12 @@ class FileSearchModal extends StatelessWidget {
     super.key,
     required this.driveDetailCubit,
     this.initialQuery,
-    this.onSearch,
+    required this.controller,
   });
 
   final DriveDetailCubit driveDetailCubit;
   final String? initialQuery;
-  final Function(String)? onSearch;
+  final TextEditingController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +46,7 @@ class FileSearchModal extends StatelessWidget {
       child: _FileSearchModal(
         driveDetailCubit: driveDetailCubit,
         initialQuery: initialQuery,
-        onSearch: onSearch,
+        controller: controller,
       ),
     );
   }
@@ -55,30 +56,28 @@ class _FileSearchModal extends StatefulWidget {
   const _FileSearchModal({
     required this.driveDetailCubit,
     this.initialQuery,
-    this.onSearch,
+    required this.controller,
   });
 
   final String? initialQuery;
   final DriveDetailCubit driveDetailCubit;
-  final Function(String)? onSearch;
+  final TextEditingController controller;
 
   @override
   _FileSearchModalState createState() => _FileSearchModalState();
 }
 
 class _FileSearchModalState extends State<_FileSearchModal> {
-  final TextEditingController controller = TextEditingController();
-
   @override
   void initState() {
     super.initState();
-    if (widget.initialQuery != null) {
-      controller.text = widget.initialQuery!;
-      controller.addListener(() {
-        widget.onSearch?.call(controller.text);
-        debounceSearch(controller.text);
-      });
+    if (widget.controller.text.isNotEmpty) {
+      searchFiles(widget.controller.text);
     }
+
+    widget.controller.addListener(() {
+      debounceSearch(widget.controller.text);
+    });
   }
 
   void debounceSearch(String query) {
@@ -103,8 +102,8 @@ class _FileSearchModalState extends State<_FileSearchModal> {
             _buildSearchHeader(typography, colorTokens),
             const SizedBox(height: 16),
             SearchTextField(
-              controller: controller,
-              onFieldSubmitted: (_) => searchFiles(controller.text),
+              controller: widget.controller,
+              onFieldSubmitted: (_) => searchFiles(widget.controller.text),
             ),
             const SizedBox(height: 16),
             _buildSearchResults(context, typography, colorTokens),
@@ -319,18 +318,14 @@ class _FileSearchModalState extends State<_FileSearchModal> {
     } else if (searchResult.result is FolderEntry) {
       context.read<DrivesCubit>().selectDrive(searchResult.drive.id);
 
-      /// means - we are in the root folder
-      if (searchResult.parentFolder == null) {
-        widget.driveDetailCubit.openFolder(
-          otherDriveId: searchResult.drive.id,
-          folderId: searchResult.result.id,
-        );
-      } else {
-        widget.driveDetailCubit.openFolder(
-          otherDriveId: searchResult.parentFolder!.driveId,
-          folderId: searchResult.result.id,
-        );
-      }
+      final otherDriveId = (searchResult.parentFolder == null)
+          ? searchResult.drive.id
+          : searchResult.parentFolder!.driveId;
+
+      widget.driveDetailCubit.openFolder(
+        otherDriveId: otherDriveId,
+        folderId: searchResult.result.id,
+      );
 
       Navigator.of(context).pop();
     } else if (searchResult.result is Drive) {

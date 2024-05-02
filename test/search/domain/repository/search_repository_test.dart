@@ -1,5 +1,6 @@
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/search/domain/repository/search_repository.dart';
+import 'package:ardrive/search/search_result.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
