@@ -1,1 +1,1 @@
-- Introduced Search: Quickly locate files, navigate through folders and drives.
+- New Feature: Search (for quickly locating files and navigating through folders and drives)
