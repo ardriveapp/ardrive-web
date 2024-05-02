@@ -4,6 +4,7 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/search/search_result.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -430,16 +431,18 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     });
   }
 
-  Future<List<SearchResult>> searchFiles(String name) async {
-    final resultFiles = await (select(fileRevisions)
-          ..where((tbl) => tbl.name.like('%$name%')))
+  Future<List<SearchResult>> search({
+    required String query,
+    required SearchQueryType type,
+  }) async {
+    final resultFiles = await (select(fileEntries)
+          ..where((tbl) => tbl.name.like('%$query%')))
         .get();
-    final resultFolders = await (select(folderRevisions)
-          ..where((tbl) => tbl.name.like('%$name%')))
+    final resultFolders = await (select(folderEntries)
+          ..where((tbl) => tbl.name.like('%$query%')))
         .get();
-    final resultDrives = await (select(driveRevisions)
-          ..where((tbl) => tbl.name.like('%$name%')))
-        .get();
+    final resultDrives =
+        await (select(drives)..where((tbl) => tbl.name.like('%$query%'))).get();
 
     resultFolders.removeWhere((element) => element.parentFolderId == null);
 
@@ -447,48 +450,56 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     final fileResults = await Future.wait(
       resultFiles.map(
         (file) async {
-          final folder = await folderById(
-            driveId: file.driveId,
-            folderId: file.parentFolderId,
-          ).getSingle();
-
           final drive = await driveById(driveId: file.driveId).getSingle();
+          FolderEntry? folder;
 
-          return SearchResult<FileRevision>(
+          if (file.parentFolderId != drive.rootFolderId) {
+            folder = await folderById(
+              driveId: file.driveId,
+              folderId: file.parentFolderId,
+            ).getSingle();
+          }
+
+          return SearchResult<FileEntry>(
             result: file,
-            folder: folder,
+            parentFolder: folder,
             drive: drive,
           );
         },
       ),
     );
 
-    final folderResults = await Future.wait(resultFolders.map((folder) async {
-      FolderEntry? parentFolder;
+    final folderResults = await Future.wait(
+      resultFolders.map(
+        (folder) async {
+          FolderEntry? parentFolder;
+          final drive = await driveById(driveId: folder.driveId).getSingle();
 
-      if (folder.parentFolderId != null) {
-        final parentFolderEntry = await folderById(
-          driveId: folder.driveId,
-          folderId: folder.parentFolderId!,
-        ).getSingle();
-        parentFolder = parentFolderEntry;
-      }
+          if (folder.parentFolderId != null &&
+              folder.parentFolderId! != drive.rootFolderId) {
+            final parentFolderEntry = await folderById(
+              driveId: folder.driveId,
+              folderId: folder.parentFolderId!,
+            ).getSingle();
+            parentFolder = parentFolderEntry;
+          }
 
-      final drive = await driveById(driveId: folder.driveId).getSingle();
-
-      return SearchResult<FolderRevision>(
-        result: folder,
-        folder: parentFolder,
-        drive: drive,
-      );
-    }));
+          return SearchResult<FolderEntry>(
+            result: folder,
+            parentFolder: parentFolder,
+            drive: drive,
+          );
+        },
+      ),
+    );
 
     final driveResults = await Future.wait(resultDrives.map((drive) async {
-      return SearchResult<DriveRevision>(
+      return SearchResult<Drive>(
         result: drive,
-        drive: await driveById(driveId: drive.driveId).getSingle(),
+        drive: await driveById(driveId: drive.id).getSingle(),
       );
     }));
+
     results.addAll(driveResults);
     results.addAll(folderResults);
     results.addAll(fileResults);
@@ -640,16 +651,4 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       await delete(networkTransactions).go();
     });
   }
-}
-
-class SearchResult<T> {
-  final T result;
-  final FolderEntry? folder;
-  final Drive drive;
-
-  SearchResult({
-    required this.result,
-    this.folder,
-    required this.drive,
-  });
 }

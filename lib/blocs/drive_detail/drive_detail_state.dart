@@ -132,6 +132,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         multiselect,
         forceRebuildKey,
         selectedItem,
+        selectedPage,
       ];
   SelectedItem? maybeSelectedItem() =>
       selectedItems.isNotEmpty ? selectedItems.first : null;

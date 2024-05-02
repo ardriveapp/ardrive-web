@@ -4,6 +4,7 @@ import 'package:ardrive/gift/reedem_button.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/search/search_modal.dart';
+import 'package:ardrive/search/search_text_field.dart';
 import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -21,6 +22,7 @@ class AppTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final enableSearch = context.read<ConfigService>().config.enableSearch;
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final controller = TextEditingController();
 
     return SizedBox(
       height: 110,
@@ -32,25 +34,28 @@ class AppTopBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             if (enableSearch) ...[
-              Flexible(
-                child: ArDriveTextFieldNew(
-                  hintText: 'Search',
-                  suffixIcon: const Icon(Icons.search),
-                  onFieldSubmitted: (s) {
-                    showArDriveDialog(
-                      context,
-                      content: FileSearchModal(
-                        initialQuery: s,
-                        driveDetailCubit: context.read<DriveDetailCubit>(),
-                      ),
-                      // blur effect
-                      barrierColor: colorTokens.containerL1.withOpacity(0.8),
-                    );
-                  },
+              Expanded(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  child: SearchTextField(
+                    controller: controller,
+                    onFieldSubmitted: (query) {
+                      showArDriveDialog(
+                        context,
+                        content: FileSearchModal(
+                          initialQuery: query,
+                          driveDetailCubit: context.read<DriveDetailCubit>(),
+                          controller: controller,
+                        ),
+                        barrierColor: colorTokens.containerL1.withOpacity(0.8),
+                      );
+                    },
+                  ),
                 ),
               ),
               const SizedBox(width: 24),
             ],
+            const Spacer(),
             const SyncButton(),
             const SizedBox(width: 24),
             const RedeemButton(),
