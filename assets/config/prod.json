@@ -13,5 +13,5 @@
   "enablePins": true,
   "useNewUploader": true,
   "enableMetamaskLogin": true,
-  "enableSearch": false
+  "enableSearch": true
 }
