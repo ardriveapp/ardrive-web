@@ -9,6 +9,7 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/search/domain/bloc/search_bloc.dart';
 import 'package:ardrive/search/domain/repository/search_repository.dart';
+import 'package:ardrive/search/search_result.dart';
 import 'package:ardrive/search/search_text_field.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';

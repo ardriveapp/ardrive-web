@@ -1,4 +1,5 @@
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
+import 'package:ardrive/search/search_result.dart';
 
 abstract class SearchRepository {
   Future<List<SearchResult>> search(String query);
