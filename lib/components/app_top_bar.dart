@@ -45,9 +45,7 @@ class AppTopBar extends StatelessWidget {
                         content: FileSearchModal(
                           initialQuery: query,
                           driveDetailCubit: context.read<DriveDetailCubit>(),
-                          onSearch: (query) {
-                            controller.text = query;
-                          },
+                          controller: controller,
                         ),
                         barrierColor: colorTokens.containerL1.withOpacity(0.8),
                       );

@@ -23,12 +23,12 @@ class FileSearchModal extends StatelessWidget {
     super.key,
     required this.driveDetailCubit,
     this.initialQuery,
-    this.onSearch,
+    required this.controller,
   });
 
   final DriveDetailCubit driveDetailCubit;
   final String? initialQuery;
-  final Function(String)? onSearch;
+  final TextEditingController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +46,7 @@ class FileSearchModal extends StatelessWidget {
       child: _FileSearchModal(
         driveDetailCubit: driveDetailCubit,
         initialQuery: initialQuery,
-        onSearch: onSearch,
+        controller: controller,
       ),
     );
   }
@@ -56,30 +56,28 @@ class _FileSearchModal extends StatefulWidget {
   const _FileSearchModal({
     required this.driveDetailCubit,
     this.initialQuery,
-    this.onSearch,
+    required this.controller,
   });
 
   final String? initialQuery;
   final DriveDetailCubit driveDetailCubit;
-  final Function(String)? onSearch;
+  final TextEditingController controller;
 
   @override
   _FileSearchModalState createState() => _FileSearchModalState();
 }
 
 class _FileSearchModalState extends State<_FileSearchModal> {
-  final TextEditingController controller = TextEditingController();
-
   @override
   void initState() {
     super.initState();
-    if (widget.initialQuery != null) {
-      controller.text = widget.initialQuery!;
-      controller.addListener(() {
-        widget.onSearch?.call(controller.text);
-        debounceSearch(controller.text);
-      });
+    if (widget.controller.text.isNotEmpty) {
+      searchFiles(widget.controller.text);
     }
+
+    widget.controller.addListener(() {
+      debounceSearch(widget.controller.text);
+    });
   }
 
   void debounceSearch(String query) {
@@ -104,8 +102,8 @@ class _FileSearchModalState extends State<_FileSearchModal> {
             _buildSearchHeader(typography, colorTokens),
             const SizedBox(height: 16),
             SearchTextField(
-              controller: controller,
-              onFieldSubmitted: (_) => searchFiles(controller.text),
+              controller: widget.controller,
+              onFieldSubmitted: (_) => searchFiles(widget.controller.text),
             ),
             const SizedBox(height: 16),
             _buildSearchResults(context, typography, colorTokens),
@@ -323,7 +321,7 @@ class _FileSearchModalState extends State<_FileSearchModal> {
       final otherDriveId = (searchResult.parentFolder == null)
           ? searchResult.drive.id
           : searchResult.parentFolder!.driveId;
-          
+
       widget.driveDetailCubit.openFolder(
         otherDriveId: otherDriveId,
         folderId: searchResult.result.id,
