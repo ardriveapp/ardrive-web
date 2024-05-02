@@ -200,7 +200,6 @@ Widget _buildDataListContent(
           !context.watch<ActivityTracker>().isMultiSelectEnabled,
       rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
       maxItemsPerPage: 100,
-      
       pageItemsDivisorFactor: 25,
       onSelectedRows: (boxes) {
         final bloc = context.read<DriveDetailCubit>();
@@ -405,6 +404,32 @@ class DriveDataTableItemMapper {
       index: index,
       pinnedDataOwnerAddress: file.pinnedDataOwnerAddress,
       isHidden: file.isHidden,
+    );
+  }
+
+  static FileDataTableItem fromFileEntryForSearchModal(
+    FileEntry fileEntry,
+  ) {
+    return FileDataTableItem(
+      isOwner: true,
+      lastModifiedDate: fileEntry.lastModifiedDate,
+      name: fileEntry.name,
+      size: fileEntry.size,
+      lastUpdated: fileEntry.lastUpdated,
+      dateCreated: fileEntry.dateCreated,
+      contentType: fileEntry.dataContentType ?? '',
+      fileStatusFromTransactions: null,
+      fileId: fileEntry.id,
+      driveId: fileEntry.driveId,
+      parentFolderId: fileEntry.parentFolderId,
+      dataTxId: fileEntry.dataTxId,
+      bundledIn: fileEntry.bundledIn,
+      licenseTxId: fileEntry.licenseTxId,
+      metadataTx: null,
+      dataTx: null,
+      index: 0,
+      pinnedDataOwnerAddress: fileEntry.pinnedDataOwnerAddress,
+      isHidden: fileEntry.isHidden,
     );
   }
 

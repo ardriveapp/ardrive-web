@@ -228,7 +228,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 pathSegments: pathSegments,
                 driveIsEmpty: folderContents.files.isEmpty &&
                     folderContents.subfolders.isEmpty,
-                
               ),
             );
           } else {
@@ -307,11 +306,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     var state = this.state as DriveDetailLoadSuccess;
 
     if (state.currentDrive.isPublic && item is FileDataTableItem) {
-      final fileWithRevisions = _driveDao.latestFileRevisionByFileId(
-        driveId: driveId,
-        fileId: item.id,
-      );
-      final dataTxId = (await fileWithRevisions.getSingle()).dataTxId;
+      final dataTxId = item.dataTxId;
       state = state.copyWith(
           selectedFilePreviewUrl:
               '${_configService.config.defaultArweaveGatewayUrl}/$dataTxId');
@@ -326,10 +321,14 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           state.currentFolderContents.indexOf(item) ~/ state.rowsPerPage;
     }
 
-    emit(state.copyWith(
+    emit(
+      state.copyWith(
         selectedItem: item,
         showSelectedItemDetails: true,
-        selectedPage: selectedPage));
+        selectedPage: selectedPage,
+        forceRebuildKey: selectedPage != null ? UniqueKey() : null,
+      ),
+    );
   }
 
   ArDriveDataTableItem? _selectedItem;

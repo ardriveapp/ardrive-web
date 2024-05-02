@@ -188,6 +188,7 @@ class ArDriveTextFieldNew extends StatefulWidget {
     this.isEnabled = true,
     this.asyncValidator,
     this.hintText,
+    this.hintStyle,
     this.onChanged,
     this.obscureText = false,
     this.autofillHints,
@@ -216,6 +217,7 @@ class ArDriveTextFieldNew extends StatefulWidget {
     this.minLines = 1,
     this.maxLines = 1,
     this.errorMessage,
+    this.prefixIcon,
   });
 
   final bool isEnabled;
@@ -223,6 +225,7 @@ class ArDriveTextFieldNew extends StatefulWidget {
   final String? Function(String?)? validator;
   final Function(String)? onChanged;
   final String? hintText;
+  final TextStyle? hintStyle;
   final bool obscureText;
   final List<String>? autofillHints;
   final AutovalidateMode? autovalidateMode;
@@ -249,6 +252,7 @@ class ArDriveTextFieldNew extends StatefulWidget {
   final int? minLines;
   final int? maxLines;
   final String? errorMessage;
+  final Widget? prefixIcon;
 
   @override
   State<ArDriveTextFieldNew> createState() => ArDriveTextFieldStateNew();
@@ -342,6 +346,7 @@ class ArDriveTextFieldStateNew extends State<ArDriveTextFieldNew> {
             enabled: widget.isEnabled,
             decoration: InputDecoration(
               prefix: widget.prefix,
+              prefixIcon: widget.prefixIcon,
               suffix: widget.showObfuscationToggle
                   ? GestureDetector(
                       onTap: () {
@@ -367,9 +372,10 @@ class ArDriveTextFieldStateNew extends State<ArDriveTextFieldNew> {
                   : widget.suffixIcon,
               errorStyle: const TextStyle(height: 0),
               hintText: widget.hintText,
-              hintStyle: typography.paragraphNormal(
-                  color: colorTokens.textXLow,
-                  fontWeight: ArFontWeight.semiBold),
+              hintStyle: widget.hintStyle ??
+                  typography.paragraphNormal(
+                      color: colorTokens.textXLow,
+                      fontWeight: ArFontWeight.semiBold),
               enabledBorder: _getEnabledBorder(colorTokens),
               focusedBorder: _getFocusedBoder(colorTokens),
               disabledBorder: _getDisabledBorder(colorTokens),
