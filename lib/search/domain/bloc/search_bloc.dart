@@ -1,4 +1,3 @@
-import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/search/domain/repository/search_repository.dart';
 import 'package:ardrive/search/search_result.dart';
 import 'package:equatable/equatable.dart';
