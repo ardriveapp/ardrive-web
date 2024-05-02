@@ -320,18 +320,14 @@ class _FileSearchModalState extends State<_FileSearchModal> {
     } else if (searchResult.result is FolderEntry) {
       context.read<DrivesCubit>().selectDrive(searchResult.drive.id);
 
-      /// means - we are in the root folder
-      if (searchResult.parentFolder == null) {
-        widget.driveDetailCubit.openFolder(
-          otherDriveId: searchResult.drive.id,
-          folderId: searchResult.result.id,
-        );
-      } else {
-        widget.driveDetailCubit.openFolder(
-          otherDriveId: searchResult.parentFolder!.driveId,
-          folderId: searchResult.result.id,
-        );
-      }
+      final otherDriveId = (searchResult.parentFolder == null)
+          ? searchResult.drive.id
+          : searchResult.parentFolder!.driveId;
+          
+      widget.driveDetailCubit.openFolder(
+        otherDriveId: otherDriveId,
+        folderId: searchResult.result.id,
+      );
 
       Navigator.of(context).pop();
     } else if (searchResult.result is Drive) {
