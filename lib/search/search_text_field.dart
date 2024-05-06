@@ -1,7 +1,7 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
-class SearchTextField extends StatelessWidget {
+class SearchTextField extends StatefulWidget {
   const SearchTextField({
     super.key,
     required this.controller,
@@ -12,12 +12,17 @@ class SearchTextField extends StatelessWidget {
   final Function(String text) onFieldSubmitted;
 
   @override
+  State<SearchTextField> createState() => _SearchTextFieldState();
+}
+
+class _SearchTextFieldState extends State<SearchTextField> {
+  @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return ArDriveTextFieldNew(
-      controller: controller,
+      controller: widget.controller,
       hintText: 'Search',
       prefixIcon: Padding(
         padding: const EdgeInsets.only(right: 8.0, left: 16),
@@ -38,14 +43,14 @@ class SearchTextField extends StatelessWidget {
               color: colorTokens.textMid,
             ),
             onTap: () {
-              controller.clear();
+              widget.controller.clear();
             },
           ),
         ),
       ),
       hintStyle: typography.paragraphNormal(
           color: colorTokens.textMid, fontWeight: ArFontWeight.semiBold),
-      onFieldSubmitted: onFieldSubmitted,
+      onFieldSubmitted: widget.onFieldSubmitted,
     );
   }
 }

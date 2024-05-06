@@ -21,6 +21,7 @@ class AppTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final enableSearch = context.read<ConfigService>().config.enableSearch;
     final controller = TextEditingController();
+    final typography = ArDriveTypographyNew.of(context);
 
     return SizedBox(
       height: 110,
@@ -29,7 +30,7 @@ class AppTopBar extends StatelessWidget {
         padding: const EdgeInsets.only(right: 24.0),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: MainAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
             if (enableSearch) ...[
               Expanded(
@@ -45,6 +46,23 @@ class AppTopBar extends StatelessWidget {
                       );
                     },
                   ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: ArDriveButtonNew(
+                  text: 'Search',
+                  isDisabled: false,
+                  typography: typography,
+                  onPressed: () {
+                    showSearchModalDesktop(
+                      context: context,
+                      driveDetailCubit: context.read<DriveDetailCubit>(),
+                      controller: controller,
+                    );
+                  },
+                  maxWidth: 100,
+                  variant: ButtonVariant.secondary,
                 ),
               ),
               const SizedBox(width: 24),
