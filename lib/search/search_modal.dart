@@ -140,7 +140,7 @@ class _FileSearchModalState extends State<_FileSearchModal> {
   }
 
   Future<void> searchFiles(String query) async {
-    if(mounted) {
+    if (mounted) {
       context.read<SearchBloc>().add(SearchQueryChanged(query));
     }
   }
@@ -430,7 +430,7 @@ class _FileSearchModalState extends State<_FileSearchModal> {
     }
   }
 
-Future<void> _navigateToFile(
+  Future<void> _navigateToFile(
     BuildContext context,
     FileEntry result,
   ) async {
