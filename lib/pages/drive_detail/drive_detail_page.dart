@@ -964,6 +964,12 @@ class MobileFolderNavigation extends StatelessWidget {
           Expanded(
             child: InkWell(
               onTap: () {
+                if (path.length == 1) {
+                  // If we are at the root folder, open the drive
+                  context.read<DriveDetailCubit>().openFolder();
+                  return;
+                }
+                
                 String? targetId;
 
                 if (path.isNotEmpty) {
