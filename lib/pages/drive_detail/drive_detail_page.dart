@@ -962,48 +962,52 @@ class MobileFolderNavigation extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
-            child: InkWell(
-              onTap: () {
-                if (path.length == 1) {
-                  // If we are at the root folder, open the drive
-                  context.read<DriveDetailCubit>().openFolder();
-                  return;
-                }
-                
-                String? targetId;
+            child: SizedBox(
+              height: 45,
+              child: InkWell(
+                onTap: () {
+                  if (path.length == 1) {
+                    // If we are at the root folder, open the drive
+                    context.read<DriveDetailCubit>().openFolder();
+                    return;
+                  }
+                  String? targetId;
 
-                if (path.isNotEmpty) {
-                  targetId = path.first.targetId;
-                }
+                  if (path.isNotEmpty) {
+                    targetId = path.first.targetId;
+                  }
 
-                context.read<DriveDetailCubit>().openFolder(folderId: targetId);
-              },
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  if (path.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        left: 16,
-                        right: 8,
-                        top: 4,
-                      ),
-                      child: ArDriveIcons.arrowLeft(),
-                    ),
-                  Expanded(
-                    child: Padding(
-                      padding: path.isEmpty
-                          ? const EdgeInsets.only(left: 16, top: 6, bottom: 6)
-                          : EdgeInsets.zero,
-                      child: Text(
-                        _pathToName(
-                          path.isEmpty ? driveName : path.last.text,
+                  context
+                      .read<DriveDetailCubit>()
+                      .openFolder(folderId: targetId);
+                },
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    if (path.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          left: 16,
+                          right: 8,
+                          top: 4,
                         ),
-                        style: ArDriveTypography.body.buttonNormalBold(),
+                        child: ArDriveIcons.arrowLeft(),
+                      ),
+                    Expanded(
+                      child: Padding(
+                        padding: path.isEmpty
+                            ? const EdgeInsets.only(left: 16, top: 6, bottom: 6)
+                            : EdgeInsets.zero,
+                        child: Text(
+                          _pathToName(
+                            path.isEmpty ? driveName : path.last.text,
+                          ),
+                          style: ArDriveTypography.body.buttonNormalBold(),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
