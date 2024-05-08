@@ -452,7 +452,7 @@ class UploadCubit extends Cubit<UploadState> {
 
     if (uploadAction == UploadActions.skip) {
       _removeFilesWithFileNameConflicts();
-    } else if (uploadAction == UploadActions.skipSuccessfullyUploads) {
+    } else if (uploadAction == UploadActions.skipSuccessfulUploads) {
       _removeSuccessfullyUploadedFiles();
     }
 
