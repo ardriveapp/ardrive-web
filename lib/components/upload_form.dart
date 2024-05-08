@@ -330,8 +330,7 @@ class _UploadFormState extends State<UploadForm> {
                     action: () => context
                         .read<UploadCubit>()
                         .prepareUploadPlanAndCostEstimates(
-                            uploadAction:
-                                UploadActions.skipSuccessfullyUploads),
+                            uploadAction: UploadActions.skipSuccessfulUploads),
                     title: 'Replace failed uploads',
                   ),
                 ],
