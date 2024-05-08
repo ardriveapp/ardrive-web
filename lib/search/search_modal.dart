@@ -11,12 +11,67 @@ import 'package:ardrive/search/domain/bloc/search_bloc.dart';
 import 'package:ardrive/search/domain/repository/search_repository.dart';
 import 'package:ardrive/search/search_result.dart';
 import 'package:ardrive/search/search_text_field.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 
 import '../models/models.dart';
+
+Future<void> showSearchModalBottomSheet({
+  required BuildContext context,
+  required DriveDetailCubit driveDetailCubit,
+  required TextEditingController controller,
+  String? query,
+}) {
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+  return showModalBottomSheet(
+    isScrollControlled: true,
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (_) => Container(
+      height: MediaQuery.of(context).size.height * 0.85,
+      decoration: BoxDecoration(
+        color: colorTokens.containerL2,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(6.0),
+          topRight: Radius.circular(6.0),
+        ),
+      ),
+      child: Padding(
+        padding: MediaQuery.of(context).viewInsets,
+        child: BlocProvider.value(
+          value: context.read<DriveDetailCubit>(),
+          child: FileSearchModal(
+            initialQuery: query,
+            driveDetailCubit: context.read<DriveDetailCubit>(),
+            controller: controller,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+Future<void> showSearchModalDesktop({
+  required BuildContext context,
+  required DriveDetailCubit driveDetailCubit,
+  required TextEditingController controller,
+  String? query,
+}) {
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+  return showArDriveDialog(
+    context,
+    content: FileSearchModal(
+      initialQuery: query,
+      driveDetailCubit: context.read<DriveDetailCubit>(),
+      controller: controller,
+    ),
+    barrierColor: colorTokens.containerL1.withOpacity(0.8),
+  );
+}
 
 class FileSearchModal extends StatelessWidget {
   const FileSearchModal({
@@ -85,32 +140,71 @@ class _FileSearchModalState extends State<_FileSearchModal> {
   }
 
   Future<void> searchFiles(String query) async {
-    context.read<SearchBloc>().add(SearchQueryChanged(query));
+    if (mounted) {
+      context.read<SearchBloc>().add(SearchQueryChanged(query));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    return ArDriveLoginModal(
-      width: MediaQuery.of(context).size.width * 0.6,
-      content: SizedBox(
-        height: MediaQuery.of(context).size.height * 0.7,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildSearchHeader(typography, colorTokens),
-            const SizedBox(height: 16),
-            SearchTextField(
-              controller: widget.controller,
-              onFieldSubmitted: (_) => searchFiles(widget.controller.text),
+    return ScreenTypeLayout.builder(mobile: (context) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            clipBehavior: Clip.hardEdge,
+            decoration: BoxDecoration(
+              color: colorTokens.containerRed,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(9),
+                topRight: Radius.circular(9),
+              ),
             ),
-            const SizedBox(height: 16),
-            _buildSearchResults(context, typography, colorTokens),
-          ],
+            height: 6,
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  _buildSearchHeader(typography, colorTokens),
+                  const SizedBox(height: 16),
+                  SearchTextField(
+                    controller: widget.controller,
+                    onFieldSubmitted: (_) =>
+                        searchFiles(widget.controller.text),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildSearchResults(context, typography, colorTokens),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }, desktop: (context) {
+      return ArDriveLoginModal(
+        width: MediaQuery.of(context).size.width * 0.6,
+        content: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.7,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildSearchHeader(typography, colorTokens),
+              const SizedBox(height: 16),
+              SearchTextField(
+                controller: widget.controller,
+                onFieldSubmitted: (_) => searchFiles(widget.controller.text),
+              ),
+              const SizedBox(height: 16),
+              _buildSearchResults(context, typography, colorTokens),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildSearchHeader(
@@ -192,8 +286,7 @@ class _FileSearchModalState extends State<_FileSearchModal> {
         child: ListTile(
           onTap: () => _handleNavigation(context, searchResult),
           leading: leadingIcon,
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
+          title: Wrap(
             children: [
               Text(
                 name,

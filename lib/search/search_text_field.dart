@@ -27,6 +27,9 @@ class SearchTextField extends StatelessWidget {
           color: colorTokens.textMid,
         ),
       ),
+      onTapOutside: (_) {
+        FocusScope.of(context).unfocus();
+      },
       suffixIcon: Transform(
         // move 4 pixels bottom
         transform: Matrix4.translationValues(0.0, 4.0, 0.0),

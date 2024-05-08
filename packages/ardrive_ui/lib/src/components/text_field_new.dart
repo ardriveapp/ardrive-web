@@ -218,6 +218,7 @@ class ArDriveTextFieldNew extends StatefulWidget {
     this.maxLines = 1,
     this.errorMessage,
     this.prefixIcon,
+    this.onTapOutside,
   });
 
   final bool isEnabled;
@@ -253,6 +254,7 @@ class ArDriveTextFieldNew extends StatefulWidget {
   final int? maxLines;
   final String? errorMessage;
   final Widget? prefixIcon;
+  final Function(PointerDownEvent)? onTapOutside;
 
   @override
   State<ArDriveTextFieldNew> createState() => ArDriveTextFieldStateNew();
@@ -307,6 +309,7 @@ class ArDriveTextFieldStateNew extends State<ArDriveTextFieldNew> {
               ),
             ),
           TextFormField(
+            onTapOutside: widget.onTapOutside,
             controller: controller,
             autocorrect: widget.autocorrect,
             autofocus: widget.autofocus,

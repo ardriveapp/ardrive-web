@@ -32,6 +32,8 @@ import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/file_icon.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/components/unpreviewable_content.dart';
+import 'package:ardrive/search/search_modal.dart';
+import 'package:ardrive/search/search_text_field.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sharing/sharing_file_listener.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
@@ -83,6 +85,7 @@ class DriveDetailPage extends StatefulWidget {
 class _DriveDetailPageState extends State<DriveDetailPage> {
   bool checkboxEnabled = false;
   final _scrollController = ScrollController();
+  final controller = TextEditingController();
 
   @override
   void initState() {
@@ -742,8 +745,47 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
       filteredItems = items.where((item) => item.isHidden == false).toList();
     }
 
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return Column(
       children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: SearchTextField(
+            controller: controller,
+            onFieldSubmitted: (query) {
+              if (query.isEmpty) {
+                return;
+              }
+
+              showModalBottomSheet(
+                isScrollControlled: true,
+                context: context,
+                backgroundColor: Colors.transparent,
+                builder: (_) => Container(
+                  height: MediaQuery.of(context).size.height * 0.85,
+                  decoration: BoxDecoration(
+                    color: colorTokens.containerL2,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(6.0),
+                      topRight: Radius.circular(6.0),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: MediaQuery.of(context).viewInsets,
+                    child: BlocProvider.value(
+                      value: context.read<DriveDetailCubit>(),
+                      child: FileSearchModal(
+                        initialQuery: query,
+                        driveDetailCubit: context.read<DriveDetailCubit>(),
+                        controller: controller,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
         Padding(
           padding: const EdgeInsets.only(top: 8),
           child: Row(
@@ -924,42 +966,52 @@ class MobileFolderNavigation extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
-            child: InkWell(
-              onTap: () {
-                String? targetId;
+            child: SizedBox(
+              height: 45,
+              child: InkWell(
+                onTap: () {
+                  if (path.length == 1) {
+                    // If we are at the root folder, open the drive
+                    context.read<DriveDetailCubit>().openFolder();
+                    return;
+                  }
+                  String? targetId;
 
-                if (path.isNotEmpty) {
-                  targetId = path.first.targetId;
-                }
+                  if (path.isNotEmpty) {
+                    targetId = path.first.targetId;
+                  }
 
-                context.read<DriveDetailCubit>().openFolder(folderId: targetId);
-              },
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  if (path.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        left: 16,
-                        right: 8,
-                        top: 4,
-                      ),
-                      child: ArDriveIcons.arrowLeft(),
-                    ),
-                  Expanded(
-                    child: Padding(
-                      padding: path.isEmpty
-                          ? const EdgeInsets.only(left: 16, top: 6, bottom: 6)
-                          : EdgeInsets.zero,
-                      child: Text(
-                        _pathToName(
-                          path.isEmpty ? driveName : path.last.text,
+                  context
+                      .read<DriveDetailCubit>()
+                      .openFolder(folderId: targetId);
+                },
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    if (path.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          left: 16,
+                          right: 8,
+                          top: 4,
                         ),
-                        style: ArDriveTypography.body.buttonNormalBold(),
+                        child: ArDriveIcons.arrowLeft(),
+                      ),
+                    Expanded(
+                      child: Padding(
+                        padding: path.isEmpty
+                            ? const EdgeInsets.only(left: 16, top: 6, bottom: 6)
+                            : EdgeInsets.zero,
+                        child: Text(
+                          _pathToName(
+                            path.isEmpty ? driveName : path.last.text,
+                          ),
+                          style: ArDriveTypography.body.buttonNormalBold(),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

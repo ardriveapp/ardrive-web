@@ -10,7 +10,6 @@ import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
-import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -21,7 +20,6 @@ class AppTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enableSearch = context.read<ConfigService>().config.enableSearch;
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final controller = TextEditingController();
 
     return SizedBox(
@@ -40,14 +38,10 @@ class AppTopBar extends StatelessWidget {
                   child: SearchTextField(
                     controller: controller,
                     onFieldSubmitted: (query) {
-                      showArDriveDialog(
-                        context,
-                        content: FileSearchModal(
-                          initialQuery: query,
-                          driveDetailCubit: context.read<DriveDetailCubit>(),
-                          controller: controller,
-                        ),
-                        barrierColor: colorTokens.containerL1.withOpacity(0.8),
+                      showSearchModalDesktop(
+                        context: context,
+                        driveDetailCubit: context.read<DriveDetailCubit>(),
+                        controller: controller,
                       );
                     },
                   ),
