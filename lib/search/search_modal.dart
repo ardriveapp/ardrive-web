@@ -286,8 +286,7 @@ class _FileSearchModalState extends State<_FileSearchModal> {
         child: ListTile(
           onTap: () => _handleNavigation(context, searchResult),
           leading: leadingIcon,
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
+          title: Wrap(
             children: [
               Text(
                 name,

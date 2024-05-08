@@ -753,6 +753,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           child: SearchTextField(
             controller: controller,
             onFieldSubmitted: (query) {
+              if (query.isEmpty) {
+                return;
+              }
+
               showModalBottomSheet(
                 isScrollControlled: true,
                 context: context,
