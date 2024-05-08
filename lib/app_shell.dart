@@ -223,20 +223,6 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Padding(
-              padding: const EdgeInsets.only(
-                left: 24.0,
-              ),
-              child: ArDriveImage(
-                image: AssetImage(
-                  isLightMode
-                      ? Resources.images.brand.blackLogo1
-                      : Resources.images.brand.whiteLogo1,
-                ),
-                width: 128,
-                height: 28,
-              ),
-            ),
-            Padding(
               padding: const EdgeInsets.only(left: 7.0),
               child: leading ??
                   (showDrawerButton
@@ -252,6 +238,21 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
                         )
                       : Container()),
             ),
+            if (!showDrawerButton)
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: 24.0,
+                ),
+                child: ArDriveImage(
+                  image: AssetImage(
+                    isLightMode
+                        ? Resources.images.brand.blackLogo1
+                        : Resources.images.brand.whiteLogo1,
+                  ),
+                  width: 128,
+                  height: 28,
+                ),
+              ),
             const Spacer(),
             const SyncButton(),
             const SizedBox(
