@@ -349,7 +349,7 @@ class UploadCubit extends Cubit<UploadState> {
 
           final transaction = await status.getSingleOrNull();
 
-          if (transaction?.status == 'pending') {
+          if (transaction?.status == TransactionStatus.failed) {
             failedFiles.add(fileNameKey);
           }
         }
