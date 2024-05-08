@@ -186,7 +186,6 @@ class UploadCubit extends Cubit<UploadState> {
   /// Map of conflicting file ids keyed by their file names.
   final Map<String, String> conflictingFiles = {};
   final List<String> conflictingFolders = [];
-  List<String> failedFiles = [];
 
   UploadCubit({
     required this.driveId,
@@ -302,9 +301,7 @@ class UploadCubit extends Cubit<UploadState> {
     checkConflicts();
   }
 
-  Future<void> checkConflictingFiles({
-    bool checkFailedFiles = true,
-  }) async {
+  Future<void> checkConflictingFiles() async {
     emit(UploadPreparationInProgress());
 
     _removeFilesWithFolderNameConflicts();
@@ -325,52 +322,11 @@ class UploadCubit extends Cubit<UploadState> {
         conflictingFiles[file.getIdentifier()] = existingFileId;
       }
     }
-
     if (conflictingFiles.isNotEmpty) {
-      if (checkFailedFiles) {
-        failedFiles.clear();
-
-        conflictingFiles.forEach((key, value) {
-          logger.d('Checking if file $key has failed');
-        });
-
-        for (final fileNameKey in conflictingFiles.keys) {
-          final fileId = conflictingFiles[fileNameKey];
-
-          final fileRevision = await _driveDao
-              .latestFileRevisionByFileId(
-                driveId: driveId,
-                fileId: fileId!,
-              )
-              .getSingleOrNull();
-
-          final status = _driveDao.select(_driveDao.networkTransactions)
-            ..where((tbl) => tbl.id.equals(fileRevision!.metadataTxId));
-
-          final transaction = await status.getSingleOrNull();
-
-          if (transaction?.status == 'pending') {
-            failedFiles.add(fileNameKey);
-          }
-        }
-
-        if (failedFiles.isNotEmpty) {
-          emit(
-            UploadConflictWithFailedFiles(
-              areAllFilesConflicting: conflictingFiles.length == files.length,
-              conflictingFileNames: conflictingFiles.keys.toList(),
-              conflictingFileNamesForFailedFiles: failedFiles,
-            ),
-          );
-          return;
-        }
-      }
-
       emit(
         UploadFileConflict(
           areAllFilesConflicting: conflictingFiles.length == files.length,
           conflictingFileNames: conflictingFiles.keys.toList(),
-          conflictingFileNamesForFailedFiles: const [],
         ),
       );
     } else {
@@ -452,8 +408,6 @@ class UploadCubit extends Cubit<UploadState> {
 
     if (uploadAction == UploadActions.skip) {
       _removeFilesWithFileNameConflicts();
-    } else if (uploadAction == UploadActions.skipSuccessfullyUploads) {
-      _removeSuccessfullyUploadedFiles();
     }
 
     logger.d(
@@ -962,12 +916,6 @@ class UploadCubit extends Cubit<UploadState> {
   void _removeFilesWithFileNameConflicts() {
     files.removeWhere(
       (file) => conflictingFiles.containsKey(file.getIdentifier()),
-    );
-  }
-
-  void _removeSuccessfullyUploadedFiles() {
-    files.removeWhere(
-      (file) => !failedFiles.contains(file.getIdentifier()),
     );
   }
 
