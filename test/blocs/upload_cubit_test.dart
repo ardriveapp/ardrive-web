@@ -333,7 +333,12 @@ void main() {
               const TypeMatcher<UploadPreparationInProgress>(),
               UploadFileConflict(
                   areAllFilesConflicting: true,
-                  conflictingFileNames: const ['${tRootFolderId}1']),
+                  conflictingFileNames: const [
+                    '${tRootFolderId}1'
+                  ],
+                  conflictingFileNamesForFailedFiles: const [
+                    '${tRootFolderId}1'
+                  ]),
             ]);
 
     blocTest<UploadCubit, UploadState>(
@@ -351,8 +356,10 @@ void main() {
               const TypeMatcher<UploadPreparationInitialized>(),
               const TypeMatcher<UploadPreparationInProgress>(),
               UploadFileConflict(
-                  areAllFilesConflicting: false,
-                  conflictingFileNames: const ['${tRootFolderId}1'])
+                areAllFilesConflicting: false,
+                conflictingFileNames: const ['${tRootFolderId}1'],
+                conflictingFileNamesForFailedFiles: const ['${tRootFolderId}1'],
+              )
             ]);
 
     blocTest<UploadCubit, UploadState>(
