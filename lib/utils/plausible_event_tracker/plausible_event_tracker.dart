@@ -461,6 +461,26 @@ abstract class PlausibleEventTracker {
     );
   }
 
+  // clickCreatePublicDriveButton
+  static Future<void> trackClickCreatePublicDriveButton(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickCreatePublicDriveButton,
+    );
+  }
+
+  // clickCreatePrivateDriveButton
+  static Future<void> trackClickCreatePrivateDriveButton(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickCreatePrivateDriveButton,
+    );
+  }
+
   static Future<void> _track({
     required PlausibleApiData data,
     required PlausibleEventData eventData,
