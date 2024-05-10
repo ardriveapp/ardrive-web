@@ -64,7 +64,10 @@ Future<void> showSearchModalDesktop({
   required TextEditingController controller,
   String? query,
 }) {
+  PlausibleEventTracker.trackPageview(page: PlausiblePageView.searchPage);
+
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
   return showArDriveDialog(
     context,
     content: FileSearchModal(
