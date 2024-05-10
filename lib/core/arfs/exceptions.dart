@@ -12,5 +12,5 @@ abstract class ARFSException implements Exception {
 class ARFSMultipleNamesForTheSameEntityException extends ARFSException {
   ARFSMultipleNamesForTheSameEntityException()
       : super(
-            'More than one folder with the same name found in the same parent folder');
+            'More than one folder/file with the same name found in the same parent folder');
 }
