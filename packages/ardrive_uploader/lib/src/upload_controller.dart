@@ -403,9 +403,7 @@ class _UploadController implements UploadController {
     print('Upload Error');
   };
 
-  void Function(UploadTask task) _onCompleteTask = (UploadTask tasks) {
-    print('Upload Canceled');
-  };
+  void Function(UploadTask task) _onCompleteTask = (UploadTask tasks) {};
 
   void _updateTaskStatus(UploadTask task, String taskId) {
     switch (task.status) {

@@ -75,10 +75,31 @@ class ManifestData {
     return manifestDataItem;
   }
 
-  static Future<ManifestData> fromFolderNode({
+  factory ManifestData.fromJson(Map<String, dynamic> json) =>
+      _$ManifestDataFromJson(json);
+  Map<String, dynamic> toJson() => _$ManifestDataToJson(this);
+}
+
+/// Utility function to remove base path of the target folder and
+/// replace spaces with underscores for arweave.net URL compatibility
+String prepareManifestPath({
+  required String filePath,
+  required String rootFolderPath,
+}) {
+  return filePath.substring(rootFolderPath.length + 1).replaceAll(' ', '_');
+}
+
+class ManifestDataBuilder {
+  final FolderRepository folderRepository;
+  final FileRepository fileRepository;
+
+  ManifestDataBuilder({
+    required this.folderRepository,
+    required this.fileRepository,
+  });
+
+  Future<ManifestData> build({
     required FolderNode folderNode,
-    required FolderRepository folderRepository,
-    required FileRepository fileRepository,
   }) async {
     final fileList = folderNode
         .getRecursiveFiles()
@@ -104,7 +125,7 @@ class ManifestData {
       folderNode.folder.driveId,
       folderNode.folder.id,
     );
-    
+
     final indexPath =
         await fileRepository.getFilePath(indexFile.driveId, indexFile.id);
 
@@ -125,17 +146,4 @@ class ManifestData {
       paths,
     );
   }
-
-  factory ManifestData.fromJson(Map<String, dynamic> json) =>
-      _$ManifestDataFromJson(json);
-  Map<String, dynamic> toJson() => _$ManifestDataToJson(this);
-}
-
-/// Utility function to remove base path of the target folder and
-/// replace spaces with underscores for arweave.net URL compatibility
-String prepareManifestPath({
-  required String filePath,
-  required String rootFolderPath,
-}) {
-  return filePath.substring(rootFolderPath.length + 1).replaceAll(' ', '_');
 }
