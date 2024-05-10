@@ -63,8 +63,8 @@ enum PlausibleCustomEvent {
   clickTermsOfServices,
 
   /// Create Drive on Empty State
-  clickCreatePublicDriveButton,
-  clickCreatePrivateDriveButton,
+  clickCreatePrivateDriveButtonEmptyState,
+  clickCreatePublicDriveButtonEmptyState,
 }
 
 extension PlausibleCustomEventNames on PlausibleCustomEvent {
@@ -180,10 +180,10 @@ extension PlausibleCustomEventNames on PlausibleCustomEvent {
         return 'clickTermsOfServices';
 
       /// Create Drive
-      case PlausibleCustomEvent.clickCreatePublicDriveButton:
-        return 'clickCreatePublicDriveButton';
-      case PlausibleCustomEvent.clickCreatePrivateDriveButton:
-        return 'clickCreatePrivateDriveButton';
+      case PlausibleCustomEvent.clickCreatePrivateDriveButtonEmptyState:
+        return 'clickCreatePrivateDriveButtonEmptyState';
+      case PlausibleCustomEvent.clickCreatePublicDriveButtonEmptyState:
+        return 'clickCreatePublicDriveButtonEmptyState';
     }
   }
 }

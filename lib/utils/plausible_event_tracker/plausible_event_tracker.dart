@@ -467,7 +467,7 @@ abstract class PlausibleEventTracker {
   ) {
     return _trackCustomEvent(
       page: page,
-      event: PlausibleCustomEvent.clickCreatePublicDriveButton,
+      event: PlausibleCustomEvent.clickCreatePublicDriveButtonEmptyState,
     );
   }
 
@@ -477,7 +477,7 @@ abstract class PlausibleEventTracker {
   ) {
     return _trackCustomEvent(
       page: page,
-      event: PlausibleCustomEvent.clickCreatePrivateDriveButton,
+      event: PlausibleCustomEvent.clickCreatePrivateDriveButtonEmptyState,
     );
   }
 
