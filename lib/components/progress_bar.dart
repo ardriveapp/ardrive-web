@@ -19,11 +19,9 @@ class _ProgressBarState extends State<ProgressBar> {
     return StreamBuilder<LinearProgress>(
       stream: widget.percentage,
       builder: (context, snapshot) {
-        if (snapshot.hasData) {
-          _percentage = ((snapshot.data!.progress * 100)).roundToDouble() / 100;
-        } else {
-          _percentage = 0;
-        }
+        _percentage = snapshot.hasData
+            ? ((snapshot.data!.progress * 100)).roundToDouble() / 100
+            : 0;
 
         return LinearPercentIndicator(
           animation: true,
