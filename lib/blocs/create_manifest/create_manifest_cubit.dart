@@ -220,29 +220,32 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     }
 
     if (state is CreateManifestUploadReview) {
-      final createManifestUploadReview = state as CreateManifestUploadReview;
-      final uploadType =
-          createManifestUploadReview.uploadMethod == UploadMethod.ar
-              ? UploadType.d2n
-              : UploadType.turbo;
+      try {
+        final createManifestUploadReview = state as CreateManifestUploadReview;
+        final uploadType =
+            createManifestUploadReview.uploadMethod == UploadMethod.ar
+                ? UploadType.d2n
+                : UploadType.turbo;
 
-      emit(CreateManifestUploadInProgress());
+        emit(CreateManifestUploadInProgress());
 
-      await _manifestRepository.uploadManifest(
-        params: ManifestUploadParams(
-          manifestFile: createManifestUploadReview.manifestFile,
-          driveId: _drive.id,
-          parentFolderId: createManifestUploadReview.parentFolder.id,
-          existingManifestFileId:
-              createManifestUploadReview.existingManifestFileId,
-          uploadType: uploadType,
-          wallet: _auth.currentUser.wallet,
-        ),
-      );
+        await _manifestRepository.uploadManifest(
+          params: ManifestUploadParams(
+            manifestFile: createManifestUploadReview.manifestFile,
+            driveId: _drive.id,
+            parentFolderId: createManifestUploadReview.parentFolder.id,
+            existingManifestFileId:
+                createManifestUploadReview.existingManifestFileId,
+            uploadType: uploadType,
+            wallet: _auth.currentUser.wallet,
+          ),
+        );
 
-      emit(CreateManifestSuccess());
-
-      return;
+        emit(CreateManifestSuccess());
+      } catch (e) {
+        logger.e('An error occured uploading the manifest.', e);
+        addError(e);
+      }
     }
   }
 
