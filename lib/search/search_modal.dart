@@ -11,6 +11,7 @@ import 'package:ardrive/search/domain/bloc/search_bloc.dart';
 import 'package:ardrive/search/domain/repository/search_repository.dart';
 import 'package:ardrive/search/search_result.dart';
 import 'package:ardrive/search/search_text_field.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -26,6 +27,8 @@ Future<void> showSearchModalBottomSheet({
   required TextEditingController controller,
   String? query,
 }) {
+  PlausibleEventTracker.trackPageview(page: PlausiblePageView.searchPage);
+
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
   return showModalBottomSheet(
     isScrollControlled: true,
@@ -61,7 +64,10 @@ Future<void> showSearchModalDesktop({
   required TextEditingController controller,
   String? query,
 }) {
+  PlausibleEventTracker.trackPageview(page: PlausiblePageView.searchPage);
+
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
   return showArDriveDialog(
     context,
     content: FileSearchModal(

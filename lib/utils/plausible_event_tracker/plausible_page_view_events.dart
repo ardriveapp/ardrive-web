@@ -35,5 +35,8 @@ enum PlausiblePageView {
   loginPage,
   importWalletPage,
   enterPasswordPage,
-  returnUserPage, 
+  returnUserPage,
+
+  /// Search
+  searchPage,
 }
