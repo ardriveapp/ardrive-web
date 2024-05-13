@@ -29,7 +29,6 @@ import 'package:ardrive/utils/validate_folder_name.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:arweave/arweave.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -64,10 +63,7 @@ Future<void> promptToCreateManifest(
                 appInfoServices: AppInfoServices(),
               ),
             ),
-            arweave: Arweave(
-              gatewayUrl:
-                  Uri.parse(configService.config.defaultArweaveGatewayUrl!),
-            ),
+            arweave: context.read<ArweaveService>().client,
             pstService: pst,
           ),
           context.read<FolderRepository>(),
