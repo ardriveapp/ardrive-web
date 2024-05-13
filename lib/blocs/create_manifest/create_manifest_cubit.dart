@@ -208,8 +208,9 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
           existingManifestFileId: existingManifestFileId,
         ),
       );
-    } catch (err) {
-      addError(err);
+    } catch (e) {
+      logger.e('Failed to prepare manifest file', e);
+      addError(e);
     }
   }
 
