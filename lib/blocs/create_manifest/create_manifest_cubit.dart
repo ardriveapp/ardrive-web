@@ -147,11 +147,15 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         (state as CreateManifestCheckingForConflicts).parentFolder;
     await _selectedFolderSubscription?.cancel();
 
-    final hasConflictNames = await _manifestRepository.checkNameConflict(
+    final conflictTuple =
+        await _manifestRepository.checkNameConflictAndReturnExistingFileId(
       driveId: _drive.id,
       parentFolderId: parentFolder.id,
       name: name,
     );
+
+    final hasConflictNames = conflictTuple.$1;
+    final existingManifestFileId = conflictTuple.$2;
 
     if (hasConflictNames) {
       emit(CreateManifestNameConflict(
@@ -161,7 +165,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       return;
     }
 
-    final manifestRevisionId = _manifestRepository.existingManifestFileId;
+    final manifestRevisionId = existingManifestFileId;
 
     if (manifestRevisionId != null) {
       emit(

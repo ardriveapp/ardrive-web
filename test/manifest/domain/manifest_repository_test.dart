@@ -352,7 +352,7 @@ void main() async {
         });
       });
 
-      group('checkNameConflict', () {
+      group('checkNameConflictAndReturnExistingFileId', () {
         late MockFolderEntry mockFolderEntry;
         late MockFileEntry mockFileEntry;
 
@@ -373,13 +373,14 @@ void main() async {
         });
 
         test('Returns false when no name conflict is found', () async {
-          final result = await repository.checkNameConflict(
+          final result =
+              await repository.checkNameConflictAndReturnExistingFileId(
             driveId: 'drive123',
             name: 'manifest.json',
             parentFolderId: 'folder123',
           );
 
-          expect(result, false);
+          expect(result, (false, null));
         });
 
         test('Handles error when checking for name conflict', () async {
@@ -390,7 +391,7 @@ void main() async {
               .thenThrow(Exception('Error checking for folder name conflict'));
 
           expect(
-            () => repository.checkNameConflict(
+            () => repository.checkNameConflictAndReturnExistingFileId(
               driveId: 'drive123',
               name: 'manifest.json',
               parentFolderId: 'folder123',
@@ -407,7 +408,7 @@ void main() async {
               .thenThrow(Exception('Error checking for file name conflict'));
 
           expect(
-            () => repository.checkNameConflict(
+            () => repository.checkNameConflictAndReturnExistingFileId(
               driveId: 'drive123',
               name: 'manifest.json',
               parentFolderId: 'folder123',
@@ -424,13 +425,14 @@ void main() async {
                   parentFolderId: any(named: 'parentFolderId')))
               .thenAnswer((invocation) async => [mockFolderEntry]);
 
-          final result = await repository.checkNameConflict(
+          final result =
+              await repository.checkNameConflictAndReturnExistingFileId(
             driveId: 'drive123',
             name: 'manifest.json',
             parentFolderId: 'folder123',
           );
 
-          expect(result, true);
+          expect(result, (true, null));
         });
 
         test(
@@ -446,13 +448,14 @@ void main() async {
           when(() => mockFileEntry.dataContentType)
               .thenReturn(ContentType.json);
 
-          final result = await repository.checkNameConflict(
+          final result =
+              await repository.checkNameConflictAndReturnExistingFileId(
             driveId: 'drive123',
             name: 'manifest.json',
             parentFolderId: 'folder123',
           );
 
-          expect(result, true);
+          expect(result, (true, null));
         });
 
         test(
@@ -469,13 +472,14 @@ void main() async {
               .thenReturn(ContentType.manifest);
           when(() => mockFileEntry.id).thenReturn('file123');
 
-          final result = await repository.checkNameConflict(
+          final result =
+              await repository.checkNameConflictAndReturnExistingFileId(
             driveId: 'drive123',
             name: 'manifest.json',
             parentFolderId: 'folder123',
           );
 
-          expect(result, false);
+          expect(result, (false, 'file123'));
         });
       });
     },

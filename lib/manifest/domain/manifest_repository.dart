@@ -33,13 +33,13 @@ abstract class ManifestRepository {
 
   Future<bool> hasPendingFilesOnTargetFolder({required FolderNode folderNode});
 
-  Future<bool> checkNameConflict({
+  /// Checks if there is a name conflict with the manifest file.
+  /// Returns a tuple with the first value being a boolean indicating if there is a conflict. The second value is the existing manifest file id if there is a conflict.
+  Future<(bool, String?)> checkNameConflictAndReturnExistingFileId({
     required String driveId,
     required String parentFolderId,
     required String name,
   });
-
-  String? get existingManifestFileId;
 }
 
 class ManifestRepositoryImpl implements ManifestRepository {
@@ -56,11 +56,6 @@ class ManifestRepositoryImpl implements ManifestRepository {
     this._builder,
     this._versionRevisionStatusUtils,
   );
-
-  String? _existingManifestFileId;
-
-  @override
-  String? get existingManifestFileId => _existingManifestFileId;
 
   @override
   Future<void> saveManifestOnDatabase({
@@ -129,7 +124,7 @@ class ManifestRepositoryImpl implements ManifestRepository {
 
         saveManifestOnDatabase(
           manifest: manifestMetadata,
-          existingManifestFileId: existingManifestFileId,
+          existingManifestFileId: params.existingManifestFileId,
         );
 
         completer.complete();
@@ -194,7 +189,7 @@ class ManifestRepositoryImpl implements ManifestRepository {
   }
 
   @override
-  Future<bool> checkNameConflict({
+  Future<(bool, String?)> checkNameConflictAndReturnExistingFileId({
     required String driveId,
     required String parentFolderId,
     required String name,
@@ -211,15 +206,15 @@ class ManifestRepositoryImpl implements ManifestRepository {
       if (foldersWithName.isNotEmpty || conflictingFiles.isNotEmpty) {
         // Name conflicts with existing file or folder
         // This is an error case, send user back to naming the manifest
-        return true;
+        return (true, null);
       }
 
       /// Might be a case where the user is trying to upload a new version of the manifest
-      _existingManifestFileId = filesWithName
+      final existingManifestFileId = filesWithName
           .firstWhereOrNull((e) => e.dataContentType == ContentType.manifest)
           ?.id;
 
-      return false;
+      return (false, existingManifestFileId);
     } catch (e) {
       throw ManifestCreationException(
         'Failed to check for name conflict.',

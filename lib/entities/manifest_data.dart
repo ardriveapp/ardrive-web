@@ -84,7 +84,7 @@ class ManifestData {
 /// replace spaces with underscores for arweave.net URL compatibility
 String prepareManifestPath({
   required String filePath,
-  required String rootFolderPath,
+  required String rootFolderPath, 
 }) {
   return filePath.substring(rootFolderPath.length + 1).replaceAll(' ', '_');
 }
