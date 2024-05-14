@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
 import 'package:pst/pst.dart';
-import 'package:ardrive_uploader/src/utils/logger.dart';
 
 enum UploadType { turbo, d2n }
 
@@ -155,7 +155,7 @@ class _ArDriveUploader implements ArDriveUploader {
     SecretKey? driveKey,
     required UploadType type,
   }) async {
-    logger.d('Creating a new upload controller using the upload type $type');
+    logger.i('Creating a new upload controller using the upload type $type');
 
     final dataBundler = _dataBundlerFactory.createDataBundler(
       type,
