@@ -9,7 +9,7 @@ final logger = Logger(
   shouldLogErrorCallback: shouldLogErrorCallback,
 );
 
-final Set<String> _knownBugVersions = {
+final Set<String> _knownTransactionDecryptionBugVersions = {
   '2.30.0',
   '2.30.1',
   '2.30.2',
@@ -22,7 +22,8 @@ ShouldLogErrorCallback shouldLogErrorCallback = (error) {
   if (error is ActionCanceledException) {
     return false;
   } else if (error is TransactionDecryptionException) {
-    return !_knownBugVersions.contains(error.corruptedDataAppVersion);
+    return !_knownTransactionDecryptionBugVersions
+        .contains(error.corruptedDataAppVersion);
   }
   return true;
 };

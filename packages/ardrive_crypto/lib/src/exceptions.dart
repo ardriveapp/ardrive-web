@@ -27,8 +27,8 @@ class MissingCipherTagException extends ArDriveDecryptionException {
   }
 }
 
-class UnknowCipherException extends ArDriveDecryptionException {
-  UnknowCipherException({super.corruptedDataAppVersion});
+class UnknownCipherException extends ArDriveDecryptionException {
+  UnknownCipherException({super.corruptedDataAppVersion});
 
   @override
   String toString() {

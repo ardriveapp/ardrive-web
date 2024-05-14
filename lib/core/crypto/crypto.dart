@@ -126,7 +126,7 @@ class ArDriveCrypto {
 
         decryptedData = Uint8List.fromList(decryptedDataAsListInt);
       } else {
-        throw UnknowCipherException(
+        throw UnknownCipherException(
           corruptedDataAppVersion: transaction.getTag(EntityTag.appVersion),
         );
       }

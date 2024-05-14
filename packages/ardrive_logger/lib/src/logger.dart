@@ -78,7 +78,6 @@ class Logger {
   void e(String message, [Object? error, StackTrace? stackTrace]) {
     String errorMessage = message;
 
-    _shouldLogErrorCallback?.call(error);
     if (error != null) {
       errorMessage += '\nError: $error';
     }
