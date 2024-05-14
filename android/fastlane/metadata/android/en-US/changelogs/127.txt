@@ -1,2 +1,2 @@
-- Enhances error tracking
-- Improves existing Plausible event tracking
+- Improved handling of a few common errors
+- New analytics
