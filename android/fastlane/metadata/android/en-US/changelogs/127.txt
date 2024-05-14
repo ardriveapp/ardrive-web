@@ -1,1 +1,2 @@
 - Enhances error tracking
+- Improves existing Plausible event tracking
