@@ -194,6 +194,7 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
   }) async {
     final bundle = await _dataBundler.createDataBundle(
       file: task.file,
+      dataItemFiles: dataItems,
       metadata: task.metadata,
       wallet: wallet,
       driveKey: task.encryptionKey,

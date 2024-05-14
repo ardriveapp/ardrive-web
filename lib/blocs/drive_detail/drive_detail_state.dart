@@ -14,8 +14,11 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   final bool driveIsEmpty;
   final bool multiselect;
   final bool hasFoldersSelected;
+  final int? selectedPage;
 
   final FolderWithContents folderInView;
+
+  final List<BreadCrumbRowInfo> pathSegments;
 
   final DriveOrder contentOrderBy;
   final OrderingMode contentOrderingMode;
@@ -59,6 +62,8 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     required this.columnVisibility,
     this.forceRebuildKey,
     required this.isShowingHiddenFiles,
+    required this.pathSegments,
+    this.selectedPage,
   });
 
   DriveDetailLoadSuccess copyWith({
@@ -79,8 +84,11 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     List<ArDriveDataTableItem>? currentFolderContents,
     Key? forceRebuildKey,
     bool? isShowingHiddenFiles,
+    List<BreadCrumbRowInfo>? pathSegments,
+    int? selectedPage,
   }) =>
       DriveDetailLoadSuccess(
+        selectedPage: selectedPage ?? this.selectedPage,
         columnVisibility: columnVisibility,
         forceRebuildKey: forceRebuildKey ?? this.forceRebuildKey,
         selectedItem: selectedItem ?? this.selectedItem,
@@ -102,6 +110,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         currentFolderContents:
             currentFolderContents ?? this.currentFolderContents,
         isShowingHiddenFiles: isShowingHiddenFiles ?? this.isShowingHiddenFiles,
+        pathSegments: pathSegments ?? this.pathSegments,
       );
 
   @override
@@ -123,6 +132,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         multiselect,
         forceRebuildKey,
         selectedItem,
+        selectedPage,
       ];
   SelectedItem? maybeSelectedItem() =>
       selectedItems.isNotEmpty ? selectedItems.first : null;

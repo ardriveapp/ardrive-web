@@ -50,7 +50,7 @@ jobs:
         run: |
           scr setup
           flutter config --enable-web
-          flutter build web --dart-define=environment=staging --dart-define=SENTRY_DSN=${SENTRY_DSN} --dart-define=SENTRY_PROJECT=${SENTRY_PROJECT} --dart-define=SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN} --dart-define=SENTRY_ORG=${SENTRY_ORG} --release --pwa-strategy=none --no-web-resources-cdn --source-maps
+          flutter build web --dart-define=environment=staging --dart-define=SENTRY_DSN=${SENTRY_DSN} --dart-define=SENTRY_PROJECT=${SENTRY_PROJECT} --dart-define=SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN} --dart-define=SENTRY_ORG=${SENTRY_ORG} --release --pwa-strategy=none --no-web-resources-cdn --source-maps --dart2js-optimization=O1
           flutter packages pub run sentry_dart_plugin
 
       # Deploy to github pages
@@ -116,10 +116,13 @@ jobs:
           ruby-version: '3.1'
 
       # Install JDK
-      - uses: actions/setup-java@v3
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '11'
+          java-version: '17'
+          cache: 'gradle'
+          check-latest: true
 
       # Set Flutter version from fvm
       - uses: kuhnroyal/flutter-fvm-config-action@v1

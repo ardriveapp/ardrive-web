@@ -4,6 +4,7 @@ query DriveEntityHistory(
   $minBlockHeight: Int
   $maxBlockHeight: Int
   $ownerAddress: String!
+  $entityType: String!
 ) {
   transactions(
     owners: [$ownerAddress]
@@ -11,6 +12,7 @@ query DriveEntityHistory(
     sort: HEIGHT_ASC
     tags: [
       { name: "Drive-Id", values: [$driveId] }
+      { name: "Entity-Type", values: [$entityType] }
     ]
     after: $after
     block: { min: $minBlockHeight, max: $maxBlockHeight }

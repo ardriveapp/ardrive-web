@@ -15,5 +15,4 @@ export 'keyboard_listener/keyboard_listener_bloc.dart';
 export 'profile/profile_cubit.dart';
 export 'profile_add/profile_add_cubit.dart';
 export 'shared_file/shared_file_cubit.dart';
-export 'sync/sync_cubit.dart';
 export 'upload/upload_cubit.dart';

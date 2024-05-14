@@ -685,13 +685,11 @@ abstract class UploadItem<T> {
 }
 
 class DataItemUploadItem extends UploadItem<DataItemResult> {
-  DataItemUploadItem({required int size, required DataItemResult data})
-      : super(size: size, data: data);
+  DataItemUploadItem({required super.size, required super.data});
 }
 
 class TransactionUploadItem extends UploadItem<TransactionResult> {
-  TransactionUploadItem({required int size, required TransactionResult data})
-      : super(size: size, data: data);
+  TransactionUploadItem({required super.size, required super.data});
 }
 
 class FolderUploadTask implements UploadTask<ARFSUploadMetadata> {

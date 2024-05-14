@@ -1,6 +1,8 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
+import 'package:ardrive/core/arfs/repository/file_repository.dart';
+import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
@@ -38,6 +40,8 @@ Future<void> promptToCreateManifest(
         turboUploadService: context.read<TurboUploadService>(),
         driveDao: context.read<DriveDao>(),
         pst: context.read<PstService>(),
+        fileRepository: context.read<FileRepository>(),
+        folderRepository: context.read<FolderRepository>(),
       ),
       child: const CreateManifestForm(),
     ),
@@ -45,7 +49,7 @@ Future<void> promptToCreateManifest(
 }
 
 class CreateManifestForm extends StatefulWidget {
-  const CreateManifestForm({Key? key}) : super(key: key);
+  const CreateManifestForm({super.key});
 
   @override
   State<CreateManifestForm> createState() => _CreateManifestFormState();
@@ -504,7 +508,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
               ),
             ),
           )
-          .toList(),
+          ,
     ];
 
     return ArDriveCard(

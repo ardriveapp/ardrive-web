@@ -10,13 +10,11 @@ abstract class FsEntryRenameState extends Equatable {
 }
 
 class FsEntryRenameInitializing extends FsEntryRenameState {
-  const FsEntryRenameInitializing({required bool isRenamingFolder})
-      : super(isRenamingFolder: isRenamingFolder);
+  const FsEntryRenameInitializing({required super.isRenamingFolder});
 }
 
 class FsEntryRenameInitialized extends FsEntryRenameState {
-  const FsEntryRenameInitialized({required bool isRenamingFolder})
-      : super(isRenamingFolder: isRenamingFolder);
+  const FsEntryRenameInitialized({required super.isRenamingFolder});
 }
 
 class FolderEntryRenameInProgress extends FsEntryRenameState {
@@ -34,8 +32,8 @@ class FolderEntryRenameFailure extends FsEntryRenameState {
 class EntityAlreadyExists extends FsEntryRenameState {
   const EntityAlreadyExists(
     this.entityName, {
-    required bool isRenamingFolder,
-  }) : super(isRenamingFolder: isRenamingFolder);
+    required super.isRenamingFolder,
+  });
 
   final String entityName;
 }

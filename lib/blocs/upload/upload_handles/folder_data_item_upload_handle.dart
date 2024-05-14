@@ -66,7 +66,9 @@ class FolderDataItemUploadHandle implements UploadHandle, DataItemHandle {
       key: driveKey,
     );
 
-    await folderEntityTx.sign(wallet);
+    final signer = ArweaveSigner(wallet);
+
+    await folderEntityTx.sign(signer);
   }
 
   Future<void> writeFolderToDatabase({
@@ -77,7 +79,6 @@ class FolderDataItemUploadHandle implements UploadHandle, DataItemHandle {
         driveId: targetDriveId,
         parentFolderId: folder.parentFolderId,
         folderName: folder.name,
-        path: folder.path,
         folderId: folder.id,
       );
 

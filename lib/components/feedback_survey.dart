@@ -14,7 +14,7 @@ Future<void> openFeedbackSurveyModal(BuildContext context) => showArDriveDialog(
     );
 
 class FeedbackSurveyModal extends StatelessWidget {
-  const FeedbackSurveyModal({Key? key}) : super(key: key);
+  const FeedbackSurveyModal({super.key});
 
   @override
   Widget build(BuildContext context) =>

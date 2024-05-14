@@ -3,16 +3,20 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/drive_detail/utils/breadcrumb_builder.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/feedback_survey.dart';
 import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
+import 'package:ardrive/sync/domain/repositories/sync_repository.dart';
 import 'package:ardrive/theme/theme_switcher_bloc.dart';
 import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -192,6 +196,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     driveDao: context.read<DriveDao>(),
                     configService: context.read<ConfigService>(),
                     auth: context.read<ArDriveAuth>(),
+                    breadcrumbBuilder: BreadcrumbBuilder(
+                      context.read<FolderRepository>(),
+                    ),
                   ),
                   child: MultiBlocListener(
                     listeners: [
@@ -282,15 +289,12 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               providers: [
                 BlocProvider(
                   create: (context) => SyncCubit(
+                    syncRepository: context.read<SyncRepository>(),
                     activityTracker: context.read<ActivityTracker>(),
                     configService: context.read<ConfigService>(),
-                    licenseService: context.read<LicenseService>(),
                     profileCubit: context.read<ProfileCubit>(),
                     activityCubit: context.read<ActivityCubit>(),
                     promptToSnapshotBloc: context.read<PromptToSnapshotBloc>(),
-                    arweave: context.read<ArweaveService>(),
-                    driveDao: context.read<DriveDao>(),
-                    db: context.read<Database>(),
                     tabVisibility: TabVisibilitySingleton(),
                   ),
                 ),

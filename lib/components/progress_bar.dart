@@ -1,9 +1,9 @@
-import 'package:ardrive/blocs/sync/sync_cubit.dart';
+import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 
 class ProgressBar extends StatefulWidget {
-  const ProgressBar({Key? key, required this.percentage}) : super(key: key);
+  const ProgressBar({super.key, required this.percentage});
 
   final Stream<LinearProgress> percentage;
 

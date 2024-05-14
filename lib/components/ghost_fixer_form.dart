@@ -23,12 +23,12 @@ Future<void> promptToReCreateFolder(BuildContext context,
       context,
       content: BlocProvider(
         create: (context) => GhostFixerCubit(
-            ghostFolder: ghostFolder,
-            profileCubit: context.read<ProfileCubit>(),
-            arweave: context.read<ArweaveService>(),
-            turboUploadService: context.read<TurboUploadService>(),
-            driveDao: context.read<DriveDao>(),
-            syncCubit: context.read<SyncCubit>()),
+          ghostFolder: ghostFolder,
+          profileCubit: context.read<ProfileCubit>(),
+          arweave: context.read<ArweaveService>(),
+          turboUploadService: context.read<TurboUploadService>(),
+          driveDao: context.read<DriveDao>(),
+        ),
         child: GhostFixerForm(
           driveDetailCubit: driveDetailCubit,
         ),
@@ -42,9 +42,9 @@ Future<void> promptToReCreateFolder(BuildContext context,
 
 class GhostFixerForm extends StatefulWidget {
   const GhostFixerForm({
-    Key? key,
+    super.key,
     required this.driveDetailCubit,
-  }) : super(key: key);
+  });
 
   final DriveDetailCubit driveDetailCubit;
 

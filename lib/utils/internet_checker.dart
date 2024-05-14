@@ -7,6 +7,10 @@ class InternetChecker {
 
   Future<bool> isConnected() async {
     final connectivityResult = await connectivity.checkConnectivity();
-    return connectivityResult != ConnectivityResult.none;
+
+    /// According to the documentation, if no connection is available, the result will be [ConnectivityResult.none]
+    final noneConnection = connectivityResult.first == ConnectivityResult.none;
+
+    return !noneConnection;
   }
 }

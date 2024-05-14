@@ -27,6 +27,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final DrivesCubit _drivesCubit;
+  final DrivePrivacy privacy;
 
   DriveCreateCubit({
     required ArweaveService arweave,
@@ -34,12 +35,15 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required DrivesCubit drivesCubit,
+    this.privacy = DrivePrivacy.private,
   })  : _arweave = arweave,
         _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _drivesCubit = drivesCubit,
-        super(const DriveCreateInitial(privacy: DrivePrivacy.private));
+        super(DriveCreateInitial(privacy: privacy)) {
+    form.control('privacy').value = privacy.name;
+  }
 
   void onPrivacyChanged() {
     final privacy = form.control('privacy').value == DrivePrivacy.private.name
@@ -106,8 +110,10 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         key: createRes.driveKey,
       );
 
-      await rootFolderDataItem.sign(profile.wallet);
-      await driveDataItem.sign(profile.wallet);
+      final signer = ArweaveSigner(profile.wallet);
+
+      await rootFolderDataItem.sign(signer);
+      await driveDataItem.sign(signer);
       late TransactionBase createTx;
       if (_turboUploadService.useTurboUpload) {
         createTx = await _arweave.prepareBundledDataItem(

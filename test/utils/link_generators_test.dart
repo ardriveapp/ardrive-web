@@ -87,7 +87,6 @@ void main() {
           driveId: 'driveId',
           parentFolderId: 'parentFolderId',
           name: 'testFile',
-          path: '/test/test',
           dataTxId: 'Data',
           size: 500,
           dateCreated: DateTime.now(),
@@ -95,6 +94,7 @@ void main() {
           lastUpdated: DateTime.now(),
           dataContentType: '',
           isHidden: false,
+          path: '',
         );
         testFileKeyBase64 = 'X123YZAB-CD4e5fgHIjKlmN6O7pqrStuVwxYzaBcd8E';
         testFileKey = SecretKey(decodeBase64ToBytes(testFileKeyBase64));

@@ -29,7 +29,7 @@ Future<void> promptToShareDrive({
 
 /// Depends on a provided [DriveShareCubit] for business logic.
 class DriveShareDialog extends StatefulWidget {
-  const DriveShareDialog({Key? key}) : super(key: key);
+  const DriveShareDialog({super.key});
 
   @override
   DriveShareDialogState createState() => DriveShareDialogState();

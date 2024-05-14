@@ -40,12 +40,9 @@ class UploadFileConflict extends UploadState {
 
 class UploadFolderNameConflict extends UploadFileConflict {
   UploadFolderNameConflict({
-    required List<String> conflictingFileNames,
-    required bool areAllFilesConflicting,
-  }) : super(
-          conflictingFileNames: conflictingFileNames,
-          areAllFilesConflicting: areAllFilesConflicting,
-        );
+    required super.conflictingFileNames,
+    required super.areAllFilesConflicting,
+  });
 }
 
 class UploadFileTooLarge extends UploadState {
@@ -76,10 +73,10 @@ class UploadReadyToPrepare extends UploadState {
   List<Object> get props => [params];
 }
 
-/// [UploadReady] means that the upload is ready to be performed and is awaiting confirmation from the user.
+/// [UploadReady] means that the upload is ready to be performed and is awaiting the user to proceed.
 class UploadReady extends UploadState {
   final UploadPaymentMethodInfo paymentInfo;
-  final bool isButtonToUploadEnabled;
+  final bool isNextButtonEnabled;
   final bool isDragNDrop;
   final bool uploadIsPublic;
   final int numberOfFiles;
@@ -91,18 +88,18 @@ class UploadReady extends UploadState {
   UploadReady({
     required this.paymentInfo,
     required this.uploadIsPublic,
-    required this.isButtonToUploadEnabled,
+    required this.isNextButtonEnabled,
     this.isDragNDrop = false,
     required this.params,
     required this.numberOfFiles,
     required this.isArConnect,
   });
 
-// copyWith
+  // copyWith
   UploadReady copyWith({
     UploadPaymentMethodInfo? paymentInfo,
     UploadMethod? uploadMethod,
-    bool? isButtonToUploadEnabled,
+    bool? isNextButtonEnabled,
     bool? isDragNDrop,
     bool? uploadIsPublic,
     int? numberOfFiles,
@@ -115,8 +112,7 @@ class UploadReady extends UploadState {
       isDragNDrop: isDragNDrop ?? this.isDragNDrop,
       paymentInfo: paymentInfo ?? this.paymentInfo,
       params: params ?? this.params,
-      isButtonToUploadEnabled:
-          isButtonToUploadEnabled ?? this.isButtonToUploadEnabled,
+      isNextButtonEnabled: isNextButtonEnabled ?? this.isNextButtonEnabled,
       numberOfFiles: numberOfFiles ?? this.numberOfFiles,
     );
   }
@@ -124,11 +120,56 @@ class UploadReady extends UploadState {
   @override
   List<Object?> get props => [
         paymentInfo,
-        isButtonToUploadEnabled,
+        isNextButtonEnabled,
       ];
 
   @override
   toString() => 'UploadReady { paymentInfo: $paymentInfo }';
+}
+
+/// [UploadConfiguringLicense] means that the upload is ready to be performed but the user is configuring the license.
+class UploadConfiguringLicense extends UploadState {
+  final UploadReady readyState;
+  final LicenseCategory licenseCategory;
+
+  UploadConfiguringLicense({
+    required this.readyState,
+    required this.licenseCategory,
+  });
+
+  @override
+  List<Object?> get props => [
+        readyState,
+        licenseCategory,
+      ];
+
+  @override
+  toString() =>
+      'UploadConfiguringLicense { paymentInfo: ${readyState.paymentInfo} }';
+}
+
+/// [UploadReviewWithLicense] means that the upload + license is being reviewed by the user and awaiting confirmation to begin upload.
+class UploadReviewWithLicense extends UploadState {
+  final UploadReady readyState;
+  final LicenseCategory licenseCategory;
+  final LicenseState licenseState;
+
+  UploadReviewWithLicense({
+    required this.readyState,
+    required this.licenseCategory,
+    required this.licenseState,
+  });
+
+  @override
+  List<Object?> get props => [
+        readyState,
+        licenseCategory,
+        licenseState,
+      ];
+
+  @override
+  toString() =>
+      'UploadReviewWithLicense { paymentInfo: ${readyState.paymentInfo} }';
 }
 
 class UploadInProgress extends UploadState {

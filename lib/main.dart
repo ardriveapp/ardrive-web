@@ -9,6 +9,8 @@ import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/keyboard_handler.dart';
 import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/core/arfs/repository/file_repository.dart';
+import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
@@ -16,6 +18,8 @@ import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
 import 'package:ardrive/sharing/blocs/sharing_file_bloc.dart';
+import 'package:ardrive/sync/domain/repositories/sync_repository.dart';
+import 'package:ardrive/sync/utils/batch_processor.dart';
 import 'package:ardrive/theme/theme_switcher_bloc.dart';
 import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
@@ -33,7 +37,6 @@ import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:ardrive_logger/ardrive_logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -88,7 +91,7 @@ Future<void> _runWithoutLogging() async {
 }
 
 Future<void> _runWithSentryLogging() async {
-  await initSentry();
+  await logger.initSentry();
 
   runApp(const App());
 }
@@ -147,7 +150,7 @@ Future<void> _initializeServices() async {
 }
 
 class App extends StatefulWidget {
-  const App({Key? key}) : super(key: key);
+  const App({super.key});
 
   @override
   AppState createState() => AppState();
@@ -407,6 +410,26 @@ class AppState extends State<App> {
         ),
         RepositoryProvider(
           create: (_) => LicenseService(),
+        ),
+        RepositoryProvider(
+          create: (_) => SyncRepository(
+            arweave: _arweave,
+            configService: configService,
+            driveDao: _.read<DriveDao>(),
+            licenseService: _.read<LicenseService>(),
+            batchProcessor: BatchProcessor(),
+          ),
+        ),
+        RepositoryProvider(
+          create: (_) => FolderRepository(
+            _.read<DriveDao>(),
+          ),
+        ),
+        RepositoryProvider(
+          create: (_) => FileRepository(
+            _.read<DriveDao>(),
+            _.read<FolderRepository>(),
+          ),
         ),
       ];
 }

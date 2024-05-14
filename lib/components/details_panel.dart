@@ -257,6 +257,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                     children: [
                       ArDriveImage(
                         image: AssetImage(
+                          // TODO: replace with ArDriveTheme .isLight method
                           ArDriveTheme.of(context).themeData.name == 'light'
                               ? Resources.images.brand.blackLogo2
                               : Resources.images.brand.whiteLogo2,
@@ -1092,7 +1093,7 @@ class CopyButton extends StatefulWidget {
   final Color? copyMessageColor;
 
   const CopyButton({
-    Key? key,
+    super.key,
     required this.text,
     this.size = 20,
     this.showCopyText = true,
@@ -1100,7 +1101,7 @@ class CopyButton extends StatefulWidget {
     this.positionY = 40,
     this.positionX = 20,
     this.copyMessageColor,
-  }) : super(key: key);
+  });
 
   @override
   // ignore: library_private_types_in_public_api
@@ -1113,7 +1114,9 @@ class _CopyButtonState extends State<CopyButton> {
 
   @override
   dispose() {
-    _overlayEntry?.remove();
+    if (_overlayEntry != null && _overlayEntry!.mounted) {
+      _overlayEntry?.remove();
+    }
     super.dispose();
   }
 
@@ -1206,12 +1209,11 @@ class _CopyButtonState extends State<CopyButton> {
 
 class _DownloadOrPreview extends StatelessWidget {
   const _DownloadOrPreview({
-    Key? key,
     required this.privacy,
     required this.fileRevision,
     this.fileKey,
     this.isSharedFile = false,
-  }) : super(key: key);
+  });
 
   final String privacy;
   final ARFSFileEntity fileRevision;
@@ -1419,6 +1421,97 @@ class DetailsPanelToolbar extends StatelessWidget {
         tooltip: tooltip,
         onPressed: onTap,
         icon: icon,
+      ),
+    );
+  }
+}
+
+class LicenseDetailsPopoverButton extends StatefulWidget {
+  final LicenseState licenseState;
+  final FileDataTableItem fileItem;
+  final bool updateButton;
+  final Aligned anchor;
+
+  const LicenseDetailsPopoverButton({
+    super.key,
+    required this.licenseState,
+    required this.fileItem,
+    required this.updateButton,
+    required this.anchor,
+  });
+
+  @override
+  State<LicenseDetailsPopoverButton> createState() =>
+      _LicenseDetailsPopoverButtonState();
+}
+
+class _LicenseDetailsPopoverButtonState
+    extends State<LicenseDetailsPopoverButton> {
+  bool _showLicenseDetailsCard = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return ArDriveOverlay(
+      onVisibleChange: (visible) {
+        if (!visible) {
+          setState(() {
+            _showLicenseDetailsCard = false;
+          });
+        }
+      },
+      visible: _showLicenseDetailsCard,
+      anchor: widget.anchor,
+      content: LicenseDetailsPopover(
+        licenseState: widget.licenseState,
+        closePopover: () {
+          setState(() {
+            _showLicenseDetailsCard = false;
+          });
+        },
+        child: widget.updateButton
+            ? ArDriveButton(
+                text:
+                    // TODO: Localize
+                    // appLocalizationsOf(context).licenseUpdate
+                    'Update',
+                icon: ArDriveIcons.license(
+                  size: 16,
+                  color: ArDriveTheme.of(context).themeData.backgroundColor,
+                ),
+                fontStyle: ArDriveTypography.body.buttonNormalBold(
+                  color: ArDriveTheme.of(context).themeData.backgroundColor,
+                ),
+                backgroundColor:
+                    ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                maxHeight: 32,
+                onPressed: () {
+                  setState(() {
+                    _showLicenseDetailsCard = false;
+                  });
+                  promptToLicense(
+                    context,
+                    driveId: widget.fileItem.driveId,
+                    selectedItems: [widget.fileItem],
+                  );
+                },
+              )
+            : null,
+      ),
+      child: HoverWidget(
+        hoverScale: 1.0,
+        tooltip:
+            // TODO: Localize
+            // appLocalizations.of(context).licenseDetails,
+            'View license details',
+        child: ArDriveButton(
+          text: widget.licenseState.meta.shortName,
+          style: ArDriveButtonStyle.tertiary,
+          onPressed: () {
+            setState(() {
+              _showLicenseDetailsCard = !_showLicenseDetailsCard;
+            });
+          },
+        ),
       ),
     );
   }

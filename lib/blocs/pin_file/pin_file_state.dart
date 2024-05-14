@@ -80,10 +80,10 @@ class PinFileFieldsValid extends PinFileState {
   bool get isPrivate => privacy == DrivePrivacy.private;
 
   const PinFileFieldsValid({
-    required String id,
-    required String name,
-    required NameValidationResult nameValidation,
-    required IdValidationResult idValidation,
+    required super.id,
+    required super.name,
+    required super.nameValidation,
+    required super.idValidation,
     required this.privacy,
     required this.dataContentType,
     this.maybeLastUpdated,
@@ -92,12 +92,7 @@ class PinFileFieldsValid extends PinFileState {
     required this.size,
     required this.dataTxId,
     required this.pinnedDataOwnerAddress,
-  }) : super(
-          id: id,
-          name: name,
-          nameValidation: nameValidation,
-          idValidation: idValidation,
-        );
+  });
 
   @override
   List<Object?> get props => [
@@ -116,14 +111,11 @@ class PinFileFieldsValid extends PinFileState {
 
 class PinFileCreating extends PinFileState {
   const PinFileCreating({
-    required String id,
-    required String name,
-    required IdValidationResult idValidation,
+    required super.id,
+    required super.name,
+    required super.idValidation,
   }) : super(
-          id: id,
-          name: name,
           nameValidation: NameValidationResult.valid,
-          idValidation: idValidation,
         );
 
   @override

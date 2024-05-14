@@ -22,7 +22,7 @@ import '../drive_detail/components/drive_explorer_item_tile.dart';
 class SharedFilePage extends StatelessWidget {
   final _fileKeyController = TextEditingController();
 
-  SharedFilePage({Key? key}) : super(key: key) {
+  SharedFilePage({super.key}) {
     PlausibleEventTracker.trackPageview(page: PlausiblePageView.sharedFilePage);
   }
 
@@ -117,6 +117,7 @@ class SharedFilePage extends StatelessWidget {
                     children: [
                       ArDriveImage(
                         image: AssetImage(
+                          // TODO: replace with ArDriveTheme .isLight method
                           ArDriveTheme.of(context).themeData.name == 'light'
                               ? Resources.images.brand.blackLogo2
                               : Resources.images.brand.whiteLogo2,
@@ -131,6 +132,7 @@ class SharedFilePage extends StatelessWidget {
                     children: [
                       ArDriveImage(
                         image: AssetImage(
+                          // TODO: replace with ArDriveTheme .isLight method
                           ArDriveTheme.of(context).themeData.name == 'light'
                               ? Resources.images.brand.blackLogo2
                               : Resources.images.brand.whiteLogo2,

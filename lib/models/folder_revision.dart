@@ -17,11 +17,12 @@ extension FolderRevisionCompanionExtensions on FolderRevisionsCompanion {
         driveId: driveId.value,
         parentFolderId: parentFolderId,
         name: name.value,
-        path: rootPath,
         lastUpdated: dateCreated,
         customGQLTags: customGQLTags,
         customJsonMetadata: customJsonMetadata,
         isHidden: isHidden,
+        // TODO: path is not used in the app, so it's not necessary to set it
+        path: '',
       );
 
   /// Returns a [NetworkTransactionsCompanion] representing the metadata transaction

@@ -17,19 +17,19 @@ void main() {
 
     test('should return true if connected to mobile internet', () async {
       when(() => mockConnectivity.checkConnectivity())
-          .thenAnswer((_) async => ConnectivityResult.mobile);
+          .thenAnswer((_) async => [ConnectivityResult.mobile]);
       expect(await checker.isConnected(), isTrue);
     });
 
     test('should return true if connected to wifi internet', () async {
       when(() => mockConnectivity.checkConnectivity())
-          .thenAnswer((_) async => ConnectivityResult.wifi);
+          .thenAnswer((_) async => [ConnectivityResult.wifi]);
       expect(await checker.isConnected(), isTrue);
     });
 
     test('should return false if not connected to internet', () async {
       when(() => mockConnectivity.checkConnectivity())
-          .thenAnswer((_) async => ConnectivityResult.none);
+          .thenAnswer((_) async => [ConnectivityResult.none]);
       expect(await checker.isConnected(), isFalse);
     });
   });

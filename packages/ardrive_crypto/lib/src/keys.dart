@@ -17,18 +17,6 @@ final pbkdf2 = Pbkdf2(
 final hkdf = Hkdf(hmac: Hmac(sha256), outputLength: keyByteLength);
 final aesGcm = AesGcm.with256bits();
 
-Future<ProfileKeyDerivationResult> deriveProfileKey(String password,
-    [List<int>? salt]) async {
-  salt ??= aesGcm.newNonce();
-
-  final profileKey = await pbkdf2.deriveKey(
-    secretKey: SecretKey(utf8.encode(password)),
-    nonce: salt,
-  );
-
-  return ProfileKeyDerivationResult(profileKey, salt);
-}
-
 Future<SecretKey> deriveDriveKey(
   Wallet wallet,
   String driveId,
@@ -52,11 +40,4 @@ Future<SecretKey> deriveFileKey(SecretKey driveKey, String fileId) async {
     info: fileIdBytes,
     nonce: Uint8List(1),
   );
-}
-
-class ProfileKeyDerivationResult {
-  final SecretKey key;
-  final List<int> salt;
-
-  ProfileKeyDerivationResult(this.key, this.salt);
 }

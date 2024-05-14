@@ -57,7 +57,7 @@ Future<void> showPinFileDialog({
 }
 
 class PinFileDialog extends StatelessWidget {
-  const PinFileDialog({Key? key}) : super(key: key);
+  const PinFileDialog({super.key});
 
   @override
   Widget build(BuildContext context) {

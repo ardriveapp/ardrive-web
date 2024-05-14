@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:ardrive_uploader/src/exceptions.dart';
@@ -17,7 +18,6 @@ class TurboUploadService {
   final r = RetryOptions(maxAttempts: 8);
   final List<CancelToken> _cancelTokens = [];
   final dio = Dio();
-  final dataItemConfirmationRetryDelay = Duration(seconds: 15);
   final maxInFlightData = MiB(100).size;
   Timer? onSendProgressTimer;
 
@@ -138,20 +138,23 @@ class TurboUploadService {
 
       final finaliseInfo = await r.retry(
         () => dio.post(
-          '$turboUploadUri/chunks/arweave/$uploadId/-1',
+          '$turboUploadUri/chunks/arweave/$uploadId/finalize',
           data: null,
           cancelToken: finalizeCancelToken,
-          options: Options(
-            validateStatus: (int? status) {
-              return status != null &&
-                  ((status >= 200 && status < 300) || status == 504);
-            },
-          ),
         ),
       );
 
-      if (finaliseInfo.statusCode == 504) {
-        final confirmInfo = await _confirmUpload(dataItem.id);
+      if (finaliseInfo.statusCode == 202) {
+        // TODO: Send this upload to a queue. We'd need to change the
+        // type of the returned data though. Perhaps the returned object
+        // could be an event emitter that the calling client can use to
+        // listen for async outcomes like finalization success/failure.
+        final confirmInfo = await _confirmUpload(
+          dataItemId: dataItem.id,
+          uploadId: uploadId,
+          dataItemSize: dataItem.dataItemSize,
+        );
+
         onSendProgressTimer?.cancel();
 
         return confirmInfo;
@@ -176,32 +179,56 @@ class TurboUploadService {
     }
   }
 
-  Future<Response> _confirmUpload(TxID dataItemId) async {
-    try {
-      logger.i('[$dataItemId] Confirming upload to Turbo');
+  // TODO: This funciton as designed should go away, but some incremental
+  // improvements that could be helpful:
+  // - Don't use recursion. Use a while loop instead.
+  // - Have a max retry count and/or max finalization time
+  // - Make retries based on an exponential backoff rather than a fixed delay
+  // - Make starting time for first wait based on some linear function of file size
+  // - Don't keep retrying infinitely in the case of errors.
+  Future<Response> _confirmUpload({
+    required TxID dataItemId,
+    required String uploadId,
+    required int dataItemSize,
+  }) async {
+    final fileSizeInGiB = (dataItemSize.toDouble() / GiB(1).size).ceil();
+    final maxWaitTime = Duration(minutes: fileSizeInGiB);
+    logger.d(
+        '[$dataItemId] Confirming upload to Turbo with uploadId $uploadId for up to ${maxWaitTime.inMinutes} minutes.');
+
+    final startTime = DateTime.now();
+    final cutoffTime = startTime.add(maxWaitTime);
+    int attemptCount = 0;
+
+    while (DateTime.now().isBefore(cutoffTime)) {
       final response = await dio.get(
-        '$turboUploadUri/v1/tx/$dataItemId/status',
+        '$turboUploadUri/chunks/arweave/$uploadId/status',
       );
 
       final responseData = response.data;
+      final responseStatus = responseData['status'];
+      switch (responseStatus) {
+        case 'FINALIZED':
+          logger.i('[$dataItemId] DataItem confirmed!');
+          return response;
+        case 'UNDERFUNDED':
+          throw UploadCanceledException('Upload canceled. Underfunded.');
+        case 'ASSEMBLING':
+        case 'VALIDATING':
+        case 'FINALIZING':
+          final retryAfterDuration =
+              dataItemConfirmationRetryDelay(attemptCount++);
+          logger.i(
+              '[$dataItemId] DataItem not confirmed. Retrying in ${retryAfterDuration.inMilliseconds}ms');
 
-      if (responseData['status'] == 'CONFIRMED' ||
-          responseData['status'] == 'FINALIZED') {
-        logger.i('[$dataItemId] DataItem confirmed!');
-        return response;
-      } else {
-        logger.w(
-            '[$dataItemId] DataItem not confirmed. Retrying in ${dataItemConfirmationRetryDelay.toString()}');
-
-        await Future.delayed(dataItemConfirmationRetryDelay);
-
-        return _confirmUpload(dataItemId);
+          await Future.delayed(retryAfterDuration);
+        default:
+          throw UploadCanceledException(
+              'Upload canceled. Finalization failed. Status: ${responseData['status']}');
       }
-    } catch (e) {
-      await Future.delayed(dataItemConfirmationRetryDelay);
-
-      return _confirmUpload(dataItemId);
     }
+    throw UploadCanceledException(
+        'Upload canceled. Finalization took too long.');
   }
 
   Future<void> cancel() {
@@ -298,4 +325,19 @@ Stream<Uint8List> streamToChunks(
   if (buffer.length > 0) {
     yield buffer.toBytes();
   }
+}
+
+final defaultBaseDuration = Duration(milliseconds: 250);
+
+Duration dataItemConfirmationRetryDelay(
+  int iteration, {
+  Duration baseDuration = const Duration(milliseconds: 100),
+  Duration maxDuration = const Duration(seconds: 8),
+}) {
+  return Duration(
+    milliseconds: min(
+      baseDuration.inMilliseconds * pow(2, iteration).toInt(),
+      maxDuration.inMilliseconds,
+    ),
+  );
 }

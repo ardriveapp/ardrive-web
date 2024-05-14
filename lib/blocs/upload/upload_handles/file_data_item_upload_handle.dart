@@ -20,7 +20,6 @@ const fileDataItemEntityCount = 2;
 class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
   final FileEntity entity;
   final UploadFile file;
-  final String path;
   final SecretKey? driveKey;
   final SecretKey? fileKey;
   final String revisionAction;
@@ -47,7 +46,6 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
 
   FileDataItemUploadHandle({
     required this.entity,
-    required this.path,
     required this.file,
     required this.revisionAction,
     required this.arweave,
@@ -64,7 +62,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
   }) async {
     entity.bundledIn = bundledInTxId;
     await driveDao.transaction(() async {
-      await driveDao.writeFileEntity(entity, path);
+      await driveDao.writeFileEntity(entity);
       await driveDao.insertFileRevision(
         entity.toRevisionCompanion(performedAction: revisionAction),
       );
@@ -73,6 +71,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
 
   Future<List<DataItem>> prepareAndSignDataItems() async {
     final fileData = await file.ioFile.readAsBytes();
+    final signer = ArweaveSigner(wallet);
 
     dataTx = isPrivate
         ? await crypto.createEncryptedDataItem(fileData, fileKey!)
@@ -93,7 +92,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
       );
     }
 
-    await dataTx.sign(wallet);
+    await dataTx.sign(signer);
 
     entity.dataTxId = dataTx.id;
     entityTx = await arweave.prepareEntityDataItem(
@@ -101,7 +100,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
       wallet,
       key: fileKey,
     );
-    await entityTx.sign(wallet);
+    await entityTx.sign(signer);
     entity.txId = entityTx.id;
 
     return [entityTx, dataTx];
@@ -140,7 +139,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
       parentFolderId: entity.parentFolderId,
       size: entity.size,
     );
-    return (utf8.encode(json.encode(entityFake)) as Uint8List).lengthInBytes;
+    return utf8.encode(json.encode(entityFake)).lengthInBytes;
   }
 
   Future<int> _estimateDataTxSize() async {

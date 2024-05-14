@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
+import 'package:ardrive/services/arweave/get_segmented_transaction_from_drive_strategy.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
 import 'package:ardrive/utils/arfs_txs_filter.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
@@ -46,7 +49,7 @@ class ArweaveService {
     ArtemisClient? artemisClient,
   }) : _gql = artemisClient ??
             ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
-    _graphQLRetry = GraphQLRetry(
+    graphQLRetry = GraphQLRetry(
       _gql,
       internetChecker: InternetChecker(connectivity: Connectivity()),
     );
@@ -76,7 +79,7 @@ class ArweaveService {
     return (bytes / byteCountPerChunk).ceil();
   }
 
-  late GraphQLRetry _graphQLRetry;
+  late GraphQLRetry graphQLRetry;
   late HttpRetry httpRetry;
 
   /// Returns the onchain balance of the specified address.
@@ -114,7 +117,7 @@ class ArweaveService {
 
   /// Returns the pending transaction fees of the specified address that is not reflected by `getWalletBalance()`.
   Future<BigInt> getPendingTxFees(String address) async {
-    final query = await _graphQLRetry.execute(PendingTxFeesQuery(
+    final query = await graphQLRetry.execute(PendingTxFeesQuery(
         variables: PendingTxFeesArguments(walletAddress: address)));
 
     return query.data!.transactions.edges
@@ -150,7 +153,7 @@ class ArweaveService {
     while (true) {
       try {
         // Get a page of 100 transactions
-        final snapshotEntityHistoryQuery = await _graphQLRetry.execute(
+        final snapshotEntityHistoryQuery = await graphQLRetry.execute(
           SnapshotEntityHistoryQuery(
             variables: SnapshotEntityHistoryArguments(
               driveId: driveId,
@@ -181,56 +184,28 @@ class ArweaveService {
     }
   }
 
-  Stream<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>>
-      getAllTransactionsFromDrive(
-    String driveId, {
-    required String ownerAddress,
-    int? lastBlockHeight,
-  }) {
-    return getSegmentedTransactionsFromDrive(
-      driveId,
-      minBlockHeight: lastBlockHeight,
-      ownerAddress: ownerAddress,
-    );
-  }
-
-  Stream<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>>
+  Stream<List<DriveEntityHistoryTransactionModel>>
       getSegmentedTransactionsFromDrive(
     String driveId, {
     required String ownerAddress,
     int? minBlockHeight,
     int? maxBlockHeight,
+    GetSegmentedTransactionFromDriveStrategy? strategy,
   }) async* {
-    String? cursor;
+    strategy ??=
+        GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy(
+      graphQLRetry,
+    );
 
-    while (true) {
-      // Get a page of 100 transactions
-      final driveEntityHistoryQuery = await _graphQLRetry.execute(
-        DriveEntityHistoryQuery(
-          variables: DriveEntityHistoryArguments(
-            driveId: driveId,
-            minBlockHeight: minBlockHeight,
-            maxBlockHeight: maxBlockHeight,
-            after: cursor,
-            ownerAddress: ownerAddress,
-          ),
-        ),
-      );
+    logger.d(
+        'Fetching segmented transactions from drive using strategy ${strategy.runtimeType}');
 
-      yield driveEntityHistoryQuery.data!.transactions.edges
-          .where((element) => doesTagsContainValidArFSVersion(
-                element.node.tags.map((e) => Tag(e.name, e.value)).toList(),
-              ))
-          .toList();
-
-      cursor = driveEntityHistoryQuery.data!.transactions.edges.isNotEmpty
-          ? driveEntityHistoryQuery.data!.transactions.edges.last.cursor
-          : null;
-
-      if (!driveEntityHistoryQuery.data!.transactions.pageInfo.hasNextPage) {
-        break;
-      }
-    }
+    yield* strategy.getSegmentedTransactionFromDrive(
+      driveId,
+      minBlockHeight: minBlockHeight,
+      maxBlockHeight: maxBlockHeight,
+      ownerAddress: ownerAddress,
+    );
   }
 
   Stream<List<LicenseAssertions$Query$TransactionConnection$TransactionEdge$Transaction>>
@@ -239,7 +214,7 @@ class ArweaveService {
     final chunks = licenseAssertionTxIds.slices(chunkSize);
     for (final chunk in chunks) {
       // Get a page of 100 transactions
-      final licenseAssertionsQuery = await _graphQLRetry.execute(
+      final licenseAssertionsQuery = await graphQLRetry.execute(
         LicenseAssertionsQuery(
           variables: LicenseAssertionsArguments(transactionIds: chunk),
         ),
@@ -257,7 +232,7 @@ class ArweaveService {
     final chunks = licenseComposedTxIds.slices(chunkSize);
     for (final chunk in chunks) {
       // Get a page of 100 transactions
-      final licenseComposedQuery = await _graphQLRetry.execute(
+      final licenseComposedQuery = await graphQLRetry.execute(
         LicenseComposedQuery(
           variables: LicenseComposedArguments(transactionIds: chunk),
         ),
@@ -275,8 +250,7 @@ class ArweaveService {
   ///
   /// returns DriveEntityHistory object
   Future<DriveEntityHistory> createDriveEntityHistoryFromTransactions(
-    List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
-        entityTxs,
+    List<DriveEntityHistoryTransactionModel> entityTxs,
     SecretKey? driveKey,
     int lastBlockHeight, {
     required String ownerAddress,
@@ -292,13 +266,22 @@ class ArweaveService {
 
     final List<Uint8List> entityDatas = await Future.wait(
       entityTxs.map(
-        (entity) async {
-          final tags = entity.tags;
-          final isSnapshot = tags.any(
-            (tag) =>
-                tag.name == EntityTag.entityType &&
-                tag.value == EntityTypeTag.snapshot.toString(),
+        (model) async {
+          final entity = model.transactionCommonMixin;
+
+          final tags = HashMap.fromIterable(
+            entity.tags,
+            key: (tag) => tag.name,
+            value: (tag) => tag.value,
           );
+
+          if (driveKey != null && tags[EntityTag.cipherIv] == null) {
+            logger.d('skipping unnecessary request for a broken entity');
+            return Uint8List(0);
+          }
+
+          final isSnapshot =
+              tags[EntityTag.entityType] == EntityTypeTag.snapshot;
 
           // don't fetch data for snapshots
           if (isSnapshot) {
@@ -322,7 +305,19 @@ class ArweaveService {
     final blockHistory = <BlockEntities>[];
 
     for (var i = 0; i < entityTxs.length; i++) {
-      final transaction = entityTxs[i];
+      final transaction = entityTxs[i].transactionCommonMixin;
+
+      final tags = HashMap.fromIterable(
+        transaction.tags,
+        key: (tag) => tag.name,
+        value: (tag) => tag.value,
+      );
+
+      if (driveKey != null && tags[EntityTag.cipherIv] == null) {
+        logger.d('skipping unnecessary request for a broken entity');
+        continue;
+      }
+
       // If we encounter a transaction that has yet to be mined, we stop moving through history.
       // We can continue once the transaction is mined.
       if (transaction.block == null) {
@@ -336,7 +331,7 @@ class ArweaveService {
       }
 
       try {
-        final entityType = transaction.getTag(EntityTag.entityType);
+        final entityType = tags[EntityTag.entityType];
         final rawEntityData = entityDatas[i];
 
         await metadataCache.put(transaction.id, rawEntityData);
@@ -475,7 +470,7 @@ class ArweaveService {
     String cursor = '';
 
     while (true) {
-      final userDriveEntitiesQuery = await _graphQLRetry.execute(
+      final userDriveEntitiesQuery = await graphQLRetry.execute(
         UserDriveEntitiesQuery(
           variables: UserDriveEntitiesArguments(
             owner: userAddress,
@@ -612,18 +607,20 @@ class ArweaveService {
   ///
   /// Returns `null` if no valid drive is found or the provided `driveKey` is incorrect.
   Future<DriveEntity?> getLatestDriveEntityWithId(
-    String driveId, [
+    String driveId, {
+    String? driveOwner,
     SecretKey? driveKey,
     int maxRetries = defaultMaxRetries,
-  ]) async {
-    final driveOwner = await getOwnerForDriveEntityWithId(driveId);
+  }) async {
+    driveOwner ??= await getOwnerForDriveEntityWithId(driveId);
+
     if (driveOwner == null) {
       return null;
     }
 
     String cursor = '';
     while (true) {
-      final latestDriveQuery = await _graphQLRetry.execute(
+      final latestDriveQuery = await graphQLRetry.execute(
         LatestDriveEntityWithIdQuery(
           variables: LatestDriveEntityWithIdArguments(
             driveId: driveId,
@@ -687,7 +684,7 @@ class ArweaveService {
       return null;
     }
 
-    final latestDriveQuery = await _graphQLRetry.execute(
+    final latestDriveQuery = await graphQLRetry.execute(
         LatestDriveEntityWithIdQuery(
             variables: LatestDriveEntityWithIdArguments(
                 driveId: driveId, owner: driveOwner)));
@@ -763,11 +760,13 @@ class ArweaveService {
 
   /// Gets the owner of the drive sorted by blockheight.
   /// Returns `null` if no valid drive is found or the provided `driveKey` is incorrect.
-  Future<String?> getOwnerForDriveEntityWithId(String driveId) async {
+  Future<String?> getOwnerForDriveEntityWithId(
+    String driveId,
+  ) async {
     String cursor = '';
 
     while (true) {
-      final firstOwnerQuery = await _graphQLRetry.execute(
+      final firstOwnerQuery = await graphQLRetry.execute(
         FirstDriveEntityWithIdOwnerQuery(
           variables: FirstDriveEntityWithIdOwnerArguments(
             driveId: driveId,
@@ -829,7 +828,8 @@ class ArweaveService {
 
     return await getLatestDriveEntityWithId(
       checkDriveId,
-      checkDriveKey,
+      driveOwner: await wallet.getAddress(),
+      driveKey: checkDriveKey,
     );
   }
 
@@ -850,7 +850,7 @@ class ArweaveService {
     String cursor = '';
 
     while (true) {
-      final latestFileQuery = await _graphQLRetry.execute(
+      final latestFileQuery = await graphQLRetry.execute(
         LatestFileEntityWithIdQuery(
           variables: LatestFileEntityWithIdArguments(
             fileId: fileId,
@@ -908,7 +908,7 @@ class ArweaveService {
 
     while (true) {
       // Get a page of 100 transactions
-      final allFileEntitiesQuery = await _graphQLRetry.execute(
+      final allFileEntitiesQuery = await graphQLRetry.execute(
         AllFileEntitiesWithIdQuery(
           variables: AllFileEntitiesWithIdArguments(
             fileId: fileId,
@@ -968,7 +968,7 @@ class ArweaveService {
     String cursor = '';
 
     while (true) {
-      final firstOwnerQuery = await _graphQLRetry.execute(
+      final firstOwnerQuery = await graphQLRetry.execute(
         FirstFileEntityWithIdOwnerQuery(
           variables: FirstFileEntityWithIdOwnerArguments(
             fileId: fileId,
@@ -1027,7 +1027,7 @@ class ArweaveService {
             ? i + chunkSize
             : transactionIds.length;
 
-        final query = await _graphQLRetry.execute(
+        final query = await graphQLRetry.execute(
           TransactionStatusesQuery(
             variables: TransactionStatusesArguments(
               transactionIds:
@@ -1061,6 +1061,20 @@ class ArweaveService {
     return transactionConfirmations;
   }
 
+  Future<String?> getFirstTxForWallet(String owner) async {
+    final firstTxQuery = await graphQLRetry.execute(
+      FirstTxForWalletQuery(
+        variables: FirstTxForWalletArguments(owner: owner),
+      ),
+    );
+
+    if (firstTxQuery.data!.transactions.edges.isEmpty) {
+      return null;
+    }
+
+    return firstTxQuery.data!.transactions.edges.first.node.id;
+  }
+
   /// Creates and signs a [Transaction] representing the provided entity.
   ///
   /// Optionally provide a [SecretKey] to encrypt the entity data.
@@ -1077,23 +1091,10 @@ class ArweaveService {
     );
 
     if (!skipSignature) {
-      await tx.sign(wallet);
+      await tx.sign(ArweaveSigner(wallet));
     }
 
     return tx;
-  }
-
-  Future<Uint8List> getSignatureData(
-    Entity entity,
-    Wallet wallet, [
-    SecretKey? key,
-  ]) async {
-    final tx = await client.transactions.prepare(
-      await entity.asTransaction(key: key),
-      wallet,
-    );
-
-    return await tx.getSignatureData();
   }
 
   /// Creates and signs a [DataItem] representing the provided entity.
@@ -1110,7 +1111,7 @@ class ArweaveService {
     item.setOwner(await wallet.getOwner());
 
     if (!skipSignature) {
-      await item.sign(wallet);
+      await item.sign(ArweaveSigner(wallet));
     }
 
     return item;
@@ -1132,7 +1133,7 @@ class ArweaveService {
       wallet,
     );
 
-    await bundleTx.sign(wallet);
+    await bundleTx.sign(ArweaveSigner(wallet));
 
     return bundleTx;
   }
@@ -1151,7 +1152,7 @@ class ArweaveService {
       )
       ..addBundleTags()
       ..setOwner(await wallet.getOwner());
-    await item.sign(wallet);
+    await item.sign(ArweaveSigner(wallet));
 
     logger.i('Prepared bundled data item with id ${item.id}'
         ' with tags ${item.tags}');
@@ -1170,7 +1171,7 @@ class ArweaveService {
       wallet,
     );
 
-    await bundleTx.sign(wallet);
+    await bundleTx.sign(ArweaveSigner(wallet));
 
     return bundleTx;
   }

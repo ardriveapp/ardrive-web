@@ -59,6 +59,11 @@ class DrivesCubit extends Cubit<DrivesState> {
 
       final profileState = _profileCubit.state;
 
+      if (profileState is ProfileLoggingIn) {
+        emit(DrivesLoadInProgress());
+        return;
+      }
+
       String? selectedDriveId;
 
       if (state is DrivesLoadSuccess && state.selectedDriveId != null) {

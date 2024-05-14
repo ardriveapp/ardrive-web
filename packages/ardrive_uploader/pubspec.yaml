@@ -16,7 +16,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v3.8.3
+      ref: v3.9.0
   ardrive_utils:
     path: ../ardrive_utils
   ardrive_crypto:
@@ -27,7 +27,7 @@ dependencies:
     path: ../arfs
   pst:
     path: ../pst
-  uuid: ^3.0.4
+  uuid: ^4.4.0
   cryptography: ^2.5.0
   rxdart: ^0.27.7
   dio: ^5.4.0
@@ -38,7 +38,7 @@ dependencies:
     path: ../ardrive_logger
 
 dev_dependencies:
-  lints: ^2.0.0
+  lints: ^3.0.0
   test: ^1.21.0
   build_runner: ^2.0.4
   mocktail: ^1.0.2

@@ -1,0 +1,2 @@
+- Optimizes sync load time
+- Fixes an issue when creating large snapshots on Firefox

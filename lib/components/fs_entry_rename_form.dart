@@ -34,7 +34,6 @@ void promptToRenameModal(
             turboUploadService: context.read<TurboUploadService>(),
             driveDao: context.read<DriveDao>(),
             profileCubit: context.read<ProfileCubit>(),
-            syncCubit: context.read<SyncCubit>(),
           ),
         ),
         BlocProvider.value(
@@ -50,9 +49,9 @@ void promptToRenameModal(
 
 class FsEntryRenameForm extends StatefulWidget {
   const FsEntryRenameForm({
-    Key? key,
+    super.key,
     required this.entryName,
-  }) : super(key: key);
+  });
 
   final String entryName;
 

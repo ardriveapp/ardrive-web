@@ -4,6 +4,7 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/search/search_result.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -33,8 +34,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   final ArDriveCrypto _crypto = ArDriveCrypto();
 
   DriveDao(
-    Database db,
-  ) : super(db) {
+    super.db,
+  ) {
     initVaults();
   }
 
@@ -92,6 +93,66 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return await _previewVault.put(dataTxId, bytes);
   }
 
+  Future<void> insertNewDriveRevisions(
+    List<DriveRevisionsCompanion> revisions,
+  ) async {
+    await db.batch((b) async {
+      b.insertAllOnConflictUpdate(db.driveRevisions, revisions);
+    });
+  }
+
+  Future<void> insertNewFileRevisions(
+    List<FileRevisionsCompanion> revisions,
+  ) async {
+    await db.batch((b) async {
+      b.insertAllOnConflictUpdate(db.fileRevisions, revisions);
+    });
+  }
+
+  Future<void> insertNewFolderRevisions(
+    List<FolderRevisionsCompanion> revisions,
+  ) async {
+    await db.batch((b) async {
+      b.insertAllOnConflictUpdate(db.folderRevisions, revisions);
+    });
+  }
+
+  Future<void> insertNewNetworkTransactions(
+    List<NetworkTransactionsCompanion> transactions,
+  ) async {
+    await db.batch((b) async {
+      b.insertAllOnConflictUpdate(db.networkTransactions, transactions);
+    });
+  }
+
+  Future<void> updateFolderEntries(
+    List<FolderEntriesCompanion> entries,
+  ) async {
+    await db.batch((b) async {
+      b.insertAllOnConflictUpdate(db.folderEntries, entries);
+    });
+  }
+
+  Future<void> updateFileEntries(
+    List<FileEntriesCompanion> entries,
+  ) async {
+    await db.batch((b) async {
+      b.insertAllOnConflictUpdate(db.fileEntries, entries);
+    });
+  }
+
+  Future<void> updateDrive(
+    DrivesCompanion drive,
+  ) async {
+    await (db.update(drives)..whereSamePrimaryKey(drive)).write(drive);
+  }
+
+  Future<void> runTransaction(
+    Future<void> Function() transaction,
+  ) async {
+    await db.transaction(transaction);
+  }
+
   /// Creates a drive with its accompanying root folder.
   Future<CreateDriveResult> createDrive({
     required String name,
@@ -101,6 +162,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     required String password,
     required SecretKey profileKey,
   }) async {
+    // TODO: A DAO object should not be responsible for generating UUIDs.
     final driveId = _uuid.v4();
     final rootFolderId = _uuid.v4();
 
@@ -112,6 +174,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       privacy: privacy,
     );
 
+    // TODO: A DAO object should not be responsible for deriving keys.
     SecretKey? driveKey;
     switch (privacy) {
       case DrivePrivacyTag.private:
@@ -133,8 +196,9 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           id: rootFolderId,
           driveId: driveId,
           name: name,
-          path: rootPath,
           isHidden: const Value(false),
+          // TODO: path is not used in the app, so it's not necessary to set it
+          path: '',
         ),
       );
     });
@@ -291,63 +355,52 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Stream<FolderWithContents> watchFolderContents(
     String driveId, {
     String? folderId,
-    String? folderPath,
     DriveOrder orderBy = DriveOrder.name,
     OrderingMode orderingMode = OrderingMode.asc,
   }) {
-    assert(folderId != null || folderPath != null);
-    final folderStream = (folderId != null
-            ? folderById(driveId: driveId, folderId: folderId)
-            : folderWithPath(driveId: driveId, path: folderPath!))
-        .watchSingleOrNull();
+    if (folderId == null) {
+      return driveById(driveId: driveId).watchSingleOrNull().switchMap((drive) {
+        if (drive == null) {
+          throw Exception('Drive with id $driveId not found');
+        }
 
-    final subfolderQuery = (folderId != null
-        ? foldersInFolder(
-            driveId: driveId,
-            parentFolderId: folderId,
-            order: (folderEntries) {
-              return enumToFolderOrderByClause(
-                folderEntries,
-                orderBy,
-                orderingMode,
-              );
-            },
-          )
-        : foldersInFolderAtPath(
-            driveId: driveId,
-            path: folderPath!,
-            order: (folderEntries) {
-              return enumToFolderOrderByClause(
-                folderEntries,
-                orderBy,
-                orderingMode,
-              );
-            },
-          ));
+        return folderById(driveId: driveId, folderId: drive.rootFolderId)
+            .watchSingleOrNull()
+            .switchMap((folder) {
+          return watchFolderContents(driveId,
+              folderId: folder!.id,
+              orderBy: orderBy,
+              orderingMode: orderingMode);
+        });
+      });
+    }
 
-    final filesQuery = folderId != null
-        ? filesInFolderWithLicenseAndRevisionTransactions(
-            driveId: driveId,
-            parentFolderId: folderId,
-            order: (fileEntries, _, __, ___) {
-              return enumToFileOrderByClause(
-                fileEntries,
-                orderBy,
-                orderingMode,
-              );
-            },
-          )
-        : filesInFolderAtPathWithLicenseAndRevisionTransactions(
-            driveId: driveId,
-            path: folderPath!,
-            order: (fileEntries, _, __, ___) {
-              return enumToFileOrderByClause(
-                fileEntries,
-                orderBy,
-                orderingMode,
-              );
-            },
-          );
+    final folderStream =
+        folderById(driveId: driveId, folderId: folderId).watchSingleOrNull();
+
+    final subfolderQuery = foldersInFolder(
+      driveId: driveId,
+      parentFolderId: folderId,
+      order: (folderEntries) {
+        return enumToFolderOrderByClause(
+          folderEntries,
+          orderBy,
+          orderingMode,
+        );
+      },
+    );
+
+    final filesQuery = filesInFolderWithLicenseAndRevisionTransactions(
+      driveId: driveId,
+      parentFolderId: folderId,
+      order: (fileEntries, _, __, ___) {
+        return enumToFileOrderByClause(
+          fileEntries,
+          orderBy,
+          orderingMode,
+        );
+      },
+    );
 
     return Rx.combineLatest3(
         folderStream.where((folder) => folder != null).map((folder) => folder!),
@@ -378,6 +431,82 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     });
   }
 
+  Future<List<SearchResult>> search({
+    required String query,
+    required SearchQueryType type,
+  }) async {
+    final resultFiles = await (select(fileEntries)
+          ..where((tbl) => tbl.name.like('%$query%')))
+        .get();
+    final resultFolders = await (select(folderEntries)
+          ..where((tbl) => tbl.name.like('%$query%')))
+        .get();
+    final resultDrives =
+        await (select(drives)..where((tbl) => tbl.name.like('%$query%'))).get();
+
+    resultFolders.removeWhere((element) => element.parentFolderId == null);
+
+    final List<SearchResult> results = [];
+    final fileResults = await Future.wait(
+      resultFiles.map(
+        (file) async {
+          final drive = await driveById(driveId: file.driveId).getSingle();
+          FolderEntry? folder;
+
+          if (file.parentFolderId != drive.rootFolderId) {
+            folder = await folderById(
+              driveId: file.driveId,
+              folderId: file.parentFolderId,
+            ).getSingle();
+          }
+
+          return SearchResult<FileEntry>(
+            result: file,
+            parentFolder: folder,
+            drive: drive,
+          );
+        },
+      ),
+    );
+
+    final folderResults = await Future.wait(
+      resultFolders.map(
+        (folder) async {
+          FolderEntry? parentFolder;
+          final drive = await driveById(driveId: folder.driveId).getSingle();
+
+          if (folder.parentFolderId != null &&
+              folder.parentFolderId! != drive.rootFolderId) {
+            final parentFolderEntry = await folderById(
+              driveId: folder.driveId,
+              folderId: folder.parentFolderId!,
+            ).getSingle();
+            parentFolder = parentFolderEntry;
+          }
+
+          return SearchResult<FolderEntry>(
+            result: folder,
+            parentFolder: parentFolder,
+            drive: drive,
+          );
+        },
+      ),
+    );
+
+    final driveResults = await Future.wait(resultDrives.map((drive) async {
+      return SearchResult<Drive>(
+        result: drive,
+        drive: await driveById(driveId: drive.id).getSingle(),
+      );
+    }));
+
+    results.addAll(driveResults);
+    results.addAll(folderResults);
+    results.addAll(fileResults);
+
+    return results;
+  }
+
   /// Create a new folder entry.
   /// Returns the id of the created folder.
   Future<FolderID> createFolder({
@@ -385,7 +514,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     FolderID? parentFolderId,
     FolderID? folderId,
     required String folderName,
-    required String path,
   }) async {
     final id = folderId ?? _uuid.v4();
     final folderEntriesCompanion = FolderEntriesCompanion.insert(
@@ -393,8 +521,9 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       driveId: driveId,
       parentFolderId: Value(parentFolderId),
       name: folderName,
-      path: path,
       isHidden: const Value(false),
+      // TODO: path is not used in the app, so it's not necessary to set it
+      path: '',
     );
     await into(folderEntries).insert(folderEntriesCompanion);
 
@@ -448,20 +577,20 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   Future<void> writeFileEntity(
     FileEntity entity,
-    String path,
   ) {
     final companion = FileEntriesCompanion.insert(
       id: entity.id!,
       driveId: entity.driveId!,
       parentFolderId: entity.parentFolderId!,
       name: entity.name!,
-      path: path,
       dataTxId: entity.dataTxId!,
       size: entity.size!,
       lastModifiedDate: entity.lastModifiedDate ?? DateTime.now(),
       dataContentType: Value(entity.dataContentType),
       pinnedDataOwnerAddress: Value(entity.pinnedDataOwnerAddress),
       isHidden: Value(entity.isHidden ?? false),
+      // TODO: path is not used in the app, so it's not necessary to set it
+      path: '',
     );
 
     return into(fileEntries).insert(

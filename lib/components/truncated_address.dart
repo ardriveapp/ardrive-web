@@ -10,12 +10,12 @@ class TruncatedAddress extends StatelessWidget {
   final int offsetEnd;
 
   const TruncatedAddress({
-    Key? key,
+    super.key,
     required this.walletAddress,
     this.fontSize,
     this.offsetStart = 6,
     this.offsetEnd = 5,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive_logger/ardrive_logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -131,7 +132,7 @@ abstract class EntityWithCustomMetadata extends Entity {
     'Bundle-Version',
   ];
 
-  EntityWithCustomMetadata(ArDriveCrypto crypto) : super(crypto);
+  EntityWithCustomMetadata(super.crypto);
 
   @override
   Future<Transaction> asTransaction({
@@ -192,7 +193,7 @@ abstract class EntityWithCustomMetadata extends Entity {
   }
 }
 
-class EntityTransactionParseException implements Exception {
+class EntityTransactionParseException implements UntrackedException {
   final String transactionId;
 
   EntityTransactionParseException({required this.transactionId});

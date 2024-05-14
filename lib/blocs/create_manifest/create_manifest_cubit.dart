@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/arfs/repository/file_repository.dart';
+import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/manifest_data.dart';
 import 'package:ardrive/models/models.dart';
@@ -31,6 +33,10 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final PstService _pst;
+
+  final FolderRepository _folderRepository;
+  final FileRepository _fileRepository;
+
   bool _hasPendingFiles = false;
 
   StreamSubscription? _selectedFolderSubscription;
@@ -43,12 +49,16 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     required DriveDao driveDao,
     required PstService pst,
     required bool hasPendingFiles,
+    required FileRepository fileRepository,
+    required FolderRepository folderRepository,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
         _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _pst = pst,
         _hasPendingFiles = hasPendingFiles,
+        _fileRepository = fileRepository,
+        _folderRepository = folderRepository,
         super(CreateManifestInitial()) {
     if (drive.isPrivate) {
       // Extra guardrail to prevent private drives from creating manifests
@@ -215,19 +225,24 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     try {
       final parentFolder =
           (state as CreateManifestPreparingManifest).parentFolder;
+
       final folderNode = rootFolderNode.searchForFolder(parentFolder.id) ??
           await _driveDao.getFolderTree(drive.id, parentFolder.id);
-      final arweaveManifest = ManifestData.fromFolderNode(
+
+      final arweaveManifest = await ManifestData.fromFolderNode(
         folderNode: folderNode,
+        fileRepository: _fileRepository,
+        folderRepository: _folderRepository,
       );
 
       final profile = _profileCubit.state as ProfileLoggedIn;
       final wallet = profile.wallet;
+      final signer = ArweaveSigner(wallet);
 
       final manifestDataItem = await arweaveManifest.asPreparedDataItem(
         owner: await wallet.getOwner(),
       );
-      await manifestDataItem.sign(wallet);
+      await manifestDataItem.sign(signer);
 
       /// Assemble data JSON of the metadata tx for the manifest
       final manifestFileEntity = FileEntity(
@@ -247,15 +262,12 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       );
 
       // Sign data item and preserve meta data tx ID on entity
-      await manifestMetaDataItem.sign(wallet);
+      await manifestMetaDataItem.sign(signer);
       manifestFileEntity.txId = manifestMetaDataItem.id;
 
       addManifestToDatabase() => _driveDao.transaction(
             () async {
-              await _driveDao.writeFileEntity(
-                manifestFileEntity,
-                '${parentFolder.path}/$manifestName',
-              );
+              await _driveDao.writeFileEntity(manifestFileEntity);
               await _driveDao.insertFileRevision(
                 manifestFileEntity.toRevisionCompanion(
                   performedAction: existingManifestFileId == null
@@ -311,7 +323,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
           .convertForUSD(double.parse(arUploadCost));
 
       // Sign bundle tx and preserve bundle tx ID on entity
-      await bundleTx.sign(wallet);
+      await bundleTx.sign(ArweaveSigner(wallet));
       manifestFileEntity.bundledIn = bundleTx.id;
 
       final uploadManifestParams = UploadManifestParams(

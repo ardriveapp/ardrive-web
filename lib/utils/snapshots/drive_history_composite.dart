@@ -1,4 +1,4 @@
-import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
+import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
 import 'package:ardrive/utils/snapshots/gql_drive_history.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
@@ -56,8 +56,7 @@ class DriveHistoryComposite implements SegmentedGQLData {
   }
 
   @override
-  Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
-      getNextStream() {
+  Stream<DriveEntityHistoryTransactionModel> getNextStream() {
     _currentIndex++;
     if (currentIndex >= subRanges.rangeSegments.length) {
       throw SubRangeIndexOverflow(index: currentIndex);
@@ -66,8 +65,7 @@ class DriveHistoryComposite implements SegmentedGQLData {
     return _getNextStream();
   }
 
-  Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
-      _getNextStream() async* {
+  Stream<DriveEntityHistoryTransactionModel> _getNextStream() async* {
     for (SegmentedGQLData source in _subRangeToSnapshotItemMapping) {
       yield* source.getNextStream();
     }

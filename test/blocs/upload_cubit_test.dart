@@ -12,7 +12,6 @@ import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
-import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/user/user.dart';
@@ -30,8 +29,6 @@ import 'package:pst/pst.dart';
 import '../core/upload/uploader_test.dart';
 import '../test_utils/utils.dart';
 import 'drives_cubit_test.dart';
-
-class MockArweaveService extends Mock implements ArweaveService {}
 
 class MockPstService extends Mock implements PstService {}
 
@@ -109,8 +106,8 @@ void main() {
       lastUpdated: tDefaultDate,
       name: '',
       parentFolderId: '',
-      path: '',
       isHidden: false,
+      path: '',
     ));
 
     registerFallbackValue(Drive(

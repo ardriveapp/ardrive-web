@@ -56,12 +56,11 @@ class DrivesLoadSuccess extends DrivesState {
 
 class DrivesLoadedWithNoDrivesFound extends DrivesLoadSuccess {
   DrivesLoadedWithNoDrivesFound({
-    required bool canCreateNewDrive,
+    required super.canCreateNewDrive,
   }) : super(
           selectedDriveId: null,
           userDrives: [],
           sharedDrives: [],
           drivesWithAlerts: [],
-          canCreateNewDrive: canCreateNewDrive,
         );
 }

@@ -1,14 +1,15 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/license/cc_type_form.dart';
+import 'package:ardrive/components/license/learn_about_licensing.dart';
+import 'package:ardrive/components/license/udl_params_form.dart';
 import 'package:ardrive/components/license_summary.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
-import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -54,9 +55,9 @@ class FsEntryLicenseForm extends StatefulWidget {
   final List<ArDriveDataTableItem> selectedItems;
 
   const FsEntryLicenseForm({
-    Key? key,
+    super.key,
     required this.selectedItems,
-  }) : super(key: key);
+  });
 
   @override
   State<FsEntryLicenseForm> createState() => _FsEntryLicenseFormState();
@@ -208,11 +209,12 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                   const Divider(height: 24),
                   SizedBox(
                     child: ReactiveForm(
-                      formGroup: context.watch<FsEntryLicenseBloc>().selectForm,
+                      formGroup:
+                          context.watch<FsEntryLicenseBloc>().categoryForm,
                       child: ReactiveDropdownField(
                         alignment: AlignmentDirectional.centerStart,
                         isExpanded: true,
-                        formControlName: 'licenseType',
+                        formControlName: 'licenseCategory',
                         decoration: InputDecoration(
                           border: InputBorder.none,
                           label: Text(
@@ -250,21 +252,7 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                       ),
                     ),
                   ),
-                  ArDriveClickArea(
-                    child: GestureDetector(
-                      onTap: () {
-                        openUrl(
-                          url: Resources.howDoesKeyFileLoginWork,
-                        );
-                      },
-                      child: Text(
-                        'Learn More about Licensing',
-                        style: ArDriveTypography.body
-                            .buttonNormalRegular()
-                            .copyWith(decoration: TextDecoration.underline),
-                      ),
-                    ),
-                  ),
+                  const LearnAboutLicensing(),
                   const Divider(height: 32),
                   Text(
                     // TODO: Localize
@@ -302,13 +290,11 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
               ],
             );
           } else if (state is FsEntryLicenseConfiguring) {
-            final licenseType = context
-                .read<FsEntryLicenseBloc>()
-                .selectedLicenseMeta
-                .licenseType;
-            final modalTitle = licenseType == LicenseType.udlV2
+            final licenseCategory =
+                context.read<FsEntryLicenseBloc>().selectedLicenseCategory;
+            final modalTitle = licenseCategory == LicenseCategory.udl
                 ? 'Configure Universal Data License'
-                : licenseType == LicenseType.ccByV2
+                : licenseCategory == LicenseCategory.cc
                     ? 'Configure Creative Commons License'
                     : 'Unsupported license type';
             return ArDriveScrollBar(
@@ -327,19 +313,20 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                               .filesToLicense!),
                       const SizedBox(height: 16),
                       const Divider(height: 24),
-                      licenseType == LicenseType.udlV2
+                      licenseCategory == LicenseCategory.udl
                           ? UdlParamsForm(
                               onChangeLicenseFee: () {
                                 setState(() {});
                               },
-                              formGroup:
-                                  context.watch<FsEntryLicenseBloc>().udlForm,
+                              formGroup: context
+                                  .watch<FsEntryLicenseBloc>()
+                                  .udlParamsForm,
                             )
-                          : licenseType == LicenseType.ccByV2
-                              ? CcParamsForm(
+                          : licenseCategory == LicenseCategory.cc
+                              ? CcTypeForm(
                                   formGroup: context
                                       .watch<FsEntryLicenseBloc>()
-                                      .ccForm,
+                                      .ccTypeForm,
                                 )
                               : const Text('Unsupported license type'),
                     ],
@@ -352,8 +339,10 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                       title: appLocalizationsOf(context).backEmphasized,
                     ),
                     ModalAction(
-                      isEnable:
-                          context.watch<FsEntryLicenseBloc>().udlForm.valid,
+                      isEnable: context
+                          .watch<FsEntryLicenseBloc>()
+                          .udlParamsForm
+                          .valid,
                       action: () => context
                           .read<FsEntryLicenseBloc>()
                           .add(const FsEntryLicenseConfigurationSubmit()),
@@ -670,282 +659,4 @@ class LicenseFileList extends StatelessWidget {
 
   Color _colorDisabled(BuildContext context) =>
       ArDriveTheme.of(context).themeData.colors.themeInputPlaceholder;
-}
-
-class LabeledInput extends StatelessWidget {
-  final String labelText;
-  final Widget child;
-
-  const LabeledInput({
-    super.key,
-    required this.labelText,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          labelText,
-          style: ArDriveTheme.of(context)
-              .themeData
-              .textFieldTheme
-              .inputTextStyle
-              .copyWith(
-                color:
-                    ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-        ),
-        const SizedBox(height: 8),
-        child,
-      ],
-    );
-  }
-}
-
-class UdlParamsForm extends StatefulWidget {
-  final FormGroup formGroup;
-  final Function onChangeLicenseFee;
-
-  const UdlParamsForm({
-    super.key,
-    required this.formGroup,
-    required this.onChangeLicenseFee,
-  });
-
-  @override
-  State<UdlParamsForm> createState() => _UdlParamsFormState();
-}
-
-class _UdlParamsFormState extends State<UdlParamsForm> {
-  @override
-  Widget build(BuildContext context) {
-    final inputBorder = OutlineInputBorder(
-      borderSide: BorderSide(
-        color: ArDriveTheme.of(context)
-            .themeData
-            .colors
-            .themeFgDisabled
-            .withOpacity(0.3),
-        width: 2,
-      ),
-      borderRadius: BorderRadius.circular(4),
-    );
-
-    return ReactiveForm(
-        formGroup: widget.formGroup,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: LabeledInput(
-                    labelText:
-                        // TODO: Localize
-                        // appLocalizationsOf(context).udlLicenseFee,
-                        'License Fee',
-                    child: ReactiveTextField(
-                      formControlName: 'licenseFeeAmount',
-                      cursorColor: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgDefault,
-                      keyboardType: TextInputType.number,
-                      showErrors: (control) => control.dirty && control.invalid,
-                      decoration: InputDecoration(
-                        border: inputBorder,
-                        enabledBorder: inputBorder,
-                        focusedBorder: inputBorder,
-                      ),
-                      onChanged: (s) {
-                        widget.onChangeLicenseFee();
-                      },
-                      style: const TextStyle(height: 1.5),
-                    ),
-                  ),
-                ),
-                Container(
-                  width: kMediumDialogWidth * 0.5,
-                  padding: const EdgeInsets.only(left: 24),
-                  child: LabeledInput(
-                    labelText: appLocalizationsOf(context).currency,
-                    child: ReactiveDropdownField(
-                      formControlName: 'licenseFeeCurrency',
-                      decoration: InputDecoration(
-                        enabledBorder: inputBorder,
-                        focusedBorder: inputBorder,
-                      ),
-                      showErrors: (control) => control.dirty && control.invalid,
-                      validationMessages:
-                          kValidationMessages(appLocalizationsOf(context)),
-                      items: udlCurrencyValues.entries
-                          .map(
-                            (entry) => DropdownMenuItem(
-                              value: entry.key,
-                              child: Text(entry.value),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            LabeledInput(
-              labelText:
-                  // TODO: Localize
-                  // appLocalizationsOf(context).udlCommercialUse,
-                  'Commercial Use',
-              child: ReactiveDropdownField(
-                formControlName: 'commercialUse',
-                decoration: InputDecoration(
-                  enabledBorder: inputBorder,
-                  focusedBorder: inputBorder,
-                ),
-                showErrors: (control) => control.dirty && control.invalid,
-                validationMessages:
-                    kValidationMessages(appLocalizationsOf(context)),
-                items: udlCommercialUseValues.entries
-                    .map(
-                      (entry) => DropdownMenuItem(
-                        value: entry.key,
-                        child: Text(entry.value),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ),
-            LabeledInput(
-              labelText:
-                  // TODO: Localize
-                  // appLocalizationsOf(context).udlDerivations,
-                  'Derivations',
-              child: ReactiveDropdownField(
-                formControlName: 'derivations',
-                decoration: InputDecoration(
-                  enabledBorder: inputBorder,
-                  focusedBorder: inputBorder,
-                ),
-                showErrors: (control) => control.dirty && control.invalid,
-                validationMessages:
-                    kValidationMessages(appLocalizationsOf(context)),
-                items: udlDerivationValues.entries
-                    .map(
-                      (entry) => DropdownMenuItem(
-                        value: entry.key,
-                        child: Text(entry.value),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ),
-          ]
-              .expand(
-                (element) => [element, const SizedBox(height: 16)],
-              )
-              .toList(),
-        ));
-  }
-}
-
-class CcParamsForm extends StatefulWidget {
-  const CcParamsForm({super.key, required this.formGroup});
-
-  final FormGroup formGroup;
-
-  @override
-  State<CcParamsForm> createState() => _CcParamsFormState();
-}
-
-class _CcParamsFormState extends State<CcParamsForm> {
-  LicenseMeta get licenseMeta =>
-      context.read<FsEntryLicenseBloc>().selectedLicenseMeta;
-
-  @override
-  Widget build(BuildContext context) {
-    final inputBorder = OutlineInputBorder(
-      borderSide: BorderSide(
-        color: ArDriveTheme.of(context)
-            .themeData
-            .colors
-            .themeFgDisabled
-            .withOpacity(0.3),
-        width: 2,
-      ),
-      borderRadius: BorderRadius.circular(4),
-    );
-
-    return ReactiveForm(
-      formGroup: widget.formGroup,
-      child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Flexible(
-                  child: LabeledInput(
-                    labelText: 'Type',
-                    child: ReactiveDropdownField(
-                      formControlName: 'ccAttributionField',
-                      decoration: InputDecoration(
-                        enabledBorder: inputBorder,
-                        focusedBorder: inputBorder,
-                      ),
-                      onChanged: (e) {
-                        setState(() {});
-                      },
-                      showErrors: (control) => control.dirty && control.invalid,
-                      validationMessages:
-                          kValidationMessages(appLocalizationsOf(context)),
-                      items: ccLicenses
-                          .map(
-                            (e) => DropdownMenuItem(
-                              value: e,
-                              child: Text(e.name),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            Builder(
-              builder: (context) {
-                final selectedLicenseMeta = context
-                    .watch<FsEntryLicenseBloc>()
-                    .ccForm
-                    .value['ccAttributionField'] as LicenseMeta;
-
-                return Text(
-                  selectedLicenseMeta.shortName,
-                  style: ArDriveTypography.body.buttonNormalBold(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDisabled,
-                  ),
-                );
-              },
-            ),
-          ]),
-    );
-  }
 }
