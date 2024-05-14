@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:ardrive/entities/entity.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -93,7 +92,7 @@ class ArDriveCrypto {
       final cipherIvTag = transaction.getTag(EntityTag.cipherIv);
 
       if (cipher == null || cipherIvTag == null) {
-        throw TransactionDecryptionException();
+        throw MissingCipherTagException();
       }
 
       final cipherIv = utils.decodeBase64ToBytes(cipherIvTag);
@@ -127,16 +126,24 @@ class ArDriveCrypto {
 
         decryptedData = Uint8List.fromList(decryptedDataAsListInt);
       } else {
-        throw TransactionDecryptionException();
+        throw UnknowCipherException(
+          corruptedDataAppVersion: transaction.getTag(EntityTag.appVersion),
+        );
       }
 
       final jsonStr = utf8.decode(decryptedData);
       final jsonMap = json.decode(jsonStr);
 
       return jsonMap;
-    } catch (e, s) {
-      logger.e('Failed to decrypt entity json', e, s);
-      throw TransactionDecryptionException();
+    } catch (e) {
+      if (e is ArDriveDecryptionException) {
+        rethrow;
+      }
+
+      /// Unknow error
+      throw TransactionDecryptionException(
+        corruptedDataAppVersion: transaction.getTag(EntityTag.appVersion),
+      );
     }
   }
 
@@ -152,7 +159,9 @@ class ArDriveCrypto {
     final cipherIvTag = transaction.getTag(EntityTag.cipherIv);
 
     if (cipher == null || cipherIvTag == null) {
-      throw TransactionDecryptionException();
+      throw MissingCipherTagException(
+        corruptedDataAppVersion: transaction.getTag(EntityTag.appVersion),
+      );
     }
 
     final decryptedData =
@@ -208,8 +217,6 @@ class ArDriveCrypto {
       );
   }
 }
-
-class TransactionDecryptionException implements Exception {}
 
 class ProfileKeyDerivationResult {
   final SecretKey key;
