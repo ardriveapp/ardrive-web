@@ -1114,7 +1114,9 @@ class _CopyButtonState extends State<CopyButton> {
 
   @override
   dispose() {
-    _overlayEntry?.remove();
+    if (_overlayEntry != null && _overlayEntry!.mounted) {
+      _overlayEntry?.remove();
+    }
     super.dispose();
   }
 

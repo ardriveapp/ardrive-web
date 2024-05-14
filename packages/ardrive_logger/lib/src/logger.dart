@@ -69,6 +69,7 @@ class Logger {
 
   void i(String message) {
     log(LogLevel.info, message);
+    Sentry.addBreadcrumb(Breadcrumb(message: message));
   }
 
   void w(String message) {
