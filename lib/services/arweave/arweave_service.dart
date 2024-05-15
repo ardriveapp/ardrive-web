@@ -364,10 +364,9 @@ class ArweaveService {
 
         // If there are errors in parsing the entity, ignore it.
       } on EntityTransactionParseException catch (parseException) {
-        logger.e(
+        logger.w(
           'Failed to parse transaction '
           'with id ${parseException.transactionId}',
-          parseException,
         );
       } on GatewayError catch (fetchException) {
         logger.e(
