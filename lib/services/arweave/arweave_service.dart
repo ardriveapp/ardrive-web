@@ -367,6 +367,7 @@ class ArweaveService {
         logger.e(
           'Failed to parse transaction '
           'with id ${parseException.transactionId}',
+          parseException,
         );
       } on GatewayError catch (fetchException) {
         logger.e(
