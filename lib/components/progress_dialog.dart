@@ -26,6 +26,7 @@ class ProgressDialog extends StatelessWidget {
     this.progressDescription,
     this.progressBar,
     this.percentageDetails,
+    this.useNewArDriveUI = false,
   });
 
   final String title;
@@ -33,42 +34,53 @@ class ProgressDialog extends StatelessWidget {
   final Widget? progressDescription;
   final Widget? progressBar;
   final Widget? percentageDetails;
-
+  final bool useNewArDriveUI;
   @override
   Widget build(BuildContext context) {
-    return ArDriveStandardModal(
-      title: title,
-      content: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 32),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 32),
-                child: SizedBox(
-                    width: 74,
-                    height: 74,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 8,
-                    )),
-              ),
-              if (progressDescription != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: progressDescription!,
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 32),
+              child: SizedBox(
+                width: 74,
+                height: 74,
+                child: CircularProgressIndicator(
+                  strokeWidth: 8,
                 ),
-              if (progressBar != null) progressBar!,
-              if (percentageDetails != null)
-                Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: percentageDetails!),
-            ],
-          ),
+              ),
+            ),
+            if (progressDescription != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: progressDescription!,
+              ),
+            if (progressBar != null) progressBar!,
+            if (percentageDetails != null)
+              Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: percentageDetails!),
+          ],
         ),
       ),
+    );
+
+    if (useNewArDriveUI) {
+      return ArDriveStandardModalNew(
+        title: title,
+        content: content,
+        actions: actions,
+      );
+    }
+
+    return ArDriveStandardModal(
+      title: title,
+      content: content,
       actions: actions,
     );
   }

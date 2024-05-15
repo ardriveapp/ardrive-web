@@ -1,10 +1,30 @@
+import 'package:ardrive/core/arfs/exceptions.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
+import 'package:ardrive/utils/logger.dart';
+import 'package:drift/drift.dart';
 
 abstract class FolderRepository {
+  Future<FolderNode> getFolderNode(String driveId, String folderId);
   Future<FolderRevision?> getLatestFolderRevisionInfo(
       String driveId, String folderId);
   Future<String> getFolderPath(String driveId, String folderId);
+  Stream<FolderWithContents> watchFolderContents({
+    required String driveId,
+    required String folderId,
+    DriveOrder orderBy = DriveOrder.name,
+    OrderingMode orderingMode = OrderingMode.asc,
+  });
+  Future<List<FileEntry>> existingFilesWithName({
+    required String name,
+    required String parentFolderId,
+    required String driveId,
+  });
+  Future<List<FolderEntry>> existingFoldersWithName({
+    required String name,
+    required String parentFolderId,
+    required String driveId,
+  });
 
   factory FolderRepository(DriveDao driveDao) => _FolderRepository(driveDao);
 }
@@ -53,5 +73,72 @@ class _FolderRepository implements FolderRepository {
     // Join all path components with '/' to create the full path
     // This will correctly handle the scenario when pathComponents is empty
     return pathComponents.join('/');
+  }
+
+  // TODO: implement unit tests for this method
+  @override
+  Stream<FolderWithContents> watchFolderContents({
+    required String driveId,
+    required String folderId,
+    DriveOrder orderBy = DriveOrder.name,
+    OrderingMode orderingMode = OrderingMode.asc,
+  }) {
+    return _driveDao.watchFolderContents(
+      driveId,
+      folderId: folderId,
+      orderBy: orderBy,
+      orderingMode: orderingMode,
+    );
+  }
+
+  @override
+  Future<FolderNode> getFolderNode(String driveId, String folderId) {
+    return _driveDao.getFolderTree(driveId, folderId);
+  }
+
+  // TODO: implement unit tests for this method
+  @override
+  Future<List<FileEntry>> existingFilesWithName({
+    required String name,
+    required String parentFolderId,
+    required String driveId,
+  }) async {
+    final files = await _driveDao
+        .filesInFolderWithName(
+            name: name, parentFolderId: parentFolderId, driveId: driveId)
+        .get();
+
+    if (files.length > 1) {
+      /// It should not happen, but it's a possible case.
+      logger.e(
+        'Error checking for file name conflictics.',
+        ARFSMultipleNamesForTheSameEntityException(),
+      );
+    }
+
+    return files;
+  }
+
+  // TODO: implement unit tests for this method
+  @override
+  Future<List<FolderEntry>> existingFoldersWithName({
+    required String name,
+    required String parentFolderId,
+    required String driveId,
+  }) async {
+    final folders = await _driveDao
+        .foldersInFolderWithName(
+            name: name, parentFolderId: parentFolderId, driveId: driveId)
+        .get();
+
+    if (folders.length > 1) {
+      /// It should not happen, but it's a possible case.
+      logger.e(
+        'Error checking for folder name conflictics.',
+        ARFSMultipleNamesForTheSameEntityException(),
+      );
+    }
+
+    return folders;
   }
 }

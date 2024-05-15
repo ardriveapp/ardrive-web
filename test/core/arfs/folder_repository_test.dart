@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' as drift;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../manifest/domain/manifest_repository_test.dart';
 import '../../test_utils/mocks.dart';
 
 class MockSelectable<T> extends Mock implements drift.Selectable<T> {}
@@ -61,6 +62,23 @@ void main() {
       final folderRevision = await folderRepository.getLatestFolderRevisionInfo(
           'invalidDriveId', 'invalidFolderId');
       expect(folderRevision, isNull);
+    });
+    group('getFolderNode', () {
+      test('returns a FolderNode on valid input', () async {
+        when(() => mockDriveDao.getFolderTree('validDriveId', 'validFolderId'))
+            .thenAnswer((invocation) async => MockFolderNode());
+
+        final folderNode = await folderRepository.getFolderNode(
+          'validDriveId',
+          'validFolderId',
+        );
+
+        expect(folderNode, isNotNull);
+        verify(() => mockDriveDao.getFolderTree(
+              'validDriveId',
+              'validFolderId',
+            )).called(1);
+      });
     });
   });
 }

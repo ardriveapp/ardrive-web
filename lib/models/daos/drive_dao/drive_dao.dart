@@ -631,7 +631,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     LicensesCompanion license,
   ) async {
     await db.transaction(() async {
-      await Future.wait(
+      await Future.wait( 
           license.getTransactionCompanions().map((tx) => writeTransaction(tx)));
       await into(licenses).insert(license);
     });

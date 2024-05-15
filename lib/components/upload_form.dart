@@ -476,7 +476,6 @@ class _UploadFormState extends State<UploadForm> {
                                 .read<UploadCubit>()
                                 .setUploadMethod(method, info, canUpload);
                           },
-                          params: state.params,
                         ),
                       ),
                       SizedBox(
