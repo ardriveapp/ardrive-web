@@ -17,25 +17,23 @@ class _ProgressBarState extends State<ProgressBar> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<LinearProgress>(
-        stream: widget.percentage,
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            _percentage =
-                ((snapshot.data!.progress * 100)).roundToDouble() / 100;
-          } else {
-            _percentage = 0;
-          }
+      stream: widget.percentage,
+      builder: (context, snapshot) {
+        _percentage = snapshot.hasData
+            ? ((snapshot.data!.progress * 100)).roundToDouble() / 100
+            : 0;
 
-          return LinearPercentIndicator(
-            animation: true,
-            animateFromLastPercent: true,
-            lineHeight: 10.0,
-            barRadius: const Radius.circular(5),
-            backgroundColor: const Color(0xffFAFAFA),
-            animationDuration: 1000,
-            percent: _percentage,
-            progressColor: const Color(0xff3C3C3C),
-          );
-        });
+        return LinearPercentIndicator(
+          animation: true,
+          animateFromLastPercent: true,
+          lineHeight: 10.0,
+          barRadius: const Radius.circular(5),
+          backgroundColor: const Color(0xffFAFAFA),
+          animationDuration: 1000,
+          percent: _percentage,
+          progressColor: const Color(0xff3C3C3C),
+        );
+      },
+    );
   }
 }

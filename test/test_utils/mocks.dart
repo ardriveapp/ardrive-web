@@ -22,6 +22,7 @@ import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -112,6 +113,8 @@ class MockPromptToSnapshotBloc extends Mock implements PromptToSnapshotBloc {}
 class MockFolderRepository extends Mock implements FolderRepository {}
 
 class MockFileRepository extends Mock implements FileRepository {}
+
+class MockArDriveUploader extends Mock implements ArDriveUploader {}
 
 class MockARFSFile extends ARFSFileEntity {
   MockARFSFile({

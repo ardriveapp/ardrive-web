@@ -10,6 +10,7 @@ class PaymentMethodSelector extends StatelessWidget {
   final void Function() onTurboTopupSucess;
   final void Function() onArSelect;
   final void Function() onTurboSelect;
+  final bool useNewArDriveUI;
 
   const PaymentMethodSelector({
     super.key,
@@ -17,6 +18,7 @@ class PaymentMethodSelector extends StatelessWidget {
     required this.onTurboTopupSucess,
     required this.onArSelect,
     required this.onTurboSelect,
+    this.useNewArDriveUI = false,
   });
 
   @override
@@ -33,6 +35,9 @@ class PaymentMethodSelector extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
     return Column(
       children: [
         Text(
@@ -66,7 +71,11 @@ class PaymentMethodSelector extends StatelessWidget {
               // TODO: Localization
               text:
                   'Cost: ${winstonToAr(uploadMethodInfo.costEstimateAr.totalCost)} AR',
-              textStyle: ArDriveTypography.body.buttonLargeBold(),
+              textStyle: useNewArDriveUI
+                  ? typography.paragraphLarge(
+                      fontWeight: ArFontWeight.bold,
+                    )
+                  : ArDriveTypography.body.buttonLargeBold(),
             ),
             if (uploadMethodInfo.costEstimateTurbo != null &&
                 uploadMethodInfo.isTurboUploadPossible)
@@ -76,7 +85,11 @@ class PaymentMethodSelector extends StatelessWidget {
                 text: uploadMethodInfo.hasNoTurboBalance
                     ? ''
                     : 'Cost: ${winstonToAr(uploadMethodInfo.costEstimateTurbo!.totalCost)} Credits',
-                textStyle: ArDriveTypography.body.buttonLargeBold(),
+                textStyle: useNewArDriveUI
+                    ? typography.paragraphLarge(
+                        color: colorTokens.textHigh,
+                        fontWeight: ArFontWeight.bold)
+                    : ArDriveTypography.body.buttonLargeBold(),
                 content: uploadMethodInfo.hasNoTurboBalance
                     ? GestureDetector(
                         onTap: () {
@@ -91,26 +104,32 @@ class PaymentMethodSelector extends StatelessWidget {
                                 // TODO: use text with multiple styles
                                 TextSpan(
                                   text: 'Use Turbo Credits', // TODO: localize
-                                  style: ArDriveTypography.body
-                                      .buttonLargeBold(
-                                        color: ArDriveTheme.of(context)
-                                            .themeData
-                                            .colors
-                                            .themeFgDefault,
-                                      )
-                                      .copyWith(
-                                        decoration: TextDecoration.underline,
-                                      ),
+                                  style: useNewArDriveUI
+                                      ? typography.paragraphLarge(
+                                          color: colorTokens.textMid,
+                                          fontWeight: ArFontWeight.bold,
+                                        )
+                                      : ArDriveTypography.body.buttonLargeBold(
+                                          color: ArDriveTheme.of(context)
+                                              .themeData
+                                              .colors
+                                              .themeFgDefault,
+                                        ),
                                 ),
                                 TextSpan(
                                   text:
                                       ' for faster uploads.', // TODO: localize
-                                  style: ArDriveTypography.body.buttonLargeBold(
-                                    color: ArDriveTheme.of(context)
-                                        .themeData
-                                        .colors
-                                        .themeFgDefault,
-                                  ),
+                                  style: useNewArDriveUI
+                                      ? typography.paragraphLarge(
+                                          color: colorTokens.textMid,
+                                          fontWeight: ArFontWeight.bold,
+                                        )
+                                      : ArDriveTypography.body.buttonLargeBold(
+                                          color: ArDriveTheme.of(context)
+                                              .themeData
+                                              .colors
+                                              .themeFgDefault,
+                                        ),
                                 ),
                               ],
                             ),
@@ -132,10 +151,17 @@ class PaymentMethodSelector extends StatelessWidget {
                       // TODO: localize
                       ? 'Wallet Balance: ${uploadMethodInfo.arBalance} AR'
                       : 'Turbo Balance: ${uploadMethodInfo.turboCredits} Credits',
-                  style: ArDriveTypography.body.buttonNormalBold(
-                    color:
-                        ArDriveTheme.of(context).themeData.colors.themeFgMuted,
-                  ),
+                  style: useNewArDriveUI
+                      ? typography.paragraphNormal(
+                          color: colorTokens.textLow,
+                          fontWeight: ArFontWeight.semiBold,
+                        )
+                      : ArDriveTypography.body.buttonNormalBold(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgMuted,
+                        ),
                 ),
               ),
             ],

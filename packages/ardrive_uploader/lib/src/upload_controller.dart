@@ -391,21 +391,13 @@ class _UploadController implements UploadController {
 
   void Function(UploadProgress progress)? _onProgressChange = (progress) {};
 
-  void Function(List<UploadTask> tasks) _onDone = (List<UploadTask> tasks) {
-    print('Upload Finished');
-  };
+  void Function(List<UploadTask> tasks) _onDone = (List<UploadTask> tasks) {};
 
-  void Function(List<UploadTask> tasks) _onCancel = (List<UploadTask> tasks) {
-    print('Upload Canceled');
-  };
+  void Function(List<UploadTask> tasks) _onCancel = (List<UploadTask> tasks) {};
 
-  void Function(List<UploadTask> tasks) _onError = (List<UploadTask> tasks) {
-    print('Upload Error');
-  };
+  void Function(List<UploadTask> tasks) _onError = (List<UploadTask> tasks) {};
 
-  void Function(UploadTask task) _onCompleteTask = (UploadTask tasks) {
-    print('Upload Canceled');
-  };
+  void Function(UploadTask task) _onCompleteTask = (UploadTask tasks) {};
 
   void _updateTaskStatus(UploadTask task, String taskId) {
     switch (task.status) {
