@@ -287,9 +287,15 @@ class _ArDriveUploader implements ArDriveUploader {
     }
 
     if (folderUploadTask != null) {
-      // first sends the upload task for the folder and then uploads the files
-      uploadController.sendTask(folderUploadTask, wallet, onTaskCompleted: () {
-        uploadController.sendTasks(wallet);
+      /// first sends the upload task for the folder and then uploads the files
+      uploadController.sendTask(folderUploadTask, wallet,
+          onTaskCompleted: (success) {
+        logger.i('Folder upload task completed with success: $success');
+        if (success) {
+          uploadController.sendTasks(wallet);
+        } else {
+          uploadController.cancel();
+        }
       });
     } else {
       uploadController.sendTasks(wallet);

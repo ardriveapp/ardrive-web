@@ -607,9 +607,13 @@ class UploadCubit extends Cubit<UploadState> {
     );
 
     uploadController.onError((tasks) {
-      logger.e('Error uploading folders. Number of tasks: ${tasks.length}');
+      logger.i('Error uploading folders. Number of tasks: ${tasks.length}');
       addError(Exception('Error uploading'));
       hasEmittedError = true;
+    });
+
+    uploadController.onFailedTask((task) {
+      logger.e('UploadTask failed. Task: ${task.errorInfo()}', task.error);
     });
 
     uploadController.onProgressChange(
@@ -651,8 +655,6 @@ class UploadCubit extends Cubit<UploadState> {
 
   void retryUploads() {
     if (state is UploadFailure) {
-      logger.i('Retrying uploads');
-
       final controller = (state as UploadFailure).controller!;
 
       controller.retryFailedTasks(_auth.currentUser.wallet);
@@ -722,7 +724,7 @@ class UploadCubit extends Cubit<UploadState> {
     );
 
     uploadController.onError((tasks) {
-      logger.e('Error uploading files. Number of tasks: ${tasks.length}');
+      logger.i('Error uploading files. Number of tasks: ${tasks.length}');
       hasEmittedError = true;
       emit(
         UploadFailure(
@@ -731,6 +733,10 @@ class UploadCubit extends Cubit<UploadState> {
           controller: uploadController,
         ),
       );
+    });
+
+    uploadController.onFailedTask((task) {
+      logger.e('UploadTask failed. Task: ${task.errorInfo()}', task.error);
     });
 
     uploadController.onProgressChange(
@@ -961,7 +967,6 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     emit(UploadFailure(error: UploadErrors.unknown));
-    logger.e('Failed to upload file', error, stackTrace);
     super.onError(error, stackTrace);
   }
 

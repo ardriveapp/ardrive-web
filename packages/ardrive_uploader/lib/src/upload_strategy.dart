@@ -79,8 +79,8 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
       logger.i('metadata upload result: $uploadResult');
 
       if (!uploadResult.success) {
-        throw MetadataUploadException(
-          message: 'Failed to upload metadata item. DataItem won\'t be sent',
+        throw MetadataTransactionUploadException(
+          message: 'Failed to upload metadata item. DataItem won\'t be sent.',
           error: uploadResult.error,
         );
       }
@@ -157,9 +157,9 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
     );
 
     if (!result.success) {
-      logger.e('Failed to upload data item.', result.error);
-      throw DataUploadException(
-        message: 'Failed to upload data item. Error: ${result.error}',
+      throw DataTransactionUploadException(
+        message:
+            'Failed to upload data item. It will cause a creation of a ghost file e.g. a file with a red dot.',
         error: result.error,
       );
     }
@@ -267,7 +267,7 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
 
     if (!result.success) {
       throw BundleUploadException(
-        message: 'Failed to upload bundle',
+        message: 'Failed to upload file bundle. Bundle: $bundle',
         error: result.error,
       );
     }
@@ -347,7 +347,10 @@ class UploadFolderStructureAsBundleStrategy
     });
 
     if (!result.success) {
-      throw BundleUploadException(message: 'Failed to upload bundle');
+      throw BundleUploadException(
+        message: 'Failed to upload bundle of folders. Folder bundle: $bundle',
+        error: result.error,
+      );
     }
 
     controller.updateProgress(

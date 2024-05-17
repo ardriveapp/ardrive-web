@@ -22,8 +22,16 @@ abstract class UploadController {
   void onProgressChange(Function(UploadProgress progress) callback);
   void onCompleteTask(Function(UploadTask tasks) callback);
   void sendTasks(Wallet wallet);
-  void sendTask(UploadTask task, Wallet wallet, {Function()? onTaskCompleted});
+
+  /// onTaskCompleted is a callback that is called when a task is completed.
+  /// it pass true if the task is completed successfully, otherwise it pass false.
+  void sendTask(
+    UploadTask task,
+    Wallet wallet, {
+    Function(bool)? onTaskCompleted,
+  });
   void addTask(UploadTask task);
+  void onFailedTask(Function(UploadTask task) callback);
   Future<void> retryFailedTasks(Wallet wallet);
 
   factory UploadController(
@@ -181,7 +189,10 @@ class _UploadController implements UploadController {
         );
 
         if (!uploadResult.success) {
-          final updatedTask = tasks[task.id]!;
+          final updatedTask =
+              tasks[task.id]!.copyWith(error: uploadResult.error);
+
+          _onFailedTask(updatedTask);
 
           updateProgress(
               task: updatedTask.copyWith(status: UploadStatus.failed));
@@ -210,11 +221,11 @@ class _UploadController implements UploadController {
   void sendTask(
     UploadTask task,
     Wallet wallet, {
-    Function()? onTaskCompleted,
+    Function(bool)? onTaskCompleted,
   }) {
     final worker = UploadWorker(
       onError: (task, e) {
-        logger.d('Error on UploadWorker. Task: ${e.toString()}');
+        logger.e('Error on UploadWorker. Task: ${task.toString()}', e);
         final updatedTask = tasks[task.id]!;
         updateProgress(task: updatedTask.copyWith(status: UploadStatus.failed));
       },
@@ -227,16 +238,22 @@ class _UploadController implements UploadController {
         );
 
         if (!uploadResult.success) {
-          final updatedTask = tasks[task.id]!;
+          final updatedTask =
+              tasks[task.id]!.copyWith(error: uploadResult.error);
 
           updateProgress(
               task: updatedTask.copyWith(status: UploadStatus.failed));
+
+          /// Callback to the caller that the task has failed
+          _onFailedTask(updatedTask);
         }
       },
       maxTasks: 1,
       task: task,
-      onTaskCompleted: () {
-        onTaskCompleted?.call();
+      onTaskCompleted: (task) {
+        logger.d('Task completed with status: ${task.status}');
+        final updatedTask = tasks[task.id]!;
+        onTaskCompleted?.call(updatedTask.status == UploadStatus.complete);
       },
     );
 
@@ -317,7 +334,11 @@ class _UploadController implements UploadController {
         );
 
         if (!uploadResult.success) {
-          final updatedTask = tasks[task.id]!;
+          final updatedTask =
+              tasks[task.id]!.copyWith(error: uploadResult.error);
+
+          /// Callback to the caller that the task has failed
+          _onFailedTask(updatedTask);
 
           updateProgress(
               task: updatedTask.copyWith(status: UploadStatus.failed));
@@ -389,6 +410,11 @@ class _UploadController implements UploadController {
     _start = null;
   }
 
+  @override
+  void onFailedTask(Function(UploadTask task) callback) {
+    _onFailedTask = callback;
+  }
+
   void Function(UploadProgress progress)? _onProgressChange = (progress) {};
 
   void Function(List<UploadTask> tasks) _onDone = (List<UploadTask> tasks) {};
@@ -398,6 +424,8 @@ class _UploadController implements UploadController {
   void Function(List<UploadTask> tasks) _onError = (List<UploadTask> tasks) {};
 
   void Function(UploadTask task) _onCompleteTask = (UploadTask tasks) {};
+
+  void Function(UploadTask task) _onFailedTask = (UploadTask tasks) {};
 
   void _updateTaskStatus(UploadTask task, String taskId) {
     switch (task.status) {
@@ -564,7 +592,7 @@ class UploadProgress {
 }
 
 class UploadWorker {
-  final Function() onTaskCompleted;
+  final Function(UploadTask) onTaskCompleted;
   final Function(UploadTask) upload;
   final Function(UploadTask, Object e) onError;
   final int maxTasks;
@@ -587,7 +615,7 @@ class UploadWorker {
 
       future.then((_) {
         taskFutures.remove(future);
-        onTaskCompleted();
+        onTaskCompleted(task);
       });
     }
   }
@@ -629,7 +657,7 @@ class WorkerPool {
         upload: upload,
         onError: (task, exception) => onWorkerError(task),
         maxTasks: maxTasksPerWorker,
-        onTaskCompleted: () {
+        onTaskCompleted: (task) {
           if (_isCanceled) {
             return;
           }
@@ -678,13 +706,23 @@ abstract class UploadItem<T> {
 
 class DataItemUploadItem extends UploadItem<DataItemResult> {
   DataItemUploadItem({required super.size, required super.data});
+
+  @override
+  String toString() {
+    return 'DataItemUploadItem(id: ${data.id}, size: $size)';
+  }
 }
 
 class TransactionUploadItem extends UploadItem<TransactionResult> {
   TransactionUploadItem({required super.size, required super.data});
+
+  @override
+  String toString() {
+    return 'TransactionUploadItem(id: ${data.id}, size: $size)';
+  }
 }
 
-class FolderUploadTask implements UploadTask<ARFSUploadMetadata> {
+class FolderUploadTask extends UploadTask<ARFSUploadMetadata> {
   final List<(ARFSFolderUploadMetatadata, IOEntity)> folders;
 
   @override
@@ -708,6 +746,12 @@ class FolderUploadTask implements UploadTask<ARFSUploadMetadata> {
   @override
   final UploadType type;
 
+  @override
+  final SecretKey? encryptionKey;
+
+  @override
+  final Object? error;
+
   FolderUploadTask({
     required this.folders,
     this.uploadItem,
@@ -719,6 +763,7 @@ class FolderUploadTask implements UploadTask<ARFSUploadMetadata> {
     this.cancelToken,
     String? id,
     required this.type,
+    this.error,
   }) : id = id ?? const Uuid().v4();
 
   @override
@@ -736,6 +781,7 @@ class FolderUploadTask implements UploadTask<ARFSUploadMetadata> {
     List<(ARFSFolderUploadMetatadata, IOEntity)>? folders,
     UploadTaskCancelToken? cancelToken,
     UploadType? type,
+    Object? error,
   }) {
     return FolderUploadTask(
       cancelToken: cancelToken ?? this.cancelToken,
@@ -747,11 +793,10 @@ class FolderUploadTask implements UploadTask<ARFSUploadMetadata> {
       isProgressAvailable: isProgressAvailable ?? this.isProgressAvailable,
       status: status ?? this.status,
       type: type ?? this.type,
+      encryptionKey: encryptionKey ?? this.encryptionKey,
+      error: error ?? this.error,
     );
   }
-
-  @override
-  final SecretKey? encryptionKey;
 }
 
 class FileUploadTask extends UploadTask {
@@ -779,6 +824,15 @@ class FileUploadTask extends UploadTask {
   @override
   UploadTaskCancelToken? cancelToken;
 
+  @override
+  final Object? error;
+
+  @override
+  final SecretKey? encryptionKey;
+
+  @override
+  UploadType type;
+
   FileUploadTask({
     this.uploadItem,
     this.isProgressAvailable = true,
@@ -792,6 +846,7 @@ class FileUploadTask extends UploadTask {
     this.progress = 0,
     required this.type,
     this.metadataUploaded = false,
+    this.error,
   }) : id = id ?? const Uuid().v4();
 
   @override
@@ -810,6 +865,7 @@ class FileUploadTask extends UploadTask {
     UploadTaskCancelToken? cancelToken,
     UploadType? type,
     bool? metadataUploaded,
+    Object? error,
   }) {
     return FileUploadTask(
       cancelToken: cancelToken ?? this.cancelToken,
@@ -824,14 +880,9 @@ class FileUploadTask extends UploadTask {
       progress: progress ?? this.progress,
       type: type ?? this.type,
       metadataUploaded: metadataUploaded ?? this.metadataUploaded,
+      error: error ?? this.error,
     );
   }
-
-  @override
-  final SecretKey? encryptionKey;
-
-  @override
-  UploadType type;
 }
 
 abstract class UploadTask<T> {
@@ -844,6 +895,19 @@ abstract class UploadTask<T> {
   abstract final SecretKey? encryptionKey;
   abstract final UploadTaskCancelToken? cancelToken;
   abstract final UploadType type;
+  abstract final Object? error;
+
+  String errorInfo() {
+    String errorInfo = '';
+
+    errorInfo += 'progress: $progress\n';
+    errorInfo += 'status: $status\n';
+    errorInfo += 'type: $type\n';
+    errorInfo += 'number of content: ${content?.length}\n';
+    errorInfo += 'uploadItem: ${uploadItem.toString()}}\n';
+
+    return errorInfo;
+  }
 
   UploadTask copyWith({
     UploadItem? uploadItem,
@@ -855,6 +919,7 @@ abstract class UploadTask<T> {
     SecretKey? encryptionKey,
     UploadTaskCancelToken? cancelToken,
     UploadType? type,
+    Object? error,
   });
 }
 
