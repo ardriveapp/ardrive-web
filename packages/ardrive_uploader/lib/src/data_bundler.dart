@@ -6,6 +6,7 @@ import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_uploader/src/constants.dart';
 import 'package:ardrive_uploader/src/cost_calculator.dart';
 import 'package:ardrive_uploader/src/utils/data_bundler_utils.dart';
+import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
@@ -563,6 +564,9 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
       dataStream: dataGenerator.$1,
       fileLength: dataGenerator.$4,
     );
+
+    logger.d('Metadata tags length: ${metadataDataItem.tags.length}');
+    logger.d('DataItem tags length: ${fileDataItem.tags.length}');
 
     return [metadataDataItem, fileDataItem];
   }

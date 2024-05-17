@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/src/data_bundler.dart';
 import 'package:ardrive_uploader/src/utils/logger.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:rxdart/rxdart.dart';
@@ -22,6 +23,8 @@ abstract class UploadController {
   void onProgressChange(Function(UploadProgress progress) callback);
   void onCompleteTask(Function(UploadTask tasks) callback);
   void sendTasks(Wallet wallet);
+
+  List<UploadTask> get notCompletedTasks;
 
   /// onTaskCompleted is a callback that is called when a task is completed.
   /// it pass true if the task is completed successfully, otherwise it pass false.
@@ -80,6 +83,10 @@ class _UploadController implements UploadController {
   final Map<String, UploadTask> _failedTasks = {};
   final Map<String, UploadTask> _canceledTasks = {};
   final Map<String, UploadTask> _inProgressTasks = {};
+
+  @override
+  List<UploadTask> get notCompletedTasks =>
+      tasks.values.where((e) => e.status == UploadStatus.complete).toList();
 
   int _totalSize = 0;
   int _numberOfItems = 0;
@@ -292,13 +299,29 @@ class _UploadController implements UploadController {
     _progressStream.add(UploadProgress.notStarted());
 
     for (var task in _failedTasks.values) {
-      addTask(
-        task.copyWith(
-          status: UploadStatus.notStarted,
-          progress: 0,
-          cancelToken: null,
-        ),
-      );
+      if (task is FileUploadTask) {
+        task.prepareToRetry();
+
+        addTask(
+          task.copyWith(
+            status: UploadStatus.notStarted,
+            progress: 0,
+            cancelToken: null,
+            metadata: task.metadata,
+          ),
+        );
+      } else if (task is FolderUploadTask) {
+        task.prepareToRetry();
+
+        addTask(
+          task.copyWith(
+            status: UploadStatus.notStarted,
+            progress: 0,
+            cancelToken: null,
+            folders: task.folders,
+          ),
+        );
+      }
     }
 
     logger.d('Retrying failed tasks.');
@@ -722,7 +745,8 @@ class TransactionUploadItem extends UploadItem<TransactionResult> {
   }
 }
 
-class FolderUploadTask extends UploadTask<ARFSUploadMetadata> {
+class FolderUploadTask extends UploadTask<ARFSUploadMetadata>
+    implements RetryableUploadTask {
   final List<(ARFSFolderUploadMetatadata, IOEntity)> folders;
 
   @override
@@ -751,6 +775,18 @@ class FolderUploadTask extends UploadTask<ARFSUploadMetadata> {
 
   @override
   final Object? error;
+
+  @override
+  void prepareToRetry() {
+    /// Remove the cipher and cipherIv tags from the metadata
+    for (var element in folders) {
+      element.$1.entityMetadataTags.removeWhere(
+        (element) =>
+            element.name == EntityTag.cipher ||
+            element.name == EntityTag.cipherIv,
+      );
+    }
+  }
 
   FolderUploadTask({
     required this.folders,
@@ -799,7 +835,11 @@ class FolderUploadTask extends UploadTask<ARFSUploadMetadata> {
   }
 }
 
-class FileUploadTask extends UploadTask {
+abstract class RetryableUploadTask {
+  void prepareToRetry();
+}
+
+class FileUploadTask extends UploadTask implements RetryableUploadTask {
   final IOFile file;
 
   final ARFSFileUploadMetadata metadata;
@@ -832,6 +872,22 @@ class FileUploadTask extends UploadTask {
 
   @override
   UploadType type;
+
+  @override
+  void prepareToRetry() {
+    /// Remove the cipher and cipherIv tags from the metadata and data tx
+    metadata.entityMetadataTags.removeWhere(
+      (element) =>
+          element.name == EntityTag.cipher ||
+          element.name == EntityTag.cipherIv,
+    );
+
+    metadata.dataItemTags.removeWhere(
+      (element) =>
+          element.name == EntityTag.cipher ||
+          element.name == EntityTag.cipherIv,
+    );
+  }
 
   FileUploadTask({
     this.uploadItem,

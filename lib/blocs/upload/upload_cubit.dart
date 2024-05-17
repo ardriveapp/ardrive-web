@@ -608,7 +608,10 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onError((tasks) {
       logger.i('Error uploading folders. Number of tasks: ${tasks.length}');
-      addError(Exception('Error uploading'));
+      emit(UploadFailure(
+          error: UploadErrors.unknown,
+          failedTasks: tasks,
+          controller: uploadController));
       hasEmittedError = true;
     });
 
@@ -742,7 +745,6 @@ class UploadCubit extends Cubit<UploadState> {
     uploadController.onProgressChange(
       (progress) async {
         // TODO: Save as the file is finished the upload
-
         emit(
           UploadInProgressUsingNewUploader(
             progress: progress,
