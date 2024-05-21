@@ -228,13 +228,13 @@ void main() {
       group('Data and license transaction IDs', () {
         test('dataTxId setter and getter work correctly', () {
           const dataTxId = 'dataTxId';
-          metadata.setDataTxId = dataTxId;
+          metadata.updateDataTxId(dataTxId);
           expect(metadata.dataTxId, dataTxId);
         });
 
         test('licenseTxId setter and getter work correctly', () {
           const licenseTxId = 'licenseTxId';
-          metadata.setLicenseTxId = licenseTxId;
+          metadata.updateLicenseTxId(licenseTxId);
           expect(metadata.licenseTxId, licenseTxId);
         });
       });
@@ -245,7 +245,7 @@ void main() {
         });
         test('toJson returns correct map when dataTxId is set', () {
           const dataTxId = 'dataTxId';
-          metadata.setDataTxId = dataTxId;
+          metadata.updateDataTxId(dataTxId);
 
           final json = metadata.toJson();
           expect(json, {
@@ -260,8 +260,8 @@ void main() {
             () {
           const dataTxId = 'dataTxId';
           const licenseTxId = 'licenseTxId';
-          metadata.setDataTxId = dataTxId;
-          metadata.setLicenseTxId = licenseTxId;
+          metadata.updateDataTxId(dataTxId);
+          metadata.updateLicenseTxId(licenseTxId);
 
           final json = metadata.toJson();
           expect(json, {

@@ -17,8 +17,14 @@ class ARFSDriveUploadMetadata extends ARFSUploadMetadata {
   }
 }
 
+/// Metadata for uploading a folder following the ARFS spec.
+///
+/// This metadata is used to create the metadata transaction for the folder.
 class ARFSFolderUploadMetatadata extends ARFSUploadMetadata {
+  /// The ID of the drive where the folder will be uploaded.
   final String driveId;
+
+  /// The ID of the parent folder where the folder will be uploaded.
   final String? parentFolderId;
 
   ARFSFolderUploadMetatadata({
@@ -29,6 +35,7 @@ class ARFSFolderUploadMetatadata extends ARFSUploadMetadata {
     required super.isPrivate,
   });
 
+  /// Converts the metadata into a JSON object used on the metadata transaction.
   @override
   Map<String, dynamic> toJson() {
     return {
@@ -37,47 +44,27 @@ class ARFSFolderUploadMetatadata extends ARFSUploadMetadata {
   }
 }
 
-class ARFSFileUploadMetadata extends ARFSUploadMetadata {
-  ARFSFileUploadMetadata({
-    required this.size,
-    required this.lastModifiedDate,
-    required this.dataContentType,
-    required this.driveId,
-    required this.parentFolderId,
-    this.licenseDefinitionTxId,
-    this.licenseAdditionalTags,
-    required super.name,
-    required super.id,
-    required super.isPrivate,
-  });
+/// A mixin that provides data-related functionality for uploading files.
+mixin ARFSUploadData {
+  /// The data tags for the file. These are the tags that will be added to the data transaction.
+  List<Tag> _dataTags = [];
 
-  final int size;
-  final DateTime lastModifiedDate;
-  final String dataContentType;
-  final String driveId;
-  final String parentFolderId;
-  final String? licenseDefinitionTxId;
-  final Map<String, String>? licenseAdditionalTags;
-
-  late List<Tag> _dataTags;
-
-  void setDataTags(List<Tag> dataTags) => _dataTags = dataTags;
-
+  /// The transaction ID for the data.
   String? _dataTxId;
 
-  set setDataTxId(String dataTxId) => _dataTxId = dataTxId;
-
+  /// Gets the data transaction ID.
   String? get dataTxId => _dataTxId;
 
-  String? _licenseTxId;
+  /// Updates the data transaction ID.
+  void updateDataTxId(String dataTxId) {
+    _dataTxId = dataTxId;
+  }
 
-  set setLicenseTxId(String licenseTxId) => _licenseTxId = licenseTxId;
-
-  String? get licenseTxId => _licenseTxId;
-
+  /// The cipher tags for the data transaction.
   Tag? _dataCipherTag;
   Tag? _dataCipherIvTag;
 
+  // Method to set data cipher tags
   void setDataCipher({
     required String cipher,
     required String cipherIv,
@@ -92,6 +79,10 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata {
     );
   }
 
+  // Setter for data tags
+  void setDataTags(List<Tag> dataTags) => _dataTags = dataTags;
+
+  /// Gets the data tags including cipher tags if set.
   List<Tag> getDataTags() {
     return [
       ..._dataTags,
@@ -99,10 +90,61 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata {
       if (_dataCipherIvTag != null) _dataCipherIvTag!,
     ];
   }
+}
+
+/// Metadata for uploading a file following the ARFS spec.
+///
+/// This metadata is used to create the metadata transaction for the file.
+/// It also contains the data tags that will be added to the data transaction.
+class ARFSFileUploadMetadata extends ARFSUploadMetadata with ARFSUploadData {
+  ARFSFileUploadMetadata({
+    required this.size,
+    required this.lastModifiedDate,
+    required this.dataContentType,
+    required this.driveId,
+    required this.parentFolderId,
+    this.licenseDefinitionTxId,
+    this.licenseAdditionalTags,
+    required super.name,
+    required super.id,
+    required super.isPrivate,
+  });
+
+  /// The size of the file in bytes.
+  final int size;
+
+  /// The last modified date of the file.
+  final DateTime lastModifiedDate;
+
+  /// The content type of the file. e.g. 'image/jpeg'.
+  final String dataContentType;
+
+  /// The ID of the drive where the file will be uploaded.
+  final String driveId;
+
+  /// The ID of the parent folder where the file will be uploaded.
+  final String parentFolderId;
+
+  /// The transaction ID of the license definition.
+  final String? licenseDefinitionTxId;
+
+  /// Additional tags for the license.
+  final Map<String, String>? licenseAdditionalTags;
+
+  /// The transaction ID of the license transaction.
+  String? _licenseTxId;
+
+  // Getter for licenseTxId
+  String? get licenseTxId => _licenseTxId;
+
+  // Public method to set licenseTxId with validation or additional logic
+  void updateLicenseTxId(String licenseTxId) {
+    _licenseTxId = licenseTxId;
+  }
 
   @override
   Map<String, dynamic> toJson() {
-    if (_dataTxId == null) {
+    if (dataTxId == null) {
       throw StateError('dataTxId is required but not set.');
     }
 
@@ -112,14 +154,17 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata {
       'lastModifiedDate': lastModifiedDate.millisecondsSinceEpoch,
       'dataContentType': dataContentType,
       'dataTxId': dataTxId,
-    }..addAll(licenseTxId != null
-        ? {
-            'licenseTxId': licenseTxId,
-          }
-        : {});
+      if (licenseTxId != null) 'licenseTxId': licenseTxId,
+    };
   }
 }
 
+/// An abstract class that serves as a base for ARFS upload metadata.
+///
+/// This class provides common properties and methods for handling metadata
+/// related to ARFS uploads, including the name, ID, and privacy status of the
+/// entity, as well as methods for setting and retrieving entity metadata tags
+/// and cipher tags.
 abstract class ARFSUploadMetadata extends UploadMetadata {
   ARFSUploadMetadata({
     required this.name,
@@ -127,17 +172,26 @@ abstract class ARFSUploadMetadata extends UploadMetadata {
     required this.isPrivate,
   });
 
+  /// The unique identifier for the entity.
   final String id;
+
+  /// The name of the entity.
   final String name;
+
+  /// Boolean indicating if the entity is private.
   final bool isPrivate;
 
+  /// The metadata transaction ID.
   String? _metadataTxId;
 
+  /// List of entity metadata tags.
   late List<Tag> _entityMetadataTags;
 
+  /// Tags for the cipher. It's null if the entity is not encrypted.
   Tag? _cipherTag;
   Tag? _cipherIvTag;
 
+  /// Gets the entity metadata tags including cipher tags if set.
   List<Tag> getEntityMetadataTags() {
     return [
       ..._entityMetadataTags,
@@ -146,9 +200,11 @@ abstract class ARFSUploadMetadata extends UploadMetadata {
     ];
   }
 
+  /// Sets the entity metadata tags.
   void setEntityMetadataTags(List<Tag> entityMetadataTags) =>
       _entityMetadataTags = entityMetadataTags;
 
+  /// Sets the cipher and IV tags for the entity.
   void setCipher({
     required String cipher,
     required String cipherIv,
@@ -163,9 +219,13 @@ abstract class ARFSUploadMetadata extends UploadMetadata {
     );
   }
 
+  /// Sets the metadata transaction ID.
   set setMetadataTxId(String metadataTxId) => _metadataTxId = metadataTxId;
+
+  /// Gets the metadata transaction ID.
   String? get metadataTxId => _metadataTxId;
 
+  /// Converts the metadata into a JSON object used on the metadata transaction.
   Map<String, dynamic> toJson();
 
   @override

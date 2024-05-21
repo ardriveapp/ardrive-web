@@ -611,9 +611,9 @@ Future<DataItemFile> _generateMetadataDataItemForFile({
   fileDataItemResult.match((l) {
     throw l;
   }, (fileDataItem) {
-    metadata.setDataTxId = fileDataItem.id;
+    metadata.updateDataTxId(fileDataItem.id);
     if (metadata.licenseDefinitionTxId != null) {
-      metadata.setLicenseTxId = fileDataItem.id;
+      metadata.updateLicenseTxId(fileDataItem.id);
     }
   });
 
