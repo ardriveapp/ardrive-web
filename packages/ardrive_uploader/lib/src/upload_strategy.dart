@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive_uploader/src/constants.dart';
 import 'package:ardrive_uploader/src/data_bundler.dart';
 import 'package:ardrive_uploader/src/exceptions.dart';
 import 'package:ardrive_uploader/src/utils/data_bundler_utils.dart';
 import 'package:ardrive_uploader/src/utils/logger.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 
 abstract class UploadFileStrategy {
@@ -205,6 +207,7 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
           ),
         );
       },
+      customBundleTags: customBundleTags(task.type),
       onStartMetadataCreation: () {
         controller.updateProgress(
           task: task.copyWith(
@@ -303,6 +306,7 @@ class UploadFolderStructureAsBundleStrategy
       entities: task.folders,
       wallet: wallet,
       driveKey: task.encryptionKey,
+      customBundleTags: customBundleTags(task.type),
     );
 
     final folderBundle = (bundle).first.dataItemResult;
@@ -359,4 +363,23 @@ class UploadFolderStructureAsBundleStrategy
       ),
     );
   }
+}
+
+List<Tag>? customBundleTags(
+  UploadType type,
+) {
+  if (type == UploadType.d2n) {
+    return _uTags;
+  } else {
+    return null;
+  }
+}
+
+List<Tag> get _uTags {
+  return [
+    Tag(EntityTag.appName, 'SmartWeaveAction'),
+    Tag(EntityTag.appVersion, '0.3.0'),
+    Tag(EntityTag.input, '{"function":"mint"}'),
+    Tag(EntityTag.contract, uContractId.toString()),
+  ];
 }

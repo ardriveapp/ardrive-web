@@ -1,15 +1,13 @@
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 
 abstract class UploadMetadata {}
 
 class ARFSDriveUploadMetadata extends ARFSUploadMetadata {
   ARFSDriveUploadMetadata({
-    required super.entityMetadataTags,
     required super.name,
     required super.id,
     required super.isPrivate,
-    required super.dataItemTags,
-    required super.bundleTags,
   });
 
   // TODO: implement toJson
@@ -26,12 +24,9 @@ class ARFSFolderUploadMetatadata extends ARFSUploadMetadata {
   ARFSFolderUploadMetatadata({
     required this.driveId,
     this.parentFolderId,
-    required super.entityMetadataTags,
     required super.name,
     required super.id,
     required super.isPrivate,
-    required super.dataItemTags,
-    required super.bundleTags,
   });
 
   @override
@@ -43,14 +38,6 @@ class ARFSFolderUploadMetatadata extends ARFSUploadMetadata {
 }
 
 class ARFSFileUploadMetadata extends ARFSUploadMetadata {
-  final int size;
-  final DateTime lastModifiedDate;
-  final String dataContentType;
-  final String driveId;
-  final String parentFolderId;
-  final String? licenseDefinitionTxId;
-  final Map<String, String>? licenseAdditionalTags;
-
   ARFSFileUploadMetadata({
     required this.size,
     required this.lastModifiedDate,
@@ -59,13 +46,22 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata {
     required this.parentFolderId,
     this.licenseDefinitionTxId,
     this.licenseAdditionalTags,
-    required super.entityMetadataTags,
     required super.name,
     required super.id,
     required super.isPrivate,
-    required super.dataItemTags,
-    required super.bundleTags,
   });
+
+  final int size;
+  final DateTime lastModifiedDate;
+  final String dataContentType;
+  final String driveId;
+  final String parentFolderId;
+  final String? licenseDefinitionTxId;
+  final Map<String, String>? licenseAdditionalTags;
+
+  late List<Tag> _dataTags;
+
+  void setDataTags(List<Tag> dataTags) => _dataTags = dataTags;
 
   String? _dataTxId;
 
@@ -79,37 +75,93 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata {
 
   String? get licenseTxId => _licenseTxId;
 
+  Tag? _dataCipherTag;
+  Tag? _dataCipherIvTag;
+
+  void setDataCipher({
+    required String cipher,
+    required String cipherIv,
+  }) {
+    _dataCipherTag = Tag(
+      EntityTag.cipher,
+      cipher,
+    );
+    _dataCipherIvTag = Tag(
+      EntityTag.cipherIv,
+      cipherIv,
+    );
+  }
+
+  List<Tag> getDataTags() {
+    return [
+      ..._dataTags,
+      if (_dataCipherTag != null) _dataCipherTag!,
+      if (_dataCipherIvTag != null) _dataCipherIvTag!,
+    ];
+  }
+
   @override
-  Map<String, dynamic> toJson() => {
-        'name': name,
-        'size': size,
-        'lastModifiedDate': lastModifiedDate.millisecondsSinceEpoch,
-        'dataContentType': dataContentType,
-        'dataTxId': dataTxId,
-      }..addAll(licenseTxId != null
-          ? {
-              'licenseTxId': licenseTxId,
-            }
-          : {});
+  Map<String, dynamic> toJson() {
+    if (_dataTxId == null) {
+      throw StateError('dataTxId is required but not set.');
+    }
+
+    return {
+      'name': name,
+      'size': size,
+      'lastModifiedDate': lastModifiedDate.millisecondsSinceEpoch,
+      'dataContentType': dataContentType,
+      'dataTxId': dataTxId,
+    }..addAll(licenseTxId != null
+        ? {
+            'licenseTxId': licenseTxId,
+          }
+        : {});
+  }
 }
 
 abstract class ARFSUploadMetadata extends UploadMetadata {
-  final String id;
-  final String name;
-  final List<Tag> entityMetadataTags;
-  final List<Tag> dataItemTags;
-  final List<Tag> bundleTags;
-  final bool isPrivate;
-  String? _metadataTxId;
-
   ARFSUploadMetadata({
     required this.name,
-    required this.entityMetadataTags,
-    required this.dataItemTags,
-    required this.bundleTags,
     required this.id,
     required this.isPrivate,
   });
+
+  final String id;
+  final String name;
+  final bool isPrivate;
+
+  String? _metadataTxId;
+
+  late List<Tag> _entityMetadataTags;
+
+  Tag? _cipherTag;
+  Tag? _cipherIvTag;
+
+  List<Tag> getEntityMetadataTags() {
+    return [
+      ..._entityMetadataTags,
+      if (_cipherTag != null) _cipherTag!,
+      if (_cipherIvTag != null) _cipherIvTag!,
+    ];
+  }
+
+  void setEntityMetadataTags(List<Tag> entityMetadataTags) =>
+      _entityMetadataTags = entityMetadataTags;
+
+  void setCipher({
+    required String cipher,
+    required String cipherIv,
+  }) {
+    _cipherTag = Tag(
+      EntityTag.cipher,
+      cipher,
+    );
+    _cipherIvTag = Tag(
+      EntityTag.cipherIv,
+      cipherIv,
+    );
+  }
 
   set setMetadataTxId(String metadataTxId) => _metadataTxId = metadataTxId;
   String? get metadataTxId => _metadataTxId;
@@ -117,5 +169,5 @@ abstract class ARFSUploadMetadata extends UploadMetadata {
   Map<String, dynamic> toJson();
 
   @override
-  String toString() => toJson().toString();
+  String toString() => 'ARFSUploadMetadata: $name';
 }

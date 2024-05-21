@@ -1,13 +1,9 @@
 import 'dart:async';
 
-import 'package:ardrive_io/ardrive_io.dart';
-import 'package:ardrive_uploader/src/data_bundler.dart';
+import 'package:ardrive_uploader/src/upload_dispatcher.dart';
 import 'package:ardrive_uploader/src/utils/logger.dart';
-import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
-import 'package:cryptography/cryptography.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:uuid/uuid.dart';
 
 import '../ardrive_uploader.dart';
 
@@ -300,8 +296,6 @@ class _UploadController implements UploadController {
 
     for (var task in _failedTasks.values) {
       if (task is FileUploadTask) {
-        task.prepareToRetry();
-
         addTask(
           task.copyWith(
             status: UploadStatus.notStarted,
@@ -311,8 +305,6 @@ class _UploadController implements UploadController {
           ),
         );
       } else if (task is FolderUploadTask) {
-        task.prepareToRetry();
-
         addTask(
           task.copyWith(
             status: UploadStatus.notStarted,
@@ -370,8 +362,6 @@ class _UploadController implements UploadController {
     );
   }
 
-  /// It is just an experimentation. It is not used yet, but it will be used in the future.
-  /// When this implementation is stable, we must add this method on its interface class: `UploadController`.
   Future<void> retryTask(UploadTask task, Wallet wallet) async {
     task.copyWith(status: UploadStatus.notStarted);
 
@@ -387,7 +377,9 @@ class _UploadController implements UploadController {
 
   @override
   Future<void> close() async {
-    await _progressStream.close();
+    if (!_progressStream.isClosed) {
+      await _progressStream.close();
+    }
   }
 
   @override
@@ -745,324 +737,12 @@ class TransactionUploadItem extends UploadItem<TransactionResult> {
   }
 }
 
-class FolderUploadTask extends UploadTask<ARFSUploadMetadata>
-    implements RetryableUploadTask {
-  final List<(ARFSFolderUploadMetatadata, IOEntity)> folders;
-
-  @override
-  final UploadItem? uploadItem;
-
-  @override
-  final List<ARFSUploadMetadata>? content;
-
-  @override
-  final double progress;
-
-  @override
-  final String id;
-
-  @override
-  bool isProgressAvailable = true;
-
-  @override
-  UploadTaskCancelToken? cancelToken;
-
-  @override
-  final UploadType type;
-
-  @override
-  final SecretKey? encryptionKey;
-
-  @override
-  final Object? error;
-
-  @override
-  void prepareToRetry() {
-    /// Remove the cipher and cipherIv tags from the metadata
-    for (var element in folders) {
-      element.$1.entityMetadataTags.removeWhere(
-        (element) =>
-            element.name == EntityTag.cipher ||
-            element.name == EntityTag.cipherIv,
-      );
-    }
-  }
-
-  FolderUploadTask({
-    required this.folders,
-    this.uploadItem,
-    this.isProgressAvailable = true,
-    this.status = UploadStatus.notStarted,
-    this.content,
-    this.encryptionKey,
-    this.progress = 0,
-    this.cancelToken,
-    String? id,
-    required this.type,
-    this.error,
-  }) : id = id ?? const Uuid().v4();
-
-  @override
-  UploadStatus status;
-
-  @override
-  FolderUploadTask copyWith({
-    UploadItem? uploadItem,
-    double? progress,
-    bool? isProgressAvailable,
-    UploadStatus? status,
-    String? id,
-    List<ARFSUploadMetadata>? content,
-    SecretKey? encryptionKey,
-    List<(ARFSFolderUploadMetatadata, IOEntity)>? folders,
-    UploadTaskCancelToken? cancelToken,
-    UploadType? type,
-    Object? error,
-  }) {
-    return FolderUploadTask(
-      cancelToken: cancelToken ?? this.cancelToken,
-      folders: folders ?? this.folders,
-      uploadItem: uploadItem ?? this.uploadItem,
-      content: content ?? this.content,
-      id: id ?? this.id,
-      progress: progress ?? this.progress,
-      isProgressAvailable: isProgressAvailable ?? this.isProgressAvailable,
-      status: status ?? this.status,
-      type: type ?? this.type,
-      encryptionKey: encryptionKey ?? this.encryptionKey,
-      error: error ?? this.error,
-    );
-  }
-}
-
-abstract class RetryableUploadTask {
-  void prepareToRetry();
-}
-
-class FileUploadTask extends UploadTask implements RetryableUploadTask {
-  final IOFile file;
-
-  final ARFSFileUploadMetadata metadata;
-
-  @override
-  final UploadItem? uploadItem;
-
-  @override
-  final List<ARFSUploadMetadata>? content;
-
-  @override
-  final double progress;
-
-  @override
-  final String id;
-
-  @override
-  bool isProgressAvailable = true;
-
-  bool metadataUploaded;
-
-  @override
-  UploadTaskCancelToken? cancelToken;
-
-  @override
-  final Object? error;
-
-  @override
-  final SecretKey? encryptionKey;
-
-  @override
-  UploadType type;
-
-  @override
-  void prepareToRetry() {
-    /// Remove the cipher and cipherIv tags from the metadata and data tx
-    metadata.entityMetadataTags.removeWhere(
-      (element) =>
-          element.name == EntityTag.cipher ||
-          element.name == EntityTag.cipherIv,
-    );
-
-    metadata.dataItemTags.removeWhere(
-      (element) =>
-          element.name == EntityTag.cipher ||
-          element.name == EntityTag.cipherIv,
-    );
-  }
-
-  FileUploadTask({
-    this.uploadItem,
-    this.isProgressAvailable = true,
-    this.status = UploadStatus.notStarted,
-    this.content,
-    String? id,
-    required this.file,
-    required this.metadata,
-    this.encryptionKey,
-    this.cancelToken,
-    this.progress = 0,
-    required this.type,
-    this.metadataUploaded = false,
-    this.error,
-  }) : id = id ?? const Uuid().v4();
-
-  @override
-  UploadStatus status;
-
-  @override
-  FileUploadTask copyWith({
-    UploadItem? uploadItem,
-    double? progress,
-    bool? isProgressAvailable,
-    UploadStatus? status,
-    String? id,
-    ARFSFileUploadMetadata? metadata,
-    List<ARFSUploadMetadata>? content,
-    SecretKey? encryptionKey,
-    UploadTaskCancelToken? cancelToken,
-    UploadType? type,
-    bool? metadataUploaded,
-    Object? error,
-  }) {
-    return FileUploadTask(
-      cancelToken: cancelToken ?? this.cancelToken,
-      encryptionKey: encryptionKey ?? this.encryptionKey,
-      metadata: metadata ?? this.metadata,
-      uploadItem: uploadItem ?? this.uploadItem,
-      content: content ?? this.content,
-      id: id ?? this.id,
-      isProgressAvailable: isProgressAvailable ?? this.isProgressAvailable,
-      status: status ?? this.status,
-      file: file,
-      progress: progress ?? this.progress,
-      type: type ?? this.type,
-      metadataUploaded: metadataUploaded ?? this.metadataUploaded,
-      error: error ?? this.error,
-    );
-  }
-}
-
-abstract class UploadTask<T> {
-  abstract final String id;
-  abstract final UploadItem? uploadItem;
-  abstract final List<ARFSUploadMetadata>? content;
-  abstract final double progress;
-  abstract final bool isProgressAvailable;
-  abstract final UploadStatus status;
-  abstract final SecretKey? encryptionKey;
-  abstract final UploadTaskCancelToken? cancelToken;
-  abstract final UploadType type;
-  abstract final Object? error;
-
-  String errorInfo() {
-    String errorInfo = '';
-
-    errorInfo += 'progress: $progress\n';
-    errorInfo += 'status: $status\n';
-    errorInfo += 'type: $type\n';
-    errorInfo += 'number of content: ${content?.length}\n';
-    errorInfo += 'uploadItem: ${uploadItem.toString()}}\n';
-
-    return errorInfo;
-  }
-
-  UploadTask copyWith({
-    UploadItem? uploadItem,
-    double? progress,
-    bool? isProgressAvailable,
-    UploadStatus? status,
-    String? id,
-    List<ARFSUploadMetadata>? content,
-    SecretKey? encryptionKey,
-    UploadTaskCancelToken? cancelToken,
-    UploadType? type,
-    Object? error,
-  });
-}
-
 class UploadTaskCancelToken {
   final Function() cancel;
 
   UploadTaskCancelToken({
     required this.cancel,
   });
-}
-
-class UploadDispatcher {
-  UploadFileStrategy _uploadFileStrategy;
-  final UploadFolderStructureStrategy _uploadFolderStrategy;
-  final DataBundler _dataBundler;
-
-  UploadDispatcher({
-    required UploadFileStrategy uploadStrategy,
-    required DataBundler dataBundler,
-    required UploadFolderStructureStrategy uploadFolderStrategy,
-  })  : _dataBundler = dataBundler,
-        _uploadFolderStrategy = uploadFolderStrategy,
-        _uploadFileStrategy = uploadStrategy;
-
-  Future<UploadResult> send({
-    required UploadTask task,
-    required Wallet wallet,
-    required UploadController controller,
-    required bool Function() verifyCancel,
-  }) async {
-    try {
-      if (task is FileUploadTask) {
-        final dataItems = await _dataBundler.createDataItemsForFile(
-          file: task.file,
-          metadata: task.metadata,
-          wallet: wallet,
-          driveKey: task.encryptionKey,
-          onStartBundleCreation: () {
-            controller.updateProgress(
-              task: task.copyWith(
-                status: UploadStatus.creatingBundle,
-              ),
-            );
-          },
-          onStartMetadataCreation: () {
-            controller.updateProgress(
-              task: task.copyWith(
-                status: UploadStatus.creatingMetadata,
-              ),
-            );
-          },
-        );
-
-        logger.d(
-            'Uploading task ${task.id} with strategy: ${_uploadFileStrategy.runtimeType}');
-
-        await _uploadFileStrategy.upload(
-          dataItems: dataItems,
-          task: task,
-          wallet: wallet,
-          controller: controller,
-          verifyCancel: verifyCancel,
-        );
-      } else if (task is FolderUploadTask) {
-        await _uploadFolderStrategy.upload(
-          task: task,
-          wallet: wallet,
-          controller: controller,
-          verifyCancel: verifyCancel,
-        );
-      } else {
-        throw Exception('Invalid task type');
-      }
-
-      return UploadResult(success: true);
-    } catch (e, stacktrace) {
-      logger.d('Error on UploadDispatcher.send: $e $stacktrace');
-      return UploadResult(
-        success: false,
-        error: e,
-      );
-    }
-  }
-
-  void setUploadFileStrategy(UploadFileStrategy strategy) {
-    _uploadFileStrategy = strategy;
-  }
 }
 
 class UploadResult {
