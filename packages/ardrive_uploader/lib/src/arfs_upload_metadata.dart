@@ -83,6 +83,8 @@ mixin ARFSUploadData {
   void setDataTags(List<Tag> dataTags) => _dataTags = dataTags;
 
   /// Gets the data tags including cipher tags if set.
+  ///
+  /// Only call this method after setting the data tags and cipher tags if needed.
   List<Tag> getDataTags() {
     return [
       ..._dataTags,

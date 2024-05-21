@@ -586,8 +586,6 @@ Future<DataItemFile> _generateMetadataDataItemForFile({
   required Wallet wallet,
   SecretKey? driveKey,
 }) async {
-  final dataItemTags = metadata.getDataTags();
-
   if (driveKey != null) {
     final cipher = dataStream.$3;
     final cipherIv = dataStream.$2;
@@ -603,7 +601,8 @@ Future<DataItemFile> _generateMetadataDataItemForFile({
     wallet: wallet,
     dataStream: dataStreamGenerator,
     dataStreamSize: dataStreamSize,
-    tags: dataItemTags.map((e) => createTag(e.name, e.value)).toList(),
+    tags:
+        metadata.getDataTags().map((e) => createTag(e.name, e.value)).toList(),
   );
 
   final fileDataItemResult = await fileDataItemEither.run();
