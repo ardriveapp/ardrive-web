@@ -196,7 +196,7 @@ void main() {
       final errorInfo = task.errorInfo();
       expect(errorInfo, contains('progress: 0'));
       expect(errorInfo, contains('status: UploadStatus.notStarted'));
-      expect(errorInfo, contains('type: UploadType.folder'));
+      expect(errorInfo, contains('type: UploadType.turbo'));
     });
   });
 }
