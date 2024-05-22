@@ -82,7 +82,7 @@ class _UploadController implements UploadController {
 
   @override
   List<UploadTask> get notCompletedTasks =>
-      tasks.values.where((e) => e.status == UploadStatus.complete).toList();
+      tasks.values.where((e) => e.status != UploadStatus.complete).toList();
 
   int _totalSize = 0;
   int _numberOfItems = 0;
