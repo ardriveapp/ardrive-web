@@ -597,6 +597,8 @@ Future<DataItemFile> _generateMetadataDataItemForFile({
   final dataStreamGenerator = dataStream.$1;
   final dataStreamSize = dataStream.$4;
 
+  logger.d('Data tags: ${getJsonFromListOfTags(metadata.getDataTags())}');
+
   final fileDataItemEither = createDataItemTaskEither(
     wallet: wallet,
     dataStream: dataStreamGenerator,
@@ -652,6 +654,8 @@ Future<DataItemFile> _generateMetadataDataItemForFile({
     metadataGenerator = () => Stream.fromIterable(metadataBytes);
     metadataLength = metadataBytes.length;
   }
+
+  logger.d('Metadata tags: ${getJsonFromListOfTags(metadata.getDataTags())}');
 
   final metadataTask = createDataItemTaskEither(
     wallet: wallet,
