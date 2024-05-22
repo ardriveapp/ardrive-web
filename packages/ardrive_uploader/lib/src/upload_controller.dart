@@ -275,6 +275,7 @@ class _UploadController implements UploadController {
     _progressStream.close();
     _progressStream = StreamController.broadcast();
 
+    /// Clean up the tasks
     tasks.clear();
     _completedTasks.clear();
     _canceledTasks.clear();
@@ -284,6 +285,9 @@ class _UploadController implements UploadController {
 
     _progressStream.add(UploadProgress.notStarted());
 
+    bool containtsFolder = false;
+
+    /// Add the failed tasks back to the tasks list as not started
     for (var task in _failedTasks.values) {
       if (task is FileUploadTask) {
         addTask(
@@ -295,6 +299,8 @@ class _UploadController implements UploadController {
           ),
         );
       } else if (task is FolderUploadTask) {
+        containtsFolder = true;
+
         addTask(
           task.copyWith(
             status: UploadStatus.notStarted,
@@ -308,41 +314,33 @@ class _UploadController implements UploadController {
 
     logger.d('Retrying failed tasks.');
 
-    for (var task in tasks.values) {
-      logger.d('Task: ${task.id} and progress ${task.progress}');
-    }
-
     _failedTasks.clear();
 
     init();
 
-    // creates a worker pool and initializes it with the tasks
-    WorkerPool(
-      numWorkers: _numOfWorkers,
-      maxTasksPerWorker: _maxTasksPerWorker,
-      taskQueue: tasks.values
-          .where((element) => element.status == UploadStatus.notStarted)
-          .toList(),
-      onWorkerError: (e) {
-        final updatedTask = tasks[e.id]!;
+    /// All folders goes in a single bundle. We are safe to send all the folders at once.
+    final folderTasks =
+        tasks.values.whereType<FolderUploadTask>().toList().first;
 
-        updateProgress(task: updatedTask.copyWith(status: UploadStatus.failed));
-
-        logger.d('Unknown error on UploadWorker. Task: ${e.toString()}');
-      },
-      upload: (task) async {
-        final uploadResult = await _uploadDispatcher.send(
-          task: task,
-          wallet: wallet,
-          controller: this,
-          verifyCancel: () => _isCanceled,
-        );
-
-        if (!uploadResult.success) {
-          _handleError(task: task, error: uploadResult.error);
-        }
-      },
-    );
+    /// If the tasks contains a folder, we must send the folder first
+    if (containtsFolder) {
+      sendTask(
+        folderTasks,
+        wallet,
+        onTaskCompleted: (success) {
+          if (success) {
+            sendTasks(wallet);
+          } else {
+            for (var task in tasks.values) {
+              task = task.copyWith(status: UploadStatus.failed);
+              updateProgress(task: task);
+            }
+          }
+        },
+      );
+    } else {
+      sendTasks(wallet);
+    }
   }
 
   Future<void> retryTask(UploadTask task, Wallet wallet) async {
