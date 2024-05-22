@@ -298,8 +298,8 @@ class _ArDriveUploader implements ArDriveUploader {
           /// if the folder upload task fails, then all the files are marked as failed
           for (var task in uploadController.notCompletedTasks) {
             task = task.copyWith(status: UploadStatus.failed);
+            uploadController.updateProgress(task: task);
           }
-          uploadController.updateProgress();
           uploadController.cancel();
         }
       });
