@@ -300,7 +300,6 @@ class _ArDriveUploader implements ArDriveUploader {
             task = task.copyWith(status: UploadStatus.failed);
             uploadController.updateProgress(task: task);
           }
-          uploadController.cancel();
         }
       });
     } else {
