@@ -178,10 +178,11 @@ class _UploadController implements UploadController {
           .where((element) => element.status == UploadStatus.notStarted)
           .toList(),
       onWorkerError: (e) {
+        /// Handles any uncaught error on the worker. It is not supposed to happen as
+        /// the `_uploadDispatcher` should handle all the errors and return an `UploadResult`
         logger.d('Error on UploadWorker. Task: ${e.toString()}');
-        final updatedTask = tasks[e.id]!;
 
-        updateProgress(task: updatedTask.copyWith(status: UploadStatus.failed));
+        _handleError(task: tasks[e.id]!, error: e);
       },
       upload: (task) async {
         final uploadResult = await _uploadDispatcher.send(
@@ -192,13 +193,7 @@ class _UploadController implements UploadController {
         );
 
         if (!uploadResult.success) {
-          final updatedTask =
-              tasks[task.id]!.copyWith(error: uploadResult.error);
-
-          _onFailedTask(updatedTask);
-
-          updateProgress(
-              task: updatedTask.copyWith(status: UploadStatus.failed));
+          _handleError(task: task, error: uploadResult.error);
         }
       },
     );
@@ -228,9 +223,11 @@ class _UploadController implements UploadController {
   }) {
     final worker = UploadWorker(
       onError: (task, e) {
-        logger.e('Error on UploadWorker. Task: ${task.toString()}', e);
-        final updatedTask = tasks[task.id]!;
-        updateProgress(task: updatedTask.copyWith(status: UploadStatus.failed));
+        /// Handles any uncaught error on the worker. It is not supposed to happen as
+        /// the `_uploadDispatcher` should handle all the errors and return an `UploadResult`
+        logger.d('Error on UploadWorker. Task: ${task.toString()}');
+
+        _handleError(task: task, error: e);
       },
       upload: (task) async {
         final uploadResult = await _uploadDispatcher.send(
@@ -241,14 +238,7 @@ class _UploadController implements UploadController {
         );
 
         if (!uploadResult.success) {
-          final updatedTask =
-              tasks[task.id]!.copyWith(error: uploadResult.error);
-
-          updateProgress(
-              task: updatedTask.copyWith(status: UploadStatus.failed));
-
-          /// Callback to the caller that the task has failed
-          _onFailedTask(updatedTask);
+          _handleError(task: task, error: uploadResult.error);
         }
       },
       maxTasks: 1,
@@ -349,14 +339,7 @@ class _UploadController implements UploadController {
         );
 
         if (!uploadResult.success) {
-          final updatedTask =
-              tasks[task.id]!.copyWith(error: uploadResult.error);
-
-          /// Callback to the caller that the task has failed
-          _onFailedTask(updatedTask);
-
-          updateProgress(
-              task: updatedTask.copyWith(status: UploadStatus.failed));
+          _handleError(task: task, error: uploadResult.error);
         }
       },
     );
@@ -414,6 +397,22 @@ class _UploadController implements UploadController {
 
   int totalSize() {
     return _totalSize;
+  }
+
+  /// Set the status of the task to failed and update the progress
+  ///
+  /// Calls the callback to the caller that the task has failed
+  void _handleError({
+    required UploadTask task,
+    required Object? error,
+  }) {
+    final updatedTask =
+        tasks[task.id]!.copyWith(error: error, status: UploadStatus.failed);
+
+    updateProgress(task: updatedTask);
+
+    /// Callback to the caller that the task has failed
+    _onFailedTask(updatedTask);
   }
 
   void _resetUploadProgress() {
