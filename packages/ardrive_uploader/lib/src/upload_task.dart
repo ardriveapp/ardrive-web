@@ -70,6 +70,7 @@ class FileUploadTask extends UploadTask {
     UploadType? type,
     bool? metadataUploaded,
     Object? error,
+    IOFile? file,
   }) {
     return FileUploadTask(
       cancelToken: cancelToken ?? this.cancelToken,
@@ -80,7 +81,7 @@ class FileUploadTask extends UploadTask {
       id: id ?? this.id,
       isProgressAvailable: isProgressAvailable ?? this.isProgressAvailable,
       status: status ?? this.status,
-      file: file,
+      file: file ?? this.file,
       progress: progress ?? this.progress,
       type: type ?? this.type,
       metadataUploaded: metadataUploaded ?? this.metadataUploaded,
