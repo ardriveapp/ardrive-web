@@ -564,15 +564,15 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     if (uploadFolders) {
-      // await _uploadFolderUsingArDriveUploader(
-      //   licenseStateConfigured: licenseStateConfigured,
-      // );
-      // return;
+      await _uploadFolderUsingArDriveUploader(
+        licenseStateConfigured: licenseStateConfigured,
+      );
+      return;
     }
 
-    // await _uploadUsingArDriveUploader(
-    //   licenseStateConfigured: licenseStateConfigured,
-    // );
+    await _uploadUsingArDriveUploader(
+      licenseStateConfigured: licenseStateConfigured,
+    );
 
     return;
   }
