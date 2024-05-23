@@ -311,16 +311,18 @@ class UploadCubit extends Cubit<UploadState> {
 
     for (final file in files) {
       final fileName = file.ioFile.name;
-      final existingFileId = await _driveDao
+      final existingFileIds = await _driveDao
           .filesInFolderWithName(
             driveId: _targetDrive.id,
             parentFolderId: file.parentFolderId,
             name: fileName,
           )
           .map((f) => f.id)
-          .getSingleOrNull();
+          .get();
 
-      if (existingFileId != null) {
+      if (existingFileIds.isNotEmpty) {
+        final existingFileId = existingFileIds.first;
+
         logger.d('Found conflicting file. Existing file id: $existingFileId');
         conflictingFiles[file.getIdentifier()] = existingFileId;
       }
@@ -345,14 +347,18 @@ class UploadCubit extends Cubit<UploadState> {
               .getSingleOrNull();
 
           final status = _driveDao.select(_driveDao.networkTransactions)
-            ..where((tbl) => tbl.id.equals(fileRevision!.metadataTxId));
+            ..where((tbl) => tbl.id.equals(fileRevision!.dataTxId));
 
           final transaction = await status.getSingleOrNull();
+
+          logger.d('Transaction status: ${transaction?.status}');
 
           if (transaction?.status == TransactionStatus.failed) {
             failedFiles.add(fileNameKey);
           }
         }
+
+        logger.d('Failed files: $failedFiles');
 
         if (failedFiles.isNotEmpty) {
           emit(
@@ -402,19 +408,20 @@ class UploadCubit extends Cubit<UploadState> {
           )
           .map((f) => f.id)
           .getSingleOrNull();
-      final existingFileId = await _driveDao
+      final existingFileIds = await _driveDao
           .filesInFolderWithName(
             driveId: driveId,
             name: folder.name,
             parentFolderId: folder.parentFolderId,
           )
           .map((f) => f.id)
-          .getSingleOrNull();
+          .get();
+
       if (existingFolderId != null) {
         folder.id = existingFolderId;
         foldersToSkip.add(folder);
       }
-      if (existingFileId != null) {
+      if (existingFileIds.isNotEmpty) {
         conflictingFolders.add(folder.name);
       }
     }
@@ -557,15 +564,15 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     if (uploadFolders) {
-      await _uploadFolderUsingArDriveUploader(
-        licenseStateConfigured: licenseStateConfigured,
-      );
-      return;
+      // await _uploadFolderUsingArDriveUploader(
+      //   licenseStateConfigured: licenseStateConfigured,
+      // );
+      // return;
     }
 
-    await _uploadUsingArDriveUploader(
-      licenseStateConfigured: licenseStateConfigured,
-    );
+    // await _uploadUsingArDriveUploader(
+    //   licenseStateConfigured: licenseStateConfigured,
+    // );
 
     return;
   }
