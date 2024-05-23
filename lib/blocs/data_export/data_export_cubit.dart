@@ -35,7 +35,8 @@ class DataExportCubit extends Cubit<DataExportState> {
         'File Size',
         'Date Created',
         'Last Modified',
-        'Direct Download Link'
+        'Direct Download Link',
+        'Status',
       ]
     ];
 
@@ -50,7 +51,8 @@ class DataExportCubit extends Cubit<DataExportState> {
         ..add(file.size.toString())
         ..add(file.dateCreated.toString())
         ..add(file.lastModifiedDate.toString())
-        ..add(Uri.parse('$_gatewayURL/${file.dataTx.id}').toString());
+        ..add(Uri.parse('$_gatewayURL/${file.dataTx.id}').toString())
+        ..add(file.dataTx.status.toString());
       export.add(fileContent);
     }
     return const ListToCsvConverter().convert(export);
