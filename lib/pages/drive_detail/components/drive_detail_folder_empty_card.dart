@@ -396,20 +396,6 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
     );
   }
 
-  Widget _attachDrive(BuildContext context) {
-    return _actionCard(
-      context: context,
-      title: 'Attach Drive',
-      description:
-          'Attach a new drive to your account to increase your storage capacity and organize your files.',
-      buttonText: 'Attach Drive',
-      onPressed: () {
-        attachDrive(context: context);
-      },
-      icon: ArDriveIcons.iconAttachDrive(),
-    );
-  }
-
   Widget _actionCard({
     required BuildContext context,
     required String title,
