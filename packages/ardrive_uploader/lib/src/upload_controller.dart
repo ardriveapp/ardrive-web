@@ -285,7 +285,7 @@ class _UploadController implements UploadController {
 
     _progressStream.add(UploadProgress.notStarted());
 
-    bool containtsFolder = false;
+    bool containsFolder = false;
 
     /// Add the failed tasks back to the tasks list as not started
     for (var task in _failedTasks.values) {
@@ -299,7 +299,7 @@ class _UploadController implements UploadController {
           ),
         );
       } else if (task is FolderUploadTask) {
-        containtsFolder = true;
+        containsFolder = true;
 
         addTask(
           task.copyWith(
@@ -319,7 +319,7 @@ class _UploadController implements UploadController {
     init();
 
     /// If the tasks contains a folder, we must send the folder first
-    if (containtsFolder) {
+    if (containsFolder) {
       /// All folders goes in a single bundle. We are safe to send all the folders at once.
       final folderTasks =
           tasks.values.whereType<FolderUploadTask>().toList().first;
