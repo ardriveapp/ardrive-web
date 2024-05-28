@@ -22,7 +22,6 @@ import 'package:ardrive/utils/file_type_helper.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -83,7 +82,7 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
   Widget _buildFileIcon(BuildContext context) {
     if (item is FileDataTableItem && FileTypeHelper.isImage(item.contentType)) {
       final file = item as FileDataTableItem;
-      final url = '${Arweave().api.gatewayUrl.origin}/raw/${file.dataTxId}';
+      // final url = '${Arweave().api.gatewayUrl.origin}/raw/${file.dataTxId}';
 
       return ArDriveCard(
         width: 30,
