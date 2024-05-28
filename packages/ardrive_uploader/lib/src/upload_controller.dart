@@ -74,7 +74,6 @@ class _UploadController implements UploadController {
 
   @override
   final Map<String, UploadTask> tasks = {};
-
   final Map<String, UploadTask> _completedTasks = {};
   final Map<String, UploadTask> _failedTasks = {};
   final Map<String, UploadTask> _canceledTasks = {};
@@ -285,8 +284,6 @@ class _UploadController implements UploadController {
 
     _progressStream.add(UploadProgress.notStarted());
 
-    bool containsFolder = false;
-
     /// Add the failed tasks back to the tasks list as not started
     for (var task in _failedTasks.values) {
       if (task is FileUploadTask) {
@@ -299,8 +296,6 @@ class _UploadController implements UploadController {
           ),
         );
       } else if (task is FolderUploadTask) {
-        containsFolder = true;
-
         addTask(
           task.copyWith(
             status: UploadStatus.notStarted,
@@ -318,14 +313,15 @@ class _UploadController implements UploadController {
 
     init();
 
+    /// All folders goes in a single bundle. We are safe to send all the folders at once.
+    final folderTasks = tasks.values.whereType<FolderUploadTask>();
+
+    final containsFolder = folderTasks.isNotEmpty;
+
     /// If the tasks contains a folder, we must send the folder first
     if (containsFolder) {
-      /// All folders goes in a single bundle. We are safe to send all the folders at once.
-      final folderTasks =
-          tasks.values.whereType<FolderUploadTask>().toList().first;
-
       sendTask(
-        folderTasks,
+        folderTasks.first,
         wallet,
         onTaskCompleted: (success) {
           if (success) {
