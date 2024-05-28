@@ -318,12 +318,12 @@ class _UploadController implements UploadController {
 
     init();
 
-    /// All folders goes in a single bundle. We are safe to send all the folders at once.
-    final folderTasks =
-        tasks.values.whereType<FolderUploadTask>().toList().first;
-
     /// If the tasks contains a folder, we must send the folder first
     if (containtsFolder) {
+      /// All folders goes in a single bundle. We are safe to send all the folders at once.
+      final folderTasks =
+          tasks.values.whereType<FolderUploadTask>().toList().first;
+
       sendTask(
         folderTasks,
         wallet,
