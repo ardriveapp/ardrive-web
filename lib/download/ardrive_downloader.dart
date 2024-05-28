@@ -26,6 +26,19 @@ abstract class ArDriveDownloader {
     String? cipherIvString,
   });
 
+  Future<Uint8List> downloadToMemory({
+    required TransactionCommonMixin dataTx,
+    required int fileSize,
+    required String fileName,
+    required DateTime lastModifiedDate,
+    required String contentType,
+    required bool isManifest,
+    Completer<String>? cancelWithReason,
+    SecretKey? fileKey,
+    String? cipher,
+    String? cipherIvString,
+  });
+
   Future<void> abortDownload();
 
   factory ArDriveDownloader({
@@ -271,5 +284,34 @@ class _ArDriveDownloader implements ArDriveDownloader {
     );
 
     return;
+  }
+
+  @override
+  Future<Uint8List> downloadToMemory({
+    required TransactionCommonMixin dataTx,
+    required int fileSize,
+    required String fileName,
+    required DateTime lastModifiedDate,
+    required String contentType,
+    required bool isManifest,
+    Completer<String>? cancelWithReason,
+    SecretKey? fileKey,
+    String? cipher,
+    String? cipherIvString,
+  }) async {
+    final stream = await _getFileStream(
+      dataTx: dataTx,
+      fileSize: fileSize,
+      fileName: fileName,
+      lastModifiedDate: lastModifiedDate,
+      contentType: contentType,
+      fileKey: fileKey,
+      cipher: cipher,
+      cipherIvString: cipherIvString,
+    );
+
+    final data = await stream.toList();
+
+    return Uint8List.fromList(data.expand((element) => element).toList());
   }
 }
