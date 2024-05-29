@@ -94,13 +94,6 @@ void main() {
           isPrivate: false,
           contentType: 'text/plain',
           entity: EntityType.file,
-          customBundleTags: [
-            Tag(EntityTag.appName, 'SmartWeaveAction'),
-            Tag(EntityTag.appVersion, '0.3.0'),
-            Tag(EntityTag.input, '{"function":"mint"}'),
-            Tag(EntityTag.contract,
-                'KTzTXT_ANmF84fWEKHzWURD1LWd9QaFR9yfYUwH2Lxw'),
-          ],
           entityId: 'entity123',
           driveId: 'driveId',
           parentFolderId: 'parentFolderId',
@@ -130,14 +123,15 @@ void main() {
           ),
         );
 
+        expect(metadata, isA<ARFSFileUploadMetadata>());
+
+        metadata as ARFSFileUploadMetadata;
+
         /// validate tags
-        expect(metadata.bundleTags, [
-          Tag('bundle-data-item-tag-name', 'bundle-data-item-tag-value'),
-        ]);
-        expect(metadata.dataItemTags, [
+        expect(metadata.getDataTags(), [
           Tag('data-item-tag-name', 'data-item-tag-value'),
         ]);
-        expect(metadata.entityMetadataTags, [
+        expect(metadata.getEntityMetadataTags(), [
           Tag('entity-tag-name', 'entity-tag-value'),
         ]);
 
@@ -162,13 +156,6 @@ void main() {
           isPrivate: true,
           contentType: 'application/octet-stream',
           entity: EntityType.file,
-          customBundleTags: [
-            Tag(EntityTag.appName, 'SmartWeaveAction'),
-            Tag(EntityTag.appVersion, '0.3.0'),
-            Tag(EntityTag.input, '{"function":"mint"}'),
-            Tag(EntityTag.contract,
-                'KTzTXT_ANmF84fWEKHzWURD1LWd9QaFR9yfYUwH2Lxw'),
-          ],
           entityId: 'entity123',
           driveId: 'driveId',
           parentFolderId: 'parentFolderId',
@@ -197,14 +184,15 @@ void main() {
           ),
         );
 
+        expect(metadata, isA<ARFSFileUploadMetadata>());
+
+        metadata as ARFSFileUploadMetadata;
+
         /// validate tags
-        expect(metadata.bundleTags, [
-          Tag('bundle-data-item-tag-name', 'bundle-data-item-tag-value'),
-        ]);
-        expect(metadata.dataItemTags, [
+        expect(metadata.getDataTags(), [
           Tag('data-item-tag-name', 'data-item-tag-value'),
         ]);
-        expect(metadata.entityMetadataTags, [
+        expect(metadata.getEntityMetadataTags(), [
           Tag('entity-tag-name', 'entity-tag-value'),
         ]);
 
@@ -258,14 +246,15 @@ void main() {
           ),
         );
 
+        expect(metadata, isA<ARFSFileUploadMetadata>());
+
+        metadata as ARFSFileUploadMetadata;
+
         /// validate tags
-        expect(metadata.bundleTags, [
-          Tag('bundle-data-item-tag-name', 'bundle-data-item-tag-value'),
-        ]);
-        expect(metadata.dataItemTags, [
+        expect(metadata.getDataTags(), [
           Tag('data-item-tag-name', 'data-item-tag-value'),
         ]);
-        expect(metadata.entityMetadataTags, [
+        expect(metadata.getEntityMetadataTags(), [
           Tag('entity-tag-name', 'entity-tag-value'),
         ]);
 
@@ -315,14 +304,15 @@ void main() {
           ),
         );
 
+        expect(metadata, isA<ARFSFileUploadMetadata>());
+
+        metadata as ARFSFileUploadMetadata;
+
         /// validate tags
-        expect(metadata.bundleTags, [
-          Tag('bundle-data-item-tag-name', 'bundle-data-item-tag-value'),
-        ]);
-        expect(metadata.dataItemTags, [
+        expect(metadata.getDataTags(), [
           Tag('data-item-tag-name', 'data-item-tag-value'),
         ]);
-        expect(metadata.entityMetadataTags, [
+        expect(metadata.getEntityMetadataTags(), [
           Tag('entity-tag-name', 'entity-tag-value'),
         ]);
 
@@ -447,39 +437,17 @@ void main() {
           parentFolderId: 'parentFolder123',
         );
 
-        var result = tagsGenerator.generateTags(args);
+        final result = tagsGenerator.generateTags(args);
 
-        final dataItemTags = result['data-item'];
-        final bundleTags = result['bundle-data-item'];
         final entityTags = result['entity'];
 
-        final dataItemTagsMap = <String, dynamic>{};
-        final bundleDataItemTagsMap = <String, dynamic>{};
         final entityDataItemTagsMap = <String, dynamic>{};
-
-        for (var tag in dataItemTags!) {
-          dataItemTagsMap[tag.name] = tag.value;
-        }
-
-        for (var tag in bundleTags!) {
-          bundleDataItemTagsMap[tag.name] = tag.value;
-        }
 
         for (var tag in entityTags!) {
           entityDataItemTagsMap[tag.name] = tag.value;
         }
 
         // Assert
-
-        // dataItemTags
-        expect(dataItemTagsMap[EntityTag.contentType], 'text/plain');
-        _validateAppTags(dataItemTagsMap, appInfo);
-
-        // bundleTags
-        expect(bundleDataItemTagsMap[EntityTag.tipType], 'data upload');
-        _validateAppTags(bundleDataItemTagsMap, appInfo);
-
-        // entity
         expect(entityDataItemTagsMap[EntityTag.driveId], 'drive123');
         expect(
             entityDataItemTagsMap[EntityTag.contentType], 'application/json');
@@ -503,37 +471,15 @@ void main() {
 
         var result = tagsGenerator.generateTags(args);
 
-        final dataItemTags = result['data-item'];
-        final bundleTags = result['bundle-data-item'];
         final entityTags = result['entity'];
 
-        final dataItemTagsMap = <String, dynamic>{};
-        final bundleDataItemTagsMap = <String, dynamic>{};
         final entityDataItemTagsMap = <String, dynamic>{};
-
-        for (var tag in dataItemTags!) {
-          dataItemTagsMap[tag.name] = tag.value;
-        }
-
-        for (var tag in bundleTags!) {
-          bundleDataItemTagsMap[tag.name] = tag.value;
-        }
 
         for (var tag in entityTags!) {
           entityDataItemTagsMap[tag.name] = tag.value;
         }
 
         // Assert
-
-        // dataItemTags
-        expect(dataItemTagsMap[EntityTag.contentType], 'text/plain');
-        _validateAppTags(dataItemTagsMap, appInfo);
-
-        // bundleTags
-        expect(bundleDataItemTagsMap['Tip-Type'], 'data upload');
-        _validateAppTags(bundleDataItemTagsMap, appInfo);
-
-        // entity
         expect(entityDataItemTagsMap[EntityTag.driveId], 'drive123');
 
         /// For private files the content type is application/octet-stream
@@ -545,34 +491,6 @@ void main() {
         expect(entityDataItemTagsMap[EntityTag.entityType], EntityTypeTag.file);
 
         _validateAppTags(entityDataItemTagsMap, appInfo);
-      });
-
-      test(
-          'Generates tags for standard public file input with CUSTOM bundle tags',
-          () {
-        var args = ARFSTagsArgs(
-          driveId: 'drive123',
-          entityId: 'entity123',
-          contentType: 'text/plain',
-          entity: EntityType.file,
-          isPrivate: false,
-          parentFolderId: 'parentFolder123',
-          customBundleTags: [
-            Tag('custom-tag-name', 'custom-tag-value'),
-          ],
-        );
-
-        var result = tagsGenerator.generateTags(args);
-
-        final bundleTags = result['bundle-data-item'];
-
-        final bundleDataItemTagsMap = <String, dynamic>{};
-
-        for (var tag in bundleTags!) {
-          bundleDataItemTagsMap[tag.name] = tag.value;
-        }
-
-        expect(bundleDataItemTagsMap['custom-tag-name'], 'custom-tag-value');
       });
     });
 
@@ -590,37 +508,15 @@ void main() {
 
         var result = tagsGenerator.generateTags(args);
 
-        final dataItemTags = result['data-item'];
-        final bundleTags = result['bundle-data-item'];
         final entityTags = result['entity'];
 
-        final dataItemTagsMap = <String, dynamic>{};
-        final bundleDataItemTagsMap = <String, dynamic>{};
         final entityDataItemTagsMap = <String, dynamic>{};
-
-        for (var tag in dataItemTags!) {
-          dataItemTagsMap[tag.name] = tag.value;
-        }
-
-        for (var tag in bundleTags!) {
-          bundleDataItemTagsMap[tag.name] = tag.value;
-        }
 
         for (var tag in entityTags!) {
           entityDataItemTagsMap[tag.name] = tag.value;
         }
 
         // Assert
-
-        // dataItemTags
-        expect(dataItemTagsMap[EntityTag.contentType], 'application/json');
-        _validateAppTags(dataItemTagsMap, appInfo);
-
-        // bundleTags
-        expect(bundleDataItemTagsMap['Tip-Type'], 'data upload');
-        _validateAppTags(bundleDataItemTagsMap, appInfo);
-
-        // entity
         expect(entityDataItemTagsMap[EntityTag.driveId], 'drive123');
         expect(
             entityDataItemTagsMap[EntityTag.contentType], 'application/json');
@@ -646,36 +542,15 @@ void main() {
 
         var result = tagsGenerator.generateTags(args);
 
-        final dataItemTags = result['data-item'];
-        final bundleTags = result['bundle-data-item'];
         final entityTags = result['entity'];
 
-        final dataItemTagsMap = <String, dynamic>{};
-        final bundleDataItemTagsMap = <String, dynamic>{};
         final entityDataItemTagsMap = <String, dynamic>{};
-
-        for (var tag in dataItemTags!) {
-          dataItemTagsMap[tag.name] = tag.value;
-        }
-
-        for (var tag in bundleTags!) {
-          bundleDataItemTagsMap[tag.name] = tag.value;
-        }
 
         for (var tag in entityTags!) {
           entityDataItemTagsMap[tag.name] = tag.value;
         }
 
         // Assert
-
-        // dataItemTags
-        expect(dataItemTagsMap[EntityTag.contentType], 'application/json');
-        _validateAppTags(dataItemTagsMap, appInfo);
-
-        // bundleTags
-        expect(bundleDataItemTagsMap['Tip-Type'], 'data upload');
-        _validateAppTags(bundleDataItemTagsMap, appInfo);
-        // entity
         expect(entityDataItemTagsMap[EntityTag.driveId], 'drive123');
         expect(entityDataItemTagsMap[EntityTag.contentType],
             'application/octet-stream');
@@ -713,6 +588,12 @@ void main() {
 
         // Assert
         expect(entityDataItemTagsMap[EntityTag.parentFolderId], isNull);
+        expect(entityDataItemTagsMap[EntityTag.driveId], 'drive123');
+        expect(
+            entityDataItemTagsMap[EntityTag.contentType], 'application/json');
+        expect(entityDataItemTagsMap[EntityTag.folderId], 'entity123');
+        expect(
+            entityDataItemTagsMap[EntityTag.entityType], EntityTypeTag.folder);
       });
       test(
           'Generates tags for standard a private folder input with no parent folder',
@@ -739,92 +620,66 @@ void main() {
 
         // Assert
         expect(entityDataItemTagsMap[EntityTag.parentFolderId], isNull);
-      });
-
-      test(
-          'Generates tags for standard public folder bundle input with CUSTOM bundle tags',
-          () {
-        var args = ARFSTagsArgs(
-          driveId: 'drive123',
-          entityId: 'entity123',
-          contentType: 'text/plain',
-          entity: EntityType.folder,
-          isPrivate: false,
-          parentFolderId: 'parentFolder123',
-          customBundleTags: [
-            Tag('custom-tag-name', 'custom-tag-value'),
-          ],
-        );
-
-        var result = tagsGenerator.generateTags(args);
-
-        final bundleTags = result['bundle-data-item'];
-
-        final bundleDataItemTagsMap = <String, dynamic>{};
-
-        for (var tag in bundleTags!) {
-          bundleDataItemTagsMap[tag.name] = tag.value;
-        }
-
-        expect(bundleDataItemTagsMap['custom-tag-name'], 'custom-tag-value');
+        expect(entityDataItemTagsMap[EntityTag.driveId], 'drive123');
+        expect(entityDataItemTagsMap[EntityTag.contentType],
+            'application/octet-stream');
+        expect(entityDataItemTagsMap[EntityTag.folderId], 'entity123');
+        expect(
+            entityDataItemTagsMap[EntityTag.entityType], EntityTypeTag.folder);
       });
     });
 
     group('generating for drives', () {
-      test('Generates tags for standard a public drive input', () {
-        // Define standard ARFSTagsArgs
+      test('generate a public drive', () {
         var args = ARFSTagsArgs(
           driveId: 'drive123',
           entityId: 'entity123',
           contentType: 'application/json',
-          entity: EntityType.folder,
+          entity: EntityType.drive,
           isPrivate: false,
-          parentFolderId: 'parentFolder123',
         );
 
         var result = tagsGenerator.generateTags(args);
 
-        final dataItemTags = result['data-item'];
-        final bundleTags = result['bundle-data-item'];
         final entityTags = result['entity'];
 
-        final dataItemTagsMap = <String, dynamic>{};
-        final bundleDataItemTagsMap = <String, dynamic>{};
         final entityDataItemTagsMap = <String, dynamic>{};
-
-        for (var tag in dataItemTags!) {
-          dataItemTagsMap[tag.name] = tag.value;
-        }
-
-        for (var tag in bundleTags!) {
-          bundleDataItemTagsMap[tag.name] = tag.value;
-        }
 
         for (var tag in entityTags!) {
           entityDataItemTagsMap[tag.name] = tag.value;
         }
 
         // Assert
-
-        // dataItemTags
-        expect(dataItemTagsMap[EntityTag.contentType], 'application/json');
-        _validateAppTags(dataItemTagsMap, appInfo);
-
-        // bundleTags
-        expect(bundleDataItemTagsMap['Tip-Type'], 'data upload');
-        _validateAppTags(bundleDataItemTagsMap, appInfo);
-
-        // entity
         expect(entityDataItemTagsMap[EntityTag.driveId], 'drive123');
         expect(
             entityDataItemTagsMap[EntityTag.contentType], 'application/json');
-        // folder id
-        expect(entityDataItemTagsMap[EntityTag.folderId], 'entity123');
-        expect(
-            entityDataItemTagsMap[EntityTag.parentFolderId], 'parentFolder123');
-        expect(
-            entityDataItemTagsMap[EntityTag.entityType], EntityTypeTag.folder);
-        _validateAppTags(entityDataItemTagsMap, appInfo);
+        expect(entityDataItemTagsMap[EntityTag.drivePrivacy], 'public');
+      });
+
+      test('generate a private drive', () {
+        var args = ARFSTagsArgs(
+          driveId: 'drive123',
+          entityId: 'entity123',
+          contentType: 'application/json',
+          entity: EntityType.drive,
+          isPrivate: true,
+        );
+
+        var result = tagsGenerator.generateTags(args);
+
+        final entityTags = result['entity'];
+
+        final entityDataItemTagsMap = <String, dynamic>{};
+
+        for (var tag in entityTags!) {
+          entityDataItemTagsMap[tag.name] = tag.value;
+        }
+
+        // Assert
+        expect(entityDataItemTagsMap[EntityTag.driveId], 'drive123');
+        expect(entityDataItemTagsMap[EntityTag.contentType],
+            'application/octet-stream');
+        expect(entityDataItemTagsMap[EntityTag.drivePrivacy], 'private');
       });
     });
   });
