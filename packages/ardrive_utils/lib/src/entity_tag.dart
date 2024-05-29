@@ -1,4 +1,6 @@
 // TODO: move for the ARFS package
+import 'package:arweave/arweave.dart';
+
 class EntityTag {
   static const appName = 'App-Name';
   static const appPlatform = 'App-Platform';
@@ -63,4 +65,9 @@ class DrivePrivacyTag {
 class DriveAuthModeTag {
   static const password = 'password';
   static const none = 'none';
+}
+
+String getJsonFromListOfTags(List<Tag> tags) {
+  final jsonTags = tags.map((tag) => tag.toJson()).toList();
+  return jsonTags.toString();
 }
