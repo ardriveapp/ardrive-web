@@ -7,7 +7,6 @@ import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-// http
 import 'package:http/http.dart' as http;
 
 class DrivesHealthCheckModal extends StatefulWidget {
@@ -19,6 +18,8 @@ class DrivesHealthCheckModal extends StatefulWidget {
 
 class _DrivesHealthCheckModalState extends State<DrivesHealthCheckModal> {
   List<FileHealthCheckStatus> statuses = [];
+  List<DriveHealthCheckStatus> driveStatuses = [];
+  List<Drive> drives = [];
   int numberOfFiles = 0;
 
   @override
@@ -27,75 +28,267 @@ class _DrivesHealthCheckModalState extends State<DrivesHealthCheckModal> {
 
     final driveDao = context.read<DriveDao>();
 
-    driveDao.select(driveDao.fileEntries).get().then((files) {
-      numberOfFiles = files.length;
-      processFiles(files);
+    driveDao.select(driveDao.drives).get().then((drives) {
+      setState(() {
+        this.drives = drives;
+      });
+
+      processDrivesInSequency();
     });
   }
+
+  Future<void> processDrivesInSequency() async {
+    final driveDao = context.read<DriveDao>();
+
+    for (final drive in drives) {
+      final status = DriveHealthCheckStatus(
+        drive: drive,
+        files: [],
+        totalFiles: 0,
+      );
+
+      driveStatuses.add(status);
+
+      setState(() {});
+    }
+
+    for (final currentStatus in driveStatuses) {
+      final files = await (driveDao.select(driveDao.fileEntries)
+            ..where((tbl) => tbl.driveId.equals(currentStatus.drive.id)))
+          .get();
+      if (files.isEmpty) {
+        currentStatus.isLoading = false;
+
+        setState(() {});
+
+        continue;
+      }
+
+      currentStatus.totalFiles = files.length;
+
+      selectedDriveStatus = currentStatus;
+      setState(() {});
+
+      await processFiles(files, currentStatus);
+
+      currentStatus.isLoading = false;
+
+      setState(() {});
+    }
+  }
+
+  late DriveHealthCheckStatus selectedDriveStatus;
 
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
 
-    if (statuses.isNotEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            height: 500,
-            child: ListView.builder(
-                itemCount: statuses.length,
-                addAutomaticKeepAlives: true,
-                shrinkWrap: true,
-                itemBuilder: (context, index) {
-                  final status = statuses[index];
+    if (driveStatuses.isNotEmpty) {
+      return SizedBox(
+        child: ArDriveModalNew(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.9,
+            maxWidth: MediaQuery.of(context).size.width * 0.8,
+            minHeight: MediaQuery.of(context).size.height * 0.9,
+          ),
+          content: Column(
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Flexible(
+                    flex: 2,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('Drives',
+                              style: typography.heading4(
+                                fontWeight: ArFontWeight.bold,
+                              )),
+                          Text('Click on a drive to view details',
+                              style: typography.paragraphNormal(
+                                fontWeight: ArFontWeight.semiBold,
+                              )),
+                          const SizedBox(
+                            height: 8,
+                          ),
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.72,
+                            child: ListView.separated(
+                                itemCount: driveStatuses.length,
+                                addAutomaticKeepAlives: true,
+                                separatorBuilder: (context, index) =>
+                                    const Divider(),
+                                shrinkWrap: true,
+                                itemBuilder: (context, index) {
+                                  final driveStatus = driveStatuses[index];
 
-                  return FileHealthCheckTile(
-                    status: status,
-                    onFinish: () async {},
-                  );
-                }),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Files Processed: ${statuses.length}',
-            style: typography.paragraphLarge(
-              fontWeight: ArFontWeight.bold,
-            ),
-          ),
-          Text(
-            'Files Remaining: ${numberOfFiles - statuses.length}',
-            style: typography.paragraphLarge(
-              fontWeight: ArFontWeight.bold,
-            ),
-          ),
-          const Divider(
-            height: 20,
-          ),
-          Text(
-            'Failed Files: ${statuses.where((status) => status.isFailed).length}',
-            style: typography.paragraphLarge(
-              fontWeight: ArFontWeight.bold,
-            ),
-          ),
-          Text(
-            'Success Files: ${statuses.where((status) => status.isSuccess).length}',
-            style: typography.paragraphLarge(
-              fontWeight: ArFontWeight.bold,
-            ),
-          ),
-          ArDriveProgressBar(percentage: statuses.length / numberOfFiles),
-          if (statuses.length == numberOfFiles)
-            Align(
-              alignment: Alignment.center,
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: ArDriveButton(
-                    text: 'Close',
-                    onPressed: () => Navigator.of(context).pop()),
+                                  return ArDriveClickArea(
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          selectedDriveStatus = driveStatus;
+                                        });
+                                      },
+                                      child: DriveHealthCheckTile(
+                                        status: driveStatus,
+                                        key: Key(driveStatus.drive.id),
+                                        isSelected:
+                                            selectedDriveStatus.drive.id ==
+                                                driveStatus.drive.id,
+                                      ),
+                                    ),
+                                  );
+                                }),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // const SizedBox(height: 20),
+                    // Text(
+                    //   'Files Processed: ${statuses.length}',
+                    //   style: typography.paragraphLarge(
+                    //     fontWeight: ArFontWeight.bold,
+                    //   ),
+                    // ),
+                    // Text(
+                    //   'Files Remaining: ${numberOfFiles - statuses.length}',
+                    //   style: typography.paragraphLarge(
+                    //     fontWeight: ArFontWeight.bold,
+                    //   ),
+                    // ),
+                    // const Divider(
+                    //   height: 20,
+                    // ),
+                    // Text(
+                    //   'Failed Files: ${statuses.where((status) => status.isFailed).length}',
+                    //   style: typography.paragraphLarge(
+                    //     fontWeight: ArFontWeight.bold,
+                    //   ),
+                    // ),
+                    // Text(
+                    //   'Success Files: ${statuses.where((status) => status.isSuccess).length}',
+                    //   style: typography.paragraphLarge(
+                    //     fontWeight: ArFontWeight.bold,
+                    //   ),
+                    // ),
+                    // ArDriveProgressBar(percentage: statuses.length / numberOfFiles),
+                  ),
+                  const SizedBox(width: 20),
+                  Flexible(
+                    flex: 1,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          height: 8,
+                        ),
+                        Text(
+                          'Drive: ${selectedDriveStatus.drive.name}',
+                          style: typography.paragraphLarge(
+                            fontWeight: ArFontWeight.bold,
+                          ),
+                        ),
+                        Text('Success Files',
+                            style: typography.paragraphLarge()),
+                        const SizedBox(
+                          height: 8,
+                        ),
+                        Flexible(
+                          flex: 1,
+                          child: ArDriveCard(
+                            content: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxHeight:
+                                    MediaQuery.of(context).size.height * 0.32,
+                              ),
+                              child: Builder(builder: (context) {
+                                final successFiles = selectedDriveStatus.files
+                                    .where((element) => element.isSuccess)
+                                    .toList();
+                                if (successFiles.isEmpty) {
+                                  return const Center(
+                                    child: Text('No files found'),
+                                  );
+                                }
+
+                                return ListView.builder(
+                                    itemCount: successFiles.length,
+                                    addAutomaticKeepAlives: true,
+                                    shrinkWrap: true,
+                                    itemBuilder: (context, index) {
+                                      final status = successFiles[index];
+
+                                      return FileHealthCheckTile(
+                                        status: status,
+                                        onFinish: () async {},
+                                      );
+                                    });
+                              }),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(
+                          height: 20,
+                        ),
+                        Text('Failed Files',
+                            style: typography.paragraphLarge()),
+                        const SizedBox(
+                          height: 8,
+                        ),
+                        Flexible(
+                          flex: 1,
+                          child: ArDriveCard(
+                            content: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxHeight:
+                                    MediaQuery.of(context).size.height * 0.32,
+                              ),
+                              child: Builder(builder: (context) {
+                                final failedFiles = selectedDriveStatus.files
+                                    .where((element) => element.isFailed)
+                                    .toList();
+                                if (failedFiles.isEmpty) {
+                                  return const Center(
+                                    child: Text('No files found'),
+                                  );
+                                }
+                                return ListView.builder(
+                                    itemCount: failedFiles.length,
+                                    addAutomaticKeepAlives: true,
+                                    shrinkWrap: true,
+                                    itemBuilder: (context, index) {
+                                      final status = failedFiles[index];
+
+                                      return FileHealthCheckTile(
+                                        status: status,
+                                        onFinish: () async {},
+                                      );
+                                    });
+                              }),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ),
-        ],
+              SizedBox(
+                height: 8,
+              ),
+              Text(
+                'Drives Loaded: ${driveStatuses.where((element) => !element.isLoading).length} of ${driveStatuses.length}',
+                style: typography.paragraphLarge(
+                  fontWeight: ArFontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -104,7 +297,8 @@ class _DrivesHealthCheckModalState extends State<DrivesHealthCheckModal> {
     );
   }
 
-  Future<void> processFiles(List<FileEntry> files) async {
+  Future<void> processFiles(
+      List<FileEntry> files, DriveHealthCheckStatus driveStatus) async {
     const int maxConcurrentTasks = 20;
     final StreamController<void> controller = StreamController<void>();
 
@@ -112,7 +306,7 @@ class _DrivesHealthCheckModalState extends State<DrivesHealthCheckModal> {
     void processNext() {
       if (files.isNotEmpty) {
         final file = files.removeAt(0);
-        checkHealth(file).then((_) {
+        checkHealth(file, driveStatus).then((_) {
           controller.add(null);
           setState(() {});
         });
@@ -135,7 +329,8 @@ class _DrivesHealthCheckModalState extends State<DrivesHealthCheckModal> {
   }
 
   /// checks the health of the file
-  Future<void> checkHealth(FileEntry file) async {
+  Future<void> checkHealth(
+      FileEntry file, DriveHealthCheckStatus driveStatus) async {
     try {
       final arweave = context.read<ArweaveService>();
 
@@ -148,7 +343,7 @@ class _DrivesHealthCheckModalState extends State<DrivesHealthCheckModal> {
           'Checking health of ${file.name}. Response: ${response.statusCode}');
 
       if (response.statusCode > 400) {
-        statuses.add(FileHealthCheckStatus(
+        driveStatus.files.add(FileHealthCheckStatus(
           file: file,
           isSuccess: false,
           isFailed: true,
@@ -157,15 +352,109 @@ class _DrivesHealthCheckModalState extends State<DrivesHealthCheckModal> {
         return;
       }
 
-      statuses.add(FileHealthCheckStatus(
+      driveStatus.files.add(FileHealthCheckStatus(
         file: file,
         isSuccess: true,
         isFailed: false,
       ));
 
       setState(() {});
-    } catch (e) {}
+    } catch (e) {
+      driveStatus.files.add(FileHealthCheckStatus(
+        file: file,
+        isSuccess: false,
+        isFailed: true,
+      ));
+    }
   }
+}
+
+class DriveHealthCheckTile extends StatefulWidget {
+  const DriveHealthCheckTile(
+      {super.key, required this.status, this.isSelected = false});
+
+  final DriveHealthCheckStatus status;
+  final bool isSelected;
+
+  @override
+  State<DriveHealthCheckTile> createState() => _DriveHealthCheckTielState();
+}
+
+class _DriveHealthCheckTielState extends State<DriveHealthCheckTile> {
+  @override
+  Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final failedFiles =
+        widget.status.files.where((element) => element.isFailed).toList();
+    final progress = widget.status.totalFiles == 0 && widget.status.isLoading
+        ? 0.0
+        : widget.status.totalFiles == 0 && !widget.status.isLoading
+            ? 1.0
+            : widget.status.files.length / widget.status.totalFiles;
+    return ArDriveCard(
+      content: Column(
+        children: [
+          Row(
+            children: [
+              Text(
+                widget.status.drive.name,
+                style: ArDriveTypographyNew.of(context).paragraphLarge(
+                  fontWeight: ArFontWeight.bold,
+                  color: failedFiles.isNotEmpty ? colorTokens.strokeRed : null,
+                ),
+              ),
+              const Spacer(),
+              if (failedFiles.isNotEmpty) ...[
+                ArDriveIcons.triangle(size: 20, color: colorTokens.strokeRed),
+                const SizedBox(width: 2),
+                Text(failedFiles.length.toString(),
+                    style: ArDriveTypographyNew.of(context).paragraphLarge(
+                      fontWeight: ArFontWeight.bold,
+                      color: colorTokens.strokeRed,
+                    )),
+                const SizedBox(width: 8),
+              ],
+              Text(
+                '${widget.status.files.length}/${widget.status.totalFiles}',
+                style: ArDriveTypographyNew.of(context).paragraphLarge(
+                  fontWeight: ArFontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(
+            height: 8,
+          ),
+          ArDriveProgressBar(
+            percentage: progress,
+            indicatorColor: progress == 1
+                ? failedFiles.isNotEmpty
+                    ? colorTokens.strokeRed
+                    : ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeSuccessDefault
+                : colorTokens.textHigh,
+            backgroundColor: colorTokens.textLow,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class DriveHealthCheckStatus {
+  final Drive drive;
+  final List<FileHealthCheckStatus> files;
+  int totalFiles;
+  bool isLoading;
+
+  DriveHealthCheckStatus({
+    required this.drive,
+    required this.files,
+    required this.totalFiles,
+    this.isLoading = true,
+  });
 }
 
 class FileHealthCheckStatus {
