@@ -1,10 +1,12 @@
 import 'dart:convert';
 
+import 'package:ardrive/dev_tools/drives_health_check.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/material.dart';
@@ -274,6 +276,15 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.button,
     );
 
+    final ArDriveDevToolOption runHealthCheck = ArDriveDevToolOption(
+      name: 'Run Health Check',
+      value: '',
+      onChange: (value) {
+        
+      },
+      type: ArDriveDevToolOptionType.button,
+    );
+
     final ArDriveDevToolOption resetOptions = ArDriveDevToolOption(
       name: 'Reset options',
       value: '',
@@ -373,6 +384,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
     );
 
     final List<ArDriveDevToolOption> options = [
+      runHealthCheck,
       useTurboOption,
       useTurboPaymentOption,
       defaultTurboPaymentUrlOption,
