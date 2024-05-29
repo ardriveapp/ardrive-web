@@ -4,6 +4,7 @@ import 'package:ardrive/dev_tools/drives_health_check.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/config/config.dart';
+import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
@@ -280,7 +281,16 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       name: 'Run Health Check',
       value: '',
       onChange: (value) {
-        
+        final BuildContext context = ArDriveDevTools().context!;
+
+        showArDriveDialog(
+          context,
+          content: const ArDriveStandardModalNew(
+            title: 'Health Check',
+            width: kLargeDialogWidth,
+            content: DrivesHealthCheckModal(),
+          ),
+        );
       },
       type: ArDriveDevToolOptionType.button,
     );

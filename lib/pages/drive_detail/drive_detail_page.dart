@@ -16,10 +16,13 @@ import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/components/drive_detach_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/fs_entry_license_form.dart';
+import 'package:ardrive/components/keyboard_handler.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/components/prompt_to_snapshot_dialog.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/dev_tools/app_dev_tools.dart';
+import 'package:ardrive/dev_tools/shortcut_handler.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/entities/entities.dart' as entities;
 import 'package:ardrive/l11n/l11n.dart';
@@ -146,30 +149,25 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
               if (driveDetailState is DriveDetailLoadInProgress) {
                 return const Center(child: CircularProgressIndicator());
               } else if (driveDetailState is DriveInitialLoading) {
-                return ScreenTypeLayout.builder(
-                  mobile: (context) {
-                    return Scaffold(
-                      drawerScrimColor: Colors.transparent,
-                      drawer: const AppSideBar(),
-                      appBar: const MobileAppBar(),
-                      body: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Center(
-                          child: Text(
-                            appLocalizationsOf(context)
-                                .driveDoingInitialSetupMessage,
-                            style: ArDriveTypography.body.buttonLargeBold(),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                  desktop: (context) => Scaffold(
-                    drawerScrimColor: Colors.transparent,
-                    body: Column(
-                      children: [
-                        const AppTopBar(),
-                        Expanded(
+                return ArDriveDevToolsShortcuts(
+                  customShortcuts: [
+                    Shortcut(
+                      modifier: LogicalKeyboardKey.shiftLeft,
+                      key: LogicalKeyboardKey.keyH,
+                      action: () {
+                        ArDriveDevTools.instance
+                            .showDevTools(optionalContext: context);
+                      },
+                    ),
+                  ],
+                  child: ScreenTypeLayout.builder(
+                    mobile: (context) {
+                      return Scaffold(
+                        drawerScrimColor: Colors.transparent,
+                        drawer: const AppSideBar(),
+                        appBar: const MobileAppBar(),
+                        body: Padding(
+                          padding: const EdgeInsets.all(8.0),
                           child: Center(
                             child: Text(
                               appLocalizationsOf(context)
@@ -178,7 +176,24 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                             ),
                           ),
                         ),
-                      ],
+                      );
+                    },
+                    desktop: (context) => Scaffold(
+                      drawerScrimColor: Colors.transparent,
+                      body: Column(
+                        children: [
+                          const AppTopBar(),
+                          Expanded(
+                            child: Center(
+                              child: Text(
+                                appLocalizationsOf(context)
+                                    .driveDoingInitialSetupMessage,
+                                style: ArDriveTypography.body.buttonLargeBold(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -209,36 +224,48 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                 final canDownloadMultipleFiles = driveDetailState.multiselect &&
                     context.read<DriveDetailCubit>().selectedItems.isNotEmpty;
 
-                return ScreenTypeLayout.builder(
-                  desktop: (context) => _desktopView(
-                    isDriveOwner: isOwner,
-                    driveDetailState: driveDetailState,
-                    hasSubfolders: hasSubfolders,
-                    hasFiles: hasFiles,
-                    canDownloadMultipleFiles: canDownloadMultipleFiles,
-                  ),
-                  mobile: (context) => Scaffold(
-                    resizeToAvoidBottomInset: false,
-                    drawerScrimColor: Colors.transparent,
-                    drawer: const AppSideBar(),
-                    appBar: (driveDetailState.showSelectedItemDetails &&
-                            context.read<DriveDetailCubit>().selectedItem !=
-                                null)
-                        ? MobileAppBar(
-                            leading: ArDriveIconButton(
-                              icon: ArDriveIcons.arrowLeft(),
-                              onPressed: () {
-                                context
-                                    .read<DriveDetailCubit>()
-                                    .toggleSelectedItemDetails();
-                              },
-                            ),
-                          )
-                        : null,
-                    body: _mobileView(
-                      driveDetailState,
-                      hasSubfolders,
-                      hasFiles,
+                return ArDriveDevToolsShortcuts(
+                  customShortcuts: [
+                    Shortcut(
+                      modifier: LogicalKeyboardKey.shiftLeft,
+                      key: LogicalKeyboardKey.keyH,
+                      action: () {
+                        ArDriveDevTools.instance
+                            .showDevTools(optionalContext: context);
+                      },
+                    ),
+                  ],
+                  child: ScreenTypeLayout.builder(
+                    desktop: (context) => _desktopView(
+                      isDriveOwner: isOwner,
+                      driveDetailState: driveDetailState,
+                      hasSubfolders: hasSubfolders,
+                      hasFiles: hasFiles,
+                      canDownloadMultipleFiles: canDownloadMultipleFiles,
+                    ),
+                    mobile: (context) => Scaffold(
+                      resizeToAvoidBottomInset: false,
+                      drawerScrimColor: Colors.transparent,
+                      drawer: const AppSideBar(),
+                      appBar: (driveDetailState.showSelectedItemDetails &&
+                              context.read<DriveDetailCubit>().selectedItem !=
+                                  null)
+                          ? MobileAppBar(
+                              leading: ArDriveIconButton(
+                                icon: ArDriveIcons.arrowLeft(),
+                                onPressed: () {
+                                  context
+                                      .read<DriveDetailCubit>()
+                                      .toggleSelectedItemDetails();
+                                },
+                              ),
+                            )
+                          : null,
+                      body: _mobileView(
+                        driveDetailState,
+                        hasSubfolders,
+                        hasFiles,
+                      ),
                     ),
                   ),
                 );

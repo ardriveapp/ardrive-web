@@ -5,7 +5,6 @@ import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/components/theme_switcher.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
-import 'package:ardrive/dev_tools/drives_health_check.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
@@ -144,15 +143,6 @@ class _AppSideBarState extends State<AppSideBar> {
               ),
               const SizedBox(
                 height: 16,
-              ),
-              ArDriveButtonNew(
-                text: 'Health Check',
-                typography: ArDriveTypographyNew.of(context),
-                onPressed: () {
-                  showArDriveDialog(context,
-                      content: ArDriveStandardModalNew(
-                          content: DrivesHealthCheckModal()));
-                },
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 16.0),
@@ -390,15 +380,6 @@ class _AppSideBarState extends State<AppSideBar> {
                 ),
                 const SizedBox(
                   height: 16,
-                ),
-                ArDriveButtonNew(
-                  text: 'Health Check',
-                  typography: ArDriveTypographyNew.of(context),
-                  onPressed: () {
-                    showArDriveDialog(context,
-                        content: ArDriveStandardModalNew(
-                            content: DrivesHealthCheckModal()));
-                  },
                 ),
                 Align(
                   alignment: Alignment.centerLeft,
