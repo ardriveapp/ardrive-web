@@ -94,11 +94,11 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
             );
           }
         },
-        builder: (context, state) => ArDriveStandardModal(
+        builder: (context, state) => ArDriveStandardModalNew(
           title: appLocalizationsOf(context).createFolderEmphasized,
           content: SizedBox(
             width: kMediumDialogWidth,
-            child: ArDriveTextField(
+            child: ArDriveTextFieldNew(
               controller: _folderNameController,
               autofocus: true,
               onFieldSubmitted: (value) {

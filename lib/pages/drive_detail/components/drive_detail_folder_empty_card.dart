@@ -1,6 +1,6 @@
 part of '../drive_detail_page.dart';
 
-class DriveDetailFolderEmptyCard extends StatelessWidget {
+class DriveDetailFolderEmptyCard extends StatefulWidget {
   final bool promptToAddFiles;
   final String driveId;
   final String parentFolderId;
@@ -13,6 +13,34 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
     required this.parentFolderId,
     required this.isRootFolder,
   });
+
+  @override
+  State<DriveDetailFolderEmptyCard> createState() =>
+      _DriveDetailFolderEmptyCardState();
+}
+
+class _DriveDetailFolderEmptyCardState
+    extends State<DriveDetailFolderEmptyCard> {
+  bool? _hasTrackedPageView = false;
+
+  void trackPageView({
+    required bool isRootFolder,
+    required bool isANewUser,
+  }) {
+    if (_hasTrackedPageView == false) {
+      if (isRootFolder && isANewUser) {
+        PlausibleEventTracker.trackPageview(
+            page: PlausiblePageView.newUserDriveEmptyPage);
+      } else if (isRootFolder && !isANewUser) {
+        PlausibleEventTracker.trackPageview(
+            page: PlausiblePageView.existingUserDriveEmptyPage);
+      } else {
+        PlausibleEventTracker.trackPageview(
+            page: PlausiblePageView.folderEmptyPage);
+      }
+      _hasTrackedPageView = true;
+    }
+  }
 
   @override
   Widget build(BuildContext context) => buildArDriveCard(context);
@@ -39,7 +67,7 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: !isRootFolder
+                  child: !widget.isRootFolder
                       ? _emptyFolder(context)
                       : isANewUser
                           ? _newUserEmptyRootFolder(context)
@@ -56,7 +84,7 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
               child: ArDriveCard(
                 width: double.infinity,
                 backgroundColor: colorTokens.containerL1,
-                content: !isRootFolder
+                content: !widget.isRootFolder
                     ? _emptyFolder(context)
                     : isANewUser
                         ? _newUserEmptyRootFolder(context)
@@ -73,6 +101,11 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final width = MediaQuery.of(context).size.width;
+    trackPageView(
+      isRootFolder: false,
+      isANewUser: false,
+    );
+
     return ScreenTypeLayout.builder(mobile: (context) {
       return SingleChildScrollView(
         child: Column(
@@ -83,6 +116,7 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
                 fontWeight: ArFontWeight.bold,
               ),
             ),
+            const SizedBox(height: 10),
             Text(
               'Start by adding some content to your new folder. Explore the various options available to keep your drive neat and efficient.',
               style: typography.heading5(
@@ -122,6 +156,7 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
                           fontWeight: ArFontWeight.bold,
                         ),
                       ),
+                      const SizedBox(height: 10),
                       Text(
                         'Start by adding some content to your new folder. Explore the various options available to keep your drive neat and efficient.',
                         style: typography.heading5(
@@ -152,9 +187,13 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
   }
 
   Widget _existingUserEmptyRootFolder(BuildContext context) {
+    trackPageView(
+      isRootFolder: true,
+      isANewUser: false,
+    );
+
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
     final width = MediaQuery.of(context).size.width;
 
     return ScreenTypeLayout.builder(
@@ -168,8 +207,9 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
                   fontWeight: ArFontWeight.bold,
                 ),
               ),
+              const SizedBox(height: 10),
               Text(
-                'When you are ready to benefit from blazingly fast, unlimited uploading, you can try out Turbo. Until then, check out some of the awesome FREE things you can do next. 👇',
+                'When you are ready to benefit from blazingly fast, unlimited uploading, you can try out Turbo. Until then, check out some of the awesome FREE things you can do next.',
                 style: typography.paragraphLarge(
                   color: colorTokens.textLow,
                 ),
@@ -210,8 +250,9 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
                             fontWeight: ArFontWeight.bold,
                           ),
                         ),
+                        const SizedBox(height: 10),
                         Text(
-                          'When you are ready to benefit from blazingly fast, unlimited uploading, you can try out Turbo. Until then, check out some of the awesome FREE things you can do next. 👇',
+                          'When you are ready to benefit from blazingly fast, unlimited uploading, you can try out Turbo. Until then, check out some of the awesome FREE things you can do next.',
                           style: typography.heading5(
                             color: colorTokens.textLow,
                           ),
@@ -244,6 +285,10 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
   Widget _newUserEmptyRootFolder(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    trackPageView(
+      isRootFolder: true,
+      isANewUser: true,
+    );
 
     return ScreenTypeLayout.builder(
       mobile: (context) {
@@ -256,6 +301,7 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
                   fontWeight: ArFontWeight.bold,
                 ),
               ),
+              const SizedBox(height: 10),
               Text(
                 'You have just made your first blockchain interaction, congrats! You can now use your new drive to manage, share, and organize just about any multimedia file.',
                 style: typography.paragraphLarge(
@@ -292,6 +338,7 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
                             fontWeight: ArFontWeight.bold,
                           ),
                         ),
+                        const SizedBox(height: 10),
                         Text(
                           'You have just made your first blockchain interaction, congrats! You can now use your new drive to manage, share, and organize just about any multimedia file.',
                           style: typography.heading5(
@@ -333,8 +380,8 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
       onPressed: () {
         promptToUpload(
           context,
-          driveId: driveId,
-          parentFolderId: parentFolderId,
+          driveId: widget.driveId,
+          parentFolderId: widget.parentFolderId,
           isFolderUpload: false,
         );
       },
@@ -353,7 +400,7 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
       buttonText: 'Create Folder',
       onPressed: () {
         promptToCreateFolder(context,
-            driveId: driveId, parentFolderId: parentFolderId);
+            driveId: widget.driveId, parentFolderId: widget.parentFolderId);
       },
       icon: ArDriveIcons.iconUploadFolder1(),
     );
@@ -371,8 +418,8 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
       onPressed: () {
         promptToUpload(
           context,
-          driveId: driveId,
-          parentFolderId: parentFolderId,
+          driveId: widget.driveId,
+          parentFolderId: widget.parentFolderId,
           isFolderUpload: true,
         );
       },
