@@ -183,7 +183,7 @@ class _DrivesHealthCheckModalState extends State<DrivesHealthCheckModal> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SizedBox(
+                        const SizedBox(
                           height: 8,
                         ),
                         Text(
@@ -277,7 +277,7 @@ class _DrivesHealthCheckModalState extends State<DrivesHealthCheckModal> {
                   ),
                 ],
               ),
-              SizedBox(
+              const SizedBox(
                 height: 8,
               ),
               Text(

@@ -284,7 +284,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
 
         showArDriveDialog(
           context,
-          content: DrivesHealthCheckModal(),
+          content: const DrivesHealthCheckModal(),
         );
       },
       type: ArDriveDevToolOptionType.button,
