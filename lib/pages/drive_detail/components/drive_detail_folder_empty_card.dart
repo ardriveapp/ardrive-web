@@ -144,7 +144,7 @@ class _EmptyFolderState extends State<_EmptyFolder> {
     final width = MediaQuery.of(context).size.width;
     const String headerText = 'Ready to organize your files?';
     const String descriptionText =
-        'Start by adding some content to your new folder. Explore the various options available to keep your drive neat and efficient.';
+        'This folder is empty. You can move existing files into this folder, or upload new content.';
 
     return ScreenTypeLayout.builder(
       mobile: (context) => SingleChildScrollView(
@@ -159,7 +159,10 @@ class _EmptyFolderState extends State<_EmptyFolder> {
             _buildDescriptionText(
               context: context,
               text: descriptionText,
-              style: typography.heading5(color: colorTokens.textLow),
+              style: typography.heading5(
+                color: colorTokens.textLow,
+                fontWeight: ArFontWeight.semiBold,
+              ),
             ),
             const SizedBox(height: 20),
             _ActionCard.uploadFile(context,
@@ -202,7 +205,10 @@ class _EmptyFolderState extends State<_EmptyFolder> {
                       _buildDescriptionText(
                         context: context,
                         text: descriptionText,
-                        style: typography.heading5(color: colorTokens.textLow),
+                        style: typography.heading5(
+                          color: colorTokens.textLow,
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
                       ),
                     ],
                   ),
@@ -286,7 +292,7 @@ class _NewUserEmptyRootFolderState extends State<_NewUserEmptyRootFolder> {
 
     const String headerText = 'You\'re on chain!';
     const String descriptionText =
-        'You have just made your first blockchain interaction, congrats! You can now use your new drive to manage, share, and organize just about any multimedia file.';
+        'You have just made your first blockchain interaction, congratulations! You can now use your new drive to manage, share, and organize just about any multimedia file. Uploads collectively under 100KB are free!';
 
     return ScreenTypeLayout.builder(
       mobile: (context) => SingleChildScrollView(
@@ -301,7 +307,9 @@ class _NewUserEmptyRootFolderState extends State<_NewUserEmptyRootFolder> {
             _buildDescriptionText(
               context: context,
               text: descriptionText,
-              style: typography.paragraphLarge(color: colorTokens.textLow),
+              style: typography.paragraphLarge(
+                  color: colorTokens.textLow,
+                  fontWeight: ArFontWeight.semiBold),
             ),
             const SizedBox(height: 20),
             _ActionCard.uploadFile(
@@ -331,21 +339,25 @@ class _NewUserEmptyRootFolderState extends State<_NewUserEmptyRootFolder> {
                 ArDriveImage(
                     image: AssetImage(Resources.images.login.confetti)),
                 Flexible(
-                  child: Column(
-                    children: [
-                      _buildHeaderText(
-                        context: context,
-                        text: headerText,
-                        style:
-                            typography.display(fontWeight: ArFontWeight.bold),
-                      ),
-                      const SizedBox(height: 10),
-                      _buildDescriptionText(
-                        context: context,
-                        text: descriptionText,
-                        style: typography.heading5(color: colorTokens.textLow),
-                      ),
-                    ],
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Column(
+                      children: [
+                        _buildHeaderText(
+                          context: context,
+                          text: headerText,
+                          style:
+                              typography.display(fontWeight: ArFontWeight.bold),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildDescriptionText(
+                          context: context,
+                          text: descriptionText,
+                          style:
+                              typography.heading5(color: colorTokens.textLow),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 ArDriveImage(
@@ -423,9 +435,10 @@ class _ExistingUserEmptyRootFolderState
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final width = MediaQuery.of(context).size.width;
-    const String headerText = 'Just look at this shiny new drive!';
+    const String headerText = 'Your brand new drive!';
+    // add gesture and link to turbo
     const String descriptionText =
-        'When you are ready to benefit from blazingly fast, unlimited uploading, you can try out Turbo. Until then, check out some of the awesome FREE things you can do next.';
+        'When you are ready to benefit from blazingly fast, unlimited uploading you can try out Turbo. Until then, if your upload is collectively under 100KB, here are some of the awesome FREE things you can do next.';
 
     return ScreenTypeLayout.builder(
       mobile: (context) => SingleChildScrollView(
@@ -440,7 +453,10 @@ class _ExistingUserEmptyRootFolderState
             _buildDescriptionText(
               context: context,
               text: descriptionText,
-              style: typography.paragraphLarge(color: colorTokens.textLow),
+              style: typography.paragraphLarge(
+                color: colorTokens.textLow,
+                fontWeight: ArFontWeight.semiBold,
+              ),
             ),
             const SizedBox(height: 20),
             _ActionCard.uploadFile(
@@ -490,7 +506,10 @@ class _ExistingUserEmptyRootFolderState
                       _buildDescriptionText(
                         context: context,
                         text: descriptionText,
-                        style: typography.heading5(color: colorTokens.textLow),
+                        style: typography.heading5(
+                          color: colorTokens.textLow,
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
                       ),
                     ],
                   ),
@@ -559,9 +578,9 @@ class _ActionCard {
   }) {
     return _buildActionCard(
       context: context,
-      title: 'Upload File(s)',
+      title: 'Upload Files',
       description:
-          'Upload a file, or a selection of files, that are collectively under 100KB into your new drive.',
+          'Upload a file, or a selection of files into your new drive.',
       buttonText: 'Upload',
       onPressed: () {
         PlausibleEventTracker.trackClickUploadFileEmptyState(page);
@@ -586,8 +605,7 @@ class _ActionCard {
     return _buildActionCard(
       context: context,
       title: 'Create a Folder',
-      description:
-          'Create a new folder to organize your files. You can create as many folders as you need to keep your drive organized.',
+      description: 'Create folders to keep your drive organized.',
       buttonText: 'Create Folder',
       onPressed: () {
         PlausibleEventTracker.trackClickCreateFolderEmptyState(page);
@@ -595,7 +613,7 @@ class _ActionCard {
         promptToCreateFolder(context,
             driveId: driveId, parentFolderId: parentFolderId);
       },
-      icon: ArDriveIcons.iconUploadFolder1(),
+      icon: ArDriveIcons.iconNewFolder1(),
     );
   }
 
@@ -607,7 +625,7 @@ class _ActionCard {
       context: context,
       title: 'Upload a Folder',
       description:
-          'Upload existing folders that total less than 100KB from a computer, other file storage apps, or an external HD.',
+          'Upload existing folders from your computer, other file storage apps, or an external HD.',
       buttonText: 'Upload Folder',
       onPressed: () {
         PlausibleEventTracker.trackClickUploadFolderEmptyState(page);
@@ -629,7 +647,7 @@ class _ActionCard {
       context: context,
       title: 'Create a Pin',
       description:
-          'Pin any permaweb file to your Drive, to create inspiration boards, recipe collections, or NFT compilations.',
+          'Pin any permaweb file to your drive, to create inspiration boards, recipe collections, or NFT galleries.',
       buttonText: 'Create Pin',
       onPressed: () {
         PlausibleEventTracker.trackClickCreatePinEmptyState(page);
@@ -668,7 +686,8 @@ class _ActionCard {
           const SizedBox(height: 10),
           Text(
             description,
-            style: typography.paragraphNormal(color: colorTokens.textLow),
+            style: typography.paragraphNormal(
+                color: colorTokens.textMid, fontWeight: ArFontWeight.semiBold),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
