@@ -21,27 +21,6 @@ class DriveDetailFolderEmptyCard extends StatefulWidget {
 
 class _DriveDetailFolderEmptyCardState
     extends State<DriveDetailFolderEmptyCard> {
-  bool? _hasTrackedPageView = false;
-
-  void trackPageView({
-    required bool isRootFolder,
-    required bool isANewUser,
-  }) {
-    if (_hasTrackedPageView == false) {
-      if (isRootFolder && isANewUser) {
-        PlausibleEventTracker.trackPageview(
-            page: PlausiblePageView.newUserDriveEmptyPage);
-      } else if (isRootFolder && !isANewUser) {
-        PlausibleEventTracker.trackPageview(
-            page: PlausiblePageView.existingUserDriveEmptyPage);
-      } else {
-        PlausibleEventTracker.trackPageview(
-            page: PlausiblePageView.folderEmptyPage);
-      }
-      _hasTrackedPageView = true;
-    }
-  }
-
   @override
   Widget build(BuildContext context) => buildArDriveCard(context);
 
@@ -116,7 +95,7 @@ class _DriveDetailFolderEmptyCardState
   }
 }
 
-class _EmptyFolder extends StatefulWidget {
+class _EmptyFolder extends StatelessWidget {
   final String driveId;
   final String parentFolderId;
 
@@ -124,18 +103,6 @@ class _EmptyFolder extends StatefulWidget {
     required this.driveId,
     required this.parentFolderId,
   });
-
-  @override
-  State<_EmptyFolder> createState() => _EmptyFolderState();
-}
-
-class _EmptyFolderState extends State<_EmptyFolder> {
-  @override
-  initState() {
-    super.initState();
-    PlausibleEventTracker.trackPageview(
-        page: PlausiblePageView.folderEmptyPage);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -146,202 +113,56 @@ class _EmptyFolderState extends State<_EmptyFolder> {
     const String descriptionText =
         'This folder is empty. You can move existing files into this folder, or upload new content.';
 
-    return ScreenTypeLayout.builder(
-      mobile: (context) => SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildHeaderText(
-              context: context,
-              text: headerText,
-              style: typography.display(fontWeight: ArFontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            _buildDescriptionText(
-              context: context,
-              text: descriptionText,
-              style: typography.heading5(
-                color: colorTokens.textLow,
-                fontWeight: ArFontWeight.semiBold,
-              ),
-            ),
-            const SizedBox(height: 20),
-            _ActionCard.uploadFile(context,
-                driveId: widget.driveId,
-                parentFolderId: widget.parentFolderId,
-                page: PlausiblePageView.folderEmptyPage),
-            const SizedBox(height: 20),
-            _ActionCard.uploadFolder(context,
-                driveId: widget.driveId,
-                parentFolderId: widget.parentFolderId,
-                page: PlausiblePageView.folderEmptyPage),
-            const SizedBox(height: 20),
-            _ActionCard.createPin(context,
-                page: PlausiblePageView.folderEmptyPage),
-          ],
-        ),
-      ),
-      desktop: (context) => Column(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 66),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ArDriveImage(
-                    image: AssetImage(Resources.images.login.confetti)),
-                Flexible(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      _buildHeaderText(
-                        context: context,
-                        text: headerText,
-                        style:
-                            typography.display(fontWeight: ArFontWeight.bold),
-                      ),
-                      const SizedBox(height: 10),
-                      _buildDescriptionText(
-                        context: context,
-                        text: descriptionText,
-                        style: typography.heading5(
-                          color: colorTokens.textLow,
-                          fontWeight: ArFontWeight.semiBold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                ArDriveImage(
-                    image: AssetImage(Resources.images.login.confetti)),
-              ],
-            ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    return PlausiblePageViewWrapper(
+      pageView: PlausiblePageView.folderEmptyPage,
+      child: ScreenTypeLayout.builder(
+        mobile: (context) => SingleChildScrollView(
+          child: Column(
             children: [
-              _ActionCard.uploadFile(context,
-                  driveId: widget.driveId,
-                  parentFolderId: widget.parentFolderId,
-                  page: PlausiblePageView.folderEmptyPage),
-              _ActionCard.uploadFolder(context,
-                  driveId: widget.driveId,
-                  parentFolderId: widget.parentFolderId,
-                  page: PlausiblePageView.folderEmptyPage),
-              if (width > SMALL_DESKTOP)
-                _ActionCard.createPin(context,
-                    page: PlausiblePageView.folderEmptyPage),
-            ],
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeaderText({
-    required BuildContext context,
-    required String text,
-    required TextStyle style,
-  }) {
-    return Text(
-      text,
-      style: style,
-    );
-  }
-
-  Widget _buildDescriptionText({
-    required BuildContext context,
-    required String text,
-    required TextStyle style,
-  }) {
-    return Text(
-      text,
-      style: style,
-      textAlign: TextAlign.center,
-    );
-  }
-}
-
-class _NewUserEmptyRootFolder extends StatefulWidget {
-  final String driveId;
-  final String parentFolderId;
-
-  const _NewUserEmptyRootFolder({
-    required this.driveId,
-    required this.parentFolderId,
-  });
-
-  @override
-  State<_NewUserEmptyRootFolder> createState() =>
-      _NewUserEmptyRootFolderState();
-}
-
-class _NewUserEmptyRootFolderState extends State<_NewUserEmptyRootFolder> {
-  @override
-  initState() {
-    super.initState();
-    PlausibleEventTracker.trackPageview(
-        page: PlausiblePageView.newUserDriveEmptyPage);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-    const String headerText = 'You\'re on chain!';
-    const String descriptionText =
-        'You have just made your first blockchain interaction, congratulations! You can now use your new drive to manage, share, and organize just about any multimedia file. Uploads collectively under 100KB are free!';
-
-    return ScreenTypeLayout.builder(
-      mobile: (context) => SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildHeaderText(
-              context: context,
-              text: headerText,
-              style: typography.heading4(fontWeight: ArFontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            _buildDescriptionText(
-              context: context,
-              text: descriptionText,
-              style: typography.paragraphLarge(
+              _buildHeaderText(
+                context: context,
+                text: headerText,
+                style: typography.display(fontWeight: ArFontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              _buildDescriptionText(
+                context: context,
+                text: descriptionText,
+                style: typography.heading5(
                   color: colorTokens.textLow,
-                  fontWeight: ArFontWeight.semiBold),
-            ),
-            const SizedBox(height: 20),
-            _ActionCard.uploadFile(
-              context,
-              driveId: widget.driveId,
-              parentFolderId: widget.parentFolderId,
-              page: PlausiblePageView.newUserDriveEmptyPage,
-            ),
-            const SizedBox(height: 20),
-            _ActionCard.createFolder(
-              context,
-              driveId: widget.driveId,
-              parentFolderId: widget.parentFolderId,
-              page: PlausiblePageView.newUserDriveEmptyPage,
-            ),
-          ],
+                  fontWeight: ArFontWeight.semiBold,
+                ),
+              ),
+              const SizedBox(height: 20),
+              _ActionCard.uploadFile(context,
+                  driveId: driveId,
+                  parentFolderId: parentFolderId,
+                  page: PlausiblePageView.folderEmptyPage),
+              const SizedBox(height: 20),
+              _ActionCard.uploadFolder(context,
+                  driveId: driveId,
+                  parentFolderId: parentFolderId,
+                  page: PlausiblePageView.folderEmptyPage),
+              const SizedBox(height: 20),
+              _ActionCard.createPin(context,
+                  page: PlausiblePageView.folderEmptyPage),
+            ],
+          ),
         ),
-      ),
-      desktop: (context) => Column(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 66),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ArDriveImage(
-                    image: AssetImage(Resources.images.login.confetti)),
-                Flexible(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+        desktop: (context) => Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 66),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ArDriveImage(
+                      image: AssetImage(Resources.images.login.confetti)),
+                  Flexible(
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         _buildHeaderText(
                           context: context,
@@ -353,32 +174,37 @@ class _NewUserEmptyRootFolderState extends State<_NewUserEmptyRootFolder> {
                         _buildDescriptionText(
                           context: context,
                           text: descriptionText,
-                          style:
-                              typography.heading5(color: colorTokens.textLow),
+                          style: typography.heading5(
+                            color: colorTokens.textLow,
+                            fontWeight: ArFontWeight.semiBold,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ),
-                ArDriveImage(
-                    image: AssetImage(Resources.images.login.confetti)),
-              ],
+                  ArDriveImage(
+                      image: AssetImage(Resources.images.login.confetti)),
+                ],
+              ),
             ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _ActionCard.uploadFile(context,
-                  driveId: widget.driveId,
-                  parentFolderId: widget.parentFolderId,
-                  page: PlausiblePageView.newUserDriveEmptyPage),
-              _ActionCard.createFolder(context,
-                  driveId: widget.driveId,
-                  parentFolderId: widget.parentFolderId,
-                  page: PlausiblePageView.newUserDriveEmptyPage),
-            ],
-          )
-        ],
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _ActionCard.uploadFile(context,
+                    driveId: driveId,
+                    parentFolderId: parentFolderId,
+                    page: PlausiblePageView.folderEmptyPage),
+                _ActionCard.uploadFolder(context,
+                    driveId: driveId,
+                    parentFolderId: parentFolderId,
+                    page: PlausiblePageView.folderEmptyPage),
+                if (width > SMALL_DESKTOP)
+                  _ActionCard.createPin(context,
+                      page: PlausiblePageView.folderEmptyPage),
+              ],
+            )
+          ],
+        ),
       ),
     );
   }
@@ -407,7 +233,141 @@ class _NewUserEmptyRootFolderState extends State<_NewUserEmptyRootFolder> {
   }
 }
 
-class _ExistingUserEmptyRootFolder extends StatefulWidget {
+class _NewUserEmptyRootFolder extends StatelessWidget {
+  final String driveId;
+  final String parentFolderId;
+
+  const _NewUserEmptyRootFolder({
+    required this.driveId,
+    required this.parentFolderId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    const String headerText = 'You\'re on chain!';
+    const String descriptionText =
+        'You have just made your first blockchain interaction, congratulations! You can now use your new drive to manage, share, and organize just about any multimedia file. Uploads collectively under 100KB are free!';
+
+    return PlausiblePageViewWrapper(
+      pageView: PlausiblePageView.newUserDriveEmptyPage,
+      child: ScreenTypeLayout.builder(
+        mobile: (context) => SingleChildScrollView(
+          child: Column(
+            children: [
+              _buildHeaderText(
+                context: context,
+                text: headerText,
+                style: typography.heading4(fontWeight: ArFontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              _buildDescriptionText(
+                context: context,
+                text: descriptionText,
+                style: typography.paragraphLarge(
+                    color: colorTokens.textLow,
+                    fontWeight: ArFontWeight.semiBold),
+              ),
+              const SizedBox(height: 20),
+              _ActionCard.uploadFile(
+                context,
+                driveId: driveId,
+                parentFolderId: parentFolderId,
+                page: PlausiblePageView.newUserDriveEmptyPage,
+              ),
+              const SizedBox(height: 20),
+              _ActionCard.createFolder(
+                context,
+                driveId: driveId,
+                parentFolderId: parentFolderId,
+                page: PlausiblePageView.newUserDriveEmptyPage,
+              ),
+            ],
+          ),
+        ),
+        desktop: (context) => Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 66),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ArDriveImage(
+                      image: AssetImage(Resources.images.login.confetti)),
+                  Flexible(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Column(
+                        children: [
+                          _buildHeaderText(
+                            context: context,
+                            text: headerText,
+                            style: typography.display(
+                                fontWeight: ArFontWeight.bold),
+                          ),
+                          const SizedBox(height: 10),
+                          _buildDescriptionText(
+                            context: context,
+                            text: descriptionText,
+                            style:
+                                typography.heading5(color: colorTokens.textLow),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  ArDriveImage(
+                      image: AssetImage(Resources.images.login.confetti)),
+                ],
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _ActionCard.uploadFile(context,
+                    driveId: driveId,
+                    parentFolderId: parentFolderId,
+                    page: PlausiblePageView.newUserDriveEmptyPage),
+                _ActionCard.createFolder(context,
+                    driveId: driveId,
+                    parentFolderId: parentFolderId,
+                    page: PlausiblePageView.newUserDriveEmptyPage),
+              ],
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderText({
+    required BuildContext context,
+    required String text,
+    required TextStyle style,
+  }) {
+    return Text(
+      text,
+      style: style,
+    );
+  }
+
+  Widget _buildDescriptionText({
+    required BuildContext context,
+    required String text,
+    required TextStyle style,
+  }) {
+    return Text(
+      text,
+      style: style,
+      textAlign: TextAlign.center,
+    );
+  }
+}
+
+class _ExistingUserEmptyRootFolder extends StatelessWidget {
   final String driveId;
   final String parentFolderId;
 
@@ -415,20 +375,6 @@ class _ExistingUserEmptyRootFolder extends StatefulWidget {
     required this.driveId,
     required this.parentFolderId,
   });
-
-  @override
-  State<_ExistingUserEmptyRootFolder> createState() =>
-      _ExistingUserEmptyRootFolderState();
-}
-
-class _ExistingUserEmptyRootFolderState
-    extends State<_ExistingUserEmptyRootFolder> {
-  @override
-  initState() {
-    super.initState();
-    PlausibleEventTracker.trackPageview(
-        page: PlausiblePageView.existingUserDriveEmptyPage);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -440,107 +386,110 @@ class _ExistingUserEmptyRootFolderState
     const String descriptionText =
         'When you are ready to benefit from blazingly fast, unlimited uploading you can try out Turbo. Until then, if your upload is collectively under 100KB, here are some of the awesome FREE things you can do next.';
 
-    return ScreenTypeLayout.builder(
-      mobile: (context) => SingleChildScrollView(
-        child: Column(
+    return PlausiblePageViewWrapper(
+      pageView: PlausiblePageView.existingUserDriveEmptyPage,
+      child: ScreenTypeLayout.builder(
+        mobile: (context) => SingleChildScrollView(
+          child: Column(
+            children: [
+              _buildHeaderText(
+                context: context,
+                text: headerText,
+                style: typography.heading4(fontWeight: ArFontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              _buildDescriptionText(
+                context: context,
+                text: descriptionText,
+                style: typography.paragraphLarge(
+                  color: colorTokens.textLow,
+                  fontWeight: ArFontWeight.semiBold,
+                ),
+              ),
+              const SizedBox(height: 20),
+              _ActionCard.uploadFile(
+                context,
+                driveId: driveId,
+                parentFolderId: parentFolderId,
+                page: PlausiblePageView.existingUserDriveEmptyPage,
+              ),
+              const SizedBox(height: 20),
+              _ActionCard.uploadFolder(context,
+                  driveId: driveId,
+                  parentFolderId: parentFolderId,
+                  page: PlausiblePageView.existingUserDriveEmptyPage),
+              const SizedBox(height: 20),
+              _ActionCard.createFolder(context,
+                  driveId: driveId,
+                  parentFolderId: parentFolderId,
+                  page: PlausiblePageView.existingUserDriveEmptyPage),
+              const SizedBox(height: 20),
+              _ActionCard.createPin(context,
+                  page: PlausiblePageView.existingUserDriveEmptyPage),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+        desktop: (context) => Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildHeaderText(
-              context: context,
-              text: headerText,
-              style: typography.heading4(fontWeight: ArFontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            _buildDescriptionText(
-              context: context,
-              text: descriptionText,
-              style: typography.paragraphLarge(
-                color: colorTokens.textLow,
-                fontWeight: ArFontWeight.semiBold,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 66),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ArDriveImage(
+                      image: AssetImage(Resources.images.login.confetti)),
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        _buildHeaderText(
+                          context: context,
+                          text: headerText,
+                          style:
+                              typography.display(fontWeight: ArFontWeight.bold),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildDescriptionText(
+                          context: context,
+                          text: descriptionText,
+                          style: typography.heading5(
+                            color: colorTokens.textLow,
+                            fontWeight: ArFontWeight.semiBold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ArDriveImage(
+                      image: AssetImage(Resources.images.login.confetti)),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
-            _ActionCard.uploadFile(
-              context,
-              driveId: widget.driveId,
-              parentFolderId: widget.parentFolderId,
-              page: PlausiblePageView.existingUserDriveEmptyPage,
-            ),
-            const SizedBox(height: 20),
-            _ActionCard.uploadFolder(context,
-                driveId: widget.driveId,
-                parentFolderId: widget.parentFolderId,
-                page: PlausiblePageView.existingUserDriveEmptyPage),
-            const SizedBox(height: 20),
-            _ActionCard.createFolder(context,
-                driveId: widget.driveId,
-                parentFolderId: widget.parentFolderId,
-                page: PlausiblePageView.existingUserDriveEmptyPage),
-            const SizedBox(height: 20),
-            _ActionCard.createPin(context,
-                page: PlausiblePageView.existingUserDriveEmptyPage),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-      desktop: (context) => Column(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 66),
-            child: Row(
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                ArDriveImage(
-                    image: AssetImage(Resources.images.login.confetti)),
-                Flexible(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      _buildHeaderText(
-                        context: context,
-                        text: headerText,
-                        style:
-                            typography.display(fontWeight: ArFontWeight.bold),
-                      ),
-                      const SizedBox(height: 10),
-                      _buildDescriptionText(
-                        context: context,
-                        text: descriptionText,
-                        style: typography.heading5(
-                          color: colorTokens.textLow,
-                          fontWeight: ArFontWeight.semiBold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                ArDriveImage(
-                    image: AssetImage(Resources.images.login.confetti)),
+                _ActionCard.uploadFile(context,
+                    driveId: driveId,
+                    parentFolderId: parentFolderId,
+                    page: PlausiblePageView.existingUserDriveEmptyPage),
+                _ActionCard.uploadFolder(context,
+                    driveId: driveId,
+                    parentFolderId: parentFolderId,
+                    page: PlausiblePageView.existingUserDriveEmptyPage),
+                if (width > SMALL_DESKTOP)
+                  _ActionCard.createFolder(context,
+                      driveId: driveId,
+                      parentFolderId: parentFolderId,
+                      page: PlausiblePageView.existingUserDriveEmptyPage),
+                if (width > LARGE_DESKTOP)
+                  _ActionCard.createPin(context,
+                      page: PlausiblePageView.existingUserDriveEmptyPage),
               ],
-            ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _ActionCard.uploadFile(context,
-                  driveId: widget.driveId,
-                  parentFolderId: widget.parentFolderId,
-                  page: PlausiblePageView.existingUserDriveEmptyPage),
-              _ActionCard.uploadFolder(context,
-                  driveId: widget.driveId,
-                  parentFolderId: widget.parentFolderId,
-                  page: PlausiblePageView.existingUserDriveEmptyPage),
-              if (width > SMALL_DESKTOP)
-                _ActionCard.createFolder(context,
-                    driveId: widget.driveId,
-                    parentFolderId: widget.parentFolderId,
-                    page: PlausiblePageView.existingUserDriveEmptyPage),
-              if (width > LARGE_DESKTOP)
-                _ActionCard.createPin(context,
-                    page: PlausiblePageView.existingUserDriveEmptyPage),
-            ],
-          )
-        ],
+            )
+          ],
+        ),
       ),
     );
   }

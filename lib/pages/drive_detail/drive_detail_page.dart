@@ -38,6 +38,7 @@ import 'package:ardrive/pages/drive_detail/components/unpreviewable_content.dart
 import 'package:ardrive/search/search_modal.dart';
 import 'package:ardrive/search/search_text_field.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/shared/components/plausible_page_view_wrapper.dart';
 import 'package:ardrive/sharing/sharing_file_listener.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/theme/theme.dart';
