@@ -146,35 +146,6 @@ class _DrivesHealthCheckModalState extends State<DrivesHealthCheckModal> {
                         ],
                       ),
                     ),
-                    // const SizedBox(height: 20),
-                    // Text(
-                    //   'Files Processed: ${statuses.length}',
-                    //   style: typography.paragraphLarge(
-                    //     fontWeight: ArFontWeight.bold,
-                    //   ),
-                    // ),
-                    // Text(
-                    //   'Files Remaining: ${numberOfFiles - statuses.length}',
-                    //   style: typography.paragraphLarge(
-                    //     fontWeight: ArFontWeight.bold,
-                    //   ),
-                    // ),
-                    // const Divider(
-                    //   height: 20,
-                    // ),
-                    // Text(
-                    //   'Failed Files: ${statuses.where((status) => status.isFailed).length}',
-                    //   style: typography.paragraphLarge(
-                    //     fontWeight: ArFontWeight.bold,
-                    //   ),
-                    // ),
-                    // Text(
-                    //   'Success Files: ${statuses.where((status) => status.isSuccess).length}',
-                    //   style: typography.paragraphLarge(
-                    //     fontWeight: ArFontWeight.bold,
-                    //   ),
-                    // ),
-                    // ArDriveProgressBar(percentage: statuses.length / numberOfFiles),
                   ),
                   const SizedBox(width: 20),
                   Flexible(
