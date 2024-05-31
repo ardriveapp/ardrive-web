@@ -92,7 +92,10 @@ class ArDriveCrypto {
       final cipherIvTag = transaction.getTag(EntityTag.cipherIv);
 
       if (cipher == null || cipherIvTag == null) {
-        throw MissingCipherTagException();
+        throw MissingCipherTagException(
+          corruptedDataAppVersion: transaction.getTag(EntityTag.appVersion),
+          corruptedTransactionId: transaction.id,
+        );
       }
 
       final cipherIv = utils.decodeBase64ToBytes(cipherIvTag);
@@ -128,6 +131,7 @@ class ArDriveCrypto {
       } else {
         throw UnknownCipherException(
           corruptedDataAppVersion: transaction.getTag(EntityTag.appVersion),
+          corruptedTransactionId: transaction.id,
         );
       }
 
@@ -143,6 +147,7 @@ class ArDriveCrypto {
       /// Unknow error
       throw TransactionDecryptionException(
         corruptedDataAppVersion: transaction.getTag(EntityTag.appVersion),
+        corruptedTransactionId: transaction.id,
       );
     }
   }
@@ -161,6 +166,7 @@ class ArDriveCrypto {
     if (cipher == null || cipherIvTag == null) {
       throw MissingCipherTagException(
         corruptedDataAppVersion: transaction.getTag(EntityTag.appVersion),
+        corruptedTransactionId: transaction.id,
       );
     }
 

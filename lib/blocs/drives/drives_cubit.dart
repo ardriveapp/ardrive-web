@@ -132,6 +132,10 @@ class DrivesCubit extends Cubit<DrivesState> {
         drivesWithAlerts: const [],
         canCreateNewDrive: false);
 
+    if (isClosed) {
+      return;
+    }
+
     emit(state);
   }
 

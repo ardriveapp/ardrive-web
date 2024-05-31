@@ -1,37 +1,50 @@
 class ArDriveDecryptionException implements Exception {
   final String? corruptedDataAppVersion;
+  final String? corruptedTransactionId;
 
-  ArDriveDecryptionException({this.corruptedDataAppVersion});
+  ArDriveDecryptionException({
+    this.corruptedDataAppVersion,
+    this.corruptedTransactionId,
+  });
 
   @override
   String toString() {
-    return 'ARFSDecryptionException: corruptedDataAppVersion: $corruptedDataAppVersion';
+    return 'ArDriveDecryptionException: corruptedDataAppVersion: $corruptedDataAppVersion and corruptedTransactionId: $corruptedTransactionId';
   }
 }
 
 class TransactionDecryptionException extends ArDriveDecryptionException {
-  TransactionDecryptionException({super.corruptedDataAppVersion});
+  TransactionDecryptionException({
+    super.corruptedDataAppVersion,
+    super.corruptedTransactionId,
+  });
 
   @override
   String toString() {
-    return 'TransactionDecryptionException: corruptedDataAppVersion: $corruptedDataAppVersion';
+    return 'TransactionDecryptionException: corruptedDataAppVersion: $corruptedDataAppVersion and corruptedTransactionId: $corruptedTransactionId';
   }
 }
 
 class MissingCipherTagException extends ArDriveDecryptionException {
-  MissingCipherTagException({super.corruptedDataAppVersion});
+  MissingCipherTagException({
+    super.corruptedDataAppVersion,
+    super.corruptedTransactionId,
+  });
 
   @override
   String toString() {
-    return 'MissingCipherTagException: corruptedDataAppVersion: $corruptedDataAppVersion';
+    return 'MissingCipherTagException: corruptedDataAppVersion: $corruptedDataAppVersion and corruptedTransactionId: $corruptedTransactionId';
   }
 }
 
 class UnknownCipherException extends ArDriveDecryptionException {
-  UnknownCipherException({super.corruptedDataAppVersion});
+  UnknownCipherException({
+    super.corruptedDataAppVersion,
+    super.corruptedTransactionId,
+  });
 
   @override
   String toString() {
-    return 'UnknowCipherException: corruptedDataAppVersion: $corruptedDataAppVersion';
+    return 'UnknowCipherException: corruptedDataAppVersion: $corruptedDataAppVersion and corruptedTransactionId: $corruptedTransactionId';
   }
 }
