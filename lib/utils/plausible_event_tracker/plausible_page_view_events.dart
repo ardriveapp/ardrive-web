@@ -39,4 +39,9 @@ enum PlausiblePageView {
 
   /// Search
   searchPage,
+
+  /// Empty State
+  folderEmptyPage,
+  existingUserDriveEmptyPage,
+  newUserDriveEmptyPage,
 }
