@@ -834,6 +834,71 @@ class FileUploadTask extends UploadTask {
   UploadType type;
 }
 
+class ThumbnailUploadTask implements UploadTask {
+  final IOFile file;
+  final ThumbnailUploadMetadata metadata;
+  @override
+  final UploadItem? uploadItem;
+  @override
+  final double progress;
+  @override
+  final String id;
+  @override
+  final bool isProgressAvailable;
+  @override
+  final UploadStatus status;
+  @override
+  final SecretKey? encryptionKey;
+  @override
+  final UploadTaskCancelToken? cancelToken;
+  @override
+  final UploadType type;
+
+  ThumbnailUploadTask({
+    required this.file,
+    required this.metadata,
+    this.uploadItem,
+    this.progress = 0,
+    required this.id,
+    this.isProgressAvailable = true,
+    this.status = UploadStatus.notStarted,
+    this.encryptionKey,
+    this.cancelToken,
+    required this.type,
+  });
+
+  @override
+  ThumbnailUploadTask copyWith({
+    IOFile? file,
+    ThumbnailUploadMetadata? metadata,
+    UploadItem? uploadItem,
+    List<ARFSUploadMetadata>? content,
+    double? progress,
+    String? id,
+    bool? isProgressAvailable,
+    UploadStatus? status,
+    SecretKey? encryptionKey,
+    UploadTaskCancelToken? cancelToken,
+    UploadType? type,
+  }) {
+    return ThumbnailUploadTask(
+      cancelToken: cancelToken ?? this.cancelToken,
+      encryptionKey: encryptionKey ?? this.encryptionKey,
+      metadata: metadata ?? this.metadata,
+      uploadItem: uploadItem ?? this.uploadItem,
+      id: id ?? this.id,
+      isProgressAvailable: isProgressAvailable ?? this.isProgressAvailable,
+      status: status ?? this.status,
+      file: file ?? this.file,
+      progress: progress ?? this.progress,
+      type: type ?? this.type,
+    );
+  }
+
+  @override
+  List<ARFSUploadMetadata> get content => [];
+}
+
 abstract class UploadTask<T> {
   abstract final String id;
   abstract final UploadItem? uploadItem;

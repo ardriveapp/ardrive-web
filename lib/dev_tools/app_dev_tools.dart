@@ -1,10 +1,12 @@
 import 'dart:convert';
 
+import 'package:ardrive/dev_tools/pick_image_thumbnail_poc.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/material.dart';
@@ -329,6 +331,28 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.button,
     );
 
+    final ArDriveDevToolOption pickImageAndGenerateThumbnailItem =
+        ArDriveDevToolOption(
+      name: 'setDefaultDataOnPaymentForm',
+      value: '',
+      onChange: (value) {},
+      onInteraction: () {
+        try {
+          pickImageAndGenerateThumbnail(
+            onThumbnailGenerated: (thumbnail) {
+              showArDriveDialog(context,
+                  content: ArDriveStandardModal(
+                    content: Image.memory(thumbnail),
+                  ));
+            },
+          );
+        } catch (e) {
+          logger.e('Error setting default data on payment form', e);
+        }
+      },
+      type: ArDriveDevToolOptionType.button,
+    );
+
     final ArDriveDevToolOption forceNoFreeThanksToTurbo = ArDriveDevToolOption(
       name: 'forceNoFreeThanksToTurbo',
       value: config.forceNoFreeThanksToTurbo,
@@ -377,6 +401,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       useTurboPaymentOption,
       defaultTurboPaymentUrlOption,
       enableSyncFromSnapshotOption,
+      pickImageAndGenerateThumbnailItem,
       stripePublishableKey,
       enableQuickSyncAuthoringOption,
       enableMultipleFileDownloadOption,

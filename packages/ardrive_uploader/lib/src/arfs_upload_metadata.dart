@@ -2,6 +2,17 @@ import 'package:arweave/arweave.dart';
 
 abstract class UploadMetadata {}
 
+class ThumbnailUploadMetadata extends UploadMetadata {
+  ThumbnailUploadMetadata({
+    required this.entityMetadataTags,
+    required this.thumbnailSize,
+  });
+
+  final List<Tag> entityMetadataTags;
+
+  final int thumbnailSize;
+}
+
 class ARFSDriveUploadMetadata extends ARFSUploadMetadata {
   ARFSDriveUploadMetadata({
     required super.entityMetadataTags,

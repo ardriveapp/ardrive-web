@@ -473,3 +473,46 @@ List<Tag> get _uTags {
     Tag(EntityTag.contract, uContractId.toString()),
   ];
 }
+
+class ThumbnailMetadataGenerator
+    implements
+        UploadMetadataGenerator<ThumbnailUploadMetadata,
+            ThumbnailMetadataArgs> {
+  @override
+  Future<ThumbnailUploadMetadata> generateMetadata(
+    IOEntity entity, {
+    required ThumbnailMetadataArgs arguments,
+  }) async {
+    if (entity is IOFile) {
+      final file = entity;
+
+      final tags = <Tag>[
+        Tag('Relates-To', file.contentType),
+        Tag(EntityTag.contentType, arguments.contentType),
+        Tag('width', arguments.width.toString()),
+        Tag('height', arguments.height.toString()),
+      ];
+
+      return ThumbnailUploadMetadata(
+        entityMetadataTags: tags,
+        thumbnailSize: arguments.thumbnailSize,
+      );
+    }
+
+    throw Exception('Invalid entity type');
+  }
+}
+
+class ThumbnailMetadataArgs {
+  final int height;
+  final int width;
+  final String contentType;
+  final int thumbnailSize;
+
+  ThumbnailMetadataArgs({
+    required this.contentType,
+    required this.height,
+    required this.width,
+    required this.thumbnailSize,
+  });
+}

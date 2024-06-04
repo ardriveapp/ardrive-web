@@ -7,6 +7,7 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
 import 'package:pst/pst.dart';
+import 'package:uuid/uuid.dart';
 
 enum UploadType { turbo, d2n }
 
@@ -37,6 +38,15 @@ abstract class ArDriveUploader {
     Function(ARFSUploadMetadata)? skipMetadataUpload,
     Function(ARFSUploadMetadata)? onCreateMetadata,
     required UploadType type,
+  }) {
+    throw UnimplementedError();
+  }
+
+  Future<UploadController> uploadThumbnail({
+    required IOFile file,
+    required Wallet wallet,
+    required UploadType type,
+    required ThumbnailMetadataArgs args,
   }) {
     throw UnimplementedError();
   }
@@ -294,6 +304,54 @@ class _ArDriveUploader implements ArDriveUploader {
     } else {
       uploadController.sendTasks(wallet);
     }
+
+    return uploadController;
+  }
+
+  @override
+  Future<UploadController> uploadThumbnail(
+      {required IOFile file,
+      required Wallet wallet,
+      required UploadType type,
+      required ThumbnailMetadataArgs args}) async {
+    final thumbnailMetadataGenerator = ThumbnailMetadataGenerator();
+
+    final thumbnailMetadata = await thumbnailMetadataGenerator.generateMetadata(
+      file,
+      arguments: args,
+    );
+
+    final dataBundler = _dataBundlerFactory.createDataBundler(
+      type,
+    );
+
+    final UploadFileStrategy uploadFileStrategy = UploadFileUsingDataItemFiles(
+        streamedUploadFactory: _streamedUploadFactory);
+
+    final uploadController = UploadController(
+      StreamController<UploadProgress>(),
+      UploadDispatcher(
+        dataBundler: dataBundler,
+        uploadStrategy: uploadFileStrategy,
+        uploadFolderStrategy: UploadFolderStructureAsBundleStrategy(
+          dataBundler: dataBundler,
+          streamedUploadFactory: _streamedUploadFactory,
+        ),
+      ),
+      numOfWorkers: 1,
+      maxTasksPerWorker: 1,
+    );
+
+    final uploadTask = ThumbnailUploadTask(
+      file: file,
+      metadata: thumbnailMetadata,
+      type: type,
+      id: Uuid().v4(),
+    );
+
+    uploadController.addTask(uploadTask);
+
+    uploadController.sendTasks(wallet);
 
     return uploadController;
   }

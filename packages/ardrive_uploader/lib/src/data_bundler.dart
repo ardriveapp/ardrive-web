@@ -52,6 +52,13 @@ abstract class DataBundler<T> {
     required Wallet wallet,
     SecretKey? driveKey,
   });
+
+  Future<DataItemFile> createDataItemForThumbnail({
+    required IOFile file,
+    required ThumbnailUploadMetadata metadata,
+    required Wallet wallet,
+    SecretKey? driveKey,
+  });
 }
 
 class DataTransactionBundler implements DataBundler<TransactionResult> {
@@ -300,7 +307,7 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
     final dataGenerator = await _dataGenerator(
       dataStream: file.openReadStream,
       fileLength: await file.length,
-      metadata: metadata,
+      metadataId: metadata.id,
       wallet: wallet,
       encryptionKey: key,
     );
@@ -323,6 +330,16 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
     onFinishMetadataCreation?.call();
 
     return [metadataDataItem, fileDataItem];
+  }
+
+  @override
+  Future<DataItemFile> createDataItemForThumbnail(
+      {required IOFile file,
+      required ThumbnailUploadMetadata metadata,
+      required Wallet wallet,
+      SecretKey? driveKey}) {
+    // TODO: implement createDataItemForThumbnail
+    throw UnimplementedError();
   }
 }
 
@@ -544,7 +561,7 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
     final dataGenerator = await _dataGenerator(
       dataStream: file.openReadStream,
       fileLength: await file.length,
-      metadata: metadata,
+      metadataId: metadata.id,
       wallet: wallet,
       encryptionKey: key,
     );
@@ -565,6 +582,34 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
     );
 
     return [metadataDataItem, fileDataItem];
+  }
+
+  @override
+  Future<DataItemFile> createDataItemForThumbnail({
+    required IOFile file,
+    required ThumbnailUploadMetadata metadata,
+    required Wallet wallet,
+    SecretKey? driveKey,
+  }) async {
+    final dataGenerator = await _dataGenerator(
+      dataStream: file.openReadStream,
+      fileLength: metadata.thumbnailSize,
+
+      /// pass the file original file id
+      metadataId: '',
+      wallet: wallet,
+      encryptionKey: driveKey,
+    );
+
+    final thumbnailDataItem = DataItemFile(
+      dataSize: metadata.thumbnailSize,
+      streamGenerator: dataGenerator.$1,
+      tags: metadata.entityMetadataTags
+          .map((e) => createTag(e.name, e.value))
+          .toList(),
+    );
+
+    return thumbnailDataItem;
   }
 }
 
@@ -836,7 +881,7 @@ Future<
       String? cipher,
       int fileSize
     )> _dataGenerator({
-  required ARFSUploadMetadata metadata,
+  required String metadataId,
   required Stream<Uint8List> Function() dataStream,
   required int fileLength,
   required Wallet wallet,
@@ -844,7 +889,7 @@ Future<
 }) async {
   if (encryptionKey != null) {
     return await handleEncryption(
-        encryptionKey, dataStream, metadata.id, fileLength, keyByteLength);
+        encryptionKey, dataStream, metadataId, fileLength, keyByteLength);
   } else {
     return (
       dataStream,
