@@ -33,11 +33,11 @@ class _DrivesHealthCheckModalState extends State<DrivesHealthCheckModal> {
         this.drives = drives;
       });
 
-      processDrivesInSequency();
+      processDrivesSequentially();
     });
   }
 
-  Future<void> processDrivesInSequency() async {
+  Future<void> processDrivesSequentially() async {
     final driveDao = context.read<DriveDao>();
 
     for (final drive in drives) {
@@ -48,9 +48,9 @@ class _DrivesHealthCheckModalState extends State<DrivesHealthCheckModal> {
       );
 
       driveStatuses.add(status);
-
-      setState(() {});
     }
+
+    setState(() {});
 
     for (final currentStatus in driveStatuses) {
       final files = await (driveDao.select(driveDao.fileEntries)
@@ -67,6 +67,7 @@ class _DrivesHealthCheckModalState extends State<DrivesHealthCheckModal> {
       currentStatus.totalFiles = files.length;
 
       selectedDriveStatus = currentStatus;
+
       setState(() {});
 
       await processFiles(files, currentStatus);
@@ -83,188 +84,188 @@ class _DrivesHealthCheckModalState extends State<DrivesHealthCheckModal> {
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
 
-    if (driveStatuses.isNotEmpty) {
-      return SizedBox(
-        child: ArDriveModalNew(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.9,
-            maxWidth: MediaQuery.of(context).size.width * 0.8,
-            minHeight: MediaQuery.of(context).size.height * 0.9,
-          ),
-          content: Column(
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Flexible(
-                    flex: 2,
-                    child: SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('Drives',
-                              style: typography.heading4(
-                                fontWeight: ArFontWeight.bold,
-                              )),
-                          Text('Click on a drive to view details',
-                              style: typography.paragraphNormal(
-                                fontWeight: ArFontWeight.semiBold,
-                              )),
-                          const SizedBox(
-                            height: 8,
-                          ),
-                          SizedBox(
-                            height: MediaQuery.of(context).size.height * 0.72,
-                            child: ListView.separated(
-                                itemCount: driveStatuses.length,
-                                addAutomaticKeepAlives: true,
-                                separatorBuilder: (context, index) =>
-                                    const Divider(),
-                                shrinkWrap: true,
-                                itemBuilder: (context, index) {
-                                  final driveStatus = driveStatuses[index];
+    if (driveStatuses.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
 
-                                  return ArDriveClickArea(
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          selectedDriveStatus = driveStatus;
-                                        });
-                                      },
-                                      child: DriveHealthCheckTile(
-                                        status: driveStatus,
-                                        key: Key(driveStatus.drive.id),
-                                        isSelected:
-                                            selectedDriveStatus.drive.id ==
-                                                driveStatus.drive.id,
-                                      ),
-                                    ),
-                                  );
-                                }),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 20),
-                  Flexible(
-                    flex: 1,
+    return SizedBox(
+      child: ArDriveModalNew(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+          maxWidth: MediaQuery.of(context).size.width * 0.8,
+          minHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
+        content: Column(
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Flexible(
+                  flex: 2,
+                  child: SingleChildScrollView(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Text('Drives',
+                            style: typography.heading4(
+                              fontWeight: ArFontWeight.bold,
+                            )),
+                        Text('Click on a drive to view details',
+                            style: typography.paragraphNormal(
+                              fontWeight: ArFontWeight.semiBold,
+                            )),
                         const SizedBox(
                           height: 8,
                         ),
-                        Text(
-                          'Drive: ${selectedDriveStatus.drive.name}',
-                          style: typography.paragraphLarge(
-                            fontWeight: ArFontWeight.bold,
-                          ),
-                        ),
-                        Text('Success Files',
-                            style: typography.paragraphLarge()),
-                        const SizedBox(
-                          height: 8,
-                        ),
-                        Flexible(
-                          flex: 1,
-                          child: ArDriveCard(
-                            content: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                maxHeight:
-                                    MediaQuery.of(context).size.height * 0.32,
-                              ),
-                              child: Builder(builder: (context) {
-                                final successFiles = selectedDriveStatus.files
-                                    .where((element) => element.isSuccess)
-                                    .toList();
-                                if (successFiles.isEmpty) {
-                                  return const Center(
-                                    child: Text('No files found'),
-                                  );
-                                }
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.72,
+                          child: ListView.separated(
+                              itemCount: driveStatuses.length,
+                              addAutomaticKeepAlives: true,
+                              separatorBuilder: (context, index) =>
+                                  const Divider(),
+                              shrinkWrap: true,
+                              itemBuilder: (context, index) {
+                                final driveStatus = driveStatuses[index];
 
-                                return ListView.builder(
-                                    itemCount: successFiles.length,
-                                    addAutomaticKeepAlives: true,
-                                    shrinkWrap: true,
-                                    itemBuilder: (context, index) {
-                                      final status = successFiles[index];
-
-                                      return FileHealthCheckTile(
-                                        status: status,
-                                        onFinish: () async {},
-                                      );
-                                    });
+                                return ArDriveClickArea(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        selectedDriveStatus = driveStatus;
+                                      });
+                                    },
+                                    child: DriveHealthCheckTile(
+                                      status: driveStatus,
+                                      key: Key(driveStatus.drive.id),
+                                      isSelected:
+                                          selectedDriveStatus.drive.id ==
+                                              driveStatus.drive.id,
+                                    ),
+                                  ),
+                                );
                               }),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(
-                          height: 20,
-                        ),
-                        Text('Failed Files',
-                            style: typography.paragraphLarge()),
-                        const SizedBox(
-                          height: 8,
-                        ),
-                        Flexible(
-                          flex: 1,
-                          child: ArDriveCard(
-                            content: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                maxHeight:
-                                    MediaQuery.of(context).size.height * 0.32,
-                              ),
-                              child: Builder(builder: (context) {
-                                final failedFiles = selectedDriveStatus.files
-                                    .where((element) => element.isFailed)
-                                    .toList();
-                                if (failedFiles.isEmpty) {
-                                  return const Center(
-                                    child: Text('No files found'),
-                                  );
-                                }
-                                return ListView.builder(
-                                    itemCount: failedFiles.length,
-                                    addAutomaticKeepAlives: true,
-                                    shrinkWrap: true,
-                                    itemBuilder: (context, index) {
-                                      final status = failedFiles[index];
-
-                                      return FileHealthCheckTile(
-                                        status: status,
-                                        onFinish: () async {},
-                                      );
-                                    });
-                              }),
-                            ),
-                          ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(
-                height: 8,
-              ),
-              Text(
-                'Drives Loaded: ${driveStatuses.where((element) => !element.isLoading).length} of ${driveStatuses.length}',
-                style: typography.paragraphLarge(
-                  fontWeight: ArFontWeight.bold,
                 ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+                const SizedBox(width: 20),
+                Flexible(
+                  flex: 1,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(
+                        height: 8,
+                      ),
+                      Text(
+                        'Selected Drive: ${selectedDriveStatus.drive.name}',
+                        style: typography.paragraphLarge(
+                          fontWeight: ArFontWeight.bold,
+                        ),
+                      ),
+                      Text('Success Files - ${selectedDriveStatus.drive.name}',
+                          style: typography.paragraphLarge()),
+                      const SizedBox(
+                        height: 8,
+                      ),
+                      Flexible(
+                        flex: 1,
+                        child: ArDriveCard(
+                          content: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxHeight:
+                                  MediaQuery.of(context).size.height * 0.32,
+                            ),
+                            child: Builder(builder: (context) {
+                              final successFiles = selectedDriveStatus.files
+                                  .where((element) => element.isSuccess)
+                                  .toList();
+                              if (successFiles.isEmpty) {
+                                return const Center(
+                                  child: Text('No files found'),
+                                );
+                              }
 
-    return const Center(
-      child: CircularProgressIndicator(),
+                              return ListView.builder(
+                                  itemCount: successFiles.length,
+                                  addAutomaticKeepAlives: true,
+                                  shrinkWrap: true,
+                                  itemBuilder: (context, index) {
+                                    final status = successFiles[index];
+
+                                    return FileHealthCheckTile(
+                                      status: status,
+                                      onFinish: () async {},
+                                    );
+                                  });
+                            }),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(
+                        height: 20,
+                      ),
+                      Text('Failed Files - ${selectedDriveStatus.drive.name}',
+                          style: typography.paragraphLarge()),
+                      const SizedBox(
+                        height: 8,
+                      ),
+                      Flexible(
+                        flex: 1,
+                        child: ArDriveCard(
+                          content: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxHeight:
+                                  MediaQuery.of(context).size.height * 0.32,
+                            ),
+                            child: Builder(builder: (context) {
+                              final failedFiles = selectedDriveStatus.files
+                                  .where((element) => element.isFailed)
+                                  .toList();
+                              if (failedFiles.isEmpty) {
+                                return const Center(
+                                  child: Text('No files found'),
+                                );
+                              }
+                              return ListView.builder(
+                                  itemCount: failedFiles.length,
+                                  addAutomaticKeepAlives: true,
+                                  shrinkWrap: true,
+                                  itemBuilder: (context, index) {
+                                    final status = failedFiles[index];
+
+                                    return FileHealthCheckTile(
+                                      status: status,
+                                      onFinish: () async {},
+                                    );
+                                  });
+                            }),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(
+              height: 8,
+            ),
+            Text(
+              'Drives Loaded: ${driveStatuses.where((element) => !element.isLoading).length} of ${driveStatuses.length}',
+              style: typography.paragraphLarge(
+                fontWeight: ArFontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
