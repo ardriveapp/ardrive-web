@@ -279,11 +279,14 @@ class _DrivesHealthCheckModalState extends State<DrivesHealthCheckModal> {
       if (files.isNotEmpty) {
         final file = files.removeAt(0);
         checkHealth(file, driveStatus).then((_) {
+          if (files.isEmpty) {
+            controller.close();
+            return;
+          }
+
           controller.add(null);
           setState(() {});
         });
-      } else {
-        controller.close();
       }
     }
 
