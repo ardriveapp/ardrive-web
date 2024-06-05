@@ -36,7 +36,7 @@ class LicenseAssertionEntity with TransactionPropertiesMixin {
   ) {
     try {
       // assert(transaction.getTag(LicenseTag.appName) ==
-      //     LicenseTag.appNameLicenseAssertion);
+  // LicenseTag.appNameLicenseAssertion);
       final additionalTags = Map.fromEntries(transaction.tags
           .where((tag) => !licenseAssertionTxBaseTagKeys.contains(tag.name))
           .map((tag) => MapEntry(tag.name, tag.value)));

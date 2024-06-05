@@ -746,7 +746,6 @@ class _UploadFormState extends State<UploadForm> {
                 ],
               );
             } else if (state is UploadFailure) {
-              logger.e('Upload failed: ${state.error}');
               if (state.error == UploadErrors.turboTimeout) {
                 return ArDriveStandardModal(
                   title: appLocalizationsOf(context).uploadFailed,

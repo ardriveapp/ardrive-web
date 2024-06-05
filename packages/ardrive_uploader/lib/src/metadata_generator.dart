@@ -1,6 +1,6 @@
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
-import 'package:ardrive_uploader/src/constants.dart';
+import 'package:ardrive_uploader/src/utils/data_bundler_utils.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arfs/arfs.dart';
 import 'package:arweave/arweave.dart';
@@ -70,16 +70,6 @@ class ARFSUploadMetadataGenerator
 
       final file = entity;
 
-      final List<Tag>? customBundleTags;
-
-      /// If the file is a D2N file, we need to add the $U tags to the
-      /// bundle tags
-      if (arguments.type == UploadType.d2n) {
-        customBundleTags = _uTags;
-      } else {
-        customBundleTags = null;
-      }
-
       final tags = _tagsGenerator.generateTags(
         ARFSTagsArgs(
           driveId: arguments.driveId!,
@@ -92,25 +82,22 @@ class ARFSUploadMetadataGenerator
           licenseAdditionalTags: arguments.licenseAdditionalTags?.entries
               .map((e) => Tag(e.key, e.value))
               .toList(),
-          customBundleTags: customBundleTags,
         ),
       );
 
       return ARFSFileUploadMetadata(
-        isPrivate: arguments.isPrivate,
-        size: await file.length,
-        lastModifiedDate: file.lastModifiedDate,
-        dataContentType: file.contentType,
-        driveId: arguments.driveId!,
-        parentFolderId: arguments.parentFolderId!,
-        name: file.name,
-        id: id,
-        entityMetadataTags: tags['entity']!,
-        dataItemTags: tags['data-item']!,
-        bundleTags: tags['bundle-data-item']!,
-        licenseDefinitionTxId: arguments.licenseDefinitionTxId,
-        licenseAdditionalTags: arguments.licenseAdditionalTags,
-      );
+          isPrivate: arguments.isPrivate,
+          size: await file.length,
+          lastModifiedDate: file.lastModifiedDate,
+          dataContentType: file.contentType,
+          driveId: arguments.driveId!,
+          parentFolderId: arguments.parentFolderId!,
+          name: file.name,
+          id: id,
+          licenseDefinitionTxId: arguments.licenseDefinitionTxId,
+          licenseAdditionalTags: arguments.licenseAdditionalTags)
+        ..setDataTags(tags['data-item']!)
+        ..setEntityMetadataTags(tags['entity']!);
     } else if (entity is IOFolder) {
       ARFSUploadMetadataArgsValidator.validate(arguments, EntityType.folder);
 
@@ -128,15 +115,12 @@ class ARFSUploadMetadataGenerator
       );
 
       return ARFSFolderUploadMetatadata(
-        id: id,
-        isPrivate: arguments.isPrivate,
-        driveId: arguments.driveId!,
-        parentFolderId: arguments.parentFolderId,
-        name: folder.name,
-        entityMetadataTags: tags['entity']!,
-        dataItemTags: tags['data-item']!,
-        bundleTags: tags['bundle-data-item']!,
-      );
+          id: id,
+          isPrivate: arguments.isPrivate,
+          driveId: arguments.driveId!,
+          parentFolderId: arguments.parentFolderId,
+          name: folder.name)
+        ..setEntityMetadataTags(tags['entity']!);
     }
 
     throw Exception('Invalid file type');
@@ -169,14 +153,11 @@ class ARFSUploadMetadataGenerator
       ),
     );
 
-    return ARFSDriveUploadMetadata(
-      isPrivate: isPrivate,
-      name: name,
-      entityMetadataTags: tags['entity']!,
-      dataItemTags: tags['data-item']!,
-      bundleTags: tags['bundle-data-item']!,
-      id: id,
-    );
+    final uploadMetadata =
+        ARFSDriveUploadMetadata(isPrivate: isPrivate, name: name, id: id)
+          ..setEntityMetadataTags(tags['entity']!);
+
+    return uploadMetadata;
   }
 }
 
@@ -256,17 +237,10 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
 
   @override
   Map<String, List<Tag>> generateTags(ARFSTagsArgs arguments) {
-    final bundleDataItemTags = _bundleDataItemTags;
-
-    if (arguments.customBundleTags != null) {
-      bundleDataItemTags.addAll(arguments.customBundleTags!);
-    }
-
     final entityTags = _entityTags(arguments);
-    final appTags = _appTags;
 
     final dataItemTags = [
-      ...appTags,
+      ...appTags(_appInfoServices),
       Tag(EntityTag.contentType, arguments.contentType),
       if (arguments.licenseDefinitionTxId != null) ...[
         Tag(LicenseTag.licenseDefinitionTxId, arguments.licenseDefinitionTxId!),
@@ -275,11 +249,10 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
       ],
     ];
 
-    final entityMedataTags = [...entityTags, ...appTags];
+    final entityMedataTags = [...entityTags, ...appTags(_appInfoServices)];
 
     return {
       'data-item': dataItemTags,
-      'bundle-data-item': bundleDataItemTags,
       'entity': entityMedataTags,
     };
   }
@@ -327,7 +300,9 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
         break;
       case EntityType.drive:
         if (arguments.isPrivate ?? false) {
-          tags.add(Tag(EntityTag.driveAuthMode, 'private'));
+          tags.add(Tag(EntityTag.drivePrivacy, 'private'));
+        } else {
+          tags.add(Tag(EntityTag.drivePrivacy, 'public'));
         }
 
         tags.add(Tag(EntityTag.entityType, EntityType.drive.name));
@@ -336,32 +311,6 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
     }
 
     return tags;
-  }
-
-  List<Tag> get _appTags {
-    final appInfo = _appInfoServices.appInfo;
-
-    final appVersion = Tag(EntityTag.appVersion, appInfo.version);
-    final appPlatform = Tag(EntityTag.appPlatform, appInfo.platform);
-    final unixTime = Tag(
-      EntityTag.unixTime,
-      (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString(),
-    );
-    final appName = Tag(EntityTag.appName, appInfo.appName);
-
-    return [
-      appName,
-      appPlatform,
-      appVersion,
-      unixTime,
-    ];
-  }
-
-  List<Tag> get _bundleDataItemTags {
-    return [
-      ..._appTags,
-      Tag(EntityTag.tipType, 'data upload'),
-    ];
   }
 }
 
@@ -439,7 +388,6 @@ class ARFSTagsArgs extends Equatable {
   final EntityType entity;
   final String? licenseDefinitionTxId;
   final List<Tag>? licenseAdditionalTags;
-  final List<Tag>? customBundleTags;
 
   ARFSTagsArgs({
     this.driveId,
@@ -450,7 +398,6 @@ class ARFSTagsArgs extends Equatable {
     required this.contentType,
     this.licenseDefinitionTxId,
     this.licenseAdditionalTags,
-    this.customBundleTags,
   });
 
   @override
@@ -463,15 +410,6 @@ class ARFSTagsArgs extends Equatable {
         entity,
         customBundleTags,
       ];
-}
-
-List<Tag> get _uTags {
-  return [
-    Tag(EntityTag.appName, 'SmartWeaveAction'),
-    Tag(EntityTag.appVersion, '0.3.0'),
-    Tag(EntityTag.input, '{"function":"mint"}'),
-    Tag(EntityTag.contract, uContractId.toString()),
-  ];
 }
 
 class ThumbnailMetadataGenerator

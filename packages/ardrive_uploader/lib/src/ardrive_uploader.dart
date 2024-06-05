@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive_uploader/src/upload_dispatcher.dart';
 import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -309,9 +310,19 @@ class _ArDriveUploader implements ArDriveUploader {
     }
 
     if (folderUploadTask != null) {
-      // first sends the upload task for the folder and then uploads the files
-      uploadController.sendTask(folderUploadTask, wallet, onTaskCompleted: () {
-        uploadController.sendTasks(wallet);
+      /// first sends the upload task for the folder and then uploads the files
+      uploadController.sendTask(folderUploadTask, wallet,
+          onTaskCompleted: (success) {
+        logger.i('Folder upload task completed with success: $success');
+        if (success) {
+          uploadController.sendTasks(wallet);
+        } else {
+          /// if the folder upload task fails, then all the files are marked as failed
+          for (var task in uploadController.notCompletedTasks) {
+            task = task.copyWith(status: UploadStatus.failed);
+            uploadController.updateProgress(task: task);
+          }
+        }
       });
     } else {
       uploadController.sendTasks(wallet);

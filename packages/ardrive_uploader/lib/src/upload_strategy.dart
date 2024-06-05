@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive_uploader/src/constants.dart';
 import 'package:ardrive_uploader/src/data_bundler.dart';
 import 'package:ardrive_uploader/src/exceptions.dart';
 import 'package:ardrive_uploader/src/utils/data_bundler_utils.dart';
 import 'package:ardrive_uploader/src/utils/logger.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 
 abstract class UploadFileStrategy {
@@ -98,8 +100,8 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
       logger.i('metadata upload result: $uploadResult');
 
       if (!uploadResult.success) {
-        throw MetadataUploadException(
-          message: 'Failed to upload metadata item. DataItem won\'t be sent',
+        throw MetadataTransactionUploadException(
+          message: 'Failed to upload metadata item. DataItem won\'t be sent.',
           error: uploadResult.error,
         );
       }
@@ -176,9 +178,9 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
     );
 
     if (!result.success) {
-      logger.e('Failed to upload data item.', result.error);
-      throw DataUploadException(
-        message: 'Failed to upload data item. Error: ${result.error}',
+      throw DataTransactionUploadException(
+        message:
+            'Failed to upload data item. It will cause a creation of a ghost file e.g. a file with a red dot.',
         error: result.error,
       );
     }
@@ -224,6 +226,7 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
           ),
         );
       },
+      customBundleTags: customBundleTags(task.type),
       onStartMetadataCreation: () {
         controller.updateProgress(
           task: task.copyWith(
@@ -286,7 +289,7 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
 
     if (!result.success) {
       throw BundleUploadException(
-        message: 'Failed to upload bundle',
+        message: 'Failed to upload file bundle. Bundle: $bundle',
         error: result.error,
       );
     }
@@ -322,6 +325,7 @@ class UploadFolderStructureAsBundleStrategy
       entities: task.folders,
       wallet: wallet,
       driveKey: task.encryptionKey,
+      customBundleTags: customBundleTags(task.type),
     );
 
     final folderBundle = (bundle).first.dataItemResult;
@@ -366,7 +370,10 @@ class UploadFolderStructureAsBundleStrategy
     });
 
     if (!result.success) {
-      throw BundleUploadException(message: 'Failed to upload bundle');
+      throw BundleUploadException(
+        message: 'Failed to upload bundle of folders. Folder bundle: $bundle',
+        error: result.error,
+      );
     }
 
     controller.updateProgress(
@@ -435,4 +442,23 @@ class _UploadThumbnailStrategy implements UploadThumbnailStrategy {
       ),
     );
   }
+}
+
+List<Tag>? customBundleTags(
+  UploadType type,
+) {
+  if (type == UploadType.d2n) {
+    return _uTags;
+  } else {
+    return null;
+  }
+}
+
+List<Tag> get _uTags {
+  return [
+    Tag(EntityTag.appName, 'SmartWeaveAction'),
+    Tag(EntityTag.appVersion, '0.3.0'),
+    Tag(EntityTag.input, '{"function":"mint"}'),
+    Tag(EntityTag.contract, uContractId.toString()),
+  ];
 }

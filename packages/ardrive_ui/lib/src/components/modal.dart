@@ -651,15 +651,22 @@ Future<void> showStandardDialog(
   required String description,
   List<ModalAction>? actions,
   bool barrierDismissible = true,
+  bool useNewArDriveUI = false,
 }) {
   return showAnimatedDialog(
     context,
     barrierDismissible: barrierDismissible,
-    content: ArDriveStandardModal(
-      description: description,
-      title: title,
-      actions: actions,
-    ),
+    content: useNewArDriveUI
+        ? ArDriveStandardModalNew(
+            description: description,
+            title: title,
+            actions: actions,
+          )
+        : ArDriveStandardModal(
+            description: description,
+            title: title,
+            actions: actions,
+          ),
   );
 }
 

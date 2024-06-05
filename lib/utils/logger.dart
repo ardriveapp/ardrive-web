@@ -13,9 +13,10 @@ final Set<String> _knownTransactionDecryptionBugVersions = {
   '2.30.0',
   '2.30.1',
   '2.30.2',
+  '2.32.0',
   '2.36.0',
   '2.37.0',
-  '2.37.1'
+  '2.37.1',
 };
 
 ShouldLogErrorCallback shouldLogErrorCallback = (error) {
