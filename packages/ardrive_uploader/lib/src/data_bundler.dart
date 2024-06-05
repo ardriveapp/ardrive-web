@@ -822,3 +822,13 @@ Future<
     );
   }
 }
+
+class DataResultWithContents<T> {
+  final T dataItemResult;
+  final List<ARFSUploadMetadata> contents;
+
+  DataResultWithContents({
+    required this.dataItemResult,
+    required this.contents,
+  });
+}

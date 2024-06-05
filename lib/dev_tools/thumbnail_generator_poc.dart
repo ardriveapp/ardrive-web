@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
@@ -27,10 +29,6 @@ class _ThumbnailGeneratorPOCState extends State<ThumbnailGeneratorPOC> {
   // load files
   Future<void> _generateThumbnailsForFiles({required String driveId}) async {
     final driveDao = context.read<DriveDao>();
-    // final currentDriveId =
-    //     (context.read<DriveDetailCubit>().state as DriveDetailLoadSuccess)
-    //         .currentDrive
-    //         .id;
 
     final files = await (driveDao.select(driveDao.fileEntries)
           ..where((tbl) => tbl.driveId.equals(driveId)))
@@ -39,7 +37,6 @@ class _ThumbnailGeneratorPOCState extends State<ThumbnailGeneratorPOC> {
     setState(() {
       _files = files;
     });
-    // ignore: use_build_context_synchronously
     final arweaveService = context.read<ArweaveService>();
     final turboUploadService = context.read<TurboUploadService>();
     final wallet = context.read<ArDriveAuth>().currentUser.wallet;
@@ -57,9 +54,9 @@ class _ThumbnailGeneratorPOCState extends State<ThumbnailGeneratorPOC> {
 
       final bytes = await ardriveHttp.getAsBytes(realImageUrl);
 
-      final uploader = ArDriveUploader(turboUploadUri: Uri.parse(
-          // ignore: use_build_context_synchronously
-          context.read<ConfigService>().config.defaultTurboUploadUrl!));
+      final uploader = ArDriveUploader(
+          turboUploadUri: Uri.parse(
+              context.read<ConfigService>().config.defaultTurboUploadUrl!));
 
       final data = generateThumbnail(bytes.data);
 
@@ -77,7 +74,6 @@ class _ThumbnailGeneratorPOCState extends State<ThumbnailGeneratorPOC> {
         args: thumbnailArgs,
         file: file,
         type: UploadType.turbo,
-        // ignore: use_build_context_synchronously
         wallet: context.read<ArDriveAuth>().currentUser.wallet,
       );
 
@@ -109,13 +105,7 @@ class _ThumbnailGeneratorPOCState extends State<ThumbnailGeneratorPOC> {
               wallet: wallet,
             );
             fileEntity.txId = fileDataItem.id;
-          } else {
-            // final fileTx = await arweaveService.prepareEntityTx(
-            //     fileEntity, wallet, fileKey);
-
-            // await _arweave.postTx(fileTx);
-            // fileEntity.txId = fileTx.id;
-          }
+          } else {}
 
           logger.i(
               'Updating file ${f.id} with txId ${fileEntity.txId}. Data content type: ${fileEntity.dataContentType}');
@@ -130,7 +120,7 @@ class _ThumbnailGeneratorPOCState extends State<ThumbnailGeneratorPOC> {
   }
 
   final textController = TextEditingController();
-
+r
   @override
   Widget build(BuildContext context) {
     if (_files == null) {
