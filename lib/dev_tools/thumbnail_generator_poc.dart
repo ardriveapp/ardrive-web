@@ -120,7 +120,7 @@ class _ThumbnailGeneratorPOCState extends State<ThumbnailGeneratorPOC> {
   }
 
   final textController = TextEditingController();
-r
+
   @override
   Widget build(BuildContext context) {
     if (_files == null) {

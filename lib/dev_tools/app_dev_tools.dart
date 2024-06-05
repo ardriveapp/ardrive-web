@@ -158,20 +158,6 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.text,
     );
 
-    final ArDriveDevToolOption defaultTurboPaymentUrlOption =
-        ArDriveDevToolOption(
-      name: 'defaultTurboUrl',
-      value: config.defaultTurboPaymentUrl,
-      onChange: (value) {
-        setState(() {
-          configService.updateAppConfig(
-            config.copyWith(defaultTurboPaymentUrl: value),
-          );
-        });
-      },
-      type: ArDriveDevToolOptionType.text,
-    );
-
     final ArDriveDevToolOption stripePublishableKey = ArDriveDevToolOption(
       name: 'stripePublishableKey',
       value: config.stripePublishableKey,
@@ -358,43 +344,6 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
           showArDriveDialog(context,
               content:
                   const ArDriveStandardModal(content: ThumbnailGeneratorPOC()));
-
-          // pickImageAndGenerateThumbnail(
-          //   onThumbnailGenerated: (thumbnail) async {
-          //     final uploader = ArDriveUploader(
-          //         turboUploadUri: Uri.parse(context
-          //             .read<ConfigService>()
-          //             .config
-          //             .defaultTurboUploadUrl!));
-
-          //     final file = await IOFileAdapter().fromData(thumbnail,
-          //         name: 'thumbnail', lastModifiedDate: DateTime.now());
-          //     final thumbnailArgs = ThumbnailMetadataArgs(
-          //       contentType: 'image/png',
-          //       height: 100,
-          //       width: 100,
-          //       thumbnailSize: thumbnail.length,
-          //       relatesTo: 'a92e1181-f2b5-41b7-acc9-fac06128e647',
-          //     );
-
-          //     final controller = await uploader.uploadThumbnail(
-          //       args: thumbnailArgs,
-          //       file: file,
-          //       type: UploadType.turbo,
-          //       // ignore: use_build_context_synchronously
-          //       wallet: context.read<ArDriveAuth>().currentUser.wallet,
-          //     );
-
-          //     controller.onDone((task) {
-          //       logger.i('Thumbnail uploaded');
-          //     });
-
-          //     showArDriveDialog(context,
-          //         content: ArDriveStandardModal(
-          //           content: Image.memory(thumbnail),
-          //         ));
-          //   },
-          // );
         } catch (e) {
           logger.e('Error setting default data on payment form', e);
         }
