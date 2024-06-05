@@ -97,6 +97,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
   final NetworkTransaction? metadataTx;
   final NetworkTransaction? dataTx;
   final String? pinnedDataOwnerAddress;
+  final String? thumbnailUrl;
 
   FileDataTableItem(
       {required super.driveId,
@@ -116,6 +117,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
       required this.metadataTx,
       required this.dataTx,
       required this.pinnedDataOwnerAddress,
+      this.thumbnailUrl,
       super.licenseType,
       this.licenseTxId,
       this.bundledIn})
@@ -272,8 +274,10 @@ Widget _buildDataListContent(
         return folders + files;
       },
       buildRow: (row) {
+        final typography = ArDriveTypographyNew.of(context);
         return DriveExplorerItemTile(
           name: row.name,
+          typography: typography,
           size: row.size == null ? '-' : filesize(row.size),
           lastUpdated: yMMdDateFormatter.format(row.lastUpdated),
           dateCreated: yMMdDateFormatter.format(row.dateCreated),
@@ -404,6 +408,7 @@ class DriveDataTableItemMapper {
       index: index,
       pinnedDataOwnerAddress: file.pinnedDataOwnerAddress,
       isHidden: file.isHidden,
+      thumbnailUrl: file.thumbnailTxId,
     );
   }
 
@@ -430,6 +435,7 @@ class DriveDataTableItemMapper {
       index: 0,
       pinnedDataOwnerAddress: fileEntry.pinnedDataOwnerAddress,
       isHidden: fileEntry.isHidden,
+      thumbnailUrl: fileEntry.thumbnailTxId,
     );
   }
 
@@ -494,6 +500,7 @@ class DriveDataTableItemMapper {
       index: 0,
       pinnedDataOwnerAddress: revision.pinnedDataOwnerAddress,
       isHidden: revision.isHidden,
+      thumbnailUrl: revision.thumbnailTxId,
     );
   }
 }

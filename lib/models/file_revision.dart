@@ -25,6 +25,7 @@ extension FileRevisionsCompanionExtensions on FileRevisionsCompanion {
         isHidden: isHidden,
         // TODO: path is not used in the app, so it's not necessary to set it
         path: '',
+        thumbnailTxId: Value(thumbnailTxId.value),
       );
 
   /// Returns a list of [NetworkTransactionsCompanion] representing the metadata and data transactions
@@ -62,6 +63,7 @@ extension FileEntityExtensions on FileEntity {
         customJsonMetadata: Value(customJsonMetadataAsString),
         pinnedDataOwnerAddress: Value(pinnedDataOwnerAddress),
         isHidden: Value(isHidden ?? false),
+        thumbnailTxId: Value(thumbnailTxId),
       );
 
   FileRevision toRevision({
@@ -85,6 +87,7 @@ extension FileEntityExtensions on FileEntity {
         customJsonMetadata: customJsonMetadataAsString,
         pinnedDataOwnerAddress: pinnedDataOwnerAddress,
         isHidden: isHidden ?? false,
+        thumbnailTxId: thumbnailTxId,
       );
 
   /// Returns the action performed on the file that lead to the new revision.
@@ -104,6 +107,8 @@ extension FileEntityExtensions on FileEntity {
       return RevisionAction.hide;
     } else if (isHidden == false && previousRevision.isHidden.value == true) {
       return RevisionAction.unhide;
+    } else if (thumbnailTxId != previousRevision.thumbnailTxId.value) {
+      return RevisionAction.rename;
     }
 
     return null;

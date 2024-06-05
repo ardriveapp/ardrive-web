@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/src/data_bundler.dart';
 import 'package:ardrive_uploader/src/utils/logger.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:rxdart/rxdart.dart';
@@ -489,6 +490,9 @@ enum UploadStatus {
   /// The upload has failed
   failed,
 
+  /// uploading thumbnail
+  uploadingThumbnail,
+
   /// The upload has been canceled
   canceled,
 }
@@ -934,14 +938,17 @@ class UploadTaskCancelToken {
 class UploadDispatcher {
   UploadFileStrategy _uploadFileStrategy;
   final UploadFolderStructureStrategy _uploadFolderStrategy;
+  final UploadThumbnailStrategy _uploadThumbnailStrategy;
   final DataBundler _dataBundler;
 
   UploadDispatcher({
     required UploadFileStrategy uploadStrategy,
     required DataBundler dataBundler,
     required UploadFolderStructureStrategy uploadFolderStrategy,
+    required UploadThumbnailStrategy uploadThumbnailStrategy,
   })  : _dataBundler = dataBundler,
         _uploadFolderStrategy = uploadFolderStrategy,
+        _uploadThumbnailStrategy = uploadThumbnailStrategy,
         _uploadFileStrategy = uploadStrategy;
 
   Future<UploadResult> send({
@@ -983,8 +990,82 @@ class UploadDispatcher {
           controller: controller,
           verifyCancel: verifyCancel,
         );
+
+        if (task.file.contentType == 'image/jpeg') {
+          var updatedTask = controller.tasks[task.id]!;
+
+          controller.updateProgress(
+            task: updatedTask.copyWith(
+              status: UploadStatus.uploadingThumbnail,
+            ),
+          );
+
+          final data = generateThumbnail(await task.file.readAsBytes());
+
+          final thumbnailMetadata = ThumbnailUploadMetadata(
+            thumbnailSize: 0,
+            relatesTo:
+                (task.content!.first as ARFSFileUploadMetadata).dataTxId!,
+            entityMetadataTags: [],
+          );
+
+          final thumb = await IOFileAdapter().fromData(
+            data,
+            name: 'thumbnail',
+            lastModifiedDate: DateTime.now(),
+            contentType: 'image/jpeg',
+          );
+
+          final dataItem = await _dataBundler.createDataItemForThumbnail(
+              file: thumb, metadata: thumbnailMetadata, wallet: wallet);
+
+          final thumbnailTask = ThumbnailUploadTask(
+            file: thumb,
+            metadata: thumbnailMetadata,
+            type: task.type,
+            uploadItem: DataItemUploadItem(
+              size: dataItem.dataItemSize,
+              data: dataItem,
+            ),
+            id: Uuid().v4(),
+          );
+
+          await _uploadThumbnailStrategy.upload(
+            task: thumbnailTask,
+            wallet: wallet,
+            controller: UploadController(StreamController(), this),
+            verifyCancel: verifyCancel,
+          );
+
+          updatedTask = controller.tasks[task.id]!;
+
+          final uploadContent = task.content!.first as ARFSFileUploadMetadata;
+
+          uploadContent.thumbnailTxId =
+              (thumbnailTask.uploadItem as DataItemUploadItem).data.id;
+
+          controller.updateProgress(
+            task: updatedTask.copyWith(
+                status: UploadStatus.complete, content: [uploadContent]),
+          );
+        } else {
+          controller.updateProgress(
+            task: task.copyWith(
+              status: UploadStatus.complete,
+            ),
+          );
+        }
+
+        return UploadResult(success: true);
       } else if (task is FolderUploadTask) {
         await _uploadFolderStrategy.upload(
+          task: task,
+          wallet: wallet,
+          controller: controller,
+          verifyCancel: verifyCancel,
+        );
+      } else if (task is ThumbnailUploadTask) {
+        await _uploadThumbnailStrategy.upload(
           task: task,
           wallet: wallet,
           controller: controller,

@@ -819,6 +819,7 @@ class UploadCubit extends Cubit<UploadState> {
             name: fileMetadata.name,
             parentFolderId: fileMetadata.parentFolderId,
             size: fileMetadata.size,
+            thumbnailTxId: fileMetadata.thumbnailTxId,
             // TODO: pinnedDataOwnerAddress
           );
 

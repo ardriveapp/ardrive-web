@@ -34,32 +34,39 @@ class DriveExplorerItemTile extends TableRowWidget {
     required String license,
     required Function() onPressed,
     required bool isHidden,
+    required ArdriveTypographyNew typography,
   }) : super(
           [
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: Text(
                 name,
-                style: ArDriveTypography.body.buttonNormalBold().copyWith(
-                      color: isHidden ? Colors.grey : null,
-                    ),
+                style: typography.paragraphNormal(
+                  color: isHidden ? Colors.grey : null,
+                  fontWeight: ArFontWeight.bold,
+                ),
                 overflow: TextOverflow.fade,
                 maxLines: 1,
                 softWrap: false,
               ),
             ),
-            Text(size, style: _driveExplorerItemTileTextStyle(isHidden)),
-            Text(lastUpdated, style: _driveExplorerItemTileTextStyle(isHidden)),
-            Text(dateCreated, style: _driveExplorerItemTileTextStyle(isHidden)),
+            Text(size,
+                style: _driveExplorerItemTileTextStyle(isHidden, typography)),
+            Text(lastUpdated,
+                style: _driveExplorerItemTileTextStyle(isHidden, typography)),
+            Text(dateCreated,
+                style: _driveExplorerItemTileTextStyle(isHidden, typography)),
             Text(license, style: ArDriveTypography.body.captionRegular()),
           ],
         );
 }
 
-TextStyle _driveExplorerItemTileTextStyle(bool isHidden) =>
-    ArDriveTypography.body
-        .captionRegular()
-        .copyWith(color: isHidden ? Colors.grey : null);
+TextStyle _driveExplorerItemTileTextStyle(
+        bool isHidden, ArdriveTypographyNew typography) =>
+    typography.paragraphNormal(
+      color: isHidden ? Colors.grey : null,
+      fontWeight: ArFontWeight.bold,
+    );
 
 class DriveExplorerItemTileLeading extends StatelessWidget {
   const DriveExplorerItemTileLeading({
@@ -120,8 +127,15 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
                           state.thumbnail.url!,
                           width: 30,
                           height: 30,
-                          filterQuality: FilterQuality.low,
+                          filterQuality: FilterQuality.high,
                           fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return getIconForContentType(
+                              item.contentType,
+                            ).copyWith(
+                              color: isHidden ? Colors.grey : null,
+                            );
+                          },
                         ),
                       );
                     }

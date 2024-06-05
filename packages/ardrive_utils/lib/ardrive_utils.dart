@@ -6,6 +6,7 @@ export 'src/app_platform.dart';
 export 'src/base2_size.dart';
 export 'src/convert_to_usd.dart';
 export 'src/entity_tag.dart';
+export 'src/generate_thumbnail.dart';
 export 'src/get_first_future_result.dart';
 export 'src/html/html.dart';
 export 'src/license_tag.dart';

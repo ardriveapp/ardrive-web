@@ -483,23 +483,18 @@ class ThumbnailMetadataGenerator
     IOEntity entity, {
     required ThumbnailMetadataArgs arguments,
   }) async {
-    if (entity is IOFile) {
-      final file = entity;
+    final tags = <Tag>[
+      Tag('Relates-To', arguments.relatesTo),
+      Tag(EntityTag.contentType, arguments.contentType),
+      Tag('width', arguments.width.toString()),
+      Tag('height', arguments.height.toString()),
+    ];
 
-      final tags = <Tag>[
-        Tag('Relates-To', file.contentType),
-        Tag(EntityTag.contentType, arguments.contentType),
-        Tag('width', arguments.width.toString()),
-        Tag('height', arguments.height.toString()),
-      ];
-
-      return ThumbnailUploadMetadata(
-        entityMetadataTags: tags,
-        thumbnailSize: arguments.thumbnailSize,
-      );
-    }
-
-    throw Exception('Invalid entity type');
+    return ThumbnailUploadMetadata(
+      entityMetadataTags: tags,
+      thumbnailSize: arguments.thumbnailSize,
+      relatesTo: arguments.relatesTo,
+    );
   }
 }
 
@@ -508,11 +503,13 @@ class ThumbnailMetadataArgs {
   final int width;
   final String contentType;
   final int thumbnailSize;
+  final String relatesTo;
 
   ThumbnailMetadataArgs({
     required this.contentType,
     required this.height,
     required this.width,
     required this.thumbnailSize,
+    required this.relatesTo,
   });
 }

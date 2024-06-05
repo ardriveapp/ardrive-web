@@ -15,6 +15,7 @@ CREATE TABLE file_revisions (
     dataTxId TEXT NOT NULL,
 
     licenseTxId TEXT,
+    thumbnailTxId TEXT,
 
     bundledIn TEXT,
 

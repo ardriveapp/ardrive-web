@@ -955,6 +955,9 @@ class _UploadFormState extends State<UploadForm> {
                         case UploadStatus.creatingBundle:
                           status =
                               'We are preparing your upload. Preparation step 2/2';
+                        case UploadStatus.uploadingThumbnail:
+                          status = 'Uploading thumbnail!!!!! WOOOO-HOOOO';
+                          break;
                       }
 
                       final statusAvailableForShowingProgress =

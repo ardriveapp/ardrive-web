@@ -6,10 +6,11 @@ class ThumbnailUploadMetadata extends UploadMetadata {
   ThumbnailUploadMetadata({
     required this.entityMetadataTags,
     required this.thumbnailSize,
+    required this.relatesTo,
   });
 
   final List<Tag> entityMetadataTags;
-
+  final String relatesTo;
   final int thumbnailSize;
 }
 
@@ -60,6 +61,7 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata {
   final String driveId;
   final String parentFolderId;
   final String? licenseDefinitionTxId;
+  String? thumbnailTxId;
   final Map<String, String>? licenseAdditionalTags;
 
   ARFSFileUploadMetadata({
@@ -76,6 +78,7 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata {
     required super.isPrivate,
     required super.dataItemTags,
     required super.bundleTags,
+    this.thumbnailTxId,
   });
 
   String? _dataTxId;

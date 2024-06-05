@@ -39,7 +39,7 @@ class ThumbnailRepository {
     }
 
     final urlString =
-        '${_arweaveService.client.api.gatewayUrl.origin}/raw/${fileDataTableItem.dataTxId}';
+        '${_arweaveService.client.api.gatewayUrl.origin}/raw/${fileDataTableItem.thumbnailUrl}';
 
     return Thumbnail(data: null, url: urlString);
   }

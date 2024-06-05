@@ -17,6 +17,25 @@ abstract class UploadFileStrategy {
   });
 }
 
+abstract class UploadThumbnailStrategy {
+  Future<void> upload({
+    required ThumbnailUploadTask task,
+    required Wallet wallet,
+    required UploadController controller,
+    required bool Function() verifyCancel,
+  });
+
+  factory UploadThumbnailStrategy({
+    required StreamedUploadFactory streamedUploadFactory,
+    required DataBundler dataBundler,
+  }) {
+    return _UploadThumbnailStrategy(
+      streamedUploadFactory: streamedUploadFactory,
+      dataBundler: dataBundler,
+    );
+  }
+}
+
 abstract class UploadFolderStructureStrategy {
   Future<void> upload({
     required FolderUploadTask task,
@@ -164,13 +183,13 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
       );
     }
 
-    final updatedTask = controller.tasks[task.id]!;
+    // final updatedTask = controller.tasks[task.id]!;
 
-    controller.updateProgress(
-      task: updatedTask.copyWith(
-        status: UploadStatus.complete,
-      ),
-    );
+    // controller.updateProgress(
+    //   task: updatedTask.copyWith(
+    //     status: UploadStatus.complete,
+    //   ),
+    // );
   }
 }
 
@@ -352,6 +371,66 @@ class UploadFolderStructureAsBundleStrategy
 
     controller.updateProgress(
       task: folderTask.copyWith(
+        status: UploadStatus.complete,
+      ),
+    );
+  }
+}
+
+class _UploadThumbnailStrategy implements UploadThumbnailStrategy {
+  final StreamedUploadFactory _streamedUploadFactory;
+  final DataBundler _dataBundler;
+
+  _UploadThumbnailStrategy({
+    required StreamedUploadFactory streamedUploadFactory,
+    required DataBundler dataBundler,
+  })  : _streamedUploadFactory = streamedUploadFactory,
+        _dataBundler = dataBundler;
+
+  @override
+  Future<void> upload({
+    required ThumbnailUploadTask task,
+    required Wallet wallet,
+    required UploadController controller,
+    required bool Function() verifyCancel,
+  }) async {
+    final dataItem = await _dataBundler.createDataItemForThumbnail(
+      wallet: wallet,
+      file: task.file,
+      metadata: task.metadata,
+      driveKey: task.encryptionKey,
+    );
+
+    task = task.copyWith(
+      uploadItem: DataItemUploadItem(
+        size: dataItem.dataItemSize,
+        data: dataItem,
+      ),
+    );
+
+    final streamedUpload = _streamedUploadFactory.fromUploadType(task.type);
+
+    final result = await streamedUpload.send(
+      task.uploadItem!,
+      wallet,
+      (progress) {
+        controller.updateProgress(
+          task: task.copyWith(
+            progress: progress,
+          ),
+        );
+      },
+    );
+
+    if (!result.success) {
+      throw ThumbnailUploadException(
+        message: 'Failed to upload thumbnail',
+        error: result.error,
+      );
+    }
+
+    controller.updateProgress(
+      task: task.copyWith(
         status: UploadStatus.complete,
       ),
     );

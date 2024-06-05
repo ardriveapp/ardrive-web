@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-import 'package:ardrive/dev_tools/pick_image_thumbnail_poc.dart';
+import 'package:ardrive/dev_tools/drives_health_check.dart';
+import 'package:ardrive/dev_tools/thumbnail_generator_poc.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/config/config.dart';
@@ -276,6 +277,20 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.button,
     );
 
+    final ArDriveDevToolOption runHealthCheck = ArDriveDevToolOption(
+      name: 'Run Health Check',
+      value: '',
+      onChange: (value) {
+        final BuildContext context = ArDriveDevTools().context!;
+
+        showArDriveDialog(
+          context,
+          content: const DrivesHealthCheckModal(),
+        );
+      },
+      type: ArDriveDevToolOptionType.button,
+    );
+
     final ArDriveDevToolOption resetOptions = ArDriveDevToolOption(
       name: 'Reset options',
       value: '',
@@ -333,19 +348,53 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
 
     final ArDriveDevToolOption pickImageAndGenerateThumbnailItem =
         ArDriveDevToolOption(
-      name: 'setDefaultDataOnPaymentForm',
+      name: 'Generate Thumbnails',
       value: '',
       onChange: (value) {},
-      onInteraction: () {
+      onInteraction: () async {
         try {
-          pickImageAndGenerateThumbnail(
-            onThumbnailGenerated: (thumbnail) {
-              showArDriveDialog(context,
-                  content: ArDriveStandardModal(
-                    content: Image.memory(thumbnail),
-                  ));
-            },
-          );
+          final BuildContext context = ArDriveDevTools().context!;
+
+          showArDriveDialog(context,
+              content:
+                  const ArDriveStandardModal(content: ThumbnailGeneratorPOC()));
+
+          // pickImageAndGenerateThumbnail(
+          //   onThumbnailGenerated: (thumbnail) async {
+          //     final uploader = ArDriveUploader(
+          //         turboUploadUri: Uri.parse(context
+          //             .read<ConfigService>()
+          //             .config
+          //             .defaultTurboUploadUrl!));
+
+          //     final file = await IOFileAdapter().fromData(thumbnail,
+          //         name: 'thumbnail', lastModifiedDate: DateTime.now());
+          //     final thumbnailArgs = ThumbnailMetadataArgs(
+          //       contentType: 'image/png',
+          //       height: 100,
+          //       width: 100,
+          //       thumbnailSize: thumbnail.length,
+          //       relatesTo: 'a92e1181-f2b5-41b7-acc9-fac06128e647',
+          //     );
+
+          //     final controller = await uploader.uploadThumbnail(
+          //       args: thumbnailArgs,
+          //       file: file,
+          //       type: UploadType.turbo,
+          //       // ignore: use_build_context_synchronously
+          //       wallet: context.read<ArDriveAuth>().currentUser.wallet,
+          //     );
+
+          //     controller.onDone((task) {
+          //       logger.i('Thumbnail uploaded');
+          //     });
+
+          //     showArDriveDialog(context,
+          //         content: ArDriveStandardModal(
+          //           content: Image.memory(thumbnail),
+          //         ));
+          //   },
+          // );
         } catch (e) {
           logger.e('Error setting default data on payment form', e);
         }
@@ -397,9 +446,9 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
     );
 
     final List<ArDriveDevToolOption> options = [
+      runHealthCheck,
       useTurboOption,
       useTurboPaymentOption,
-      defaultTurboPaymentUrlOption,
       enableSyncFromSnapshotOption,
       pickImageAndGenerateThumbnailItem,
       stripePublishableKey,

@@ -125,6 +125,10 @@ class _ArDriveUploader implements ArDriveUploader {
       streamedUploadFactory: _streamedUploadFactory,
     );
 
+    final thumbnailStrategy = UploadThumbnailStrategy(
+        streamedUploadFactory: _streamedUploadFactory,
+        dataBundler: dataBundler);
+
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
       UploadDispatcher(
@@ -132,6 +136,7 @@ class _ArDriveUploader implements ArDriveUploader {
         uploadStrategy: _uploadFileStrategyFactory.createUploadStrategy(
           type: type,
         ),
+        uploadThumbnailStrategy: thumbnailStrategy,
         uploadFolderStrategy: uploadFolderStrategy,
       ),
       numOfWorkers: 1,
@@ -183,6 +188,9 @@ class _ArDriveUploader implements ArDriveUploader {
       dataBundler: dataBundler,
       uploadStrategy: uploadFileStrategy,
       uploadFolderStrategy: uploadFolderStrategy,
+      uploadThumbnailStrategy: UploadThumbnailStrategy(
+          streamedUploadFactory: _streamedUploadFactory,
+          dataBundler: dataBundler),
     );
 
     final uploadController = UploadController(
@@ -245,6 +253,10 @@ class _ArDriveUploader implements ArDriveUploader {
       dataBundler: dataBundler,
       uploadStrategy: uploadStrategy,
       uploadFolderStrategy: uploadFolderStrategy,
+      uploadThumbnailStrategy: UploadThumbnailStrategy(
+        dataBundler: dataBundler,
+        streamedUploadFactory: _streamedUploadFactory,
+      ),
     );
 
     final filesWitMetadatas = <(ARFSFileUploadMetadata, IOFile)>[];
@@ -309,11 +321,12 @@ class _ArDriveUploader implements ArDriveUploader {
   }
 
   @override
-  Future<UploadController> uploadThumbnail(
-      {required IOFile file,
-      required Wallet wallet,
-      required UploadType type,
-      required ThumbnailMetadataArgs args}) async {
+  Future<UploadController> uploadThumbnail({
+    required IOFile file,
+    required Wallet wallet,
+    required UploadType type,
+    required ThumbnailMetadataArgs args,
+  }) async {
     final thumbnailMetadataGenerator = ThumbnailMetadataGenerator();
 
     final thumbnailMetadata = await thumbnailMetadataGenerator.generateMetadata(
@@ -336,6 +349,10 @@ class _ArDriveUploader implements ArDriveUploader {
         uploadFolderStrategy: UploadFolderStructureAsBundleStrategy(
           dataBundler: dataBundler,
           streamedUploadFactory: _streamedUploadFactory,
+        ),
+        uploadThumbnailStrategy: UploadThumbnailStrategy(
+          streamedUploadFactory: _streamedUploadFactory,
+          dataBundler: _dataBundlerFactory.createDataBundler(type),
         ),
       ),
       numOfWorkers: 1,

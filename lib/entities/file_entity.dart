@@ -38,6 +38,7 @@ class FileEntity extends EntityWithCustomMetadata {
   String? pinnedDataOwnerAddress;
   @JsonKey(includeIfNull: false)
   bool? isHidden;
+  String? thumbnailTxId;
 
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -71,6 +72,7 @@ class FileEntity extends EntityWithCustomMetadata {
     this.dataContentType,
     this.pinnedDataOwnerAddress,
     this.isHidden,
+    this.thumbnailTxId,
   }) : super(ArDriveCrypto());
 
   FileEntity.withUserProvidedDetails({
@@ -112,6 +114,7 @@ class FileEntity extends EntityWithCustomMetadata {
         ..ownerAddress = transaction.owner.address
         ..bundledIn = transaction.bundledIn?.id
         ..createdAt = commitTime;
+
 
       final tags = transaction.tags
           .map(

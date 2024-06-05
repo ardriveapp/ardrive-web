@@ -53,7 +53,7 @@ abstract class DataBundler<T> {
     SecretKey? driveKey,
   });
 
-  Future<DataItemFile> createDataItemForThumbnail({
+  Future<DataItemResult> createDataItemForThumbnail({
     required IOFile file,
     required ThumbnailUploadMetadata metadata,
     required Wallet wallet,
@@ -333,12 +333,12 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
   }
 
   @override
-  Future<DataItemFile> createDataItemForThumbnail(
-      {required IOFile file,
-      required ThumbnailUploadMetadata metadata,
-      required Wallet wallet,
-      SecretKey? driveKey}) {
-    // TODO: implement createDataItemForThumbnail
+  Future<DataItemResult> createDataItemForThumbnail({
+    required IOFile file,
+    required ThumbnailUploadMetadata metadata,
+    required Wallet wallet,
+    SecretKey? driveKey,
+  }) async {
     throw UnimplementedError();
   }
 }
@@ -585,7 +585,7 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
   }
 
   @override
-  Future<DataItemFile> createDataItemForThumbnail({
+  Future<DataItemResult> createDataItemForThumbnail({
     required IOFile file,
     required ThumbnailUploadMetadata metadata,
     required Wallet wallet,
@@ -594,22 +594,25 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
     final dataGenerator = await _dataGenerator(
       dataStream: file.openReadStream,
       fileLength: metadata.thumbnailSize,
-
-      /// pass the file original file id
-      metadataId: '',
+      metadataId: metadata.relatesTo,
       wallet: wallet,
       encryptionKey: driveKey,
     );
 
-    final thumbnailDataItem = DataItemFile(
-      dataSize: metadata.thumbnailSize,
-      streamGenerator: dataGenerator.$1,
+    final taskEither = await createDataItemTaskEither(
+      wallet: wallet,
+      dataStream: dataGenerator.$1,
+      dataStreamSize: metadata.thumbnailSize,
       tags: metadata.entityMetadataTags
           .map((e) => createTag(e.name, e.value))
           .toList(),
-    );
+    ).run();
 
-    return thumbnailDataItem;
+    return taskEither.match((l) {
+      throw l;
+    }, (r) {
+      return r;
+    });
   }
 }
 
