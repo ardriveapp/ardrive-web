@@ -8,6 +8,7 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
+import 'package:retry/retry.dart';
 
 class DrivesHealthCheckModal extends StatefulWidget {
   const DrivesHealthCheckModal({super.key});
@@ -312,7 +313,7 @@ class _DrivesHealthCheckModalState extends State<DrivesHealthCheckModal> {
       final url =
           '${arweave.client.api.gatewayUrl.origin}/raw/${file.dataTxId}';
 
-      final response = await http.head(Uri.parse(url));
+      final response = await retry(() async => await http.head(Uri.parse(url)));
 
       logger.d(
           'Checking health of ${file.name}. Response: ${response.statusCode}');
@@ -345,8 +346,11 @@ class _DrivesHealthCheckModalState extends State<DrivesHealthCheckModal> {
 }
 
 class DriveHealthCheckTile extends StatefulWidget {
-  const DriveHealthCheckTile(
-      {super.key, required this.status, this.isSelected = false});
+  const DriveHealthCheckTile({
+    super.key,
+    required this.status,
+    this.isSelected = false,
+  });
 
   final DriveHealthCheckStatus status;
   final bool isSelected;
