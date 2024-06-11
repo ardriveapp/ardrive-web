@@ -313,14 +313,15 @@ class _DrivesHealthCheckModalState extends State<DrivesHealthCheckModal> {
       final url =
           '${arweave.client.api.gatewayUrl.origin}/raw/${file.dataTxId}';
 
-      final response = await retry(() async => await http.head(Uri.parse(url)));
+      final response = await retry(() async => await http.head(Uri.parse(url)),
+          maxDelay: const Duration(seconds: 300));
 
       logger.d(
           'Checking health of ${file.name}. Response: ${response.statusCode}');
 
       if (response.statusCode > 400) {
         driveStatus.files.add(FileHealthCheckStatus(
-          file: file,
+        file: file,
           isSuccess: false,
           isFailed: true,
         ));
@@ -336,6 +337,7 @@ class _DrivesHealthCheckModalState extends State<DrivesHealthCheckModal> {
 
       setState(() {});
     } catch (e) {
+      logger.d('Error checking health of ${file.name}. Error: $e');
       driveStatus.files.add(FileHealthCheckStatus(
         file: file,
         isSuccess: false,
