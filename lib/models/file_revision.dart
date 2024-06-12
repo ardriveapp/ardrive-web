@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:ardrive/entities/entities.dart';
 import 'package:drift/drift.dart';
 
@@ -25,7 +27,7 @@ extension FileRevisionsCompanionExtensions on FileRevisionsCompanion {
         isHidden: isHidden,
         // TODO: path is not used in the app, so it's not necessary to set it
         path: '',
-        thumbnailTxId: Value(thumbnailTxId.value),
+        thumbnail: Value(thumbnail.value),
       );
 
   /// Returns a list of [NetworkTransactionsCompanion] representing the metadata and data transactions
@@ -63,7 +65,7 @@ extension FileEntityExtensions on FileEntity {
         customJsonMetadata: Value(customJsonMetadataAsString),
         pinnedDataOwnerAddress: Value(pinnedDataOwnerAddress),
         isHidden: Value(isHidden ?? false),
-        thumbnailTxId: Value(thumbnailTxId),
+        thumbnail: Value(jsonEncode(thumbnail?.toJson())),
       );
 
   FileRevision toRevision({
@@ -87,7 +89,7 @@ extension FileEntityExtensions on FileEntity {
         customJsonMetadata: customJsonMetadataAsString,
         pinnedDataOwnerAddress: pinnedDataOwnerAddress,
         isHidden: isHidden ?? false,
-        thumbnailTxId: thumbnailTxId,
+        thumbnail: jsonEncode(thumbnail?.toJson()),
       );
 
   /// Returns the action performed on the file that lead to the new revision.
@@ -107,7 +109,8 @@ extension FileEntityExtensions on FileEntity {
       return RevisionAction.hide;
     } else if (isHidden == false && previousRevision.isHidden.value == true) {
       return RevisionAction.unhide;
-    } else if (thumbnailTxId != previousRevision.thumbnailTxId.value) {
+    } else if (jsonEncode(thumbnail?.toJson()) !=
+        previousRevision.thumbnail.value) {
       return RevisionAction.rename;
     }
 

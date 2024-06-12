@@ -158,36 +158,41 @@ Widget _buildDataListContent(
         index: 0,
         canHide: false,
       ),
-      if (constraints.maxWidth > 500)
-        TableColumn(
-          appLocalizationsOf(context).size,
-          3,
-          index: 1,
-          canHide: false,
-        ),
-      if (constraints.maxWidth > 640)
-        TableColumn(
-          appLocalizationsOf(context).lastUpdated,
-          3,
-          index: 2,
-          isVisible: columnVisibility[2] ?? true,
-        ),
-      if (constraints.maxWidth > 700)
-        TableColumn(
-          appLocalizationsOf(context).dateCreated,
-          3,
-          index: 3,
-          isVisible: columnVisibility[3] ?? true,
-        ),
-      if (constraints.maxWidth > 820)
-        TableColumn(
-          // TODO: Localize
-          // appLocalizationsOf(context).licenseType,
-          'License',
-          2,
-          index: 4,
-          isVisible: columnVisibility[4] ?? true,
-        ),
+      // if (constraints.maxWidth > 500)
+      TableColumn(
+        appLocalizationsOf(context).size,
+        3,
+        index: 1,
+        canHide: false,
+        isVisible:
+            (constraints.maxWidth > 500 && (columnVisibility[1] ?? true)),
+      ),
+      // if (constraints.maxWidth > 640)
+      TableColumn(
+        appLocalizationsOf(context).lastUpdated,
+        3,
+        index: 2,
+        isVisible:
+            (constraints.maxWidth > 640 && (columnVisibility[2] ?? true)),
+      ),
+      // if (constraints.maxWidth > 700)
+      TableColumn(
+        appLocalizationsOf(context).dateCreated,
+        3,
+        index: 3,
+        isVisible:
+            (constraints.maxWidth > 700 && (columnVisibility[3] ?? true)),
+      ),
+      // if (constraints.maxWidth > 820)
+      TableColumn(
+        // TODO: Localize
+        // appLocalizationsOf(context).licenseType,
+        'License',
+        2,
+        index: 4,
+        isVisible:
+            (constraints.maxWidth > 820 && (columnVisibility[4] ?? true)),
+      ),
     ];
 
     final driveDetailCubitState = context.read<DriveDetailCubit>().state;
@@ -408,7 +413,9 @@ class DriveDataTableItemMapper {
       index: index,
       pinnedDataOwnerAddress: file.pinnedDataOwnerAddress,
       isHidden: file.isHidden,
-      thumbnailUrl: file.thumbnailTxId,
+      thumbnailUrl: file.thumbnail != null
+          ? Thumbnail.fromJson(jsonDecode(file.thumbnail!)).variants.first.txId
+          : null,
     );
   }
 
@@ -435,7 +442,12 @@ class DriveDataTableItemMapper {
       index: 0,
       pinnedDataOwnerAddress: fileEntry.pinnedDataOwnerAddress,
       isHidden: fileEntry.isHidden,
-      thumbnailUrl: fileEntry.thumbnailTxId,
+      // thumbnailUrl: fileEntry.thumbnail != null
+      //     ? Thumbnail.fromJson(jsonDecode(fileEntry.thumbnail!))
+      //         .variants
+      //         .first
+      //         .txId
+      //     : null,
     );
   }
 
@@ -500,7 +512,12 @@ class DriveDataTableItemMapper {
       index: 0,
       pinnedDataOwnerAddress: revision.pinnedDataOwnerAddress,
       isHidden: revision.isHidden,
-      thumbnailUrl: revision.thumbnailTxId,
+      // thumbnailUrl: revision.thumbnail != null
+      //     ? Thumbnail.fromJson(jsonDecode(revision.thumbnail!))
+      //         .variants
+      //         .first
+      //         .txId
+      // : null,
     );
   }
 }

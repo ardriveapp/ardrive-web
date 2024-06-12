@@ -37,6 +37,8 @@ class FileUploadTask extends UploadTask {
   @override
   UploadType type;
 
+  final bool uploadThumbnail;
+
   FileUploadTask({
     this.uploadItem,
     this.isProgressAvailable = true,
@@ -51,6 +53,7 @@ class FileUploadTask extends UploadTask {
     required this.type,
     this.metadataUploaded = false,
     this.error,
+    required this.uploadThumbnail,
   }) : id = id ?? const Uuid().v4();
 
   @override
@@ -71,6 +74,7 @@ class FileUploadTask extends UploadTask {
     bool? metadataUploaded,
     Object? error,
     IOFile? file,
+    bool? uploadThumbnail,
   }) {
     return FileUploadTask(
       cancelToken: cancelToken ?? this.cancelToken,
@@ -86,6 +90,7 @@ class FileUploadTask extends UploadTask {
       type: type ?? this.type,
       metadataUploaded: metadataUploaded ?? this.metadataUploaded,
       error: error ?? this.error,
+      uploadThumbnail: uploadThumbnail ?? this.uploadThumbnail,
     );
   }
 }

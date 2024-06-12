@@ -5,14 +5,50 @@ abstract class UploadMetadata {}
 
 class ThumbnailUploadMetadata extends UploadMetadata {
   ThumbnailUploadMetadata({
-    required this.entityMetadataTags,
-    required this.thumbnailSize,
+    required this.size,
     required this.relatesTo,
+    required this.height,
+    required this.width,
+    required this.aspectRatio,
+    required this.name,
+    required this.contentType,
   });
 
-  final List<Tag> entityMetadataTags;
+  List<Tag> thumbnailTags() {
+    final tags = <Tag>[
+      Tag('Relates-To', relatesTo),
+      Tag(EntityTag.contentType, contentType),
+      Tag('Width', width.toString()),
+      Tag('Height', height.toString()),
+      Tag('Version', '1.0'),
+      // Implement cipher tags
+    ];
+
+    return tags;
+  }
+
   final String relatesTo;
-  final int thumbnailSize;
+  final int size;
+  final int height;
+  final int width;
+  final int aspectRatio;
+  final String name;
+  final String contentType;
+  String? _txId;
+
+  set setTxId(String txId) => _txId = txId;
+  get txId => _txId;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'txId': _txId,
+      'size': size,
+      'height': height,
+      'width': width,
+      'aspectRatio': aspectRatio,
+    };
+  }
 }
 
 class ARFSDriveUploadMetadata extends ARFSUploadMetadata {
@@ -151,19 +187,19 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata with ARFSUploadData {
   // Getter for licenseTxId
   String? get licenseTxId => _licenseTxId;
 
-  // Thumbnail TxId
-  String? _thumbnailTxId;
+  /// Additional Thumbnail tags for the file.
+  List<ThumbnailUploadMetadata>? _thumbnailInfo;
 
   // Getter for thumbnailTxId
-  String? get thumbnailTxId => _thumbnailTxId;
+  List<ThumbnailUploadMetadata>? get thumbnailInfo => _thumbnailInfo;
 
   // Public method to set licenseTxId with validation or additional logic
   void updateLicenseTxId(String licenseTxId) {
     _licenseTxId = licenseTxId;
   }
 
-  void updateThumbnailTxId(String thumbnailTxId) {
-    _thumbnailTxId = thumbnailTxId;
+  void updateThumbnailInfo(List<ThumbnailUploadMetadata> thumbnailInfo) {
+    _thumbnailInfo = thumbnailInfo;
   }
 
   @override
@@ -178,7 +214,12 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata with ARFSUploadData {
       'lastModifiedDate': lastModifiedDate.millisecondsSinceEpoch,
       'dataContentType': dataContentType,
       'dataTxId': dataTxId,
-      if (_thumbnailTxId != null) 'thumbnailTxId': _thumbnailTxId,
+      if (_thumbnailInfo != null)
+        'thumbnail': {
+          'variants': [
+            for (var variant in _thumbnailInfo!) variant.toJson(),
+          ],
+        },
       if (licenseTxId != null) 'licenseTxId': licenseTxId,
     };
   }

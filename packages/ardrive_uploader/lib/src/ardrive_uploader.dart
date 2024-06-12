@@ -19,6 +19,7 @@ abstract class ArDriveUploader {
     required Wallet wallet,
     SecretKey? driveKey,
     required UploadType type,
+    bool uploadThumbnail = true,
   }) {
     throw UnimplementedError();
   }
@@ -28,6 +29,7 @@ abstract class ArDriveUploader {
     required Wallet wallet,
     SecretKey? driveKey,
     required UploadType type,
+    bool uploadThumbnail = true,
   }) {
     throw UnimplementedError();
   }
@@ -39,6 +41,7 @@ abstract class ArDriveUploader {
     Function(ARFSUploadMetadata)? skipMetadataUpload,
     Function(ARFSUploadMetadata)? onCreateMetadata,
     required UploadType type,
+    bool uploadThumbnail = true,
   }) {
     throw UnimplementedError();
   }
@@ -47,7 +50,7 @@ abstract class ArDriveUploader {
     required IOFile file,
     required Wallet wallet,
     required UploadType type,
-    required ThumbnailMetadataArgs args,
+    required ThumbnailUploadMetadata thumbnailMetadata,
   }) {
     throw UnimplementedError();
   }
@@ -116,6 +119,7 @@ class _ArDriveUploader implements ArDriveUploader {
     required Wallet wallet,
     SecretKey? driveKey,
     required UploadType type,
+    bool uploadThumbnail = true,
   }) async {
     final dataBundler = _dataBundlerFactory.createDataBundler(
       type,
@@ -155,6 +159,8 @@ class _ArDriveUploader implements ArDriveUploader {
       content: [metadata],
       encryptionKey: driveKey,
       type: type,
+      uploadThumbnail:
+          FileTypeHelper.isImage(file.contentType) && uploadThumbnail,
     );
 
     uploadController.addTask(uploadTask);
@@ -169,6 +175,7 @@ class _ArDriveUploader implements ArDriveUploader {
     required List<(ARFSUploadMetadataArgs, IOFile)> files,
     required Wallet wallet,
     SecretKey? driveKey,
+    bool uploadThumbnail = true,
     required UploadType type,
   }) async {
     logger.i('Creating a new upload controller using the upload type $type');
@@ -197,8 +204,8 @@ class _ArDriveUploader implements ArDriveUploader {
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
       uploadSender,
-      numOfWorkers: driveKey != null ? 3 : 5,
-      maxTasksPerWorker: driveKey != null ? 1 : 3,
+      numOfWorkers: driveKey != null ? 2 : 5,
+      maxTasksPerWorker: driveKey != null ? 3 : 3,
     );
 
     for (var f in files) {
@@ -216,6 +223,8 @@ class _ArDriveUploader implements ArDriveUploader {
         content: [metadata],
         encryptionKey: driveKey,
         type: type,
+        uploadThumbnail:
+            FileTypeHelper.isImage(f.$2.contentType) && uploadThumbnail,
       );
 
       uploadController.addTask(fileTask);
@@ -237,6 +246,7 @@ class _ArDriveUploader implements ArDriveUploader {
     Function(ARFSUploadMetadata p1)? skipMetadataUpload,
     Function(ARFSUploadMetadata p1)? onCreateMetadata,
     UploadType type = UploadType.turbo,
+    bool uploadThumbnail = true,
   }) async {
     final dataBundler = _dataBundlerFactory.createDataBundler(
       type,
@@ -304,6 +314,8 @@ class _ArDriveUploader implements ArDriveUploader {
         encryptionKey: driveKey,
         content: [f.$1],
         type: type,
+        uploadThumbnail:
+            FileTypeHelper.isImage(f.$2.contentType) && uploadThumbnail,
       );
 
       uploadController.addTask(fileTask);
@@ -336,15 +348,8 @@ class _ArDriveUploader implements ArDriveUploader {
     required IOFile file,
     required Wallet wallet,
     required UploadType type,
-    required ThumbnailMetadataArgs args,
+    required ThumbnailUploadMetadata thumbnailMetadata,
   }) async {
-    final thumbnailMetadataGenerator = ThumbnailMetadataGenerator();
-
-    final thumbnailMetadata = await thumbnailMetadataGenerator.generateMetadata(
-      file,
-      arguments: args,
-    );
-
     final dataBundler = _dataBundlerFactory.createDataBundler(
       type,
     );

@@ -26,6 +26,7 @@ dependencies:
   js: ^0.6.7
   equatable: ^2.0.5
   image: ^4.2.0
+  flutter_image_compress: ^2.3.0
 
 dev_dependencies:
   flutter_test:

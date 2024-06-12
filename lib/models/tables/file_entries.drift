@@ -16,7 +16,7 @@ CREATE TABLE file_entries (
 
     bundledIn TEXT,
 
-    thumbnailTxId TEXT,
+    thumbnail TEXT,
 
     pinnedDataOwnerAddress TEXT,
 

@@ -386,13 +386,11 @@ class UploadFolderStructureAsBundleStrategy
 
 class _UploadThumbnailStrategy implements UploadThumbnailStrategy {
   final StreamedUploadFactory _streamedUploadFactory;
-  final DataBundler _dataBundler;
 
   _UploadThumbnailStrategy({
     required StreamedUploadFactory streamedUploadFactory,
     required DataBundler dataBundler,
-  })  : _streamedUploadFactory = streamedUploadFactory,
-        _dataBundler = dataBundler;
+  }) : _streamedUploadFactory = streamedUploadFactory;
 
   @override
   Future<void> upload({
@@ -401,11 +399,11 @@ class _UploadThumbnailStrategy implements UploadThumbnailStrategy {
     required UploadController controller,
     required bool Function() verifyCancel,
   }) async {
-    final dataItem = await _dataBundler.createDataItemForThumbnail(
+    final dataItem = await createDataItemForThumbnail(
       wallet: wallet,
       file: task.file,
       metadata: task.metadata,
-      driveKey: task.encryptionKey,
+      encryptionKey: task.encryptionKey,
     );
 
     task = task.copyWith(

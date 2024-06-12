@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:ardrive/app_shell.dart';
@@ -27,6 +28,7 @@ import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/dev_tools/shortcut_handler.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/entities/entities.dart' as entities;
+import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/license.dart';

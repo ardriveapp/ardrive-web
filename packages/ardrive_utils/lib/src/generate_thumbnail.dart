@@ -1,11 +1,49 @@
 import 'dart:typed_data';
 
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image/image.dart' as img;
 
-Uint8List generateThumbnail(Uint8List data) {
-  final image = img.decodeImage(data);
-  final thumbnail = img.copyResize(image!,
-      width:
-          100); // Resize the image to a width of 100 pixels, maintaining aspect ratio
-  return Uint8List.fromList(img.encodePng(thumbnail));
+enum ThumbnailSize {
+  small,
+  medium,
+  large,
+}
+
+Future<ThumbnailGenerationResult> generateThumbnail(
+  Uint8List data,
+  ThumbnailSize size,
+) async {
+  var result = await FlutterImageCompress.compressWithList(
+    data,
+    minHeight: 75,
+    minWidth: 75,
+  );
+  final thumbnail = img.decodeImage(result)!;
+
+  return ThumbnailGenerationResult(
+    thumbnail: img.encodeJpg(thumbnail),
+    size: thumbnail.length,
+    height: thumbnail.height,
+    width: thumbnail.width,
+    aspectRatio: thumbnail.width ~/ thumbnail.height,
+    name: size.name,
+  );
+}
+
+class ThumbnailGenerationResult {
+  final Uint8List thumbnail;
+  final int size;
+  final int height;
+  final int width;
+  final int aspectRatio;
+  final String name;
+
+  ThumbnailGenerationResult({
+    required this.thumbnail,
+    required this.size,
+    required this.height,
+    required this.width,
+    required this.aspectRatio,
+    required this.name,
+  });
 }

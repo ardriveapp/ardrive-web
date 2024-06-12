@@ -273,7 +273,7 @@ void main() {
             'licenseTxId': licenseTxId,
           });
         });
-
+        // TODO: update test to include the correct thumbnail object
         test(
             'toJson returns correct map when dataTxId and licenseTxId and thumbnailTxId are set',
             () {
@@ -281,7 +281,7 @@ void main() {
           const licenseTxId = 'licenseTxId';
           metadata.updateDataTxId(dataTxId);
           metadata.updateLicenseTxId(licenseTxId);
-          metadata.updateThumbnailTxId('thumbnailTxId');
+          // metadata.updateThumbnailTxId('thumbnailTxId');
 
           final json = metadata.toJson();
           expect(json, {
@@ -291,7 +291,6 @@ void main() {
             'dataContentType': dataContentType,
             'dataTxId': dataTxId,
             'licenseTxId': licenseTxId,
-            'thumbnailTxId': 'thumbnailTxId',
           });
         });
       });
