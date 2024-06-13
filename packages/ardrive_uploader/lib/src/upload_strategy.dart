@@ -413,7 +413,9 @@ class _UploadThumbnailStrategy implements UploadThumbnailStrategy {
       ),
     );
 
-    final streamedUpload = _streamedUploadFactory.fromUploadType(task.type);
+    /// It will always use the Turbo for now
+    final streamedUpload =
+        _streamedUploadFactory.fromUploadType(UploadType.turbo);
 
     final result = await streamedUpload.send(
       task.uploadItem!,

@@ -1,5 +1,4 @@
-import 'dart:typed_data';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image/image.dart' as img;
 
@@ -15,9 +14,11 @@ Future<ThumbnailGenerationResult> generateThumbnail(
 ) async {
   var result = await FlutterImageCompress.compressWithList(
     data,
-    minHeight: 75,
-    minWidth: 75,
+    minHeight: 50,
+    minWidth: 50,
+    quality: 70,
   );
+
   final thumbnail = img.decodeImage(result)!;
 
   return ThumbnailGenerationResult(
