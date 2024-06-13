@@ -45,10 +45,10 @@ class ThumbnailRepository {
   }
 
   Future<Uint8List> _getThumbnailData({
-    FileDataTableItem? fileDataTableItem,
+  FileDataTableItem? fileDataTableItem,
   }) async {
     final dataTx = await _arweaveService.getTransactionDetails(
-      fileDataTableItem!.dataTxId,
+      fileDataTableItem!.thumbnailUrl!,
     );
 
     if (dataTx == null) {

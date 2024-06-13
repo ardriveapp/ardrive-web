@@ -22,6 +22,8 @@ class ThumbnailUploadMetadata extends UploadMetadata {
       Tag('Height', height.toString()),
       Tag('Version', '1.0'),
       // Implement cipher tags
+      if (_cipherTag != null) Tag(EntityTag.cipher, _cipherTag!),
+      if (_cipherIvTag != null) Tag(EntityTag.cipherIv, _cipherIvTag!),
     ];
 
     return tags;
@@ -35,8 +37,19 @@ class ThumbnailUploadMetadata extends UploadMetadata {
   final String name;
   final String contentType;
   String? _txId;
+  String? _cipherTag;
+  String? _cipherIvTag;
 
   set setTxId(String txId) => _txId = txId;
+
+  setCipherTags({
+    required String cipherTag,
+    required String cipherIvTag,
+  }) {
+    _cipherTag = cipherTag;
+    _cipherIvTag = cipherIvTag;
+  }
+
   get txId => _txId;
 
   Map<String, dynamic> toJson() {

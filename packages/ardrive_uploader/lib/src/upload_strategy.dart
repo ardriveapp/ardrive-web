@@ -399,20 +399,6 @@ class _UploadThumbnailStrategy implements UploadThumbnailStrategy {
     required UploadController controller,
     required bool Function() verifyCancel,
   }) async {
-    final dataItem = await createDataItemForThumbnail(
-      wallet: wallet,
-      file: task.file,
-      metadata: task.metadata,
-      encryptionKey: task.encryptionKey,
-    );
-
-    task = task.copyWith(
-      uploadItem: DataItemUploadItem(
-        size: dataItem.dataItemSize,
-        data: dataItem,
-      ),
-    );
-
     /// It will always use the Turbo for now
     final streamedUpload =
         _streamedUploadFactory.fromUploadType(UploadType.turbo);

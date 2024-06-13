@@ -14,12 +14,14 @@ Future<ThumbnailGenerationResult> generateThumbnail(
 ) async {
   var result = await FlutterImageCompress.compressWithList(
     data,
-    minHeight: 50,
-    minWidth: 50,
-    quality: 70,
+    minHeight: 100,
+    minWidth: 100,
+    quality: 95,
   );
 
   final thumbnail = img.decodeImage(result)!;
+
+  debugPrint('Thumbnail size: ${thumbnail.length}');
 
   return ThumbnailGenerationResult(
     thumbnail: img.encodeJpg(thumbnail),

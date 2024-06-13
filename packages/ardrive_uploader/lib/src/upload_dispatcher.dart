@@ -75,6 +75,9 @@ class UploadDispatcher {
               file: uploadPreparation.thumbnailFile!,
               metadata: thumbnailMetadata!,
               type: task.type,
+              uploadItem: DataItemUploadItem(
+                  size: uploadPreparation.thumbnailDataItem!.dataSize,
+                  data: uploadPreparation.thumbnailDataItem!),
               id: Uuid().v4(),
 
               /// same encryption key as the file

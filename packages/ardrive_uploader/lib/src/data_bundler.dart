@@ -672,7 +672,7 @@ Future<UploadFilePreparation> prepareDataItems({
     driveKey: driveKey,
   );
 
-  DataItemFile? thumbnailDataItem;
+  DataItemResult? thumbnailDataItem;
   IOFile? thumbnailFile;
 
   /// Thumbnail generation
@@ -698,23 +698,15 @@ Future<UploadFilePreparation> prepareDataItems({
       contentType: file.contentType,
     );
 
-    final thumbnailDataItemResult = await createDataItemForThumbnail(
+    thumbnailDataItem = await createDataItemForThumbnail(
       file: thumbnailFile,
       metadata: thumbnailMetadata,
       wallet: wallet,
-      encryptionKey: driveKey,
+      encryptionKey: key,
+      fileId: metadata.id,
     );
 
-    thumbnailMetadata.setTxId = thumbnailDataItemResult.id;
-
-    thumbnailDataItem = DataItemFile(
-      dataSize: thumbnailDataItemResult.dataSize,
-      streamGenerator: thumbnailDataItemResult.streamGenerator,
-      tags: thumbnailMetadata
-          .thumbnailTags()
-          .map((e) => createTag(e.name, e.value))
-          .toList(),
-    );
+    thumbnailMetadata.setTxId = thumbnailDataItem.id;
 
     /// needs to be `variants`
     metadata.updateThumbnailInfo([thumbnailMetadata]);
@@ -747,7 +739,7 @@ Future<UploadFilePreparation> prepareDataItems({
 class UploadFilePreparation {
   final List<DataItemFile> dataItemFiles;
   final IOFile? thumbnailFile;
-  final DataItemFile? thumbnailDataItem;
+  final DataItemResult? thumbnailDataItem;
 
   UploadFilePreparation({
     required this.dataItemFiles,
@@ -806,14 +798,23 @@ Future<DataItemResult> createDataItemForThumbnail({
   required ThumbnailUploadMetadata metadata,
   required Wallet wallet,
   SecretKey? encryptionKey,
+  required String fileId,
 }) async {
   final dataGenerator = await _dataGenerator(
     dataStream: file.openReadStream,
     fileLength: metadata.size,
-    metadataId: metadata.relatesTo,
+    metadataId: fileId,
     wallet: wallet,
     encryptionKey: encryptionKey,
   );
+
+  if (encryptionKey != null) {
+    final cipher = dataGenerator.$3;
+    final cipherIv = dataGenerator.$2;
+
+    metadata.setCipherTags(
+        cipherTag: cipher!, cipherIvTag: encodeBytesToBase64(cipherIv!));
+  }
 
   final taskEither = await createDataItemTaskEither(
     wallet: wallet,
