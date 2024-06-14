@@ -97,7 +97,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
   final NetworkTransaction? metadataTx;
   final NetworkTransaction? dataTx;
   final String? pinnedDataOwnerAddress;
-  final String? thumbnailUrl;
+  final Thumbnail? thumbnail;
 
   FileDataTableItem(
       {required super.driveId,
@@ -117,7 +117,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
       required this.metadataTx,
       required this.dataTx,
       required this.pinnedDataOwnerAddress,
-      this.thumbnailUrl,
+      this.thumbnail,
       super.licenseType,
       this.licenseTxId,
       this.bundledIn})
@@ -413,8 +413,8 @@ class DriveDataTableItemMapper {
       index: index,
       pinnedDataOwnerAddress: file.pinnedDataOwnerAddress,
       isHidden: file.isHidden,
-      thumbnailUrl: file.thumbnail != null && file.thumbnail != 'null'
-          ? Thumbnail.fromJson(jsonDecode(file.thumbnail!)).variants.first.txId
+      thumbnail: file.thumbnail != null && file.thumbnail != 'null'
+          ? Thumbnail.fromJson(jsonDecode(file.thumbnail!))
           : null,
     );
   }

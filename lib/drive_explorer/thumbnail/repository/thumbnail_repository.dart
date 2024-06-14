@@ -39,16 +39,16 @@ class ThumbnailRepository {
     }
 
     final urlString =
-        '${_arweaveService.client.api.gatewayUrl.origin}/raw/${fileDataTableItem.thumbnailUrl}';
+        '${_arweaveService.client.api.gatewayUrl.origin}/raw/${fileDataTableItem.thumbnail?.variants.first.txId}';
 
     return Thumbnail(data: null, url: urlString);
   }
 
   Future<Uint8List> _getThumbnailData({
-  FileDataTableItem? fileDataTableItem,
+    required FileDataTableItem fileDataTableItem,
   }) async {
     final dataTx = await _arweaveService.getTransactionDetails(
-      fileDataTableItem!.thumbnailUrl!,
+      fileDataTableItem.thumbnail!.variants.first.txId,
     );
 
     if (dataTx == null) {
