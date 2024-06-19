@@ -173,8 +173,6 @@ class ThumbnailRepository {
           ]
         };
 
-        if (drive.isPrivate) {}
-
         fileEntry = fileEntry.copyWith(
           lastUpdated: DateTime.now(),
           thumbnail: drift.Value(jsonEncode(thumbnailData)),

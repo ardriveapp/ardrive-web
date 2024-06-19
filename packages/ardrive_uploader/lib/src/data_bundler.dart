@@ -686,17 +686,17 @@ Future<UploadFilePreparation> prepareDataItems({
       thumbnailGenerationResult.thumbnail,
       name: 'thumbnail',
       lastModifiedDate: DateTime.now(),
-      // contentType: 'image/jpeg',
+      contentType: 'image/jpeg',
     );
 
     final thumbnailMetadata = ThumbnailUploadMetadata(
       aspectRatio: thumbnailGenerationResult.aspectRatio,
       height: thumbnailGenerationResult.height,
       width: thumbnailGenerationResult.width,
-      size: thumbnailGenerationResult.size,
+      size: thumbnailGenerationResult.thumbnail.length,
       name: thumbnailGenerationResult.name,
       relatesTo: metadata.dataTxId!,
-      contentType: file.contentType,
+      contentType: 'image/jpeg',
       originalFileId: metadata.id,
     );
 

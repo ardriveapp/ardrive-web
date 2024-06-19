@@ -399,19 +399,19 @@ class _UploadThumbnailStrategy implements UploadThumbnailStrategy {
     required UploadController controller,
     required bool Function() verifyCancel,
   }) async {
-    // if (task.uploadItem == null) {
-    final thumbnailDataItem = await createDataItemForThumbnail(
-      file: task.file,
-      metadata: task.metadata,
-      wallet: wallet,
-      encryptionKey: task.encryptionKey,
-      fileId: task.metadata.originalFileId,
-    );
+    if (task.uploadItem == null) {
+      final thumbnailDataItem = await createDataItemForThumbnail(
+        file: task.file,
+        metadata: task.metadata,
+        wallet: wallet,
+        encryptionKey: task.encryptionKey,
+        fileId: task.metadata.originalFileId,
+      );
 
-    task = task.copyWith(
-        uploadItem: DataItemUploadItem(
-            size: thumbnailDataItem.dataItemSize, data: thumbnailDataItem));
-    // }
+      task = task.copyWith(
+          uploadItem: DataItemUploadItem(
+              size: thumbnailDataItem.dataItemSize, data: thumbnailDataItem));
+    }
 
     /// It will always use the Turbo for now
 
