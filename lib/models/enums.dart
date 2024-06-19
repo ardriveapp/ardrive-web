@@ -6,6 +6,7 @@ abstract class RevisionAction {
   static const hide = 'hide';
   static const unhide = 'unhide';
   static const assertLicense = 'assert-license';
+  static const createThumbnail = 'create-thumbnail';
 }
 
 abstract class TransactionStatus {

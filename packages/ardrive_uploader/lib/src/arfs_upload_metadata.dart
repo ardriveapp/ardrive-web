@@ -12,6 +12,7 @@ class ThumbnailUploadMetadata extends UploadMetadata {
     required this.aspectRatio,
     required this.name,
     required this.contentType,
+    required this.originalFileId,
   });
 
   List<Tag> thumbnailTags() {
@@ -21,7 +22,6 @@ class ThumbnailUploadMetadata extends UploadMetadata {
       Tag('Width', width.toString()),
       Tag('Height', height.toString()),
       Tag('Version', '1.0'),
-      // Implement cipher tags
       if (_cipherTag != null) Tag(EntityTag.cipher, _cipherTag!),
       if (_cipherIvTag != null) Tag(EntityTag.cipherIv, _cipherIvTag!),
     ];
@@ -36,6 +36,7 @@ class ThumbnailUploadMetadata extends UploadMetadata {
   final int aspectRatio;
   final String name;
   final String contentType;
+  final String originalFileId;
   String? _txId;
   String? _cipherTag;
   String? _cipherIvTag;

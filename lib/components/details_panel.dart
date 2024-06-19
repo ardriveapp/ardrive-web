@@ -13,6 +13,7 @@ import 'package:ardrive/components/truncated_address.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
+import 'package:ardrive/drive_explorer/thumbnail_creation/page/thumbnail_creation_modal.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
@@ -25,6 +26,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -302,6 +304,23 @@ class _DetailsPanelState extends State<DetailsPanel> {
                         const PinIndicator(
                           size: 32,
                         ),
+                      },
+                      if (FileTypeHelper.isImage(widget.item.contentType)) ...{
+                        ArDriveIconButton(
+                          icon: ArDriveIcons.image(),
+                          onPressed: () {
+                            showArDriveDialog(
+                              context,
+                              content: BlocProvider.value(
+                                value: context.read<DriveDetailCubit>(),
+                                child: ThumbnailCreationModal(
+                                  fileDataTableItem:
+                                      widget.item as FileDataTableItem,
+                                ),
+                              ),
+                            );
+                          },
+                        )
                       },
                       if (widget.currentDrive != null)
                         ScreenTypeLayout.builder(

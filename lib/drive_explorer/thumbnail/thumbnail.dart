@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
-class Thumbnail {
+class ThumbnailData {
   final Uint8List? data;
   final String? url;
 
-  Thumbnail({this.data, this.url});
+  ThumbnailData({this.data, this.url});
 }

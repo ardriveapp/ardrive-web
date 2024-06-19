@@ -686,6 +686,7 @@ Future<UploadFilePreparation> prepareDataItems({
       thumbnailGenerationResult.thumbnail,
       name: 'thumbnail',
       lastModifiedDate: DateTime.now(),
+      // contentType: 'image/jpeg',
     );
 
     final thumbnailMetadata = ThumbnailUploadMetadata(
@@ -696,6 +697,7 @@ Future<UploadFilePreparation> prepareDataItems({
       name: thumbnailGenerationResult.name,
       relatesTo: metadata.dataTxId!,
       contentType: file.contentType,
+      originalFileId: metadata.id,
     );
 
     thumbnailDataItem = await createDataItemForThumbnail(
@@ -829,6 +831,8 @@ Future<DataItemResult> createDataItemForThumbnail({
   return taskEither.match((l) {
     throw l;
   }, (r) {
+    metadata.setTxId = r.id;
+
     return r;
   });
 }

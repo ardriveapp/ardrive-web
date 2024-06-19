@@ -51,6 +51,7 @@ abstract class ArDriveUploader {
     required Wallet wallet,
     required UploadType type,
     required ThumbnailUploadMetadata thumbnailMetadata,
+    SecretKey? fileKey,
   }) {
     throw UnimplementedError();
   }
@@ -349,6 +350,7 @@ class _ArDriveUploader implements ArDriveUploader {
     required Wallet wallet,
     required UploadType type,
     required ThumbnailUploadMetadata thumbnailMetadata,
+    SecretKey? fileKey,
   }) async {
     final dataBundler = _dataBundlerFactory.createDataBundler(
       type,
@@ -380,6 +382,7 @@ class _ArDriveUploader implements ArDriveUploader {
       metadata: thumbnailMetadata,
       type: type,
       id: Uuid().v4(),
+      encryptionKey: fileKey,
     );
 
     uploadController.addTask(uploadTask);

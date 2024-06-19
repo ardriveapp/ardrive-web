@@ -46,27 +46,29 @@ extension FileEntityExtensions on FileEntity {
   /// This requires a `performedAction` to be specified.
   FileRevisionsCompanion toRevisionCompanion({
     required String performedAction,
-  }) =>
-      FileRevisionsCompanion.insert(
-        fileId: id!,
-        driveId: driveId!,
-        name: name!,
-        parentFolderId: parentFolderId!,
-        size: size!,
-        lastModifiedDate: lastModifiedDate ?? DateTime.now(),
-        metadataTxId: txId,
-        dataTxId: dataTxId!,
-        licenseTxId: Value(licenseTxId),
-        dateCreated: Value(createdAt),
-        dataContentType: Value(dataContentType),
-        action: performedAction,
-        bundledIn: Value(bundledIn),
-        customGQLTags: Value(customGqlTagsAsString),
-        customJsonMetadata: Value(customJsonMetadataAsString),
-        pinnedDataOwnerAddress: Value(pinnedDataOwnerAddress),
-        isHidden: Value(isHidden ?? false),
-        thumbnail: Value(jsonEncode(thumbnail?.toJson())),
-      );
+  }) {
+    final thumbnailData = jsonEncode(thumbnail?.toJson());
+    return FileRevisionsCompanion.insert(
+      fileId: id!,
+      driveId: driveId!,
+      name: name!,
+      parentFolderId: parentFolderId!,
+      size: size!,
+      lastModifiedDate: lastModifiedDate ?? DateTime.now(),
+      metadataTxId: txId,
+      dataTxId: dataTxId!,
+      licenseTxId: Value(licenseTxId),
+      dateCreated: Value(createdAt),
+      dataContentType: Value(dataContentType),
+      action: performedAction,
+      bundledIn: Value(bundledIn),
+      customGQLTags: Value(customGqlTagsAsString),
+      customJsonMetadata: Value(customJsonMetadataAsString),
+      pinnedDataOwnerAddress: Value(pinnedDataOwnerAddress),
+      isHidden: Value(isHidden ?? false),
+      thumbnail: Value(thumbnailData),
+    );
+  }
 
   FileRevision toRevision({
     required String performedAction,

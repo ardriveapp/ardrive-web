@@ -12,7 +12,7 @@ final class ThumbnailInitial extends ThumbnailState {}
 final class ThumbnailLoading extends ThumbnailState {}
 
 final class ThumbnailLoaded extends ThumbnailState {
-  final Thumbnail thumbnail;
+  final ThumbnailData thumbnail;
 
   const ThumbnailLoaded({required this.thumbnail});
 

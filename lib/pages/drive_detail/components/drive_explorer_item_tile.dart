@@ -17,10 +17,14 @@ import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
+import 'package:ardrive/services/config/config.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -109,6 +113,13 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
                   driveDao: context.read<DriveDao>(),
                   arweaveService: context.read<ArweaveService>(),
                   arDriveAuth: context.read<ArDriveAuth>(),
+                  arDriveUploader: ArDriveUploader(
+                    turboUploadUri: Uri.parse(context
+                        .read<ConfigService>()
+                        .config
+                        .defaultTurboUploadUrl!),
+                  ),
+                  turboUploadService: context.read<TurboUploadService>(),
                 ),
               )..add(
                   GetThumbnail(fileDataTableItem: file),
@@ -149,6 +160,7 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
                         filterQuality: FilterQuality.low,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
+                          logger.d('Error loading thumbnail: $error');
                           return getIconForContentType(
                             item.contentType,
                           ).copyWith(
@@ -188,10 +200,17 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
         children: [
           Align(
             alignment: Alignment.center,
-            child: getIconForContentType(
-              item.contentType,
-            ).copyWith(
-              color: isHidden ? Colors.grey : null,
+            child: GestureDetector(
+              onTap: () {
+                context
+                    .read<ThumbnailRepository>()
+                    .uploadThumbnail(fileId: item.id);
+              },
+              child: getIconForContentType(
+                item.contentType,
+              ).copyWith(
+                color: isHidden ? Colors.grey : null,
+              ),
             ),
           ),
           if (item.fileStatusFromTransactions != null)

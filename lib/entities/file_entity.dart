@@ -39,6 +39,7 @@ class FileEntity extends EntityWithCustomMetadata {
   @JsonKey(includeIfNull: false)
   bool? isHidden;
 
+  @JsonKey(includeFromJson: true, includeToJson: true)
   Thumbnail? thumbnail;
 
   @override
@@ -160,6 +161,8 @@ class FileEntity extends EntityWithCustomMetadata {
 
   Map<String, dynamic> toJson() {
     final thisJson = _$FileEntityToJson(this);
+    thisJson['thumbnail'] = thumbnail?.toJson();
+
     final custom = customJsonMetadata ?? {};
     final merged = {...thisJson, ...custom};
     return merged;

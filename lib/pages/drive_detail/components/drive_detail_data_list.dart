@@ -512,12 +512,9 @@ class DriveDataTableItemMapper {
       index: 0,
       pinnedDataOwnerAddress: revision.pinnedDataOwnerAddress,
       isHidden: revision.isHidden,
-      // thumbnailUrl: revision.thumbnail != null
-      //     ? Thumbnail.fromJson(jsonDecode(revision.thumbnail!))
-      //         .variants
-      //         .first
-      //         .txId
-      // : null,
+      thumbnail: revision.thumbnail != null
+          ? Thumbnail.fromJson(jsonDecode(revision.thumbnail!))
+          : null,
     );
   }
 }
