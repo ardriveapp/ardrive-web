@@ -197,7 +197,6 @@ class Variant {
   int size;
   int width;
   int height;
-  double aspectRatio;
 
   Variant({
     required this.name,
@@ -205,7 +204,6 @@ class Variant {
     required this.size,
     required this.width,
     required this.height,
-    required this.aspectRatio,
   });
 
   factory Variant.fromJson(Map<String, dynamic> json) {
@@ -215,7 +213,6 @@ class Variant {
       size: json['size'],
       width: json['width'],
       height: json['height'],
-      aspectRatio: json['aspectRatio'],
     );
   }
 
@@ -226,7 +223,6 @@ class Variant {
       'size': size,
       'width': width,
       'height': height,
-      'aspectRatio': aspectRatio,
     };
   }
 }

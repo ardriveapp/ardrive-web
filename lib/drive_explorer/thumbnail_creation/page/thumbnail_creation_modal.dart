@@ -85,16 +85,17 @@ class _ThumbnailCreationModal extends StatelessWidget {
             },
             title: 'Cancel'),
         ModalAction(
-            isEnable: context.watch<ThumbnailCreationBloc>().state
-                is! ThumbnailCreationLoading,
-            action: () {
-              context.read<ThumbnailCreationBloc>().add(
-                    CreateThumbnail(
-                      fileDataTableItem: fileDataTableItem,
-                    ),
-                  );
-            },
-            title: 'Confirm'),
+          isEnable: context.watch<ThumbnailCreationBloc>().state
+              is! ThumbnailCreationLoading,
+          action: () {
+            context.read<ThumbnailCreationBloc>().add(
+                  CreateThumbnail(
+                    fileDataTableItem: fileDataTableItem,
+                  ),
+                );
+          },
+          title: 'Confirm',
+        ),
       ],
     );
   }

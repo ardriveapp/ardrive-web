@@ -9,7 +9,6 @@ class ThumbnailUploadMetadata extends UploadMetadata {
     required this.relatesTo,
     required this.height,
     required this.width,
-    required this.aspectRatio,
     required this.name,
     required this.contentType,
     required this.originalFileId,
@@ -33,7 +32,6 @@ class ThumbnailUploadMetadata extends UploadMetadata {
   final int size;
   final int height;
   final int width;
-  final int aspectRatio;
   final String name;
   final String contentType;
   final String originalFileId;
@@ -60,7 +58,6 @@ class ThumbnailUploadMetadata extends UploadMetadata {
       'size': size,
       'height': height,
       'width': width,
-      'aspectRatio': aspectRatio,
     };
   }
 }

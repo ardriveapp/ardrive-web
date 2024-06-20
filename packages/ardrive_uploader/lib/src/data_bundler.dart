@@ -690,7 +690,6 @@ Future<UploadFilePreparation> prepareDataItems({
     );
 
     final thumbnailMetadata = ThumbnailUploadMetadata(
-      aspectRatio: thumbnailGenerationResult.aspectRatio,
       height: thumbnailGenerationResult.height,
       width: thumbnailGenerationResult.width,
       size: thumbnailGenerationResult.thumbnail.length,

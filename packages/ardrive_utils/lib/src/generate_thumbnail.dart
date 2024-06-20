@@ -28,7 +28,6 @@ Future<ThumbnailGenerationResult> generateThumbnail(
     size: thumbnail.length,
     height: thumbnail.height,
     width: thumbnail.width,
-    aspectRatio: thumbnail.width ~/ thumbnail.height,
     name: size.name,
   );
 }
@@ -38,7 +37,6 @@ class ThumbnailGenerationResult {
   final int size;
   final int height;
   final int width;
-  final int aspectRatio;
   final String name;
 
   ThumbnailGenerationResult({
@@ -46,7 +44,6 @@ class ThumbnailGenerationResult {
     required this.size,
     required this.height,
     required this.width,
-    required this.aspectRatio,
     required this.name,
   });
 }

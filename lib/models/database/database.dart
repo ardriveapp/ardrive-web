@@ -28,7 +28,7 @@ class Database extends _$Database {
   Database([QueryExecutor? e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 19;
+  int get schemaVersion => 20;
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) {
@@ -107,6 +107,14 @@ class Database extends _$Database {
 
                 await m.addColumn(fileEntries, fileEntries.licenseTxId);
                 await m.addColumn(fileRevisions, fileRevisions.licenseTxId);
+              }
+
+              if (from < 20) {
+                // Adding snapshot entries
+                logger.d('Migrating schema from v19 to v20');
+
+                await m.addColumn(fileEntries, fileEntries.thumbnail);
+                await m.addColumn(fileRevisions, fileRevisions.thumbnail);
               }
             }
           } catch (e, stacktrace) {

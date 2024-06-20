@@ -100,7 +100,6 @@ class _ThumbnailGeneratorPOCState extends State<ThumbnailGeneratorPOC> {
         width: data.width,
         size: data.thumbnail.length,
         relatesTo: f.dataTxId,
-        aspectRatio: data.aspectRatio,
         name: data.name,
         originalFileId: f.id,
       );

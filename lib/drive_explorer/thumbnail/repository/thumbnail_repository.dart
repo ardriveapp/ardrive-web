@@ -138,7 +138,6 @@ class ThumbnailRepository {
       width: data.width,
       size: data.thumbnail.length,
       relatesTo: fileEntry.dataTxId,
-      aspectRatio: data.aspectRatio,
       name: data.name,
       originalFileId: fileEntry.id,
     );
@@ -160,17 +159,7 @@ class ThumbnailRepository {
         final thumbnailTask = tasks.first as ThumbnailUploadTask;
 
         final thumbnailData = {
-          'variants': [
-            {
-              'txId': thumbnailTask.metadata.txId,
-              'size': data.thumbnail.length,
-              'height': data.height,
-              'width': data.width,
-              'aspectRatio': data.aspectRatio,
-              'name': data.name,
-              'contentType': 'image/jpeg',
-            }
-          ]
+          'variants': [thumbnailTask.metadata.toJson()]
         };
 
         fileEntry = fileEntry.copyWith(
