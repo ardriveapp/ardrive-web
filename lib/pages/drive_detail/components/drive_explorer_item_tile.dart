@@ -93,7 +93,6 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
   Widget _buildFileIcon(BuildContext context) {
     if (item is FileDataTableItem && FileTypeHelper.isImage(item.contentType)) {
       final file = item as FileDataTableItem;
-      // final url = '${Arweave().api.gatewayUrl.origin}/raw/${file.dataTxId}';
 
       return ArDriveCard(
         width: 30,
