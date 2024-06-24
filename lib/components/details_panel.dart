@@ -305,9 +305,13 @@ class _DetailsPanelState extends State<DetailsPanel> {
                           size: 32,
                         ),
                       },
-                      if (FileTypeHelper.isImage(widget.item.contentType)) ...{
+                      if (widget.item is FileDataTableItem &&
+                          FileTypeHelper.isImage(widget.item.contentType) &&
+                          (widget.item as FileDataTableItem).thumbnail ==
+                              null) ...{
                         ArDriveIconButton(
                           icon: ArDriveIcons.image(),
+                          tooltip: 'Create Thumbnail',
                           onPressed: () {
                             showArDriveDialog(
                               context,
