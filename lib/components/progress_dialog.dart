@@ -8,6 +8,7 @@ Future<void> showProgressDialog(
   BuildContext context, {
   required String title,
   List<ModalAction>? actions,
+  bool useNewArDriveUI = false,
 }) =>
     showArDriveDialog(
       context,
@@ -15,6 +16,7 @@ Future<void> showProgressDialog(
       content: ProgressDialog(
         title: title,
         actions: actions ?? const [],
+        useNewArDriveUI: useNewArDriveUI,
       ),
     );
 

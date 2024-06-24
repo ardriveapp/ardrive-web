@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:ardrive/app_shell.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
@@ -18,6 +19,7 @@ import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/fs_entry_license_form.dart';
 import 'package:ardrive/components/keyboard_handler.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
+import 'package:ardrive/components/pin_file_dialog.dart';
 import 'package:ardrive/components/prompt_to_snapshot_dialog.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/core/activity_tracker.dart';
@@ -26,6 +28,7 @@ import 'package:ardrive/dev_tools/shortcut_handler.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/entities/entities.dart' as entities;
 import 'package:ardrive/l11n/l11n.dart';
+import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
@@ -38,6 +41,7 @@ import 'package:ardrive/pages/drive_detail/components/unpreviewable_content.dart
 import 'package:ardrive/search/search_modal.dart';
 import 'package:ardrive/search/search_text_field.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/shared/components/plausible_page_view_wrapper.dart';
 import 'package:ardrive/sharing/sharing_file_listener.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -58,6 +62,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:synchronized/synchronized.dart';
@@ -588,6 +593,11 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                   .folderInView.folder.id,
                                               promptToAddFiles: driveDetailState
                                                   .hasWritePermissions,
+                                              isRootFolder: driveDetailState
+                                                      .folderInView
+                                                      .folder
+                                                      .parentFolderId ==
+                                                  null,
                                             ),
                                           ),
                                         ],
@@ -605,6 +615,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                     driveDetailState.folderInView.folder.id,
                                 promptToAddFiles:
                                     driveDetailState.hasWritePermissions,
+                                isRootFolder: driveDetailState.folderInView
+                                            .folder.parentFolderId ==
+                                        null &&
+                                    !hasSubfolders,
                               ),
                             ),
                         ],
@@ -828,32 +842,32 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           ),
         ),
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              vertical: 8,
-              horizontal: 16,
-            ),
-            child: (hasSubfolders || hasFiles)
-                ? ListView.separated(
-                    controller: _scrollController,
-                    separatorBuilder: (context, index) => const SizedBox(
-                      height: 5,
-                    ),
-                    itemCount: filteredItems.length,
-                    itemBuilder: (context, index) {
-                      return ArDriveItemListTile(
-                        key: ObjectKey([filteredItems[index]]),
-                        drive: state.currentDrive,
-                        item: filteredItems[index],
-                      );
-                    },
-                  )
-                : DriveDetailFolderEmptyCard(
-                    promptToAddFiles: state.hasWritePermissions,
-                    driveId: state.currentDrive.id,
-                    parentFolderId: state.folderInView.folder.id,
+          child: (hasSubfolders || hasFiles)
+              ? ListView.separated(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 16,
                   ),
-          ),
+                  controller: _scrollController,
+                  separatorBuilder: (context, index) => const SizedBox(
+                    height: 5,
+                  ),
+                  itemCount: filteredItems.length,
+                  itemBuilder: (context, index) {
+                    return ArDriveItemListTile(
+                      key: ObjectKey([filteredItems[index]]),
+                      drive: state.currentDrive,
+                      item: filteredItems[index],
+                    );
+                  },
+                )
+              : DriveDetailFolderEmptyCard(
+                  promptToAddFiles: state.hasWritePermissions,
+                  driveId: state.currentDrive.id,
+                  parentFolderId: state.folderInView.folder.id,
+                  isRootFolder:
+                      state.folderInView.folder.parentFolderId == null,
+                ),
         ),
       ],
     );

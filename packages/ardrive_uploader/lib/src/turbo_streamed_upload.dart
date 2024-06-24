@@ -36,8 +36,6 @@ class TurboStreamedUpload implements StreamedUpload<UploadItem> {
         .then((value) async {
       _result = StreamedUploadResult(success: true);
     }).onError((e, s) {
-      logger.e('Error on TurboStreamedUpload.send.', e, s);
-
       _result = StreamedUploadResult(success: false, error: e);
     });
 
