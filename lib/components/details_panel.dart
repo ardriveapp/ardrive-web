@@ -739,16 +739,23 @@ class _DetailsPanelState extends State<DetailsPanel> {
           leading: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ArDriveIconButton(
-                tooltip: appLocalizationsOf(context).viewOnViewBlock,
-                icon: ArDriveIcons.newWindow(size: 20),
-                onPressed: () {
-                  openUrl(
-                    url:
-                        'https://viewblock.io/arweave/tx/${state.metadataTxId}',
-                  );
-                },
+              Text(
+                '${state.metadataTxId.substring(0, 4)}...',
+                style: ArDriveTypography.body
+                    .buttonNormalRegular()
+                    .copyWith(decoration: TextDecoration.underline),
               ),
+              // const SizedBox(width: 4),
+              // ArDriveIconButton(
+              //   tooltip: appLocalizationsOf(context).viewOnViewBlock,
+              //   icon: ArDriveIcons.newWindow(size: 20),
+              //   onPressed: () {
+              //     openUrl(
+              //       url:
+              //           'https://viewblock.io/arweave/tx/${state.metadataTxId}',
+              //     );
+              //   },
+              // ),
               const SizedBox(width: 12),
               CopyButton(
                 text: state.metadataTxId,
@@ -762,15 +769,36 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ArDriveIconButton(
-              tooltip: appLocalizationsOf(context).viewOnViewBlock,
-              icon: ArDriveIcons.newWindow(size: 20),
-              onPressed: () {
-                openUrl(
-                  url: 'https://viewblock.io/arweave/tx/${item.dataTxId}',
-                );
-              },
+            // only first 4 characters of the data tx id are shown
+            ArDriveClickArea(
+              child: GestureDetector(
+                onTap: () {
+                  openUrl(
+                    url: 'https://viewblock.io/arweave/tx/${item.dataTxId}',
+                  );
+                },
+                child: Tooltip(
+                  message: item.dataTxId,
+                  child: Text(
+                    '${item.dataTxId.substring(0, 4)}...',
+                    style:
+                        ArDriveTypography.body.buttonNormalRegular().copyWith(
+                              decoration: TextDecoration.underline,
+                            ),
+                  ),
+                ),
+              ),
             ),
+            // const SizedBox(width: 4),
+            // ArDriveIconButton(
+            //   tooltip: appLocalizationsOf(context).viewOnViewBlock,
+            //   icon: ArDriveIcons.newWindow(size: 20),
+            //   onPressed: () {
+            //     openUrl(
+            //       url: 'https://viewblock.io/arweave/tx/${item.dataTxId}',
+            //     );
+            //   },
+            // ),
             const SizedBox(width: 12),
             CopyButton(
               text: item.dataTxId,

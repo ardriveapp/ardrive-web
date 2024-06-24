@@ -184,14 +184,6 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
         error: result.error,
       );
     }
-
-    // final updatedTask = controller.tasks[task.id]!;
-
-    // controller.updateProgress(
-    //   task: updatedTask.copyWith(
-    //     status: UploadStatus.complete,
-    //   ),
-    // );
   }
 }
 

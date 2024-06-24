@@ -206,7 +206,7 @@ class _ArDriveUploader implements ArDriveUploader {
       StreamController<UploadProgress>(),
       uploadSender,
       numOfWorkers: driveKey != null ? 2 : 5,
-      maxTasksPerWorker: driveKey != null ? 3 : 3,
+      maxTasksPerWorker: 3,
     );
 
     for (var f in files) {

@@ -442,12 +442,9 @@ class DriveDataTableItemMapper {
       index: 0,
       pinnedDataOwnerAddress: fileEntry.pinnedDataOwnerAddress,
       isHidden: fileEntry.isHidden,
-      // thumbnailUrl: fileEntry.thumbnail != null
-      //     ? Thumbnail.fromJson(jsonDecode(fileEntry.thumbnail!))
-      //         .variants
-      //         .first
-      //         .txId
-      //     : null,
+      thumbnail: fileEntry.thumbnail != null
+          ? Thumbnail.fromJson(jsonDecode(fileEntry.thumbnail!))
+          : null,
     );
   }
 
