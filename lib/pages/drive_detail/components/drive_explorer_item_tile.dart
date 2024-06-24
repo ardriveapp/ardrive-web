@@ -171,10 +171,13 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
                     );
                   }
 
-                  return getIconForContentType(
-                    item.contentType,
-                  ).copyWith(
-                    color: isHidden ? Colors.grey : null,
+                  return Align(
+                    alignment: Alignment.center,
+                    child: getIconForContentType(
+                      item.contentType,
+                    ).copyWith(
+                      color: isHidden ? Colors.grey : null,
+                    ),
                   );
                 },
               ),

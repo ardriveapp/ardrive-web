@@ -69,7 +69,6 @@ class _ThumbnailCreationModal extends StatelessWidget {
 
           return const Column(
             children: [
-              // explain what is a thumbnail
               Text(
                 'A thumbnail is a small image that represents your file. '
                 'It will be displayed in the file explorer and in the file details view.',
