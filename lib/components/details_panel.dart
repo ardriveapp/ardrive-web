@@ -745,17 +745,6 @@ class _DetailsPanelState extends State<DetailsPanel> {
                     .buttonNormalRegular()
                     .copyWith(decoration: TextDecoration.underline),
               ),
-              // const SizedBox(width: 4),
-              // ArDriveIconButton(
-              //   tooltip: appLocalizationsOf(context).viewOnViewBlock,
-              //   icon: ArDriveIcons.newWindow(size: 20),
-              //   onPressed: () {
-              //     openUrl(
-              //       url:
-              //           'https://viewblock.io/arweave/tx/${state.metadataTxId}',
-              //     );
-              //   },
-              // ),
               const SizedBox(width: 12),
               CopyButton(
                 text: state.metadataTxId,
@@ -789,16 +778,6 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 ),
               ),
             ),
-            // const SizedBox(width: 4),
-            // ArDriveIconButton(
-            //   tooltip: appLocalizationsOf(context).viewOnViewBlock,
-            //   icon: ArDriveIcons.newWindow(size: 20),
-            //   onPressed: () {
-            //     openUrl(
-            //       url: 'https://viewblock.io/arweave/tx/${item.dataTxId}',
-            //     );
-            //   },
-            // ),
             const SizedBox(width: 12),
             CopyButton(
               text: item.dataTxId,
