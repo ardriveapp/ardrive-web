@@ -273,6 +273,26 @@ void main() {
             'licenseTxId': licenseTxId,
           });
         });
+        // TODO: update test to include the correct thumbnail object
+        test(
+            'toJson returns correct map when dataTxId and licenseTxId and thumbnailTxId are set',
+            () {
+          const dataTxId = 'dataTxId';
+          const licenseTxId = 'licenseTxId';
+          metadata.updateDataTxId(dataTxId);
+          metadata.updateLicenseTxId(licenseTxId);
+          // metadata.updateThumbnailTxId('thumbnailTxId');
+
+          final json = metadata.toJson();
+          expect(json, {
+            'name': name,
+            'size': size,
+            'lastModifiedDate': lastModifiedDate.millisecondsSinceEpoch,
+            'dataContentType': dataContentType,
+            'dataTxId': dataTxId,
+            'licenseTxId': licenseTxId,
+          });
+        });
       });
     });
   });

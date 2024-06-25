@@ -68,7 +68,6 @@ class _DrivesHealthCheckModalState extends State<DrivesHealthCheckModal> {
       currentStatus.totalFiles = files.length;
 
       selectedDriveStatus = currentStatus;
-
       setState(() {});
 
       await processFiles(files, currentStatus);
@@ -321,7 +320,7 @@ class _DrivesHealthCheckModalState extends State<DrivesHealthCheckModal> {
 
       if (response.statusCode > 400) {
         driveStatus.files.add(FileHealthCheckStatus(
-        file: file,
+          file: file,
           isSuccess: false,
           isFailed: true,
         ));

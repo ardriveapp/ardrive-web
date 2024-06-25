@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -591,6 +592,9 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       isHidden: Value(entity.isHidden ?? false),
       // TODO: path is not used in the app, so it's not necessary to set it
       path: '',
+      thumbnail: entity.thumbnail != null
+          ? Value(jsonEncode(entity.thumbnail!.toJson()))
+          : const Value(null),
     );
 
     return into(fileEntries).insert(
@@ -631,7 +635,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     LicensesCompanion license,
   ) async {
     await db.transaction(() async {
-      await Future.wait( 
+      await Future.wait(
           license.getTransactionCompanions().map((tx) => writeTransaction(tx)));
       await into(licenses).insert(license);
     });

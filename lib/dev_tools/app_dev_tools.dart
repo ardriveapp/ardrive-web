@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:ardrive/dev_tools/drives_health_check.dart';
+import 'package:ardrive/dev_tools/thumbnail_generator_poc.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
@@ -150,20 +151,6 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
         setState(() {
           configService.updateAppConfig(
             config.copyWith(defaultTurboUploadUrl: value),
-          );
-        });
-      },
-      type: ArDriveDevToolOptionType.text,
-    );
-
-    final ArDriveDevToolOption defaultTurboPaymentUrlOption =
-        ArDriveDevToolOption(
-      name: 'defaultTurboUrl',
-      value: config.defaultTurboPaymentUrl,
-      onChange: (value) {
-        setState(() {
-          configService.updateAppConfig(
-            config.copyWith(defaultTurboPaymentUrl: value),
           );
         });
       },
@@ -344,6 +331,25 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.button,
     );
 
+    final ArDriveDevToolOption pickImageAndGenerateThumbnailItem =
+        ArDriveDevToolOption(
+      name: 'Generate Thumbnails',
+      value: '',
+      onChange: (value) {},
+      onInteraction: () async {
+        try {
+          final BuildContext context = ArDriveDevTools().context!;
+
+          showArDriveDialog(context,
+              content:
+                  const ArDriveStandardModal(content: ThumbnailGeneratorPOC()));
+        } catch (e) {
+          logger.e('Error setting default data on payment form', e);
+        }
+      },
+      type: ArDriveDevToolOptionType.button,
+    );
+
     final ArDriveDevToolOption forceNoFreeThanksToTurbo = ArDriveDevToolOption(
       name: 'forceNoFreeThanksToTurbo',
       value: config.forceNoFreeThanksToTurbo,
@@ -374,8 +380,8 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       runHealthCheck,
       useTurboOption,
       useTurboPaymentOption,
-      defaultTurboPaymentUrlOption,
       enableSyncFromSnapshotOption,
+      pickImageAndGenerateThumbnailItem,
       stripePublishableKey,
       enableQuickSyncAuthoringOption,
       enableMultipleFileDownloadOption,

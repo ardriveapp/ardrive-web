@@ -16,6 +16,8 @@ CREATE TABLE file_entries (
 
     bundledIn TEXT,
 
+    thumbnail TEXT,
+
     pinnedDataOwnerAddress TEXT,
 
     customJsonMetadata TEXT,
