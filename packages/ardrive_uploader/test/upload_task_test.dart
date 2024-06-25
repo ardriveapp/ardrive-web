@@ -40,6 +40,7 @@ void main() {
         file: mockFile,
         metadata: mockMetadata,
         type: UploadType.turbo,
+        uploadThumbnail: true,
       );
 
       expect(task.file, mockFile);
@@ -66,6 +67,7 @@ void main() {
         cancelToken: mockCancelToken,
         metadataUploaded: true,
         uploadItem: mockUploadItem,
+        uploadThumbnail: true,
       );
 
       expect(task.file, mockFile);
@@ -86,6 +88,7 @@ void main() {
         file: mockFile,
         metadata: mockMetadata,
         type: UploadType.turbo,
+        uploadThumbnail: true,
       );
 
       final newTask = task.copyWith(
@@ -107,6 +110,7 @@ void main() {
         file: mockFile,
         metadata: mockMetadata,
         type: UploadType.turbo,
+        uploadThumbnail: true,
       );
 
       final errorInfo = task.errorInfo();
