@@ -1,5 +1,5 @@
-import 'package:ardrive/utils/file_type_helper.dart';
-import 'package:test/test.dart';
+import 'package:ardrive_utils/src/file_type_helper.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('FileTypeHelper', () {

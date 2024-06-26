@@ -169,6 +169,7 @@ void main() async {
             file: mockManifestFile,
             metadata: mockMetadata,
             type: UploadType.turbo,
+            uploadThumbnail: true,
           );
 
           uploadTaskAR = FileUploadTask(
@@ -176,6 +177,7 @@ void main() async {
             file: mockManifestFile,
             metadata: mockMetadata,
             type: UploadType.d2n,
+            uploadThumbnail: true,
           );
 
           when(() => mockUploader.upload(

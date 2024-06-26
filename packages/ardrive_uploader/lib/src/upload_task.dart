@@ -37,6 +37,8 @@ class FileUploadTask extends UploadTask {
   @override
   UploadType type;
 
+  final bool uploadThumbnail;
+
   FileUploadTask({
     this.uploadItem,
     this.isProgressAvailable = true,
@@ -51,6 +53,7 @@ class FileUploadTask extends UploadTask {
     required this.type,
     this.metadataUploaded = false,
     this.error,
+    required this.uploadThumbnail,
   }) : id = id ?? const Uuid().v4();
 
   @override
@@ -71,6 +74,7 @@ class FileUploadTask extends UploadTask {
     bool? metadataUploaded,
     Object? error,
     IOFile? file,
+    bool? uploadThumbnail,
   }) {
     return FileUploadTask(
       cancelToken: cancelToken ?? this.cancelToken,
@@ -86,6 +90,7 @@ class FileUploadTask extends UploadTask {
       type: type ?? this.type,
       metadataUploaded: metadataUploaded ?? this.metadataUploaded,
       error: error ?? this.error,
+      uploadThumbnail: uploadThumbnail ?? this.uploadThumbnail,
     );
   }
 }
@@ -201,6 +206,78 @@ class FolderUploadTask extends UploadTask<ARFSUploadMetadata> {
       type: type ?? this.type,
       encryptionKey: encryptionKey ?? this.encryptionKey,
       error: error ?? this.error,
+    );
+  }
+}
+
+class ThumbnailUploadTask implements UploadTask {
+  final IOFile file;
+  final ThumbnailUploadMetadata metadata;
+  @override
+  final UploadItem? uploadItem;
+  @override
+  final double progress;
+  @override
+  final String id;
+  @override
+  final bool isProgressAvailable;
+  @override
+  final UploadStatus status;
+  @override
+  final SecretKey? encryptionKey;
+  @override
+  final UploadTaskCancelToken? cancelToken;
+  @override
+  final UploadType type;
+
+  ThumbnailUploadTask({
+    required this.file,
+    required this.metadata,
+    this.uploadItem,
+    this.progress = 0,
+    required this.id,
+    this.isProgressAvailable = true,
+    this.status = UploadStatus.notStarted,
+    this.encryptionKey,
+    this.cancelToken,
+    required this.type,
+  });
+
+  @override
+  List<ARFSUploadMetadata> get content => [];
+
+  @override
+  Object? error;
+
+  @override
+  String errorInfo() {
+    return '';
+  }
+
+  @override
+  ThumbnailUploadTask copyWith({
+    UploadItem? uploadItem,
+    double? progress,
+    bool? isProgressAvailable,
+    UploadStatus? status,
+    String? id,
+    List<ARFSUploadMetadata>? content,
+    SecretKey? encryptionKey,
+    UploadTaskCancelToken? cancelToken,
+    UploadType? type,
+    Object? error,
+  }) {
+    return ThumbnailUploadTask(
+      file: file,
+      metadata: metadata,
+      uploadItem: uploadItem ?? this.uploadItem,
+      progress: progress ?? this.progress,
+      id: id ?? this.id,
+      isProgressAvailable: isProgressAvailable ?? this.isProgressAvailable,
+      status: status ?? this.status,
+      encryptionKey: encryptionKey ?? this.encryptionKey,
+      cancelToken: cancelToken ?? this.cancelToken,
+      type: type ?? this.type,
     );
   }
 }

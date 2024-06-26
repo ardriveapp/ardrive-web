@@ -54,6 +54,11 @@ class UploadCubit extends Cubit<UploadState> {
   late Drive _targetDrive;
   late FolderEntry _targetFolder;
   UploadMethod? _uploadMethod;
+  bool _uploadThumbnail = true;
+
+  void changeUploadThumbnailOption(bool uploadThumbnail) {
+    _uploadThumbnail = uploadThumbnail;
+  }
 
   void setUploadMethod(
     UploadMethod? method,
@@ -601,6 +606,7 @@ class UploadCubit extends Cubit<UploadState> {
     final uploadController = await ardriveUploader.uploadEntities(
       entities: entities,
       wallet: _auth.currentUser.wallet,
+      uploadThumbnail: _uploadThumbnail,
       type:
           _uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo,
       driveKey: driveKey,
@@ -722,6 +728,7 @@ class UploadCubit extends Cubit<UploadState> {
       files: uploadFiles,
       wallet: _auth.currentUser.wallet,
       driveKey: driveKey,
+      uploadThumbnail: _uploadThumbnail,
       type:
           _uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo,
     );
@@ -817,6 +824,14 @@ class UploadCubit extends Cubit<UploadState> {
               ? RevisionAction.uploadNewVersion
               : RevisionAction.create;
 
+          Thumbnail? thumbnail;
+
+          if (fileMetadata.thumbnailInfo != null) {
+            thumbnail = Thumbnail(variants: [
+              Variant.fromJson(fileMetadata.thumbnailInfo!.first.toJson())
+            ]);
+          }
+
           final entity = FileEntity(
             dataContentType: fileMetadata.dataContentType,
             dataTxId: fileMetadata.dataTxId,
@@ -827,6 +842,7 @@ class UploadCubit extends Cubit<UploadState> {
             name: fileMetadata.name,
             parentFolderId: fileMetadata.parentFolderId,
             size: fileMetadata.size,
+            thumbnail: thumbnail,
             // TODO: pinnedDataOwnerAddress
           );
 
