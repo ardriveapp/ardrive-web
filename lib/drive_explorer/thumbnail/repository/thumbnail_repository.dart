@@ -38,24 +38,35 @@ class ThumbnailRepository {
         _arweaveService = arweaveService,
         _turboUploadService = turboUploadService,
         _arDriveAuth = arDriveAuth;
+  final Map<String, ThumbnailData> _cachedThumbnails = {};
 
   Future<ThumbnailData> getThumbnail({
-    FileDataTableItem? fileDataTableItem,
+    required FileDataTableItem fileDataTableItem,
   }) async {
+    if (_cachedThumbnails[fileDataTableItem.id] != null) {
+      return _cachedThumbnails[fileDataTableItem.id]!;
+    }
+
     final drive = await _driveDao
-        .driveById(driveId: fileDataTableItem!.driveId)
+        .driveById(driveId: fileDataTableItem.driveId)
         .getSingle();
 
     if (drive.isPrivate) {
-      return ThumbnailData(
-          data: await _getThumbnailData(fileDataTableItem: fileDataTableItem),
-          url: null);
+      _cachedThumbnails[fileDataTableItem.id] = ThumbnailData(
+        data: await _getThumbnailData(fileDataTableItem: fileDataTableItem),
+        url: null,
+      );
+
+      return _cachedThumbnails[fileDataTableItem.id]!;
     }
 
     final urlString =
         '${_arweaveService.client.api.gatewayUrl.origin}/raw/${fileDataTableItem.thumbnail?.variants.first.txId}';
 
-    return ThumbnailData(data: null, url: urlString);
+    _cachedThumbnails[fileDataTableItem.id] =
+        ThumbnailData(data: null, url: urlString);
+
+    return _cachedThumbnails[fileDataTableItem.id]!;
   }
 
   Future<Uint8List> _getThumbnailData({
