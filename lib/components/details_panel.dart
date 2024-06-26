@@ -1000,7 +1000,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
 }
 
 class _TxIdTextLink extends StatelessWidget {
-  const _TxIdTextLink({super.key, required this.txId});
+  const _TxIdTextLink({required this.txId});
 
   final String txId;
 
