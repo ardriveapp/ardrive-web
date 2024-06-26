@@ -602,15 +602,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ArDriveIconButton(
-              tooltip: appLocalizationsOf(context).viewOnViewBlock,
-              icon: ArDriveIcons.newWindow(size: 20),
-              onPressed: () {
-                openUrl(
-                  url: 'https://viewblock.io/arweave/tx/${folder.metadataTxId}',
-                );
-              },
-            ),
+            _TxIdTextLink(txId: folder.metadataTxId),
             const SizedBox(width: 12),
             CopyButton(
               text: folder.metadataTxId,
@@ -671,15 +663,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ArDriveIconButton(
-              tooltip: appLocalizationsOf(context).viewOnViewBlock,
-              icon: ArDriveIcons.newWindow(size: 20),
-              onPressed: () {
-                openUrl(
-                  url: 'https://viewblock.io/arweave/tx/${state.metadataTxId}',
-                );
-              },
-            ),
+            _TxIdTextLink(txId: state.metadataTxId),
             const SizedBox(width: 12),
             CopyButton(
               text: state.metadataTxId,
@@ -739,12 +723,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
           leading: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                '${state.metadataTxId.substring(0, 4)}...',
-                style: ArDriveTypography.body
-                    .buttonNormalRegular()
-                    .copyWith(decoration: TextDecoration.underline),
-              ),
+              _TxIdTextLink(txId: state.metadataTxId),
               const SizedBox(width: 12),
               CopyButton(
                 text: state.metadataTxId,
@@ -758,26 +737,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // only first 4 characters of the data tx id are shown
-            ArDriveClickArea(
-              child: GestureDetector(
-                onTap: () {
-                  openUrl(
-                    url: 'https://viewblock.io/arweave/tx/${item.dataTxId}',
-                  );
-                },
-                child: Tooltip(
-                  message: item.dataTxId,
-                  child: Text(
-                    '${item.dataTxId.substring(0, 4)}...',
-                    style:
-                        ArDriveTypography.body.buttonNormalRegular().copyWith(
-                              decoration: TextDecoration.underline,
-                            ),
-                  ),
-                ),
-              ),
-            ),
+            _TxIdTextLink(txId: item.dataTxId),
             const SizedBox(width: 12),
             CopyButton(
               text: item.dataTxId,
@@ -1035,6 +995,32 @@ class _DetailsPanelState extends State<DetailsPanel> {
       leading: leading ?? const SizedBox(),
       itemTitle: title,
       itemSubtitle: subtitle,
+    );
+  }
+}
+
+class _TxIdTextLink extends StatelessWidget {
+  const _TxIdTextLink({super.key, required this.txId});
+
+  final String txId;
+
+  @override
+  Widget build(BuildContext context) {
+    return ArDriveClickArea(
+      child: GestureDetector(
+        onTap: () {
+          openUrl(url: 'https://viewblock.io/arweave/tx/$txId');
+        },
+        child: Tooltip(
+          message: txId,
+          child: Text(
+            '${txId.substring(0, 4)}...',
+            style: ArDriveTypography.body
+                .buttonNormalRegular()
+                .copyWith(decoration: TextDecoration.underline),
+          ),
+        ),
+      ),
     );
   }
 }
