@@ -4,9 +4,9 @@ import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/logger.dart';
-import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 part 'multi_thumbnail_creation_event.dart';
 part 'multi_thumbnail_creation_state.dart';
