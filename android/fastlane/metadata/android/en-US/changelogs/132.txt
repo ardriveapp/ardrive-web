@@ -1,0 +1,1 @@
+- Fixes an issue with creating thumbnails for non-supported image extensions
