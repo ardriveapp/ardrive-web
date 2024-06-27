@@ -710,7 +710,6 @@ Future<UploadFilePreparation> prepareDataItems({
 
       thumbnailMetadata.setTxId = thumbnailDataItem.id;
 
-      /// needs to be `variants`
       metadata.updateThumbnailInfo([thumbnailMetadata]);
     } catch (e) {
       logger.e(
