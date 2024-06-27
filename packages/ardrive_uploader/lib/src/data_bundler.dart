@@ -677,40 +677,45 @@ Future<UploadFilePreparation> prepareDataItems({
 
   /// Thumbnail generation
   if (addThumbnail) {
-    final thumbnailGenerationResult = await generateThumbnail(
-      await file.readAsBytes(),
-      ThumbnailSize.small,
-    );
+    try {
+      final thumbnailGenerationResult = await generateThumbnail(
+        await file.readAsBytes(),
+        ThumbnailSize.small,
+      );
 
-    thumbnailFile = await IOFile.fromData(
-      thumbnailGenerationResult.thumbnail,
-      name: 'thumbnail',
-      lastModifiedDate: DateTime.now(),
-      contentType: 'image/jpeg',
-    );
+      thumbnailFile = await IOFile.fromData(
+        thumbnailGenerationResult.thumbnail,
+        name: 'thumbnail',
+        lastModifiedDate: DateTime.now(),
+        contentType: 'image/jpeg',
+      );
 
-    final thumbnailMetadata = ThumbnailUploadMetadata(
-      height: thumbnailGenerationResult.height,
-      width: thumbnailGenerationResult.width,
-      size: thumbnailGenerationResult.thumbnail.length,
-      name: thumbnailGenerationResult.name,
-      relatesTo: metadata.dataTxId!,
-      contentType: 'image/jpeg',
-      originalFileId: metadata.id,
-    );
+      final thumbnailMetadata = ThumbnailUploadMetadata(
+        height: thumbnailGenerationResult.height,
+        width: thumbnailGenerationResult.width,
+        size: thumbnailGenerationResult.thumbnail.length,
+        name: thumbnailGenerationResult.name,
+        relatesTo: metadata.dataTxId!,
+        contentType: 'image/jpeg',
+        originalFileId: metadata.id,
+      );
 
-    thumbnailDataItem = await createDataItemForThumbnail(
-      file: thumbnailFile,
-      metadata: thumbnailMetadata,
-      wallet: wallet,
-      encryptionKey: key,
-      fileId: metadata.id,
-    );
+      thumbnailDataItem = await createDataItemForThumbnail(
+        file: thumbnailFile,
+        metadata: thumbnailMetadata,
+        wallet: wallet,
+        encryptionKey: key,
+        fileId: metadata.id,
+      );
 
-    thumbnailMetadata.setTxId = thumbnailDataItem.id;
+      thumbnailMetadata.setTxId = thumbnailDataItem.id;
 
-    /// needs to be `variants`
-    metadata.updateThumbnailInfo([thumbnailMetadata]);
+      /// needs to be `variants`
+      metadata.updateThumbnailInfo([thumbnailMetadata]);
+    } catch (e) {
+      logger.e(
+          'Error generating thumbnail. We will proceed with the upload.', e);
+    }
   }
 
   onStartMetadataCreation?.call();

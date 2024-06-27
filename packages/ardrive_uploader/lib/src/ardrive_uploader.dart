@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive_uploader/src/constants.dart';
 import 'package:ardrive_uploader/src/upload_dispatcher.dart';
 import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -161,7 +162,8 @@ class _ArDriveUploader implements ArDriveUploader {
       encryptionKey: driveKey,
       type: type,
       uploadThumbnail:
-          FileTypeHelper.isImage(file.contentType) && uploadThumbnail,
+          supportedImageTypesForThumbnails.contains(file.contentType) &&
+              uploadThumbnail,
     );
 
     uploadController.addTask(uploadTask);
@@ -225,7 +227,8 @@ class _ArDriveUploader implements ArDriveUploader {
         encryptionKey: driveKey,
         type: type,
         uploadThumbnail:
-            FileTypeHelper.isImage(f.$2.contentType) && uploadThumbnail,
+            supportedImageTypesForThumbnails.contains(f.$2.contentType) &&
+                uploadThumbnail,
       );
 
       uploadController.addTask(fileTask);
@@ -316,7 +319,8 @@ class _ArDriveUploader implements ArDriveUploader {
         content: [f.$1],
         type: type,
         uploadThumbnail:
-            FileTypeHelper.isImage(f.$2.contentType) && uploadThumbnail,
+            supportedImageTypesForThumbnails.contains(f.$2.contentType) &&
+                uploadThumbnail,
       );
 
       uploadController.addTask(fileTask);
