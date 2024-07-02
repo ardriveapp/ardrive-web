@@ -1,4 +1,3 @@
-import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
@@ -7,7 +6,6 @@ import 'package:ardrive/components/fs_entry_license_form.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/pin_indicator.dart';
-import 'package:ardrive/download/ardrive_downloader.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/drive_explorer/thumbnail/thumbnail_bloc.dart';
@@ -16,15 +14,10 @@ import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
-import 'package:ardrive/services/arweave/arweave.dart';
-import 'package:ardrive/services/config/config.dart';
-import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/size_constants.dart';
-import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -103,24 +96,8 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
           children: [
             BlocProvider(
               create: (context) => ThumbnailBloc(
-                thumbnailRepository: ThumbnailRepository(
-                  arDriveDownloader: ArDriveDownloader(
-                    arweave: context.read<ArweaveService>(),
-                    ardriveIo: ArDriveIO(),
-                    ioFileAdapter: IOFileAdapter(),
-                  ),
-                  driveDao: context.read<DriveDao>(),
-                  arweaveService: context.read<ArweaveService>(),
-                  arDriveAuth: context.read<ArDriveAuth>(),
-                  arDriveUploader: ArDriveUploader(
-                    turboUploadUri: Uri.parse(context
-                        .read<ConfigService>()
-                        .config
-                        .defaultTurboUploadUrl!),
-                  ),
-                  turboUploadService: context.read<TurboUploadService>(),
-                ),
-              )..add(
+                  thumbnailRepository: context.read<ThumbnailRepository>())
+                ..add(
                   GetThumbnail(fileDataTableItem: file),
                 ),
               child: BlocBuilder<ThumbnailBloc, ThumbnailState>(

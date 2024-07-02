@@ -1,14 +1,8 @@
-import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/download/ardrive_downloader.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/drive_explorer/thumbnail_creation/bloc/thumbnail_creation_bloc.dart';
-import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
-import 'package:ardrive/services/arweave/arweave_service.dart';
-import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -20,14 +14,7 @@ class ThumbnailCreationModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return RepositoryProvider(
-      create: (context) => ThumbnailRepository(
-        arDriveAuth: context.read<ArDriveAuth>(),
-        arDriveDownloader: context.read<ArDriveDownloader>(),
-        arDriveUploader: context.read<ArDriveUploader>(),
-        arweaveService: context.read<ArweaveService>(),
-        driveDao: context.read<DriveDao>(),
-        turboUploadService: context.read<TurboUploadService>(),
-      ),
+      create: (context) => context.read<ThumbnailRepository>(),
       child: BlocProvider(
         create: (context) {
           return ThumbnailCreationBloc(

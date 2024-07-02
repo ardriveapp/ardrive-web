@@ -15,6 +15,7 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/download/ardrive_downloader.dart';
+import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
@@ -454,5 +455,22 @@ class AppState extends State<App> {
             pstService: _.read<PstService>(),
           ),
         ),
+        RepositoryProvider(
+          create: (context) => ThumbnailRepository(
+            arDriveDownloader: ArDriveDownloader(
+              arweave: context.read<ArweaveService>(),
+              ardriveIo: ArDriveIO(),
+              ioFileAdapter: IOFileAdapter(),
+            ),
+            driveDao: context.read<DriveDao>(),
+            arweaveService: context.read<ArweaveService>(),
+            arDriveAuth: context.read<ArDriveAuth>(),
+            arDriveUploader: ArDriveUploader(
+              turboUploadUri: Uri.parse(
+                  context.read<ConfigService>().config.defaultTurboUploadUrl!),
+            ),
+            turboUploadService: context.read<TurboUploadService>(),
+          ),
+        )
       ];
 }
