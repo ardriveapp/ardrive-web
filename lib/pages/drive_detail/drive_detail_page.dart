@@ -423,24 +423,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                     .currentDrive.name,
                                               );
                                             },
-                                            content: ArDriveDropdownItemTile(
-                                              name: appLocalizationsOf(context)
-                                                  .renameDrive,
-                                              icon: ArDriveIcons.edit(
-                                                size: defaultIconSize,
-                                              ),
-                                            ),
-                                          ),
-                                          ArDriveDropdownItem(
-                                            onClick: () {
-                                              promptToRenameDrive(
-                                                context,
-                                                driveId: driveDetailState
-                                                    .currentDrive.id,
-                                                driveName: driveDetailState
-                                                    .currentDrive.name,
-                                              );
-                                            },
                                             content: _buildItem(
                                               appLocalizationsOf(context)
                                                   .renameDrive,
