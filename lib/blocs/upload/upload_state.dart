@@ -27,21 +27,33 @@ class UploadSigningInProgress extends UploadState {
 
 class UploadFileConflict extends UploadState {
   final List<String> conflictingFileNames;
+  final List<String> conflictingFileNamesForFailedFiles;
+
   final bool areAllFilesConflicting;
 
   UploadFileConflict({
     required this.conflictingFileNames,
     required this.areAllFilesConflicting,
+    required this.conflictingFileNamesForFailedFiles,
   });
 
   @override
   List<Object> get props => [conflictingFileNames];
 }
 
+class UploadConflictWithFailedFiles extends UploadFileConflict {
+  UploadConflictWithFailedFiles({
+    required super.conflictingFileNames,
+    required super.areAllFilesConflicting,
+    super.conflictingFileNamesForFailedFiles = const <String>[],
+  });
+}
+
 class UploadFolderNameConflict extends UploadFileConflict {
   UploadFolderNameConflict({
     required super.conflictingFileNames,
     required super.areAllFilesConflicting,
+    super.conflictingFileNamesForFailedFiles = const <String>[],
   });
 }
 
