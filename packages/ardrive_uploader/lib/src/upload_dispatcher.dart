@@ -91,7 +91,10 @@ class UploadDispatcher {
               verifyCancel: verifyCancel,
             );
           } catch (e) {
-            logger.e('Error uploading thumbnail: $e');
+            logger.e(
+              'Error uploading thumbnail. The file upload wont be affected.',
+              e,
+            );
           }
         }
 
