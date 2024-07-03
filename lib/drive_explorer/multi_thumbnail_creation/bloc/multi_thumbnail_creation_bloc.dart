@@ -16,7 +16,7 @@ class MultiThumbnailCreationBloc
   final ThumbnailRepository _thumbnailRepository;
 
   WorkerPool<ThumbnailLoadingStatus>? _worker;
- 
+
   bool _inExecution = false;
 
   final List<String> _skippedDrives = [];
@@ -41,9 +41,7 @@ class MultiThumbnailCreationBloc
       }
 
       if (event is CloseMultiThumbnailCreation) {
-        _worker?.cancel();
-        emit(MultiThumbnailCreationCancelled());
-        _inExecution = false;
+        emit(MultiThumbnailClosingModal());
       }
 
       if (event is CancelMultiThumbnailCreation) {
@@ -77,6 +75,7 @@ class MultiThumbnailCreationBloc
       }
 
       int loadedDrives = 0;
+      bool noMissingThumbnails = true;
 
       _verifyCancelAndEmitLoadingState(
         state: MultiThumbnailCreationLoadingThumbnails(
@@ -105,6 +104,8 @@ class MultiThumbnailCreationBloc
           loadedDrives++;
           continue;
         }
+
+        noMissingThumbnails = false;
 
         _thumbnails = images
             .map((file) => ThumbnailLoadingStatus(
@@ -171,6 +172,11 @@ class MultiThumbnailCreationBloc
       }
 
       _inExecution = false;
+
+      if (noMissingThumbnails) {
+        emit(MultiThumbnailCreationFilesLoadedEmpty());
+        return;
+      }
 
       emit(MultiThumbnailCreationThumbnailsLoaded());
     } catch (e) {
