@@ -10,6 +10,7 @@ import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/config/config_service.dart';
+import 'package:ardrive/shared/blocs/banner/app_banner_bloc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
@@ -177,76 +178,86 @@ class _AppSideBarState extends State<AppSideBar> {
       controller: _scrollController,
       child: SingleChildScrollView(
         controller: _scrollController,
-        child: Container(
-          height: MediaQuery.of(context).size.height,
-          decoration: BoxDecoration(
-            border: Border(
-              right: BorderSide(
-                color: ArDriveTheme.of(context).themeData.colors.shadow,
-                width: 1,
-              ),
-            ),
-          ),
-          child: AnimatedSize(
-            duration: const Duration(milliseconds: 300),
-            child: SizedBox(
-              width: _isExpanded ? 240 : 64,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: Column(
-                      children: [
-                        const SizedBox(
-                          height: 24,
-                        ),
-                        _buildLogo(false),
-                        const SizedBox(
-                          height: 24,
-                        ),
-                        _buildDriveActionsButton(
-                          context,
-                          false,
-                        ),
-                        const SizedBox(
-                          height: 56,
-                        ),
-                        _isExpanded
-                            ? BlocBuilder<DrivesCubit, DrivesState>(
-                                builder: (context, state) {
-                                  if (state is DrivesLoadSuccess &&
-                                      (state.userDrives.isNotEmpty ||
-                                          state.sharedDrives.isNotEmpty)) {
-                                    return Flexible(
-                                      child: Padding(
-                                        padding:
-                                            const EdgeInsets.only(left: 43.0),
-                                        child: _buildAccordion(
-                                          state,
-                                          false,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                  return const SizedBox();
-                                },
-                              )
-                            : const SizedBox(),
-                      ],
-                    ),
+        child: BlocBuilder<AppBannerBloc, AppBannerState>(
+          builder: (context, state) {
+            double height = MediaQuery.of(context).size.height;
+
+            if (state is AppBannerVisible) {
+              height -= 45;
+            }
+
+            return Container(
+              height: height,
+              decoration: BoxDecoration(
+                border: Border(
+                  right: BorderSide(
+                    color: ArDriveTheme.of(context).themeData.colors.shadow,
+                    width: 1,
                   ),
-                  const SizedBox(
-                    height: 16,
-                  ),
-                  _isExpanded
-                      ? const SizedBox(
-                          height: 16,
-                        )
-                      : const Spacer(),
-                  _buildSideBarBottom(),
-                ],
+                ),
               ),
-            ),
-          ),
+              child: AnimatedSize(
+                duration: const Duration(milliseconds: 300),
+                child: SizedBox(
+                  width: _isExpanded ? 240 : 64,
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          children: [
+                            const SizedBox(
+                              height: 24,
+                            ),
+                            _buildLogo(false),
+                            const SizedBox(
+                              height: 24,
+                            ),
+                            _buildDriveActionsButton(
+                              context,
+                              false,
+                            ),
+                            const SizedBox(
+                              height: 56,
+                            ),
+                            _isExpanded
+                                ? BlocBuilder<DrivesCubit, DrivesState>(
+                                    builder: (context, state) {
+                                      if (state is DrivesLoadSuccess &&
+                                          (state.userDrives.isNotEmpty ||
+                                              state.sharedDrives.isNotEmpty)) {
+                                        return Flexible(
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(
+                                                left: 43.0),
+                                            child: _buildAccordion(
+                                              state,
+                                              false,
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                      return const SizedBox();
+                                    },
+                                  )
+                                : const SizedBox(),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(
+                        height: 16,
+                      ),
+                      _isExpanded
+                          ? const SizedBox(
+                              height: 16,
+                            )
+                          : const Spacer(),
+                      _buildSideBarBottom(),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

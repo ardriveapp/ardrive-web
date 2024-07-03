@@ -19,6 +19,7 @@ import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
+import 'package:ardrive/shared/blocs/banner/app_banner_bloc.dart';
 import 'package:ardrive/sharing/blocs/sharing_file_bloc.dart';
 import 'package:ardrive/sync/domain/repositories/sync_repository.dart';
 import 'package:ardrive/sync/utils/batch_processor.dart';
@@ -337,6 +338,7 @@ class AppState extends State<App> {
             context.read<ActivityTracker>(),
           ),
         ),
+        BlocProvider<AppBannerBloc>(create: (context) => AppBannerBloc()),
       ];
 
   List<SingleChildWidget> get repositoryProviders => [

@@ -7,14 +7,21 @@ sealed class MultiThumbnailCreationEvent extends Equatable {
   List<Object> get props => [];
 }
 
-final class CreateMultiThumbnailForDrive extends MultiThumbnailCreationEvent {
-  final Drive drive;
-
-  const CreateMultiThumbnailForDrive({required this.drive});
+final class CreateMultiThumbnailForAllDrives
+    extends MultiThumbnailCreationEvent {
+  const CreateMultiThumbnailForAllDrives();
 
   @override
-  List<Object> get props => [drive];
+  List<Object> get props => [];
 }
 
 // cancel
 final class CancelMultiThumbnailCreation extends MultiThumbnailCreationEvent {}
+
+final class SkipDriveMultiThumbnailCreation
+    extends MultiThumbnailCreationEvent {
+  const SkipDriveMultiThumbnailCreation();
+
+  @override
+  List<Object> get props => [];
+}

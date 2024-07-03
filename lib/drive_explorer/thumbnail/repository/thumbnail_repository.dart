@@ -17,6 +17,7 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart' as drift;
 
+// TODO(@thiagocarvalhodev): implement unit tests
 class ThumbnailRepository {
   final ArweaveService _arweaveService;
   final ArDriveDownloader _arDriveDownloader;
@@ -102,7 +103,7 @@ class ThumbnailRepository {
     var fileEntry = await (_driveDao.select(_driveDao.fileEntries)
           ..where((tbl) => tbl.id.equals(fileId)))
         .getSingle();
-    // get image
+
     final dataTx =
         await _arweaveService.getTransactionDetails(fileEntry.dataTxId);
 

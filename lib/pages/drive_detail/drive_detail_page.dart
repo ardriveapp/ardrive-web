@@ -27,8 +27,6 @@ import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/dev_tools/shortcut_handler.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
-import 'package:ardrive/drive_explorer/multi_thumbnail_creation/multi_thumbnail_creation_modal.dart';
-import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/entities/entities.dart' as entities;
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/l11n/l11n.dart';
@@ -56,7 +54,6 @@ import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/mobile_screen_orientation.dart';
 import 'package:ardrive/utils/mobile_status_bar.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
-import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -297,6 +294,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     required bool canDownloadMultipleFiles,
   }) {
     final driveDetailCubit = context.read<DriveDetailCubit>();
+    ArDriveTypographyNew.of(context);
 
     final isShowingHiddenFiles = driveDetailState.isShowingHiddenFiles;
 
@@ -485,28 +483,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                               size: defaultIconSize,
                                             ),
                                           ),
-                                        ),
-                                        ArDriveDropdownItem(
-                                          content: ArDriveDropdownItemTile(
-                                            name: 'Create Thumbnail',
-                                            icon: ArDriveIcons.image(
-                                              size: defaultIconSize,
-                                            ),
-                                          ),
-                                          onClick: () {
-                                            showArDriveDialog(
-                                              context,
-                                              content: RepositoryProvider.value(
-                                                value: context.read<
-                                                    ThumbnailRepository>(),
-                                                child:
-                                                    MultiThumbnailCreationModal(
-                                                  drive: driveDetailState
-                                                      .currentDrive,
-                                                ),
-                                              ),
-                                            );
-                                          },
                                         ),
                                         ArDriveDropdownItem(
                                           onClick: () {

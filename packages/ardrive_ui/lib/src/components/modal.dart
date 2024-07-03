@@ -1,5 +1,4 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:ardrive_ui/src/constants/size_constants.dart';
 import 'package:flutter/material.dart';
 
 class ArDriveModal extends StatelessWidget {
@@ -93,7 +92,7 @@ class ArDriveModalNew extends StatelessWidget {
         ),
         boxShadow: BoxShadowCard.shadow80,
         backgroundColor: backgroundColor ?? colorTokens.containerL3,
-        borderRadius: 9,
+        borderRadius: modalBorderRadius,
       ),
     );
   }

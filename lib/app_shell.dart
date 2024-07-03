@@ -2,15 +2,18 @@ import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/side_bar.dart';
+import 'package:ardrive/drive_explorer/multi_thumbnail_creation/bloc/multi_thumbnail_creation_bloc.dart';
 import 'package:ardrive/gift/reedem_button.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
+import 'package:ardrive/shared/blocs/banner/app_banner_bloc.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -172,24 +175,114 @@ class AppShellState extends State<AppShell> {
                 ),
               );
           return ScreenTypeLayout.builder(
-            desktop: (context) => buildPage(
-              Row(
-                children: [
-                  const AppSideBar(),
-                  Container(
-                    color: ArDriveTheme.of(context).themeData.backgroundColor,
-                    width: 16,
-                  ),
-                  Expanded(
-                    child: Scaffold(
-                      backgroundColor:
-                          ArDriveTheme.of(context).themeData.backgroundColor,
-                      body: widget.page,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            desktop: (context) {
+              final colorTokens =
+                  ArDriveTheme.of(context).themeData.colorTokens;
+              final typography = ArDriveTypographyNew.of(context);
+
+              return buildPage(
+                BlocBuilder<AppBannerBloc, AppBannerState>(
+                  builder: (context, state) {
+                    return Column(
+                      children: [
+                        if (state is AppBannerVisible)
+                          Container(
+                            height: 45,
+                            width: double.maxFinite,
+                            color: colorTokens.buttonPrimaryDefault,
+                            alignment: Alignment.center,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Spacer(),
+                                ArDriveIcons.asc(
+                                  color: colorTokens.textOnPrimary,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                // move two pixels above
+                                Transform(
+                                  transform:
+                                      Matrix4.translationValues(0.0, -2.0, 0.0),
+                                  child: RichText(
+                                    text: TextSpan(
+                                      children: [
+                                        TextSpan(
+                                          text:
+                                              'ArDrive now supports thumbnails! You can ',
+                                          style: typography.paragraphNormal(
+                                              fontWeight: ArFontWeight.semiBold,
+                                              color: colorTokens.textOnPrimary),
+                                        ),
+                                        TextSpan(
+                                          text: 'add them now!',
+                                          recognizer: TapGestureRecognizer()
+                                            ..onTap = () {
+                                              context
+                                                  .read<
+                                                      MultiThumbnailCreationBloc>()
+                                                  .add(
+                                                      const CreateMultiThumbnailForAllDrives());
+                                            },
+                                          style: typography
+                                              .paragraphNormal(
+                                                  fontWeight:
+                                                      ArFontWeight.semiBold,
+                                                  color:
+                                                      colorTokens.textOnPrimary)
+                                              .copyWith(
+                                                decoration:
+                                                    TextDecoration.underline,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const Spacer(),
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8.0),
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      context
+                                          .read<AppBannerBloc>()
+                                          .add(const AppBannerCloseEvent());
+                                    },
+                                    child: ArDriveIcons.x(
+                                      color: colorTokens.textOnPrimary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        Flexible(
+                          child: Row(
+                            children: [
+                              const AppSideBar(),
+                              Container(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .backgroundColor,
+                                width: 16,
+                              ),
+                              Expanded(
+                                child: Scaffold(
+                                  backgroundColor: ArDriveTheme.of(context)
+                                      .themeData
+                                      .backgroundColor,
+                                  body: widget.page,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              );
+            },
             mobile: (context) => buildPage(widget.page),
           );
         },

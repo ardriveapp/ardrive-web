@@ -4,7 +4,7 @@ sealed class MultiThumbnailCreationState extends Equatable {
   const MultiThumbnailCreationState();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 final class MultiThumbnailCreationInitial extends MultiThumbnailCreationState {}
@@ -12,26 +12,40 @@ final class MultiThumbnailCreationInitial extends MultiThumbnailCreationState {}
 final class MultiThumbnailCreationLoadingFiles
     extends MultiThumbnailCreationState {}
 
-final class MultiThumbnailCreationFilesLoaded
-    extends MultiThumbnailCreationState {
-  final List<FileWithLatestRevisionTransactions> files;
+// final class MultiThumbnailCreationFilesLoaded
+//     extends MultiThumbnailCreationState {
+//   final List<FileWithLatestRevisionTransactions> files;
 
-  const MultiThumbnailCreationFilesLoaded({required this.files});
+//   const MultiThumbnailCreationFilesLoaded({required this.files});
 
-  @override
-  List<Object> get props => [files];
-}
+//   @override
+//   List<Object> get props => [files];
+// }
 
 final class MultiThumbnailCreationLoadingThumbnails
     extends MultiThumbnailCreationState {
-  final List<ThumbnailLoadingStatus> thumbnails;
-  final int loadedCount;
+  final List<ThumbnailLoadingStatus> thumbnailsInDrive;
+  final Drive? driveInExecution;
+  final int loadedDrives;
+  final int loadedThumbnailsInDrive;
+  final int numberOfDrives;
 
-  const MultiThumbnailCreationLoadingThumbnails(
-      {required this.thumbnails, this.loadedCount = 0});
+  const MultiThumbnailCreationLoadingThumbnails({
+    required this.thumbnailsInDrive,
+    this.driveInExecution,
+    required this.loadedDrives,
+    required this.loadedThumbnailsInDrive,
+    required this.numberOfDrives,
+  });
 
   @override
-  List<Object> get props => [UniqueKey()];
+  List<Object?> get props => [
+        thumbnailsInDrive,
+        driveInExecution,
+        loadedDrives,
+        loadedThumbnailsInDrive,
+        numberOfDrives,
+      ];
 }
 
 final class MultiThumbnailCreationFilesLoadedEmpty
@@ -52,3 +66,8 @@ final class MultiThumbnailCreationThumbnailsLoaded
 
 final class MultiThumbnailCreationCancelled
     extends MultiThumbnailCreationState {}
+
+final class MultiThumbnailCreationError extends MultiThumbnailCreationState {
+  @override
+  List<Object> get props => [];
+}

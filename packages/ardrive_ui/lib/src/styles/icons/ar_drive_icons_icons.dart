@@ -14,7 +14,7 @@
 ///
 ///
 library;
-// ignore_for_file: unnecessary_nullable_for_final_variable_declarations, constant_identifier_names
+// ignore_for_file: constant_identifier_names
 
 import 'package:flutter/widgets.dart';
 
@@ -22,7 +22,7 @@ class ArDriveIconsData {
   ArDriveIconsData._();
 
   static const _kFontFam = 'ArDriveIcons';
-  static const String? _kFontPkg = 'ardrive_ui';
+  static const String _kFontPkg = 'ardrive_ui';
 
   static const IconData icon_add_drive =
       IconData(0xe800, fontFamily: _kFontFam, fontPackage: _kFontPkg);
@@ -148,6 +148,8 @@ class ArDriveIconsData {
       IconData(0xe83c, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData keypad =
       IconData(0xe83d, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData asc =
+      IconData(0xe83e, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData detach =
       IconData(0xe83f, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData manifest_icon_flattened =

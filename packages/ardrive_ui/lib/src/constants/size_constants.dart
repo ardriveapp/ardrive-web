@@ -26,3 +26,4 @@ const double checkboxSize = 18;
 
 /// Border radius
 const double checkboxBorderRadius = 3;
+const double modalBorderRadius = 9;
