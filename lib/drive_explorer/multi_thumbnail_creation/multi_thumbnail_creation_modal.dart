@@ -70,7 +70,7 @@ class _MultiThumbnailCreationWrapperState
             child: BlocListener<MultiThumbnailCreationBloc,
                 MultiThumbnailCreationState>(
               listener: (context, state) {
-                if (state is MultiThumbnailCreationThumbnailsLoaded ||
+                if (state is MultiThumbnailClosingModal ||
                     state is MultiThumbnailCreationCancelled) {
                   _overlayEntry?.remove();
                 }
@@ -129,7 +129,29 @@ class _MultiThumbnailCreationModalContentState
                   action: () {
                     context
                         .read<MultiThumbnailCreationBloc>()
-                        .add(CancelMultiThumbnailCreation());
+                        .add(CloseMultiThumbnailCreation());
+                  },
+                  title: appLocalizationsOf(context).close,
+                )
+              ],
+            ),
+          );
+        }
+        if (state is MultiThumbnailCreationThumbnailsLoaded) {
+          return Material(
+            borderRadius: BorderRadius.circular(modalBorderRadius),
+            child: ArDriveStandardModalNew(
+              content: Center(
+                child: Text('Thumbnails created successfully!',
+                    style: typography.paragraphLarge(
+                        fontWeight: ArFontWeight.semiBold)),
+              ),
+              actions: [
+                ModalAction(
+                  action: () {
+                    context
+                        .read<MultiThumbnailCreationBloc>()
+                        .add(CloseMultiThumbnailCreation());
                   },
                   title: appLocalizationsOf(context).close,
                 )

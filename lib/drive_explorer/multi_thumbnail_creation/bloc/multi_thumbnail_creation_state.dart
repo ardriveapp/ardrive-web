@@ -64,6 +64,8 @@ class ThumbnailLoadingStatus {
 final class MultiThumbnailCreationThumbnailsLoaded
     extends MultiThumbnailCreationState {}
 
+final class MultiThumbnailClosingModal extends MultiThumbnailCreationState {}
+
 final class MultiThumbnailCreationCancelled
     extends MultiThumbnailCreationState {}
 

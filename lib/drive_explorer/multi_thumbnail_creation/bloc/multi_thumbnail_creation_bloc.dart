@@ -16,7 +16,7 @@ class MultiThumbnailCreationBloc
   final ThumbnailRepository _thumbnailRepository;
 
   WorkerPool<ThumbnailLoadingStatus>? _worker;
-
+ 
   bool _inExecution = false;
 
   final List<String> _skippedDrives = [];
@@ -38,6 +38,12 @@ class MultiThumbnailCreationBloc
             .driveInExecution!
             .id);
         _worker?.cancel();
+      }
+
+      if (event is CloseMultiThumbnailCreation) {
+        _worker?.cancel();
+        emit(MultiThumbnailCreationCancelled());
+        _inExecution = false;
       }
 
       if (event is CancelMultiThumbnailCreation) {

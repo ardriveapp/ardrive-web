@@ -25,3 +25,5 @@ final class SkipDriveMultiThumbnailCreation
   @override
   List<Object> get props => [];
 }
+
+final class CloseMultiThumbnailCreation extends MultiThumbnailCreationEvent {}
