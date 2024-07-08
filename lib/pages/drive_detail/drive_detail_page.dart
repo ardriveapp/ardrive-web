@@ -13,6 +13,7 @@ import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_state.dart';
 import 'package:ardrive/components/app_bottom_bar.dart';
 import 'package:ardrive/components/app_top_bar.dart';
 import 'package:ardrive/components/components.dart';
+import 'package:ardrive/components/create_snapshot_dialog.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/components/drive_detach_dialog.dart';
@@ -473,7 +474,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                             ),
                                           ),
                                         ),
-                                        if (isDriveOwner)
+                                        if (isDriveOwner) ...[
                                           ArDriveDropdownItem(
                                             onClick: () {
                                               promptToRenameDrive(
@@ -484,14 +485,28 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                     .currentDrive.name,
                                               );
                                             },
-                                            content: ArDriveDropdownItemTile(
-                                              name: appLocalizationsOf(context)
+                                            content: _buildItem(
+                                              appLocalizationsOf(context)
                                                   .renameDrive,
-                                              icon: ArDriveIcons.edit(
+                                              ArDriveIcons.edit(
                                                 size: defaultIconSize,
                                               ),
                                             ),
                                           ),
+                                        ],
+                                        ArDriveDropdownItem(
+                                          onClick: () {
+                                            promptToCreateSnapshot(context,
+                                                driveDetailState.currentDrive);
+                                          },
+                                          content: _buildItem(
+                                            appLocalizationsOf(context)
+                                                .createSnapshot,
+                                            ArDriveIcons.iconCreateSnapshot(
+                                              size: defaultIconSize,
+                                            ),
+                                          ),
+                                        ),
                                         ArDriveDropdownItem(
                                           onClick: () {
                                             promptToShareDrive(
@@ -1111,7 +1126,7 @@ class MobileFolderNavigation extends StatelessWidget {
                             size: defaultIconSize,
                           ),
                         )),
-                    if (isOwner)
+                    if (isOwner) ...[
                       ArDriveDropdownItem(
                         onClick: () {
                           promptToRenameDrive(
@@ -1127,6 +1142,18 @@ class MobileFolderNavigation extends StatelessWidget {
                           ),
                         ),
                       ),
+                      ArDriveDropdownItem(
+                        onClick: () {
+                          promptToCreateSnapshot(context, state.currentDrive);
+                        },
+                        content: _buildItem(
+                          appLocalizationsOf(context).createSnapshot,
+                          ArDriveIcons.iconCreateSnapshot(
+                            size: defaultIconSize,
+                          ),
+                        ),
+                      ),
+                    ],
                     ArDriveDropdownItem(
                       onClick: () {
                         promptToShareDrive(
