@@ -46,6 +46,7 @@ void main() {
         'export drive contents as csv file exports the correct number of files',
         build: () => DataExportCubit(
               gatewayURL: testGatewayURL,
+              folderRepository: MockFolderRepository(),
               driveDao: driveDao,
               driveId: driveId,
             ),
