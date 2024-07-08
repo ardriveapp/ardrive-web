@@ -93,12 +93,16 @@ class MultiThumbnailCreationBloc
           driveId: drive.id,
         );
 
-        final images = files.where((element) =>
-            (element.thumbnail == null || element.thumbnail == 'null') &&
-            supportedImageTypesInFilePreview
-                .contains(element.dataContentType ?? ''));
+        final images = files
+            .where((element) =>
+                (element.thumbnail == null || element.thumbnail == 'null') &&
+                supportedImageTypesInFilePreview
+                    .contains(element.dataContentType ?? ''))
+            .toList();
 
         logger.d('Images missing thumbnails: ${images.length}');
+
+        images.removeWhere((element) => element.dataTx.status == 'failed');
 
         if (images.isEmpty) {
           loadedDrives++;
