@@ -8,9 +8,9 @@ class AppVersionWidget extends StatelessWidget {
   final Color color;
 
   const AppVersionWidget({
-    Key? key,
+    super.key,
     this.color = Colors.grey,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

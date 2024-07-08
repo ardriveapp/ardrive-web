@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -124,7 +125,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
       final driveEntity = await _arweave.getLatestDriveEntityWithId(
         driveId,
-        _driveKey,
+        driveKey: _driveKey,
       );
 
       if (driveEntity == null) {
@@ -187,7 +188,8 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       }
     }
 
-    final drive = await _arweave.getLatestDriveEntityWithId(driveId, _driveKey);
+    final drive =
+        await _arweave.getLatestDriveEntityWithId(driveId, driveKey: _driveKey);
 
     if (drive == null) {
       return false;
@@ -207,7 +209,8 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
     _driveKey = await getDriveKey(promptedDriveKey);
 
-    final drive = await _arweave.getLatestDriveEntityWithId(driveId, _driveKey);
+    final drive =
+        await _arweave.getLatestDriveEntityWithId(driveId, driveKey: _driveKey);
 
     if (drive == null) {
       return 'Invalid drive key';

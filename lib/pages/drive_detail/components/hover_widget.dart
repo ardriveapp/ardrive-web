@@ -99,12 +99,14 @@ class ArDriveIconButton extends StatelessWidget {
     this.onPressed,
     this.size = 16,
     this.tooltip,
+    this.scale,
   });
 
   final ArDriveIcon icon;
   final Function()? onPressed;
   final double size;
   final String? tooltip;
+  final bool? scale;
 
   @override
   Widget build(BuildContext context) {
@@ -112,6 +114,7 @@ class ArDriveIconButton extends StatelessWidget {
       onTap: onPressed,
       child: HoverWidget(
         tooltip: tooltip,
+        hoverScale: scale == true ? 1.1 : 1.0,
         child: icon,
       ),
     );

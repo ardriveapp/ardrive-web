@@ -12,8 +12,7 @@ abstract class SnapshotData {
 
 class TxSnapshot {
   @JsonKey(name: 'gqlNode')
-  DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
-      gqlNode;
+  TransactionCommonMixin gqlNode;
 
   @JsonKey(
     name: 'jsonMetadata',

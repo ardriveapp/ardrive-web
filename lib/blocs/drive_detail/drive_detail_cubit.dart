@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/drive_detail/utils/breadcrumb_builder.dart';
 import 'package:ardrive/core/activity_tracker.dart';
-import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
@@ -29,6 +29,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   final ConfigService _configService;
   final ArDriveAuth _auth;
   final ActivityTracker _activityTracker;
+  final BreadcrumbBuilder _breadcrumbBuilder;
 
   StreamSubscription? _folderSubscription;
   final _defaultAvailableRowsPerPage = [25, 50, 75, 100];
@@ -52,11 +53,13 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     required ConfigService configService,
     required ActivityTracker activityTracker,
     required ArDriveAuth auth,
+    required BreadcrumbBuilder breadcrumbBuilder,
   })  : _profileCubit = profileCubit,
         _activityTracker = activityTracker,
         _driveDao = driveDao,
         _auth = auth,
         _configService = configService,
+        _breadcrumbBuilder = breadcrumbBuilder,
         super(DriveDetailLoadInProgress()) {
     if (driveId.isEmpty) {
       return;
@@ -70,11 +73,15 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             .getSingleOrNull();
         // Open the root folder if the deep-linked folder could not be found.
 
-        openFolder(path: folder?.path ?? rootPath);
+        openFolder(folderId: folder?.id);
         // The empty string here is required to open the root folder
       });
     } else {
-      openFolder(path: rootPath);
+      Future.microtask(() async {
+        final drive =
+            await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+        openFolder(folderId: drive?.rootFolderId);
+      });
     }
   }
 
@@ -85,13 +92,16 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   }
 
   void openFolder({
-    required String path,
+    String? folderId,
+    String? otherDriveId,
     DriveOrder contentOrderBy = DriveOrder.name,
     OrderingMode contentOrderingMode = OrderingMode.asc,
   }) async {
     try {
       _selectedItem = null;
       _allImagesOfCurrentFolder = null;
+
+      String driveId = otherDriveId ?? this.driveId;
 
       emit(DriveDetailLoadInProgress());
 
@@ -111,9 +121,15 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         }
 
         try {
-          await _driveDao.getFolderTree(driveId, value.rootFolderId);
+          await _driveDao
+              .folderById(
+                driveId: driveId,
+                folderId: folderId ?? value.rootFolderId,
+              )
+              .getSingle();
         } catch (e) {
-          logger.d('Folder with id ${value.rootFolderId} not found');
+          logger
+              .d('Folder with id ${folderId ?? value.rootFolderId} not found');
 
           emit(DriveInitialLoading());
           return;
@@ -125,9 +141,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         _driveDao.driveById(driveId: driveId).watchSingle(),
         _driveDao.watchFolderContents(
           driveId,
-          folderPath: path,
           orderBy: contentOrderBy,
           orderingMode: contentOrderingMode,
+          folderId: folderId,
         ),
         _profileCubit.stream.startWith(ProfileCheckingAvailability()),
         (drive, folderContents, _) async {
@@ -141,14 +157,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
           final profile = _profileCubit.state;
 
-          var availableRowsPerPage = _defaultAvailableRowsPerPage;
-
-          availableRowsPerPage = calculateRowsPerPage(
+          final availableRowsPerPage = calculateRowsPerPage(
             folderContents.files.length + folderContents.subfolders.length,
           );
-
-          final rootFolderNode =
-              await _driveDao.getFolderTree(driveId, drive.rootFolderId);
 
           if (_selectedItem != null && _refreshSelectedItem) {
             if (_selectedItem is FileDataTableItem) {
@@ -193,6 +204,13 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             isOwner: isDriveOwner(_auth, drive.ownerAddress),
           );
 
+          final List<BreadCrumbRowInfo> pathSegments =
+              await _breadcrumbBuilder.buildForFolder(
+            folderId: folderContents.folder.id,
+            rootFolderId: drive.rootFolderId,
+            driveId: driveId,
+          );
+
           if (state != null) {
             emit(
               state.copyWith(
@@ -207,12 +225,17 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 availableRowsPerPage: availableRowsPerPage,
                 currentFolderContents: currentFolderContents,
                 isShowingHiddenFiles: _showHiddenFiles,
+                pathSegments: pathSegments,
+                driveIsEmpty: folderContents.files.isEmpty &&
+                    folderContents.subfolders.isEmpty,
               ),
             );
           } else {
             final columnsVisibility = await getTableColumnVisibility();
+
             emit(
               DriveDetailLoadSuccess(
+                pathSegments: pathSegments,
                 selectedItem: _selectedItem,
                 currentDrive: drive,
                 hasWritePermissions: profile is ProfileLoggedIn &&
@@ -222,7 +245,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 contentOrderingMode: contentOrderingMode,
                 rowsPerPage: availableRowsPerPage.first,
                 availableRowsPerPage: availableRowsPerPage,
-                driveIsEmpty: rootFolderNode.isEmpty(),
+                driveIsEmpty: folderContents.files.isEmpty &&
+                    folderContents.subfolders.isEmpty,
                 multiselect: false,
                 currentFolderContents: currentFolderContents,
                 columnVisibility: columnsVisibility,
@@ -277,26 +301,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     return availableRowsPerPage;
   }
 
-  void setRowsPerPage(int rowsPerPage) {
-    switch (state.runtimeType) {
-      case DriveDetailLoadSuccess:
-        emit(
-          (state as DriveDetailLoadSuccess).copyWith(
-            rowsPerPage: rowsPerPage,
-          ),
-        );
-    }
-  }
-
-  Future<void> selectDataItem(ArDriveDataTableItem item) async {
+  Future<void> selectDataItem(ArDriveDataTableItem item,
+      {bool openSelectedPage = false}) async {
     var state = this.state as DriveDetailLoadSuccess;
 
     if (state.currentDrive.isPublic && item is FileDataTableItem) {
-      final fileWithRevisions = _driveDao.latestFileRevisionByFileId(
-        driveId: driveId,
-        fileId: item.id,
-      );
-      final dataTxId = (await fileWithRevisions.getSingle()).dataTxId;
+      final dataTxId = item.dataTxId;
       state = state.copyWith(
           selectedFilePreviewUrl:
               '${_configService.config.defaultArweaveGatewayUrl}/$dataTxId');
@@ -304,7 +314,21 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     _selectedItem = item;
 
-    emit(state.copyWith(selectedItem: item, showSelectedItemDetails: true));
+    int? selectedPage;
+
+    if (openSelectedPage) {
+      selectedPage =
+          state.currentFolderContents.indexOf(item) ~/ state.rowsPerPage;
+    }
+
+    emit(
+      state.copyWith(
+        selectedItem: item,
+        showSelectedItemDetails: true,
+        selectedPage: selectedPage,
+        forceRebuildKey: selectedPage != null ? UniqueKey() : null,
+      ),
+    );
   }
 
   ArDriveDataTableItem? _selectedItem;
@@ -393,7 +417,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   }) {
     final state = this.state as DriveDetailLoadSuccess;
     openFolder(
-      path: state.folderInView.folder.path,
+      folderId: state.folderInView.folder.id,
       contentOrderBy: contentOrderBy,
       contentOrderingMode: contentOrderingMode,
     );

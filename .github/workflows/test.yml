@@ -22,6 +22,10 @@ jobs:
       - name: Install script_runner
         run: flutter pub global activate script_runner
 
+      - name: Fetch storybook dependencies
+        working-directory: ./packages/ardrive_ui/storybook
+        run: flutter pub get
+
       - name: Build app
         run: |
           scr setup
@@ -31,5 +35,5 @@ jobs:
 
       - name: Test app
         run: scr test
-    
-      
+
+

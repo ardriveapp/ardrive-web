@@ -13,10 +13,10 @@ class DriveFileDropZone extends StatefulWidget {
   final String folderId;
 
   const DriveFileDropZone({
-    Key? key,
+    super.key,
     required this.driveId,
     required this.folderId,
-  }) : super(key: key);
+  });
 
   @override
   DriveFileDropZoneState createState() => DriveFileDropZoneState();

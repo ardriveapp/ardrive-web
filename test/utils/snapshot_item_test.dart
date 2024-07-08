@@ -43,7 +43,7 @@ void main() {
         );
         expect(item.subRanges.rangeSegments.length, 1);
         expect(item.currentIndex, -1);
-        Stream stream = item.getNextStream();
+        final stream = item.getNextStream();
         expect(item.currentIndex, 0);
         expect(await countStreamItems(stream), 11);
 
@@ -121,7 +121,7 @@ void main() {
 
         expect(item.subRanges.rangeSegments.length, 1);
         expect(item.currentIndex, -1);
-        Stream stream = item.getNextStream();
+        final stream = item.getNextStream();
         expect(item.currentIndex, 0);
         expect(await countStreamItems(stream), 11);
 
@@ -217,7 +217,7 @@ void main() {
 
           expect(allItems[0].subRanges.rangeSegments.length, 1);
           expect(allItems[0].currentIndex, -1);
-          Stream stream = allItems[0].getNextStream();
+          final stream = allItems[0].getNextStream();
           expect(allItems[0].currentIndex, 0);
           expect(await countStreamItems(stream), 11);
           expect(

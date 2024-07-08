@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/utils.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -67,7 +68,7 @@ void main() {
 
       when(() => arweave.getLatestDriveEntityWithId(
             validPrivateDriveId,
-            validPrivateDriveKey,
+            driveKey: validPrivateDriveKey,
           )).thenAnswer(
         (_) => Future.value(
           DriveEntity(
@@ -144,7 +145,7 @@ void main() {
       setUp(() async {
         when(() => arweave.getLatestDriveEntityWithId(
               validPrivateDriveId,
-              invalidDriveKey,
+              driveKey: invalidDriveKey,
             )).thenAnswer((_) => Future.value(null));
       });
 

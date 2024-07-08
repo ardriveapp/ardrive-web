@@ -1,0 +1,1 @@
+- Adds option to choose payment method for manifest uploads, including Turbo Credits

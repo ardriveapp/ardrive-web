@@ -57,7 +57,7 @@ Future<void> promptToCreateFolderWithoutCongestionWarning(
     );
 
 class FolderCreateForm extends StatefulWidget {
-  const FolderCreateForm({Key? key}) : super(key: key);
+  const FolderCreateForm({super.key});
 
   @override
   State<FolderCreateForm> createState() => _FolderCreateFormState();
@@ -76,6 +76,7 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
             showProgressDialog(
               context,
               title: appLocalizationsOf(context).creatingFolderEmphasized,
+              useNewArDriveUI: true,
             );
           } else if (state is FolderCreateSuccess) {
             Navigator.pop(context);
@@ -91,14 +92,15 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
               description: appLocalizationsOf(context).entityAlreadyExists(
                 state.folderName,
               ),
+              useNewArDriveUI: true,
             );
           }
         },
-        builder: (context, state) => ArDriveStandardModal(
+        builder: (context, state) => ArDriveStandardModalNew(
           title: appLocalizationsOf(context).createFolderEmphasized,
           content: SizedBox(
             width: kMediumDialogWidth,
-            child: ArDriveTextField(
+            child: ArDriveTextFieldNew(
               controller: _folderNameController,
               autofocus: true,
               onFieldSubmitted: (value) {

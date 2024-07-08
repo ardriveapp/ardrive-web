@@ -1,12 +1,9 @@
 import 'dart:async';
 
-import 'package:ardrive_io/ardrive_io.dart';
-import 'package:ardrive_uploader/src/data_bundler.dart';
+import 'package:ardrive_uploader/src/upload_dispatcher.dart';
 import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:arweave/arweave.dart';
-import 'package:cryptography/cryptography.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:uuid/uuid.dart';
 
 import '../ardrive_uploader.dart';
 
@@ -22,8 +19,18 @@ abstract class UploadController {
   void onProgressChange(Function(UploadProgress progress) callback);
   void onCompleteTask(Function(UploadTask tasks) callback);
   void sendTasks(Wallet wallet);
-  void sendTask(UploadTask task, Wallet wallet, {Function()? onTaskCompleted});
+
+  List<UploadTask> get notCompletedTasks;
+
+  /// onTaskCompleted is a callback that is called when a task is completed.
+  /// it pass true if the task is completed successfully, otherwise it pass false.
+  void sendTask(
+    UploadTask task,
+    Wallet wallet, {
+    Function(bool)? onTaskCompleted,
+  });
   void addTask(UploadTask task);
+  void onFailedTask(Function(UploadTask task) callback);
   Future<void> retryFailedTasks(Wallet wallet);
 
   factory UploadController(
@@ -67,11 +74,14 @@ class _UploadController implements UploadController {
 
   @override
   final Map<String, UploadTask> tasks = {};
-
   final Map<String, UploadTask> _completedTasks = {};
   final Map<String, UploadTask> _failedTasks = {};
   final Map<String, UploadTask> _canceledTasks = {};
   final Map<String, UploadTask> _inProgressTasks = {};
+
+  @override
+  List<UploadTask> get notCompletedTasks =>
+      tasks.values.where((e) => e.status != UploadStatus.complete).toList();
 
   int _totalSize = 0;
   int _numberOfItems = 0;
@@ -167,10 +177,11 @@ class _UploadController implements UploadController {
           .where((element) => element.status == UploadStatus.notStarted)
           .toList(),
       onWorkerError: (e) {
+        /// Handles any uncaught error on the worker. It is not supposed to happen as
+        /// the `_uploadDispatcher` should handle all the errors and return an `UploadResult`
         logger.d('Error on UploadWorker. Task: ${e.toString()}');
-        final updatedTask = tasks[e.id]!;
 
-        updateProgress(task: updatedTask.copyWith(status: UploadStatus.failed));
+        _handleError(task: tasks[e.id]!, error: e);
       },
       upload: (task) async {
         final uploadResult = await _uploadDispatcher.send(
@@ -181,10 +192,7 @@ class _UploadController implements UploadController {
         );
 
         if (!uploadResult.success) {
-          final updatedTask = tasks[task.id]!;
-
-          updateProgress(
-              task: updatedTask.copyWith(status: UploadStatus.failed));
+          _handleError(task: task, error: uploadResult.error);
         }
       },
     );
@@ -210,13 +218,15 @@ class _UploadController implements UploadController {
   void sendTask(
     UploadTask task,
     Wallet wallet, {
-    Function()? onTaskCompleted,
+    Function(bool)? onTaskCompleted,
   }) {
     final worker = UploadWorker(
       onError: (task, e) {
-        logger.d('Error on UploadWorker. Task: ${e.toString()}');
-        final updatedTask = tasks[task.id]!;
-        updateProgress(task: updatedTask.copyWith(status: UploadStatus.failed));
+        /// Handles any uncaught error on the worker. It is not supposed to happen as
+        /// the `_uploadDispatcher` should handle all the errors and return an `UploadResult`
+        logger.d('Error on UploadWorker. Task: ${task.toString()}');
+
+        _handleError(task: task, error: e);
       },
       upload: (task) async {
         final uploadResult = await _uploadDispatcher.send(
@@ -227,16 +237,15 @@ class _UploadController implements UploadController {
         );
 
         if (!uploadResult.success) {
-          final updatedTask = tasks[task.id]!;
-
-          updateProgress(
-              task: updatedTask.copyWith(status: UploadStatus.failed));
+          _handleError(task: task, error: uploadResult.error);
         }
       },
       maxTasks: 1,
       task: task,
-      onTaskCompleted: () {
-        onTaskCompleted?.call();
+      onTaskCompleted: (task) {
+        logger.d('Task completed with status: ${task.status}');
+        final updatedTask = tasks[task.id]!;
+        onTaskCompleted?.call(updatedTask.status == UploadStatus.complete);
       },
     );
 
@@ -265,6 +274,7 @@ class _UploadController implements UploadController {
     _progressStream.close();
     _progressStream = StreamController.broadcast();
 
+    /// Clean up the tasks
     tasks.clear();
     _completedTasks.clear();
     _canceledTasks.clear();
@@ -274,60 +284,61 @@ class _UploadController implements UploadController {
 
     _progressStream.add(UploadProgress.notStarted());
 
+    /// Add the failed tasks back to the tasks list as not started
     for (var task in _failedTasks.values) {
-      addTask(
-        task.copyWith(
-          status: UploadStatus.notStarted,
-          progress: 0,
-          cancelToken: null,
-        ),
-      );
+      if (task is FileUploadTask) {
+        addTask(
+          task.copyWith(
+            status: UploadStatus.notStarted,
+            progress: 0,
+            cancelToken: null,
+            metadata: task.metadata,
+          ),
+        );
+      } else if (task is FolderUploadTask) {
+        addTask(
+          task.copyWith(
+            status: UploadStatus.notStarted,
+            progress: 0,
+            cancelToken: null,
+            folders: task.folders,
+          ),
+        );
+      }
     }
 
     logger.d('Retrying failed tasks.');
-
-    for (var task in tasks.values) {
-      logger.d('Task: ${task.id} and progress ${task.progress}');
-    }
 
     _failedTasks.clear();
 
     init();
 
-    // creates a worker pool and initializes it with the tasks
-    WorkerPool(
-      numWorkers: _numOfWorkers,
-      maxTasksPerWorker: _maxTasksPerWorker,
-      taskQueue: tasks.values
-          .where((element) => element.status == UploadStatus.notStarted)
-          .toList(),
-      onWorkerError: (e) {
-        final updatedTask = tasks[e.id]!;
+    /// All folders goes in a single bundle. We are safe to send all the folders at once.
+    final folderTasks = tasks.values.whereType<FolderUploadTask>();
 
-        updateProgress(task: updatedTask.copyWith(status: UploadStatus.failed));
+    final containsFolder = folderTasks.isNotEmpty;
 
-        logger.d('Unknown error on UploadWorker. Task: ${e.toString()}');
-      },
-      upload: (task) async {
-        final uploadResult = await _uploadDispatcher.send(
-          task: task,
-          wallet: wallet,
-          controller: this,
-          verifyCancel: () => _isCanceled,
-        );
-
-        if (!uploadResult.success) {
-          final updatedTask = tasks[task.id]!;
-
-          updateProgress(
-              task: updatedTask.copyWith(status: UploadStatus.failed));
-        }
-      },
-    );
+    /// If the tasks contains a folder, we must send the folder first
+    if (containsFolder) {
+      sendTask(
+        folderTasks.first,
+        wallet,
+        onTaskCompleted: (success) {
+          if (success) {
+            sendTasks(wallet);
+          } else {
+            for (var task in tasks.values) {
+              task = task.copyWith(status: UploadStatus.failed);
+              updateProgress(task: task);
+            }
+          }
+        },
+      );
+    } else {
+      sendTasks(wallet);
+    }
   }
 
-  /// It is just an experimentation. It is not used yet, but it will be used in the future.
-  /// When this implementation is stable, we must add this method on its interface class: `UploadController`.
   Future<void> retryTask(UploadTask task, Wallet wallet) async {
     task.copyWith(status: UploadStatus.notStarted);
 
@@ -343,7 +354,9 @@ class _UploadController implements UploadController {
 
   @override
   Future<void> close() async {
-    await _progressStream.close();
+    if (!_progressStream.isClosed) {
+      await _progressStream.close();
+    }
   }
 
   @override
@@ -380,6 +393,22 @@ class _UploadController implements UploadController {
     return _totalSize;
   }
 
+  /// Set the status of the task to failed and update the progress
+  ///
+  /// Calls the callback to the caller that the task has failed
+  void _handleError({
+    required UploadTask task,
+    required Object? error,
+  }) {
+    final updatedTask =
+        tasks[task.id]!.copyWith(error: error, status: UploadStatus.failed);
+
+    updateProgress(task: updatedTask);
+
+    /// Callback to the caller that the task has failed
+    _onFailedTask(updatedTask);
+  }
+
   void _resetUploadProgress() {
     _numberOfItems = 0;
     _totalProgress = 0;
@@ -389,23 +418,22 @@ class _UploadController implements UploadController {
     _start = null;
   }
 
+  @override
+  void onFailedTask(Function(UploadTask task) callback) {
+    _onFailedTask = callback;
+  }
+
   void Function(UploadProgress progress)? _onProgressChange = (progress) {};
 
-  void Function(List<UploadTask> tasks) _onDone = (List<UploadTask> tasks) {
-    print('Upload Finished');
-  };
+  void Function(List<UploadTask> tasks) _onDone = (List<UploadTask> tasks) {};
 
-  void Function(List<UploadTask> tasks) _onCancel = (List<UploadTask> tasks) {
-    print('Upload Canceled');
-  };
+  void Function(List<UploadTask> tasks) _onCancel = (List<UploadTask> tasks) {};
 
-  void Function(List<UploadTask> tasks) _onError = (List<UploadTask> tasks) {
-    print('Upload Error');
-  };
+  void Function(List<UploadTask> tasks) _onError = (List<UploadTask> tasks) {};
 
-  void Function(UploadTask task) _onCompleteTask = (UploadTask tasks) {
-    print('Upload Canceled');
-  };
+  void Function(UploadTask task) _onCompleteTask = (UploadTask tasks) {};
+
+  void Function(UploadTask task) _onFailedTask = (UploadTask tasks) {};
 
   void _updateTaskStatus(UploadTask task, String taskId) {
     switch (task.status) {
@@ -497,6 +525,9 @@ enum UploadStatus {
   /// The upload has failed
   failed,
 
+  /// uploading thumbnail
+  uploadingThumbnail,
+
   /// The upload has been canceled
   canceled,
 }
@@ -572,7 +603,7 @@ class UploadProgress {
 }
 
 class UploadWorker {
-  final Function() onTaskCompleted;
+  final Function(UploadTask) onTaskCompleted;
   final Function(UploadTask) upload;
   final Function(UploadTask, Object e) onError;
   final int maxTasks;
@@ -595,7 +626,7 @@ class UploadWorker {
 
       future.then((_) {
         taskFutures.remove(future);
-        onTaskCompleted();
+        onTaskCompleted(task);
       });
     }
   }
@@ -637,7 +668,7 @@ class WorkerPool {
         upload: upload,
         onError: (task, exception) => onWorkerError(task),
         maxTasks: maxTasksPerWorker,
-        onTaskCompleted: () {
+        onTaskCompleted: (task) {
           if (_isCanceled) {
             return;
           }
@@ -685,187 +716,21 @@ abstract class UploadItem<T> {
 }
 
 class DataItemUploadItem extends UploadItem<DataItemResult> {
-  DataItemUploadItem({required int size, required DataItemResult data})
-      : super(size: size, data: data);
+  DataItemUploadItem({required super.size, required super.data});
+
+  @override
+  String toString() {
+    return 'DataItemUploadItem(id: ${data.id}, size: $size)';
+  }
 }
 
 class TransactionUploadItem extends UploadItem<TransactionResult> {
-  TransactionUploadItem({required int size, required TransactionResult data})
-      : super(size: size, data: data);
-}
-
-class FolderUploadTask implements UploadTask<ARFSUploadMetadata> {
-  final List<(ARFSFolderUploadMetatadata, IOEntity)> folders;
+  TransactionUploadItem({required super.size, required super.data});
 
   @override
-  final UploadItem? uploadItem;
-
-  @override
-  final List<ARFSUploadMetadata>? content;
-
-  @override
-  final double progress;
-
-  @override
-  final String id;
-
-  @override
-  bool isProgressAvailable = true;
-
-  @override
-  UploadTaskCancelToken? cancelToken;
-
-  @override
-  final UploadType type;
-
-  FolderUploadTask({
-    required this.folders,
-    this.uploadItem,
-    this.isProgressAvailable = true,
-    this.status = UploadStatus.notStarted,
-    this.content,
-    this.encryptionKey,
-    this.progress = 0,
-    this.cancelToken,
-    String? id,
-    required this.type,
-  }) : id = id ?? const Uuid().v4();
-
-  @override
-  UploadStatus status;
-
-  @override
-  FolderUploadTask copyWith({
-    UploadItem? uploadItem,
-    double? progress,
-    bool? isProgressAvailable,
-    UploadStatus? status,
-    String? id,
-    List<ARFSUploadMetadata>? content,
-    SecretKey? encryptionKey,
-    List<(ARFSFolderUploadMetatadata, IOEntity)>? folders,
-    UploadTaskCancelToken? cancelToken,
-    UploadType? type,
-  }) {
-    return FolderUploadTask(
-      cancelToken: cancelToken ?? this.cancelToken,
-      folders: folders ?? this.folders,
-      uploadItem: uploadItem ?? this.uploadItem,
-      content: content ?? this.content,
-      id: id ?? this.id,
-      progress: progress ?? this.progress,
-      isProgressAvailable: isProgressAvailable ?? this.isProgressAvailable,
-      status: status ?? this.status,
-      type: type ?? this.type,
-    );
+  String toString() {
+    return 'TransactionUploadItem(id: ${data.id}, size: $size)';
   }
-
-  @override
-  final SecretKey? encryptionKey;
-}
-
-class FileUploadTask extends UploadTask {
-  final IOFile file;
-
-  final ARFSFileUploadMetadata metadata;
-
-  @override
-  final UploadItem? uploadItem;
-
-  @override
-  final List<ARFSUploadMetadata>? content;
-
-  @override
-  final double progress;
-
-  @override
-  final String id;
-
-  @override
-  bool isProgressAvailable = true;
-
-  bool metadataUploaded;
-
-  @override
-  UploadTaskCancelToken? cancelToken;
-
-  FileUploadTask({
-    this.uploadItem,
-    this.isProgressAvailable = true,
-    this.status = UploadStatus.notStarted,
-    this.content,
-    String? id,
-    required this.file,
-    required this.metadata,
-    this.encryptionKey,
-    this.cancelToken,
-    this.progress = 0,
-    required this.type,
-    this.metadataUploaded = false,
-  }) : id = id ?? const Uuid().v4();
-
-  @override
-  UploadStatus status;
-
-  @override
-  FileUploadTask copyWith({
-    UploadItem? uploadItem,
-    double? progress,
-    bool? isProgressAvailable,
-    UploadStatus? status,
-    String? id,
-    ARFSFileUploadMetadata? metadata,
-    List<ARFSUploadMetadata>? content,
-    SecretKey? encryptionKey,
-    UploadTaskCancelToken? cancelToken,
-    UploadType? type,
-    bool? metadataUploaded,
-  }) {
-    return FileUploadTask(
-      cancelToken: cancelToken ?? this.cancelToken,
-      encryptionKey: encryptionKey ?? this.encryptionKey,
-      metadata: metadata ?? this.metadata,
-      uploadItem: uploadItem ?? this.uploadItem,
-      content: content ?? this.content,
-      id: id ?? this.id,
-      isProgressAvailable: isProgressAvailable ?? this.isProgressAvailable,
-      status: status ?? this.status,
-      file: file,
-      progress: progress ?? this.progress,
-      type: type ?? this.type,
-      metadataUploaded: metadataUploaded ?? this.metadataUploaded,
-    );
-  }
-
-  @override
-  final SecretKey? encryptionKey;
-
-  @override
-  UploadType type;
-}
-
-abstract class UploadTask<T> {
-  abstract final String id;
-  abstract final UploadItem? uploadItem;
-  abstract final List<ARFSUploadMetadata>? content;
-  abstract final double progress;
-  abstract final bool isProgressAvailable;
-  abstract final UploadStatus status;
-  abstract final SecretKey? encryptionKey;
-  abstract final UploadTaskCancelToken? cancelToken;
-  abstract final UploadType type;
-
-  UploadTask copyWith({
-    UploadItem? uploadItem,
-    double? progress,
-    bool? isProgressAvailable,
-    UploadStatus? status,
-    String? id,
-    List<ARFSUploadMetadata>? content,
-    SecretKey? encryptionKey,
-    UploadTaskCancelToken? cancelToken,
-    UploadType? type,
-  });
 }
 
 class UploadTaskCancelToken {
@@ -874,84 +739,6 @@ class UploadTaskCancelToken {
   UploadTaskCancelToken({
     required this.cancel,
   });
-}
-
-class UploadDispatcher {
-  UploadFileStrategy _uploadFileStrategy;
-  final UploadFolderStructureStrategy _uploadFolderStrategy;
-  final DataBundler _dataBundler;
-
-  UploadDispatcher({
-    required UploadFileStrategy uploadStrategy,
-    required DataBundler dataBundler,
-    required UploadFolderStructureStrategy uploadFolderStrategy,
-  })  : _dataBundler = dataBundler,
-        _uploadFolderStrategy = uploadFolderStrategy,
-        _uploadFileStrategy = uploadStrategy;
-
-  Future<UploadResult> send({
-    required UploadTask task,
-    required Wallet wallet,
-    required UploadController controller,
-    required bool Function() verifyCancel,
-  }) async {
-    try {
-      if (task is FileUploadTask) {
-        final dataItems = await _dataBundler.createDataItemsForFile(
-          file: task.file,
-          metadata: task.metadata,
-          wallet: wallet,
-          driveKey: task.encryptionKey,
-          onStartBundleCreation: () {
-            controller.updateProgress(
-              task: task.copyWith(
-                status: UploadStatus.creatingBundle,
-              ),
-            );
-          },
-          onStartMetadataCreation: () {
-            controller.updateProgress(
-              task: task.copyWith(
-                status: UploadStatus.creatingMetadata,
-              ),
-            );
-          },
-        );
-
-        logger.d(
-            'Uploading task ${task.id} with strategy: ${_uploadFileStrategy.runtimeType}');
-
-        await _uploadFileStrategy.upload(
-          dataItems: dataItems,
-          task: task,
-          wallet: wallet,
-          controller: controller,
-          verifyCancel: verifyCancel,
-        );
-      } else if (task is FolderUploadTask) {
-        await _uploadFolderStrategy.upload(
-          task: task,
-          wallet: wallet,
-          controller: controller,
-          verifyCancel: verifyCancel,
-        );
-      } else {
-        throw Exception('Invalid task type');
-      }
-
-      return UploadResult(success: true);
-    } catch (e, stacktrace) {
-      logger.d('Error on UploadDispatcher.send: $e $stacktrace');
-      return UploadResult(
-        success: false,
-        error: e,
-      );
-    }
-  }
-
-  void setUploadFileStrategy(UploadFileStrategy strategy) {
-    _uploadFileStrategy = strategy;
-  }
 }
 
 class UploadResult {

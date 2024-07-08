@@ -1,15 +1,15 @@
-import 'package:ardrive/entities/file_entity.dart';
-import 'package:ardrive/services/services.dart';
+import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../test_utils/utils.dart';
+import '../../test_utils/mocks.dart';
 import '../../utils/snapshot_test_helpers.dart';
 
 const gatewayUrl = 'https://arweave.net';
 void main() {
+  // TODO: Fix this test after implementing the fakeNodesStream emiting DriveEntityHistoryTransactionModel
   group('ArweaveService class', () {
     const knownFileId = 'ffffffff-0000-0000-0000-ffffffffffff';
     const unknownFileId = 'aaaaaaaa-0000-0000-0000-ffffffffffff';
@@ -32,14 +32,7 @@ void main() {
             start: invocation.namedArguments[const Symbol('minBlockHeight')],
             end: invocation.namedArguments[const Symbol('maxBlockHeight')],
           ),
-        )
-            .map(
-              (event) =>
-                  DriveEntityHistory$Query$TransactionConnection$TransactionEdge()
-                    ..node = event
-                    ..cursor = 'mi cursor',
-            )
-            .map((event) => [event]),
+        ).map((event) => [event]),
       );
       when(() => arweave.getOwnerForDriveEntityWithId(any())).thenAnswer(
         (invocation) => Future.value('owner'),
@@ -50,24 +43,6 @@ void main() {
       when(() => arweave.getAllFileEntitiesWithId(knownFileId)).thenAnswer(
         (invocation) => Future.value([FileEntity()]),
       );
-    });
-
-    group('getAllTransactionsFromDrive method', () {
-      test('calls getAllTransactionsFromDrive once', () async {
-        arweave.getAllTransactionsFromDrive(
-          'DRIVE_ID',
-          lastBlockHeight: 10,
-          ownerAddress: '',
-        );
-        verify(
-          () => arweave.getSegmentedTransactionsFromDrive(
-            'DRIVE_ID',
-            ownerAddress: '',
-          ),
-        ).called(1);
-      },
-          skip:
-              'Cannot stub a single method to verify that the actual method gets called once');
     });
 
     group('getAllFileEntitiesWithId method', () {

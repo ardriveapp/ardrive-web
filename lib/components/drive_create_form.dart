@@ -17,13 +17,17 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 import 'components.dart';
 
-Future<void> promptToCreateDrive(BuildContext context) =>
+Future<void> promptToCreateDrive(
+  BuildContext context, {
+  DrivePrivacy? privacy,
+}) =>
     showCongestionDependentModalDialog(
       context,
       () => showArDriveDialog(
         context,
         content: BlocProvider(
           create: (_) => DriveCreateCubit(
+            privacy: privacy ?? DrivePrivacy.private,
             arweave: context.read<ArweaveService>(),
             turboUploadService: context.read<TurboUploadService>(),
             driveDao: context.read<DriveDao>(),
@@ -36,7 +40,7 @@ Future<void> promptToCreateDrive(BuildContext context) =>
     );
 
 class DriveCreateForm extends StatefulWidget {
-  const DriveCreateForm({Key? key}) : super(key: key);
+  const DriveCreateForm({super.key});
 
   @override
   State<DriveCreateForm> createState() => _DriveCreateFormState();
@@ -80,8 +84,10 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
             );
           } else {
             final privacy = state.privacy;
+            final typography = ArDriveTypographyNew.of(context);
+            final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-            return ArDriveStandardModal(
+            return ArDriveStandardModalNew(
               title: appLocalizationsOf(context).createDriveEmphasized,
               content: SizedBox(
                 width: kMediumDialogWidth,
@@ -90,7 +96,7 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      ArDriveTextField(
+                      ArDriveTextFieldNew(
                         controller: _driveNameController,
                         autofocus: true,
                         onFieldSubmitted: (value) {
@@ -100,6 +106,7 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
                                 .submit(folderName: value);
                           }
                         },
+                        hintText: appLocalizationsOf(context).driveName,
                         validator: (value) {
                           final validation = validateEntityName(value, context);
 
@@ -118,17 +125,9 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
                         decoration: InputDecoration(
                           label: Text(
                             appLocalizationsOf(context).privacy,
-                            style: ArDriveTheme.of(context)
-                                .themeData
-                                .textFieldTheme
-                                .inputTextStyle
-                                .copyWith(
-                                  color: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeFgDisabled,
-                                  fontSize: 16,
-                                ),
+                            style: typography.paragraphLarge(
+                              color: colorTokens.textLow,
+                            ),
                           ),
                           focusedBorder: InputBorder.none,
                         ),
@@ -139,34 +138,56 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
                         items: [
                           DropdownMenuItem(
                             value: DrivePrivacy.public.name,
-                            child: Text(appLocalizationsOf(context).public),
+                            child: Text(
+                              appLocalizationsOf(context).public,
+                              style: typography.paragraphLarge(
+                                color: colorTokens.textLow,
+                                fontWeight: ArFontWeight.semiBold,
+                              ),
+                            ),
                           ),
                           DropdownMenuItem(
                             value: DrivePrivacy.private.name,
                             child: Text(
                               appLocalizationsOf(context).private,
+                              style: typography.paragraphLarge(
+                                color: colorTokens.textLow,
+                                fontWeight: ArFontWeight.semiBold,
+                              ),
                             ),
-                          )
+                          ),
                         ],
                         onChanged: (_) {
                           context.read<DriveCreateCubit>().onPrivacyChanged();
                         },
                       ),
                       const SizedBox(height: 32),
-                      Row(children: [
-                        if (privacy == DrivePrivacy.private)
-                          Flexible(
+                      Row(
+                        children: [
+                          if (privacy == DrivePrivacy.private)
+                            Flexible(
                               child: Text(
-                            appLocalizationsOf(context)
-                                .drivePrivacyDescriptionPrivate,
-                          ))
-                        else
-                          Flexible(
+                                appLocalizationsOf(context)
+                                    .drivePrivacyDescriptionPrivate,
+                                style: typography.paragraphNormal(
+                                  color: colorTokens.textLow,
+                                  fontWeight: ArFontWeight.semiBold,
+                                ),
+                              ),
+                            )
+                          else
+                            Flexible(
                               child: Text(
-                            appLocalizationsOf(context)
-                                .drivePrivacyDescriptionPublic,
-                          ))
-                      ]),
+                                appLocalizationsOf(context)
+                                    .drivePrivacyDescriptionPublic,
+                                style: typography.paragraphNormal(
+                                  color: colorTokens.textLow,
+                                  fontWeight: ArFontWeight.semiBold,
+                                ),
+                              ),
+                            )
+                        ],
+                      ),
                     ],
                   ),
                 ),

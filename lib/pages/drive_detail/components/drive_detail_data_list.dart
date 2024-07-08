@@ -14,6 +14,7 @@ Widget _buildDataList(
     columnVisibility: state.columnVisibility,
     isShowingHiddenFiles: state.isShowingHiddenFiles,
     emptyState: emptyState,
+    selectedPage: state.selectedPage,
   );
 }
 
@@ -27,7 +28,6 @@ abstract class ArDriveDataTableItem extends IndexedItem {
   final String? fileStatusFromTransactions;
   final String id;
   final String driveId;
-  final String path;
   final bool isOwner;
   final bool isHidden;
 
@@ -41,7 +41,6 @@ abstract class ArDriveDataTableItem extends IndexedItem {
     this.licenseType,
     required this.contentType,
     this.fileStatusFromTransactions,
-    required this.path,
     required int index,
     required this.isOwner,
     this.isHidden = false,
@@ -56,7 +55,6 @@ class DriveDataItem extends ArDriveDataTableItem {
     required super.lastUpdated,
     required super.dateCreated,
     super.contentType = 'drive',
-    super.path = '',
     required super.index,
     required super.isOwner,
     super.isHidden,
@@ -77,7 +75,6 @@ class FolderDataTableItem extends ArDriveDataTableItem {
     required super.lastUpdated,
     required super.dateCreated,
     required super.contentType,
-    required super.path,
     super.fileStatusFromTransactions,
     super.isHidden,
     required super.index,
@@ -100,6 +97,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
   final NetworkTransaction? metadataTx;
   final NetworkTransaction? dataTx;
   final String? pinnedDataOwnerAddress;
+  final Thumbnail? thumbnail;
 
   FileDataTableItem(
       {required super.driveId,
@@ -108,7 +106,6 @@ class FileDataTableItem extends ArDriveDataTableItem {
       required super.size,
       required super.dateCreated,
       required super.contentType,
-      required super.path,
       super.isHidden,
       super.fileStatusFromTransactions,
       required super.index,
@@ -120,6 +117,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
       required this.metadataTx,
       required this.dataTx,
       required this.pinnedDataOwnerAddress,
+      this.thumbnail,
       super.licenseType,
       this.licenseTxId,
       this.bundledIn})
@@ -138,6 +136,7 @@ Widget _buildDataListContent(
   required Map<int, bool> columnVisibility,
   required bool isShowingHiddenFiles,
   required Widget emptyState,
+  int? selectedPage,
 }) {
   final List<ArDriveDataTableItem> filteredItems;
 
@@ -159,36 +158,41 @@ Widget _buildDataListContent(
         index: 0,
         canHide: false,
       ),
-      if (constraints.maxWidth > 500)
-        TableColumn(
-          appLocalizationsOf(context).size,
-          3,
-          index: 1,
-          canHide: false,
-        ),
-      if (constraints.maxWidth > 640)
-        TableColumn(
-          appLocalizationsOf(context).lastUpdated,
-          3,
-          index: 2,
-          isVisible: columnVisibility[2] ?? true,
-        ),
-      if (constraints.maxWidth > 700)
-        TableColumn(
-          appLocalizationsOf(context).dateCreated,
-          3,
-          index: 3,
-          isVisible: columnVisibility[3] ?? true,
-        ),
-      if (constraints.maxWidth > 820)
-        TableColumn(
-          // TODO: Localize
-          // appLocalizationsOf(context).licenseType,
-          'License',
-          2,
-          index: 4,
-          isVisible: columnVisibility[4] ?? true,
-        ),
+      // if (constraints.maxWidth > 500)
+      TableColumn(
+        appLocalizationsOf(context).size,
+        3,
+        index: 1,
+        canHide: false,
+        isVisible:
+            (constraints.maxWidth > 500 && (columnVisibility[1] ?? true)),
+      ),
+      // if (constraints.maxWidth > 640)
+      TableColumn(
+        appLocalizationsOf(context).lastUpdated,
+        3,
+        index: 2,
+        isVisible:
+            (constraints.maxWidth > 640 && (columnVisibility[2] ?? true)),
+      ),
+      // if (constraints.maxWidth > 700)
+      TableColumn(
+        appLocalizationsOf(context).dateCreated,
+        3,
+        index: 3,
+        isVisible:
+            (constraints.maxWidth > 700 && (columnVisibility[3] ?? true)),
+      ),
+      // if (constraints.maxWidth > 820)
+      TableColumn(
+        // TODO: Localize
+        // appLocalizationsOf(context).licenseType,
+        'License',
+        2,
+        index: 4,
+        isVisible:
+            (constraints.maxWidth > 820 && (columnVisibility[4] ?? true)),
+      ),
     ];
 
     final driveDetailCubitState = context.read<DriveDetailCubit>().state;
@@ -198,6 +202,7 @@ Widget _buildDataListContent(
     return ArDriveDataTable<ArDriveDataTableItem>(
       key: ValueKey(
           '${folder.id}-${forceRebuildKey.toString()}${columns.length}'),
+      initialPage: selectedPage,
       lockMultiSelect: context.watch<SyncCubit>().state is SyncInProgress ||
           !context.watch<ActivityTracker>().isMultiSelectEnabled,
       rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
@@ -240,7 +245,7 @@ Widget _buildDataListContent(
         final cubit = context.read<DriveDetailCubit>();
         if (item is FolderDataTableItem) {
           if (item.id == cubit.selectedItem?.id) {
-            cubit.openFolder(path: item.path);
+            cubit.openFolder(folderId: item.id);
           } else {
             cubit.selectDataItem(item);
           }
@@ -274,8 +279,10 @@ Widget _buildDataListContent(
         return folders + files;
       },
       buildRow: (row) {
+        final typography = ArDriveTypographyNew.of(context);
         return DriveExplorerItemTile(
           name: row.name,
+          typography: typography,
           size: row.size == null ? '-' : filesize(row.size),
           lastUpdated: yMMdDateFormatter.format(row.lastUpdated),
           dateCreated: yMMdDateFormatter.format(row.dateCreated),
@@ -290,7 +297,7 @@ Widget _buildDataListContent(
             final cubit = context.read<DriveDetailCubit>();
             if (row is FolderDataTableItem) {
               if (row.id == cubit.selectedItem?.id) {
-                cubit.openFolder(path: folder.path);
+                cubit.openFolder(folderId: row.id);
               } else {
                 cubit.selectDataItem(row);
               }
@@ -384,7 +391,6 @@ class DriveDataTableItemMapper {
   ) {
     return FileDataTableItem(
       isOwner: isOwner,
-      path: file.path,
       lastModifiedDate: file.lastModifiedDate,
       name: file.name,
       size: file.size,
@@ -407,6 +413,38 @@ class DriveDataTableItemMapper {
       index: index,
       pinnedDataOwnerAddress: file.pinnedDataOwnerAddress,
       isHidden: file.isHidden,
+      thumbnail: file.thumbnail != null && file.thumbnail != 'null'
+          ? Thumbnail.fromJson(jsonDecode(file.thumbnail!))
+          : null,
+    );
+  }
+
+  static FileDataTableItem fromFileEntryForSearchModal(
+    FileEntry fileEntry,
+  ) {
+    return FileDataTableItem(
+      isOwner: true,
+      lastModifiedDate: fileEntry.lastModifiedDate,
+      name: fileEntry.name,
+      size: fileEntry.size,
+      lastUpdated: fileEntry.lastUpdated,
+      dateCreated: fileEntry.dateCreated,
+      contentType: fileEntry.dataContentType ?? '',
+      fileStatusFromTransactions: null,
+      fileId: fileEntry.id,
+      driveId: fileEntry.driveId,
+      parentFolderId: fileEntry.parentFolderId,
+      dataTxId: fileEntry.dataTxId,
+      bundledIn: fileEntry.bundledIn,
+      licenseTxId: fileEntry.licenseTxId,
+      metadataTx: null,
+      dataTx: null,
+      index: 0,
+      pinnedDataOwnerAddress: fileEntry.pinnedDataOwnerAddress,
+      isHidden: fileEntry.isHidden,
+      thumbnail: fileEntry.thumbnail != null
+          ? Thumbnail.fromJson(jsonDecode(fileEntry.thumbnail!))
+          : null,
     );
   }
 
@@ -419,7 +457,6 @@ class DriveDataTableItemMapper {
       isOwner: isOwner,
       isGhostFolder: folderEntry.isGhost,
       index: index,
-      path: folderEntry.path,
       driveId: folderEntry.driveId,
       folderId: folderEntry.id,
       parentFolderId: folderEntry.parentFolderId,
@@ -454,7 +491,6 @@ class DriveDataTableItemMapper {
   static FileDataTableItem fromRevision(FileRevision revision, bool isOwner) {
     return FileDataTableItem(
       isOwner: isOwner,
-      path: '',
       lastModifiedDate: revision.lastModifiedDate,
       name: revision.name,
       size: revision.size,
@@ -473,6 +509,9 @@ class DriveDataTableItemMapper {
       index: 0,
       pinnedDataOwnerAddress: revision.pinnedDataOwnerAddress,
       isHidden: revision.isHidden,
+      thumbnail: revision.thumbnail != null
+          ? Thumbnail.fromJson(jsonDecode(revision.thumbnail!))
+          : null,
     );
   }
 }

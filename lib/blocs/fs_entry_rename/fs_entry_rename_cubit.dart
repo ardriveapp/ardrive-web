@@ -23,7 +23,6 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   final TurboUploadService _turboUploadService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
-  final SyncCubit _syncCubit;
   final ArDriveCrypto _crypto;
 
   bool get _isRenamingFolder => folderId != null;
@@ -38,13 +37,11 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     required TurboUploadService turboUploadService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
-    required SyncCubit syncCubit,
     required ArDriveCrypto crypto,
   })  : _arweave = arweave,
         _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
-        _syncCubit = syncCubit,
         _crypto = crypto,
         assert(folderId != null || fileId != null),
         super(FsEntryRenameInitializing(isRenamingFolder: folderId != null)) {
@@ -119,9 +116,6 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
           await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
               performedAction: RevisionAction.rename));
         });
-
-        final folderMap = {folder.id: folder.toCompanion(false)};
-        await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
 
         emit(const FolderEntryRenameSuccess());
       } else {

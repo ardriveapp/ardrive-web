@@ -3,7 +3,10 @@ import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/gift/reedem_button.dart';
+import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
+import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -23,9 +26,9 @@ class AppShell extends StatefulWidget {
   final Widget page;
 
   const AppShell({
-    Key? key,
+    super.key,
     required this.page,
-  }) : super(key: key);
+  });
 
   @override
   AppShellState createState() => AppShellState();
@@ -90,6 +93,8 @@ class AppShellState extends State<AppShell> {
                             ),
                             BlocBuilder<ProfileCubit, ProfileState>(
                               builder: (context, state) {
+                                final typography =
+                                    ArDriveTypographyNew.of(context);
                                 return FutureBuilder(
                                   future: context
                                       .read<ProfileCubit>()
@@ -103,22 +108,29 @@ class AppShellState extends State<AppShell> {
                                       child: Material(
                                         borderRadius: BorderRadius.circular(8),
                                         child: ProgressDialog(
+                                            useNewArDriveUI: true,
                                             progressBar: ProgressBar(
                                               percentage: context
                                                   .read<SyncCubit>()
                                                   .syncProgressController
                                                   .stream,
                                             ),
-                                            percentageDetails: _syncStreamBuilder(
-                                                builderWithData: (syncProgress) =>
-                                                    Text(appLocalizationsOf(
-                                                            context)
-                                                        .syncProgressPercentage(
-                                                            (syncProgress
-                                                                        .progress *
-                                                                    100)
-                                                                .roundToDouble()
-                                                                .toString()))),
+                                            percentageDetails:
+                                                _syncStreamBuilder(
+                                              builderWithData: (syncProgress) =>
+                                                  Text(
+                                                appLocalizationsOf(context)
+                                                    .syncProgressPercentage(
+                                                  (syncProgress.progress * 100)
+                                                      .roundToDouble()
+                                                      .toString(),
+                                                ),
+                                                style:
+                                                    typography.paragraphNormal(
+                                                  fontWeight: ArFontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
                                             progressDescription:
                                                 _syncStreamBuilder(
                                               builderWithData: (syncProgress) =>
@@ -137,8 +149,10 @@ class AppShellState extends State<AppShell> {
                                                         : appLocalizationsOf(
                                                                 context)
                                                             .syncingOnlyOneDrive,
-                                                style: ArDriveTypography.body
-                                                    .buttonNormalBold(),
+                                                style:
+                                                    typography.paragraphNormal(
+                                                  fontWeight: ArFontWeight.bold,
+                                                ),
                                               ),
                                             ),
                                             title: isCurrentProfileArConnect
@@ -211,6 +225,7 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLightMode = ArDriveTheme.of(context).themeData.name == 'light';
     return SafeArea(
       child: Container(
         height: 80,
@@ -234,6 +249,21 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
                         )
                       : Container()),
             ),
+            if (!showDrawerButton)
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: 24.0,
+                ),
+                child: ArDriveImage(
+                  image: AssetImage(
+                    isLightMode
+                        ? Resources.images.brand.blackLogo1
+                        : Resources.images.brand.whiteLogo1,
+                  ),
+                  width: 128,
+                  height: 28,
+                ),
+              ),
             const Spacer(),
             const SyncButton(),
             const SizedBox(

@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:ardrive/entities/entity.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -93,7 +92,10 @@ class ArDriveCrypto {
       final cipherIvTag = transaction.getTag(EntityTag.cipherIv);
 
       if (cipher == null || cipherIvTag == null) {
-        throw TransactionDecryptionException();
+        throw MissingCipherTagException(
+          corruptedDataAppVersion: transaction.getTag(EntityTag.appVersion),
+          corruptedTransactionId: transaction.id,
+        );
       }
 
       final cipherIv = utils.decodeBase64ToBytes(cipherIvTag);
@@ -127,16 +129,26 @@ class ArDriveCrypto {
 
         decryptedData = Uint8List.fromList(decryptedDataAsListInt);
       } else {
-        throw TransactionDecryptionException();
+        throw UnknownCipherException(
+          corruptedDataAppVersion: transaction.getTag(EntityTag.appVersion),
+          corruptedTransactionId: transaction.id,
+        );
       }
 
       final jsonStr = utf8.decode(decryptedData);
       final jsonMap = json.decode(jsonStr);
 
       return jsonMap;
-    } catch (e, s) {
-      logger.e('Failed to decrypt entity json', e, s);
-      throw TransactionDecryptionException();
+    } catch (e) {
+      if (e is ArDriveDecryptionException) {
+        rethrow;
+      }
+
+      /// Unknow error
+      throw TransactionDecryptionException(
+        corruptedDataAppVersion: transaction.getTag(EntityTag.appVersion),
+        corruptedTransactionId: transaction.id,
+      );
     }
   }
 
@@ -152,7 +164,10 @@ class ArDriveCrypto {
     final cipherIvTag = transaction.getTag(EntityTag.cipherIv);
 
     if (cipher == null || cipherIvTag == null) {
-      throw TransactionDecryptionException();
+      throw MissingCipherTagException(
+        corruptedDataAppVersion: transaction.getTag(EntityTag.appVersion),
+        corruptedTransactionId: transaction.id,
+      );
     }
 
     final decryptedData =
@@ -164,14 +179,12 @@ class ArDriveCrypto {
   /// Creates a transaction with the provided entity's JSON data encrypted along with the appropriate cipher tags.
   Future<Transaction> createEncryptedEntityTransaction(
           Entity entity, SecretKey key) =>
-      createEncryptedTransaction(
-          utf8.encode(json.encode(entity)) as Uint8List, key);
+      createEncryptedTransaction(utf8.encode(json.encode(entity)), key);
 
   /// Creates a data item with the provided entity's JSON data encrypted along with the appropriate cipher tags.
   Future<DataItem> createEncryptedEntityDataItem(
           Entity entity, SecretKey key) =>
-      createEncryptedDataItem(
-          utf8.encode(json.encode(entity)) as Uint8List, key);
+      createEncryptedDataItem(utf8.encode(json.encode(entity)), key);
 
   /// Creates a [Transaction] with the provided data encrypted along with the appropriate cipher tags.
   /// TODO: remove it as we won't use it anymore
@@ -210,8 +223,6 @@ class ArDriveCrypto {
       );
   }
 }
-
-class TransactionDecryptionException implements Exception {}
 
 class ProfileKeyDerivationResult {
   final SecretKey key;

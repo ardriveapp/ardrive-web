@@ -49,7 +49,7 @@ class D2NStreamedUpload implements StreamedUpload<UploadItem> {
 
         upload.complete(StreamedUploadResult(success: true));
       } catch (e) {
-        logger.d('D2NStreamedUpload.send: error while uploading');
+        logger.e('D2NStreamedUpload.send: error while uploading', e);
         upload.complete(StreamedUploadResult(success: false));
       }
     });
@@ -62,7 +62,7 @@ class D2NStreamedUpload implements StreamedUpload<UploadItem> {
   /// Cancel D2N uploads are not supported yet.
   @override
   Future<void> cancel(UploadItem handle) async {
-    print('D2NStreamedUpload.cancel');
+    logger.i('D2NStreamedUpload.cancel');
     _isCanceled = true;
 
     await _aborter?.abort();

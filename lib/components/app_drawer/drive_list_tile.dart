@@ -10,12 +10,12 @@ class DriveListTile extends StatelessWidget {
   final bool hasAlert;
 
   const DriveListTile({
-    Key? key,
+    super.key,
     required this.drive,
     required this.onPressed,
     this.selected = false,
     this.hasAlert = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) => Padding(

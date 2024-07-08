@@ -4,6 +4,7 @@ import 'package:ardrive/turbo/topup/models/payment_model.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/turbo_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
+import 'package:ardrive_logger/ardrive_logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
@@ -216,6 +217,7 @@ Future<ArDriveHTTPResponse> _requestPriceForFiat(
         throw PaymentServiceInvalidPromoCode(promoCode: promoCode);
       }
     }
+
     throw PaymentServiceException(
       'Turbo price fetch failed with exception: $error',
     );
@@ -252,7 +254,7 @@ String _urlParamsForGetPriceForFiat({
   return urlParams;
 }
 
-class TurboUserNotFound implements Exception {
+class TurboUserNotFound implements UntrackedException {
   TurboUserNotFound();
 }
 

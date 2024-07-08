@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/validate_folder_name.dart';
@@ -54,7 +55,7 @@ Future<void> attachDrive({
 
 /// Depends on a provided [DriveAttachCubit] for business logic.
 class DriveAttachForm extends StatefulWidget {
-  const DriveAttachForm({Key? key}) : super(key: key);
+  const DriveAttachForm({super.key});
 
   @override
   State<DriveAttachForm> createState() => _DriveAttachFormState();

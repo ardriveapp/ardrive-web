@@ -16,7 +16,6 @@ import 'package:pst/pst.dart';
 class FileV2UploadHandle implements UploadHandle {
   final FileEntity entity;
   final UploadFile file;
-  final String path;
   final SecretKey? driveKey;
   final SecretKey? fileKey;
   final String revisionAction;
@@ -40,7 +39,6 @@ class FileV2UploadHandle implements UploadHandle {
 
   FileV2UploadHandle({
     required this.entity,
-    required this.path,
     required this.file,
     required this.revisionAction,
     required this.crypto,
@@ -52,7 +50,7 @@ class FileV2UploadHandle implements UploadHandle {
   Future<void> writeFileEntityToDatabase({required DriveDao driveDao}) async {
     if (hasError) return;
     await driveDao.transaction(() async {
-      await driveDao.writeFileEntity(entity, path);
+      await driveDao.writeFileEntity(entity);
       await driveDao.insertFileRevision(
         entity.toRevisionCompanion(performedAction: revisionAction),
       );
@@ -109,7 +107,7 @@ class FileV2UploadHandle implements UploadHandle {
       parentFolderId: entity.parentFolderId,
       size: entity.size,
     );
-    return (utf8.encode(json.encode(entityFake)) as Uint8List).lengthInBytes;
+    return utf8.encode(json.encode(entityFake)).lengthInBytes;
   }
 
   void dispose() {

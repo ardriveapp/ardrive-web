@@ -33,7 +33,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
     final selectedItem = maybeSelectedItem;
     if (selectedItem != null) {
       switch (selectedItem.runtimeType) {
-        case FolderDataTableItem:
+        case const (FolderDataTableItem):
           _entrySubscription = _driveDao
               .getFolderTree(driveId, selectedItem.id)
               .asStream()
@@ -56,7 +56,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
             },
           );
           break;
-        case FileDataTableItem:
+        case const (FileDataTableItem):
           fileHandler(
             String id, {
             required String name,

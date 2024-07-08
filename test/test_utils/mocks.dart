@@ -4,6 +4,8 @@ import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
+import 'package:ardrive/core/arfs/repository/file_repository.dart';
+import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
@@ -12,11 +14,15 @@ import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
+import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -25,6 +31,8 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pst/pst.dart';
+
+class MockGraphQLRetry extends Mock implements GraphQLRetry {}
 
 class MockArweave extends Mock implements Arweave {}
 
@@ -73,6 +81,11 @@ class MockArDriveAuth extends Mock implements ArDriveAuth {}
 
 class MockArConnectService extends Mock implements ArConnectService {}
 
+class MockEthereumProviderService extends Mock
+    implements EthereumProviderService {}
+
+class MockTurboUploadService extends Mock implements TurboUploadService {}
+
 class MockTabVisibilitySingleton extends Mock
     implements TabVisibilitySingleton {}
 
@@ -96,6 +109,12 @@ class MockDeviceInfoPlugin extends Mock implements DeviceInfoPlugin {}
 class MockLicenseService extends Mock implements LicenseService {}
 
 class MockPromptToSnapshotBloc extends Mock implements PromptToSnapshotBloc {}
+
+class MockFolderRepository extends Mock implements FolderRepository {}
+
+class MockFileRepository extends Mock implements FileRepository {}
+
+class MockArDriveUploader extends Mock implements ArDriveUploader {}
 
 class MockARFSFile extends ARFSFileEntity {
   MockARFSFile({
@@ -216,7 +235,6 @@ FileDataTableItem createMockFileDataTableItem(
     size: size,
     dateCreated: dateCreated ?? DateTime.now(),
     contentType: 'contentType',
-    path: path,
     index: index,
     pinnedDataOwnerAddress: pinnedDataOwnerAddress,
     isOwner: isOwner,
@@ -246,7 +264,6 @@ FolderDataTableItem createMockFolderDataTableItem(
     lastUpdated: lastUpdated ?? DateTime.now(),
     dateCreated: dateCreated ?? DateTime.now(),
     contentType: contentType,
-    path: path,
     fileStatusFromTransactions: fileStatusFromTransactions,
     parentFolderId: parentFolderId,
     isGhostFolder: isGhostFolder,
@@ -292,10 +309,10 @@ FolderEntry createMockFolderEntry(
     driveId: driveId,
     lastUpdated: DateTime.now(),
     dateCreated: DateTime.now(),
-    path: path,
     parentFolderId: parentFolderId,
     isGhost: isGhost,
     isHidden: false,
+    path: '',
   );
 }
 
@@ -326,9 +343,9 @@ FileEntry createMockFileEntry(
     lastModifiedDate: lastModifiedDate ?? DateTime.now(),
     dateCreated: dateCreated ?? DateTime.now(),
     lastUpdated: lastUpdated ?? DateTime.now(),
-    path: path,
     parentFolderId: parentFolderId,
     bundledIn: bundledIn,
     isHidden: false,
+    path: '',
   );
 }

@@ -28,7 +28,6 @@ class MetadataCache {
 
     // FIXME: check for quota before attempting to write to cache
     try {
-      logger.d('Putting $key in metadata cache');
       await _cache.putIfAbsent(key, data);
     } catch (e, s) {
       logger.e('Failed to put $key in metadata cache', e, s);
@@ -45,11 +44,7 @@ class MetadataCache {
   Future<Uint8List?> get(String key) async {
     try {
       final value = await _cache.get(key);
-      if (value != null) {
-        logger.d('Cache hit for $key in metadata cache');
-      } else {
-        logger.d('Cache miss for $key in metadata cache');
-      }
+
       return value;
     } catch (e, s) {
       logger.e('Failed to get $key from metadata cache', e, s);

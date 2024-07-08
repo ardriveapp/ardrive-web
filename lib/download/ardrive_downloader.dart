@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
+import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -25,7 +25,18 @@ abstract class ArDriveDownloader {
     String? cipher,
     String? cipherIvString,
   });
-
+    Future<Uint8List> downloadToMemory({
+    required TransactionCommonMixin dataTx,
+    required int fileSize,
+    required String fileName,
+    required DateTime lastModifiedDate,
+    required String contentType,
+    required bool isManifest,
+    Completer<String>? cancelWithReason,
+    SecretKey? fileKey,
+    String? cipher,
+    String? cipherIvString,
+  });
   Future<void> abortDownload();
 
   factory ArDriveDownloader({
@@ -271,5 +282,34 @@ class _ArDriveDownloader implements ArDriveDownloader {
     );
 
     return;
+  }
+
+  @override
+  Future<Uint8List> downloadToMemory({
+    required TransactionCommonMixin dataTx,
+    required int fileSize,
+    required String fileName,
+    required DateTime lastModifiedDate,
+    required String contentType,
+    required bool isManifest,
+    Completer<String>? cancelWithReason,
+    SecretKey? fileKey,
+    String? cipher,
+    String? cipherIvString,
+  }) async {
+    final stream = await _getFileStream(
+      dataTx: dataTx,
+      fileSize: fileSize,
+      fileName: fileName,
+      lastModifiedDate: lastModifiedDate,
+      contentType: contentType,
+      fileKey: fileKey,
+      cipher: cipher,
+      cipherIvString: cipherIvString,
+    );
+
+    final data = await stream.toList();
+
+    return Uint8List.fromList(data.expand((element) => element).toList());
   }
 }

@@ -57,7 +57,7 @@ Future<void> showPinFileDialog({
 }
 
 class PinFileDialog extends StatelessWidget {
-  const PinFileDialog({Key? key}) : super(key: key);
+  const PinFileDialog({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -100,14 +100,14 @@ class PinFileDialog extends StatelessWidget {
         final idValidationError = _getIdValidationError(context, state);
         final nameValidationError = _getNameValidationError(context, state);
 
-        return ArDriveStandardModal(
+        return ArDriveStandardModalNew(
           title: appLocalizationsOf(context).newFilePin,
           content: SizedBox(
             width: kMediumDialogWidth,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                ArDriveTextField(
+                ArDriveTextFieldNew(
                   isEnabled: state is! PinFileNetworkCheckRunning,
                   label: appLocalizationsOf(context).enterTxIdOrFileId,
                   isFieldRequired: true,
@@ -119,7 +119,7 @@ class PinFileDialog extends StatelessWidget {
                     );
                   },
                 ),
-                ArDriveTextField(
+                ArDriveTextFieldNew(
                   isEnabled: true,
                   label: appLocalizationsOf(context).enterFileName,
                   isFieldRequired: true,
@@ -154,10 +154,6 @@ class PinFileDialog extends StatelessWidget {
   }
 
   String? _getIdValidationError(BuildContext context, PinFileState state) {
-    // if (state is PinFileInitial) {
-    //   return null;
-    // }
-
     if (state.idValidation == IdValidationResult.invalid) {
       return appLocalizationsOf(context).theIdProvidedIsNotValid;
     } else if (state.idValidation == IdValidationResult.required) {
@@ -183,10 +179,6 @@ class PinFileDialog extends StatelessWidget {
   }
 
   String? _getNameValidationError(BuildContext context, PinFileState state) {
-    // if (state is PinFileInitial) {
-    //   return null;
-    // }
-
     if (state.nameValidation == NameValidationResult.invalid) {
       return appLocalizationsOf(context).validationInvalid;
     } else if (state.nameValidation == NameValidationResult.required) {
@@ -197,21 +189,22 @@ class PinFileDialog extends StatelessWidget {
     return null;
   }
 
-  ArDriveStandardModal _errorDialog(
+  ArDriveStandardModalNew _errorDialog(
     BuildContext context, {
     required String errorText,
     bool doublePop = false,
   }) =>
-      ArDriveStandardModal(
+      ArDriveStandardModalNew(
         width: kMediumDialogWidth,
         title: appLocalizationsOf(context).failedToCreatePin,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 16),
-            Text(errorText),
-            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Text(errorText),
+            ),
           ],
         ),
         actions: [

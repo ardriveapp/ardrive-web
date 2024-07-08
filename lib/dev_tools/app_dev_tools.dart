@@ -1,10 +1,12 @@
 import 'dart:convert';
 
+import 'package:ardrive/dev_tools/drives_health_check.dart';
+import 'package:ardrive/dev_tools/thumbnail_generator_poc.dart';
 import 'package:ardrive/main.dart';
-import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/material.dart';
@@ -155,20 +157,6 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.text,
     );
 
-    final ArDriveDevToolOption defaultTurboPaymentUrlOption =
-        ArDriveDevToolOption(
-      name: 'defaultTurboUrl',
-      value: config.defaultTurboPaymentUrl,
-      onChange: (value) {
-        setState(() {
-          configService.updateAppConfig(
-            config.copyWith(defaultTurboPaymentUrl: value),
-          );
-        });
-      },
-      type: ArDriveDevToolOptionType.text,
-    );
-
     final ArDriveDevToolOption stripePublishableKey = ArDriveDevToolOption(
       name: 'stripePublishableKey',
       value: config.stripePublishableKey,
@@ -274,17 +262,27 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.button,
     );
 
+    final ArDriveDevToolOption runHealthCheck = ArDriveDevToolOption(
+      name: 'Run Health Check',
+      value: '',
+      onChange: (value) {
+        final BuildContext context = ArDriveDevTools().context!;
+
+        showArDriveDialog(
+          context,
+          content: const DrivesHealthCheckModal(),
+        );
+      },
+      type: ArDriveDevToolOptionType.button,
+    );
+
     final ArDriveDevToolOption resetOptions = ArDriveDevToolOption(
       name: 'Reset options',
       value: '',
       onChange: (value) async {
         await context.read<ConfigService>().resetDevToolsPrefs();
 
-        _windowTitle.value = 'Reloading...';
-
-        Future.delayed(const Duration(seconds: 1), () {
-          html.window.location.reload();
-        });
+        reloadPage();
       },
       type: ArDriveDevToolOptionType.buttonTertiary,
     );
@@ -333,6 +331,25 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.button,
     );
 
+    final ArDriveDevToolOption pickImageAndGenerateThumbnailItem =
+        ArDriveDevToolOption(
+      name: 'Generate Thumbnails',
+      value: '',
+      onChange: (value) {},
+      onInteraction: () async {
+        try {
+          final BuildContext context = ArDriveDevTools().context!;
+
+          showArDriveDialog(context,
+              content:
+                  const ArDriveStandardModal(content: ThumbnailGeneratorPOC()));
+        } catch (e) {
+          logger.e('Error setting default data on payment form', e);
+        }
+      },
+      type: ArDriveDevToolOptionType.button,
+    );
+
     final ArDriveDevToolOption forceNoFreeThanksToTurbo = ArDriveDevToolOption(
       name: 'forceNoFreeThanksToTurbo',
       value: config.forceNoFreeThanksToTurbo,
@@ -344,23 +361,6 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
         });
       },
       type: ArDriveDevToolOptionType.bool,
-    );
-
-    final ArDriveDevToolOption fakeTurboCredits = ArDriveDevToolOption<BigInt?>(
-      name: 'fakeTurboCredits',
-      value: config.fakeTurboCredits,
-      onChange: (value) {
-        late AppConfig newConfig;
-        if (value == null) {
-          newConfig = config.copyWith(unsetFakeTurboCredits: true);
-        } else {
-          newConfig = config.copyWith(fakeTurboCredits: value);
-        }
-        setState(() {
-          configService.updateAppConfig(newConfig);
-        });
-      },
-      type: ArDriveDevToolOptionType.turboCredits,
     );
 
     final ArDriveDevToolOption topUpDryRun = ArDriveDevToolOption(
@@ -377,10 +377,11 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
     );
 
     final List<ArDriveDevToolOption> options = [
+      runHealthCheck,
       useTurboOption,
       useTurboPaymentOption,
-      defaultTurboPaymentUrlOption,
       enableSyncFromSnapshotOption,
+      pickImageAndGenerateThumbnailItem,
       stripePublishableKey,
       enableQuickSyncAuthoringOption,
       enableMultipleFileDownloadOption,
@@ -393,11 +394,12 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       autoSyncIntervalInSecondsOption,
       turboSetDefaultData,
       forceNoFreeThanksToTurbo,
-      fakeTurboCredits,
       topUpDryRun,
       reloadOption,
       resetOptions,
     ];
+
+    final typography = ArDriveTypographyNew.of(context);
 
     return DraggableWindow(
       windowTitle: _windowTitle,
@@ -405,50 +407,86 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
         primary: true,
         child: Column(
           children: [
-            const SizedBox(height: 16),
+            const SizedBox(height: 48),
             FutureBuilder(
                 future: _readConfigsFromEnv(),
                 builder: (context, snapshot) {
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ArDriveButton(
-                        text: 'dev env',
-                        onPressed: () {
-                          setState(() {
-                            _windowTitle.value = 'Reloading...';
+                  return Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: ArDriveButtonNew(
+                            text: 'dev env',
+                            typography: typography,
+                            variant: ButtonVariant.primary,
+                            onPressed: () {
+                              setState(() {
+                                _windowTitle.value = 'Reloading...';
 
-                            configService.updateAppConfig(
-                              AppConfig.fromJson(snapshot.data![0]),
-                            );
-                          });
+                                configService.updateAppConfig(
+                                  AppConfig.fromJson(snapshot.data![0]),
+                                );
+                              });
 
-                          Future.delayed(const Duration(seconds: 1), () {
-                            setState(() {
-                              _windowTitle.value = 'Dev config';
-                            });
-                          });
-                        },
-                      ),
-                      ArDriveButton(
-                        text: 'prod env',
-                        onPressed: () {
-                          setState(() {
-                            _windowTitle.value = 'Reloading...';
+                              Future.delayed(const Duration(seconds: 1), () {
+                                setState(() {
+                                  _windowTitle.value = 'Dev config';
+                                  reloadPage();
+                                });
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Flexible(
+                          child: ArDriveButtonNew(
+                            text: 'staging env',
+                            variant: ButtonVariant.primary,
+                            typography: typography,
+                            onPressed: () {
+                              setState(() {
+                                _windowTitle.value = 'Reloading...';
 
-                            configService.updateAppConfig(
-                              AppConfig.fromJson(snapshot.data![1]),
-                            );
-                          });
+                                configService.updateAppConfig(
+                                  AppConfig.fromJson(snapshot.data![2]),
+                                );
+                              });
 
-                          Future.delayed(const Duration(seconds: 1), () {
-                            setState(() {
-                              _windowTitle.value = 'Prod config';
-                            });
-                          });
-                        },
-                      )
-                    ],
+                              Future.delayed(const Duration(seconds: 1), () {
+                                setState(() {
+                                  _windowTitle.value = 'Staging config';
+                                  reloadPage();
+                                });
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Flexible(
+                          child: ArDriveButtonNew(
+                            text: 'prod env',
+                            variant: ButtonVariant.primary,
+                            typography: typography,
+                            onPressed: () {
+                              setState(() {
+                                _windowTitle.value = 'Reloading...';
+
+                                configService.updateAppConfig(
+                                  AppConfig.fromJson(snapshot.data![1]),
+                                );
+                              });
+
+                              Future.delayed(const Duration(seconds: 1), () {
+                                setState(() {
+                                  _windowTitle.value = 'Prod config';
+                                });
+                              });
+                            },
+                          ),
+                        )
+                      ],
+                    ),
                   );
                 }),
             ListView.separated(
@@ -470,10 +508,13 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
         await rootBundle.loadString('assets/config/dev.json');
     final String prodConfig =
         await rootBundle.loadString('assets/config/prod.json');
+    final String stagingConfig =
+        await rootBundle.loadString('assets/config/staging.json');
 
     final List<Map<String, dynamic>> configs = [
       jsonDecode(devConfig),
-      jsonDecode(prodConfig)
+      jsonDecode(prodConfig),
+      jsonDecode(stagingConfig),
     ];
 
     return configs;
@@ -482,7 +523,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
   Widget buildOption(ArDriveDevToolOption option) {
     switch (option.type) {
       case ArDriveDevToolOptionType.text:
-        return ArDriveTextField(
+        return ArDriveTextFieldNew(
           label: option.name,
           initialValue: option.value,
           onFieldSubmitted: (value) {
@@ -500,7 +541,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
           },
         );
       case ArDriveDevToolOptionType.number:
-        return ArDriveTextField(
+        return ArDriveTextFieldNew(
           label: option.name,
           initialValue: option.value.toString(),
           onFieldSubmitted: (value) {
@@ -511,7 +552,9 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
         );
 
       case ArDriveDevToolOptionType.button:
-        return ArDriveButton(
+        return ArDriveButtonNew(
+          variant: ButtonVariant.primary,
+          typography: ArDriveTypographyNew.of(context),
           text: option.name,
           onPressed: () {
             option.onChange(option.value);
@@ -520,8 +563,9 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
         );
 
       case ArDriveDevToolOptionType.buttonTertiary:
-        return ArDriveButton(
-          style: ArDriveButtonStyle.tertiary,
+        return ArDriveButtonNew(
+          variant: ButtonVariant.outline,
+          typography: ArDriveTypographyNew.of(context),
           text: option.name,
           onPressed: () => option.onChange(option.value),
         );
@@ -559,6 +603,14 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
 
     Future.delayed(const Duration(seconds: 2), () {
       _windowTitle.value = 'ArDrive Dev Tools';
+    });
+  }
+
+  void reloadPage() {
+    _windowTitle.value = 'Reloading...';
+
+    Future.delayed(const Duration(seconds: 1), () {
+      html.window.location.reload();
     });
   }
 }
@@ -645,16 +697,21 @@ class DraggableWindow extends HookWidget {
                       ),
                       Align(
                         alignment: Alignment.topRight,
-                        child: ArDriveIconButton(
-                          icon: ArDriveIcons.closeCircle(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeBgCanvas,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 20, right: 8),
+                          child: ArDriveClickArea(
+                            child: GestureDetector(
+                              onTap: () {
+                                ArDriveDevTools().closeDevTools();
+                              },
+                              child: ArDriveIcons.x(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colorTokens
+                                    .iconLow,
+                              ),
+                            ),
                           ),
-                          onPressed: () {
-                            ArDriveDevTools().closeDevTools();
-                          },
                         ),
                       ),
                     ],

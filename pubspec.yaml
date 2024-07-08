@@ -3,11 +3,11 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 2.37.2
+version: 2.48.1
 
 environment:
-  sdk: '>=3.0.2 <4.0.0'
-  flutter: 3.13.6
+  sdk: '>=3.2.0 <4.0.0'
+  flutter: 3.19.6
 
 # https://pub.dev/packages/script_runner
 script_runner:
@@ -37,9 +37,7 @@ dependencies:
       url: https://github.com/ardriveapp/ardrive_io.git
       ref: v1.4.5
   ardrive_ui:
-    git:
-      url: https://github.com/elliotsayes/ardrive_ui.git
-      ref: license
+    path: ./packages/ardrive_ui
   ardrive_utils:
     path: ./packages/ardrive_utils
   ardrive_uploader:
@@ -56,7 +54,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v3.8.3
+      ref: v3.9.0
   cryptography: ^2.0.5
   flutter_bloc: ^8.1.1
   intersperse: ^2.0.0
@@ -69,7 +67,7 @@ dependencies:
   rxdart: ^0.27.1
   timeago: ^3.1.0
   url_launcher: ^6.0.6
-  uuid: ^3.0.4
+  uuid: ^4.4.0
   flutter_dropzone:
     git:
       url: https://github.com/ardriveapp/flutter_dropzone
@@ -79,18 +77,18 @@ dependencies:
   package_info_plus: ^4.1.0
   js: ^0.6.3
   collection: ^1.15.0-nullsafety.4
-  csv: ^5.0.1
-  stash_memory: ^4.3.2
+  csv: ^6.0.0
+  stash_memory: ^5.1.0
   percent_indicator: ^4.0.0
-  flutter_lints: ^2.0.1
+  flutter_lints: ^3.0.2
   retry: ^3.1.0
   shared_preferences: ^2.0.15
-  flutter_launcher_icons: ^0.10.0
-  equatable: ^2.0.3
+  flutter_launcher_icons: ^0.13.1
+  equatable: ^2.0.5
   http: ^1.1.0
-  stash: ^4.3.2
+  stash: ^5.1.0
   path: ^1.8.1
-  flutter_svg: ^1.1.3
+  flutter_svg: ^2.0.10+1
   sqlite3_flutter_libs: ^0.5.9
   app_settings: ^4.1.8
   firebase_crashlytics: ^3.0.4
@@ -98,13 +96,13 @@ dependencies:
   bloc_concurrency: ^0.2.0
   universal_html: ^2.0.8
   local_auth: ^2.1.2
-  flutter_secure_storage: ^8.0.0
+  flutter_secure_storage: ^9.0.0
   async: ^2.9.0
   animations: ^2.0.7
-  connectivity_plus: ^4.0.0
+  connectivity_plus: ^6.0.2
   archive: ^3.3.0
   video_player: ^2.7.1
-  lottie: ^2.3.0
+  lottie: ^3.1.0
   visibility_detector: ^0.4.0+2
   bip39: ^1.0.6
   flutter_stripe:
@@ -117,9 +115,9 @@ dependencies:
       url: https://github.com/ardriveapp/flutter_stripe/
       path: packages/stripe_web
       ref: main
-  stash_shared_preferences: ^4.6.2
+  stash_shared_preferences: ^5.1.0
   flutter_portal: ^1.1.3
-  flutter_hooks: ^0.18.6
+  flutter_hooks: ^0.20.5
   flutter_multi_formatter: ^2.11.1
   credit_card_validator: ^2.1.0
   tuple: ^2.0.2
@@ -137,6 +135,9 @@ dependencies:
       url: https://github.com/bhagat-techind/flutter_sharing_intent
       ref: 5f4f2e66c02580105ba89b3fec5a7be907d5466f
   sentry_flutter: ^7.14.0
+  webthree: ^2.5.7+2
+  carousel_slider: ^4.2.1
+  dots_indicator: ^3.0.0
 
 dependency_overrides:
   stripe_js:
@@ -161,15 +162,14 @@ dependency_overrides:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v3.8.3
+      ref: v3.9.0
+
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
       ref: v1.4.6
   ardrive_ui:
-    git:
-      url: https://github.com/ardriveapp/ardrive_ui
-      ref: v1.18.0
+    path: ./packages/ardrive_ui
 
 dev_dependencies:
   integration_test:
@@ -194,8 +194,9 @@ flutter:
     - assets/fonts/
     - assets/images/
     - assets/images/brand/
-    - assets/images/profile/
     - assets/images/login/
+    - assets/images/login/bento_box/
+    - assets/images/icons/
     - assets/animations/
 
 sentry:

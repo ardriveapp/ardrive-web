@@ -59,6 +59,11 @@ class DrivesCubit extends Cubit<DrivesState> {
 
       final profileState = _profileCubit.state;
 
+      if (profileState is ProfileLoggingIn) {
+        emit(DrivesLoadInProgress());
+        return;
+      }
+
       String? selectedDriveId;
 
       if (state is DrivesLoadSuccess && state.selectedDriveId != null) {
@@ -126,6 +131,10 @@ class DrivesCubit extends Cubit<DrivesState> {
         sharedDrives: const [],
         drivesWithAlerts: const [],
         canCreateNewDrive: false);
+
+    if (isClosed) {
+      return;
+    }
 
     emit(state);
   }

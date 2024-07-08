@@ -229,6 +229,298 @@ abstract class PlausibleEventTracker {
     return props;
   }
 
+  /// New Onboarding Events
+  ///
+  /// Welcome Page
+  static Future<void> trackClickSignUp() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.welcomePage,
+      event: PlausibleCustomEvent.clickSignUp,
+    );
+  }
+
+  static Future<void> trackClickLogin() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.welcomePage,
+      event: PlausibleCustomEvent.clickLogin,
+    );
+  }
+
+  /// Return User Page
+  static Future<void> trackClickContinueReturnUserButton() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.returnUserPage,
+      event: PlausibleCustomEvent.clickContinueReturnUserButton,
+    );
+  }
+
+  static Future<void> trackClickForgetWalletTextButton() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.returnUserPage,
+      event: PlausibleCustomEvent.clickForgetWalletTextButton,
+    );
+  }
+
+  // pressEnterContinueReturnUser
+  static Future<void> trackPressEnterContinueReturnUser() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.returnUserPage,
+      event: PlausibleCustomEvent.pressEnterContinueReturnUser,
+    );
+  }
+
+  /// Login
+  static Future<void> trackClickContinueLoginButton() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.importWalletPage,
+      event: PlausibleCustomEvent.clickContinueLoginButton,
+    );
+  }
+
+  static Future<void> trackClickContinueWithArconnectButton(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickContinueWithArconnectButton,
+    );
+  }
+
+  static Future<void> trackClickContinueWithMetamaskButton(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickContinueWithMetamaskButton,
+    );
+  }
+
+  static Future<void> trackClickImANewUserLinkButton() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.loginPage,
+      event: PlausibleCustomEvent.clickImANewUserLinkButton,
+    );
+  }
+
+  static Future<void> trackClickImportWalletButton() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.loginPage,
+      event: PlausibleCustomEvent.clickImportWalletButton,
+    );
+  }
+
+  static Future<void> trackClickUseKeyfileButton() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.importWalletPage,
+      event: PlausibleCustomEvent.clickUseKeyfileButton,
+    );
+  }
+
+  static Future<void> trackClickContinueWithSeedphraseButton() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.importWalletPage,
+      event: PlausibleCustomEvent.clickContinueWithSeedphraseButton,
+    );
+  }
+
+  static Future<void> trackClickDismissLoginModalIcon(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickDismissLoginModalIcon,
+    );
+  }
+
+  // Sign Up
+  static Future<void> trackClickAlreadyHaveAWallet() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.signUpPage,
+      event: PlausibleCustomEvent.clickAlreadyHaveAWallet,
+    );
+  }
+
+  static Future<void> trackClickCreateWallet() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.signUpPage,
+      event: PlausibleCustomEvent.clickCreateWallet,
+    );
+  }
+
+  static Future<void> trackClickTermsOfServices(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickTermsOfServices,
+    );
+  }
+
+  static Future<void> trackClickConfirmPassword() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.createAndConfirmPasswordPage,
+      event: PlausibleCustomEvent.clickConfirmPassword,
+    );
+  }
+
+  static Future<void> trackClickTutorialNextButton(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickTutorialNextButton,
+    );
+  }
+
+  static Future<void> trackClickTutorialBackButton(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickTutorialBackButton,
+    );
+  }
+
+  static Future<void> trackClickTutorialGetYourWallet() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.tutorialsPage3,
+      event: PlausibleCustomEvent.clickTutorialGetYourWallet,
+    );
+  }
+
+  static Future<void> trackClickTutorialGoToAppLink() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.tutorialsPage3,
+      event: PlausibleCustomEvent.clickTutorialGoToAppLink,
+    );
+  }
+
+  static Future<void> trackClickGoToAppButton() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.walletCreatedPage,
+      event: PlausibleCustomEvent.clickGoToAppButton,
+    );
+  }
+
+  // Theme Switcher
+  static Future<void> trackClickThemeSwitcherLight(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickThemeSwitcherLight,
+    );
+  }
+
+  static Future<void> trackClickThemeSwitcherDark(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickThemeSwitcherDark,
+    );
+  }
+
+  // clickKeyfileInfo
+  static Future<void> trackClickKeyfileInfo() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.walletCreatedPage,
+      event: PlausibleCustomEvent.clickKeyfileInfo,
+    );
+  }
+
+  // clickCopySeedPhraseButton
+  static Future<void> trackClickCopySeedPhraseButton() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.walletCreatedPage,
+      event: PlausibleCustomEvent.clickCopySeedPhraseButton,
+    );
+  }
+
+  // clickDownloadKeyfileButton
+  static Future<void> trackClickDownloadKeyfileButton() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.walletCreatedPage,
+      event: PlausibleCustomEvent.clickDownloadKeyfileButton,
+    );
+  }
+
+  // clickCopySeedPhraseIcon
+  static Future<void> trackClickCopySeedPhraseIcon() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.walletCreatedPage,
+      event: PlausibleCustomEvent.clickCopySeedPhraseIcon,
+    );
+  }
+
+  // clickBackedUpSeedPhraseCheckBox
+  static Future<void> trackClickBackedUpSeedPhraseCheckBox() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.walletCreatedPage,
+      event: PlausibleCustomEvent.clickBackedUpSeedPhraseCheckBox,
+    );
+  }
+
+  // clickCreatePublicDriveButton
+  static Future<void> trackClickCreatePublicDriveButton(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickCreatePublicDriveButtonEmptyState,
+    );
+  }
+
+  // clickCreatePrivateDriveButton
+  static Future<void> trackClickCreatePrivateDriveButton(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickCreatePrivateDriveButtonEmptyState,
+    );
+  }
+
+  // clickUploadFileEmptyState,
+  static Future<void> trackClickUploadFileEmptyState(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickUploadFileEmptyState,
+    );
+  }
+
+  // clickCreateFolderEmptyState
+  static Future<void> trackClickCreateFolderEmptyState(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickCreateFolderEmptyState,
+    );
+  }
+
+  // clickUploadFolderEmptyState
+  static Future<void> trackClickUploadFolderEmptyState(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickUploadFolderEmptyState,
+    );
+  }
+
+  // clickCreatePinEmptyState
+  static Future<void> trackClickCreatePinEmptyState(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickCreatePinEmptyState,
+    );
+  }
+
   static Future<void> _track({
     required PlausibleApiData data,
     required PlausibleEventData eventData,

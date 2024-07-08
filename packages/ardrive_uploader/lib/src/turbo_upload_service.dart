@@ -42,7 +42,7 @@ class TurboUploadService {
       maxChunkSize: uploadChunkSizeMaxInBytes,
     );
     final maxUploadsInParallel = maxInFlightData ~/ uploadChunkSizeInBytes;
-    logger.d(
+    logger.i(
         '[${dataItem.id}] Upload ID: $uploadId, Uploads in parallel: $maxUploadsInParallel, Chunk size: $uploadChunkSizeInBytes');
 
     // (offset: sent bytes) map for in flight requests progress
@@ -118,7 +118,7 @@ class TurboUploadService {
         });
       } catch (e) {
         if (_isCanceled) {
-          logger.d('[${dataItem.id}] Upload canceled');
+          logger.i('[${dataItem.id}] Upload canceled');
           onSendProgressTimer?.cancel();
           cancelToken.cancel();
         }
@@ -132,7 +132,7 @@ class TurboUploadService {
     final finalizeCancelToken = CancelToken();
 
     try {
-      logger.d('[${dataItem.id}] Finalising upload to Turbo');
+      logger.i('[${dataItem.id}] Finalising upload to Turbo');
 
       _cancelTokens.add(finalizeCancelToken);
 
@@ -160,16 +160,16 @@ class TurboUploadService {
         return confirmInfo;
       }
 
-      logger.d('[${dataItem.id}] Upload finalised');
+      logger.i('[${dataItem.id}] Upload finalised');
 
       onSendProgressTimer?.cancel();
 
       return finaliseInfo;
     } catch (e) {
       if (e is DioException) {
-        logger.d('[${dataItem.id}] Finalising upload failed, ${e.type}');
+        logger.i('[${dataItem.id}] Finalising upload failed, ${e.type}');
       } else if (_isCanceled) {
-        logger.d('[${dataItem.id}] Upload canceled');
+        logger.i('[${dataItem.id}] Upload canceled');
         finalizeCancelToken.cancel();
       }
 
@@ -209,7 +209,7 @@ class TurboUploadService {
       final responseStatus = responseData['status'];
       switch (responseStatus) {
         case 'FINALIZED':
-          logger.d('[$dataItemId] DataItem confirmed!');
+          logger.i('[$dataItemId] DataItem confirmed!');
           return response;
         case 'UNDERFUNDED':
           throw UploadCanceledException('Upload canceled. Underfunded.');
@@ -218,7 +218,7 @@ class TurboUploadService {
         case 'FINALIZING':
           final retryAfterDuration =
               dataItemConfirmationRetryDelay(attemptCount++);
-          logger.d(
+          logger.i(
               '[$dataItemId] DataItem not confirmed. Retrying in ${retryAfterDuration.inMilliseconds}ms');
 
           await Future.delayed(retryAfterDuration);

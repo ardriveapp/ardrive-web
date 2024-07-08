@@ -40,12 +40,9 @@ class UploadFileConflict extends UploadState {
 
 class UploadFolderNameConflict extends UploadFileConflict {
   UploadFolderNameConflict({
-    required List<String> conflictingFileNames,
-    required bool areAllFilesConflicting,
-  }) : super(
-          conflictingFileNames: conflictingFileNames,
-          areAllFilesConflicting: areAllFilesConflicting,
-        );
+    required super.conflictingFileNames,
+    required super.areAllFilesConflicting,
+  });
 }
 
 class UploadFileTooLarge extends UploadState {
@@ -83,7 +80,6 @@ class UploadReady extends UploadState {
   final bool isDragNDrop;
   final bool uploadIsPublic;
   final int numberOfFiles;
-
   final UploadParams params;
 
   final bool isArConnect;

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:ardrive/entities/entities.dart';
 import 'package:drift/drift.dart';
 
@@ -15,7 +17,6 @@ extension FileRevisionsCompanionExtensions on FileRevisionsCompanion {
         dataTxId: dataTxId.value,
         licenseTxId: Value(licenseTxId.value),
         size: size.value,
-        path: rootPath,
         lastUpdated: dateCreated,
         lastModifiedDate: lastModifiedDate.value,
         dataContentType: dataContentType,
@@ -24,6 +25,9 @@ extension FileRevisionsCompanionExtensions on FileRevisionsCompanion {
         customJsonMetadata: customJsonMetadata,
         pinnedDataOwnerAddress: pinnedDataOwnerAddress,
         isHidden: isHidden,
+        // TODO: path is not used in the app, so it's not necessary to set it
+        path: '',
+        thumbnail: Value(thumbnail.value),
       );
 
   /// Returns a list of [NetworkTransactionsCompanion] representing the metadata and data transactions
@@ -42,26 +46,29 @@ extension FileEntityExtensions on FileEntity {
   /// This requires a `performedAction` to be specified.
   FileRevisionsCompanion toRevisionCompanion({
     required String performedAction,
-  }) =>
-      FileRevisionsCompanion.insert(
-        fileId: id!,
-        driveId: driveId!,
-        name: name!,
-        parentFolderId: parentFolderId!,
-        size: size!,
-        lastModifiedDate: lastModifiedDate ?? DateTime.now(),
-        metadataTxId: txId,
-        dataTxId: dataTxId!,
-        licenseTxId: Value(licenseTxId),
-        dateCreated: Value(createdAt),
-        dataContentType: Value(dataContentType),
-        action: performedAction,
-        bundledIn: Value(bundledIn),
-        customGQLTags: Value(customGqlTagsAsString),
-        customJsonMetadata: Value(customJsonMetadataAsString),
-        pinnedDataOwnerAddress: Value(pinnedDataOwnerAddress),
-        isHidden: Value(isHidden ?? false),
-      );
+  }) {
+    final thumbnailData = jsonEncode(thumbnail?.toJson());
+    return FileRevisionsCompanion.insert(
+      fileId: id!,
+      driveId: driveId!,
+      name: name!,
+      parentFolderId: parentFolderId!,
+      size: size!,
+      lastModifiedDate: lastModifiedDate ?? DateTime.now(),
+      metadataTxId: txId,
+      dataTxId: dataTxId!,
+      licenseTxId: Value(licenseTxId),
+      dateCreated: Value(createdAt),
+      dataContentType: Value(dataContentType),
+      action: performedAction,
+      bundledIn: Value(bundledIn),
+      customGQLTags: Value(customGqlTagsAsString),
+      customJsonMetadata: Value(customJsonMetadataAsString),
+      pinnedDataOwnerAddress: Value(pinnedDataOwnerAddress),
+      isHidden: Value(isHidden ?? false),
+      thumbnail: Value(thumbnailData),
+    );
+  }
 
   FileRevision toRevision({
     required String performedAction,
@@ -84,6 +91,7 @@ extension FileEntityExtensions on FileEntity {
         customJsonMetadata: customJsonMetadataAsString,
         pinnedDataOwnerAddress: pinnedDataOwnerAddress,
         isHidden: isHidden ?? false,
+        thumbnail: jsonEncode(thumbnail?.toJson()),
       );
 
   /// Returns the action performed on the file that lead to the new revision.
@@ -103,6 +111,9 @@ extension FileEntityExtensions on FileEntity {
       return RevisionAction.hide;
     } else if (isHidden == false && previousRevision.isHidden.value == true) {
       return RevisionAction.unhide;
+    } else if (jsonEncode(thumbnail?.toJson()) !=
+        previousRevision.thumbnail.value) {
+      return RevisionAction.rename;
     }
 
     return null;

@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:ardrive/core/arfs/repository/file_repository.dart';
+import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -58,7 +60,7 @@ class ManifestData {
   );
 
   int get size => jsonData.lengthInBytes;
-  Uint8List get jsonData => utf8.encode(json.encode(this)) as Uint8List;
+  Uint8List get jsonData => utf8.encode(json.encode(this));
 
   Future<DataItem> asPreparedDataItem({
     required ArweaveAddressString owner,
@@ -73,9 +75,32 @@ class ManifestData {
     return manifestDataItem;
   }
 
-  static ManifestData fromFolderNode({
+  factory ManifestData.fromJson(Map<String, dynamic> json) =>
+      _$ManifestDataFromJson(json);
+  Map<String, dynamic> toJson() => _$ManifestDataToJson(this);
+}
+
+/// Utility function to remove base path of the target folder and
+/// replace spaces with underscores for arweave.net URL compatibility
+String prepareManifestPath({
+  required String filePath,
+  required String rootFolderPath, 
+}) {
+  return filePath.substring(rootFolderPath.length + 1).replaceAll(' ', '_');
+}
+
+class ManifestDataBuilder {
+  final FolderRepository folderRepository;
+  final FileRepository fileRepository;
+
+  ManifestDataBuilder({
+    required this.folderRepository,
+    required this.fileRepository,
+  });
+
+  Future<ManifestData> build({
     required FolderNode folderNode,
-  }) {
+  }) async {
     final fileList = folderNode
         .getRecursiveFiles()
         // We will not include any existing manifests in the new manifest
@@ -96,16 +121,22 @@ class ManifestData {
       return fileList.first;
     }();
 
-    final rootFolderPath = folderNode.folder.path;
+    final rootFolderPath = await folderRepository.getFolderPath(
+      folderNode.folder.driveId,
+      folderNode.folder.id,
+    );
+
+    final indexPath =
+        await fileRepository.getFilePath(indexFile.driveId, indexFile.id);
+
     final index = ManifestIndex(
-      prepareManifestPath(
-          filePath: indexFile.path, rootFolderPath: rootFolderPath),
+      prepareManifestPath(filePath: indexPath, rootFolderPath: rootFolderPath),
     );
 
     final paths = {
       for (final file in fileList)
         prepareManifestPath(
-          filePath: file.path,
+          filePath: await fileRepository.getFilePath(file.driveId, file.id),
           rootFolderPath: rootFolderPath,
         ): ManifestPath(file.dataTxId, fileId: file.id)
     };
@@ -115,17 +146,4 @@ class ManifestData {
       paths,
     );
   }
-
-  factory ManifestData.fromJson(Map<String, dynamic> json) =>
-      _$ManifestDataFromJson(json);
-  Map<String, dynamic> toJson() => _$ManifestDataToJson(this);
-}
-
-/// Utility function to remove base path of the target folder and
-/// replace spaces with underscores for arweave.net URL compatibility
-String prepareManifestPath({
-  required String filePath,
-  required String rootFolderPath,
-}) {
-  return filePath.substring(rootFolderPath.length + 1).replaceAll(' ', '_');
 }

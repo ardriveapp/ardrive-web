@@ -54,6 +54,11 @@ class UploadCubit extends Cubit<UploadState> {
   late Drive _targetDrive;
   late FolderEntry _targetFolder;
   UploadMethod? _uploadMethod;
+  bool _uploadThumbnail = true;
+
+  void changeUploadThumbnailOption(bool uploadThumbnail) {
+    _uploadThumbnail = uploadThumbnail;
+  }
 
   void setUploadMethod(
     UploadMethod? method,
@@ -373,9 +378,6 @@ class UploadCubit extends Cubit<UploadState> {
       if (existingFileId != null) {
         conflictingFolders.add(folder.name);
       }
-      folder.path = folder.parentFolderPath.isNotEmpty
-          ? '${_targetFolder.path}/${folder.parentFolderPath}/${folder.name}'
-          : '${_targetFolder.path}/${folder.name}';
     }
     final filesToUpload = <UploadFile>[];
     for (var file in files) {
@@ -568,7 +570,6 @@ class UploadCubit extends Cubit<UploadState> {
         UploadFolder(
           lastModifiedDate: DateTime.now(),
           name: folder.name,
-          path: folder.path,
         ),
       ));
     }
@@ -605,15 +606,23 @@ class UploadCubit extends Cubit<UploadState> {
     final uploadController = await ardriveUploader.uploadEntities(
       entities: entities,
       wallet: _auth.currentUser.wallet,
+      uploadThumbnail: _uploadThumbnail,
       type:
           _uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo,
       driveKey: driveKey,
     );
 
     uploadController.onError((tasks) {
-      logger.e('Error uploading folders. Number of tasks: ${tasks.length}');
-      addError(Exception('Error uploading'));
+      logger.i('Error uploading folders. Number of tasks: ${tasks.length}');
+      emit(UploadFailure(
+          error: UploadErrors.unknown,
+          failedTasks: tasks,
+          controller: uploadController));
       hasEmittedError = true;
+    });
+
+    uploadController.onFailedTask((task) {
+      logger.e('UploadTask failed. Task: ${task.errorInfo()}', task.error);
     });
 
     uploadController.onProgressChange(
@@ -655,8 +664,6 @@ class UploadCubit extends Cubit<UploadState> {
 
   void retryUploads() {
     if (state is UploadFailure) {
-      logger.i('Retrying uploads');
-
       final controller = (state as UploadFailure).controller!;
 
       controller.retryFailedTasks(_auth.currentUser.wallet);
@@ -721,12 +728,13 @@ class UploadCubit extends Cubit<UploadState> {
       files: uploadFiles,
       wallet: _auth.currentUser.wallet,
       driveKey: driveKey,
+      uploadThumbnail: _uploadThumbnail,
       type:
           _uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo,
     );
 
     uploadController.onError((tasks) {
-      logger.e('Error uploading files. Number of tasks: ${tasks.length}');
+      logger.i('Error uploading files. Number of tasks: ${tasks.length}');
       hasEmittedError = true;
       emit(
         UploadFailure(
@@ -737,10 +745,13 @@ class UploadCubit extends Cubit<UploadState> {
       );
     });
 
+    uploadController.onFailedTask((task) {
+      logger.e('UploadTask failed. Task: ${task.errorInfo()}', task.error);
+    });
+
     uploadController.onProgressChange(
       (progress) async {
         // TODO: Save as the file is finished the upload
-
         emit(
           UploadInProgressUsingNewUploader(
             progress: progress,
@@ -813,6 +824,14 @@ class UploadCubit extends Cubit<UploadState> {
               ? RevisionAction.uploadNewVersion
               : RevisionAction.create;
 
+          Thumbnail? thumbnail;
+
+          if (fileMetadata.thumbnailInfo != null) {
+            thumbnail = Thumbnail(variants: [
+              Variant.fromJson(fileMetadata.thumbnailInfo!.first.toJson())
+            ]);
+          }
+
           final entity = FileEntity(
             dataContentType: fileMetadata.dataContentType,
             dataTxId: fileMetadata.dataTxId,
@@ -823,6 +842,7 @@ class UploadCubit extends Cubit<UploadState> {
             name: fileMetadata.name,
             parentFolderId: fileMetadata.parentFolderId,
             size: fileMetadata.size,
+            thumbnail: thumbnail,
             // TODO: pinnedDataOwnerAddress
           );
 
@@ -858,8 +878,7 @@ class UploadCubit extends Cubit<UploadState> {
           entity.txId = fileMetadata.metadataTxId!;
 
           _driveDao.transaction(() async {
-            final filePath = '${_targetFolder.path}/${metadata.name}';
-            await _driveDao.writeFileEntity(entity, filePath);
+            await _driveDao.writeFileEntity(entity);
             await _driveDao.insertFileRevision(
               entity.toRevisionCompanion(
                 performedAction: revisionAction,
@@ -888,18 +907,11 @@ class UploadCubit extends Cubit<UploadState> {
 
           entity.txId = metadata.metadataTxId!;
 
-          final folderPath = foldersByPath.values
-              .firstWhere((element) =>
-                  element.name == metadata.name &&
-                  element.parentFolderId == metadata.parentFolderId)
-              .path;
-
           await _driveDao.transaction(() async {
             await _driveDao.createFolder(
               driveId: _targetDrive.id,
               parentFolderId: metadata.parentFolderId,
               folderName: metadata.name,
-              path: folderPath,
               folderId: metadata.id,
             );
             await _driveDao.insertFolderRevision(
@@ -973,7 +985,6 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     emit(UploadFailure(error: UploadErrors.unknown));
-    logger.e('Failed to upload file', error, stackTrace);
     super.onError(error, stackTrace);
   }
 
@@ -1033,7 +1044,6 @@ class UploadCubit extends Cubit<UploadState> {
 class UploadFolder extends IOFolder {
   UploadFolder({
     required this.name,
-    required this.path,
     required this.lastModifiedDate,
   });
 
@@ -1059,8 +1069,8 @@ class UploadFolder extends IOFolder {
   final String name;
 
   @override
-  // TODO: implement path
-  final String path;
+  // We dont need to use the path for the upload
+  final String path = '';
 
   @override
   List<Object?> get props => [name, path, lastModifiedDate];

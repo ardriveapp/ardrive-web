@@ -27,6 +27,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
@@ -107,9 +108,11 @@ Future<void> promptToUpload(
   }
 
   // ignore: use_build_context_synchronously
-  await showCongestionDependentModalDialog(
-    context,
-    () => showArDriveDialog(
+  await showCongestionDependentModalDialog(context, () {
+    if (!context.mounted) {
+      return;
+    }
+    showArDriveDialog(
       context,
       content: RepositoryProvider(
         create: (context) => ArDriveUploadPreparationManager(
@@ -181,12 +184,12 @@ Future<void> promptToUpload(
         ),
       ),
       barrierDismissible: false,
-    ),
-  );
+    );
+  });
 }
 
 class UploadForm extends StatefulWidget {
-  const UploadForm({Key? key}) : super(key: key);
+  const UploadForm({super.key});
 
   @override
   State<UploadForm> createState() => _UploadFormState();
@@ -416,6 +419,7 @@ class _UploadFormState extends State<UploadForm> {
                 ),
               );
             } else if (state is UploadReady) {
+              final typography = ArDriveTypographyNew.of(context);
               return ReactiveForm(
                 formGroup: context.watch<UploadCubit>().licenseCategoryForm,
                 child: ReactiveFormConsumer(builder: (_, form, __) {
@@ -473,7 +477,33 @@ class _UploadFormState extends State<UploadForm> {
                                 .read<UploadCubit>()
                                 .setUploadMethod(method, info, canUpload);
                           },
-                          params: state.params,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Row(
+                          children: [
+                            ArDriveCheckBox(
+                              title: 'Upload with thumbnails',
+                              checked: true,
+                              titleStyle: typography.paragraphLarge(
+                                fontWeight: ArFontWeight.semiBold,
+                              ),
+                              onChange: (value) {
+                                context
+                                    .read<UploadCubit>()
+                                    .changeUploadThumbnailOption(value);
+                              },
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8.0),
+                              child: ArDriveIconButton(
+                                icon: ArDriveIcons.info(),
+                                tooltip:
+                                    'Uploading with thumbnails is free, but may make your upload take longer.\nYou can always attach a thumbnail later.',
+                              ),
+                            )
+                          ],
                         ),
                       ),
                       SizedBox(
@@ -744,7 +774,6 @@ class _UploadFormState extends State<UploadForm> {
                 ],
               );
             } else if (state is UploadFailure) {
-              logger.e('Upload failed: ${state.error}');
               if (state.error == UploadErrors.turboTimeout) {
                 return ArDriveStandardModal(
                   title: appLocalizationsOf(context).uploadFailed,
@@ -953,6 +982,9 @@ class _UploadFormState extends State<UploadForm> {
                         case UploadStatus.creatingBundle:
                           status =
                               'We are preparing your upload. Preparation step 2/2';
+                        case UploadStatus.uploadingThumbnail:
+                          status = 'Uploading thumbnail...';
+                          break;
                       }
 
                       final statusAvailableForShowingProgress =

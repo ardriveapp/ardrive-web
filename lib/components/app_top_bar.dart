@@ -1,8 +1,12 @@
-import 'package:ardrive/blocs/sync/sync_cubit.dart';
+import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/gift/reedem_button.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
+import 'package:ardrive/search/search_modal.dart';
+import 'package:ardrive/search/search_text_field.dart';
+import 'package:ardrive/services/config/config.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
@@ -15,19 +19,42 @@ class AppTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(
+    final enableSearch = context.read<ConfigService>().config.enableSearch;
+    final controller = TextEditingController();
+
+    return SizedBox(
       height: 110,
       width: double.maxFinite,
       child: Padding(
-        padding: EdgeInsets.only(right: 24.0),
+        padding: const EdgeInsets.only(right: 24.0),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            SyncButton(),
-            SizedBox(width: 24),
-            RedeemButton(),
-            SizedBox(width: 24),
-            ProfileCard(),
+            if (enableSearch) ...[
+              Expanded(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  child: SearchTextField(
+                    controller: controller,
+                    onFieldSubmitted: (query) {
+                      showSearchModalDesktop(
+                        context: context,
+                        driveDetailCubit: context.read<DriveDetailCubit>(),
+                        controller: controller,
+                      );
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(width: 24),
+            ],
+            const Spacer(),
+            const SyncButton(),
+            const SizedBox(width: 24),
+            const RedeemButton(),
+            const SizedBox(width: 24),
+            const ProfileCard(),
           ],
         ),
       ),
@@ -40,6 +67,7 @@ class SyncButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return HoverWidget(
       tooltip: appLocalizationsOf(context).resyncTooltip,
       child: ArDriveDropdown(
@@ -50,7 +78,7 @@ class SyncButton extends StatelessWidget {
         items: [
           ArDriveDropdownItem(
             onClick: () {
-              context.read<SyncCubit>().startSync(syncDeep: false);
+              context.read<SyncCubit>().startSync(deepSync: false);
               PlausibleEventTracker.trackResync(type: ResyncType.resync);
             },
             content: ArDriveDropdownItemTile(
@@ -61,20 +89,20 @@ class SyncButton extends StatelessWidget {
             ),
           ),
           ArDriveDropdownItem(
-              onClick: () {
-                context.read<SyncCubit>().startSync(syncDeep: true);
-                PlausibleEventTracker.trackResync(type: ResyncType.deepResync);
-              },
-              content: ArDriveDropdownItemTile(
-                name: appLocalizationsOf(context).deepResync,
-                icon: ArDriveIcons.cloudSync(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-                ),
-              )),
+            onClick: () {
+              context.read<SyncCubit>().startSync(deepSync: true);
+              PlausibleEventTracker.trackResync(type: ResyncType.deepResync);
+            },
+            content: ArDriveDropdownItemTile(
+              name: appLocalizationsOf(context).deepResync,
+              icon: ArDriveIcons.cloudSync(
+                color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+              ),
+            ),
+          ),
         ],
         child: ArDriveIcons.refresh(
-          color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+          color: colorTokens.textMid,
         ),
       ),
     );

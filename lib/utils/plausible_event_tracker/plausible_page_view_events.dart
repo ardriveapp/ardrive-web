@@ -7,7 +7,6 @@ enum PlausiblePageView {
   tutorialsPage2, // TODO: remove
   tutorialsPage3, // TODO: remove
   tutorialSkipped, // TODO: remove
-  createAndConfirmPasswordPage,
   createdAndConfirmedPassword, // TODO: remove - why: it should be an event
   gettingStartedPage,
   enterSeedPhrasePage,
@@ -26,6 +25,23 @@ enum PlausiblePageView {
   walletGenerationPage,
   welcomePage,
   welcomeBackPage,
-
   unknown,
+
+  /// New Onboarding Events
+  signUpPage,
+  createAndConfirmPasswordPage,
+  generateWalletLoader,
+  walletCreatedPage,
+  loginPage,
+  importWalletPage,
+  enterPasswordPage,
+  returnUserPage,
+
+  /// Search
+  searchPage,
+
+  /// Empty State
+  folderEmptyPage,
+  existingUserDriveEmptyPage,
+  newUserDriveEmptyPage,
 }

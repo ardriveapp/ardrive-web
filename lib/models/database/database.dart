@@ -110,8 +110,15 @@ class Database extends _$Database {
               }
 
               if (from < 20) {
-                // Recreate licenses
+                // Adding snapshot entries
                 logger.d('Migrating schema from v19 to v20');
+
+                await m.addColumn(fileEntries, fileEntries.thumbnail);
+                await m.addColumn(fileRevisions, fileRevisions.thumbnail);
+              }
+              if (from < 21) {
+                // Recreate licenses
+                logger.d('Migrating schema from v20 to v21');
 
                 await m.deleteTable('licenses');
                 await m.createTable(licenses);

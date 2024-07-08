@@ -261,6 +261,7 @@ class _AppSideBarState extends State<AppSideBar> {
             ? Padding(
                 padding: EdgeInsets.all(isMobile ? 0 : 16.0),
                 child: Image.asset(
+                  // TODO: replace with ArDriveTheme .isLight method
                   ArDriveTheme.of(context).themeData.name == 'light'
                       ? Resources.images.brand.blackLogo1
                       : Resources.images.brand.whiteLogo1,
@@ -280,6 +281,8 @@ class _AppSideBarState extends State<AppSideBar> {
   }
 
   Widget _buildAccordion(DrivesLoadSuccess state, bool isMobile) {
+    final typography = ArDriveTypographyNew.of(context);
+
     return ArDriveAccordion(
       contentPadding: isMobile ? const EdgeInsets.all(4) : null,
       key: ValueKey(state.userDrives.map((e) => e.name)),
@@ -290,9 +293,9 @@ class _AppSideBarState extends State<AppSideBar> {
             isExpanded: true,
             Text(
               appLocalizationsOf(context).publicDrives,
-              style: ArDriveTypography.body.buttonLargeBold().copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: typography.paragraphNormal(
+                fontWeight: ArFontWeight.bold,
+              ),
             ),
             state.userDrives
                 .where((element) => element.isPublic)
@@ -303,7 +306,7 @@ class _AppSideBarState extends State<AppSideBar> {
                     onTap: () {
                       if (state.selectedDriveId == d.id) {
                         // opens the root folder
-                        context.read<DriveDetailCubit>().openFolder(path: '');
+                        context.read<DriveDetailCubit>().openFolder();
                         return;
                       }
                       context.read<DrivesCubit>().selectDrive(d.id);
@@ -318,9 +321,9 @@ class _AppSideBarState extends State<AppSideBar> {
             isExpanded: true,
             Text(
               appLocalizationsOf(context).privateDrives,
-              style: ArDriveTypography.body
-                  .buttonLargeBold()
-                  .copyWith(fontWeight: FontWeight.w700),
+              style: typography.paragraphNormal(
+                fontWeight: ArFontWeight.bold,
+              ),
             ),
             state.userDrives
                 .where((element) => element.isPrivate)
@@ -341,9 +344,9 @@ class _AppSideBarState extends State<AppSideBar> {
             isExpanded: true,
             Text(
               appLocalizationsOf(context).sharedDrives,
-              style: ArDriveTypography.body
-                  .buttonLargeBold()
-                  .copyWith(fontWeight: FontWeight.w700),
+              style: typography.paragraphNormal(
+                fontWeight: ArFontWeight.bold,
+              ),
             ),
             state.sharedDrives
                 .map(
@@ -665,15 +668,17 @@ class DriveListTile extends StatelessWidget {
   final VoidCallback onTap;
 
   const DriveListTile({
-    Key? key,
+    super.key,
     required this.drive,
     required this.isSelected,
     required this.onTap,
     this.hasAlert = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+
     return GestureDetector(
       key: key,
       onTap: onTap,
@@ -692,19 +697,15 @@ class DriveListTile extends StatelessWidget {
                 child: Text(
                   drive.name,
                   style: isSelected
-                      ? ArDriveTypography.body
-                          .buttonNormalBold(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgDefault,
-                          )
-                          .copyWith(fontWeight: FontWeight.w700)
-                      : ArDriveTypography.body.buttonNormalRegular(
+                      ? typography.paragraphNormal(
+                          fontWeight: ArFontWeight.semiBold,
+                        )
+                      : typography.paragraphNormal(
+                          fontWeight: ArFontWeight.semiBold,
                           color: ArDriveTheme.of(context)
                               .themeData
-                              .colors
-                              .themeAccentDisabled,
+                              .colorTokens
+                              .textLow,
                         ),
                 ),
               ),

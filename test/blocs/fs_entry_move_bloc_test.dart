@@ -3,6 +3,7 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -68,24 +69,24 @@ void main() {
             id: rootFolderId,
             driveId: driveId,
             name: 'fake-drive-name',
-            path: '',
             isHidden: const Value(false),
+            path: '',
           ),
           FolderEntriesCompanion.insert(
             id: nestedFolderId,
             driveId: driveId,
             parentFolderId: Value(rootFolderId),
             name: nestedFolderId,
-            path: '/$nestedFolderId',
             isHidden: const Value(false),
+            path: '',
           ),
           FolderEntriesCompanion.insert(
             id: conflictTestFolderId,
             driveId: driveId,
             parentFolderId: Value(rootFolderId),
             name: conflictTestFolderId,
-            path: '/$conflictTestFolderId',
             isHidden: const Value(false),
+            path: '',
           ),
         ]);
         // Insert fake files
@@ -101,13 +102,13 @@ void main() {
                   driveId: driveId,
                   parentFolderId: rootFolderId,
                   name: fileId,
-                  path: '/$fileId',
                   dataTxId: '${fileId}Data',
                   size: 500,
                   dateCreated: Value(defaultDate),
                   lastModifiedDate: defaultDate,
                   dataContentType: const Value(''),
                   isHidden: const Value(false),
+                  path: '',
                 );
               },
             ),
@@ -120,13 +121,13 @@ void main() {
                   driveId: driveId,
                   parentFolderId: conflictTestFolderId,
                   name: fileId,
-                  path: '/$fileId',
                   dataTxId: '${fileId}Data',
                   size: 500,
                   dateCreated: Value(defaultDate),
                   lastModifiedDate: defaultDate,
                   dataContentType: const Value(''),
                   isHidden: const Value(false),
+                  path: '',
                 );
               },
             ),
@@ -244,9 +245,7 @@ void main() {
       );
       turboUploadService = DontUseUploadService();
       syncBloc = MockSyncBloc();
-      when(() => syncBloc.generateFsEntryPaths(any(), any(), any())).thenAnswer(
-        (_) async => Future.value(),
-      );
+
       profileCubit = MockProfileCubit();
 
       final keyBytes = Uint8List(32);
