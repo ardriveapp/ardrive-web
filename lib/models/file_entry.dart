@@ -19,8 +19,9 @@ extension FileEntryExtensions on FileEntry {
       dataContentType: dataContentType,
       pinnedDataOwnerAddress: pinnedDataOwnerAddress,
       isHidden: isHidden,
-      thumbnail:
-          thumbnail != null ? Thumbnail.fromJson(jsonDecode(thumbnail!)) : null,
+      thumbnail: thumbnail != null && thumbnail != 'null'
+          ? Thumbnail.fromJson(jsonDecode(thumbnail!))
+          : null,
     );
 
     file.customJsonMetadata = parseCustomJsonMetadata(customJsonMetadata);
