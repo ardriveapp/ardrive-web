@@ -467,6 +467,7 @@ class _UploadFormState extends State<UploadForm> {
                 ),
               );
             } else if (state is UploadReady) {
+              final typography = ArDriveTypographyNew.of(context);
               return ReactiveForm(
                 formGroup: context.watch<UploadCubit>().licenseCategoryForm,
                 child: ReactiveFormConsumer(builder: (_, form, __) {
@@ -524,7 +525,33 @@ class _UploadFormState extends State<UploadForm> {
                                 .read<UploadCubit>()
                                 .setUploadMethod(method, info, canUpload);
                           },
-                          params: state.params,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Row(
+                          children: [
+                            ArDriveCheckBox(
+                              title: 'Upload with thumbnails',
+                              checked: true,
+                              titleStyle: typography.paragraphLarge(
+                                fontWeight: ArFontWeight.semiBold,
+                              ),
+                              onChange: (value) {
+                                context
+                                    .read<UploadCubit>()
+                                    .changeUploadThumbnailOption(value);
+                              },
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8.0),
+                              child: ArDriveIconButton(
+                                icon: ArDriveIcons.info(),
+                                tooltip:
+                                    'Uploading with thumbnails is free, but may make your upload take longer.\nYou can always attach a thumbnail later.',
+                              ),
+                            )
+                          ],
                         ),
                       ),
                       SizedBox(
@@ -795,7 +822,6 @@ class _UploadFormState extends State<UploadForm> {
                 ],
               );
             } else if (state is UploadFailure) {
-              logger.e('Upload failed: ${state.error}');
               if (state.error == UploadErrors.turboTimeout) {
                 return ArDriveStandardModal(
                   title: appLocalizationsOf(context).uploadFailed,
@@ -1004,6 +1030,9 @@ class _UploadFormState extends State<UploadForm> {
                         case UploadStatus.creatingBundle:
                           status =
                               'We are preparing your upload. Preparation step 2/2';
+                        case UploadStatus.uploadingThumbnail:
+                          status = 'Uploading thumbnail...';
+                          break;
                       }
 
                       final statusAvailableForShowingProgress =

@@ -73,74 +73,71 @@ class CreateManifestPreparingManifest extends CreateManifestState {
   List<Object> get props => [parentFolder];
 }
 
-/// User does not have enough AR to cover the manifest transaction reward and tip, create manifest must be aborted
-class CreateManifestInsufficientBalance extends CreateManifestState {
-  final String walletBalance;
-  final String totalCost;
-
-  CreateManifestInsufficientBalance({
-    required this.walletBalance,
-    required this.totalCost,
-  });
-
-  @override
-  List<Object> get props => [walletBalance, totalCost];
-}
-
-/// Manifest transaction is prepared, prompt user to confirm price of the upload
-class CreateManifestUploadConfirmation extends CreateManifestState {
+class CreateManifestUploadReview extends CreateManifestState {
   final int manifestSize;
   final String manifestName;
   final bool folderHasPendingFiles;
-  final String arUploadCost;
-  final double? usdUploadCost;
+  final IOFile manifestFile;
+  final bool freeUpload;
+  final UploadMethod? uploadMethod;
+  final Drive drive;
+  final FolderEntry parentFolder;
+  final String? existingManifestFileId;
+  final bool canUpload;
 
-  final UploadManifestParams uploadManifestParams;
-
-  CreateManifestUploadConfirmation({
+  CreateManifestUploadReview({
     required this.manifestSize,
     required this.manifestName,
     required this.folderHasPendingFiles,
-    required this.arUploadCost,
-    required this.usdUploadCost,
-    required this.uploadManifestParams,
+    required this.manifestFile,
+    this.freeUpload = false,
+    this.uploadMethod,
+    required this.drive,
+    required this.parentFolder,
+    this.existingManifestFileId,
+    this.canUpload = false,
   });
 
   @override
   List get props => [
         manifestSize,
         manifestName,
+        manifestFile,
         folderHasPendingFiles,
-        arUploadCost,
-        usdUploadCost,
-        uploadManifestParams,
+        freeUpload,
+        uploadMethod,
+        drive,
+        parentFolder,
+        existingManifestFileId,
       ];
-}
 
-/// Manifest transaction is prepared, prompt user to confirm price of the upload
-class CreateManifestTurboUploadConfirmation extends CreateManifestState {
-  final int manifestSize;
-  final String manifestName;
-  final bool folderHasPendingFiles;
-  final List<DataItem> manifestDataItems;
-  final Future<void> Function() addManifestToDatabase;
-
-  CreateManifestTurboUploadConfirmation({
-    required this.manifestSize,
-    required this.manifestName,
-    required this.folderHasPendingFiles,
-    required this.manifestDataItems,
-    required this.addManifestToDatabase,
-  });
-
-  @override
-  List<Object> get props => [
-        manifestSize,
-        manifestName,
-        folderHasPendingFiles,
-        manifestDataItems,
-        addManifestToDatabase,
-      ];
+  CreateManifestUploadReview copyWith({
+    int? manifestSize,
+    String? manifestName,
+    bool? folderHasPendingFiles,
+    IOFile? manifestFile,
+    bool? freeUpload,
+    UploadMethod? uploadMethod,
+    Drive? drive,
+    FolderEntry? parentFolder,
+    String? existingManifestFileId,
+    bool? canUpload,
+  }) {
+    return CreateManifestUploadReview(
+      manifestSize: manifestSize ?? this.manifestSize,
+      manifestName: manifestName ?? this.manifestName,
+      folderHasPendingFiles:
+          folderHasPendingFiles ?? this.folderHasPendingFiles,
+      manifestFile: manifestFile ?? this.manifestFile,
+      freeUpload: freeUpload ?? this.freeUpload,
+      uploadMethod: uploadMethod ?? this.uploadMethod,
+      drive: drive ?? this.drive,
+      parentFolder: parentFolder ?? this.parentFolder,
+      existingManifestFileId:
+          existingManifestFileId ?? this.existingManifestFileId,
+      canUpload: canUpload ?? this.canUpload,
+    );
+  }
 }
 
 /// User has confirmed the upload and the manifest transaction upload has started

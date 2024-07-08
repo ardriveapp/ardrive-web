@@ -1,20 +1,33 @@
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
+import 'package:ardrive/blocs/upload/models/upload_file.dart';
+import 'package:ardrive/blocs/upload/payment_method/bloc/upload_payment_method_bloc.dart';
+import 'package:ardrive/blocs/upload/payment_method/view/upload_payment_method_view.dart';
 import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
-import 'package:ardrive/misc/misc.dart';
+import 'package:ardrive/core/arfs/utils/arfs_revision_status_utils.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/core/upload/cost_calculator.dart';
+import 'package:ardrive/core/upload/uploader.dart';
+import 'package:ardrive/entities/manifest_data.dart';
+import 'package:ardrive/manifest/domain/manifest_repository.dart';
+import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/open_url.dart';
-import 'package:ardrive/utils/usd_upload_cost_to_string.dart';
+import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive/utils/validate_folder_name.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -29,6 +42,8 @@ Future<void> promptToCreateManifest(
   required Drive drive,
   required bool hasPendingFiles,
 }) {
+  final pst = context.read<PstService>();
+  final configService = context.read<ConfigService>();
   return showArDriveDialog(
     context,
     content: BlocProvider(
@@ -36,12 +51,28 @@ Future<void> promptToCreateManifest(
         drive: drive,
         profileCubit: context.read<ProfileCubit>(),
         hasPendingFiles: hasPendingFiles,
-        arweave: context.read<ArweaveService>(),
-        turboUploadService: context.read<TurboUploadService>(),
-        driveDao: context.read<DriveDao>(),
-        pst: context.read<PstService>(),
-        fileRepository: context.read<FileRepository>(),
         folderRepository: context.read<FolderRepository>(),
+        auth: context.read<ArDriveAuth>(),
+        manifestRepository: ManifestRepositoryImpl(
+          context.read<DriveDao>(),
+          ArDriveUploader(
+            turboUploadUri:
+                Uri.parse(configService.config.defaultTurboUploadUrl!),
+            metadataGenerator: ARFSUploadMetadataGenerator(
+              tagsGenerator: ARFSTagsGenetator(
+                appInfoServices: AppInfoServices(),
+              ),
+            ),
+            arweave: context.read<ArweaveService>().client,
+            pstService: pst,
+          ),
+          context.read<FolderRepository>(),
+          ManifestDataBuilder(
+            fileRepository: context.read<FileRepository>(),
+            folderRepository: context.read<FolderRepository>(),
+          ),
+          ARFSRevisionStatusUtils(context.read<FileRepository>()),
+        ),
       ),
       child: const CreateManifestForm(),
     ),
@@ -60,366 +91,120 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
 
   bool _isFormValid = false;
 
+  ArDriveTextFieldNew manifestNameForm() {
+    final readCubitContext = context.read<CreateManifestCubit>();
+
+    return ArDriveTextFieldNew(
+      hintText: appLocalizationsOf(context).manifestName,
+      controller: _manifestNameController,
+      validator: (value) {
+        final validation = validateEntityName(value, context);
+
+        _isFormValid = validation == null;
+
+        setState(() {});
+
+        return validation;
+      },
+      autofocus: true,
+      onFieldSubmitted: (s) {
+        readCubitContext.chooseTargetFolder();
+      },
+    );
+  }
+
   @override
-  Widget build(BuildContext context) =>
-      BlocConsumer<CreateManifestCubit, CreateManifestState>(
-          listener: (context, state) {
-        if (state is CreateManifestUploadInProgress) {
-          showProgressDialog(
-            context,
-            title: appLocalizationsOf(context).uploadingManifestEmphasized,
-          );
-        } else if (state is CreateManifestPreparingManifest) {
-          showProgressDialog(
-            context,
-            title: appLocalizationsOf(context).preparingManifestEmphasized,
-          );
-        } else if (state is CreateManifestSuccess ||
-            state is CreateManifestPrivacyMismatch) {
-          Navigator.pop(context);
-          Navigator.pop(context);
-          context.read<FeedbackSurveyCubit>().openRemindMe();
-        }
-      }, builder: (context, state) {
-        final textStyle = ArDriveTypography.body.buttonNormalRegular(
-          color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-        );
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-        final readCubitContext = context.read<CreateManifestCubit>();
+    return BlocConsumer<CreateManifestCubit, CreateManifestState>(
+        listener: (context, state) {
+      if (state is CreateManifestSuccess ||
+          state is CreateManifestPrivacyMismatch) {
+        Navigator.pop(context);
+        context.read<FeedbackSurveyCubit>().openRemindMe();
+      }
+    }, builder: (context, state) {
+      final textStyle = typography.paragraphNormal(
+        color: colorTokens.textLow,
+        fontWeight: ArFontWeight.semiBold,
+      );
 
-        ArDriveTextField manifestNameForm() => ArDriveTextField(
-              hintText: appLocalizationsOf(context).manifestName,
-              controller: _manifestNameController,
-              validator: (value) {
-                final validation = validateEntityName(value, context);
-
-                _isFormValid = validation == null;
-
-                setState(() {});
-
-                return validation;
-              },
-              autofocus: true,
-            );
-
-        ArDriveStandardModal errorDialog({required String errorText}) =>
-            ArDriveStandardModal(
-              width: kMediumDialogWidth,
-              title:
-                  appLocalizationsOf(context).failedToCreateManifestEmphasized,
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
-                  Text(errorText),
-                  const SizedBox(height: 16),
-                ],
-              ),
-              actions: [
-                ModalAction(
-                  action: () => Navigator.pop(context),
-                  title: appLocalizationsOf(context).continueEmphasized,
-                ),
-              ],
-            );
-
-        if (state is CreateManifestWalletMismatch) {
-          Navigator.pop(context);
-          return errorDialog(
-            errorText:
-                appLocalizationsOf(context).walletChangedDuringManifestCreation,
-          );
-        }
-
-        if (state is CreateManifestFailure) {
-          Navigator.pop(context);
-          return errorDialog(
-            errorText: appLocalizationsOf(context)
-                .manifestTransactionUnexpectedlyFailed,
-          );
-        }
-
-        if (state is CreateManifestInsufficientBalance) {
-          Navigator.pop(context);
-          return errorDialog(
-            errorText: appLocalizationsOf(context)
-                .insufficientBalanceForManifest(
-                    state.walletBalance, state.totalCost),
-          );
-        }
-
-        if (state is CreateManifestNameConflict) {
-          return ArDriveStandardModal(
+      ArDriveStandardModal errorDialog({required String errorText}) =>
+          ArDriveStandardModal(
             width: kMediumDialogWidth,
-            title: appLocalizationsOf(context).conflictingNameFound,
-            content: SizedBox(
-              height: 200,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    appLocalizationsOf(context)
-                        .conflictingManifestFoundChooseNewName,
-                  ),
-                  manifestNameForm()
-                ],
-              ),
-            ),
-            actions: [
-              ModalAction(
-                action: () => Navigator.of(context).pop(false),
-                title: appLocalizationsOf(context).cancelEmphasized,
-              ),
-              ModalAction(
-                action: () => readCubitContext
-                    .reCheckConflicts(_manifestNameController.text),
-                title: appLocalizationsOf(context).continueEmphasized,
-              ),
-            ],
-          );
-        }
-
-        if (state is CreateManifestRevisionConfirm) {
-          return ArDriveStandardModal(
-            width: kMediumDialogWidth,
-            title: appLocalizationsOf(context).conflictingManifestFound,
+            title: appLocalizationsOf(context).failedToCreateManifestEmphasized,
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 16),
-                Text(
-                  appLocalizationsOf(context)
-                      .conflictingManifestFoundChooseNewName,
-                ),
+                Text(errorText),
                 const SizedBox(height: 16),
               ],
             ),
             actions: [
               ModalAction(
-                action: () => Navigator.of(context).pop(false),
-                title: appLocalizationsOf(context).cancelEmphasized,
-              ),
-              ModalAction(
-                isEnable: _isFormValid,
-                action: () => readCubitContext
-                    .confirmRevision(_manifestNameController.text),
+                action: () => Navigator.pop(context),
                 title: appLocalizationsOf(context).continueEmphasized,
               ),
             ],
           );
-        }
 
-        if (state is CreateManifestInitial) {
-          return ArDriveStandardModal(
-            width: kLargeDialogWidth,
-            title: appLocalizationsOf(context).addnewManifestEmphasized,
-            actions: [
-              ModalAction(
-                action: () => Navigator.pop(context),
-                title: appLocalizationsOf(context).cancelEmphasized,
-              ),
-              ModalAction(
-                action: () => readCubitContext.chooseTargetFolder(),
-                title: appLocalizationsOf(context).nextEmphasized,
-              ),
-            ],
-            content: SizedBox(
-              height: 250,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    RichText(
-                      text: TextSpan(children: [
-                        TextSpan(
-                          text: appLocalizationsOf(context)
-                              .aManifestIsASpecialKindOfFile, // trimmed spaces
-                          style: textStyle,
-                        ),
-                        const TextSpan(text: ' '),
-                        TextSpan(
-                          text: appLocalizationsOf(context).learnMore,
-                          style: textStyle.copyWith(
-                            decoration: TextDecoration.underline,
-                          ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () => openUrl(
-                                  url: Resources.manifestLearnMoreLink,
-                                ),
-                        ),
-                      ]),
-                    ),
-                    manifestNameForm()
-                  ],
-                ),
-              ),
-            ),
-          );
-        }
-        if (state is CreateManifestTurboUploadConfirmation) {
-          final hasPendingFiles = state.folderHasPendingFiles;
+      if (state is CreateManifestWalletMismatch) {
+        Navigator.pop(context);
+        return errorDialog(
+          errorText:
+              appLocalizationsOf(context).walletChangedDuringManifestCreation,
+        );
+      } else if (state is CreateManifestFailure) {
+        Navigator.pop(context);
+        return errorDialog(
+          errorText:
+              appLocalizationsOf(context).manifestTransactionUnexpectedlyFailed,
+        );
+      } else if (state is CreateManifestPreparingManifest) {
+        return ProgressDialog(
+          useNewArDriveUI: true,
+          title: appLocalizationsOf(context).preparingManifestEmphasized,
+        );
+      } else if (state is CreateManifestNameConflict) {
+        return _createManifestNameConflict(
+          contexty: context,
+          textStyle: textStyle,
+        );
+      } else if (state is CreateManifestRevisionConfirm) {
+        return _createManifestRevisionConfirm(
+          context: context,
+          textStyle: textStyle,
+        );
+      } else if (state is CreateManifestInitial) {
+        return _createManifestInitial(
+          context: context,
+          textStyle: textStyle,
+        );
+      }
+      if (state is CreateManifestUploadInProgress) {
+        return ProgressDialog(
+          useNewArDriveUI: true,
+          title: appLocalizationsOf(context).uploadingManifestEmphasized,
+        );
+      } else if (state is CreateManifestUploadReview) {
+        return _createManifestUploadReview(
+          state: state,
+          context: context,
+          textStyle: textStyle,
+        );
+      }
 
-          Navigator.pop(context);
-          return ArDriveStandardModal(
-            width: kMediumDialogWidth,
-            title: hasPendingFiles
-                ? appLocalizationsOf(context).filesPending
-                : appLocalizationsOf(context).createManifestEmphasized,
-            content: SizedBox(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (hasPendingFiles) ...[
-                    Text(
-                      appLocalizationsOf(context)
-                          .filesPendingManifestExplanation,
-                      style: textStyle,
-                    ),
-                    const Divider(),
-                  ],
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 256),
-                    child: Scrollbar(
-                      child: ListView(
-                        shrinkWrap: true,
-                        children: [
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(
-                              state.manifestName,
-                              style: textStyle,
-                            ),
-                            subtitle: Text(
-                              filesize(state.manifestSize),
-                              style: textStyle,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const Divider(),
-                  const SizedBox(height: 16),
-                  Text(
-                    appLocalizationsOf(context).freeTurboTransaction,
-                    style: textStyle,
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    appLocalizationsOf(context)
-                        .filesWillBePermanentlyPublicWarning,
-                    style: textStyle,
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              ModalAction(
-                action: () => Navigator.of(context).pop(false),
-                title: appLocalizationsOf(context).cancelEmphasized,
-              ),
-              ModalAction(
-                action: () => readCubitContext.uploadManifest(),
-                title: appLocalizationsOf(context).confirmEmphasized,
-              ),
-            ],
-          );
-        }
-        if (state is CreateManifestUploadConfirmation) {
-          Navigator.pop(context);
-          return ArDriveStandardModal(
-            width: kMediumDialogWidth,
-            title: appLocalizationsOf(context).createManifestEmphasized,
-            content: SizedBox(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 256),
-                    child: Scrollbar(
-                      child: ListView(
-                        shrinkWrap: true,
-                        children: [
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(
-                              state.manifestName,
-                              style: textStyle,
-                            ),
-                            subtitle: Text(
-                              filesize(state.manifestSize),
-                              style: textStyle.copyWith(
-                                  color: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeFgOnDisabled),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const Divider(),
-                  const SizedBox(height: 16),
-                  Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                          text: appLocalizationsOf(context)
-                              .cost(state.arUploadCost),
-                        ),
-                        if (state.usdUploadCost != null)
-                          TextSpan(
-                            text: usdUploadCostToString(
-                              state.usdUploadCost!,
-                            ),
-                          )
-                        else
-                          TextSpan(
-                            text:
-                                ' ${appLocalizationsOf(context).usdPriceNotAvailable}',
-                          ),
-                      ],
-                      style: textStyle,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    appLocalizationsOf(context)
-                        .filesWillBePermanentlyPublicWarning,
-                    style: textStyle,
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              ModalAction(
-                action: () => Navigator.of(context).pop(false),
-                title: appLocalizationsOf(context).cancelEmphasized,
-              ),
-              ModalAction(
-                action: () => readCubitContext.uploadManifest(),
-                title: appLocalizationsOf(context).confirmEmphasized,
-              ),
-            ],
-          );
-        }
+      if (state is CreateManifestFolderLoadSuccess) {
+        return _selectFolder(state, context);
+      }
 
-        if (state is CreateManifestFolderLoadSuccess) {
-          return _selectFolder(state, context);
-        }
-
-        return const SizedBox();
-      });
+      return const SizedBox();
+    });
+  }
 
   bool _isFolderEmpty(FolderID folderId, FolderNode rootFolderNode) {
     final folderNode = rootFolderNode.searchForFolder(folderId);
@@ -431,9 +216,334 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
     return folderNode.isEmpty();
   }
 
+  Widget _createManifestNameConflict({
+    required BuildContext contexty,
+    required TextStyle textStyle,
+  }) {
+    final readCubitContext = context.read<CreateManifestCubit>();
+
+    return ArDriveStandardModalNew(
+      width: kMediumDialogWidth,
+      title: appLocalizationsOf(context).conflictingNameFound,
+      content: SizedBox(
+        height: 200,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              appLocalizationsOf(context).conflictingManifestFoundChooseNewName,
+              style: textStyle,
+            ),
+            manifestNameForm()
+          ],
+        ),
+      ),
+      actions: [
+        ModalAction(
+          action: () => Navigator.of(context).pop(false),
+          title: appLocalizationsOf(context).cancelEmphasized,
+        ),
+        ModalAction(
+          action: () =>
+              readCubitContext.reCheckConflicts(_manifestNameController.text),
+          title: appLocalizationsOf(context).continueEmphasized,
+        ),
+      ],
+    );
+  }
+
+  Widget _createManifestRevisionConfirm({
+    required BuildContext context,
+    required TextStyle textStyle,
+  }) {
+    final readCubitContext = context.read<CreateManifestCubit>();
+    return ArDriveStandardModalNew(
+      width: kMediumDialogWidth,
+      title: appLocalizationsOf(context).conflictingManifestFound,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 16),
+          Text(
+            appLocalizationsOf(context).conflictingManifestFoundChooseNewName,
+            style: textStyle,
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+      actions: [
+        ModalAction(
+          action: () => Navigator.of(context).pop(false),
+          title: appLocalizationsOf(context).cancelEmphasized,
+        ),
+        ModalAction(
+          isEnable: _isFormValid,
+          action: () =>
+              readCubitContext.confirmRevision(_manifestNameController.text),
+          title: appLocalizationsOf(context).continueEmphasized,
+        ),
+      ],
+    );
+  }
+
+  Widget _createManifestInitial({
+    required BuildContext context,
+    required TextStyle textStyle,
+  }) {
+    final readCubitContext = context.read<CreateManifestCubit>();
+    return ArDriveStandardModalNew(
+      width: kLargeDialogWidth,
+      title: appLocalizationsOf(context).addnewManifestEmphasized,
+      actions: [
+        ModalAction(
+          action: () => Navigator.pop(context),
+          title: appLocalizationsOf(context).cancelEmphasized,
+        ),
+        ModalAction(
+          isEnable: _isFormValid,
+          action: () => readCubitContext.chooseTargetFolder(),
+          title: appLocalizationsOf(context).nextEmphasized,
+        ),
+      ],
+      content: SizedBox(
+        height: 250,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              RichText(
+                text: TextSpan(children: [
+                  TextSpan(
+                    text: appLocalizationsOf(context)
+                        .aManifestIsASpecialKindOfFile, // trimmed spaces
+                    style: textStyle,
+                  ),
+                  const TextSpan(text: ' '),
+                  TextSpan(
+                    text: appLocalizationsOf(context).learnMore,
+                    style: textStyle.copyWith(
+                      decoration: TextDecoration.underline,
+                    ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () => openUrl(
+                            url: Resources.manifestLearnMoreLink,
+                          ),
+                  ),
+                ]),
+              ),
+              manifestNameForm()
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _createManifestUploadReview({
+    required CreateManifestUploadReview state,
+    required BuildContext context,
+    required TextStyle textStyle,
+  }) {
+    final readCubitContext = context.read<CreateManifestCubit>();
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    final hasPendingFiles = state.folderHasPendingFiles;
+
+    return ArDriveStandardModalNew(
+      width: kMediumDialogWidth,
+      title: hasPendingFiles
+          ? appLocalizationsOf(context).filesPending
+          : appLocalizationsOf(context).createManifestEmphasized,
+      content: SizedBox(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (hasPendingFiles) ...[
+              Text(
+                appLocalizationsOf(context).filesPendingManifestExplanation,
+                style: textStyle,
+              ),
+              const Divider(),
+            ],
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 256),
+              child: Scrollbar(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        state.manifestName,
+                        style: typography.paragraphLarge(
+                          color: colorTokens.textHigh,
+                          fontWeight: ArFontWeight.bold,
+                        ),
+                      ),
+                      subtitle: Text(
+                        filesize(state.manifestSize),
+                        style: textStyle,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const Divider(),
+            const SizedBox(height: 16),
+            if (state.freeUpload) ...[
+              Text(
+                appLocalizationsOf(context).freeTurboTransaction,
+                style: typography.paragraphNormal(
+                  color: colorTokens.textMid,
+                  fontWeight: ArFontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+            if (!state.freeUpload) ...[
+              MultiBlocProvider(
+                providers: [
+                  RepositoryProvider(
+                    create: (context) => ArDriveUploadPreparationManager(
+                      uploadPreparePaymentOptions: UploadPaymentEvaluator(
+                        appConfig: context.read<ConfigService>().config,
+                        auth: context.read<ArDriveAuth>(),
+                        turboBalanceRetriever: TurboBalanceRetriever(
+                          paymentService: context.read<PaymentService>(),
+                        ),
+                        turboUploadCostCalculator: TurboUploadCostCalculator(
+                          priceEstimator: TurboPriceEstimator(
+                            wallet:
+                                context.read<ArDriveAuth>().currentUser.wallet,
+                            costCalculator: TurboCostCalculator(
+                              paymentService: context.read<PaymentService>(),
+                            ),
+                            paymentService: context.read<PaymentService>(),
+                          ),
+                          turboCostCalculator: TurboCostCalculator(
+                            paymentService: context.read<PaymentService>(),
+                          ),
+                        ),
+                        uploadCostEstimateCalculatorForAR:
+                            UploadCostEstimateCalculatorForAR(
+                          arweaveService: context.read<ArweaveService>(),
+                          pstService: context.read<PstService>(),
+                          arCostToUsd: ConvertArToUSD(
+                            arweave: context.read<ArweaveService>(),
+                          ),
+                        ),
+                      ),
+                      uploadPreparer: UploadPreparer(
+                        uploadPlanUtils: UploadPlanUtils(
+                          crypto: ArDriveCrypto(),
+                          arweave: context.read<ArweaveService>(),
+                          turboUploadService:
+                              context.read<TurboUploadService>(),
+                          driveDao: context.read<DriveDao>(),
+                        ),
+                      ),
+                    ),
+                  ),
+                  BlocProvider(
+                    create: (context) => UploadPaymentMethodBloc(
+                      context.read<ProfileCubit>(),
+                      context.read<ArDriveUploadPreparationManager>(),
+                      context.read<ArDriveAuth>(),
+                    )..add(
+                        PrepareUploadPaymentMethod(
+                          params: UploadParams(
+                            conflictingFiles: {},
+                            files: [
+                              UploadFile(
+                                ioFile: state.manifestFile,
+                                parentFolderId: state.parentFolder.id,
+                              ),
+                            ],
+                            foldersByPath:
+                                UploadPlanUtils.generateFoldersForFiles([
+                              UploadFile(
+                                ioFile: state.manifestFile,
+                                parentFolderId: state.parentFolder.id,
+                              ),
+                            ]),
+                            targetDrive: state.drive,
+                            targetFolder: state.parentFolder,
+                            user: context.read<ArDriveAuth>().currentUser,
+                          ),
+                        ),
+                      ),
+                  ),
+                ],
+                child: UploadPaymentMethodView(
+                  onUploadMethodChanged: (method, methodInfo, canUpload) {
+                    readCubitContext.selectUploadMethod(
+                      method,
+                      methodInfo,
+                      canUpload,
+                    );
+                  },
+                  onError: () {},
+                  loadingIndicator: Center(
+                    child: Column(
+                      children: [
+                        Text(
+                          'Loading payment methods...',
+                          style: typography.paragraphLarge(
+                            color: colorTokens.textHigh,
+                            fontWeight: ArFontWeight.bold,
+                          ),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(
+                              vertical: 8.0, horizontal: 32),
+                          child: SizedBox(
+                            child: LinearProgressIndicator(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  useNewArDriveUI: true,
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+            Text(
+              appLocalizationsOf(context).filesWillBePermanentlyPublicWarning,
+              style: textStyle,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        ModalAction(
+          action: () => Navigator.of(context).pop(false),
+          title: appLocalizationsOf(context).cancelEmphasized,
+        ),
+        ModalAction(
+          isEnable: state.canUpload,
+          action: () => readCubitContext.uploadManifest(),
+          title: appLocalizationsOf(context).confirmEmphasized,
+        ),
+      ],
+    );
+  }
+
   Widget _selectFolder(
       CreateManifestFolderLoadSuccess state, BuildContext context) {
     final cubit = context.read<CreateManifestCubit>();
+
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     final items = <Widget>[
       ...state.viewingFolder.subfolders
@@ -458,21 +568,27 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                 child: Row(
                   children: [
                     ArDriveIcons.folderOutline(
-                      size: 16,
-                      color: enabled ? null : _colorDisabled(context),
+                      size: 20,
+                      color: enabled
+                          ? colorTokens.textHigh
+                          : _colorDisabled(context),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         f.name,
-                        style: ArDriveTypography.body.inputNormalRegular(
-                          color: enabled ? null : _colorDisabled(context),
-                        ),
+                        style: typography.paragraphLarge(
+                            fontWeight: ArFontWeight.bold,
+                            color: enabled
+                                ? colorTokens.textHigh
+                                : _colorDisabled(context)),
                       ),
                     ),
                     ArDriveIcons.carretRight(
-                      size: 18,
-                      color: enabled ? null : _colorDisabled(context),
+                      size: 24,
+                      color: enabled
+                          ? colorTokens.textHigh
+                          : _colorDisabled(context),
                     ),
                   ],
                 ),
@@ -481,9 +597,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           );
         },
       ),
-      ...state.viewingFolder.files
-          .where((element) => !element.isHidden)
-          .map(
+      ...state.viewingFolder.files.where((element) => !element.isHidden).map(
             (f) => Padding(
               padding: const EdgeInsets.symmetric(
                 vertical: 16.0,
@@ -492,14 +606,14 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
               child: Row(
                 children: [
                   ArDriveIcons.file(
-                    size: 16,
+                    size: 20,
                     color: _colorDisabled(context),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       f.name,
-                      style: ArDriveTypography.body.inputNormalRegular(
+                      style: typography.paragraphLarge(
                         color: _colorDisabled(context),
                       ),
                     ),
@@ -507,68 +621,70 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                 ],
               ),
             ),
-          )
-          ,
+          ),
     ];
 
-    return ArDriveCard(
-      height: 441,
+    return ArDriveModalNew(
+      constraints: const BoxConstraints(maxWidth: 600, maxHeight: 600),
       contentPadding: EdgeInsets.zero,
-      width: kMediumDialogWidth,
-      content: SizedBox(
-        height: 325,
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600, maxHeight: 500),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.only(left: 16, right: 16),
               width: double.infinity,
               height: 77,
               alignment: Alignment.centerLeft,
-              color:
-                  ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
-              child: Row(
-                children: [
-                  ArDriveClickArea(
-                    child: AnimatedContainer(
-                      width: !state.viewingRootFolder ? 20 : 0,
-                      duration: const Duration(milliseconds: 200),
-                      child: GestureDetector(
-                        onTap: () {
-                          cubit.loadParentFolder();
-                        },
-                        child: AnimatedScale(
-                          duration: const Duration(milliseconds: 200),
-                          scale: !state.viewingRootFolder ? 1 : 0,
-                          child: ArDriveIcons.arrowLeft(
-                            size: 32,
+              color: colorTokens.containerL1,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    ArDriveClickArea(
+                      child: AnimatedContainer(
+                        width: !state.viewingRootFolder ? 20 : 0,
+                        duration: const Duration(milliseconds: 200),
+                        child: GestureDetector(
+                          onTap: () {
+                            cubit.loadParentFolder();
+                          },
+                          child: AnimatedScale(
+                            duration: const Duration(milliseconds: 200),
+                            scale: !state.viewingRootFolder ? 1 : 0,
+                            child: ArDriveIcons.arrowLeft(
+                              size: 32,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  AnimatedPadding(
-                    duration: const Duration(milliseconds: 200),
-                    padding: !state.viewingRootFolder
-                        ? const EdgeInsets.only(left: 14)
-                        : const EdgeInsets.only(left: 0),
-                    child: Text(
-                      appLocalizationsOf(context).targetFolderEmphasized,
-                      style: ArDriveTypography.headline.headline5Bold(),
+                    AnimatedPadding(
+                      duration: const Duration(milliseconds: 200),
+                      padding: !state.viewingRootFolder
+                          ? const EdgeInsets.only(left: 14)
+                          : const EdgeInsets.only(left: 0),
+                      child: Text(
+                        appLocalizationsOf(context).targetFolderEmphasized,
+                        style: typography.heading5(
+                          color: colorTokens.textHigh,
+                          fontWeight: ArFontWeight.bold,
+                        ),
+                      ),
                     ),
-                  ),
-                  const Spacer(),
-                  ArDriveIconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    icon: ArDriveIcons.x(
-                      size: 24,
+                    const Spacer(),
+                    ArDriveIconButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      icon: ArDriveIcons.x(
+                        size: 24,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             Expanded(
@@ -582,74 +698,38 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
             ),
             const Divider(),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: ArDriveCard(
-                  backgroundColor: ArDriveTheme.of(context)
-                      .themeData
-                      .tableTheme
-                      .backgroundColor,
-                  borderRadius: 5,
-                  content: Row(
-                    children: [
-                      ArDriveIcons.info(
-                        size: 16,
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDefault,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Hidden files are not added into the manifest.',
-                          style: ArDriveTypography.body.buttonNormalBold(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgDefault,
-                          ),
+                backgroundColor: colorTokens.containerL1,
+                borderRadius: 5,
+                content: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ArDriveIcons.info(size: 16, color: colorTokens.iconHigh),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Hidden files are not added into the manifest.',
+                        style: typography.paragraphNormal(
+                          color: colorTokens.textMid,
+                          fontWeight: ArFontWeight.semiBold,
                         ),
                       ),
-                    ],
-                  )),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                color: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  ArDriveButton(
-                    maxHeight: 36,
-                    backgroundColor: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDefault,
-                    fontStyle: ArDriveTypography.body.buttonNormalBold(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeAccentSubtle,
                     ),
-                    text: appLocalizationsOf(context).createHereEmphasized,
-                    onPressed: () {
-                      cubit.checkForConflicts(_manifestNameController.text);
-                    },
-                  ),
-                ],
+                  ],
+                ),
               ),
-            )
+            ),
           ],
         ),
+      ),
+      action: ModalAction(
+        action: () => cubit.checkForConflicts(_manifestNameController.text),
+        title: appLocalizationsOf(context).createHereEmphasized,
       ),
     );
   }
 
   Color _colorDisabled(BuildContext context) =>
-      ArDriveTheme.of(context).themeData.colors.themeInputPlaceholder;
+      ArDriveTheme.of(context).themeData.colorTokens.iconLow;
 }

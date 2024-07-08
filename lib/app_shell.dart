@@ -93,6 +93,8 @@ class AppShellState extends State<AppShell> {
                             ),
                             BlocBuilder<ProfileCubit, ProfileState>(
                               builder: (context, state) {
+                                final typography =
+                                    ArDriveTypographyNew.of(context);
                                 return FutureBuilder(
                                   future: context
                                       .read<ProfileCubit>()
@@ -106,22 +108,29 @@ class AppShellState extends State<AppShell> {
                                       child: Material(
                                         borderRadius: BorderRadius.circular(8),
                                         child: ProgressDialog(
+                                            useNewArDriveUI: true,
                                             progressBar: ProgressBar(
                                               percentage: context
                                                   .read<SyncCubit>()
                                                   .syncProgressController
                                                   .stream,
                                             ),
-                                            percentageDetails: _syncStreamBuilder(
-                                                builderWithData: (syncProgress) =>
-                                                    Text(appLocalizationsOf(
-                                                            context)
-                                                        .syncProgressPercentage(
-                                                            (syncProgress
-                                                                        .progress *
-                                                                    100)
-                                                                .roundToDouble()
-                                                                .toString()))),
+                                            percentageDetails:
+                                                _syncStreamBuilder(
+                                              builderWithData: (syncProgress) =>
+                                                  Text(
+                                                appLocalizationsOf(context)
+                                                    .syncProgressPercentage(
+                                                  (syncProgress.progress * 100)
+                                                      .roundToDouble()
+                                                      .toString(),
+                                                ),
+                                                style:
+                                                    typography.paragraphNormal(
+                                                  fontWeight: ArFontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
                                             progressDescription:
                                                 _syncStreamBuilder(
                                               builderWithData: (syncProgress) =>
@@ -140,8 +149,10 @@ class AppShellState extends State<AppShell> {
                                                         : appLocalizationsOf(
                                                                 context)
                                                             .syncingOnlyOneDrive,
-                                                style: ArDriveTypography.body
-                                                    .buttonNormalBold(),
+                                                style:
+                                                    typography.paragraphNormal(
+                                                  fontWeight: ArFontWeight.bold,
+                                                ),
                                               ),
                                             ),
                                             title: isCurrentProfileArConnect

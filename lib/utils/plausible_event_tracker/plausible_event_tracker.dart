@@ -461,6 +461,66 @@ abstract class PlausibleEventTracker {
     );
   }
 
+  // clickCreatePublicDriveButton
+  static Future<void> trackClickCreatePublicDriveButton(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickCreatePublicDriveButtonEmptyState,
+    );
+  }
+
+  // clickCreatePrivateDriveButton
+  static Future<void> trackClickCreatePrivateDriveButton(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickCreatePrivateDriveButtonEmptyState,
+    );
+  }
+
+  // clickUploadFileEmptyState,
+  static Future<void> trackClickUploadFileEmptyState(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickUploadFileEmptyState,
+    );
+  }
+
+  // clickCreateFolderEmptyState
+  static Future<void> trackClickCreateFolderEmptyState(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickCreateFolderEmptyState,
+    );
+  }
+
+  // clickUploadFolderEmptyState
+  static Future<void> trackClickUploadFolderEmptyState(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickUploadFolderEmptyState,
+    );
+  }
+
+  // clickCreatePinEmptyState
+  static Future<void> trackClickCreatePinEmptyState(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickCreatePinEmptyState,
+    );
+  }
+
   static Future<void> _track({
     required PlausibleApiData data,
     required PlausibleEventData eventData,

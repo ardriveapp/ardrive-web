@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/utils/custom_metadata.dart';
 
@@ -17,6 +19,7 @@ extension FileEntryExtensions on FileEntry {
       dataContentType: dataContentType,
       pinnedDataOwnerAddress: pinnedDataOwnerAddress,
       isHidden: isHidden,
+      thumbnail: Thumbnail.fromJson(jsonDecode(thumbnail!)),
     );
 
     file.customJsonMetadata = parseCustomJsonMetadata(customJsonMetadata);

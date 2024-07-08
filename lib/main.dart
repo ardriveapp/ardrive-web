@@ -14,6 +14,7 @@ import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
+import 'package:ardrive/download/ardrive_downloader.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
@@ -38,6 +39,7 @@ import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/foundation.dart';
@@ -429,6 +431,27 @@ class AppState extends State<App> {
           create: (_) => FileRepository(
             _.read<DriveDao>(),
             _.read<FolderRepository>(),
+          ),
+        ),
+        RepositoryProvider(
+          create: (_) => ArDriveDownloader(
+            ardriveIo: ArDriveIO(),
+            arweave: _arweave,
+            ioFileAdapter: IOFileAdapter(),
+          ),
+        ),
+        // ArDriveUploader
+        RepositoryProvider(
+          create: (_) => ArDriveUploader(
+            arweave: _arweave.client,
+            turboUploadUri:
+                Uri.parse(configService.config.defaultTurboUploadUrl!),
+            metadataGenerator: ARFSUploadMetadataGenerator(
+              tagsGenerator: ARFSTagsGenetator(
+                appInfoServices: AppInfoServices(),
+              ),
+            ),
+            pstService: _.read<PstService>(),
           ),
         ),
       ];

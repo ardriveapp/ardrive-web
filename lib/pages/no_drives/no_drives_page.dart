@@ -263,6 +263,9 @@ class NoDrivesPage extends StatelessWidget {
             typography: typography,
             variant: ButtonVariant.primary,
             onPressed: () {
+              PlausibleEventTracker.trackClickCreatePrivateDriveButton(
+                PlausiblePageView.fileExplorerNewUserEmpty,
+              );
               promptToCreateDrive(context, privacy: DrivePrivacy.private);
             },
           ),
@@ -306,6 +309,9 @@ class NoDrivesPage extends StatelessWidget {
             typography: typography,
             variant: ButtonVariant.primary,
             onPressed: () {
+              PlausibleEventTracker.trackClickCreatePublicDriveButton(
+                PlausiblePageView.fileExplorerNewUserEmpty,
+              );
               promptToCreateDrive(context, privacy: DrivePrivacy.public);
             },
           ),

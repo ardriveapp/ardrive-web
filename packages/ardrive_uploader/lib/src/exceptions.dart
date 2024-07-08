@@ -17,8 +17,8 @@ class UploadCanceledException implements ArDriveUploaderExceptions {
 
 abstract class UploadStrategyException implements UploadPreparationException {}
 
-class MetadataUploadException implements UploadStrategyException {
-  MetadataUploadException({
+class MetadataTransactionUploadException extends UploadStrategyException {
+  MetadataTransactionUploadException({
     required this.message,
     this.error,
   });
@@ -27,10 +27,15 @@ class MetadataUploadException implements UploadStrategyException {
   final String message;
   @override
   Object? error;
+
+  @override
+  String toString() {
+    return 'MetadataTransactionUploadException: $message. Error: ${error.toString()}';
+  }
 }
 
-class DataUploadException implements UploadStrategyException {
-  DataUploadException({
+class DataTransactionUploadException implements UploadStrategyException {
+  DataTransactionUploadException({
     required this.message,
     this.error,
   });
@@ -39,6 +44,11 @@ class DataUploadException implements UploadStrategyException {
   final String message;
   @override
   Object? error;
+
+  @override
+  String toString() {
+    return 'DataTransactionUploadException: $message. Error: ${error.toString()}';
+  }
 }
 
 class BundleUploadException implements UploadStrategyException {
@@ -51,6 +61,11 @@ class BundleUploadException implements UploadStrategyException {
   final String message;
   @override
   Object? error;
+
+  @override
+  String toString() {
+    return 'BundleUploadException: $message. Error: ${error.toString()}';
+  }
 }
 
 abstract class NetworkException implements ArDriveUploaderExceptions {
@@ -96,6 +111,18 @@ class UnknownNetworkException implements NetworkException {
 
   @override
   final int? statusCode;
+  @override
+  final String message;
+  @override
+  Object? error;
+}
+
+class ThumbnailUploadException implements UploadStrategyException {
+  ThumbnailUploadException({
+    required this.message,
+    this.error,
+  });
+
   @override
   final String message;
   @override

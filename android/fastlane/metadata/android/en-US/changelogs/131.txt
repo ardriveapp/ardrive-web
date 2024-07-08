@@ -1,0 +1,1 @@
+- New Feature: Thumbnails for image files now supported and displayed in drive explorer

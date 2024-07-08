@@ -214,14 +214,15 @@ void main() {
             stubFileInChild2.driveId, stubFileInChild2.id)).thenAnswer(
         (_) async => 'root-folder/parent-folder/child-folder/file-in-child-2');
   });
-  group('ManifestEntity Tests', () {
+  group('ManifestDataBuilder Tests', () {
     test('returns a ManifestEntity with a valid expected manifest shape',
         () async {
-      final manifest = await ManifestData.fromFolderNode(
-        folderNode: stubRootFolderNode,
-        fileRepository: fileRepository,
+      final builder = ManifestDataBuilder(
         folderRepository: folderRepository,
+        fileRepository: fileRepository,
       );
+
+      final manifest = await builder.build(folderNode: stubRootFolderNode);
 
       expect(
           manifest.toJson(),
@@ -255,10 +256,13 @@ void main() {
     test(
         'returns a ManifestEntity with a valid expected manifest shape with a nested child folder',
         () async {
-      final manifest = await ManifestData.fromFolderNode(
-        folderNode: stubChildFolderNode,
-        fileRepository: fileRepository,
+      final builder = ManifestDataBuilder(
         folderRepository: folderRepository,
+        fileRepository: fileRepository,
+      );
+
+      final manifest = await builder.build(
+        folderNode: stubChildFolderNode,
       );
 
       expect(
@@ -289,11 +293,15 @@ void main() {
 
       test('returns a DataItem with the expected tags, owner, and data',
           () async {
-        final manifest = await ManifestData.fromFolderNode(
-          folderNode: stubRootFolderNode,
-          fileRepository: fileRepository,
+        final builder = ManifestDataBuilder(
           folderRepository: folderRepository,
+          fileRepository: fileRepository,
         );
+
+        final manifest = await builder.build(
+          folderNode: stubRootFolderNode,
+        );
+
         final wallet = getTestWallet();
 
         AppPlatform.setMockPlatform(platform: SystemPlatform.Android);

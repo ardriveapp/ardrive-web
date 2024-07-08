@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive_crypto/src/constants.dart';
+import 'package:ardrive_crypto/src/exceptions.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
@@ -155,5 +156,3 @@ Future<DataItem> createEncryptedDataItem(
       utils.encodeBytesToBase64(encryptionRes.nonce),
     );
 }
-
-class TransactionDecryptionException implements Exception {}
