@@ -442,7 +442,7 @@ class DriveDataTableItemMapper {
       index: 0,
       pinnedDataOwnerAddress: fileEntry.pinnedDataOwnerAddress,
       isHidden: fileEntry.isHidden,
-      thumbnail: fileEntry.thumbnail != null
+      thumbnail: fileEntry.thumbnail != null && fileEntry.thumbnail != 'null'
           ? Thumbnail.fromJson(jsonDecode(fileEntry.thumbnail!))
           : null,
     );
@@ -509,7 +509,7 @@ class DriveDataTableItemMapper {
       index: 0,
       pinnedDataOwnerAddress: revision.pinnedDataOwnerAddress,
       isHidden: revision.isHidden,
-      thumbnail: revision.thumbnail != null
+      thumbnail: revision.thumbnail != null && revision.thumbnail != 'null'
           ? Thumbnail.fromJson(jsonDecode(revision.thumbnail!))
           : null,
     );
