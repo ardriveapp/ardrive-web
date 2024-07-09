@@ -1,0 +1,2 @@
+- Implements thumbnail generator for all image files
+- Adds the Parent Folder Name and Status columns on the Drive Export feature
