@@ -18,3 +18,4 @@ export 'src/types/string_types.dart';
 export 'src/types/transaction_id.dart';
 export 'src/types/winston.dart';
 export 'src/validations.dart';
+export 'src/worker.dart';

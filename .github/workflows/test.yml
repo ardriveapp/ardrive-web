@@ -35,5 +35,3 @@ jobs:
 
       - name: Test app
         run: scr test
-
-
