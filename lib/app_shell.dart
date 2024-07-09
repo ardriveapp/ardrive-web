@@ -221,7 +221,7 @@ class AppShellState extends State<AppShell> {
                                             ..onTap = () {
                                               showArDriveDialog(context,
                                                   content:
-                                                      MultiThumbnailCreationWarningModal());
+                                                      const MultiThumbnailCreationWarningModal());
                                             },
                                           style: typography
                                               .paragraphNormal(
