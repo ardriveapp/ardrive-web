@@ -35,6 +35,7 @@ class _ArDriveProgressBarState extends State<ArDriveProgressBar> {
       percent: widget.percentage,
       progressColor: widget.indicatorColor ??
           ArDriveTheme.of(context).themeData.colors.themeAccentMuted,
+      padding: EdgeInsets.zero,
     );
   }
 }

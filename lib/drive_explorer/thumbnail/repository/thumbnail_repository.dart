@@ -17,6 +17,7 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart' as drift;
 
+// TODO(@thiagocarvalhodev): implement unit tests
 class ThumbnailRepository {
   final ArweaveService _arweaveService;
   final ArDriveDownloader _arDriveDownloader;
@@ -38,24 +39,35 @@ class ThumbnailRepository {
         _arweaveService = arweaveService,
         _turboUploadService = turboUploadService,
         _arDriveAuth = arDriveAuth;
+  final Map<String, ThumbnailData> _cachedThumbnails = {};
 
   Future<ThumbnailData> getThumbnail({
-    FileDataTableItem? fileDataTableItem,
+    required FileDataTableItem fileDataTableItem,
   }) async {
+    if (_cachedThumbnails[fileDataTableItem.id] != null) {
+      return _cachedThumbnails[fileDataTableItem.id]!;
+    }
+
     final drive = await _driveDao
-        .driveById(driveId: fileDataTableItem!.driveId)
+        .driveById(driveId: fileDataTableItem.driveId)
         .getSingle();
 
     if (drive.isPrivate) {
-      return ThumbnailData(
-          data: await _getThumbnailData(fileDataTableItem: fileDataTableItem),
-          url: null);
+      _cachedThumbnails[fileDataTableItem.id] = ThumbnailData(
+        data: await _getThumbnailData(fileDataTableItem: fileDataTableItem),
+        url: null,
+      );
+
+      return _cachedThumbnails[fileDataTableItem.id]!;
     }
 
     final urlString =
         '${_arweaveService.client.api.gatewayUrl.origin}/raw/${fileDataTableItem.thumbnail?.variants.first.txId}';
 
-    return ThumbnailData(data: null, url: urlString);
+    _cachedThumbnails[fileDataTableItem.id] =
+        ThumbnailData(data: null, url: urlString);
+
+    return _cachedThumbnails[fileDataTableItem.id]!;
   }
 
   Future<Uint8List> _getThumbnailData({
@@ -91,7 +103,7 @@ class ThumbnailRepository {
     var fileEntry = await (_driveDao.select(_driveDao.fileEntries)
           ..where((tbl) => tbl.id.equals(fileId)))
         .getSingle();
-    // get image
+
     final dataTx =
         await _arweaveService.getTransactionDetails(fileEntry.dataTxId);
 
