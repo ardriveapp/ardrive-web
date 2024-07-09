@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/data_export/data_export_cubit.dart';
+import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -23,6 +24,7 @@ Future<void> promptToExportCSVData({
           return DataExportCubit(
             driveId: driveId,
             driveDao: context.read<DriveDao>(),
+            folderRepository: context.read<FolderRepository>(),
             gatewayURL:
                 context.read<ArweaveService>().client.api.gatewayUrl.toString(),
           )..exportData();
