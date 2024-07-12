@@ -6,6 +6,8 @@ const String _package = 'ardrive_ui';
 class ArDriveTypography {
   static Body body = const Body();
   static Headline headline = const Headline();
+
+  static of(BuildContext context) {}
 }
 
 class Body {

@@ -19,6 +19,9 @@ class TruncatedAddress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
@@ -28,17 +31,12 @@ class TruncatedAddress extends StatelessWidget {
           );
         },
         child: Text(
-          truncateString(
-            walletAddress,
-            offsetStart: offsetStart,
-            offsetEnd: offsetEnd,
-          ),
-          style: ArDriveTypography.body.captionRegular().copyWith(
-                fontWeight: FontWeight.w600,
-                fontSize: fontSize,
-                decoration: TextDecoration.underline,
-              ),
-        ),
+            truncateString(
+              walletAddress,
+              offsetStart: offsetStart,
+              offsetEnd: offsetEnd,
+            ),
+            style: typography.paragraphNormal(color: colorTokens.textLink)),
       ),
     );
   }

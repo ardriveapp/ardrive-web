@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
@@ -138,27 +140,27 @@ class _AppSideBarState extends State<AppSideBar> {
                   height: 16,
                 ),
               ],
-              const Padding(
-                padding: EdgeInsets.only(left: 16.0),
-                child: HelpButton(),
-              ),
-              const SizedBox(
-                height: 16,
-              ),
-              Padding(
-                padding: const EdgeInsets.only(left: 16.0),
-                child: _exportLogsButton(),
-              ),
-              const SizedBox(
-                height: 4,
-              ),
-              const Padding(
-                padding: EdgeInsets.only(left: 16.0),
-                child: ThemeSwitcher(),
-              ),
-              const SizedBox(
-                height: 4,
-              ),
+              // const Padding(
+              //   padding: EdgeInsets.only(left: 16.0),
+              //   child: HelpButton(),
+              // ),
+              // const SizedBox(
+              //   height: 16,
+              // ),
+              // Padding(
+              //   padding: const EdgeInsets.only(left: 16.0),
+              //   child: _exportLogsButton(),
+              // ),
+              // const SizedBox(
+              //   height: 4,
+              // ),
+              // const Padding(
+              //   padding: EdgeInsets.only(left: 16.0),
+              //   child: ThemeSwitcher(),
+              // ),
+              // const SizedBox(
+              //   height: 4,
+              // ),
               const Padding(
                 padding: EdgeInsets.only(left: 20.0),
                 child: AppVersionWidget(),
@@ -387,20 +389,20 @@ class _AppSideBarState extends State<AppSideBar> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: HelpButton(),
-                ),
-                const SizedBox(
-                  height: 16,
-                ),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: _exportLogsButton(),
-                ),
-                const SizedBox(
-                  height: 8,
-                ),
+                // const Align(
+                //   alignment: Alignment.centerLeft,
+                //   child: HelpButton(),
+                // ),
+                // const SizedBox(
+                //   height: 16,
+                // ),
+                // Align(
+                //   alignment: Alignment.centerLeft,
+                //   child: _exportLogsButton(),
+                // ),
+                // const SizedBox(
+                //   height: 8,
+                // ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -438,10 +440,10 @@ class _AppSideBarState extends State<AppSideBar> {
           )
         : Column(
             children: [
-              const HelpButton(),
-              const SizedBox(
-                height: 24,
-              ),
+              // const HelpButton(),
+              // const SizedBox(
+              //   height: 24,
+              // ),
               ArDriveIconButton(
                 tooltip: appLocalizationsOf(context).expandSideBar,
                 icon: ArDriveIcons.arrowRightFilled(),
@@ -755,4 +757,103 @@ class HelpButton extends StatelessWidget {
       },
     );
   }
+}
+
+Future<void> shareLogs({
+  required BuildContext context,
+}) async {
+  final logExportInfo = LogExportInfo(
+    emailSubject: appLocalizationsOf(context).shareLogsEmailSubject,
+    emailBody: appLocalizationsOf(context).shareLogsEmailBody,
+    shareText: appLocalizationsOf(context).shareLogsNativeShareText,
+    shareSubject: appLocalizationsOf(context).shareLogsNativeShareSubject,
+    emailSupport: Resources.emailSupport,
+);
+  final canLaunchEmail = await canLaunchUrl(Uri.parse('mailto:'));
+  showArDriveDialog(
+    context,
+    content: ArDriveStandardModal(
+      hasCloseButton: true,
+      title: appLocalizationsOf(context).help,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            appLocalizationsOf(context).shareLogsDescription,
+            style: ArDriveTypography.body.buttonLargeBold(),
+          ),
+          const SizedBox(
+            height: 16,
+          ),
+          Text(
+            appLocalizationsOf(context).ourChannels,
+            style: ArDriveTypography.body.buttonLargeBold().copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          ArDriveClickArea(
+            child: GestureDetector(
+              onTap: () {
+                openUrl(
+                  url: Resources.discordLink,
+                );
+              },
+              child: Text(
+                discord,
+                style: ArDriveTypography.body.buttonLargeBold().copyWith(
+                      decoration: TextDecoration.underline,
+                    ),
+              ),
+            ),
+          ),
+          const SizedBox(
+            height: 4,
+          ),
+          ArDriveClickArea(
+            child: GestureDetector(
+              onTap: () {
+                openUrl(
+                  url: Resources.helpCenterLink,
+                );
+              },
+              child: Text(
+                appLocalizationsOf(context).helpCenter,
+                style: ArDriveTypography.body.buttonLargeBold().copyWith(
+                      decoration: TextDecoration.underline,
+                    ),
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        ModalAction(
+          action: () {
+            logger.exportLogs(info: logExportInfo);
+          },
+          title: appLocalizationsOf(context).download,
+        ),
+        if (AppPlatform.isMobile && canLaunchEmail)
+          ModalAction(
+            action: () {
+              logger.exportLogs(
+                info: logExportInfo,
+                shareAsEmail: true,
+              );
+            },
+            title: appLocalizationsOf(context).shareLogsWithEmailText,
+          ),
+        if (AppPlatform.isMobile)
+          ModalAction(
+            action: () {
+              logger.exportLogs(
+                info: logExportInfo,
+                share: true,
+              );
+            },
+            title: appLocalizationsOf(context).share,
+          ),
+      ],
+    ),
+  );
 }
