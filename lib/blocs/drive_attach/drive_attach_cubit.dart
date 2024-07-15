@@ -144,7 +144,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       emit(DriveAttachSuccess());
 
       /// Wait for the sync to finish before syncing the newly attached drive.
-      if (_syncBloc.state is SyncInProgress) {
+      if (_syncBloc.state is! SyncIdle) {
         await for (var state in _syncBloc.stream) {
           if (state is SyncIdle) {
             break;

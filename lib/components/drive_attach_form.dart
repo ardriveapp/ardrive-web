@@ -90,7 +90,7 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
         if (state is DriveAttachInvalidDriveKey) {
           showArDriveDialog(
             context,
-            content: ArDriveStandardModal(
+            content: ArDriveStandardModalNew(
               title: appLocalizationsOf(context).error,
               description: appLocalizationsOf(context).invalidKeyFile,
             ),
@@ -98,7 +98,7 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
         } else if (state is DriveAttachDriveNotFound) {
           showArDriveDialog(
             context,
-            content: ArDriveStandardModal(
+            content: ArDriveStandardModalNew(
               title: appLocalizationsOf(context).error,
               description: appLocalizationsOf(context)
                   .validationAttachDriveCouldNotBeFound,
@@ -110,18 +110,19 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
       builder: (context, state) {
         if (state is DriveAttachInProgress) {
           return ProgressDialog(
+            useNewArDriveUI: true,
             title: appLocalizationsOf(context).attachingDriveEmphasized,
           );
         }
 
-        return ArDriveStandardModal(
+        return ArDriveStandardModalNew(
           title: appLocalizationsOf(context).attachDriveEmphasized,
           content: SizedBox(
             width: kMediumDialogWidth,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                ArDriveTextField(
+                ArDriveTextFieldNew(
                   controller:
                       context.read<DriveAttachCubit>().driveIdController,
                   autofocus: true,
@@ -140,7 +141,7 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
                 ),
                 const SizedBox(height: 16),
                 if (state is DriveAttachPrivate)
-                  ArDriveTextField(
+                  ArDriveTextFieldNew(
                     controller:
                         context.read<DriveAttachCubit>().driveKeyController,
                     autofocus: true,
@@ -156,7 +157,7 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
                     hintText: appLocalizationsOf(context).driveKey,
                   ),
                 const SizedBox(height: 16),
-                ArDriveTextField(
+                ArDriveTextFieldNew(
                   controller:
                       context.read<DriveAttachCubit>().driveNameController,
                   hintText: appLocalizationsOf(context).driveName,
