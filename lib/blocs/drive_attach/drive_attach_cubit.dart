@@ -144,15 +144,9 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       emit(DriveAttachSuccess());
 
       /// Wait for the sync to finish before syncing the newly attached drive.
-      if (_syncBloc.state is! SyncIdle) {
-        await for (var state in _syncBloc.stream) {
-          if (state is SyncIdle) {
-            break;
-          }
-        }
-      }
+      await _syncBloc.waitCurrentSync();
 
-      /// Then, select the newly attached drive.
+      /// Then, sync and select the newly attached drive.
       unawaited(_syncBloc
           .startSync()
           .then((value) => _drivesBloc.selectDrive(driveId)));
