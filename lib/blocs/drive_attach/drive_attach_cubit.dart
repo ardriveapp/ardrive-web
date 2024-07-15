@@ -142,6 +142,15 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       );
 
       emit(DriveAttachSuccess());
+
+      if (_syncBloc.state is SyncInProgress) {
+        await for (var state in _syncBloc.stream) {
+          if (state is SyncIdle) {
+            break;
+          }
+        }
+      }
+
       unawaited(_syncBloc
           .startSync()
           .then((value) => _drivesBloc.selectDrive(driveId)));
