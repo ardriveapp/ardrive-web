@@ -206,11 +206,7 @@ class SyncCubit extends Cubit<SyncState> {
         );
       }
 
-      final currentBlockHeight = await _syncRepository.getCurrentBlockHeight();
-
       _promptToSnapshotBloc.add(const SyncRunning(isRunning: true));
-
-      logger.d('Current block height number $currentBlockHeight');
 
       await for (var syncProgress in _syncRepository.syncAllDrives(
           wallet: wallet,
