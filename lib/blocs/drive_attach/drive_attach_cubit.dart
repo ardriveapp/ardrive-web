@@ -141,10 +141,10 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         profileKey: _profileKey,
       );
 
-      _drivesBloc.selectDrive(driveId);
-
       emit(DriveAttachSuccess());
-      unawaited(_syncBloc.startSync());
+      unawaited(_syncBloc
+          .startSync()
+          .then((value) => _drivesBloc.selectDrive(driveId)));
 
       PlausibleEventTracker.trackAttachDrive(
         drivePrivacy: drivePrivacy,
