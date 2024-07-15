@@ -153,6 +153,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
             }
           },
           child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
+            buildWhen: (previous, current) {
+              return context.read<SyncCubit>().state is! SyncInProgress;
+            },
             builder: (context, driveDetailState) {
               if (driveDetailState is DriveDetailLoadInProgress) {
                 return const Center(child: CircularProgressIndicator());
