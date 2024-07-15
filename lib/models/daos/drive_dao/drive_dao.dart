@@ -6,6 +6,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/search/search_result.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -368,10 +369,17 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         return folderById(driveId: driveId, folderId: drive.rootFolderId)
             .watchSingleOrNull()
             .switchMap((folder) {
-          return watchFolderContents(driveId,
-              folderId: folder!.id,
-              orderBy: orderBy,
-              orderingMode: orderingMode);
+          if (folder == null) {
+            logger.e('Root folder not found');
+            throw Exception('Root folder not found');
+          }
+
+          return watchFolderContents(
+            driveId,
+            folderId: folder.id,
+            orderBy: orderBy,
+            orderingMode: orderingMode,
+          );
         });
       });
     }
