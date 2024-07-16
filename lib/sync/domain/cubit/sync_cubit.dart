@@ -68,6 +68,17 @@ class SyncCubit extends Cubit<SyncState> {
     restartArConnectSyncOnFocus();
   }
 
+  /// Waits for the current sync to finish.
+  Future<void> waitCurrentSync() async {
+    if (state is! SyncIdle) {
+      await for (var state in stream) {
+        if (state is SyncIdle || state is SyncFailure) {
+          break;
+        }
+      }
+    }
+  }
+
   void createSyncStream() async {
     logger.d('Creating sync stream to periodically call sync automatically');
 
@@ -206,11 +217,7 @@ class SyncCubit extends Cubit<SyncState> {
         );
       }
 
-      final currentBlockHeight = await _syncRepository.getCurrentBlockHeight();
-
       _promptToSnapshotBloc.add(const SyncRunning(isRunning: true));
-
-      logger.d('Current block height number $currentBlockHeight');
 
       await for (var syncProgress in _syncRepository.syncAllDrives(
           wallet: wallet,
