@@ -362,15 +362,18 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     if (folderId == null) {
       return driveById(driveId: driveId).watchSingleOrNull().switchMap((drive) {
         if (drive == null) {
-          throw Exception('Drive with id $driveId not found');
+          throw DriveNotFoundException(driveId);
         }
 
         return folderById(driveId: driveId, folderId: drive.rootFolderId)
             .watchSingleOrNull()
             .switchMap((folder) {
+          if (folder == null) {
+            throw FolderNotFoundInDriveException(driveId, drive.rootFolderId);
+          }
           return watchFolderContents(
             driveId,
-            folderId: folder?.id,
+            folderId: folder.id,
             orderBy: orderBy,
             orderingMode: orderingMode,
           );
@@ -656,5 +659,28 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       await delete(driveRevisions).go();
       await delete(networkTransactions).go();
     });
+  }
+}
+
+class FolderNotFoundInDriveException implements Exception {
+  final String driveId;
+  final String folderId;
+
+  FolderNotFoundInDriveException(this.driveId, this.folderId);
+
+  @override
+  String toString() {
+    return 'Folder with id $folderId not found in drive with id $driveId';
+  }
+}
+
+class DriveNotFoundException implements Exception {
+  final String driveId;
+
+  DriveNotFoundException(this.driveId);
+
+  @override
+  String toString() {
+    return 'Drive with id $driveId not found';
   }
 }
