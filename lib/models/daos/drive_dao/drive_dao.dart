@@ -368,10 +368,12 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         return folderById(driveId: driveId, folderId: drive.rootFolderId)
             .watchSingleOrNull()
             .switchMap((folder) {
-          return watchFolderContents(driveId,
-              folderId: folder!.id,
-              orderBy: orderBy,
-              orderingMode: orderingMode);
+          return watchFolderContents(
+            driveId,
+            folderId: folder?.id,
+            orderBy: orderBy,
+            orderingMode: orderingMode,
+          );
         });
       });
     }
