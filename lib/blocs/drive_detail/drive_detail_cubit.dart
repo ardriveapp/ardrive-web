@@ -7,6 +7,7 @@ import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -30,6 +31,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   final ArDriveAuth _auth;
   final ActivityTracker _activityTracker;
   final BreadcrumbBuilder _breadcrumbBuilder;
+  final SyncCubit _syncCubit;
 
   StreamSubscription? _folderSubscription;
   final _defaultAvailableRowsPerPage = [25, 50, 75, 100];
@@ -54,12 +56,14 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     required ActivityTracker activityTracker,
     required ArDriveAuth auth,
     required BreadcrumbBuilder breadcrumbBuilder,
+    required SyncCubit syncCubit,
   })  : _profileCubit = profileCubit,
         _activityTracker = activityTracker,
         _driveDao = driveDao,
         _auth = auth,
         _configService = configService,
         _breadcrumbBuilder = breadcrumbBuilder,
+        _syncCubit = syncCubit,
         super(DriveDetailLoadInProgress()) {
     if (driveId.isEmpty) {
       return;
@@ -97,6 +101,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     DriveOrder contentOrderBy = DriveOrder.name,
     OrderingMode contentOrderingMode = OrderingMode.asc,
   }) async {
+    /// always wait for the current sync to finish before opening a new folder
+    await _syncCubit.waitCurrentSync();
+
     try {
       _selectedItem = null;
       _allImagesOfCurrentFolder = null;
@@ -106,35 +113,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       emit(DriveDetailLoadInProgress());
 
       await _folderSubscription?.cancel();
-      // For attaching drives. If drive is not found, emit state to prompt drive attach
-      await _driveDao
-          .driveById(driveId: driveId)
-          .getSingleOrNull()
-          .then((value) async {
-        logger.d('Drive with id $driveId found');
-
-        if (value == null) {
-          logger.d('Drive with id $driveId not found');
-
-          emit(DriveDetailLoadNotFound());
-          return;
-        }
-
-        try {
-          await _driveDao
-              .folderById(
-                driveId: driveId,
-                folderId: folderId ?? value.rootFolderId,
-              )
-              .getSingle();
-        } catch (e) {
-          logger
-              .d('Folder with id ${folderId ?? value.rootFolderId} not found');
-
-          emit(DriveInitialLoading());
-          return;
-        }
-      });
 
       _folderSubscription =
           Rx.combineLatest3<Drive, FolderWithContents, ProfileState, void>(
@@ -259,6 +237,20 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     } catch (e, stacktrace) {
       logger.e('An error occured mouting the drive explorer', e, stacktrace);
     }
+
+    _folderSubscription?.onError((e) {
+      if (e is FolderNotFoundInDriveException) {
+        emit(DriveInitialLoading());
+        return;
+      }
+
+      if (e is DriveNotFoundException) {
+        emit(DriveDetailLoadNotFound());
+        return;
+      }
+
+      logger.e('An error occured mouting the drive explorer', e);
+    });
   }
 
   List<ArDriveDataTableItem> parseEntitiesToDatatableItem({
