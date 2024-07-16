@@ -1,0 +1,1 @@
+- Fixes an issue with attaching drives on mobile Web and Android
