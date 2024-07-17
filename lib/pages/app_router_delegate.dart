@@ -202,6 +202,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                       breadcrumbBuilder: BreadcrumbBuilder(
                         context.read<FolderRepository>(),
                       ),
+                      syncCubit: context.read<SyncCubit>(),
                     ),
                     child: MultiBlocListener(
                       listeners: [

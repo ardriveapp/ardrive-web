@@ -1,0 +1,1 @@
+- Improves handling of a few common errors
