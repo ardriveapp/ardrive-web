@@ -135,6 +135,11 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   }
 
   Future<void> checkForConflicts(String name) async {
+    /// Prevent multiple checks from being triggered
+    if (state is! CreateManifestFolderLoadSuccess) {
+      return;
+    }
+
     final parentFolder =
         (state as CreateManifestFolderLoadSuccess).viewingFolder.folder;
 
@@ -180,6 +185,8 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     emit(CreateManifestPreparingManifest(parentFolder: parentFolder));
 
     await prepareManifestTx(manifestName: name);
+
+    logger.d('No conflicts found');
   }
 
   Future<void> prepareManifestTx({
