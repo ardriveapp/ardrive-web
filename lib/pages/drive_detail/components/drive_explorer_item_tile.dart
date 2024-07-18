@@ -383,7 +383,7 @@ class _DriveExplorerItemTileTrailingState
           },
           content: _buildItem(
             appLocalizationsOf(context).download,
-            ArDriveIcons.download2(
+            ArDriveIcons.download(
               size: defaultIconSize,
             ),
           ),
@@ -466,7 +466,7 @@ class _DriveExplorerItemTileTrailingState
         },
         content: _buildItem(
           appLocalizationsOf(context).download,
-          ArDriveIcons.download2(
+          ArDriveIcons.download(
             size: defaultIconSize,
           ),
         ),
@@ -631,7 +631,7 @@ class EntityActionsMenu extends StatelessWidget {
           },
           content: _buildItem(
             appLocalizationsOf(context).download,
-            ArDriveIcons.download2(
+            ArDriveIcons.download(
               size: defaultIconSize,
             ),
           ),
@@ -683,7 +683,7 @@ class EntityActionsMenu extends StatelessWidget {
             },
             content: ArDriveDropdownItemTile(
               name: appLocalizationsOf(context).download,
-              icon: ArDriveIcons.download2(
+              icon: ArDriveIcons.download(
                 size: defaultIconSize,
               ),
             )),
@@ -725,7 +725,7 @@ class EntityActionsMenu extends StatelessWidget {
           },
           content: ArDriveDropdownItemTile(
             name: appLocalizationsOf(context).exportDriveContents,
-            icon: ArDriveIcons.download2(
+            icon: ArDriveIcons.download(
               size: defaultIconSize,
             ),
           ),
@@ -762,7 +762,7 @@ class EntityActionsMenu extends StatelessWidget {
         },
         content: _buildItem(
           appLocalizationsOf(context).download,
-          ArDriveIcons.download2(
+          ArDriveIcons.download(
             size: defaultIconSize,
           ),
         ),

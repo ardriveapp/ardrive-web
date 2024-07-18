@@ -3,7 +3,6 @@ import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/drive_explorer/multi_thumbnail_creation/bloc/multi_thumbnail_creation_bloc.dart';
-import 'package:ardrive/gift/reedem_button.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/shared/blocs/banner/app_banner_bloc.dart';
@@ -363,7 +362,7 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
               width: 24,
             ),
             if (AppPlatform.isMobileWeb()) ...[
-              const RedeemButton(),
+              const HelpButton(),
               const SizedBox(
                 width: 24,
               ),

@@ -95,10 +95,9 @@ List<IconOption> _options = [
   IconOption(icon: ArDriveIcons.keypad(), name: 'keypad'),
   IconOption(icon: ArDriveIcons.pinNoCircle(), name: 'pinNoCircle'),
   IconOption(icon: ArDriveIcons.pinWithCircle(), name: 'pinWithCircle'),
-  IconOption(icon: ArDriveIcons.arrowDownload(), name: 'arrowDownload'),
   IconOption(icon: ArDriveIcons.cloudSync(), name: 'cloudSync'),
   IconOption(icon: ArDriveIcons.detach(), name: 'detach'),
-  IconOption(icon: ArDriveIcons.download2(), name: 'download2'),
+  IconOption(icon: ArDriveIcons.download(), name: 'download'),
   IconOption(icon: ArDriveIcons.manifest(), name: 'manifest'),
 ];
 

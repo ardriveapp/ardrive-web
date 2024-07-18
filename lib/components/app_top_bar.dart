@@ -1,6 +1,6 @@
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/components/profile_card.dart';
-import 'package:ardrive/gift/reedem_button.dart';
+import 'package:ardrive/components/topbar/help_button.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/search/search_modal.dart';
@@ -51,8 +51,8 @@ class AppTopBar extends StatelessWidget {
             ],
             const Spacer(),
             const SyncButton(),
-            const SizedBox(width: 24),
-            const RedeemButton(),
+            const SizedBox(width: 8),
+            const HelpButtonTopBar(),
             const SizedBox(width: 24),
             const ProfileCard(),
           ],

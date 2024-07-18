@@ -490,124 +490,6 @@ class _AppSideBarState extends State<AppSideBar> {
     }
   }
 
-  Widget _exportLogsButton() {
-    final logExportInfo = LogExportInfo(
-      emailSubject: appLocalizationsOf(context).shareLogsEmailSubject,
-      emailBody: appLocalizationsOf(context).shareLogsEmailBody,
-      shareText: appLocalizationsOf(context).shareLogsNativeShareText,
-      shareSubject: appLocalizationsOf(context).shareLogsNativeShareSubject,
-      emailSupport: Resources.emailSupport,
-    );
-    return FutureBuilder<bool>(
-      future: canLaunchUrl(Uri.parse('mailto:')),
-      builder: (context, snapshot) {
-        final canLaunchEmail = snapshot.data ?? false;
-        return HoverWidget(
-          child: GestureDetector(
-            onTap: () {
-              showArDriveDialog(
-                context,
-                content: ArDriveStandardModal(
-                  hasCloseButton: true,
-                  title: appLocalizationsOf(context).help,
-                  content: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        appLocalizationsOf(context).shareLogsDescription,
-                        style: ArDriveTypography.body.buttonLargeBold(),
-                      ),
-                      const SizedBox(
-                        height: 16,
-                      ),
-                      Text(
-                        appLocalizationsOf(context).ourChannels,
-                        style:
-                            ArDriveTypography.body.buttonLargeBold().copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                      ),
-                      ArDriveClickArea(
-                        child: GestureDetector(
-                          onTap: () {
-                            openUrl(
-                              url: Resources.discordLink,
-                            );
-                          },
-                          child: Text(
-                            discord,
-                            style: ArDriveTypography.body
-                                .buttonLargeBold()
-                                .copyWith(
-                                  decoration: TextDecoration.underline,
-                                ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(
-                        height: 4,
-                      ),
-                      ArDriveClickArea(
-                        child: GestureDetector(
-                          onTap: () {
-                            openUrl(
-                              url: Resources.helpCenterLink,
-                            );
-                          },
-                          child: Text(
-                            appLocalizationsOf(context).helpCenter,
-                            style: ArDriveTypography.body
-                                .buttonLargeBold()
-                                .copyWith(
-                                  decoration: TextDecoration.underline,
-                                ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    ModalAction(
-                      action: () {
-                        logger.exportLogs(info: logExportInfo);
-                      },
-                      title: appLocalizationsOf(context).download,
-                    ),
-                    if (AppPlatform.isMobile && canLaunchEmail)
-                      ModalAction(
-                        action: () {
-                          logger.exportLogs(
-                            info: logExportInfo,
-                            shareAsEmail: true,
-                          );
-                        },
-                        title:
-                            appLocalizationsOf(context).shareLogsWithEmailText,
-                      ),
-                    if (AppPlatform.isMobile)
-                      ModalAction(
-                        action: () {
-                          logger.exportLogs(
-                            info: logExportInfo,
-                            share: true,
-                          );
-                        },
-                        title: appLocalizationsOf(context).share,
-                      ),
-                  ],
-                ),
-              );
-            },
-            child: Text(
-              appLocalizationsOf(context).shareLogsText,
-              style: ArDriveTypography.body.buttonNormalBold(),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Widget _newButton(
     bool isExpanded,
     bool isMobile,
@@ -768,7 +650,7 @@ Future<void> shareLogs({
     shareText: appLocalizationsOf(context).shareLogsNativeShareText,
     shareSubject: appLocalizationsOf(context).shareLogsNativeShareSubject,
     emailSupport: Resources.emailSupport,
-);
+  );
   final canLaunchEmail = await canLaunchUrl(Uri.parse('mailto:'));
   showArDriveDialog(
     context,

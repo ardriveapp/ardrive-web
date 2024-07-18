@@ -378,7 +378,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                         .enableMultipleFileDownload) ...[
                                   ArDriveIconButton(
                                     tooltip: 'Download selected files',
-                                    icon: ArDriveIcons.download2(),
+                                    icon: ArDriveIcons.download(),
                                     onPressed: () async {
                                       final selectedItems = context
                                           .read<DriveDetailCubit>()
@@ -445,7 +445,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                           content: ArDriveDropdownItemTile(
                                             name: appLocalizationsOf(context)
                                                 .download,
-                                            icon: ArDriveIcons.download2(
+                                            icon: ArDriveIcons.download(
                                               size: defaultIconSize,
                                             ),
                                           ),
@@ -510,7 +510,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                           content: ArDriveDropdownItemTile(
                                             name: appLocalizationsOf(context)
                                                 .exportDriveContents,
-                                            icon: ArDriveIcons.download2(
+                                            icon: ArDriveIcons.download(
                                               size: defaultIconSize,
                                             ),
                                           ),
@@ -1098,7 +1098,7 @@ class MobileFolderNavigation extends StatelessWidget {
                         },
                         content: ArDriveDropdownItemTile(
                           name: appLocalizationsOf(context).download,
-                          icon: ArDriveIcons.download2(
+                          icon: ArDriveIcons.download(
                             size: defaultIconSize,
                           ),
                         )),
@@ -1153,7 +1153,7 @@ class MobileFolderNavigation extends StatelessWidget {
                       },
                       content: _buildItem(
                         appLocalizationsOf(context).exportDriveContents,
-                        ArDriveIcons.download2(
+                        ArDriveIcons.download(
                           size: defaultIconSize,
                         ),
                       ),

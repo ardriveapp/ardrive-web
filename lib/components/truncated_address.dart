@@ -31,12 +31,16 @@ class TruncatedAddress extends StatelessWidget {
           );
         },
         child: Text(
-            truncateString(
-              walletAddress,
-              offsetStart: offsetStart,
-              offsetEnd: offsetEnd,
-            ),
-            style: typography.paragraphNormal(color: colorTokens.textLink)),
+          truncateString(
+            walletAddress,
+            offsetStart: offsetStart,
+            offsetEnd: offsetEnd,
+          ),
+          style: typography.paragraphNormal(
+            color: colorTokens.textLink,
+            fontWeight: ArFontWeight.semiBold,
+          ),
+        ),
       ),
     );
   }
