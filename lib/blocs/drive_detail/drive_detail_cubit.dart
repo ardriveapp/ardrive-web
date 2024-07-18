@@ -4,6 +4,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_detail/utils/breadcrumb_builder.dart';
 import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/core/arfs/repository/drive_repository.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
@@ -33,6 +34,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   final BreadcrumbBuilder _breadcrumbBuilder;
   final SyncCubit _syncCubit;
 
+  final DriveRepository _driveRepository;
+
   StreamSubscription? _folderSubscription;
   final _defaultAvailableRowsPerPage = [25, 50, 75, 100];
 
@@ -57,6 +60,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     required ArDriveAuth auth,
     required BreadcrumbBuilder breadcrumbBuilder,
     required SyncCubit syncCubit,
+    required DriveRepository driveRepository,
   })  : _profileCubit = profileCubit,
         _activityTracker = activityTracker,
         _driveDao = driveDao,
@@ -64,6 +68,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         _configService = configService,
         _breadcrumbBuilder = breadcrumbBuilder,
         _syncCubit = syncCubit,
+        _driveRepository = driveRepository,
         super(DriveDetailLoadInProgress()) {
     if (driveId.isEmpty) {
       return;
@@ -115,8 +120,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       await _folderSubscription?.cancel();
 
       _folderSubscription =
-          Rx.combineLatest3<Drive, FolderWithContents, ProfileState, void>(
-        _driveDao.driveById(driveId: driveId).watchSingle(),
+          Rx.combineLatest3<Drive?, FolderWithContents, ProfileState, void>(
+        _driveRepository.watchDrive(driveId: driveId),
         _driveDao.watchFolderContents(
           driveId,
           orderBy: contentOrderBy,
@@ -125,6 +130,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         ),
         _profileCubit.stream.startWith(ProfileCheckingAvailability()),
         (drive, folderContents, _) async {
+          if (drive == null) {
+            emit(DriveDetailLoadNotFound());
+            return;
+          }
+
           if (_activityTracker.isUploading) {
             return;
           }
