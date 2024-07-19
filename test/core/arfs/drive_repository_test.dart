@@ -105,4 +105,41 @@ void main() {
       expect(result, isEmpty);
     });
   });
+
+  group('watchDrive', () {
+    const driveId = 'test-drive-id';
+    final mockDrive1 = MockDrive();
+
+    test('should return a stream of Drive when drive is found', () {
+      // Arrange
+      when(() => mockDriveDao.driveById(driveId: driveId))
+          .thenAnswer((_) => mockSelectableDrive);
+
+      when(() => mockSelectableDrive.watchSingleOrNull()).thenAnswer((_) {
+        return Stream.value(mockDrive1);
+      });
+
+      // Act
+      final driveStream = driveRepository.watchDrive(driveId: driveId);
+
+      // Assert
+      expectLater(driveStream, emits(mockDrive1));
+    });
+
+    test('should return a stream of null when drive is not found', () {
+      // Arrange
+      when(() => mockDriveDao.driveById(driveId: driveId))
+          .thenAnswer((_) => mockSelectableDrive);
+
+      when(() => mockSelectableDrive.watchSingleOrNull()).thenAnswer((_) {
+        return Stream.value(null);
+      });
+
+      // Act
+      final driveStream = driveRepository.watchDrive(driveId: driveId);
+
+      // Assert
+      expectLater(driveStream, emits(null));
+    });
+  });
 }

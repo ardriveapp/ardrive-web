@@ -9,6 +9,7 @@ import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/feedback_survey.dart';
 import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/core/arfs/repository/drive_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/drive_explorer/multi_thumbnail_creation/multi_thumbnail_creation_modal.dart';
@@ -192,6 +193,10 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   return BlocProvider(
                     key: ValueKey(driveId),
                     create: (context) => DriveDetailCubit(
+                      driveRepository: DriveRepository(
+                        driveDao: context.read<DriveDao>(),
+                        auth: context.read<ArDriveAuth>(),
+                      ),
                       activityTracker: context.read<ActivityTracker>(),
                       driveId: driveId!,
                       initialFolderId: driveFolderId,
@@ -202,6 +207,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                       breadcrumbBuilder: BreadcrumbBuilder(
                         context.read<FolderRepository>(),
                       ),
+                      syncCubit: context.read<SyncCubit>(),
                     ),
                     child: MultiBlocListener(
                       listeners: [

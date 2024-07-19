@@ -30,4 +30,13 @@ class DriveRepository {
 
     return files;
   }
+
+  /// Returns a stream of the drive with the given [driveId].
+  Stream<Drive?> watchDrive({
+    required String driveId,
+  }) {
+    final drive = _driveDao.driveById(driveId: driveId);
+
+    return drive.watchSingleOrNull();
+  }
 }
