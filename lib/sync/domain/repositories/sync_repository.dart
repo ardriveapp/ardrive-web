@@ -80,6 +80,9 @@ abstract class SyncRepository {
 
   Future<int> getCurrentBlockHeight();
 
+  Future<int> numberOfFilesInWallet();
+  Future<int> numberOfFoldersInWallet();
+
   factory SyncRepository({
     required ArweaveService arweave,
     required DriveDao driveDao,
@@ -1042,6 +1045,16 @@ class _SyncRepository implements SyncRepository {
     await _driveDao.insertNewNetworkTransactions(newNetworkTransactions);
 
     return latestRevisions.values.toList();
+  }
+
+  @override
+  Future<int> numberOfFilesInWallet() {
+    return _driveDao.numberOfFiles();
+  }
+
+  @override
+  Future<int> numberOfFoldersInWallet() {
+    return _driveDao.numberOfFolders();
   }
 }
 

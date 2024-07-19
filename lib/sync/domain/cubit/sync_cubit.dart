@@ -255,7 +255,29 @@ class SyncCubit extends Cubit<SyncState> {
     );
 
     _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
+
+    unawaited(_updateContext());
+
     emit(SyncIdle());
+  }
+
+  Future<void> _updateContext() async {
+    try {
+      var context = logger.context;
+
+      final numberOfFiles = await _syncRepository.numberOfFilesInWallet();
+      final numberOfFolders = await _syncRepository.numberOfFoldersInWallet();
+
+    logger.setContext(
+        context.copyWith(
+          numberOfDrives: _syncProgress.drivesCount,
+          numberOfFiles: numberOfFiles,
+          numberOfFolders: numberOfFolders,
+        ),
+      );
+    } catch (e) {
+      logger.w('Error setting context after sync');
+    }
   }
 
   int calculateSyncLastBlockHeight(int lastBlockHeight) {
