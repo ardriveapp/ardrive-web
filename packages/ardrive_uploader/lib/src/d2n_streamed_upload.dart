@@ -49,8 +49,8 @@ class D2NStreamedUpload implements StreamedUpload<UploadItem> {
 
         upload.complete(StreamedUploadResult(success: true));
       } catch (e) {
-        logger.e('D2NStreamedUpload.send: error while uploading', e);
-        upload.complete(StreamedUploadResult(success: false));
+        logger.i('D2NStreamedUpload.send: error while uploading');
+        upload.complete(StreamedUploadResult(success: false, error: e));
       }
     });
 
