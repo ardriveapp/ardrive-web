@@ -1358,6 +1358,10 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
     return ValueListenableBuilder(
       valueListenable: FsEntryPreviewCubit.imagePreviewNotifier,
       builder: (context, imagePreview, _) {
+        if (imagePreview == null) {
+          return const SizedBox.shrink();
+        }
+
         final isLoading = imagePreview.isLoading;
 
         if (!widget.isFullScreen) {
@@ -1579,8 +1583,12 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
         child: ValueListenableBuilder(
           valueListenable: FsEntryPreviewCubit.imagePreviewNotifier,
           builder: (context, imagePreview, _) {
-            final filename = imagePreview.filename!;
-            final contentType = imagePreview.contentType!;
+            if (imagePreview == null) {
+              return const SizedBox.shrink();
+            }
+
+            final filename = imagePreview.filename;
+            final contentType = imagePreview.contentType;
             final fileNameWithoutExtension =
                 getBasenameWithoutExtension(filePath: filename);
             return Column(
