@@ -93,6 +93,11 @@ class _LoginPageState extends State<LoginPage> {
             });
           }
 
+          if (loginState is LoginSuccess) {
+            logger.setContext(logger.context
+                .copyWith(userAddress: loginState.user.walletAddress));
+          }
+
           if (loginState is PromptPassword) {
             showEnterYourPasswordDialog(
               context: context,
