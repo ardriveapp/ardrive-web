@@ -140,27 +140,6 @@ class _AppSideBarState extends State<AppSideBar> {
                   height: 16,
                 ),
               ],
-              // const Padding(
-              //   padding: EdgeInsets.only(left: 16.0),
-              //   child: HelpButton(),
-              // ),
-              // const SizedBox(
-              //   height: 16,
-              // ),
-              // Padding(
-              //   padding: const EdgeInsets.only(left: 16.0),
-              //   child: _exportLogsButton(),
-              // ),
-              // const SizedBox(
-              //   height: 4,
-              // ),
-              // const Padding(
-              //   padding: EdgeInsets.only(left: 16.0),
-              //   child: ThemeSwitcher(),
-              // ),
-              // const SizedBox(
-              //   height: 4,
-              // ),
               const Padding(
                 padding: EdgeInsets.only(left: 20.0),
                 child: AppVersionWidget(),
@@ -389,20 +368,6 @@ class _AppSideBarState extends State<AppSideBar> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // const Align(
-                //   alignment: Alignment.centerLeft,
-                //   child: HelpButton(),
-                // ),
-                // const SizedBox(
-                //   height: 16,
-                // ),
-                // Align(
-                //   alignment: Alignment.centerLeft,
-                //   child: _exportLogsButton(),
-                // ),
-                // const SizedBox(
-                //   height: 8,
-                // ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -440,10 +405,6 @@ class _AppSideBarState extends State<AppSideBar> {
           )
         : Column(
             children: [
-              // const HelpButton(),
-              // const SizedBox(
-              //   height: 24,
-              // ),
               ArDriveIconButton(
                 tooltip: appLocalizationsOf(context).expandSideBar,
                 icon: ArDriveIcons.arrowRightFilled(),

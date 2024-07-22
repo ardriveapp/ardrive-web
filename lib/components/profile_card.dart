@@ -172,28 +172,6 @@ class _ProfileCardState extends State<ProfileCard> {
               ],
             ),
           ),
-          // Padding(
-          //   padding: const EdgeInsets.only(top: 20.0, left: 16, right: 16),
-          //   child: ArDriveClickArea(
-          //     child: GestureDetector(
-          //       onTap: () {
-          //         openFeedbackSurveyUrl();
-          //       },
-          //       child: Text(
-          //         appLocalizationsOf(context).leaveFeedback,
-          //         style: ArDriveTypography.body.captionRegular().copyWith(
-          //               fontWeight: FontWeight.w600,
-          //               fontSize: 18,
-          //               color: ArDriveTheme.of(context)
-          //                   .themeData
-          //                   .colors
-          //                   .themeFgMuted,
-          //               decoration: TextDecoration.underline,
-          //             ),
-          //       ),
-          //     ),
-          //   ),
-          // ),
           ArDriveAccordion(
             backgroundColor: Colors.transparent,
             children: [
