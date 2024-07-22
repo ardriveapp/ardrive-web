@@ -40,6 +40,7 @@ import 'components.dart';
 Future<void> promptToCreateManifest(
   BuildContext context, {
   required Drive drive,
+  String? folderId,
   required bool hasPendingFiles,
 }) {
   final pst = context.read<PstService>();

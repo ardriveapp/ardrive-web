@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
@@ -19,10 +20,18 @@ import 'package:ardrive/components/license/view_license_definition.dart';
 import 'package:ardrive/components/license_details_popover.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
+import 'package:ardrive/core/arfs/repository/file_repository.dart';
+import 'package:ardrive/core/arfs/repository/folder_repository.dart';
+import 'package:ardrive/core/arfs/utils/arfs_revision_status_utils.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
+import 'package:ardrive/drive_explorer/dock/ardrive_dock.dart';
+import 'package:ardrive/drive_explorer/dock/autodeploy_modal.dart';
+import 'package:ardrive/entities/manifest_data.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
+import 'package:ardrive/main.dart';
+import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
@@ -49,6 +58,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:pst/pst.dart';
 import 'package:reactive_forms/reactive_forms.dart';
+import 'package:uuid/uuid.dart';
 
 import '../blocs/upload/upload_handles/bundle_upload_handle.dart';
 import '../pages/drive_detail/components/drive_explorer_item_tile.dart';
@@ -112,6 +122,7 @@ Future<void> promptToUpload(
     if (!context.mounted) {
       return;
     }
+    final driveDetailCubit = context.read<DriveDetailCubit>();
     showArDriveDialog(
       context,
       content: RepositoryProvider(
@@ -180,7 +191,9 @@ Future<void> promptToUpload(
               ),
             ),
           ],
-          child: const UploadForm(),
+          child: UploadForm(
+            driveDetailCubit: driveDetailCubit,
+          ),
         ),
       ),
       barrierDismissible: false,
@@ -189,7 +202,9 @@ Future<void> promptToUpload(
 }
 
 class UploadForm extends StatefulWidget {
-  const UploadForm({super.key});
+  const UploadForm({super.key, required this.driveDetailCubit});
+
+  final DriveDetailCubit driveDetailCubit;
 
   @override
   State<UploadForm> createState() => _UploadFormState();
@@ -220,6 +235,49 @@ class _UploadFormState extends State<UploadForm> {
         child: BlocConsumer<UploadCubit, UploadState>(
           listener: (context, state) async {
             if (state is UploadComplete || state is UploadWalletMismatch) {
+              final drive =
+                  (widget.driveDetailCubit.state as DriveDetailLoadSuccess)
+                      .currentDrive;
+              CreateManifestCubit cubit = CreateManifestCubit(
+                profileCubit: context.read<ProfileCubit>(),
+                drive: drive,
+                manifestRepository: ManifestRepositoryImpl(
+                  context.read<DriveDao>(),
+                  ArDriveUploader(
+                    turboUploadUri:
+                        Uri.parse(configService.config.defaultTurboUploadUrl!),
+                    metadataGenerator: ARFSUploadMetadataGenerator(
+                      tagsGenerator: ARFSTagsGenetator(
+                        appInfoServices: AppInfoServices(),
+                      ),
+                    ),
+                    arweave: context.read<ArweaveService>().client,
+                    pstService: context.read<PstService>(),
+                  ),
+                  context.read<FolderRepository>(),
+                  ManifestDataBuilder(
+                    fileRepository: context.read<FileRepository>(),
+                    folderRepository: context.read<FolderRepository>(),
+                  ),
+                  ARFSRevisionStatusUtils(context.read<FileRepository>()),
+                ),
+                folderRepository: context.read<FolderRepository>(),
+                auth: context.read<ArDriveAuth>(),
+              );
+
+              cubit
+                  .prepareManifestTx(
+                    manifestName: 'test-autodeploy${const Uuid().v4()}',
+                    folderId: drive.rootFolderId,
+                  )
+                  .then((value) => cubit.uploadManifest());
+              ArDriveDock.of(context).showOverlay(
+                context,
+                AutoDeployWidget(
+                  createManifestCubit: cubit,
+                ),
+              );
+
               if (!_isShowingCancelDialog) {
                 Navigator.pop(context);
                 context.read<FeedbackSurveyCubit>().openRemindMe();
