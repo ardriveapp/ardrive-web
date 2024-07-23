@@ -72,6 +72,7 @@ class _LoginPageState extends State<LoginPage> {
       arDriveAuth: context.read<ArDriveAuth>(),
       userRepository: context.read<UserRepository>(),
       configService: context.read<ConfigService>(),
+      profileCubit: context.read<ProfileCubit>(),
     )..add(
         CheckIfUserIsLoggedIn(
           gettingStarted: widget.gettingStarted,

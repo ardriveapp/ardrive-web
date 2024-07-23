@@ -119,6 +119,12 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               notifyListeners();
             }
 
+            if (state is ProfileLoggingOut) {
+              driveId = null;
+              driveName = null;
+              notifyListeners();
+            }
+
             // Redirect the user away from sign in if they are already signed in.
             if ((signingIn || gettingStarted) && state is ProfileLoggedIn) {
               signingIn = false;
