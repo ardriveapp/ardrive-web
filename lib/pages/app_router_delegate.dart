@@ -122,6 +122,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             if (state is ProfileLoggingOut) {
               driveId = null;
               driveName = null;
+              sharedDriveKey = null;
               notifyListeners();
             }
 
