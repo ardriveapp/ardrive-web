@@ -5,6 +5,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/ethereum_signer.dart';
 import 'package:ardrive/authentication/login/blocs/stub_web_wallet.dart' // stub implementation
     if (dart.library.html) 'package:ardrive/authentication/login/blocs/web_wallet.dart';
+import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/entities/profile_types.dart';
@@ -40,6 +41,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   final ArweaveService _arweaveService;
   final DownloadService _downloadService;
   final ConfigService _configService;
+  final ProfileCubit _profileCubit;
 
   bool ignoreNextWaletSwitch = false;
 
@@ -61,6 +63,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     required DownloadService downloadService,
     required UserRepository userRepository,
     required ConfigService configService,
+    required ProfileCubit profileCubit,
   })  : _arDriveAuth = arDriveAuth,
         _arConnectService = arConnectService,
         _ethereumProviderService = ethereumProviderService,
@@ -68,6 +71,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         _turboUploadService = turboUploadService,
         _downloadService = downloadService,
         _configService = configService,
+        _profileCubit = profileCubit,
         super(LoginLoading()) {
     on<LoginEvent>(_onLoginEvent);
     _listenToWalletChange();
@@ -500,7 +504,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     Emitter<LoginState> emit,
   ) async {
     if (await _arDriveAuth.isUserLoggedIn()) {
-      await _arDriveAuth.logout();
+      await _arDriveAuth
+          .logout()
+          .then((value) => _profileCubit.logoutProfile());
     }
 
     usingSeedphrase = false;
