@@ -38,10 +38,10 @@ const defaultMaxRetries = 8;
 const kMaxNumberOfTransactionsPerPage = 100;
 
 class ArweaveService {
-  final Arweave client;
+  Arweave client;
   final ArDriveCrypto _crypto;
 
-  final ArtemisClient _gql;
+  ArtemisClient _gql;
 
   ArweaveService(
     this.client,
@@ -72,6 +72,15 @@ class ArweaveService {
           return exception is! RateLimitError;
         },
       ),
+    );
+  }
+
+  void setGatewayUrl(Uri url) {
+    client = Arweave(gatewayUrl: url);
+    _gql = ArtemisClient('$url/graphql');
+    graphQLRetry = GraphQLRetry(
+      _gql,
+      internetChecker: InternetChecker(connectivity: Connectivity()),
     );
   }
 

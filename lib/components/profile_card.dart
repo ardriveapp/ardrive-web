@@ -4,6 +4,7 @@ import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/components/icon_theme_switcher.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/components/truncated_address.dart';
+import 'package:ardrive/gar/presentation/widgets/gar_modal.dart';
 import 'package:ardrive/gift/bloc/redeem_gift_bloc.dart';
 import 'package:ardrive/gift/redeem_gift_modal.dart';
 import 'package:ardrive/misc/resources.dart';
@@ -243,6 +244,26 @@ class _ProfileCardState extends State<ProfileCard> {
               ),
             ],
           ),
+          SizedBox(height: 8),
+          ArDriveAccordion(backgroundColor: Colors.transparent, children: [
+            // gateway switcher
+            ArDriveAccordionItem(
+              Text(
+                'Advanced',
+                style: typography.paragraphNormal(
+                  fontWeight: ArFontWeight.semiBold,
+                ),
+              ),
+              [
+                _ProfileMenuAccordionItem(
+                  text: 'Switch Gateway',
+                  onTap: () {
+                    showGatewaySwitcherModal(context);
+                  },
+                ),
+              ],
+            ),
+          ]),
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),

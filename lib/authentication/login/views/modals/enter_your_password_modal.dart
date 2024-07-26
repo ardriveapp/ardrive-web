@@ -3,6 +3,7 @@ import 'package:ardrive/authentication/components/biometric_toggle.dart';
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/components/truncated_address_new.dart';
+import 'package:ardrive/gar/presentation/widgets/gar_modal.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider_wallet.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -95,6 +96,15 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                icon: Icon(Icons.settings),
+                onPressed: () {
+                  showGatewaySwitcherModal(context);
+                },
+              ),
+            ),
             Center(
                 child: ArDriveImage(
               image: AssetImage(Resources.images.brand.logo1),
