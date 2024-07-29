@@ -55,6 +55,8 @@ dependencies:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
       ref: v3.9.0
+  ario_sdk:
+    path: ./ario_sdk
   cryptography: ^2.0.5
   flutter_bloc: ^8.1.1
   intersperse: ^2.0.0

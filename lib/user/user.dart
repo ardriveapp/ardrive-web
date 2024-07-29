@@ -12,6 +12,7 @@ abstract class User with EquatableMixin {
   late final BigInt walletBalance;
   late final SecretKey cipherKey;
   late final ProfileType profileType;
+  abstract final String? ioTokens;
 
   factory User({
     required String password,
@@ -20,6 +21,7 @@ abstract class User with EquatableMixin {
     required BigInt walletBalance,
     required SecretKey cipherKey,
     required ProfileType profileType,
+    dynamic ioTokens,
   }) =>
       _User(
         password: password,
@@ -28,6 +30,7 @@ abstract class User with EquatableMixin {
         walletBalance: walletBalance,
         cipherKey: cipherKey,
         profileType: profileType,
+        ioTokens: ioTokens,
       );
 }
 
@@ -44,6 +47,8 @@ class _User implements User {
   late final SecretKey cipherKey;
   @override
   late final ProfileType profileType;
+  @override
+  final String? ioTokens;
 
   _User({
     required this.password,
@@ -52,6 +57,7 @@ class _User implements User {
     required this.walletBalance,
     required this.cipherKey,
     required this.profileType,
+    this.ioTokens,
   });
 
   @override

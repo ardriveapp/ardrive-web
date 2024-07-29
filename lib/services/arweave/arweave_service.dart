@@ -17,6 +17,7 @@ import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:collection/collection.dart';
@@ -51,7 +52,10 @@ class ArweaveService {
             ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
     graphQLRetry = GraphQLRetry(
       _gql,
-      internetChecker: InternetChecker(connectivity: Connectivity()),
+      internetChecker: InternetChecker(
+        connectivity: Connectivity(),
+      ),
+      arioSDK: ArioSDKWeb(),
     );
     httpRetry = HttpRetry(
       GatewayResponseHandler(),

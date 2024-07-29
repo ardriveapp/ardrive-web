@@ -1,4 +1,4 @@
-import { WarpFactory, LoggerFactory, defaultCacheOptions } from 'warp-contracts';
+import { LoggerFactory, WarpFactory, defaultCacheOptions } from 'warp-contracts';
 
 
 async function readContractAsStringPromise(

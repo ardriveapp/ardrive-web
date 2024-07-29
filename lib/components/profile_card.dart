@@ -155,6 +155,7 @@ class _ProfileCardState extends State<ProfileCard> {
                   endIndent: 16,
                 ),
                 _buildBalanceRow(context, state),
+                _buildIOTokenRow(context, state),
                 if (context.read<PaymentService>().useTurboPayment) ...[
                   Padding(
                     padding: const EdgeInsets.only(top: 20.0),
@@ -244,7 +245,7 @@ class _ProfileCardState extends State<ProfileCard> {
               ),
             ],
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           ArDriveAccordion(backgroundColor: Colors.transparent, children: [
             // gateway switcher
             ArDriveAccordionItem(
@@ -352,6 +353,37 @@ class _ProfileCardState extends State<ProfileCard> {
           ),
           Text(
             '$walletBalance AR',
+            style: typography.paragraphNormal(
+              color: colorTokens.textLow,
+              fontWeight: ArFontWeight.semiBold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIOTokenRow(BuildContext context, ProfileLoggedIn state) {
+    final walletBalance = convertWinstonToLiteralString(state.walletBalance);
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final ioTokens = context.read<ArDriveAuth>().currentUser.ioTokens;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'IO Tokens',
+            style: typography.paragraphNormal(
+              fontWeight: ArFontWeight.semiBold,
+              color: colorTokens.textHigh,
+            ),
+          ),
+          Text(
+            '$ioTokens',
             style: typography.paragraphNormal(
               color: colorTokens.textLow,
               fontWeight: ArFontWeight.semiBold,
