@@ -19,12 +19,9 @@ class SnapshotValidationService {
       final appConfig = _configService.config;
 
       try {
-        final headers = {'Accept': 'content-length'};
-
         final snapshotValidation = await http.head(
           Uri.parse(
               '${appConfig.defaultArweaveGatewayUrl}/${snapshotItem.txId}'),
-          headers: headers,
         );
 
         logger.d('Validating snapshot ${snapshotItem.txId}');
