@@ -19,7 +19,7 @@ class SnapshotValidationService {
       final appConfig = _configService.config;
 
       try {
-        final headers = {'Accept': '*/*'};
+        final headers = {'Accept': 'content-length'};
 
         final snapshotValidation = await http.head(
           Uri.parse(
