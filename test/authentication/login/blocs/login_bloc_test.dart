@@ -1,5 +1,6 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
+import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/services.dart';
@@ -24,6 +25,8 @@ void main() {
 
   late DownloadService mockDownloadService;
   late ArweaveService mockArweaveService;
+  late ProfileCubit mockProfileCubit;
+  late ConfigService mockConfigService;
 
   final wallet = getTestWallet();
 
@@ -39,6 +42,8 @@ void main() {
       arweaveService: mockArweaveService,
       downloadService: mockDownloadService,
       userRepository: mockUserRepository,
+      configService: mockConfigService,
+      profileCubit: mockProfileCubit,
     );
   }
 
@@ -50,6 +55,8 @@ void main() {
     mockUserRepository = MockUserRepository();
     mockDownloadService = MockDownloadService();
     mockArweaveService = MockArweaveService();
+    mockConfigService = MockConfigService();
+    mockProfileCubit = MockProfileCubit();
   });
 
   group('AddWalletFile', () {
@@ -69,6 +76,8 @@ void main() {
           arweaveService: mockArweaveService,
           downloadService: mockDownloadService,
           userRepository: mockUserRepository,
+          configService: mockConfigService,
+          profileCubit: mockProfileCubit,
         );
       },
       setUp: () {
@@ -103,6 +112,8 @@ void main() {
           arweaveService: mockArweaveService,
           downloadService: mockDownloadService,
           userRepository: mockUserRepository,
+          configService: mockConfigService,
+          profileCubit: mockProfileCubit,
         );
       },
       setUp: () {
@@ -139,6 +150,8 @@ void main() {
           arweaveService: mockArweaveService,
           downloadService: mockDownloadService,
           userRepository: mockUserRepository,
+          configService: mockConfigService,
+          profileCubit: mockProfileCubit,
         );
       },
       setUp: () {
@@ -243,6 +256,8 @@ void main() {
           arweaveService: mockArweaveService,
           downloadService: mockDownloadService,
           userRepository: mockUserRepository,
+          configService: mockConfigService,
+          profileCubit: mockProfileCubit,
         );
       },
       setUp: () {
@@ -746,6 +761,8 @@ void main() {
             .thenAnswer((invocation) => false);
         when(() => mockArConnectService.disconnect())
             .thenAnswer((invocation) => Future.value(null));
+        when(() => mockProfileCubit.logoutProfile())
+            .thenAnswer((_) => Future.value(null));
       },
       act: (bloc) async {
         bloc.add(const ForgetWallet());

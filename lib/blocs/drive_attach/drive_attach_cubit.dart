@@ -154,8 +154,8 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       PlausibleEventTracker.trackAttachDrive(
         drivePrivacy: drivePrivacy,
       );
-    } catch (err) {
-      addError(err);
+    } catch (err, stacktrace) {
+      _handleError(err, stacktrace);
     }
   }
 
@@ -249,11 +249,9 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     return null;
   }
 
-  @override
-  void onError(Object error, StackTrace stackTrace) {
-    emit(DriveAttachFailure());
-    super.onError(error, stackTrace);
+  void _handleError(Object error, StackTrace stackTrace) {
+    logger.e('Failed to attach drive. Emitting error', error, stackTrace);
 
-    logger.e('Failed to attach drive', error, stackTrace);
+    emit(DriveAttachFailure());
   }
 }
