@@ -17,7 +17,7 @@ class GatewaySwitcherModal extends StatelessWidget {
       create: (context) => GarBloc(
         configService: context.read<ConfigService>(),
         arweave: context.read<ArweaveService>(),
-        arioSDK: ArioSDKWeb(),
+        arioSDK: ArioSDKFactory().create(),
       )..add(GetGateways()),
       child: _GatewaySwitcherModal(),
     );
@@ -75,9 +75,7 @@ class _GatewaySwitcherModalState extends State<_GatewaySwitcherModal> {
                         fontWeight: ArFontWeight.bold,
                       ),
                     ),
-                    SizedBox(
-                      height: 16,
-                    )
+                    const SizedBox(height: 16)
                   ],
                   ArDriveTextFieldNew(
                     label: 'Search gateway',
@@ -97,9 +95,7 @@ class _GatewaySwitcherModalState extends State<_GatewaySwitcherModal> {
                       },
                     ),
                   ),
-                  SizedBox(
-                    height: 16,
-                  ),
+                  const SizedBox(height: 16),
                   Expanded(
                     child: ListView.separated(
                       separatorBuilder: (context, index) => const SizedBox(
@@ -160,21 +156,6 @@ class _GatewaySwitcherModalState extends State<_GatewaySwitcherModal> {
               ),
             ),
             actions: [
-              // ModalAction(
-              //   action: () {
-              //     try {
-              //       context.read<GarBloc>().add(
-              //             UpdateArweaveGatewayUrl(
-              //               arweaveGatewayUrl:
-              //                   _arweaveGatewayUrlController.text,
-              //             ),
-              //           );
-              //     } catch (e) {
-              //       return;
-              //     }
-              //   },
-              //   title: 'Save',
-              // ),
               ModalAction(
                 action: () {
                   Navigator.of(context).pop();
@@ -204,22 +185,7 @@ class _GatewaySwitcherModalState extends State<_GatewaySwitcherModal> {
         return ArDriveStandardModalNew(
           title: 'Gateway Switcher',
           content: _form(),
-          actions: [
-            // ModalAction(
-            //     action: () {
-            //       try {
-            //         context.read<GarBloc>().add(
-            //               UpdateArweaveGatewayUrl(
-            //                 arweaveGatewayUrl:
-            //                     _arweaveGatewayUrlController.text,
-            //               ),
-            //             );
-            //       } catch (e) {
-            //         return;
-            //       }
-            //     },
-            // title: 'Save')
-          ],
+          actions: [],
         );
       },
     );

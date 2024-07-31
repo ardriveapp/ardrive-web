@@ -41,11 +41,7 @@ class GarBloc extends Bloc<GarEvent, GarState> {
           ),
         );
 
-        arweave.setGatewayUrl(
-          Uri.parse(
-            'https://${event.gateway.settings.fqdn}',
-          ),
-        );
+        arweave.setGateway(event.gateway);
 
         emit(GatewayChanged(event.gateway));
       }

@@ -47,8 +47,13 @@ class _UserRepository implements UserRepository {
 
     final profileDetails = await _profileDao.loadDefaultProfile(password);
 
-    final ioTokens = await ArioSDKWeb()
-        .getIOTokens(await profileDetails.wallet.getAddress());
+    String? ioTokens;
+
+    if (arioSdkIsPlaformSupported()) {
+      ioTokens = await ArioSDKFactory()
+          .create()
+          .getIOTokens(await profileDetails.wallet.getAddress());
+    }
 
     final user = User(
       profileType: ProfileType.values[profileDetails.details.profileType],

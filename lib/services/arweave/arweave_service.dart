@@ -55,7 +55,7 @@ class ArweaveService {
       internetChecker: InternetChecker(
         connectivity: Connectivity(),
       ),
-      arioSDK: ArioSDKWeb(),
+      arioSDK: ArioSDKFactory().create(),
     );
     httpRetry = HttpRetry(
       GatewayResponseHandler(),
@@ -79,13 +79,9 @@ class ArweaveService {
     );
   }
 
-  void setGatewayUrl(Uri url) {
-    client = Arweave(gatewayUrl: url);
-    _gql = ArtemisClient('$url/graphql');
-    graphQLRetry = GraphQLRetry(
-      _gql,
-      internetChecker: InternetChecker(connectivity: Connectivity()),
-    );
+  /// Sets the gateway to use for all Data requests. No GraphQL requests are made with the new gateway.
+  void setGateway(Gateway gateway) {
+    client = Arweave(gatewayUrl: getGatewayUri(gateway));
   }
 
   int bytesToChunks(int bytes) {
