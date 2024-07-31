@@ -21,6 +21,7 @@ import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/services/license/license_service.dart';
 import 'package:ardrive/services/license/license_state.dart';
 import 'package:ardrive/sync/constants.dart';
+import 'package:ardrive/sync/data/snapshot_validation_service.dart';
 import 'package:ardrive/sync/domain/ghost_folder.dart';
 import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
@@ -89,6 +90,7 @@ abstract class SyncRepository {
     required ConfigService configService,
     required LicenseService licenseService,
     required BatchProcessor batchProcessor,
+    required SnapshotValidationService snapshotValidationService,
   }) {
     return _SyncRepository(
       arweave: arweave,
@@ -96,6 +98,7 @@ abstract class SyncRepository {
       configService: configService,
       licenseService: licenseService,
       batchProcessor: batchProcessor,
+      snapshotValidationService: snapshotValidationService,
     );
   }
 }
@@ -106,6 +109,7 @@ class _SyncRepository implements SyncRepository {
   final ConfigService _configService;
   final LicenseService _licenseService;
   final BatchProcessor _batchProcessor;
+  final SnapshotValidationService _snapshotValidationService;
 
   final Map<String, GhostFolder> _ghostFolders = {};
   final Set<String> _folderIds = <String>{};
@@ -118,10 +122,12 @@ class _SyncRepository implements SyncRepository {
     required ConfigService configService,
     required LicenseService licenseService,
     required BatchProcessor batchProcessor,
+    required SnapshotValidationService snapshotValidationService,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _configService = configService,
         _licenseService = licenseService,
+        _snapshotValidationService = snapshotValidationService,
         _batchProcessor = batchProcessor;
 
   @override
@@ -552,6 +558,11 @@ class _SyncRepository implements SyncRepository {
         snapshotsStream,
         arweave: _arweave,
       ).toList();
+
+      List<SnapshotItem> snapshotsVerified =
+          await _snapshotValidationService.validateSnapshotItems(snapshotItems);
+
+      snapshotItems = snapshotsVerified;
     }
 
     final SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
