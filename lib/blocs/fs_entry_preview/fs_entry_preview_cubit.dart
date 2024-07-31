@@ -325,36 +325,28 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
   void _previewAudio(
       bool isPrivate, FileDataTableItem selectedItem, previewUrl) {
-    if (_configService.config.enableAudioPreview) {
-      if (isPrivate) {
-        emit(FsEntryPreviewUnavailable());
-        return;
-      }
-
-      emit(FsEntryPreviewAudio(
-          filename: selectedItem.name, previewUrl: previewUrl));
-
+    if (isPrivate) {
+      emit(FsEntryPreviewUnavailable());
       return;
     }
 
-    emit(FsEntryPreviewUnavailable());
+    emit(FsEntryPreviewAudio(
+        filename: selectedItem.name, previewUrl: previewUrl));
+
+    return;
   }
 
   void _previewVideo(
       bool isPrivate, FileDataTableItem selectedItem, previewUrl) {
-    if (_configService.config.enableVideoPreview) {
-      if (isPrivate) {
-        emit(FsEntryPreviewUnavailable());
-        return;
-      }
-
-      emit(FsEntryPreviewVideo(
-          filename: selectedItem.name, previewUrl: previewUrl));
-
+    if (isPrivate) {
+      emit(FsEntryPreviewUnavailable());
       return;
     }
 
-    emit(FsEntryPreviewUnavailable());
+    emit(FsEntryPreviewVideo(
+        filename: selectedItem.name, previewUrl: previewUrl));
+
+    return;
   }
 
   Future<Uint8List?> _getBytesFromCache({

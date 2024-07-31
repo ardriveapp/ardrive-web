@@ -9,9 +9,11 @@ import 'package:ardrive/gift/redeem_gift_modal.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
+import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/components/turbo_balance_widget.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
+import 'package:ardrive/user/download_wallet/download_wallet_modal.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/open_url_utils.dart';
@@ -244,6 +246,80 @@ class _ProfileCardState extends State<ProfileCard> {
             ],
           ),
           const SizedBox(height: 8),
+          ArDriveAccordion(backgroundColor: Colors.transparent, children: [
+            ArDriveAccordionItem(
+              Text(
+                'Advanced',
+                style: typography.paragraphNormal(
+                  fontWeight: ArFontWeight.semiBold,
+                ),
+              ),
+              [
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.only(left: 30.0),
+                  child: ArDriveToggleSwitch(
+                    value: context
+                        .read<ConfigService>()
+                        .config
+                        .enableSyncFromSnapshot,
+                    text: 'Sync From Snapshots',
+                    textStyle: typography.paragraphNormal(
+                      fontWeight: ArFontWeight.semiBold,
+                    ),
+                    onChanged: (value) {
+                      final config = context.read<ConfigService>().config;
+                      context.read<ConfigService>().updateAppConfig(
+                            config.copyWith(
+                              enableSyncFromSnapshot: value,
+                            ),
+                          );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.only(left: 30.0),
+                  child: ArDriveToggleSwitch(
+                    value: context.read<ConfigService>().config.autoSync,
+                    text: 'Auto Sync',
+                    textStyle: typography.paragraphNormal(
+                      fontWeight: ArFontWeight.semiBold,
+                    ),
+                    onChanged: (value) {
+                      final config = context.read<ConfigService>().config;
+                      context.read<ConfigService>().updateAppConfig(
+                            config.copyWith(
+                              autoSync: value,
+                            ),
+                          );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.only(left: 30.0),
+                  child: ArDriveToggleSwitch(
+                    value:
+                        context.read<ConfigService>().config.uploadThumbnails,
+                    text: 'Upload Thumbnails',
+                    textStyle: typography.paragraphNormal(
+                      fontWeight: ArFontWeight.semiBold,
+                    ),
+                    onChanged: (value) {
+                      final config = context.read<ConfigService>().config;
+                      context.read<ConfigService>().updateAppConfig(
+                            config.copyWith(
+                              uploadThumbnails: value,
+                            ),
+                          );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ]),
+          const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
@@ -297,7 +373,12 @@ class _ProfileCardState extends State<ProfileCard> {
               const Spacer(),
               ArDriveIconButton(
                 icon: ArDriveIcons.download(
-                    color: colorTokens.textHigh, size: 21),
+                  color: colorTokens.textHigh,
+                  size: 21,
+                ),
+                onPressed: () {
+                  showDownloadWalletModal(context);
+                },
               ),
               CopyButton(
                 size: 21,

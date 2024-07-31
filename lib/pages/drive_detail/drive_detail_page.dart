@@ -374,11 +374,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                   ),
                                 ],
                                 const SizedBox(width: 8),
-                                if (canDownloadMultipleFiles &&
-                                    context
-                                        .read<ConfigService>()
-                                        .config
-                                        .enableMultipleFileDownload) ...[
+                                if (canDownloadMultipleFiles) ...[
                                   ArDriveIconButton(
                                     tooltip: 'Download selected files',
                                     icon: ArDriveIcons.download(),

@@ -14,7 +14,6 @@ import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/authentication/biometric_permission_dialog.dart';
-import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
@@ -71,7 +70,6 @@ class _LoginPageState extends State<LoginPage> {
       downloadService: downloadService,
       arDriveAuth: context.read<ArDriveAuth>(),
       userRepository: context.read<UserRepository>(),
-      configService: context.read<ConfigService>(),
     )..add(
         CheckIfUserIsLoggedIn(
           gettingStarted: widget.gettingStarted,

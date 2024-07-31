@@ -21,7 +21,6 @@ void main() {
   late EthereumProviderService mockEthereumProviderService;
   late UserRepository mockUserRepository;
   late TurboUploadService mockTurboUploadService;
-  late ConfigService mockConfigService;
 
   late DownloadService mockDownloadService;
   late ArweaveService mockArweaveService;
@@ -33,14 +32,14 @@ void main() {
 
   LoginBloc createBloc() {
     return LoginBloc(
-        arDriveAuth: mockArDriveAuth,
-        arConnectService: mockArConnectService,
-        ethereumProviderService: mockEthereumProviderService,
-        turboUploadService: mockTurboUploadService,
-        arweaveService: mockArweaveService,
-        downloadService: mockDownloadService,
-        userRepository: mockUserRepository,
-        configService: mockConfigService);
+      arDriveAuth: mockArDriveAuth,
+      arConnectService: mockArConnectService,
+      ethereumProviderService: mockEthereumProviderService,
+      turboUploadService: mockTurboUploadService,
+      arweaveService: mockArweaveService,
+      downloadService: mockDownloadService,
+      userRepository: mockUserRepository,
+    );
   }
 
   setUp(() {
@@ -51,7 +50,6 @@ void main() {
     mockUserRepository = MockUserRepository();
     mockDownloadService = MockDownloadService();
     mockArweaveService = MockArweaveService();
-    mockConfigService = MockConfigService();
   });
 
   group('AddWalletFile', () {
@@ -71,7 +69,6 @@ void main() {
           arweaveService: mockArweaveService,
           downloadService: mockDownloadService,
           userRepository: mockUserRepository,
-          configService: mockConfigService,
         );
       },
       setUp: () {
@@ -106,7 +103,6 @@ void main() {
           arweaveService: mockArweaveService,
           downloadService: mockDownloadService,
           userRepository: mockUserRepository,
-          configService: mockConfigService,
         );
       },
       setUp: () {
@@ -143,7 +139,6 @@ void main() {
           arweaveService: mockArweaveService,
           downloadService: mockDownloadService,
           userRepository: mockUserRepository,
-          configService: mockConfigService,
         );
       },
       setUp: () {
@@ -248,7 +243,6 @@ void main() {
           arweaveService: mockArweaveService,
           downloadService: mockDownloadService,
           userRepository: mockUserRepository,
-          configService: mockConfigService,
         );
       },
       setUp: () {

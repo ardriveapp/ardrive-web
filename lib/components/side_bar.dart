@@ -5,7 +5,6 @@ import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
-import 'package:ardrive/components/theme_switcher.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/misc/resources.dart';
@@ -375,7 +374,6 @@ class _AppSideBarState extends State<AppSideBar> {
                     const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ThemeSwitcher(),
                         SizedBox(
                           height: 8,
                         ),

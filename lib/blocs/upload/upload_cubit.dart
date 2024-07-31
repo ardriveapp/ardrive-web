@@ -9,10 +9,11 @@ import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/entities/folder_entity.dart';
-import 'package:ardrive/main.dart';
 import 'package:ardrive/models/forms/cc.dart';
 import 'package:ardrive/models/forms/udl.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/config/config.dart';
+import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/services/license/license.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -49,12 +50,13 @@ class UploadCubit extends Cubit<UploadState> {
   final ArDriveAuth _auth;
   final ActivityTracker _activityTracker;
   final LicenseService _licenseService;
+  final ConfigService _configService;
 
   late bool uploadFolders;
   late Drive _targetDrive;
   late FolderEntry _targetFolder;
   UploadMethod? _uploadMethod;
-  bool _uploadThumbnail = true;
+  bool _uploadThumbnail;
 
   void changeUploadThumbnailOption(bool uploadThumbnail) {
     _uploadThumbnail = uploadThumbnail;
@@ -204,6 +206,7 @@ class UploadCubit extends Cubit<UploadState> {
     required ArDriveUploadPreparationManager arDriveUploadManager,
     required ActivityTracker activityTracker,
     required LicenseService licenseService,
+    required ConfigService configService,
     this.folder,
     this.uploadFolders = false,
     this.isDragNDrop = false,
@@ -214,6 +217,8 @@ class UploadCubit extends Cubit<UploadState> {
         _auth = auth,
         _activityTracker = activityTracker,
         _licenseService = licenseService,
+        _configService = configService,
+        _uploadThumbnail = configService.config.uploadThumbnails,
         super(UploadPreparationInProgress());
 
   Future<void> startUploadPreparation({
@@ -533,14 +538,14 @@ class UploadCubit extends Cubit<UploadState> {
     LicenseState? licenseStateConfigured,
   }) async {
     final ardriveUploader = ArDriveUploader(
-      turboUploadUri: Uri.parse(configService.config.defaultTurboUploadUrl!),
+      turboUploadUri: Uri.parse(_configService.config.defaultTurboUploadUrl!),
       metadataGenerator: ARFSUploadMetadataGenerator(
         tagsGenerator: ARFSTagsGenetator(
           appInfoServices: AppInfoServices(),
         ),
       ),
       arweave: Arweave(
-        gatewayUrl: Uri.parse(configService.config.defaultArweaveGatewayUrl!),
+        gatewayUrl: Uri.parse(_configService.config.defaultArweaveGatewayUrl!),
       ),
       pstService: _pst,
     );
@@ -674,14 +679,14 @@ class UploadCubit extends Cubit<UploadState> {
     LicenseState? licenseStateConfigured,
   }) async {
     final ardriveUploader = ArDriveUploader(
-      turboUploadUri: Uri.parse(configService.config.defaultTurboUploadUrl!),
+      turboUploadUri: Uri.parse(_configService.config.defaultTurboUploadUrl!),
       metadataGenerator: ARFSUploadMetadataGenerator(
         tagsGenerator: ARFSTagsGenetator(
           appInfoServices: AppInfoServices(),
         ),
       ),
       arweave: Arweave(
-        gatewayUrl: Uri.parse(configService.config.defaultArweaveGatewayUrl!),
+        gatewayUrl: Uri.parse(_configService.config.defaultArweaveGatewayUrl!),
       ),
       pstService: _pst,
     );
