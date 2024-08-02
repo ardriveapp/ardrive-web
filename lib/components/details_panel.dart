@@ -13,6 +13,7 @@ import 'package:ardrive/components/truncated_address.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
+import 'package:ardrive/drive_explorer/thumbnail_creation/page/thumbnail_creation_modal.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
@@ -25,6 +26,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -303,6 +305,27 @@ class _DetailsPanelState extends State<DetailsPanel> {
                           size: 32,
                         ),
                       },
+                      if (widget.item is FileDataTableItem &&
+                          FileTypeHelper.isImage(widget.item.contentType) &&
+                          (widget.item as FileDataTableItem).thumbnail ==
+                              null) ...{
+                        ArDriveIconButton(
+                          icon: ArDriveIcons.image(),
+                          tooltip: 'Create Thumbnail',
+                          onPressed: () {
+                            showArDriveDialog(
+                              context,
+                              content: BlocProvider.value(
+                                value: context.read<DriveDetailCubit>(),
+                                child: ThumbnailCreationModal(
+                                  fileDataTableItem:
+                                      widget.item as FileDataTableItem,
+                                ),
+                              ),
+                            );
+                          },
+                        )
+                      },
                       if (widget.currentDrive != null)
                         ScreenTypeLayout.builder(
                           desktop: (context) => const SizedBox.shrink(),
@@ -579,15 +602,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ArDriveIconButton(
-              tooltip: appLocalizationsOf(context).viewOnViewBlock,
-              icon: ArDriveIcons.newWindow(size: 20),
-              onPressed: () {
-                openUrl(
-                  url: 'https://viewblock.io/arweave/tx/${folder.metadataTxId}',
-                );
-              },
-            ),
+            _TxIdTextLink(txId: folder.metadataTxId),
             const SizedBox(width: 12),
             CopyButton(
               text: folder.metadataTxId,
@@ -648,15 +663,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ArDriveIconButton(
-              tooltip: appLocalizationsOf(context).viewOnViewBlock,
-              icon: ArDriveIcons.newWindow(size: 20),
-              onPressed: () {
-                openUrl(
-                  url: 'https://viewblock.io/arweave/tx/${state.metadataTxId}',
-                );
-              },
-            ),
+            _TxIdTextLink(txId: state.metadataTxId),
             const SizedBox(width: 12),
             CopyButton(
               text: state.metadataTxId,
@@ -716,16 +723,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
           leading: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ArDriveIconButton(
-                tooltip: appLocalizationsOf(context).viewOnViewBlock,
-                icon: ArDriveIcons.newWindow(size: 20),
-                onPressed: () {
-                  openUrl(
-                    url:
-                        'https://viewblock.io/arweave/tx/${state.metadataTxId}',
-                  );
-                },
-              ),
+              _TxIdTextLink(txId: state.metadataTxId),
               const SizedBox(width: 12),
               CopyButton(
                 text: state.metadataTxId,
@@ -739,15 +737,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ArDriveIconButton(
-              tooltip: appLocalizationsOf(context).viewOnViewBlock,
-              icon: ArDriveIcons.newWindow(size: 20),
-              onPressed: () {
-                openUrl(
-                  url: 'https://viewblock.io/arweave/tx/${item.dataTxId}',
-                );
-              },
-            ),
+            _TxIdTextLink(txId: item.dataTxId),
             const SizedBox(width: 12),
             CopyButton(
               text: item.dataTxId,
@@ -1009,6 +999,32 @@ class _DetailsPanelState extends State<DetailsPanel> {
   }
 }
 
+class _TxIdTextLink extends StatelessWidget {
+  const _TxIdTextLink({required this.txId});
+
+  final String txId;
+
+  @override
+  Widget build(BuildContext context) {
+    return ArDriveClickArea(
+      child: GestureDetector(
+        onTap: () {
+          openUrl(url: 'https://viewblock.io/arweave/tx/$txId');
+        },
+        child: Tooltip(
+          message: txId,
+          child: Text(
+            '${txId.substring(0, 4)}...',
+            style: ArDriveTypography.body
+                .buttonNormalRegular()
+                .copyWith(decoration: TextDecoration.underline),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class EntityRevision {
   final String name;
   final DateTime dateCreated;
@@ -1114,7 +1130,9 @@ class _CopyButtonState extends State<CopyButton> {
 
   @override
   dispose() {
-    _overlayEntry?.remove();
+    if (_overlayEntry != null && _overlayEntry!.mounted) {
+      _overlayEntry?.remove();
+    }
     super.dispose();
   }
 

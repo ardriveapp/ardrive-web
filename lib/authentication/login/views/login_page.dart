@@ -72,6 +72,7 @@ class _LoginPageState extends State<LoginPage> {
       arDriveAuth: context.read<ArDriveAuth>(),
       userRepository: context.read<UserRepository>(),
       configService: context.read<ConfigService>(),
+      profileCubit: context.read<ProfileCubit>(),
     )..add(
         CheckIfUserIsLoggedIn(
           gettingStarted: widget.gettingStarted,
@@ -91,6 +92,11 @@ class _LoginPageState extends State<LoginPage> {
             setState(() {
               didGettingStartedLoadedAlready = true;
             });
+          }
+
+          if (loginState is LoginSuccess) {
+            logger.setContext(logger.context
+                .copyWith(userAddress: loginState.user.walletAddress));
           }
 
           if (loginState is PromptPassword) {

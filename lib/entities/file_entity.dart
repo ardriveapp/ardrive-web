@@ -39,6 +39,9 @@ class FileEntity extends EntityWithCustomMetadata {
   @JsonKey(includeIfNull: false)
   bool? isHidden;
 
+  @JsonKey(includeFromJson: true, includeToJson: true)
+  Thumbnail? thumbnail;
+
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   List<String> reservedGqlTags = [
@@ -71,6 +74,7 @@ class FileEntity extends EntityWithCustomMetadata {
     this.dataContentType,
     this.pinnedDataOwnerAddress,
     this.isHidden,
+    this.thumbnail,
   }) : super(ArDriveCrypto());
 
   FileEntity.withUserProvidedDetails({
@@ -157,8 +161,68 @@ class FileEntity extends EntityWithCustomMetadata {
 
   Map<String, dynamic> toJson() {
     final thisJson = _$FileEntityToJson(this);
+    thisJson['thumbnail'] = thumbnail?.toJson();
+
     final custom = customJsonMetadata ?? {};
     final merged = {...thisJson, ...custom};
     return merged;
+  }
+}
+
+class Thumbnail {
+  List<Variant> variants;
+
+  Thumbnail({required this.variants});
+
+  factory Thumbnail.fromJson(Map<String, dynamic> json) {
+    var variantsJson = json['variants'] as List;
+    List<Variant> variantsList =
+        variantsJson.map((i) => Variant.fromJson(i)).toList();
+
+    return Thumbnail(
+      variants: variantsList,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'variants': variants.map((variant) => variant.toJson()).toList(),
+    };
+  }
+}
+
+class Variant {
+  String name;
+  String txId;
+  int size;
+  int width;
+  int height;
+
+  Variant({
+    required this.name,
+    required this.txId,
+    required this.size,
+    required this.width,
+    required this.height,
+  });
+
+  factory Variant.fromJson(Map<String, dynamic> json) {
+    return Variant(
+      name: json['name'],
+      txId: json['txId'],
+      size: json['size'],
+      width: json['width'],
+      height: json['height'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'txId': txId,
+      'size': size,
+      'width': width,
+      'height': height,
+    };
   }
 }

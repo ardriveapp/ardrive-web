@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_logger/ardrive_logger.dart';
+import 'package:ardrive_logger/src/ardrive_context.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -44,6 +45,8 @@ class Logger {
   final LogExporter _logExporter;
   late ListQueue<String> inMemoryLogs;
 
+  ArDriveContext _context = ArDriveContext();
+
   /// A null value means that all errors will be logged to Sentry.
   final ShouldLogErrorCallback? _shouldLogErrorCallback;
 
@@ -69,6 +72,7 @@ class Logger {
 
   void i(String message) {
     log(LogLevel.info, message);
+    Sentry.addBreadcrumb(Breadcrumb(message: message));
   }
 
   void w(String message) {
@@ -89,6 +93,15 @@ class Logger {
     log(LogLevel.error, errorMessage);
 
     Sentry.captureException(error ?? message, stackTrace: stackTrace);
+  }
+
+  ArDriveContext get context => _context;
+
+  void setContext(ArDriveContext context) {
+    _context = context;
+    debugPrint('Context updated: ${_context.toString()}');
+
+    Sentry.addBreadcrumb(Breadcrumb(message: _context.toString()));
   }
 
   void log(LogLevel level, String message) {

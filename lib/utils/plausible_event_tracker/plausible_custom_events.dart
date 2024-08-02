@@ -61,6 +61,16 @@ enum PlausibleCustomEvent {
 
   /// Terms of Services
   clickTermsOfServices,
+
+  /// Create Drive on Empty State
+  clickCreatePrivateDriveButtonEmptyState,
+  clickCreatePublicDriveButtonEmptyState,
+
+  /// Drive Empty State
+  clickUploadFileEmptyState,
+  clickCreateFolderEmptyState,
+  clickUploadFolderEmptyState,
+  clickCreatePinEmptyState,
 }
 
 extension PlausibleCustomEventNames on PlausibleCustomEvent {
@@ -174,6 +184,22 @@ extension PlausibleCustomEventNames on PlausibleCustomEvent {
       /// Terms of Services
       case PlausibleCustomEvent.clickTermsOfServices:
         return 'clickTermsOfServices';
+
+      /// Create Drive
+      case PlausibleCustomEvent.clickCreatePrivateDriveButtonEmptyState:
+        return 'clickCreatePrivateDriveButtonEmptyState';
+      case PlausibleCustomEvent.clickCreatePublicDriveButtonEmptyState:
+        return 'clickCreatePublicDriveButtonEmptyState';
+
+      /// Drive Empty State
+      case PlausibleCustomEvent.clickUploadFileEmptyState:
+        return 'clickUploadFileEmptyState';
+      case PlausibleCustomEvent.clickCreateFolderEmptyState:
+        return 'clickCreateFolderEmptyState';
+      case PlausibleCustomEvent.clickUploadFolderEmptyState:
+        return 'clickUploadFolderEmptyState';
+      case PlausibleCustomEvent.clickCreatePinEmptyState:
+        return 'clickCreatePinEmptyState';
     }
   }
 }

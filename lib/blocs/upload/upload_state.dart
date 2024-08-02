@@ -92,7 +92,6 @@ class UploadReady extends UploadState {
   final bool isDragNDrop;
   final bool uploadIsPublic;
   final int numberOfFiles;
-
   final UploadParams params;
 
   final bool isArConnect;

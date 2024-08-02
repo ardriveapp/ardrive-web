@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive_uploader/src/constants.dart';
 import 'package:ardrive_uploader/src/data_bundler.dart';
 import 'package:ardrive_uploader/src/exceptions.dart';
 import 'package:ardrive_uploader/src/utils/data_bundler_utils.dart';
 import 'package:ardrive_uploader/src/utils/logger.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 
 abstract class UploadFileStrategy {
@@ -15,6 +17,25 @@ abstract class UploadFileStrategy {
     required UploadController controller,
     required bool Function() verifyCancel,
   });
+}
+
+abstract class UploadThumbnailStrategy {
+  Future<void> upload({
+    required ThumbnailUploadTask task,
+    required Wallet wallet,
+    required UploadController controller,
+    required bool Function() verifyCancel,
+  });
+
+  factory UploadThumbnailStrategy({
+    required StreamedUploadFactory streamedUploadFactory,
+    required DataBundler dataBundler,
+  }) {
+    return _UploadThumbnailStrategy(
+      streamedUploadFactory: streamedUploadFactory,
+      dataBundler: dataBundler,
+    );
+  }
 }
 
 abstract class UploadFolderStructureStrategy {
@@ -46,19 +67,19 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
       wallet,
     );
 
-    logger.d('metadata uploaded for the file: ${task.metadataUploaded}');
+    logger.i('metadata uploaded for the file: ${task.metadataUploaded}');
 
     /// uploads the metadata item if it hasn't been uploaded yet. It can happen
     /// that the metadata item is uploaded but the data item is not, so we need
     /// to check for that.
     if (!task.metadataUploaded) {
-      logger.d('uploading metadata for the file');
+      logger.i('uploading metadata for the file');
 
       final metadataItem = dataItemResults[0];
 
       /// The upload can be canceled while the bundle is being created
       if (verifyCancel()) {
-        logger.d('Upload canceled while data item was being created');
+        logger.w('Upload canceled while data item was being created');
         throw UploadCanceledException(
           'Upload canceled while metadata item was being created',
         );
@@ -76,11 +97,11 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
         // we don't need to update the progress of the metadata item
       });
 
-      logger.d('metadata upload result: $uploadResult');
+      logger.i('metadata upload result: $uploadResult');
 
       if (!uploadResult.success) {
-        throw MetadataUploadException(
-          message: 'Failed to upload metadata item. DataItem won\'t be sent',
+        throw MetadataTransactionUploadException(
+          message: 'Failed to upload metadata item. DataItem won\'t be sent.',
           error: uploadResult.error,
         );
       }
@@ -126,7 +147,7 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
 
     /// The upload can be canceled while the bundle is being created
     if (verifyCancel()) {
-      logger.d('Upload canceled while data item was being created');
+      logger.w('Upload canceled while data item was being created');
       throw UploadCanceledException(
         'Upload canceled while data data item was being created',
       );
@@ -157,20 +178,12 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
     );
 
     if (!result.success) {
-      logger.d('Failed to upload data item. Error: ${result.error}');
-      throw DataUploadException(
-        message: 'Failed to upload data item. Error: ${result.error}',
+      throw DataTransactionUploadException(
+        message:
+            'Failed to upload data item. It will cause a creation of a ghost file e.g. a file with a red dot.',
         error: result.error,
       );
     }
-
-    final updatedTask = controller.tasks[task.id]!;
-
-    controller.updateProgress(
-      task: updatedTask.copyWith(
-        status: UploadStatus.complete,
-      ),
-    );
   }
 }
 
@@ -205,6 +218,7 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
           ),
         );
       },
+      customBundleTags: customBundleTags(task.type),
       onStartMetadataCreation: () {
         controller.updateProgress(
           task: task.copyWith(
@@ -241,7 +255,7 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
 
     /// The upload can be canceled while the bundle is being created
     if (verifyCancel()) {
-      logger.d('Upload canceled while bundle was being created');
+      logger.w('Upload canceled while bundle was being created');
       throw UploadCanceledException('Upload canceled');
     }
 
@@ -267,7 +281,7 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
 
     if (!result.success) {
       throw BundleUploadException(
-        message: 'Failed to upload bundle',
+        message: 'Failed to upload file bundle. Bundle: $bundle',
         error: result.error,
       );
     }
@@ -303,6 +317,7 @@ class UploadFolderStructureAsBundleStrategy
       entities: task.folders,
       wallet: wallet,
       driveKey: task.encryptionKey,
+      customBundleTags: customBundleTags(task.type),
     );
 
     final folderBundle = (bundle).first.dataItemResult;
@@ -331,7 +346,7 @@ class UploadFolderStructureAsBundleStrategy
     }
 
     if (verifyCancel()) {
-      logger.d('Upload canceled after bundle creation and before upload');
+      logger.w('Upload canceled after bundle creation and before upload');
       throw UploadCanceledException('Upload canceled on bundle creation');
     }
 
@@ -347,7 +362,10 @@ class UploadFolderStructureAsBundleStrategy
     });
 
     if (!result.success) {
-      throw BundleUploadException(message: 'Failed to upload bundle');
+      throw BundleUploadException(
+        message: 'Failed to upload bundle of folders. Folder bundle: $bundle',
+        error: result.error,
+      );
     }
 
     controller.updateProgress(
@@ -356,4 +374,84 @@ class UploadFolderStructureAsBundleStrategy
       ),
     );
   }
+}
+
+class _UploadThumbnailStrategy implements UploadThumbnailStrategy {
+  final StreamedUploadFactory _streamedUploadFactory;
+
+  _UploadThumbnailStrategy({
+    required StreamedUploadFactory streamedUploadFactory,
+    required DataBundler dataBundler,
+  }) : _streamedUploadFactory = streamedUploadFactory;
+
+  @override
+  Future<void> upload({
+    required ThumbnailUploadTask task,
+    required Wallet wallet,
+    required UploadController controller,
+    required bool Function() verifyCancel,
+  }) async {
+    if (task.uploadItem == null) {
+      final thumbnailDataItem = await createDataItemForThumbnail(
+        file: task.file,
+        metadata: task.metadata,
+        wallet: wallet,
+        encryptionKey: task.encryptionKey,
+        fileId: task.metadata.originalFileId,
+      );
+
+      task = task.copyWith(
+          uploadItem: DataItemUploadItem(
+              size: thumbnailDataItem.dataItemSize, data: thumbnailDataItem));
+    }
+
+    /// It will always use the Turbo for now
+
+    final streamedUpload =
+        _streamedUploadFactory.fromUploadType(UploadType.turbo);
+
+    final result = await streamedUpload.send(
+      task.uploadItem!,
+      wallet,
+      (progress) {
+        controller.updateProgress(
+          task: task.copyWith(
+            progress: progress,
+          ),
+        );
+      },
+    );
+
+    if (!result.success) {
+      throw ThumbnailUploadException(
+        message: 'Failed to upload thumbnail',
+        error: result.error,
+      );
+    }
+
+    controller.updateProgress(
+      task: task.copyWith(
+        status: UploadStatus.complete,
+      ),
+    );
+  }
+}
+
+List<Tag>? customBundleTags(
+  UploadType type,
+) {
+  if (type == UploadType.d2n) {
+    return _uTags;
+  } else {
+    return null;
+  }
+}
+
+List<Tag> get _uTags {
+  return [
+    Tag(EntityTag.appName, 'SmartWeaveAction'),
+    Tag(EntityTag.appVersion, '0.3.0'),
+    Tag(EntityTag.input, '{"function":"mint"}'),
+    Tag(EntityTag.contract, uContractId.toString()),
+  ];
 }

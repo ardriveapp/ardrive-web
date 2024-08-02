@@ -1,8 +1,14 @@
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
+import 'package:ardrive/models/models.dart';
 
 abstract class FileRepository {
   Future<String> getFilePath(String driveId, String fileId);
+  Future<List<FileWithLicenseAndLatestRevisionTransactions>>
+      getFilesWithLicenseAndLatestRevisionTransactions(
+    String driveId,
+    String folderId,
+  );
 
   factory FileRepository(
           DriveDao driveDao, FolderRepository folderRepository) =>
@@ -31,5 +37,16 @@ class _FileRepository implements FileRepository {
         await _folderRepository.getFolderPath(driveId, file.parentFolderId);
     final filePath = '$folderPath/${file.name}';
     return filePath;
+  }
+
+  // TODO: implement unit tests for this method
+  @override
+  Future<List<FileWithLicenseAndLatestRevisionTransactions>>
+      getFilesWithLicenseAndLatestRevisionTransactions(
+          String driveId, String folderId) {
+    return _driveDao
+        .filesInFolderWithLicenseAndRevisionTransactions(
+            driveId: driveId, parentFolderId: folderId)
+        .get();
   }
 }

@@ -22,6 +22,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
   abstract final int blockStart;
   abstract final int blockEnd;
   abstract final DriveID driveId;
+  abstract final String txId;
 
   factory SnapshotItem.fromGQLNode({
     required SnapshotEntityTransaction node,
@@ -72,6 +73,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
           fakeSource: fakeSource,
           arweave: arweave,
         );
+
       } catch (e) {
         logger.e('Ignoring snapshot transaction with invalid block range', e);
         continue;
@@ -133,6 +135,8 @@ abstract class SnapshotItem implements SegmentedGQLData {
 
 class SnapshotItemOnChain implements SnapshotItem {
   final int timestamp;
+
+  @override
   final TxID txId;
   String? _cachedSource;
   int _currentIndex = -1;

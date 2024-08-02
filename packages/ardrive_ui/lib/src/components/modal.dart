@@ -1,5 +1,4 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:ardrive_ui/src/constants/size_constants.dart';
 import 'package:flutter/material.dart';
 
 class ArDriveModal extends StatelessWidget {
@@ -69,11 +68,31 @@ class ArDriveModalNew extends StatelessWidget {
               padding: contentPadding,
               child: content,
             ),
+            if (action != null) ...[
+              Padding(
+                padding: const EdgeInsets.only(
+                    left: 16, right: 16, bottom: 24, top: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Flexible(
+                      child: ArDriveButtonNew(
+                        maxHeight: 40,
+                        variant: ButtonVariant.primary,
+                        text: action!.title,
+                        onPressed: action!.action,
+                        typography: ArDriveTypographyNew.of(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ]
           ],
         ),
         boxShadow: BoxShadowCard.shadow80,
         backgroundColor: backgroundColor ?? colorTokens.containerL3,
-        borderRadius: 9,
+        borderRadius: modalBorderRadius,
       ),
     );
   }
@@ -631,15 +650,22 @@ Future<void> showStandardDialog(
   required String description,
   List<ModalAction>? actions,
   bool barrierDismissible = true,
+  bool useNewArDriveUI = false,
 }) {
   return showAnimatedDialog(
     context,
     barrierDismissible: barrierDismissible,
-    content: ArDriveStandardModal(
-      description: description,
-      title: title,
-      actions: actions,
-    ),
+    content: useNewArDriveUI
+        ? ArDriveStandardModalNew(
+            description: description,
+            title: title,
+            actions: actions,
+          )
+        : ArDriveStandardModal(
+            description: description,
+            title: title,
+            actions: actions,
+          ),
   );
 }
 

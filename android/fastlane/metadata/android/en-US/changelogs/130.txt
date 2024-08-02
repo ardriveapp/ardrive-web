@@ -1,0 +1,2 @@
+- Improves handling of a few common errors
+- Enhances empty drive and folder view

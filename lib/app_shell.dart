@@ -2,15 +2,19 @@ import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/side_bar.dart';
+import 'package:ardrive/drive_explorer/multi_thumbnail_creation/multi_thumbnail_creation_warn_modal.dart';
 import 'package:ardrive/gift/reedem_button.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
+import 'package:ardrive/shared/blocs/banner/app_banner_bloc.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -93,6 +97,8 @@ class AppShellState extends State<AppShell> {
                             ),
                             BlocBuilder<ProfileCubit, ProfileState>(
                               builder: (context, state) {
+                                final typography =
+                                    ArDriveTypographyNew.of(context);
                                 return FutureBuilder(
                                   future: context
                                       .read<ProfileCubit>()
@@ -106,22 +112,29 @@ class AppShellState extends State<AppShell> {
                                       child: Material(
                                         borderRadius: BorderRadius.circular(8),
                                         child: ProgressDialog(
+                                            useNewArDriveUI: true,
                                             progressBar: ProgressBar(
                                               percentage: context
                                                   .read<SyncCubit>()
                                                   .syncProgressController
                                                   .stream,
                                             ),
-                                            percentageDetails: _syncStreamBuilder(
-                                                builderWithData: (syncProgress) =>
-                                                    Text(appLocalizationsOf(
-                                                            context)
-                                                        .syncProgressPercentage(
-                                                            (syncProgress
-                                                                        .progress *
-                                                                    100)
-                                                                .roundToDouble()
-                                                                .toString()))),
+                                            percentageDetails:
+                                                _syncStreamBuilder(
+                                              builderWithData: (syncProgress) =>
+                                                  Text(
+                                                appLocalizationsOf(context)
+                                                    .syncProgressPercentage(
+                                                  (syncProgress.progress * 100)
+                                                      .roundToDouble()
+                                                      .toString(),
+                                                ),
+                                                style:
+                                                    typography.paragraphNormal(
+                                                  fontWeight: ArFontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
                                             progressDescription:
                                                 _syncStreamBuilder(
                                               builderWithData: (syncProgress) =>
@@ -140,8 +153,10 @@ class AppShellState extends State<AppShell> {
                                                         : appLocalizationsOf(
                                                                 context)
                                                             .syncingOnlyOneDrive,
-                                                style: ArDriveTypography.body
-                                                    .buttonNormalBold(),
+                                                style:
+                                                    typography.paragraphNormal(
+                                                  fontWeight: ArFontWeight.bold,
+                                                ),
                                               ),
                                             ),
                                             title: isCurrentProfileArConnect
@@ -161,24 +176,112 @@ class AppShellState extends State<AppShell> {
                 ),
               );
           return ScreenTypeLayout.builder(
-            desktop: (context) => buildPage(
-              Row(
-                children: [
-                  const AppSideBar(),
-                  Container(
-                    color: ArDriveTheme.of(context).themeData.backgroundColor,
-                    width: 16,
-                  ),
-                  Expanded(
-                    child: Scaffold(
-                      backgroundColor:
-                          ArDriveTheme.of(context).themeData.backgroundColor,
-                      body: widget.page,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            desktop: (context) {
+              final colorTokens =
+                  ArDriveTheme.of(context).themeData.colorTokens;
+              final typography = ArDriveTypographyNew.of(context);
+
+              return buildPage(
+                BlocBuilder<AppBannerBloc, AppBannerState>(
+                  builder: (context, state) {
+                    return Column(
+                      children: [
+                        if (state is AppBannerVisible)
+                          Container(
+                            height: 45,
+                            width: double.maxFinite,
+                            color: colorTokens.buttonPrimaryDefault,
+                            alignment: Alignment.center,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Spacer(),
+                                ArDriveIcons.asc(
+                                  color: colorTokens.textOnPrimary,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                // move two pixels above
+                                Transform(
+                                  transform:
+                                      Matrix4.translationValues(0.0, -2.0, 0.0),
+                                  child: RichText(
+                                    text: TextSpan(
+                                      children: [
+                                        TextSpan(
+                                          text:
+                                              'ArDrive now supports thumbnails! You can ',
+                                          style: typography.paragraphNormal(
+                                              fontWeight: ArFontWeight.semiBold,
+                                              color: colorTokens.textOnPrimary),
+                                        ),
+                                        TextSpan(
+                                          text: 'add them now!',
+                                          recognizer: TapGestureRecognizer()
+                                            ..onTap = () {
+                                              showArDriveDialog(context,
+                                                  content:
+                                                      const MultiThumbnailCreationWarningModal());
+                                            },
+                                          style: typography
+                                              .paragraphNormal(
+                                                  fontWeight:
+                                                      ArFontWeight.semiBold,
+                                                  color:
+                                                      colorTokens.textOnPrimary)
+                                              .copyWith(
+                                                decoration:
+                                                    TextDecoration.underline,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const Spacer(),
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8.0),
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      context
+                                          .read<AppBannerBloc>()
+                                          .add(const AppBannerCloseEvent());
+                                    },
+                                    child: ArDriveIcons.x(
+                                      color: colorTokens.textOnPrimary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        Flexible(
+                          child: Row(
+                            children: [
+                              const AppSideBar(),
+                              Container(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .backgroundColor,
+                                width: 16,
+                              ),
+                              Expanded(
+                                child: Scaffold(
+                                  backgroundColor: ArDriveTheme.of(context)
+                                      .themeData
+                                      .backgroundColor,
+                                  body: widget.page,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              );
+            },
             mobile: (context) => buildPage(widget.page),
           );
         },

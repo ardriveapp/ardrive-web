@@ -54,6 +54,11 @@ class UploadCubit extends Cubit<UploadState> {
   late Drive _targetDrive;
   late FolderEntry _targetFolder;
   UploadMethod? _uploadMethod;
+  bool _uploadThumbnail = true;
+
+  void changeUploadThumbnailOption(bool uploadThumbnail) {
+    _uploadThumbnail = uploadThumbnail;
+  }
 
   void setUploadMethod(
     UploadMethod? method,
@@ -488,7 +493,7 @@ class UploadCubit extends Cubit<UploadState> {
       );
     } catch (error, stacktrace) {
       logger.e('error mounting the upload', error, stacktrace);
-      addError(error);
+      _emitError(error);
     }
   }
 
@@ -654,15 +659,23 @@ class UploadCubit extends Cubit<UploadState> {
     final uploadController = await ardriveUploader.uploadEntities(
       entities: entities,
       wallet: _auth.currentUser.wallet,
+      uploadThumbnail: _uploadThumbnail,
       type:
           _uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo,
       driveKey: driveKey,
     );
 
     uploadController.onError((tasks) {
-      logger.e('Error uploading folders. Number of tasks: ${tasks.length}');
-      addError(Exception('Error uploading'));
+      logger.i('Error uploading folders. Number of tasks: ${tasks.length}');
+      emit(UploadFailure(
+          error: UploadErrors.unknown,
+          failedTasks: tasks,
+          controller: uploadController));
       hasEmittedError = true;
+    });
+
+    uploadController.onFailedTask((task) {
+      logger.e('UploadTask failed. Task: ${task.errorInfo()}', task.error);
     });
 
     uploadController.onProgressChange(
@@ -685,14 +698,6 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onDone(
       (tasks) async {
-        logger.d('Upload folders and files finished... Verifying results');
-
-        if (tasks.any((element) => element.status == UploadStatus.failed)) {
-          logger.e('One or more tasks failed. Emitting error');
-          // if any of the files failed, we should throw an error
-          addError(Exception('Error uploading'));
-        }
-
         emit(UploadComplete());
 
         unawaited(_profileCubit.refreshBalance());
@@ -704,8 +709,6 @@ class UploadCubit extends Cubit<UploadState> {
 
   void retryUploads() {
     if (state is UploadFailure) {
-      logger.i('Retrying uploads');
-
       final controller = (state as UploadFailure).controller!;
 
       controller.retryFailedTasks(_auth.currentUser.wallet);
@@ -770,12 +773,13 @@ class UploadCubit extends Cubit<UploadState> {
       files: uploadFiles,
       wallet: _auth.currentUser.wallet,
       driveKey: driveKey,
+      uploadThumbnail: _uploadThumbnail,
       type:
           _uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo,
     );
 
     uploadController.onError((tasks) {
-      logger.e('Error uploading files. Number of tasks: ${tasks.length}');
+      logger.i('Error uploading files. Number of tasks: ${tasks.length}');
       hasEmittedError = true;
       emit(
         UploadFailure(
@@ -786,10 +790,13 @@ class UploadCubit extends Cubit<UploadState> {
       );
     });
 
+    uploadController.onFailedTask((task) {
+      logger.e('UploadTask failed. Task: ${task.errorInfo()}', task.error);
+    });
+
     uploadController.onProgressChange(
       (progress) async {
         // TODO: Save as the file is finished the upload
-
         emit(
           UploadInProgressUsingNewUploader(
             progress: progress,
@@ -804,30 +811,15 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onDone(
       (tasks) async {
-        logger.d('Upload files finished... Verifying results');
-
-        bool uploadSucced = true;
-
-        if (tasks.any((element) => element.status == UploadStatus.failed)) {
-          logger.e('One or more tasks failed. Emitting error');
-          // if any of the files failed, we should throw an error
-          addError(Exception('Error uploading'));
-
-          PlausibleEventTracker.trackUploadFailure();
-          uploadSucced = false;
-        }
-
         unawaited(_profileCubit.refreshBalance());
 
-        // all files are uploaded
-
-        logger.i('Upload finished with success');
+        logger.i(
+          'Upload finished with success. Number of tasks: ${tasks.length}',
+        );
 
         emit(UploadComplete());
 
-        if (uploadSucced) {
-          PlausibleEventTracker.trackUploadSuccess();
-        }
+        PlausibleEventTracker.trackUploadSuccess();
       },
     );
 
@@ -862,6 +854,14 @@ class UploadCubit extends Cubit<UploadState> {
               ? RevisionAction.uploadNewVersion
               : RevisionAction.create;
 
+          Thumbnail? thumbnail;
+
+          if (fileMetadata.thumbnailInfo != null) {
+            thumbnail = Thumbnail(variants: [
+              Variant.fromJson(fileMetadata.thumbnailInfo!.first.toJson())
+            ]);
+          }
+
           final entity = FileEntity(
             dataContentType: fileMetadata.dataContentType,
             dataTxId: fileMetadata.dataTxId,
@@ -872,6 +872,7 @@ class UploadCubit extends Cubit<UploadState> {
             name: fileMetadata.name,
             parentFolderId: fileMetadata.parentFolderId,
             size: fileMetadata.size,
+            thumbnail: thumbnail,
             // TODO: pinnedDataOwnerAddress
           );
 
@@ -1011,8 +1012,7 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadFailure(error: UploadErrors.unknown));
   }
 
-  @override
-  void onError(Object error, StackTrace stackTrace) {
+  void _emitError(Object error) {
     if (error is TurboUploadTimeoutException) {
       emit(UploadFailure(error: UploadErrors.turboTimeout));
 
@@ -1020,8 +1020,6 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     emit(UploadFailure(error: UploadErrors.unknown));
-    logger.e('Failed to upload file', error, stackTrace);
-    super.onError(error, stackTrace);
   }
 
   Future<void> cancelUpload() async {

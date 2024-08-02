@@ -141,16 +141,21 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         profileKey: _profileKey,
       );
 
-      _drivesBloc.selectDrive(driveId);
-
       emit(DriveAttachSuccess());
-      unawaited(_syncBloc.startSync());
+
+      /// Wait for the sync to finish before syncing the newly attached drive.
+      await _syncBloc.waitCurrentSync();
+
+      /// Then, sync and select the newly attached drive.
+      unawaited(_syncBloc
+          .startSync()
+          .then((value) => _drivesBloc.selectDrive(driveId)));
 
       PlausibleEventTracker.trackAttachDrive(
         drivePrivacy: drivePrivacy,
       );
-    } catch (err) {
-      addError(err);
+    } catch (err, stacktrace) {
+      _handleError(err, stacktrace);
     }
   }
 
@@ -244,11 +249,9 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     return null;
   }
 
-  @override
-  void onError(Object error, StackTrace stackTrace) {
-    emit(DriveAttachFailure());
-    super.onError(error, stackTrace);
+  void _handleError(Object error, StackTrace stackTrace) {
+    logger.e('Failed to attach drive. Emitting error', error, stackTrace);
 
-    logger.e('Failed to attach drive', error, stackTrace);
+    emit(DriveAttachFailure());
   }
 }

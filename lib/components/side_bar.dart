@@ -10,6 +10,7 @@ import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/config/config_service.dart';
+import 'package:ardrive/shared/blocs/banner/app_banner_bloc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
@@ -177,76 +178,86 @@ class _AppSideBarState extends State<AppSideBar> {
       controller: _scrollController,
       child: SingleChildScrollView(
         controller: _scrollController,
-        child: Container(
-          height: MediaQuery.of(context).size.height,
-          decoration: BoxDecoration(
-            border: Border(
-              right: BorderSide(
-                color: ArDriveTheme.of(context).themeData.colors.shadow,
-                width: 1,
-              ),
-            ),
-          ),
-          child: AnimatedSize(
-            duration: const Duration(milliseconds: 300),
-            child: SizedBox(
-              width: _isExpanded ? 240 : 64,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: Column(
-                      children: [
-                        const SizedBox(
-                          height: 24,
-                        ),
-                        _buildLogo(false),
-                        const SizedBox(
-                          height: 24,
-                        ),
-                        _buildDriveActionsButton(
-                          context,
-                          false,
-                        ),
-                        const SizedBox(
-                          height: 56,
-                        ),
-                        _isExpanded
-                            ? BlocBuilder<DrivesCubit, DrivesState>(
-                                builder: (context, state) {
-                                  if (state is DrivesLoadSuccess &&
-                                      (state.userDrives.isNotEmpty ||
-                                          state.sharedDrives.isNotEmpty)) {
-                                    return Flexible(
-                                      child: Padding(
-                                        padding:
-                                            const EdgeInsets.only(left: 43.0),
-                                        child: _buildAccordion(
-                                          state,
-                                          false,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                  return const SizedBox();
-                                },
-                              )
-                            : const SizedBox(),
-                      ],
-                    ),
+        child: BlocBuilder<AppBannerBloc, AppBannerState>(
+          builder: (context, state) {
+            double height = MediaQuery.of(context).size.height;
+
+            if (state is AppBannerVisible) {
+              height -= 45;
+            }
+
+            return Container(
+              height: height,
+              decoration: BoxDecoration(
+                border: Border(
+                  right: BorderSide(
+                    color: ArDriveTheme.of(context).themeData.colors.shadow,
+                    width: 1,
                   ),
-                  const SizedBox(
-                    height: 16,
-                  ),
-                  _isExpanded
-                      ? const SizedBox(
-                          height: 16,
-                        )
-                      : const Spacer(),
-                  _buildSideBarBottom(),
-                ],
+                ),
               ),
-            ),
-          ),
+              child: AnimatedSize(
+                duration: const Duration(milliseconds: 300),
+                child: SizedBox(
+                  width: _isExpanded ? 240 : 64,
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          children: [
+                            const SizedBox(
+                              height: 24,
+                            ),
+                            _buildLogo(false),
+                            const SizedBox(
+                              height: 24,
+                            ),
+                            _buildDriveActionsButton(
+                              context,
+                              false,
+                            ),
+                            const SizedBox(
+                              height: 56,
+                            ),
+                            _isExpanded
+                                ? BlocBuilder<DrivesCubit, DrivesState>(
+                                    builder: (context, state) {
+                                      if (state is DrivesLoadSuccess &&
+                                          (state.userDrives.isNotEmpty ||
+                                              state.sharedDrives.isNotEmpty)) {
+                                        return Flexible(
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(
+                                                left: 43.0),
+                                            child: _buildAccordion(
+                                              state,
+                                              false,
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                      return const SizedBox();
+                                    },
+                                  )
+                                : const SizedBox(),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(
+                        height: 16,
+                      ),
+                      _isExpanded
+                          ? const SizedBox(
+                              height: 16,
+                            )
+                          : const Spacer(),
+                      _buildSideBarBottom(),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -281,6 +292,8 @@ class _AppSideBarState extends State<AppSideBar> {
   }
 
   Widget _buildAccordion(DrivesLoadSuccess state, bool isMobile) {
+    final typography = ArDriveTypographyNew.of(context);
+
     return ArDriveAccordion(
       contentPadding: isMobile ? const EdgeInsets.all(4) : null,
       key: ValueKey(state.userDrives.map((e) => e.name)),
@@ -291,9 +304,9 @@ class _AppSideBarState extends State<AppSideBar> {
             isExpanded: true,
             Text(
               appLocalizationsOf(context).publicDrives,
-              style: ArDriveTypography.body.buttonLargeBold().copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: typography.paragraphNormal(
+                fontWeight: ArFontWeight.bold,
+              ),
             ),
             state.userDrives
                 .where((element) => element.isPublic)
@@ -319,9 +332,9 @@ class _AppSideBarState extends State<AppSideBar> {
             isExpanded: true,
             Text(
               appLocalizationsOf(context).privateDrives,
-              style: ArDriveTypography.body
-                  .buttonLargeBold()
-                  .copyWith(fontWeight: FontWeight.w700),
+              style: typography.paragraphNormal(
+                fontWeight: ArFontWeight.bold,
+              ),
             ),
             state.userDrives
                 .where((element) => element.isPrivate)
@@ -342,9 +355,9 @@ class _AppSideBarState extends State<AppSideBar> {
             isExpanded: true,
             Text(
               appLocalizationsOf(context).sharedDrives,
-              style: ArDriveTypography.body
-                  .buttonLargeBold()
-                  .copyWith(fontWeight: FontWeight.w700),
+              style: typography.paragraphNormal(
+                fontWeight: ArFontWeight.bold,
+              ),
             ),
             state.sharedDrives
                 .map(
@@ -675,6 +688,8 @@ class DriveListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+
     return GestureDetector(
       key: key,
       onTap: onTap,
@@ -693,19 +708,15 @@ class DriveListTile extends StatelessWidget {
                 child: Text(
                   drive.name,
                   style: isSelected
-                      ? ArDriveTypography.body
-                          .buttonNormalBold(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgDefault,
-                          )
-                          .copyWith(fontWeight: FontWeight.w700)
-                      : ArDriveTypography.body.buttonNormalRegular(
+                      ? typography.paragraphNormal(
+                          fontWeight: ArFontWeight.semiBold,
+                        )
+                      : typography.paragraphNormal(
+                          fontWeight: ArFontWeight.semiBold,
                           color: ArDriveTheme.of(context)
                               .themeData
-                              .colors
-                              .themeAccentDisabled,
+                              .colorTokens
+                              .textLow,
                         ),
                 ),
               ),
