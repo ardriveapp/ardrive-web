@@ -112,6 +112,7 @@ class _ProfileCardState extends State<ProfileCard> {
     required bool isMobile,
   }) {
     final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return ArDriveCard(
       contentPadding: const EdgeInsets.all(0),
       width: 281,
@@ -257,34 +258,14 @@ class _ProfileCardState extends State<ProfileCard> {
               [
                 const SizedBox(height: 8),
                 Padding(
-                  padding: const EdgeInsets.only(left: 30.0),
+                  padding: const EdgeInsets.only(left: 30.0, right: 16),
                   child: ArDriveToggleSwitch(
-                    value: context
-                        .read<ConfigService>()
-                        .config
-                        .enableSyncFromSnapshot,
-                    text: 'Sync From Snapshots',
-                    textStyle: typography.paragraphNormal(
-                      fontWeight: ArFontWeight.semiBold,
-                    ),
-                    onChanged: (value) {
-                      final config = context.read<ConfigService>().config;
-                      context.read<ConfigService>().updateAppConfig(
-                            config.copyWith(
-                              enableSyncFromSnapshot: value,
-                            ),
-                          );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.only(left: 30.0),
-                  child: ArDriveToggleSwitch(
+                    alignRight: true,
                     value: context.read<ConfigService>().config.autoSync,
-                    text: 'Auto Sync',
+                    text: 'Automatic Sync',
                     textStyle: typography.paragraphNormal(
                       fontWeight: ArFontWeight.semiBold,
+                      color: colorTokens.textLow,
                     ),
                     onChanged: (value) {
                       final config = context.read<ConfigService>().config;
@@ -298,13 +279,15 @@ class _ProfileCardState extends State<ProfileCard> {
                 ),
                 const SizedBox(height: 8),
                 Padding(
-                  padding: const EdgeInsets.only(left: 30.0),
+                  padding: const EdgeInsets.only(left: 30.0, right: 16),
                   child: ArDriveToggleSwitch(
+                    alignRight: true,
                     value:
                         context.read<ConfigService>().config.uploadThumbnails,
-                    text: 'Upload Thumbnails',
+                    text: 'Upload with thumbnails',
                     textStyle: typography.paragraphNormal(
                       fontWeight: ArFontWeight.semiBold,
+                      color: colorTokens.textLow,
                     ),
                     onChanged: (value) {
                       final config = context.read<ConfigService>().config;
@@ -316,12 +299,35 @@ class _ProfileCardState extends State<ProfileCard> {
                     },
                   ),
                 ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.only(left: 30.0, right: 16),
+                  child: ArDriveToggleSwitch(
+                    alignRight: true,
+                    value: context
+                        .read<ConfigService>()
+                        .config
+                        .enableSyncFromSnapshot,
+                    text: 'Sync From Snapshots',
+                    textStyle: typography.paragraphNormal(
+                      fontWeight: ArFontWeight.semiBold,
+                      color: colorTokens.textLow,
+                    ),
+                    onChanged: (value) {
+                      final config = context.read<ConfigService>().config;
+                      context.read<ConfigService>().updateAppConfig(
+                            config.copyWith(
+                              enableSyncFromSnapshot: value,
+                            ),
+                          );
+                    },
+                  ),
+                ),
               ],
             ),
           ]),
-          const SizedBox(height: 8),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            padding: const EdgeInsets.only(right: 12.0, left: 16, top: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
