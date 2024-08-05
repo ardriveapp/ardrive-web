@@ -7,15 +7,18 @@ import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/pin_indicator.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
+import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
+import 'package:ardrive/drive_explorer/thumbnail/thumbnail_bloc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/file_type_helper.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -28,32 +31,39 @@ class DriveExplorerItemTile extends TableRowWidget {
     required String license,
     required Function() onPressed,
     required bool isHidden,
+    required ArdriveTypographyNew typography,
   }) : super(
           [
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: Text(
                 name,
-                style: ArDriveTypography.body.buttonNormalBold().copyWith(
-                      color: isHidden ? Colors.grey : null,
-                    ),
+                style: typography.paragraphNormal(
+                  color: isHidden ? Colors.grey : null,
+                  fontWeight: ArFontWeight.bold,
+                ),
                 overflow: TextOverflow.fade,
                 maxLines: 1,
                 softWrap: false,
               ),
             ),
-            Text(size, style: _driveExplorerItemTileTextStyle(isHidden)),
-            Text(lastUpdated, style: _driveExplorerItemTileTextStyle(isHidden)),
-            Text(dateCreated, style: _driveExplorerItemTileTextStyle(isHidden)),
+            Text(size,
+                style: _driveExplorerItemTileTextStyle(isHidden, typography)),
+            Text(lastUpdated,
+                style: _driveExplorerItemTileTextStyle(isHidden, typography)),
+            Text(dateCreated,
+                style: _driveExplorerItemTileTextStyle(isHidden, typography)),
             Text(license, style: ArDriveTypography.body.captionRegular()),
           ],
         );
 }
 
-TextStyle _driveExplorerItemTileTextStyle(bool isHidden) =>
-    ArDriveTypography.body
-        .captionRegular()
-        .copyWith(color: isHidden ? Colors.grey : null);
+TextStyle _driveExplorerItemTileTextStyle(
+        bool isHidden, ArdriveTypographyNew typography) =>
+    typography.paragraphNormal(
+      color: isHidden ? Colors.grey : null,
+      fontWeight: ArFontWeight.bold,
+    );
 
 class DriveExplorerItemTileLeading extends StatelessWidget {
   const DriveExplorerItemTileLeading({
@@ -74,6 +84,92 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
   }
 
   Widget _buildFileIcon(BuildContext context) {
+    if (item is FileDataTableItem && FileTypeHelper.isImage(item.contentType)) {
+      final file = item as FileDataTableItem;
+
+      return ArDriveCard(
+        width: 30,
+        height: 30,
+        elevation: 0,
+        contentPadding: EdgeInsets.zero,
+        content: Stack(
+          children: [
+            BlocProvider(
+              create: (context) => ThumbnailBloc(
+                  thumbnailRepository: context.read<ThumbnailRepository>())
+                ..add(
+                  GetThumbnail(fileDataTableItem: file),
+                ),
+              child: BlocBuilder<ThumbnailBloc, ThumbnailState>(
+                builder: (context, state) {
+                  if (state is ThumbnailLoading) {
+                    return const SizedBox();
+                  }
+
+                  if (state is ThumbnailLoaded) {
+                    if (state.thumbnail.url != null) {
+                      return Align(
+                        alignment: Alignment.center,
+                        child: Image.network(
+                          state.thumbnail.url!,
+                          width: 30,
+                          height: 30,
+                          filterQuality: FilterQuality.high,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return getIconForContentType(
+                              item.contentType,
+                            ).copyWith(
+                              color: isHidden ? Colors.grey : null,
+                            );
+                          },
+                        ),
+                      );
+                    }
+
+                    return Align(
+                      alignment: Alignment.center,
+                      child: Image.memory(
+                        state.thumbnail.data!,
+                        width: 30,
+                        height: 30,
+                        filterQuality: FilterQuality.low,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          logger.d('Error loading thumbnail: $error');
+                          return getIconForContentType(
+                            item.contentType,
+                          ).copyWith(
+                            color: isHidden ? Colors.grey : null,
+                          );
+                        },
+                      ),
+                    );
+                  }
+
+                  return Align(
+                    alignment: Alignment.center,
+                    child: getIconForContentType(
+                      item.contentType,
+                    ).copyWith(
+                      color: isHidden ? Colors.grey : null,
+                    ),
+                  );
+                },
+              ),
+            ),
+            if (item.fileStatusFromTransactions != null)
+              Positioned(
+                right: 3,
+                bottom: 3,
+                child: _buildFileStatus(context),
+              ),
+          ],
+        ),
+        backgroundColor: ArDriveTheme.of(context).themeData.backgroundColor,
+      );
+    }
+
     return ArDriveCard(
       width: 30,
       height: 30,
@@ -83,10 +179,17 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
         children: [
           Align(
             alignment: Alignment.center,
-            child: getIconForContentType(
-              item.contentType,
-            ).copyWith(
-              color: isHidden ? Colors.grey : null,
+            child: GestureDetector(
+              onTap: () {
+                context
+                    .read<ThumbnailRepository>()
+                    .uploadThumbnail(fileId: item.id);
+              },
+              child: getIconForContentType(
+                item.contentType,
+              ).copyWith(
+                color: isHidden ? Colors.grey : null,
+              ),
             ),
           ),
           if (item.fileStatusFromTransactions != null)

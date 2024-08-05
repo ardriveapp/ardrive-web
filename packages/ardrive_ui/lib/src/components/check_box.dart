@@ -1,5 +1,4 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:ardrive_ui/src/constants/size_constants.dart';
 import 'package:flutter/material.dart';
 
 // TODO: We only set the checked state on the initial state, to change the state the user must interact with the checkbox.

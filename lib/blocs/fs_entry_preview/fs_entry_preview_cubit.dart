@@ -32,8 +32,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   final SecretKey? _fileKey;
 
   StreamSubscription? _entrySubscription;
-  static final ValueNotifier<ImagePreviewNotification> imagePreviewNotifier =
-      ValueNotifier<ImagePreviewNotification>(ImagePreviewNotification());
+  static final ValueNotifier<ImagePreviewNotification?> imagePreviewNotifier =
+      ValueNotifier<ImagePreviewNotification?>(null);
 
   final previewMaxFileSize = 1024 * 1024 * 100;
   final allowedPreviewContentTypes = [];
@@ -180,10 +180,15 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     FileEntry file,
     String dataUrl,
   ) async {
+    if (file.dataContentType == null) {
+      emit(FsEntryPreviewUnavailable());
+      return;
+    }
+
     imagePreviewNotifier.value = ImagePreviewNotification(
       isLoading: true,
       filename: file.name,
-      contentType: file.dataContentType,
+      contentType: file.dataContentType!,
     );
 
     emit(FsEntryPreviewImage(previewUrl: dataUrl));
@@ -428,10 +433,16 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     if (isClosed) {
       return;
     }
+
+    if (file.dataContentType == null) {
+      emit(FsEntryPreviewUnavailable());
+      return;
+    }
+
     imagePreviewNotifier.value = ImagePreviewNotification(
       dataBytes: dataBytes,
       filename: file.name,
-      contentType: file.dataContentType,
+      contentType: file.dataContentType!,
     );
     emit(FsEntryPreviewImage(previewUrl: dataUrl));
   }

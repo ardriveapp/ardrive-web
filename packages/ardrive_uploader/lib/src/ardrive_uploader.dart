@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive_uploader/src/constants.dart';
 import 'package:ardrive_uploader/src/upload_dispatcher.dart';
 import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
 import 'package:pst/pst.dart';
+import 'package:uuid/uuid.dart';
 
 enum UploadType { turbo, d2n }
 
@@ -18,6 +20,7 @@ abstract class ArDriveUploader {
     required Wallet wallet,
     SecretKey? driveKey,
     required UploadType type,
+    bool uploadThumbnail = true,
   }) {
     throw UnimplementedError();
   }
@@ -27,6 +30,7 @@ abstract class ArDriveUploader {
     required Wallet wallet,
     SecretKey? driveKey,
     required UploadType type,
+    bool uploadThumbnail = true,
   }) {
     throw UnimplementedError();
   }
@@ -38,6 +42,17 @@ abstract class ArDriveUploader {
     Function(ARFSUploadMetadata)? skipMetadataUpload,
     Function(ARFSUploadMetadata)? onCreateMetadata,
     required UploadType type,
+    bool uploadThumbnail = true,
+  }) {
+    throw UnimplementedError();
+  }
+
+  Future<UploadController> uploadThumbnail({
+    required IOFile file,
+    required Wallet wallet,
+    required UploadType type,
+    required ThumbnailUploadMetadata thumbnailMetadata,
+    SecretKey? fileKey,
   }) {
     throw UnimplementedError();
   }
@@ -106,6 +121,7 @@ class _ArDriveUploader implements ArDriveUploader {
     required Wallet wallet,
     SecretKey? driveKey,
     required UploadType type,
+    bool uploadThumbnail = true,
   }) async {
     final dataBundler = _dataBundlerFactory.createDataBundler(
       type,
@@ -116,6 +132,10 @@ class _ArDriveUploader implements ArDriveUploader {
       streamedUploadFactory: _streamedUploadFactory,
     );
 
+    final thumbnailStrategy = UploadThumbnailStrategy(
+        streamedUploadFactory: _streamedUploadFactory,
+        dataBundler: dataBundler);
+
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
       UploadDispatcher(
@@ -123,6 +143,7 @@ class _ArDriveUploader implements ArDriveUploader {
         uploadStrategy: _uploadFileStrategyFactory.createUploadStrategy(
           type: type,
         ),
+        uploadThumbnailStrategy: thumbnailStrategy,
         uploadFolderStrategy: uploadFolderStrategy,
       ),
       numOfWorkers: 1,
@@ -140,6 +161,9 @@ class _ArDriveUploader implements ArDriveUploader {
       content: [metadata],
       encryptionKey: driveKey,
       type: type,
+      uploadThumbnail:
+          supportedImageTypesForThumbnails.contains(file.contentType) &&
+              uploadThumbnail,
     );
 
     uploadController.addTask(uploadTask);
@@ -154,6 +178,7 @@ class _ArDriveUploader implements ArDriveUploader {
     required List<(ARFSUploadMetadataArgs, IOFile)> files,
     required Wallet wallet,
     SecretKey? driveKey,
+    bool uploadThumbnail = true,
     required UploadType type,
   }) async {
     logger.i('Creating a new upload controller using the upload type $type');
@@ -174,13 +199,16 @@ class _ArDriveUploader implements ArDriveUploader {
       dataBundler: dataBundler,
       uploadStrategy: uploadFileStrategy,
       uploadFolderStrategy: uploadFolderStrategy,
+      uploadThumbnailStrategy: UploadThumbnailStrategy(
+          streamedUploadFactory: _streamedUploadFactory,
+          dataBundler: dataBundler),
     );
 
     final uploadController = UploadController(
       StreamController<UploadProgress>(),
       uploadSender,
-      numOfWorkers: driveKey != null ? 3 : 5,
-      maxTasksPerWorker: driveKey != null ? 1 : 3,
+      numOfWorkers: driveKey != null ? 2 : 5,
+      maxTasksPerWorker: 3,
     );
 
     for (var f in files) {
@@ -198,6 +226,9 @@ class _ArDriveUploader implements ArDriveUploader {
         content: [metadata],
         encryptionKey: driveKey,
         type: type,
+        uploadThumbnail:
+            supportedImageTypesForThumbnails.contains(f.$2.contentType) &&
+                uploadThumbnail,
       );
 
       uploadController.addTask(fileTask);
@@ -219,6 +250,7 @@ class _ArDriveUploader implements ArDriveUploader {
     Function(ARFSUploadMetadata p1)? skipMetadataUpload,
     Function(ARFSUploadMetadata p1)? onCreateMetadata,
     UploadType type = UploadType.turbo,
+    bool uploadThumbnail = true,
   }) async {
     final dataBundler = _dataBundlerFactory.createDataBundler(
       type,
@@ -236,6 +268,10 @@ class _ArDriveUploader implements ArDriveUploader {
       dataBundler: dataBundler,
       uploadStrategy: uploadStrategy,
       uploadFolderStrategy: uploadFolderStrategy,
+      uploadThumbnailStrategy: UploadThumbnailStrategy(
+        dataBundler: dataBundler,
+        streamedUploadFactory: _streamedUploadFactory,
+      ),
     );
 
     final filesWitMetadatas = <(ARFSFileUploadMetadata, IOFile)>[];
@@ -282,6 +318,9 @@ class _ArDriveUploader implements ArDriveUploader {
         encryptionKey: driveKey,
         content: [f.$1],
         type: type,
+        uploadThumbnail:
+            supportedImageTypesForThumbnails.contains(f.$2.contentType) &&
+                uploadThumbnail,
       );
 
       uploadController.addTask(fileTask);
@@ -308,14 +347,52 @@ class _ArDriveUploader implements ArDriveUploader {
 
     return uploadController;
   }
-}
 
-class DataResultWithContents<T> {
-  final T dataItemResult;
-  final List<ARFSUploadMetadata> contents;
+  @override
+  Future<UploadController> uploadThumbnail({
+    required IOFile file,
+    required Wallet wallet,
+    required UploadType type,
+    required ThumbnailUploadMetadata thumbnailMetadata,
+    SecretKey? fileKey,
+  }) async {
+    final dataBundler = _dataBundlerFactory.createDataBundler(
+      type,
+    );
 
-  DataResultWithContents({
-    required this.dataItemResult,
-    required this.contents,
-  });
+    final UploadFileStrategy uploadFileStrategy = UploadFileUsingDataItemFiles(
+        streamedUploadFactory: _streamedUploadFactory);
+
+    final uploadController = UploadController(
+      StreamController<UploadProgress>(),
+      UploadDispatcher(
+        dataBundler: dataBundler,
+        uploadStrategy: uploadFileStrategy,
+        uploadFolderStrategy: UploadFolderStructureAsBundleStrategy(
+          dataBundler: dataBundler,
+          streamedUploadFactory: _streamedUploadFactory,
+        ),
+        uploadThumbnailStrategy: UploadThumbnailStrategy(
+          streamedUploadFactory: _streamedUploadFactory,
+          dataBundler: _dataBundlerFactory.createDataBundler(type),
+        ),
+      ),
+      numOfWorkers: 1,
+      maxTasksPerWorker: 1,
+    );
+
+    final uploadTask = ThumbnailUploadTask(
+      file: file,
+      metadata: thumbnailMetadata,
+      type: type,
+      id: Uuid().v4(),
+      encryptionKey: fileKey,
+    );
+
+    uploadController.addTask(uploadTask);
+
+    uploadController.sendTasks(wallet);
+
+    return uploadController;
+  }
 }

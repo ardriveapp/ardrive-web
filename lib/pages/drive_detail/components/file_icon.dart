@@ -1,6 +1,6 @@
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/utils/file_type_helper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/material.dart';
 
 class ArDriveFileIcon extends StatelessWidget {

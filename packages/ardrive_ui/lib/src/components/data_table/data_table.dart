@@ -1,5 +1,4 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:ardrive_ui/src/constants/size_constants.dart';
 import 'package:ardrive_ui/src/styles/colors/global_colors.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';

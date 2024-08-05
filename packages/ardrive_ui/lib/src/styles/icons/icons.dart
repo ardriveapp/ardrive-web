@@ -481,4 +481,9 @@ class ArDriveIcons {
         size: size,
         color: color,
       );
+  static ArDriveIcon asc({double? size, Color? color}) => ArDriveIcon(
+        icon: ArDriveIconsData.asc,
+        size: size,
+        color: color,
+      );
 }

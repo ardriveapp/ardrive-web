@@ -561,6 +561,9 @@ enum UploadStatus {
   /// The upload has failed
   failed,
 
+  /// uploading thumbnail
+  uploadingThumbnail,
+
   /// The upload has been canceled
   canceled,
 }

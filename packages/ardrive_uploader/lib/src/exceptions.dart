@@ -128,3 +128,15 @@ class UnderFundException implements ArDriveUploaderExceptions {
   @override
   Object? error;
 }
+
+class ThumbnailUploadException implements UploadStrategyException {
+  ThumbnailUploadException({
+    required this.message,
+    this.error,
+  });
+
+  @override
+  final String message;
+  @override
+  Object? error;
+}

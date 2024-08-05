@@ -1,5 +1,6 @@
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
+import 'package:ardrive/models/models.dart';
 
 abstract class FileRepository {
   Future<String> getFilePath(String driveId, String fileId);

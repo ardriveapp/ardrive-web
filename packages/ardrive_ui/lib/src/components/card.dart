@@ -16,6 +16,7 @@ class ArDriveCard extends StatelessWidget {
     this.width,
     this.boxShadow,
     this.border,
+    this.withRedLineOnTop = false,
   });
 
   final Color? backgroundColor;
@@ -27,6 +28,7 @@ class ArDriveCard extends StatelessWidget {
   final double? width;
   final BoxShadowCard? boxShadow;
   final Border? border;
+  final bool withRedLineOnTop;
 
   @override
   Widget build(BuildContext context) {
@@ -50,9 +52,23 @@ class ArDriveCard extends StatelessWidget {
         ),
         child: Padding(
           padding: contentPadding,
-          child: content,
+          child: withRedLineOnTop ? _buildRedLineOnTop(context) : content,
         ),
       ),
+    );
+  }
+
+  Widget _buildRedLineOnTop(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 6,
+          child: Container(
+            color: ArDriveTheme.of(context).themeData.colorTokens.containerRed,
+          ),
+        ),
+        content,
+      ],
     );
   }
 

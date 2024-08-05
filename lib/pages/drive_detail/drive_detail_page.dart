@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:ardrive/app_shell.dart';
@@ -12,18 +13,23 @@ import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_state.dart';
 import 'package:ardrive/components/app_bottom_bar.dart';
 import 'package:ardrive/components/app_top_bar.dart';
 import 'package:ardrive/components/components.dart';
+import 'package:ardrive/components/create_snapshot_dialog.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/components/drive_detach_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/fs_entry_license_form.dart';
+import 'package:ardrive/components/keyboard_handler.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/components/pin_file_dialog.dart';
 import 'package:ardrive/components/prompt_to_snapshot_dialog.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/dev_tools/app_dev_tools.dart';
+import 'package:ardrive/dev_tools/shortcut_handler.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/entities/entities.dart' as entities;
+import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/license.dart';
@@ -147,34 +153,32 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
             }
           },
           child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
+            buildWhen: (previous, current) {
+              return widget.context.read<SyncCubit>().state is! SyncInProgress;
+            },
             builder: (context, driveDetailState) {
               if (driveDetailState is DriveDetailLoadInProgress) {
                 return const Center(child: CircularProgressIndicator());
               } else if (driveDetailState is DriveInitialLoading) {
-                return ScreenTypeLayout.builder(
-                  mobile: (context) {
-                    return Scaffold(
-                      drawerScrimColor: Colors.transparent,
-                      drawer: const AppSideBar(),
-                      appBar: const MobileAppBar(),
-                      body: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Center(
-                          child: Text(
-                            appLocalizationsOf(context)
-                                .driveDoingInitialSetupMessage,
-                            style: ArDriveTypography.body.buttonLargeBold(),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                  desktop: (context) => Scaffold(
-                    drawerScrimColor: Colors.transparent,
-                    body: Column(
-                      children: [
-                        const AppTopBar(),
-                        Expanded(
+                return ArDriveDevToolsShortcuts(
+                  customShortcuts: [
+                    Shortcut(
+                      modifier: LogicalKeyboardKey.shiftLeft,
+                      key: LogicalKeyboardKey.keyH,
+                      action: () {
+                        ArDriveDevTools.instance
+                            .showDevTools(optionalContext: context);
+                      },
+                    ),
+                  ],
+                  child: ScreenTypeLayout.builder(
+                    mobile: (context) {
+                      return Scaffold(
+                        drawerScrimColor: Colors.transparent,
+                        drawer: const AppSideBar(),
+                        appBar: const MobileAppBar(),
+                        body: Padding(
+                          padding: const EdgeInsets.all(8.0),
                           child: Center(
                             child: Text(
                               appLocalizationsOf(context)
@@ -183,7 +187,24 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                             ),
                           ),
                         ),
-                      ],
+                      );
+                    },
+                    desktop: (context) => Scaffold(
+                      drawerScrimColor: Colors.transparent,
+                      body: Column(
+                        children: [
+                          const AppTopBar(),
+                          Expanded(
+                            child: Center(
+                              child: Text(
+                                appLocalizationsOf(context)
+                                    .driveDoingInitialSetupMessage,
+                                style: ArDriveTypography.body.buttonLargeBold(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -214,36 +235,48 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                 final canDownloadMultipleFiles = driveDetailState.multiselect &&
                     context.read<DriveDetailCubit>().selectedItems.isNotEmpty;
 
-                return ScreenTypeLayout.builder(
-                  desktop: (context) => _desktopView(
-                    isDriveOwner: isOwner,
-                    driveDetailState: driveDetailState,
-                    hasSubfolders: hasSubfolders,
-                    hasFiles: hasFiles,
-                    canDownloadMultipleFiles: canDownloadMultipleFiles,
-                  ),
-                  mobile: (context) => Scaffold(
-                    resizeToAvoidBottomInset: false,
-                    drawerScrimColor: Colors.transparent,
-                    drawer: const AppSideBar(),
-                    appBar: (driveDetailState.showSelectedItemDetails &&
-                            context.read<DriveDetailCubit>().selectedItem !=
-                                null)
-                        ? MobileAppBar(
-                            leading: ArDriveIconButton(
-                              icon: ArDriveIcons.arrowLeft(),
-                              onPressed: () {
-                                context
-                                    .read<DriveDetailCubit>()
-                                    .toggleSelectedItemDetails();
-                              },
-                            ),
-                          )
-                        : null,
-                    body: _mobileView(
-                      driveDetailState,
-                      hasSubfolders,
-                      hasFiles,
+                return ArDriveDevToolsShortcuts(
+                  customShortcuts: [
+                    Shortcut(
+                      modifier: LogicalKeyboardKey.shiftLeft,
+                      key: LogicalKeyboardKey.keyH,
+                      action: () {
+                        ArDriveDevTools.instance
+                            .showDevTools(optionalContext: context);
+                      },
+                    ),
+                  ],
+                  child: ScreenTypeLayout.builder(
+                    desktop: (context) => _desktopView(
+                      isDriveOwner: isOwner,
+                      driveDetailState: driveDetailState,
+                      hasSubfolders: hasSubfolders,
+                      hasFiles: hasFiles,
+                      canDownloadMultipleFiles: canDownloadMultipleFiles,
+                    ),
+                    mobile: (context) => Scaffold(
+                      resizeToAvoidBottomInset: false,
+                      drawerScrimColor: Colors.transparent,
+                      drawer: const AppSideBar(),
+                      appBar: (driveDetailState.showSelectedItemDetails &&
+                              context.read<DriveDetailCubit>().selectedItem !=
+                                  null)
+                          ? MobileAppBar(
+                              leading: ArDriveIconButton(
+                                icon: ArDriveIcons.arrowLeft(),
+                                onPressed: () {
+                                  context
+                                      .read<DriveDetailCubit>()
+                                      .toggleSelectedItemDetails();
+                                },
+                              ),
+                            )
+                          : null,
+                      body: _mobileView(
+                        driveDetailState,
+                        hasSubfolders,
+                        hasFiles,
+                      ),
                     ),
                   ),
                 );
@@ -265,6 +298,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     required bool canDownloadMultipleFiles,
   }) {
     final driveDetailCubit = context.read<DriveDetailCubit>();
+    ArDriveTypographyNew.of(context);
 
     final isShowingHiddenFiles = driveDetailState.isShowingHiddenFiles;
 
@@ -419,7 +453,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                             ),
                                           ),
                                         ),
-                                        if (isDriveOwner)
+                                        if (isDriveOwner) ...[
                                           ArDriveDropdownItem(
                                             onClick: () {
                                               promptToRenameDrive(
@@ -430,14 +464,28 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                     .currentDrive.name,
                                               );
                                             },
-                                            content: ArDriveDropdownItemTile(
-                                              name: appLocalizationsOf(context)
+                                            content: _buildItem(
+                                              appLocalizationsOf(context)
                                                   .renameDrive,
-                                              icon: ArDriveIcons.edit(
+                                              ArDriveIcons.edit(
                                                 size: defaultIconSize,
                                               ),
                                             ),
                                           ),
+                                        ],
+                                        ArDriveDropdownItem(
+                                          onClick: () {
+                                            promptToCreateSnapshot(context,
+                                                driveDetailState.currentDrive);
+                                          },
+                                          content: _buildItem(
+                                            appLocalizationsOf(context)
+                                                .createSnapshot,
+                                            ArDriveIcons.iconCreateSnapshot(
+                                              size: defaultIconSize,
+                                            ),
+                                          ),
+                                        ),
                                         ArDriveDropdownItem(
                                           onClick: () {
                                             promptToShareDrive(
@@ -1057,7 +1105,7 @@ class MobileFolderNavigation extends StatelessWidget {
                             size: defaultIconSize,
                           ),
                         )),
-                    if (isOwner)
+                    if (isOwner) ...[
                       ArDriveDropdownItem(
                         onClick: () {
                           promptToRenameDrive(
@@ -1073,6 +1121,18 @@ class MobileFolderNavigation extends StatelessWidget {
                           ),
                         ),
                       ),
+                      ArDriveDropdownItem(
+                        onClick: () {
+                          promptToCreateSnapshot(context, state.currentDrive);
+                        },
+                        content: _buildItem(
+                          appLocalizationsOf(context).createSnapshot,
+                          ArDriveIcons.iconCreateSnapshot(
+                            size: defaultIconSize,
+                          ),
+                        ),
+                      ),
+                    ],
                     ArDriveDropdownItem(
                       onClick: () {
                         promptToShareDrive(
