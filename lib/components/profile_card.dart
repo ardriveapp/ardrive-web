@@ -262,6 +262,9 @@ class _ProfileCardState extends State<ProfileCard> {
                   _ProfileMenuAccordionItem(
                     text: 'Switch Gateway',
                     onTap: () {
+                      setState(() {
+                        _showProfileCard = false;
+                      });
                       showGatewaySwitcherModal(context);
                     },
                   ),

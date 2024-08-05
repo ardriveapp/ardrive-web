@@ -49,9 +49,17 @@ class _GatewaySwitcherModalState extends State<_GatewaySwitcherModal> {
     return BlocBuilder<GarBloc, GarState>(
       builder: (context, state) {
         if (state is LoadingGateways) {
-          return const ProgressDialog(
+          return ProgressDialog(
             title: 'Loading Gateways',
             useNewArDriveUI: true,
+            actions: [
+              ModalAction(
+                action: () {
+                  Navigator.of(context).pop();
+                },
+                title: 'Cancel',
+              ),
+            ],
           );
         }
 
@@ -220,7 +228,7 @@ class _ConfirmGatewayChange extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ArDriveStandardModalNew(
-      title: 'Gateway Switcher',
+      title: 'Switch Gateway',
       description:
           'Are you sure you want to change the gateway to ${gateway.settings.label}?',
       actions: [
