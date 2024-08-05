@@ -116,3 +116,15 @@ class UnknownNetworkException implements NetworkException {
   @override
   Object? error;
 }
+
+class UnderFundException implements ArDriveUploaderExceptions {
+  UnderFundException({
+    required this.message,
+    this.error,
+  });
+
+  @override
+  final String message;
+  @override
+  Object? error;
+}

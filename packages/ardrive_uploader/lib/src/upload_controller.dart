@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive_uploader/src/exceptions.dart';
 import 'package:ardrive_uploader/src/upload_dispatcher.dart';
 import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:arweave/arweave.dart';
@@ -181,7 +182,7 @@ class _UploadController implements UploadController {
         /// the `_uploadDispatcher` should handle all the errors and return an `UploadResult`
         logger.d('Error on UploadWorker. Task: ${e.toString()}');
 
-        _handleError(task: tasks[e.id]!, error: e);
+        _handleError(task: tasks[e.id]!, exception: e);
       },
       upload: (task) async {
         final uploadResult = await _uploadDispatcher.send(
@@ -192,7 +193,7 @@ class _UploadController implements UploadController {
         );
 
         if (!uploadResult.success) {
-          _handleError(task: task, error: uploadResult.error);
+          _handleError(task: task, exception: uploadResult.error);
         }
       },
     );
@@ -226,7 +227,7 @@ class _UploadController implements UploadController {
         /// the `_uploadDispatcher` should handle all the errors and return an `UploadResult`
         logger.d('Error on UploadWorker. Task: ${task.toString()}');
 
-        _handleError(task: task, error: e);
+        _handleError(task: task, exception: e);
       },
       upload: (task) async {
         final uploadResult = await _uploadDispatcher.send(
@@ -237,7 +238,7 @@ class _UploadController implements UploadController {
         );
 
         if (!uploadResult.success) {
-          _handleError(task: task, error: uploadResult.error);
+          _handleError(task: task, exception: uploadResult.error);
         }
       },
       maxTasks: 1,
@@ -361,6 +362,10 @@ class _UploadController implements UploadController {
 
   @override
   Future<void> cancel() async {
+    if (_isCanceled) {
+      return;
+    }
+
     workerPool?.cancel();
     _isCanceled = true;
 
@@ -398,12 +403,43 @@ class _UploadController implements UploadController {
   /// Calls the callback to the caller that the task has failed
   void _handleError({
     required UploadTask task,
-    required Object? error,
+    required Object? exception,
   }) {
+    if (_isCanceled) return;
+
     final updatedTask =
-        tasks[task.id]!.copyWith(error: error, status: UploadStatus.failed);
+        tasks[task.id]!.copyWith(error: exception, status: UploadStatus.failed);
 
     updateProgress(task: updatedTask);
+
+    if (exception is UploadStrategyException &&
+        exception.error is UnderFundException) {
+      _isCanceled = true;
+
+      final cancelableTask = tasks.values
+          .where((e) =>
+              e.status != UploadStatus.complete &&
+              e.status != UploadStatus.failed)
+          .toList();
+
+      final cancelTasksFutureAsFailedUploads = cancelableTask.map(
+        (task) async {
+          await task.cancelToken?.cancel();
+
+          task = task.copyWith(status: UploadStatus.failed);
+
+          _failedTasks.putIfAbsent(task.id, () => task);
+
+          updateProgress(task: task);
+        },
+      );
+
+      Future.wait(cancelTasksFutureAsFailedUploads).then((_) {
+        _onError(_failedTasks.values.toList());
+      });
+
+      return;
+    }
 
     /// Callback to the caller that the task has failed
     _onFailedTask(updatedTask);
