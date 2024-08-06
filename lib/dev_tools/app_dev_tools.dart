@@ -1,10 +1,8 @@
 import 'dart:convert';
 
 import 'package:ardrive/dev_tools/drives_health_check.dart';
-import 'package:ardrive/dev_tools/thumbnail_generator_poc.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/services/config/config.dart';
-import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -97,8 +95,6 @@ class AppConfigWindowManager extends StatefulWidget {
 class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
   final _windowTitle = ValueNotifier('Dev Tools');
 
-  final _devTools = ArDriveDevTools.instance;
-
   @override
   Widget build(BuildContext context) {
     final ConfigService configService = context.read<ConfigService>();
@@ -184,60 +180,6 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.number,
     );
 
-    final ArDriveDevToolOption enableQuickSyncAuthoringOption =
-        ArDriveDevToolOption(
-      name: 'enableQuickSyncAuthoring',
-      value: config.enableQuickSyncAuthoring,
-      onChange: (value) {
-        setState(() {
-          configService.updateAppConfig(
-            config.copyWith(enableQuickSyncAuthoring: value),
-          );
-        });
-      },
-      type: ArDriveDevToolOptionType.bool,
-    );
-
-    final ArDriveDevToolOption enableMultipleFileDownloadOption =
-        ArDriveDevToolOption(
-      name: 'enableMultipleFileDownload',
-      value: config.enableMultipleFileDownload,
-      onChange: (value) {
-        setState(() {
-          configService.updateAppConfig(
-            config.copyWith(enableMultipleFileDownload: value),
-          );
-        });
-      },
-      type: ArDriveDevToolOptionType.bool,
-    );
-
-    final ArDriveDevToolOption enableVideoPreviewOption = ArDriveDevToolOption(
-      name: 'enableVideoPreview',
-      value: config.enableVideoPreview,
-      onChange: (value) {
-        setState(() {
-          configService.updateAppConfig(
-            config.copyWith(enableVideoPreview: value),
-          );
-        });
-      },
-      type: ArDriveDevToolOptionType.bool,
-    );
-
-    final ArDriveDevToolOption enableAudioPreviewOption = ArDriveDevToolOption(
-      name: 'enableAudioPreview',
-      value: config.enableAudioPreview,
-      onChange: (value) {
-        setState(() {
-          configService.updateAppConfig(
-            config.copyWith(enableAudioPreview: value),
-          );
-        });
-      },
-      type: ArDriveDevToolOptionType.bool,
-    );
-
     final ArDriveDevToolOption autoSyncIntervalInSecondsOption =
         ArDriveDevToolOption(
       name: 'autoSyncIntervalInSeconds',
@@ -301,100 +243,16 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.bool,
     );
 
-    final ArDriveDevToolOption enableSeedPhreaseLogin = ArDriveDevToolOption(
-      name: 'enableSeedPhreaseLogin',
-      value: config.enableSeedPhraseLogin,
-      onChange: (value) {
-        setState(() {
-          configService.updateAppConfig(
-            config.copyWith(enableSeedPhraseLogin: value),
-          );
-        });
-      },
-      type: ArDriveDevToolOptionType.bool,
-    );
-
-    // reload option
-    final ArDriveDevToolOption turboSetDefaultData = ArDriveDevToolOption(
-      name: 'setDefaultDataOnPaymentForm',
-      value: '',
-      onChange: (value) {},
-      onInteraction: () {
-        try {
-          _devTools.context
-              ?.read<PaymentFormBloc>()
-              .add(PaymentFormPrePopulateFields());
-        } catch (e) {
-          logger.e('Error setting default data on payment form', e);
-        }
-      },
-      type: ArDriveDevToolOptionType.button,
-    );
-
-    final ArDriveDevToolOption pickImageAndGenerateThumbnailItem =
-        ArDriveDevToolOption(
-      name: 'Generate Thumbnails',
-      value: '',
-      onChange: (value) {},
-      onInteraction: () async {
-        try {
-          final BuildContext context = ArDriveDevTools().context!;
-
-          showArDriveDialog(context,
-              content:
-                  const ArDriveStandardModal(content: ThumbnailGeneratorPOC()));
-        } catch (e) {
-          logger.e('Error setting default data on payment form', e);
-        }
-      },
-      type: ArDriveDevToolOptionType.button,
-    );
-
-    final ArDriveDevToolOption forceNoFreeThanksToTurbo = ArDriveDevToolOption(
-      name: 'forceNoFreeThanksToTurbo',
-      value: config.forceNoFreeThanksToTurbo,
-      onChange: (value) {
-        setState(() {
-          configService.updateAppConfig(
-            config.copyWith(forceNoFreeThanksToTurbo: value),
-          );
-        });
-      },
-      type: ArDriveDevToolOptionType.bool,
-    );
-
-    final ArDriveDevToolOption topUpDryRun = ArDriveDevToolOption(
-      name: 'topUpDryRun',
-      value: config.topUpDryRun,
-      onChange: (value) {
-        setState(() {
-          configService.updateAppConfig(
-            config.copyWith(topUpDryRun: value),
-          );
-        });
-      },
-      type: ArDriveDevToolOptionType.bool,
-    );
-
     final List<ArDriveDevToolOption> options = [
       runHealthCheck,
       useTurboOption,
       useTurboPaymentOption,
       enableSyncFromSnapshotOption,
-      pickImageAndGenerateThumbnailItem,
       stripePublishableKey,
-      enableQuickSyncAuthoringOption,
-      enableMultipleFileDownloadOption,
-      enableVideoPreviewOption,
-      enableAudioPreviewOption,
-      enableSeedPhreaseLogin,
       allowedDataItemSizeForTurboOption,
       defaultArweaveGatewayUrlOption,
       defaultTurboUrlOption,
       autoSyncIntervalInSecondsOption,
-      turboSetDefaultData,
-      forceNoFreeThanksToTurbo,
-      topUpDryRun,
       reloadOption,
       resetOptions,
     ];

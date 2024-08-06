@@ -216,11 +216,6 @@ void main() {
         when(() => appConfig.allowedDataItemSizeForTurbo)
             .thenAnswer((invocation) => 100);
         when(() => appConfig.useTurboUpload).thenAnswer((invocation) => true);
-        when(() => appConfig.forceNoFreeThanksToTurbo)
-            .thenAnswer((invocation) => false);
-        when(() => appConfig.fakeTurboCredits).thenAnswer((invocation) => null);
-        when(() => appConfig.topUpDryRun).thenAnswer((invocation) => false);
-
         when(() => configService.config).thenAnswer((invocation) => appConfig);
 
         when(() => tabVisibility.isTabFocused())

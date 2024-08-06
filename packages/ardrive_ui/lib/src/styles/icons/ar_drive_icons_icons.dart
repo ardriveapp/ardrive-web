@@ -13,8 +13,9 @@
 ///
 ///
 ///
-library;
 // ignore_for_file: constant_identifier_names
+
+library;
 
 import 'package:flutter/widgets.dart';
 
@@ -152,6 +153,8 @@ class ArDriveIconsData {
       IconData(0xe83e, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData detach =
       IconData(0xe83f, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData question_circle =
+      IconData(0xe840, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData manifest_icon_flattened =
       IconData(0xe841, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData download_2 =
@@ -168,6 +171,12 @@ class ArDriveIconsData {
       IconData(0xe848, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData public_drive =
       IconData(0xe849, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData out_right =
+      IconData(0xe84a, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData download_new =
+      IconData(0xe84b, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData copy_1 =
+      IconData(0xe84c, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData arrow_download =
       IconData(0xe880, fontFamily: _kFontFam, fontPackage: _kFontPkg);
 }

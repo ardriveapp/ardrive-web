@@ -3,7 +3,9 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
 class IconThemeSwitcher extends StatelessWidget {
-  const IconThemeSwitcher({super.key});
+  const IconThemeSwitcher({super.key, this.color});
+
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +16,7 @@ class IconThemeSwitcher extends StatelessWidget {
       ),
       customDarkModeContent: Icon(
         Icons.sunny,
-        color: colorTokens.iconLow,
+        color: color ?? colorTokens.iconLow,
       ),
     );
   }

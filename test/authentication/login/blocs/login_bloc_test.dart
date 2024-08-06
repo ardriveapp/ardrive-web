@@ -22,7 +22,6 @@ void main() {
   late EthereumProviderService mockEthereumProviderService;
   late UserRepository mockUserRepository;
   late TurboUploadService mockTurboUploadService;
-  late ConfigService mockConfigService;
 
   late DownloadService mockDownloadService;
   late ArweaveService mockArweaveService;
@@ -42,7 +41,6 @@ void main() {
       arweaveService: mockArweaveService,
       downloadService: mockDownloadService,
       userRepository: mockUserRepository,
-      configService: mockConfigService,
       profileCubit: mockProfileCubit,
     );
   }
@@ -55,7 +53,6 @@ void main() {
     mockUserRepository = MockUserRepository();
     mockDownloadService = MockDownloadService();
     mockArweaveService = MockArweaveService();
-    mockConfigService = MockConfigService();
     mockProfileCubit = MockProfileCubit();
   });
 
@@ -76,7 +73,6 @@ void main() {
           arweaveService: mockArweaveService,
           downloadService: mockDownloadService,
           userRepository: mockUserRepository,
-          configService: mockConfigService,
           profileCubit: mockProfileCubit,
         );
       },
@@ -112,7 +108,6 @@ void main() {
           arweaveService: mockArweaveService,
           downloadService: mockDownloadService,
           userRepository: mockUserRepository,
-          configService: mockConfigService,
           profileCubit: mockProfileCubit,
         );
       },
@@ -150,7 +145,6 @@ void main() {
           arweaveService: mockArweaveService,
           downloadService: mockDownloadService,
           userRepository: mockUserRepository,
-          configService: mockConfigService,
           profileCubit: mockProfileCubit,
         );
       },
@@ -256,7 +250,6 @@ void main() {
           arweaveService: mockArweaveService,
           downloadService: mockDownloadService,
           userRepository: mockUserRepository,
-          configService: mockConfigService,
           profileCubit: mockProfileCubit,
         );
       },

@@ -10,7 +10,6 @@ import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/models/enums.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
-import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
@@ -346,19 +345,18 @@ class NewButton extends StatelessWidget {
               name: appLocalizations.createManifest,
               icon: ArDriveIcons.manifest(size: defaultIconSize),
             ),
-          if (context.read<ConfigService>().config.enableQuickSyncAuthoring)
-            ArDriveNewButtonItem(
-              onClick: () {
-                promptToCreateSnapshot(
-                  context,
-                  drive!,
-                );
-              },
-              isDisabled: !driveDetailState.hasWritePermissions ||
-                  driveDetailState.driveIsEmpty,
-              name: appLocalizations.newSnapshot,
-              icon: ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
-            ),
+          ArDriveNewButtonItem(
+            onClick: () {
+              promptToCreateSnapshot(
+                context,
+                drive!,
+              );
+            },
+            isDisabled: !driveDetailState.hasWritePermissions ||
+                driveDetailState.driveIsEmpty,
+            name: appLocalizations.newSnapshot,
+            icon: ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
+          ),
         ]
       ];
     }

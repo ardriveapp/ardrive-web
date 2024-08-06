@@ -17,11 +17,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class TurboReviewView extends StatefulWidget {
-  final bool dryRun;
-  const TurboReviewView({
-    super.key,
-    required this.dryRun,
-  });
+  const TurboReviewView({super.key});
 
   @override
   State<TurboReviewView> createState() => _TurboReviewViewState();
@@ -617,7 +613,6 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                             PaymentReviewFinishPayment(
                               email: _emailController.text,
                               userAcceptedToReceiveEmails: _emailChecked,
-                              dryRun: widget.dryRun,
                             ),
                           );
                     },
@@ -651,7 +646,6 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                             PaymentReviewFinishPayment(
                               email: _emailController.text,
                               userAcceptedToReceiveEmails: _emailChecked,
-                              dryRun: widget.dryRun,
                             ),
                           );
                     },
@@ -738,7 +732,6 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                             PaymentReviewFinishPayment(
                               email: _emailController.text,
                               userAcceptedToReceiveEmails: _emailChecked,
-                              dryRun: widget.dryRun,
                             ),
                           );
                     },
@@ -772,7 +765,6 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                             PaymentReviewFinishPayment(
                               email: _emailController.text,
                               userAcceptedToReceiveEmails: _emailChecked,
-                              dryRun: widget.dryRun,
                             ),
                           );
                     },

@@ -70,6 +70,8 @@ class _TurboBalanceState extends State<TurboBalance> {
 
   @override
   Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4),
       child: Column(
@@ -90,13 +92,10 @@ class _TurboBalanceState extends State<TurboBalance> {
                       flex: 2,
                       child: Text(
                         appLocalizationsOf(context).turboAddCreditsBlurb,
-                        style: ArDriveTypography.body.captionRegular().copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeFgMuted,
-                            ),
+                        style: typography.paragraphNormal(
+                          color: colorTokens.textLow,
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
                       ),
                     ),
                     Flexible(
@@ -114,14 +113,10 @@ class _TurboBalanceState extends State<TurboBalance> {
                   children: [
                     Text(
                       '${convertWinstonToLiteralString(balance)} ${appLocalizationsOf(context).credits}',
-                      style: ArDriveTypography.body.captionRegular().copyWith(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 18,
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgMuted,
-                          ),
+                      style: typography.paragraphNormal(
+                        color: colorTokens.textLow,
+                        fontWeight: ArFontWeight.semiBold,
+                      ),
                     ),
                     addButton(context),
                   ],

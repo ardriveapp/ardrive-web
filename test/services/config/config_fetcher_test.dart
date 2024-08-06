@@ -30,7 +30,6 @@ void main() {
     allowedDataItemSizeForTurbo: 100,
     stripePublishableKey: 'stripeKey',
     defaultArweaveGatewayUrl: 'devGatewayUrl',
-    enableQuickSyncAuthoring: false,
   )..toJson());
 
   group('fetchConfig', () {
@@ -46,7 +45,6 @@ void main() {
 
       expect(result, isInstanceOf<AppConfig>());
       expect(result.defaultArweaveGatewayUrl, equals('gatewayUrl'));
-      expect(result.enableQuickSyncAuthoring, equals(true));
     });
 
     test('returns the dev config when flavor is dev', () async {
@@ -56,7 +54,6 @@ void main() {
 
       expect(result, isInstanceOf<AppConfig>());
       expect(result.defaultArweaveGatewayUrl, equals('devGatewayUrl'));
-      expect(result.enableQuickSyncAuthoring, equals(false));
     });
 
     test('returns the staging config when flavor is destagingv', () async {
@@ -67,7 +64,6 @@ void main() {
 
       expect(result, isInstanceOf<AppConfig>());
       expect(result.defaultArweaveGatewayUrl, equals('devGatewayUrl'));
-      expect(result.enableQuickSyncAuthoring, equals(false));
     });
     test(
         'returns the dev config when flavor is dev from env when there is no previous dev config saved on dev tools',
@@ -85,7 +81,6 @@ void main() {
 
       expect(result, isInstanceOf<AppConfig>());
       expect(result.defaultArweaveGatewayUrl, equals('https://arweave.net'));
-      expect(result.enableQuickSyncAuthoring, equals(true));
     });
   });
 
@@ -98,7 +93,6 @@ void main() {
 
       expect(result, isInstanceOf<AppConfig>());
       expect(result.defaultArweaveGatewayUrl, equals('devGatewayUrl'));
-      expect(result.enableQuickSyncAuthoring, equals(false));
     });
 
     test('loads config from env and saves to local storage if not present',
@@ -118,7 +112,6 @@ void main() {
 
       expect(result, isInstanceOf<AppConfig>());
       expect(result.defaultArweaveGatewayUrl, equals('gatewayUrl'));
-      expect(result.enableQuickSyncAuthoring, equals(true));
       verify(() => localStore.putString('config', any())).called(1);
     });
 
@@ -140,7 +133,6 @@ void main() {
 
       expect(result, isInstanceOf<AppConfig>());
       expect(result.defaultArweaveGatewayUrl, equals('gatewayUrl'));
-      expect(result.enableQuickSyncAuthoring, equals(true));
       verify(() => localStore.putString('config', any())).called(1);
     });
   });
@@ -149,7 +141,6 @@ void main() {
     test('saves the config to local storage', () {
       final config = AppConfig(
         stripePublishableKey: '',
-        enableQuickSyncAuthoring: false,
         defaultArweaveGatewayUrl: '',
         allowedDataItemSizeForTurbo: 100,
       );

@@ -170,6 +170,7 @@ Future<void> promptToUpload(
                 uploadFolders: isFolderUpload,
                 auth: context.read<ArDriveAuth>(),
                 licenseService: context.read<LicenseService>(),
+                configService: context.read<ConfigService>(),
               )..startUploadPreparation(),
             ),
             BlocProvider(
@@ -485,7 +486,10 @@ class _UploadFormState extends State<UploadForm> {
                           children: [
                             ArDriveCheckBox(
                               title: 'Upload with thumbnails',
-                              checked: true,
+                              checked: context
+                                  .read<ConfigService>()
+                                  .config
+                                  .uploadThumbnails,
                               titleStyle: typography.paragraphLarge(
                                 fontWeight: ArFontWeight.semiBold,
                               ),
