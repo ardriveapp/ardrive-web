@@ -1,0 +1,4 @@
+- Revamped account menu with additional customization options
+- Added option to enable/disable automatic sync
+- Introduced setting to enable/disable sync from snapshots
+- New feature to enable/disable upload with thumbnails

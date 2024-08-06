@@ -194,7 +194,7 @@ class ArDriveIcons {
       );
 
   static ArDriveIcon copy({double? size, Color? color}) => ArDriveIcon(
-        icon: ArDriveIconsData.copy,
+        icon: ArDriveIconsData.copy_1,
         size: size,
         color: color,
       );
@@ -206,7 +206,7 @@ class ArDriveIcons {
       );
 
   static ArDriveIcon download({double? size, Color? color}) => ArDriveIcon(
-        icon: ArDriveIconsData.download,
+        icon: ArDriveIconsData.download_new,
         size: size,
         color: color,
       );
@@ -326,7 +326,7 @@ class ArDriveIcons {
 
   // logout
   static ArDriveIcon logout({double? size, Color? color}) => ArDriveIcon(
-        icon: ArDriveIconsData.logout,
+        icon: ArDriveIconsData.out_right,
         size: size,
         color: color,
       );
@@ -347,7 +347,7 @@ class ArDriveIcons {
 
   // help
   static ArDriveIcon question({double? size, Color? color}) => ArDriveIcon(
-        icon: ArDriveIconsData.question,
+        icon: ArDriveIconsData.question_circle,
         size: size,
         color: color,
       );
@@ -421,13 +421,6 @@ class ArDriveIcons {
         color: color,
       );
 
-  // arrow-download
-  static ArDriveIcon arrowDownload({double? size, Color? color}) => ArDriveIcon(
-        icon: ArDriveIconsData.arrow_download,
-        size: size,
-        color: color,
-      );
-
   static ArDriveIcon cloudSync({double? size, Color? color}) => ArDriveIcon(
         icon: Icons.cloud_sync,
         size: size,
@@ -437,12 +430,6 @@ class ArDriveIcons {
   static ArDriveIcon detach({double? size, Color? color}) => ArDriveIcon(
         icon: ArDriveIconsData.detach,
         size: size,
-        color: color,
-      );
-
-  static ArDriveIcon download2({double? size, Color? color}) => ArDriveIcon(
-        icon: ArDriveIconsData.download_2,
-        size: size ?? 18,
         color: color,
       );
 

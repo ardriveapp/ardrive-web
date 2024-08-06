@@ -13,6 +13,7 @@ class ArDriveToggleSwitch extends StatefulWidget {
     this.onChanged,
     this.value = false,
     this.isEnabled = true,
+    this.alignRight = false,
   });
 
   final String text;
@@ -20,6 +21,7 @@ class ArDriveToggleSwitch extends StatefulWidget {
   final bool value;
   final bool isEnabled;
   final FutureOr Function(bool value)? onChanged;
+  final bool alignRight;
 
   @override
   State<ArDriveToggleSwitch> createState() => ArDriveToggleSwitchState();
@@ -107,6 +109,11 @@ class ArDriveToggleSwitchState extends State<ArDriveToggleSwitch> {
 
   @override
   Widget build(BuildContext context) {
+    final textWidget = Text(
+      widget.text,
+      style: widget.textStyle ?? ArDriveTypography.body.bodyRegular(),
+    );
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
@@ -133,20 +140,19 @@ class ArDriveToggleSwitchState extends State<ArDriveToggleSwitch> {
           setState(() {});
         },
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 4.0),
-              child: _toggle(),
-            ),
+            widget.alignRight
+                ? textWidget
+                : Padding(
+                    padding: const EdgeInsets.only(top: 4.0),
+                    child: _toggle(),
+                  ),
             const SizedBox(
               width: 8,
             ),
-            Text(
-              widget.text,
-              style: widget.textStyle ?? ArDriveTypography.body.bodyRegular(),
-            ),
+            widget.alignRight ? const Spacer() : const SizedBox(),
+            widget.alignRight ? _toggle() : textWidget
           ],
         ),
       ),

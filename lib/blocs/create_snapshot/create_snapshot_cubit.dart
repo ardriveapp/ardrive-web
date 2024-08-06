@@ -425,16 +425,14 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final profileState = _profileCubit.state as ProfileLoggedIn;
     final wallet = profileState.wallet;
 
-    final BigInt? fakeTurboCredits = appConfig.fakeTurboCredits;
-
     /// necessary to wait for backend update the balance
     await Future.delayed(const Duration(seconds: 2));
 
-    final BigInt turboBalance = fakeTurboCredits ??
+    final BigInt turboBalance =
         await turboBalanceRetriever.getBalance(wallet).catchError((e) {
-          logger.e('Error while retrieving turbo balance', e);
-          return BigInt.zero;
-        });
+      logger.e('Error while retrieving turbo balance', e);
+      return BigInt.zero;
+    });
 
     logger.d('Balance after topping up: $turboBalance');
 
@@ -472,13 +470,11 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final ProfileLoggedIn profileState = _profileCubit.state as ProfileLoggedIn;
     final Wallet wallet = profileState.wallet;
 
-    final BigInt? fakeTurboCredits = appConfig.fakeTurboCredits;
-
-    final BigInt turboBalance = fakeTurboCredits ??
+    final BigInt turboBalance =
         await turboBalanceRetriever.getBalance(wallet).catchError((e) {
-          logger.e('Error while retrieving turbo balance', e);
-          return BigInt.zero;
-        });
+      logger.e('Error while retrieving turbo balance', e);
+      return BigInt.zero;
+    });
 
     logger.d('Balance before topping up: $turboBalance');
 
@@ -507,10 +503,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
   void _computeIsFreeThanksToTurbo() {
     final allowedDataItemSizeForTurbo = appConfig.allowedDataItemSizeForTurbo;
-    final forceNoFreeThanksToTurbo = appConfig.forceNoFreeThanksToTurbo;
     final isFreeThanksToTurbo =
         _snapshotEntity!.data!.length <= allowedDataItemSizeForTurbo;
-    _isFreeThanksToTurbo = isFreeThanksToTurbo && !forceNoFreeThanksToTurbo;
+    _isFreeThanksToTurbo = isFreeThanksToTurbo;
   }
 
   void setUploadMethod(UploadMethod method) {

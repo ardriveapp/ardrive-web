@@ -1,16 +1,25 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/details_panel.dart';
+import 'package:ardrive/components/icon_theme_switcher.dart';
+import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/components/truncated_address.dart';
+import 'package:ardrive/gift/bloc/redeem_gift_bloc.dart';
+import 'package:ardrive/gift/redeem_gift_modal.dart';
+import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
+import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/components/turbo_balance_widget.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/user/download_wallet/download_wallet_modal.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/open_url_utils.dart';
+import 'package:ardrive/utils/open_urls.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -86,7 +95,7 @@ class _ProfileCardState extends State<ProfileCard> {
       anchor: Aligned(
         follower: Alignment.topRight,
         target: Alignment.bottomRight,
-        offset: isMobile ? const Offset(12, -60) : const Offset(0, 4),
+        offset: isMobile ? const Offset(12, -60) : const Offset(0, 18),
       ),
       content: _buildProfileCardContent(
         context,
@@ -102,6 +111,8 @@ class _ProfileCardState extends State<ProfileCard> {
     ProfileLoggedIn state, {
     required bool isMobile,
   }) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return ArDriveCard(
       contentPadding: const EdgeInsets.all(0),
       width: 281,
@@ -112,76 +123,232 @@ class _ProfileCardState extends State<ProfileCard> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isMobile)
-            Row(
+          Container(
+            color: ArDriveTheme.of(context).themeData.colorTokens.containerL3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: ArDriveIconButton(
-                    onPressed: () {
-                      setState(() {
-                        _showProfileCard = false;
-                      });
-                    },
-                    icon: ArDriveIcons.x(
-                      size: 24,
+                if (isMobile)
+                  Row(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: ArDriveIconButton(
+                          onPressed: () {
+                            setState(() {
+                              _showProfileCard = false;
+                            });
+                          },
+                          icon: ArDriveIcons.x(
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                const SizedBox(height: 8),
+                _buildWalletAddressRow(context, state),
+                if (state.wallet is! ArConnectWallet) ...[
+                  const SizedBox(height: 8),
+                ],
+                const Divider(
+                  height: 21,
+                  indent: 16,
+                  endIndent: 16,
+                ),
+                _buildBalanceRow(context, state),
+                if (context.read<PaymentService>().useTurboPayment) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(top: 20.0),
+                    child: TurboBalance(
+                      paymentService: context.read<PaymentService>(),
+                      wallet: state.wallet,
+                      onTapAddButton: () {
+                        setState(() {
+                          _showProfileCard = false;
+                        });
+                      },
                     ),
                   ),
+                ],
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+          ArDriveAccordion(
+            backgroundColor: Colors.transparent,
+            automaticallyCloseWhenOpenAnotherItem: true,
+            children: [
+              ArDriveAccordionItem(
+                Text(
+                  'Gift',
+                  style: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                ),
+                [
+                  _ProfileMenuAccordionItem(
+                    text: 'Send',
+                    onTap: () {
+                      openUrl(url: Resources.sendGiftLink);
+                    },
+                  ),
+                  _ProfileMenuAccordionItem(
+                    text: 'Reedem',
+                    onTap: () {
+                      showArDriveDialog(
+                        context,
+                        content: BlocProvider(
+                          create: (context) => RedeemGiftBloc(
+                              paymentService: context.read<PaymentService>(),
+                              auth: context.read<ArDriveAuth>()),
+                          child: const RedeemGiftModal(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              ArDriveAccordionItem(
+                Text(
+                  'Support',
+                  style: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                ),
+                [
+                  _ProfileMenuAccordionItem(
+                    text: 'Docs',
+                    onTap: () {
+                      openDocs();
+                    },
+                  ),
+                  _ProfileMenuAccordionItem(
+                    text: 'Help',
+                    onTap: () {
+                      openHelp();
+                    },
+                  ),
+                  _ProfileMenuAccordionItem(
+                    text: 'Leave Feedback',
+                    onTap: () {
+                      openFeedbackSurveyUrl();
+                    },
+                  ),
+                  _ProfileMenuAccordionItem(
+                    text: 'Share Logs',
+                    onTap: () {
+                      shareLogs(
+                        context: context,
+                      );
+                    },
+                  ),
+                ],
+              ),
+              ArDriveAccordionItem(
+                Text(
+                  'Advanced Settings',
+                  style: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                ),
+                [
+                  const SizedBox(height: 6),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16.0, right: 16),
+                    child: ArDriveToggleSwitch(
+                      alignRight: true,
+                      value: context.read<ConfigService>().config.autoSync,
+                      text: 'Automatic Sync',
+                      textStyle: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colorTokens.textMid,
+                      ),
+                      onChanged: (value) {
+                        final config = context.read<ConfigService>().config;
+                        context.read<ConfigService>().updateAppConfig(
+                              config.copyWith(
+                                autoSync: value,
+                              ),
+                            );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16.0, right: 16),
+                    child: ArDriveToggleSwitch(
+                      alignRight: true,
+                      value:
+                          context.read<ConfigService>().config.uploadThumbnails,
+                      text: 'Upload with thumbnails',
+                      textStyle: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colorTokens.textMid,
+                      ),
+                      onChanged: (value) {
+                        final config = context.read<ConfigService>().config;
+                        context.read<ConfigService>().updateAppConfig(
+                              config.copyWith(
+                                uploadThumbnails: value,
+                              ),
+                            );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16.0, right: 16),
+                    child: ArDriveToggleSwitch(
+                      alignRight: true,
+                      value: context
+                          .read<ConfigService>()
+                          .config
+                          .enableSyncFromSnapshot,
+                      text: 'Sync From Snapshots',
+                      textStyle: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colorTokens.textMid,
+                      ),
+                      onChanged: (value) {
+                        final config = context.read<ConfigService>().config;
+                        context.read<ConfigService>().updateAppConfig(
+                              config.copyWith(
+                                enableSyncFromSnapshot: value,
+                              ),
+                            );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // ArDriveAccordion(backgroundColor: Colors.transparent, children: [
+
+          // ]),
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0, left: 16, top: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Theme',
+                  style: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                ),
+                IconThemeSwitcher(
+                  color:
+                      ArDriveTheme.of(context).themeData.colorTokens.iconHigh,
                 ),
               ],
             ),
-          const SizedBox(height: 8),
-          _buildWalletAddressRow(context, state),
-          if (state.wallet is! ArConnectWallet) ...[
-            const SizedBox(height: 8),
-            _buildDownloadWalletRow(context),
-            const SizedBox(height: 8),
-          ],
-          const Divider(
-            height: 21,
-            indent: 16,
-            endIndent: 16,
           ),
-          _buildBalanceRow(context, state),
-          if (context.read<PaymentService>().useTurboPayment) ...[
-            Padding(
-              padding: const EdgeInsets.only(top: 20.0),
-              child: TurboBalance(
-                paymentService: context.read<PaymentService>(),
-                wallet: state.wallet,
-                onTapAddButton: () {
-                  setState(() {
-                    _showProfileCard = false;
-                  });
-                },
-              ),
-            ),
-          ],
-          Padding(
-            padding: const EdgeInsets.only(top: 20.0, left: 16, right: 16),
-            child: ArDriveClickArea(
-              child: GestureDetector(
-                onTap: () {
-                  openFeedbackSurveyUrl();
-                },
-                child: Text(
-                  appLocalizationsOf(context).leaveFeedback,
-                  style: ArDriveTypography.body.captionRegular().copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 18,
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgMuted,
-                        decoration: TextDecoration.underline,
-                      ),
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(top: 20.0),
-            child: _buildLogoutButton(context),
+          const Padding(
+            padding: EdgeInsets.only(top: 20.0),
+            child: _LogoutButton(),
           ),
           if (isMobile)
             Expanded(
@@ -196,6 +363,7 @@ class _ProfileCardState extends State<ProfileCard> {
 
   Widget _buildWalletAddressRow(BuildContext context, ProfileLoggedIn state) {
     final walletAddress = state.walletAddress;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -204,15 +372,24 @@ class _ProfileCardState extends State<ProfileCard> {
         children: [
           const SizedBox(height: 8),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               if (walletAddress.isNotEmpty)
                 TruncatedAddress(
                   walletAddress: walletAddress,
                   fontSize: 18,
                 ),
+              const Spacer(),
+              ArDriveIconButton(
+                icon: ArDriveIcons.download(
+                  color: colorTokens.textHigh,
+                  size: 21,
+                ),
+                onPressed: () {
+                  showDownloadWalletModal(context);
+                },
+              ),
               CopyButton(
-                size: 24,
+                size: 21,
                 text: walletAddress,
                 showCopyText: false,
               ),
@@ -223,43 +400,10 @@ class _ProfileCardState extends State<ProfileCard> {
     );
   }
 
-  Widget _buildDownloadWalletRow(
-    BuildContext context,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 10.0, right: 15),
-      child: HoverWidget(
-        hoverScale: 1,
-        child: ArDriveClickArea(
-          child: GestureDetector(
-            onTap: () {
-              _showProfileCard = false;
-              setState(() {});
-              showDownloadWalletModal(context);
-            },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  child: Text(
-                    appLocalizationsOf(context).downloadWalletKeyfile,
-                    style: ArDriveTypography.body.captionRegular().copyWith(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 18,
-                        ),
-                  ),
-                ),
-                ArDriveIcons.arrowDownload(),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildBalanceRow(BuildContext context, ProfileLoggedIn state) {
     final walletBalance = convertWinstonToLiteralString(state.walletBalance);
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -269,26 +413,21 @@ class _ProfileCardState extends State<ProfileCard> {
         children: [
           Text(
             appLocalizationsOf(context).arBalance,
-            style: ArDriveTypography.body.buttonLargeBold().copyWith(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 18,
-                ),
+            style: typography.paragraphNormal(
+              fontWeight: ArFontWeight.semiBold,
+              color: colorTokens.textHigh,
+            ),
           ),
           Text(
             '$walletBalance AR',
-            style: ArDriveTypography.body.captionRegular().copyWith(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 18,
-                  color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
-                ),
+            style: typography.paragraphNormal(
+              color: colorTokens.textLow,
+              fontWeight: ArFontWeight.semiBold,
+            ),
           ),
         ],
       ),
     );
-  }
-
-  Widget _buildLogoutButton(BuildContext context) {
-    return const _LogoutButton();
   }
 
   Widget _buildProfileCardHeader(BuildContext context, String walletAddress) {
@@ -319,6 +458,8 @@ class __LogoutButtonState extends State<_LogoutButton> {
 
   @override
   Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
     return HoverDetector(
       onExit: () {
         setState(() {
@@ -353,11 +494,46 @@ class __LogoutButtonState extends State<_LogoutButton> {
               children: [
                 Text(
                   appLocalizationsOf(context).logOut,
-                  style: ArDriveTypography.body
-                      .captionBold()
-                      .copyWith(fontSize: 15),
+                  style: typography.paragraphNormal(
+                    color: colorTokens.textHigh,
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
                 ),
+                const Spacer(),
+                ArDriveIcons.logout(size: 21),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileMenuAccordionItem extends StatelessWidget {
+  const _ProfileMenuAccordionItem({
+    required this.text,
+    required this.onTap,
+  });
+
+  final String text;
+  final Function() onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return ArDriveClickArea(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.only(left: 16.0, right: 15),
+          child: Text(
+            text,
+            style: typography.paragraphNormal(
+              fontWeight: ArFontWeight.semiBold,
+              color: colors.textMid,
             ),
           ),
         ),

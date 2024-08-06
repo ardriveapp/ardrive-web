@@ -182,18 +182,10 @@ class Turbo extends Disposable {
     return _currentPaymentIntent!;
   }
 
-  Future<PaymentStatus> confirmPayment({
-    bool dryRun = false,
-  }) async {
+  Future<PaymentStatus> confirmPayment() async {
     if (_currentPaymentIntent == null) {
       throw Exception(
           'Current payment intent is null. You should create it before calling this method.');
-    }
-
-    if (dryRun) {
-      logger.d('Confirming payment with dry run');
-      _paymentStatus = PaymentStatus.success;
-      return _paymentStatus!;
     }
 
     logger.d('Confirming payment with payment provider');

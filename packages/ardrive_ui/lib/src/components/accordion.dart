@@ -22,12 +22,14 @@ class ArDriveAccordion extends StatefulWidget {
   final List<ArDriveAccordionItem> children;
   final Color? backgroundColor;
   final EdgeInsetsGeometry? contentPadding;
+  final bool automaticallyCloseWhenOpenAnotherItem;
 
   const ArDriveAccordion({
     super.key,
     required this.children,
     this.backgroundColor,
     this.contentPadding,
+    this.automaticallyCloseWhenOpenAnotherItem = false,
   });
 
   @override
@@ -36,10 +38,13 @@ class ArDriveAccordion extends StatefulWidget {
 
 class _ArDriveAccordionState extends State<ArDriveAccordion> {
   late List<ArDriveAccordionItem> tiles;
+  late List<ExpansionTileController> controller;
 
   @override
   void initState() {
     tiles = [...widget.children];
+    controller =
+        List.generate(tiles.length, (index) => ExpansionTileController());
     super.initState();
   }
 
@@ -76,8 +81,18 @@ class _ArDriveAccordionState extends State<ArDriveAccordion> {
               expandedAlignment: Alignment.centerLeft,
               expandedCrossAxisAlignment: CrossAxisAlignment.start,
               onExpansionChanged: (value) {
+                if (widget.automaticallyCloseWhenOpenAnotherItem) {
+                  for (var i = 0; i < tiles.length; i++) {
+                    if (tiles[i] != tile) {
+                      controller[i].collapse();
+                    }
+                  }
+                }
+                if (value) controller[index].expand();
                 setState(() => tiles[tiles.indexOf(tile)].isExpanded = !value);
               },
+              maintainState: false,
+              controller: controller[index],
               children: tile.children,
             ),
           );

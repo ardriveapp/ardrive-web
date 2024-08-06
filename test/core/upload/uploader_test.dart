@@ -46,8 +46,6 @@ class MockArDriveAuth extends Mock implements ArDriveAuth {}
 
 class MockSizeUtils extends Mock implements SizeUtils {}
 
-class MockConfigService extends Mock implements ConfigService {}
-
 class MockUploadPlan extends Mock implements UploadPlan {}
 
 class MockUploadPaymentInfo extends Mock implements UploadPaymentInfo {}

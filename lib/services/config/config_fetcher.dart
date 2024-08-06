@@ -29,13 +29,8 @@ class ConfigFetcher {
     AppConfig configFromEnv = AppConfig.fromJson(json.decode(configContent));
 
     final gatewayUrl = localStore.getString('arweaveGatewayUrl');
-    final enableQuickSyncAuthoring =
-        localStore.getBool('enableQuickSyncAuthoring');
 
-    return configFromEnv.copyWith(
-      defaultArweaveGatewayUrl: gatewayUrl,
-      enableQuickSyncAuthoring: enableQuickSyncAuthoring,
-    );
+    return configFromEnv.copyWith(defaultArweaveGatewayUrl: gatewayUrl);
   }
 
   @visibleForTesting

@@ -80,10 +80,7 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
           )..add(LoadInitialData()),
         ),
       ],
-      child: TurboModal(
-        parentContext: modalContext,
-        appConfig: appConfig,
-      ),
+      child: TurboModal(parentContext: modalContext),
     ),
     barrierDismissible: false,
     barrierColor:
@@ -110,14 +107,12 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
 }
 
 class TurboModal extends StatefulWidget {
-  final AppConfig _appConfig;
   final BuildContext parentContext;
 
   const TurboModal({
     super.key,
     required this.parentContext,
-    required AppConfig appConfig,
-  }) : _appConfig = appConfig;
+  });
 
   @override
   State<TurboModal> createState() => _TurboModalState();
@@ -232,9 +227,7 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
                 child: Container(
                   color:
                       ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
-                  child: TurboReviewView(
-                    dryRun: widget._appConfig.topUpDryRun,
-                  ),
+                  child: const TurboReviewView(),
                 ),
               ),
             ],

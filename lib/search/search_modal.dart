@@ -372,7 +372,7 @@ class _FileSearchModalState extends State<_FileSearchModal> {
         const SizedBox(width: 8),
         if (searchResult.result is FileEntry)
           ArDriveIconButton(
-            icon: ArDriveIcons.download2(color: colorTokens.iconHigh),
+            icon: ArDriveIcons.download(color: colorTokens.iconHigh),
             onPressed: () => promptToDownloadProfileFile(
               context: context,
               file: DriveDataTableItemMapper.fromFileEntryForSearchModal(
