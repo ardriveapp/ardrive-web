@@ -250,22 +250,22 @@ class _ProfileCardState extends State<ProfileCard> {
           ArDriveAccordion(backgroundColor: Colors.transparent, children: [
             ArDriveAccordionItem(
               Text(
-                'Advanced',
+                'Advanced Settings',
                 style: typography.paragraphNormal(
                   fontWeight: ArFontWeight.semiBold,
                 ),
               ),
               [
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Padding(
-                  padding: const EdgeInsets.only(left: 30.0, right: 16),
+                  padding: const EdgeInsets.only(left: 16.0, right: 16),
                   child: ArDriveToggleSwitch(
                     alignRight: true,
                     value: context.read<ConfigService>().config.autoSync,
                     text: 'Automatic Sync',
                     textStyle: typography.paragraphNormal(
                       fontWeight: ArFontWeight.semiBold,
-                      color: colorTokens.textLow,
+                      color: colorTokens.textMid,
                     ),
                     onChanged: (value) {
                       final config = context.read<ConfigService>().config;
@@ -279,7 +279,7 @@ class _ProfileCardState extends State<ProfileCard> {
                 ),
                 const SizedBox(height: 8),
                 Padding(
-                  padding: const EdgeInsets.only(left: 30.0, right: 16),
+                  padding: const EdgeInsets.only(left: 16.0, right: 16),
                   child: ArDriveToggleSwitch(
                     alignRight: true,
                     value:
@@ -287,7 +287,7 @@ class _ProfileCardState extends State<ProfileCard> {
                     text: 'Upload with thumbnails',
                     textStyle: typography.paragraphNormal(
                       fontWeight: ArFontWeight.semiBold,
-                      color: colorTokens.textLow,
+                      color: colorTokens.textMid,
                     ),
                     onChanged: (value) {
                       final config = context.read<ConfigService>().config;
@@ -301,7 +301,7 @@ class _ProfileCardState extends State<ProfileCard> {
                 ),
                 const SizedBox(height: 8),
                 Padding(
-                  padding: const EdgeInsets.only(left: 30.0, right: 16),
+                  padding: const EdgeInsets.only(left: 16.0, right: 16),
                   child: ArDriveToggleSwitch(
                     alignRight: true,
                     value: context
@@ -311,7 +311,7 @@ class _ProfileCardState extends State<ProfileCard> {
                     text: 'Sync From Snapshots',
                     textStyle: typography.paragraphNormal(
                       fontWeight: ArFontWeight.semiBold,
-                      color: colorTokens.textLow,
+                      color: colorTokens.textMid,
                     ),
                     onChanged: (value) {
                       final config = context.read<ConfigService>().config;
@@ -520,16 +520,18 @@ class _ProfileMenuAccordionItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
 
     return ArDriveClickArea(
       child: GestureDetector(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.only(left: 30.0, right: 15),
+          padding: const EdgeInsets.only(left: 16.0, right: 15),
           child: Text(
             text,
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
+              color: colors.textMid,
             ),
           ),
         ),
