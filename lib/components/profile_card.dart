@@ -177,6 +177,7 @@ class _ProfileCardState extends State<ProfileCard> {
           ),
           ArDriveAccordion(
             backgroundColor: Colors.transparent,
+            automaticallyCloseWhenOpenAnotherItem: true,
             children: [
               ArDriveAccordionItem(
                 Text(
@@ -187,13 +188,13 @@ class _ProfileCardState extends State<ProfileCard> {
                 ),
                 [
                   _ProfileMenuAccordionItem(
-                    text: 'Gift',
+                    text: 'Send',
                     onTap: () {
                       openUrl(url: Resources.sendGiftLink);
                     },
                   ),
                   _ProfileMenuAccordionItem(
-                    text: 'Reedem Gift',
+                    text: 'Reedem',
                     onTap: () {
                       showArDriveDialog(
                         context,
@@ -244,88 +245,89 @@ class _ProfileCardState extends State<ProfileCard> {
                   ),
                 ],
               ),
+              ArDriveAccordionItem(
+                Text(
+                  'Advanced Settings',
+                  style: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                ),
+                [
+                  const SizedBox(height: 6),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16.0, right: 16),
+                    child: ArDriveToggleSwitch(
+                      alignRight: true,
+                      value: context.read<ConfigService>().config.autoSync,
+                      text: 'Automatic Sync',
+                      textStyle: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colorTokens.textMid,
+                      ),
+                      onChanged: (value) {
+                        final config = context.read<ConfigService>().config;
+                        context.read<ConfigService>().updateAppConfig(
+                              config.copyWith(
+                                autoSync: value,
+                              ),
+                            );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16.0, right: 16),
+                    child: ArDriveToggleSwitch(
+                      alignRight: true,
+                      value:
+                          context.read<ConfigService>().config.uploadThumbnails,
+                      text: 'Upload with thumbnails',
+                      textStyle: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colorTokens.textMid,
+                      ),
+                      onChanged: (value) {
+                        final config = context.read<ConfigService>().config;
+                        context.read<ConfigService>().updateAppConfig(
+                              config.copyWith(
+                                uploadThumbnails: value,
+                              ),
+                            );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16.0, right: 16),
+                    child: ArDriveToggleSwitch(
+                      alignRight: true,
+                      value: context
+                          .read<ConfigService>()
+                          .config
+                          .enableSyncFromSnapshot,
+                      text: 'Sync From Snapshots',
+                      textStyle: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colorTokens.textMid,
+                      ),
+                      onChanged: (value) {
+                        final config = context.read<ConfigService>().config;
+                        context.read<ConfigService>().updateAppConfig(
+                              config.copyWith(
+                                enableSyncFromSnapshot: value,
+                              ),
+                            );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 8),
-          ArDriveAccordion(backgroundColor: Colors.transparent, children: [
-            ArDriveAccordionItem(
-              Text(
-                'Advanced Settings',
-                style: typography.paragraphNormal(
-                  fontWeight: ArFontWeight.semiBold,
-                ),
-              ),
-              [
-                const SizedBox(height: 6),
-                Padding(
-                  padding: const EdgeInsets.only(left: 16.0, right: 16),
-                  child: ArDriveToggleSwitch(
-                    alignRight: true,
-                    value: context.read<ConfigService>().config.autoSync,
-                    text: 'Automatic Sync',
-                    textStyle: typography.paragraphNormal(
-                      fontWeight: ArFontWeight.semiBold,
-                      color: colorTokens.textMid,
-                    ),
-                    onChanged: (value) {
-                      final config = context.read<ConfigService>().config;
-                      context.read<ConfigService>().updateAppConfig(
-                            config.copyWith(
-                              autoSync: value,
-                            ),
-                          );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.only(left: 16.0, right: 16),
-                  child: ArDriveToggleSwitch(
-                    alignRight: true,
-                    value:
-                        context.read<ConfigService>().config.uploadThumbnails,
-                    text: 'Upload with thumbnails',
-                    textStyle: typography.paragraphNormal(
-                      fontWeight: ArFontWeight.semiBold,
-                      color: colorTokens.textMid,
-                    ),
-                    onChanged: (value) {
-                      final config = context.read<ConfigService>().config;
-                      context.read<ConfigService>().updateAppConfig(
-                            config.copyWith(
-                              uploadThumbnails: value,
-                            ),
-                          );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.only(left: 16.0, right: 16),
-                  child: ArDriveToggleSwitch(
-                    alignRight: true,
-                    value: context
-                        .read<ConfigService>()
-                        .config
-                        .enableSyncFromSnapshot,
-                    text: 'Sync From Snapshots',
-                    textStyle: typography.paragraphNormal(
-                      fontWeight: ArFontWeight.semiBold,
-                      color: colorTokens.textMid,
-                    ),
-                    onChanged: (value) {
-                      final config = context.read<ConfigService>().config;
-                      context.read<ConfigService>().updateAppConfig(
-                            config.copyWith(
-                              enableSyncFromSnapshot: value,
-                            ),
-                          );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ]),
+          // ArDriveAccordion(backgroundColor: Colors.transparent, children: [
+
+          // ]),
           Padding(
             padding: const EdgeInsets.only(right: 12.0, left: 16, top: 12),
             child: Row(
