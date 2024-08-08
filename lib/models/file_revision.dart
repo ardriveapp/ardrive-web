@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:drift/drift.dart';
 
 import 'models.dart';
@@ -47,27 +48,32 @@ extension FileEntityExtensions on FileEntity {
   FileRevisionsCompanion toRevisionCompanion({
     required String performedAction,
   }) {
-    final thumbnailData = jsonEncode(thumbnail?.toJson());
-    return FileRevisionsCompanion.insert(
-      fileId: id!,
-      driveId: driveId!,
-      name: name!,
-      parentFolderId: parentFolderId!,
-      size: size!,
-      lastModifiedDate: lastModifiedDate ?? DateTime.now(),
-      metadataTxId: txId,
-      dataTxId: dataTxId!,
-      licenseTxId: Value(licenseTxId),
-      dateCreated: Value(createdAt),
-      dataContentType: Value(dataContentType),
-      action: performedAction,
-      bundledIn: Value(bundledIn),
-      customGQLTags: Value(customGqlTagsAsString),
-      customJsonMetadata: Value(customJsonMetadataAsString),
-      pinnedDataOwnerAddress: Value(pinnedDataOwnerAddress),
-      isHidden: Value(isHidden ?? false),
-      thumbnail: Value(thumbnailData),
-    );
+    try {
+      final thumbnailData = jsonEncode(thumbnail?.toJson());
+      return FileRevisionsCompanion.insert(
+        fileId: id!,
+        driveId: driveId!,
+        name: name!,
+        parentFolderId: parentFolderId!,
+        size: size!,
+        lastModifiedDate: lastModifiedDate ?? DateTime.now(),
+        metadataTxId: txId,
+        dataTxId: dataTxId!,
+        licenseTxId: Value(licenseTxId),
+        dateCreated: Value(createdAt),
+        dataContentType: Value(dataContentType),
+        action: performedAction,
+        bundledIn: Value(bundledIn),
+        customGQLTags: Value(customGqlTagsAsString),
+        customJsonMetadata: Value(customJsonMetadataAsString),
+        pinnedDataOwnerAddress: Value(pinnedDataOwnerAddress),
+        isHidden: Value(isHidden ?? false),
+        thumbnail: Value(thumbnailData),
+      );
+    } catch (e) {
+      logger.e('Error converting file entity to revision companion: $e');
+      rethrow;
+    }
   }
 
   FileRevision toRevision({

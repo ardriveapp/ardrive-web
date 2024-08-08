@@ -205,7 +205,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<void> runTransaction(
     Future<void> Function() transaction,
   ) async {
-    await db.transaction(transaction);
+    try {
+      await db.transaction(transaction);
+    } catch (e) {
+      throw _handleError('Error running transaction', e);
+    }
   }
 
   DriveDAOException _handleError(String description, Object error) {
@@ -580,19 +584,23 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     FolderID? folderId,
     required String folderName,
   }) async {
-    final id = folderId ?? _uuid.v4();
-    final folderEntriesCompanion = FolderEntriesCompanion.insert(
-      id: id,
-      driveId: driveId,
-      parentFolderId: Value(parentFolderId),
-      name: folderName,
-      isHidden: const Value(false),
-      // TODO: path is not used in the app, so it's not necessary to set it
-      path: '',
-    );
-    await into(folderEntries).insert(folderEntriesCompanion);
+    try {
+      final id = folderId ?? _uuid.v4();
+      final folderEntriesCompanion = FolderEntriesCompanion.insert(
+        id: id,
+        driveId: driveId,
+        parentFolderId: Value(parentFolderId),
+        name: folderName,
+        isHidden: const Value(false),
+        // TODO: path is not used in the app, so it's not necessary to set it
+        path: '',
+      );
+      await into(folderEntries).insert(folderEntriesCompanion);
 
-    return id;
+      return id;
+    } catch (e) {
+      throw _handleError('Error creating folder', e);
+    }
   }
 
   UpdateStatement<FolderEntries, FolderEntry> updateFolderById(
@@ -643,28 +651,32 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<void> writeFileEntity(
     FileEntity entity,
   ) {
-    final companion = FileEntriesCompanion.insert(
-      id: entity.id!,
-      driveId: entity.driveId!,
-      parentFolderId: entity.parentFolderId!,
-      name: entity.name!,
-      dataTxId: entity.dataTxId!,
-      size: entity.size!,
-      lastModifiedDate: entity.lastModifiedDate ?? DateTime.now(),
-      dataContentType: Value(entity.dataContentType),
-      pinnedDataOwnerAddress: Value(entity.pinnedDataOwnerAddress),
-      isHidden: Value(entity.isHidden ?? false),
-      // TODO: path is not used in the app, so it's not necessary to set it
-      path: '',
-      thumbnail: entity.thumbnail != null
-          ? Value(jsonEncode(entity.thumbnail!.toJson()))
-          : const Value(null),
-    );
+    try {
+      final companion = FileEntriesCompanion.insert(
+        id: entity.id!,
+        driveId: entity.driveId!,
+        parentFolderId: entity.parentFolderId!,
+        name: entity.name!,
+        dataTxId: entity.dataTxId!,
+        size: entity.size!,
+        lastModifiedDate: entity.lastModifiedDate ?? DateTime.now(),
+        dataContentType: Value(entity.dataContentType),
+        pinnedDataOwnerAddress: Value(entity.pinnedDataOwnerAddress),
+        isHidden: Value(entity.isHidden ?? false),
+        // TODO: path is not used in the app, so it's not necessary to set it
+        path: '',
+        thumbnail: entity.thumbnail != null
+            ? Value(jsonEncode(entity.thumbnail!.toJson()))
+            : const Value(null),
+      );
 
-    return into(fileEntries).insert(
-      companion,
-      onConflict: DoUpdate((_) => companion.copyWith(dateCreated: null)),
-    );
+      return into(fileEntries).insert(
+        companion,
+        onConflict: DoUpdate((_) => companion.copyWith(dateCreated: null)),
+      );
+    } catch (e) {
+      throw _handleError('Error writing file entity', e);
+    }
   }
 
   Future<void> writeToTransaction(Insertable<NetworkTransaction> transaction) =>
@@ -679,30 +691,43 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   }
 
   Future<void> insertFolderRevision(FolderRevisionsCompanion revision) async {
-    await db.transaction(() async {
-      await writeTransaction(revision.getTransactionCompanion());
-      await into(folderRevisions).insert(revision);
-    });
+    try {
+      await db.transaction(() async {
+        await writeTransaction(revision.getTransactionCompanion());
+        await into(folderRevisions).insert(revision);
+      });
+    } catch (e) {
+      throw _handleError('Error inserting folder revision', e);
+    }
   }
 
   /// Inserts the specified file revision and its associated metadata and data transactions.
   Future<void> insertFileRevision(FileRevisionsCompanion revision) async {
-    await db.transaction(() async {
-      await Future.wait(revision
-          .getTransactionCompanions()
-          .map((tx) => writeTransaction(tx)));
-      await into(fileRevisions).insert(revision);
-    });
+    try {
+      await db.transaction(() async {
+        await Future.wait(revision
+            .getTransactionCompanions()
+            .map((tx) => writeTransaction(tx)));
+        await into(fileRevisions).insert(revision);
+      });
+    } catch (e) {
+      throw _handleError('Error inserting file revision', e);
+    }
   }
 
   Future<void> insertLicense(
     LicensesCompanion license,
   ) async {
-    await db.transaction(() async {
-      await Future.wait(
-          license.getTransactionCompanions().map((tx) => writeTransaction(tx)));
-      await into(licenses).insert(license);
-    });
+    try {
+      await db.transaction(() async {
+        await Future.wait(license
+            .getTransactionCompanions()
+            .map((tx) => writeTransaction(tx)));
+        await into(licenses).insert(license);
+      });
+    } catch (e) {
+      throw _handleError('Error inserting license', e);
+    }
   }
 
   Future<void> writeTransaction(Insertable<NetworkTransaction> transaction) =>

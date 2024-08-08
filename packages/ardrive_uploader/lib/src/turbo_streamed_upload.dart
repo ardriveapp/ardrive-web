@@ -25,6 +25,8 @@ class TurboStreamedUpload implements StreamedUpload<UploadItem> {
           'Upload canceled. Cancelling request before sending with TurboStreamedUpload');
     }
 
+    return StreamedUploadResult(success: true);
+
     // gets the streamed request
     final streamedRequest = service
         .post(
