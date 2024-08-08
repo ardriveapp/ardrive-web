@@ -16,6 +16,7 @@ import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/services/license/license.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
@@ -430,6 +431,17 @@ class UploadCubit extends Cubit<UploadState> {
         return;
       }
 
+      final containsSupportedImageTypeForThumbnailGeneration = files.any(
+        (element) => supportedImageTypesInFilePreview.contains(
+          element.ioFile.contentType,
+        ),
+      );
+
+      // if there are no files that can be used to generate a thumbnail, we disable the option
+      if (!containsSupportedImageTypeForThumbnailGeneration) {
+        _uploadThumbnail = false;
+      }
+
       emit(
         UploadReadyToPrepare(
           params: UploadParams(
@@ -439,6 +451,8 @@ class UploadCubit extends Cubit<UploadState> {
             targetDrive: _targetDrive,
             conflictingFiles: conflictingFiles,
             foldersByPath: foldersByPath,
+            containsSupportedImageTypeForThumbnailGeneration:
+                containsSupportedImageTypeForThumbnailGeneration,
           ),
           isArConnect: await _profileCubit.isCurrentProfileArConnect(),
         ),
