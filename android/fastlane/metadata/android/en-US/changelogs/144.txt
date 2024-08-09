@@ -1,2 +1,2 @@
--	Show thumbnail checkbox only when images are present in uploads.
+- Show thumbnail checkbox only when images are present in uploads.
 - Fixed issue with saving advanced settings.
