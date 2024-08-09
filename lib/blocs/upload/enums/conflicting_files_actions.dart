@@ -4,5 +4,5 @@
 ///
 /// `Replace` will upload the conflicting file and replace the existent.
 ///
-/// `SkipSuccessfullyUploads` will skip the files that were successfully uploaded.
+/// `SkipSuccessfulUploads` will skip the files that were successfully uploaded.
 enum UploadActions { skip, skipSuccessfulUploads, replace }
