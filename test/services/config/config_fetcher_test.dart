@@ -89,7 +89,7 @@ void main() {
       when(() => localStore.getString('config')).thenReturn(configStringDev);
 
       final result =
-          await configFetcher.loadFromDevToolsPrefs(Flavor.development);
+          await configFetcher.loadFromLocalSettings(Flavor.development);
 
       expect(result, isInstanceOf<AppConfig>());
       expect(result.defaultArweaveGatewayUrl, equals('devGatewayUrl'));
@@ -108,7 +108,7 @@ void main() {
           .thenAnswer((i) => Future.value(true));
 
       final result =
-          await configFetcher.loadFromDevToolsPrefs(Flavor.development);
+          await configFetcher.loadFromLocalSettings(Flavor.development);
 
       expect(result, isInstanceOf<AppConfig>());
       expect(result.defaultArweaveGatewayUrl, equals('gatewayUrl'));
@@ -129,7 +129,7 @@ void main() {
           .thenAnswer((i) => Future.value(true));
 
       final result =
-          await configFetcher.loadFromDevToolsPrefs(Flavor.development);
+          await configFetcher.loadFromLocalSettings(Flavor.development);
 
       expect(result, isInstanceOf<AppConfig>());
       expect(result.defaultArweaveGatewayUrl, equals('gatewayUrl'));
