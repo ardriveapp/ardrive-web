@@ -135,6 +135,7 @@ void main() {
       targetDrive: getFakeDrive(),
       conflictingFiles: {},
       foldersByPath: {},
+      containsSupportedImageTypeForThumbnailGeneration: false,
     ));
 
     tWalletAddress = await tWallet.getAddress();

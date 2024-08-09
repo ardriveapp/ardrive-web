@@ -13,11 +13,7 @@ class ConfigFetcher {
   ConfigFetcher({required this.localStore});
 
   Future<AppConfig> fetchConfig(Flavor flavor) async {
-    if (flavor == Flavor.production) {
-      return loadFromEnv('prod');
-    } else {
-      return loadFromDevToolsPrefs(flavor);
-    }
+    return loadFromLocalSettings(flavor);
   }
 
   @visibleForTesting
@@ -34,7 +30,7 @@ class ConfigFetcher {
   }
 
   @visibleForTesting
-  Future<AppConfig> loadFromDevToolsPrefs(Flavor flavor) async {
+  Future<AppConfig> loadFromLocalSettings(Flavor flavor) async {
     try {
       final config = localStore.getString('config');
 

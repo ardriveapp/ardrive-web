@@ -33,20 +33,6 @@ void main() {
   )..toJson());
 
   group('fetchConfig', () {
-    test('returns the production config when flavor is production', () async {
-      when(() => localStore.getString('arweaveGatewayUrl'))
-          .thenReturn('gatewayUrl');
-      when(() => localStore.getBool('enableQuickSyncAuthoring'))
-          .thenReturn(true);
-      when(() => assetBundle.loadString('assets/config/prod.json'))
-          .thenAnswer((_) async => '{}');
-
-      final result = await configFetcher.fetchConfig(Flavor.production);
-
-      expect(result, isInstanceOf<AppConfig>());
-      expect(result.defaultArweaveGatewayUrl, equals('gatewayUrl'));
-    });
-
     test('returns the dev config when flavor is dev', () async {
       when(() => localStore.getString('config')).thenReturn(configStringDev);
 
@@ -89,7 +75,7 @@ void main() {
       when(() => localStore.getString('config')).thenReturn(configStringDev);
 
       final result =
-          await configFetcher.loadFromDevToolsPrefs(Flavor.development);
+          await configFetcher.loadFromLocalSettings(Flavor.development);
 
       expect(result, isInstanceOf<AppConfig>());
       expect(result.defaultArweaveGatewayUrl, equals('devGatewayUrl'));
@@ -108,7 +94,7 @@ void main() {
           .thenAnswer((i) => Future.value(true));
 
       final result =
-          await configFetcher.loadFromDevToolsPrefs(Flavor.development);
+          await configFetcher.loadFromLocalSettings(Flavor.development);
 
       expect(result, isInstanceOf<AppConfig>());
       expect(result.defaultArweaveGatewayUrl, equals('gatewayUrl'));
@@ -129,7 +115,7 @@ void main() {
           .thenAnswer((i) => Future.value(true));
 
       final result =
-          await configFetcher.loadFromDevToolsPrefs(Flavor.development);
+          await configFetcher.loadFromLocalSettings(Flavor.development);
 
       expect(result, isInstanceOf<AppConfig>());
       expect(result.defaultArweaveGatewayUrl, equals('gatewayUrl'));

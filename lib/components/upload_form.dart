@@ -480,36 +480,38 @@ class _UploadFormState extends State<UploadForm> {
                           },
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Row(
-                          children: [
-                            ArDriveCheckBox(
-                              title: 'Upload with thumbnails',
-                              checked: context
-                                  .read<ConfigService>()
-                                  .config
-                                  .uploadThumbnails,
-                              titleStyle: typography.paragraphLarge(
-                                fontWeight: ArFontWeight.semiBold,
+                      if (state.params
+                          .containsSupportedImageTypeForThumbnailGeneration)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: Row(
+                            children: [
+                              ArDriveCheckBox(
+                                title: 'Upload with thumbnails',
+                                checked: context
+                                    .read<ConfigService>()
+                                    .config
+                                    .uploadThumbnails,
+                                titleStyle: typography.paragraphLarge(
+                                  fontWeight: ArFontWeight.semiBold,
+                                ),
+                                onChange: (value) {
+                                  context
+                                      .read<UploadCubit>()
+                                      .changeUploadThumbnailOption(value);
+                                },
                               ),
-                              onChange: (value) {
-                                context
-                                    .read<UploadCubit>()
-                                    .changeUploadThumbnailOption(value);
-                              },
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(left: 8.0),
-                              child: ArDriveIconButton(
-                                icon: ArDriveIcons.info(),
-                                tooltip:
-                                    'Uploading with thumbnails is free, but may make your upload take longer.\nYou can always attach a thumbnail later.',
-                              ),
-                            )
-                          ],
+                              Padding(
+                                padding: const EdgeInsets.only(left: 8.0),
+                                child: ArDriveIconButton(
+                                  icon: ArDriveIcons.info(),
+                                  tooltip:
+                                      'Uploading with thumbnails is free, but may make your upload take longer.\nYou can always attach a thumbnail later.',
+                                ),
+                              )
+                            ],
+                          ),
                         ),
-                      ),
                       SizedBox(
                         child: ReactiveForm(
                           formGroup:
