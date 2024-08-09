@@ -780,6 +780,7 @@ void main() {
         targetDrive: getFakeDrive(),
         conflictingFiles: {},
         foldersByPath: {},
+        containsSupportedImageTypeForThumbnailGeneration: false,
       ));
       registerFallbackValue(getFakeFolder());
       registerFallbackValue(getFakeDrive());
@@ -796,6 +797,7 @@ void main() {
         targetDrive: getFakeDrive(),
         conflictingFiles: {},
         foldersByPath: {},
+        containsSupportedImageTypeForThumbnailGeneration: false,
       );
       uploadPreparer = UploadPreparer(uploadPlanUtils: uploadPlanUtils);
     });
@@ -896,6 +898,7 @@ void main() {
         targetDrive: getFakeDrive(),
         conflictingFiles: {},
         foldersByPath: {},
+        containsSupportedImageTypeForThumbnailGeneration: false,
       ));
     });
 

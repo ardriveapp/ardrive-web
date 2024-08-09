@@ -625,6 +625,7 @@ class UploadParams {
   final Drive targetDrive;
   final Map<String, String> conflictingFiles;
   final Map<String, WebFolder> foldersByPath;
+  final bool containsSupportedImageTypeForThumbnailGeneration;
 
   UploadParams({
     required this.user,
@@ -633,5 +634,6 @@ class UploadParams {
     required this.targetDrive,
     required this.conflictingFiles,
     required this.foldersByPath,
+    required this.containsSupportedImageTypeForThumbnailGeneration,
   });
 }
