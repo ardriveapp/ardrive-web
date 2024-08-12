@@ -139,6 +139,7 @@ dependencies:
   webthree: ^2.5.7+2
   carousel_slider: ^4.2.1
   dots_indicator: ^3.0.0
+  markdown_editor_plus: ^0.2.15
 
 dependency_overrides:
   stripe_js:
