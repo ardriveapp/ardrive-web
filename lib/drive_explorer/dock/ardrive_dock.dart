@@ -24,18 +24,19 @@ class ArDriveDockState extends State<ArDriveDock> {
     super.initState();
   }
 
-  void showOverlay(BuildContext context, Widget content) {
-    _overlayEntry = _createOverlayEntry(content);
+  void showOverlay(BuildContext context, Widget content, {double? height}) {
+    _overlayEntry = _createOverlayEntry(content, height: height);
     Overlay.of(context).insert(_overlayEntry!);
   }
 
-  OverlayEntry _createOverlayEntry(Widget content) {
+  OverlayEntry _createOverlayEntry(Widget content, {double? height}) {
     return OverlayEntry(
       builder: (context) => Positioned(
         bottom: 0,
         right: 20,
         child: _DockContent(
           content: content,
+          height: height,
         ),
       ),
     );
@@ -64,9 +65,14 @@ class ArDriveDockState extends State<ArDriveDock> {
 }
 
 class _DockContent extends StatefulWidget {
-  const _DockContent({super.key, required this.content});
+  const _DockContent({
+    super.key,
+    required this.content,
+    this.height,
+  });
 
   final Widget content;
+  final double? height;
 
   @override
   State<_DockContent> createState() => __DockContentState();
@@ -116,7 +122,7 @@ class __DockContentState extends State<_DockContent> {
 
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return ArDriveCard(
-      height: 202,
+      height: widget.height ?? 202,
       width: 400,
       elevation: 2,
       contentPadding: EdgeInsets.zero,
@@ -157,10 +163,7 @@ class __DockContentState extends State<_DockContent> {
               ),
             ),
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: widget.content,
-              ),
+              child: widget.content,
             ),
           ],
         ),

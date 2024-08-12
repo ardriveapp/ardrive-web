@@ -257,6 +257,17 @@ class UploadCubit extends Cubit<UploadState> {
     await checkConflictingFiles();
   }
 
+  List<FileEntry> _manifestFiles = [];
+  final List<FileEntry> _selectedManifestFiles = [];
+
+  void selectManifestFile(FileEntry file) {
+    _selectedManifestFiles.add(file);
+  }
+
+  void unselectManifestFile(FileEntry file) {
+    _selectedManifestFiles.remove(file);
+  }
+
   /// Tries to find a files that conflict with the files in the target folder.
   ///
   /// If there's one, prompt the user to upload the file as a version of the existing one.
@@ -449,8 +460,8 @@ class UploadCubit extends Cubit<UploadState> {
         _uploadThumbnail = false;
       }
 
-      final manifestsInTheFolder = await _manifestRepository
-          .getManifestFilesInFolder(folderId: parentFolderId);
+      _manifestFiles = await _manifestRepository.getManifestFilesInFolder(
+          folderId: parentFolderId);
 
       emit(
         UploadReadyToPrepare(
@@ -464,7 +475,7 @@ class UploadCubit extends Cubit<UploadState> {
             containsSupportedImageTypeForThumbnailGeneration:
                 containsSupportedImageTypeForThumbnailGeneration,
           ),
-          manifestFiles: manifestsInTheFolder,
+          manifestFiles: _manifestFiles,
           isArConnect: await _profileCubit.isCurrentProfileArConnect(),
         ),
       );
@@ -675,7 +686,9 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onDone(
       (tasks) async {
-        emit(UploadComplete());
+        emit(UploadComplete(
+          manifestFiles: _selectedManifestFiles,
+        ));
 
         unawaited(_profileCubit.refreshBalance());
       },
@@ -794,7 +807,9 @@ class UploadCubit extends Cubit<UploadState> {
           'Upload finished with success. Number of tasks: ${tasks.length}',
         );
 
-        emit(UploadComplete());
+        emit(UploadComplete(
+          manifestFiles: _selectedManifestFiles,
+        ));
 
         PlausibleEventTracker.trackUploadSuccess();
       },

@@ -245,6 +245,9 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
         emit(CreateManifestUploadInProgress());
 
+        logger.d(
+            'Uploading manifest file with existing manifest file id: ${createManifestUploadReview.existingManifestFileId}');
+
         await _manifestRepository.uploadManifest(
           params: ManifestUploadParams(
             manifestFile: createManifestUploadReview.manifestFile,

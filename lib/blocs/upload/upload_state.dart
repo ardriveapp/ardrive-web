@@ -220,7 +220,11 @@ class UploadFailure extends UploadState {
   UploadFailure({this.failedTasks, required this.error, this.controller});
 }
 
-class UploadComplete extends UploadState {}
+class UploadComplete extends UploadState {
+  final List<FileEntry> manifestFiles;
+
+  UploadComplete({required this.manifestFiles});
+}
 
 class UploadWalletMismatch extends UploadState {}
 

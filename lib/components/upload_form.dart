@@ -32,8 +32,6 @@ import 'package:ardrive/entities/manifest_data.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/manifest/domain/manifest_repository.dart';
-import 'package:ardrive/main.dart';
-import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
@@ -60,7 +58,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:pst/pst.dart';
 import 'package:reactive_forms/reactive_forms.dart';
-import 'package:uuid/uuid.dart';
 
 import '../blocs/upload/upload_handles/bundle_upload_handle.dart';
 import '../pages/drive_detail/components/drive_explorer_item_tile.dart';
@@ -257,49 +254,51 @@ class _UploadFormState extends State<UploadForm> {
         },
         child: BlocConsumer<UploadCubit, UploadState>(
           listener: (context, state) async {
-            if (state is UploadComplete || state is UploadWalletMismatch) {
-              final drive =
-                  (widget.driveDetailCubit.state as DriveDetailLoadSuccess)
-                      .currentDrive;
-              CreateManifestCubit cubit = CreateManifestCubit(
-                profileCubit: context.read<ProfileCubit>(),
-                drive: drive,
-                manifestRepository: ManifestRepositoryImpl(
-                  context.read<DriveDao>(),
-                  ArDriveUploader(
-                    turboUploadUri:
-                        Uri.parse(configService.config.defaultTurboUploadUrl!),
-                    metadataGenerator: ARFSUploadMetadataGenerator(
-                      tagsGenerator: ARFSTagsGenetator(
-                        appInfoServices: AppInfoServices(),
+            if (state is UploadComplete) {
+              if (state.manifestFiles.isNotEmpty) {
+                final drive =
+                    (widget.driveDetailCubit.state as DriveDetailLoadSuccess)
+                        .currentDrive;
+                CreateManifestCubit cubit = CreateManifestCubit(
+                  profileCubit: context.read<ProfileCubit>(),
+                  drive: drive,
+                  manifestRepository: ManifestRepositoryImpl(
+                    context.read<DriveDao>(),
+                    ArDriveUploader(
+                      turboUploadUri: Uri.parse(
+                          configService.config.defaultTurboUploadUrl!),
+                      metadataGenerator: ARFSUploadMetadataGenerator(
+                        tagsGenerator: ARFSTagsGenetator(
+                          appInfoServices: AppInfoServices(),
+                        ),
                       ),
+                      arweave: context.read<ArweaveService>().client,
+                      pstService: context.read<PstService>(),
                     ),
-                    arweave: context.read<ArweaveService>().client,
-                    pstService: context.read<PstService>(),
+                    context.read<FolderRepository>(),
+                    ManifestDataBuilder(
+                      fileRepository: context.read<FileRepository>(),
+                      folderRepository: context.read<FolderRepository>(),
+                    ),
+                    ARFSRevisionStatusUtils(context.read<FileRepository>()),
                   ),
-                  context.read<FolderRepository>(),
-                  ManifestDataBuilder(
-                    fileRepository: context.read<FileRepository>(),
-                    folderRepository: context.read<FolderRepository>(),
-                  ),
-                  ARFSRevisionStatusUtils(context.read<FileRepository>()),
-                ),
-                folderRepository: context.read<FolderRepository>(),
-                auth: context.read<ArDriveAuth>(),
-              );
+                  folderRepository: context.read<FolderRepository>(),
+                  auth: context.read<ArDriveAuth>(),
+                );
 
-              cubit
-                  .prepareManifestTx(
-                    manifestName: 'test-autodeploy${const Uuid().v4()}',
-                    folderId: drive.rootFolderId,
-                  )
-                  .then((value) => cubit.uploadManifest());
-              ArDriveDock.of(context).showOverlay(
-                context,
-                AutoDeployWidget(
-                  createManifestCubit: cubit,
-                ),
-              );
+                cubit
+                    .prepareManifestTx(
+                      manifestName: state.manifestFiles.first.name,
+                      folderId: state.manifestFiles.first.parentFolderId,
+                      existingManifestFileId: state.manifestFiles.first.id,
+                    )
+                    .then((value) => cubit.uploadManifest());
+                ArDriveDock.of(context).showOverlay(
+                  context,
+                  AutoDeployWidget(createManifestCubit: cubit),
+                  height: 150,
+                );
+              }
 
               if (!_isShowingCancelDialog) {
                 Navigator.pop(context);
@@ -593,67 +592,108 @@ class _UploadFormState extends State<UploadForm> {
                           ),
                         ),
                       if (state.manifestFiles.isNotEmpty)
-                        ListView.separated(
-                          shrinkWrap: true,
-                          itemCount: state.manifestFiles.length,
-                          separatorBuilder: (context, index) => const Divider(),
-                          itemBuilder: (context, index) {
-                            final manifestFile = state.manifestFiles[index];
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(
-                                  width: 200,
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Flexible(
-                                        flex: 2,
-                                        child: Text(
-                                          'Manifests',
-                                          style: typography.paragraphLarge(
-                                            fontWeight: ArFontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                      Flexible(
-                                        flex: 1,
-                                        child: Text(
-                                          'Update',
-                                          style: typography.paragraphLarge(
-                                            fontWeight: ArFontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                        ArDriveAccordion(
+                          backgroundColor: Colors.transparent,
+                          contentPadding: const EdgeInsets.only(top: 0),
+                          children: [
+                            ArDriveAccordionItem(
+                              Text(
+                                'Manifest',
+                                style: typography.paragraphLarge(
+                                  fontWeight: ArFontWeight.bold,
                                 ),
-                                SizedBox(
-                                  width: 200,
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Flexible(
-                                        flex: 2,
-                                        child: Text(
-                                          manifestFile.name,
-                                          style: typography.paragraphNormal(
-                                            fontWeight: ArFontWeight.semiBold,
+                              ),
+                              [
+                                ListView.separated(
+                                  shrinkWrap: true,
+                                  itemCount: state.manifestFiles.length,
+                                  padding: const EdgeInsets.only(left: 16),
+                                  separatorBuilder: (context, index) =>
+                                      const Divider(),
+                                  itemBuilder: (context, index) {
+                                    final manifestFile =
+                                        state.manifestFiles[index];
+                                    return Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        SizedBox(
+                                          width: 300,
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Flexible(
+                                                flex: 2,
+                                                child: Text(
+                                                  '',
+                                                  style:
+                                                      typography.paragraphLarge(
+                                                    fontWeight:
+                                                        ArFontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                              Flexible(
+                                                flex: 1,
+                                                child: Text(
+                                                  'Update',
+                                                  style:
+                                                      typography.paragraphLarge(
+                                                    fontWeight:
+                                                        ArFontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                      ),
-                                      const Flexible(
-                                        flex: 1,
-                                        child: ArDriveCheckBox(),
-                                      ),
-                                    ],
-                                  ),
+                                        SizedBox(
+                                          width: 300,
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Flexible(
+                                                flex: 2,
+                                                child: Text(
+                                                  manifestFile.name,
+                                                  style: typography
+                                                      .paragraphNormal(
+                                                    fontWeight:
+                                                        ArFontWeight.semiBold,
+                                                  ),
+                                                ),
+                                              ),
+                                              Flexible(
+                                                flex: 1,
+                                                child: ArDriveCheckBox(
+                                                  onChange: (value) {
+                                                    if (value) {
+                                                      context
+                                                          .read<UploadCubit>()
+                                                          .selectManifestFile(
+                                                              manifestFile);
+                                                    } else {
+                                                      context
+                                                          .read<UploadCubit>()
+                                                          .unselectManifestFile(
+                                                            manifestFile,
+                                                          );
+                                                    }
+                                                  },
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
                                 ),
                               ],
-                            );
-                          },
+                            )
+                          ],
                         ),
                       SizedBox(
                         child: ReactiveForm(
@@ -1252,6 +1292,9 @@ class _UploadFormState extends State<UploadForm> {
                                         children: [
                                           if (task.isProgressAvailable &&
                                               statusAvailableForShowingProgress) ...[
+                                            const SizedBox(
+                                              width: 8,
+                                            ),
                                             Flexible(
                                               flex: 2,
                                               child: ArDriveProgressBar(

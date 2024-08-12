@@ -22,25 +22,22 @@ class _AutoDeployWidgetState extends State<AutoDeployWidget> {
         final typography = ArDriveTypographyNew.of(context);
 
         if (state is CreateManifestUploadInProgress) {
-          return SizedBox(
-            height: 150,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Text(
-                  'Uploading manifest with the new assets... ',
-                  style: typography.paragraphLarge(
-                    fontWeight: ArFontWeight.bold,
-                  ),
-                ),
-                const LinearProgressIndicator(),
-              ],
-            ),
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Updating manifest with the new assets...',
+                style: typography.paragraphLarge(fontWeight: ArFontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              const LinearProgressIndicator(),
+            ],
           );
         }
 
         if (state is CreateManifestSuccess) {
-          Future.delayed(const Duration(seconds: 2), () {
+          Future.delayed(const Duration(seconds: 3), () {
             ArDriveDock.of(context).removeOverlay();
           });
 
