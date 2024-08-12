@@ -589,6 +589,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.5"
+  expandable:
+    dependency: transitive
+    description:
+      name: expandable
+      sha256: "9604d612d4d1146dafa96c6d8eec9c2ff0994658d6d09fed720ab788c7f5afc2"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.0.1"
   fake_async:
     dependency: transitive
     description:
@@ -915,6 +923,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_markdown:
+    dependency: transitive
+    description:
+      name: flutter_markdown
+      sha256: a23c41ee57573e62fc2190a1f36a0480c4d90bde3a8a8d7126e5d5992fb53fb7
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.3+1"
   flutter_multi_formatter:
     dependency: "direct main"
     description:
@@ -1040,6 +1056,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  font_awesome_flutter:
+    dependency: transitive
+    description:
+      name: font_awesome_flutter
+      sha256: "275ff26905134bcb59417cf60ad979136f1f8257f2f449914b2c3e05bbb4cd6f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "10.7.0"
   fpdart:
     dependency: transitive
     description:
@@ -1490,6 +1514,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.0"
+  markdown:
+    dependency: transitive
+    description:
+      name: markdown
+      sha256: ef2a1298144e3f985cc736b22e0ccdaf188b5b3970648f2d9dc13efd1d9df051
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.2.2"
+  markdown_editor_plus:
+    dependency: "direct main"
+    description:
+      name: markdown_editor_plus
+      sha256: "8a4749e5b80330674dc20c65281fb2171ff583136a5ffb269802bd8fe818a7ce"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.15"
   matcher:
     dependency: transitive
     description:

@@ -63,10 +63,12 @@ class UploadFileTooLarge extends UploadState {
 class UploadReadyToPrepare extends UploadState {
   final UploadParams params;
   final bool isArConnect;
+  final List<FileEntry> manifestFiles;
 
   UploadReadyToPrepare({
     required this.params,
     this.isArConnect = false,
+    required this.manifestFiles,
   });
 
   @override
@@ -81,6 +83,7 @@ class UploadReady extends UploadState {
   final bool uploadIsPublic;
   final int numberOfFiles;
   final UploadParams params;
+  final List<FileEntry> manifestFiles;
 
   final bool isArConnect;
 
@@ -92,6 +95,7 @@ class UploadReady extends UploadState {
     required this.params,
     required this.numberOfFiles,
     required this.isArConnect,
+    required this.manifestFiles,
   });
 
   // copyWith
@@ -104,6 +108,7 @@ class UploadReady extends UploadState {
     int? numberOfFiles,
     UploadParams? params,
     bool? isArConnect,
+    List<FileEntry>? manifestFiles,
   }) {
     return UploadReady(
       isArConnect: isArConnect ?? this.isArConnect,
@@ -113,6 +118,7 @@ class UploadReady extends UploadState {
       params: params ?? this.params,
       isNextButtonEnabled: isNextButtonEnabled ?? this.isNextButtonEnabled,
       numberOfFiles: numberOfFiles ?? this.numberOfFiles,
+      manifestFiles: manifestFiles ?? this.manifestFiles,
     );
   }
 

@@ -9,6 +9,7 @@ import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/entities/folder_entity.dart';
+import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/models/forms/cc.dart';
 import 'package:ardrive/models/forms/udl.dart';
 import 'package:ardrive/models/models.dart';
@@ -52,6 +53,7 @@ class UploadCubit extends Cubit<UploadState> {
   final ActivityTracker _activityTracker;
   final LicenseService _licenseService;
   final ConfigService _configService;
+  final ManifestRepository _manifestRepository;
 
   late bool uploadFolders;
   late Drive _targetDrive;
@@ -80,15 +82,18 @@ class UploadCubit extends Cubit<UploadState> {
         isNextButtonEnabled: canUpload,
       ));
     } else if (state is UploadReadyToPrepare) {
-      emit(UploadReady(
-        params: (state as UploadReadyToPrepare).params,
-        paymentInfo: paymentInfo,
-        numberOfFiles: files.length,
-        uploadIsPublic: !_targetDrive.isPrivate,
-        isDragNDrop: isDragNDrop,
-        isNextButtonEnabled: canUpload,
-        isArConnect: (state as UploadReadyToPrepare).isArConnect,
-      ));
+      emit(
+        UploadReady(
+          params: (state as UploadReadyToPrepare).params,
+          paymentInfo: paymentInfo,
+          numberOfFiles: files.length,
+          uploadIsPublic: !_targetDrive.isPrivate,
+          isDragNDrop: isDragNDrop,
+          isNextButtonEnabled: canUpload,
+          isArConnect: (state as UploadReadyToPrepare).isArConnect,
+          manifestFiles: (state as UploadReadyToPrepare).manifestFiles,
+        ),
+      );
     }
   }
 
@@ -208,6 +213,7 @@ class UploadCubit extends Cubit<UploadState> {
     required ActivityTracker activityTracker,
     required LicenseService licenseService,
     required ConfigService configService,
+    required ManifestRepository manifestRepository,
     this.folder,
     this.uploadFolders = false,
     this.isDragNDrop = false,
@@ -219,6 +225,7 @@ class UploadCubit extends Cubit<UploadState> {
         _activityTracker = activityTracker,
         _licenseService = licenseService,
         _configService = configService,
+        _manifestRepository = manifestRepository,
         _uploadThumbnail = configService.config.uploadThumbnails,
         super(UploadPreparationInProgress());
 
@@ -442,6 +449,9 @@ class UploadCubit extends Cubit<UploadState> {
         _uploadThumbnail = false;
       }
 
+      final manifestsInTheFolder = await _manifestRepository
+          .getManifestFilesInFolder(folderId: parentFolderId);
+
       emit(
         UploadReadyToPrepare(
           params: UploadParams(
@@ -454,6 +464,7 @@ class UploadCubit extends Cubit<UploadState> {
             containsSupportedImageTypeForThumbnailGeneration:
                 containsSupportedImageTypeForThumbnailGeneration,
           ),
+          manifestFiles: manifestsInTheFolder,
           isArConnect: await _profileCubit.isCurrentProfileArConnect(),
         ),
       );

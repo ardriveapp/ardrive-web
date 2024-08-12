@@ -19,10 +19,16 @@ import 'package:ardrive/components/license/view_license_definition.dart';
 import 'package:ardrive/components/license_details_popover.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
+import 'package:ardrive/core/arfs/repository/file_repository.dart';
+import 'package:ardrive/core/arfs/repository/folder_repository.dart';
+import 'package:ardrive/core/arfs/utils/arfs_revision_status_utils.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
+import 'package:ardrive/entities/manifest_data.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
+import 'package:ardrive/main.dart';
+import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
@@ -171,6 +177,26 @@ Future<void> promptToUpload(
                 auth: context.read<ArDriveAuth>(),
                 licenseService: context.read<LicenseService>(),
                 configService: context.read<ConfigService>(),
+                manifestRepository: ManifestRepositoryImpl(
+                  context.read<DriveDao>(),
+                  ArDriveUploader(
+                    turboUploadUri:
+                        Uri.parse(configService.config.defaultTurboUploadUrl!),
+                    metadataGenerator: ARFSUploadMetadataGenerator(
+                      tagsGenerator: ARFSTagsGenetator(
+                        appInfoServices: AppInfoServices(),
+                      ),
+                    ),
+                    arweave: context.read<ArweaveService>().client,
+                    pstService: context.read<PstService>(),
+                  ),
+                  context.read<FolderRepository>(),
+                  ManifestDataBuilder(
+                    fileRepository: context.read<FileRepository>(),
+                    folderRepository: context.read<FolderRepository>(),
+                  ),
+                  ARFSRevisionStatusUtils(context.read<FileRepository>()),
+                ),
               )..startUploadPreparation(),
             ),
             BlocProvider(
@@ -511,6 +537,69 @@ class _UploadFormState extends State<UploadForm> {
                               )
                             ],
                           ),
+                        ),
+                      if (state.manifestFiles.isNotEmpty)
+                        ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: state.manifestFiles.length,
+                          separatorBuilder: (context, index) => const Divider(),
+                          itemBuilder: (context, index) {
+                            final manifestFile = state.manifestFiles[index];
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(
+                                  width: 200,
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Flexible(
+                                        flex: 2,
+                                        child: Text(
+                                          'Manifests',
+                                          style: typography.paragraphLarge(
+                                            fontWeight: ArFontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      Flexible(
+                                        flex: 1,
+                                        child: Text(
+                                          'Update',
+                                          style: typography.paragraphLarge(
+                                            fontWeight: ArFontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 200,
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Flexible(
+                                        flex: 2,
+                                        child: Text(
+                                          manifestFile.name,
+                                          style: typography.paragraphNormal(
+                                            fontWeight: ArFontWeight.semiBold,
+                                          ),
+                                        ),
+                                      ),
+                                      const Flexible(
+                                        flex: 1,
+                                        child: ArDriveCheckBox(),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       SizedBox(
                         child: ReactiveForm(
