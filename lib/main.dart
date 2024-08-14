@@ -208,30 +208,28 @@ class AppState extends State<App> {
     );
   }
 
-  SelectionArea _appBuilder(BuildContext context) {
+  MaterialApp _appBuilder(BuildContext context) {
     final ardriveTheme =
         ArDriveTheme.of(context).themeData.materialThemeData.copyWith(
               scaffoldBackgroundColor:
                   ArDriveTheme.of(context).themeData.backgroundColor,
             );
 
-    return SelectionArea(
-      child: MaterialApp.router(
-        title: _appName,
-        theme: ardriveTheme,
-        debugShowCheckedModeBanner: false,
-        routeInformationParser: _routeInformationParser,
-        routerDelegate: _routerDelegate,
-        localizationsDelegates: _localizationsDelegates,
-        supportedLocales: _locales,
+    return MaterialApp.router(
+      title: _appName,
+      theme: ardriveTheme,
+      debugShowCheckedModeBanner: false,
+      routeInformationParser: _routeInformationParser,
+      routerDelegate: _routerDelegate,
+      localizationsDelegates: _localizationsDelegates,
+      supportedLocales: _locales,
 
-        // TODO: Remove this once we have a proper solution for
-        builder: (context, child) => ListTileTheme(
-          textColor: kOnSurfaceBodyTextColor,
-          iconColor: kOnSurfaceBodyTextColor,
-          child: Portal(
-            child: child!,
-          ),
+      // TODO: Remove this once we have a proper solution for
+      builder: (context, child) => ListTileTheme(
+        textColor: kOnSurfaceBodyTextColor,
+        iconColor: kOnSurfaceBodyTextColor,
+        child: Portal(
+          child: child!,
         ),
       ),
     );

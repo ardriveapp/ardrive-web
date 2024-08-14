@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
@@ -12,6 +14,7 @@ import 'package:ardrive/blocs/upload/payment_method/view/upload_payment_method_v
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/blocs/upload/upload_handles/file_v2_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
+import 'package:ardrive/components/create_manifest_form.dart';
 import 'package:ardrive/components/file_picker_modal.dart';
 import 'package:ardrive/components/license/cc_type_form.dart';
 import 'package:ardrive/components/license/learn_about_licensing.dart';
@@ -285,23 +288,39 @@ class _UploadFormState extends State<UploadForm> {
                   folderRepository: context.read<FolderRepository>(),
                   auth: context.read<ArDriveAuth>(),
                 );
+                Navigator.pop(context);
 
-                cubit
-                    .prepareManifestTx(
-                      manifestName: state.manifestFiles.first.name,
-                      folderId: state.manifestFiles.first.parentFolderId,
-                      existingManifestFileId: state.manifestFiles.first.id,
-                    )
-                    .then((value) => cubit.uploadManifest());
-                ArDriveDock.of(context).showOverlay(
-                  context,
-                  AutoDeployWidget(createManifestCubit: cubit),
-                  height: 150,
+                await cubit.prepareManifestTx(
+                  manifestName: state.manifestFiles.first.name,
+                  folderId: state.manifestFiles.first.parentFolderId,
+                  existingManifestFileId: state.manifestFiles.first.id,
                 );
+
+                final manifestSize =
+                    await (cubit.state as CreateManifestUploadReview)
+                        .manifestFile
+                        .length;
+
+                if (manifestSize <=
+                    configService.config.allowedDataItemSizeForTurbo) {
+                  cubit.uploadManifest();
+                  ArDriveDock.of(context).showOverlay(
+                    context,
+                    AutoDeployWidget(createManifestCubit: cubit),
+                    height: 150,
+                  );
+                } else {
+                  showAnimatedDialog(
+                    context,
+                    content: BlocProvider.value(
+                      value: cubit,
+                      child: const CreateManifestForm(),
+                    ),
+                  );
+                }
               }
 
               if (!_isShowingCancelDialog) {
-                Navigator.pop(context);
                 context.read<FeedbackSurveyCubit>().openRemindMe();
                 context.read<ActivityTracker>().setUploading(false);
                 context.read<SyncCubit>().startSync();
