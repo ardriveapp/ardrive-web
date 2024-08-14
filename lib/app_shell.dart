@@ -5,6 +5,7 @@ import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/drive_explorer/multi_thumbnail_creation/multi_thumbnail_creation_warn_modal.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
+import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/shared/blocs/banner/app_banner_bloc.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
@@ -111,64 +112,74 @@ class AppShellState extends State<AppShell> {
                                       child: Material(
                                         borderRadius: BorderRadius.circular(8),
                                         child: ProgressDialog(
-                                            useNewArDriveUI: true,
-                                            progressBar: ProgressBar(
-                                              percentage: context
-                                                  .read<SyncCubit>()
-                                                  .syncProgressController
-                                                  .stream,
-                                            ),
-                                            percentageDetails:
-                                                _syncStreamBuilder(
-                                              builderWithData: (syncProgress) =>
-                                                  Text(
-                                                appLocalizationsOf(context)
-                                                    .syncProgressPercentage(
-                                                  (syncProgress.progress * 100)
-                                                      .roundToDouble()
-                                                      .toString(),
-                                                ),
-                                                style:
-                                                    typography.paragraphNormal(
-                                                  fontWeight: ArFontWeight.bold,
-                                                ),
+                                          useNewArDriveUI: true,
+                                          progressBar: ProgressBar(
+                                            percentage: context
+                                                .read<SyncCubit>()
+                                                .syncProgressController
+                                                .stream,
+                                          ),
+                                          percentageDetails: _syncStreamBuilder(
+                                            builderWithData: (syncProgress) =>
+                                                Text(
+                                              appLocalizationsOf(context)
+                                                  .syncProgressPercentage(
+                                                (syncProgress.progress * 100)
+                                                    .roundToDouble()
+                                                    .toString(),
+                                              ),
+                                              style: typography.paragraphNormal(
+                                                fontWeight: ArFontWeight.bold,
                                               ),
                                             ),
-                                            progressDescription:
-                                                _syncStreamBuilder(
-                                              builderWithData: (syncProgress) =>
-                                                  Text(
-                                                syncProgress.drivesCount == 0
-                                                    ? ''
-                                                    : syncProgress.drivesCount >
-                                                            1
-                                                        ? appLocalizationsOf(
-                                                                context)
-                                                            .driveSyncedOfDrivesCount(
-                                                                syncProgress
-                                                                    .drivesSynced,
-                                                                syncProgress
-                                                                    .drivesCount)
-                                                        : appLocalizationsOf(
-                                                                context)
-                                                            .syncingOnlyOneDrive,
-                                                style:
-                                                    typography.paragraphNormal(
-                                                  fontWeight: ArFontWeight.bold,
-                                                ),
+                                          ),
+                                          progressDescription:
+                                              _syncStreamBuilder(
+                                            builderWithData: (syncProgress) =>
+                                                Text(
+                                              syncProgress.drivesCount == 0
+                                                  ? ''
+                                                  : syncProgress.drivesCount > 1
+                                                      ? appLocalizationsOf(
+                                                              context)
+                                                          .driveSyncedOfDrivesCount(
+                                                              syncProgress
+                                                                  .drivesSynced,
+                                                              syncProgress
+                                                                  .drivesCount)
+                                                      : appLocalizationsOf(
+                                                              context)
+                                                          .syncingOnlyOneDrive,
+                                              style: typography.paragraphNormal(
+                                                fontWeight: ArFontWeight.bold,
                                               ),
                                             ),
-                                            title: isCurrentProfileArConnect
-                                                ? appLocalizationsOf(context)
-                                                    .syncingPleaseRemainOnThisTab
-                                                : appLocalizationsOf(context)
-                                                    .syncingPleaseWait),
+                                          ),
+                                          title: isCurrentProfileArConnect
+                                              ? appLocalizationsOf(context)
+                                                  .syncingPleaseRemainOnThisTab
+                                              : appLocalizationsOf(context)
+                                                  .syncingPleaseWait,
+                                        ),
                                       ),
                                     );
                                   },
                                 );
                               },
                             ),
+                            if (context.read<ConfigService>().flavor !=
+                                Flavor.production)
+                              Positioned(
+                                bottom: 0,
+                                right: 20,
+                                child: Text(
+                                  'Using gateway: ${context.read<ConfigService>().config.defaultArweaveGatewayUrl}',
+                                  style: ArDriveTypographyNew.of(context)
+                                      .paragraphLarge(
+                                    fontWeight: ArFontWeight.semiBold,
+                                  ),
+                                ),
+                              ),
                           ],
                         )
                       : scaffold,

@@ -18,6 +18,7 @@ import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:collection/collection.dart';
@@ -39,10 +40,10 @@ const defaultMaxRetries = 8;
 const kMaxNumberOfTransactionsPerPage = 100;
 
 class ArweaveService {
-  final Arweave client;
+  Arweave client;
   final ArDriveCrypto _crypto;
 
-  final ArtemisClient _gql;
+  ArtemisClient _gql;
 
   ArweaveService(
     this.client,
@@ -52,7 +53,10 @@ class ArweaveService {
             ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
     graphQLRetry = GraphQLRetry(
       _gql,
-      internetChecker: InternetChecker(connectivity: Connectivity()),
+      internetChecker: InternetChecker(
+        connectivity: Connectivity(),
+      ),
+      arioSDK: ArioSDKFactory().create(),
     );
     httpRetry = HttpRetry(
       GatewayResponseHandler(),
@@ -74,6 +78,11 @@ class ArweaveService {
         },
       ),
     );
+  }
+
+  /// Sets the gateway to use for all Data requests. No GraphQL requests are made with the new gateway.
+  void setGateway(Gateway gateway) {
+    client = Arweave(gatewayUrl: getGatewayUri(gateway));
   }
 
   int bytesToChunks(int bytes) {

@@ -4,6 +4,7 @@ import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/components/icon_theme_switcher.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/components/truncated_address.dart';
+import 'package:ardrive/gar/presentation/widgets/gar_modal.dart';
 import 'package:ardrive/gift/bloc/redeem_gift_bloc.dart';
 import 'package:ardrive/gift/redeem_gift_modal.dart';
 import 'package:ardrive/misc/resources.dart';
@@ -22,6 +23,7 @@ import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.da
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -157,6 +159,8 @@ class _ProfileCardState extends State<ProfileCard> {
                   endIndent: 16,
                 ),
                 _buildBalanceRow(context, state),
+                if (arioSdkIsPlaformSupported())
+                  _buildIOTokenRow(context, state),
                 if (context.read<PaymentService>().useTurboPayment) ...[
                   Padding(
                     padding: const EdgeInsets.only(top: 20.0),
@@ -325,9 +329,30 @@ class _ProfileCardState extends State<ProfileCard> {
             ],
           ),
           const SizedBox(height: 8),
-          // ArDriveAccordion(backgroundColor: Colors.transparent, children: [
-
-          // ]),
+          if (arioSdkIsPlaformSupported())
+            ArDriveAccordion(backgroundColor: Colors.transparent, children: [
+              // gateway switcher
+              ArDriveAccordionItem(
+                Text(
+                  'Advanced',
+                  style: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                ),
+                [
+                  _ProfileMenuAccordionItem(
+                    text: 'Switch Gateway',
+                    onTap: () {
+                      setState(() {
+                        _showProfileCard = false;
+                      });
+                      showGatewaySwitcherModal(context);
+                    },
+                  ),
+                ],
+              ),
+            ]),
+          const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.only(right: 12.0, left: 16, top: 12),
             child: Row(
@@ -420,6 +445,36 @@ class _ProfileCardState extends State<ProfileCard> {
           ),
           Text(
             '$walletBalance AR',
+            style: typography.paragraphNormal(
+              color: colorTokens.textLow,
+              fontWeight: ArFontWeight.semiBold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIOTokenRow(BuildContext context, ProfileLoggedIn state) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final ioTokens = context.read<ArDriveAuth>().currentUser.ioTokens;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'IO Tokens',
+            style: typography.paragraphNormal(
+              fontWeight: ArFontWeight.semiBold,
+              color: colorTokens.textHigh,
+            ),
+          ),
+          Text(
+            '$ioTokens',
             style: typography.paragraphNormal(
               color: colorTokens.textLow,
               fontWeight: ArFontWeight.semiBold,

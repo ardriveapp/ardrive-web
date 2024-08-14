@@ -67,7 +67,7 @@ import 'theme/theme.dart';
 final overlayKey = GlobalKey<OverlayState>();
 
 late ConfigService configService;
-late ArweaveService _arweave;
+late ArweaveService arweave;
 late TurboUploadService _turboUpload;
 late PaymentService _turboPayment;
 
@@ -125,7 +125,7 @@ Future<void> _initializeServices() async {
 
   logger.d('Initializing app with config: $config');
 
-  _arweave = ArweaveService(
+  arweave = ArweaveService(
     Arweave(
       gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!),
     ),
@@ -343,7 +343,7 @@ class AppState extends State<App> {
       ];
 
   List<SingleChildWidget> get repositoryProviders => [
-        RepositoryProvider<ArweaveService>(create: (_) => _arweave),
+        RepositoryProvider<ArweaveService>(create: (_) => arweave),
         // repository provider for UploadFileChecker
         RepositoryProvider<UploadFileSizeChecker>(
           create: (_) => UploadFileSizeChecker(
@@ -351,7 +351,7 @@ class AppState extends State<App> {
             fileSizeLimit: fileSizeLimit,
           ),
         ),
-        RepositoryProvider<ArweaveService>(create: (_) => _arweave),
+        RepositoryProvider<ArweaveService>(create: (_) => arweave),
         RepositoryProvider<ConfigService>(
           create: (_) => configService,
         ),
@@ -405,7 +405,7 @@ class AppState extends State<App> {
               const FlutterSecureStorage(),
             ),
             crypto: ArDriveCrypto(),
-            arweave: _arweave,
+            arweave: arweave,
             userRepository: context.read<UserRepository>(),
           ),
         ),
@@ -419,7 +419,7 @@ class AppState extends State<App> {
         ),
         RepositoryProvider(
           create: (_) => SyncRepository(
-            arweave: _arweave,
+            arweave: arweave,
             configService: configService,
             driveDao: _.read<DriveDao>(),
             licenseService: _.read<LicenseService>(),
@@ -443,14 +443,14 @@ class AppState extends State<App> {
         RepositoryProvider(
           create: (_) => ArDriveDownloader(
             ardriveIo: ArDriveIO(),
-            arweave: _arweave,
+            arweave: arweave,
             ioFileAdapter: IOFileAdapter(),
           ),
         ),
         // ArDriveUploader
         RepositoryProvider(
           create: (_) => ArDriveUploader(
-            arweave: _arweave.client,
+            arweave: arweave.client,
             turboUploadUri:
                 Uri.parse(configService.config.defaultTurboUploadUrl!),
             metadataGenerator: ARFSUploadMetadataGenerator(

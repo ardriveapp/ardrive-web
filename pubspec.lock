@@ -140,6 +140,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.5.0"
+  ario_sdk:
+    dependency: "direct main"
+    description:
+      path: ario_sdk
+      relative: true
+    source: path
+    version: "0.0.1"
   artemis:
     dependency: "direct main"
     description:
