@@ -1384,6 +1384,10 @@
   "@newFolder": {
     "description": "Create a new folder entity"
   },
+  "newMarkdownFile": "New Markdown File",
+  "@newMarkdownFile": {
+    "description": "E.g.: I want to create a \"New Markdown File\""
+  },
   "newSnapshot": "New Snapshot",
   "@newSnapshot": {
     "description": "The action of snapshotting a drive"

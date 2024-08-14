@@ -24,6 +24,7 @@ import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/components/pin_file_dialog.dart';
 import 'package:ardrive/components/prompt_to_snapshot_dialog.dart';
 import 'package:ardrive/components/side_bar.dart';
+import 'package:ardrive/components/upload_markdown_form.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/dev_tools/shortcut_handler.dart';
@@ -41,6 +42,7 @@ import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/file_icon.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/components/unpreviewable_content.dart';
+import 'package:ardrive/pages/markdown_editor_page.dart';
 import 'package:ardrive/search/search_modal.dart';
 import 'package:ardrive/search/search_text_field.dart';
 import 'package:ardrive/services/services.dart';
@@ -272,6 +274,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                               ),
                             )
                           : null,
+                      // TODO: THIS WOULD NEED CONTEXT ABOUT THE EDITOR
                       body: _mobileView(
                         driveDetailState,
                         hasSubfolders,
@@ -308,6 +311,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
         Expanded(
           child: Stack(
             children: [
+              // Bottom layer: Drive Detail Content
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -317,6 +321,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // breadcrumb row and spacer
                           ArDriveCard(
                             backgroundColor: ArDriveTheme.of(context)
                                 .themeData
@@ -588,9 +593,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                               ],
                             ),
                           ),
-                          const SizedBox(
-                            height: 30,
-                          ),
+                          const SizedBox(height: 30),
                           if (hasFiles || hasSubfolders)
                             Expanded(
                               child: Row(
@@ -680,12 +683,39 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                         ),
                       ))
                 ],
-              ),
-              if (kIsWeb)
+              ), // End of Drive Detail Content Row
+              if (!driveDetailState.showMarkdownEditor && kIsWeb)
                 DriveFileDropZone(
                   driveId: driveDetailState.currentDrive.id,
                   folderId: driveDetailState.folderInView.folder.id,
                 ),
+              // Top layer: Markdown Editor, conditionally visible
+              if (driveDetailState.showMarkdownEditor &&
+                  driveDetailState.currentMarkdownText == null)
+                (() {
+                  late MarkdownEditorPage markdownEditorPage;
+                  markdownEditorPage = MarkdownEditorPage(
+                    onClose: () {
+                      context.read<DriveDetailCubit>().closeMarkdownEditor();
+                    },
+                    onSave: () {
+                      // TODO: SHOULD AWAIT?
+                      debugPrint('ATTEMPTING TO SAVE MARKDOWN FILE');
+                      promptToUploadMarkdown(context,
+                          drive: driveDetailState.currentDrive,
+                          markdownText: markdownEditorPage.markdownText,
+                          parentFolderEntry:
+                              driveDetailState.folderInView.folder);
+                    },
+                  );
+                  return Positioned.fill(
+                    child: Container(
+                      color: Colors.black
+                          .withOpacity(0.7), // Optional dim background
+                      child: markdownEditorPage,
+                    ),
+                  );
+                })(),
             ],
           ),
         ),
@@ -712,6 +742,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     return 0;
   }
 
+// TODO: THIS COULD BE WHERE EDITOR IS SHOWN?
   Widget _mobileView(
     DriveDetailLoadSuccess driveDetailLoadSuccessState,
     bool hasSubfolders,

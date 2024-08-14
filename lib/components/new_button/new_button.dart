@@ -431,8 +431,18 @@ class NewButton extends StatelessWidget {
               name: appLocalizationsOf(context).newFilePin,
               icon: ArDriveIcons.pinWithCircle(size: defaultIconSize),
               onClick: () => showPinFileDialog(context: context),
-              isDisabled:
-                  !driveDetailState.hasWritePermissions || drive == null,
+              isDisabled: !driveDetailState.hasWritePermissions ||
+                  drive == null, // Why is this different than createFolder?
+            ),
+          if (drive != null)
+            ArDriveNewButtonItem(
+              name: appLocalizationsOf(context).newMarkdownFile,
+              icon: ArDriveIcons.iconUploadFiles(size: defaultIconSize),
+              onClick: () {
+                context.read<DriveDetailCubit>().openMarkdownEditor();
+              },
+              isDisabled: !driveDetailState.hasWritePermissions ||
+                  drive == null, // Why is this different than createFolder?
             ),
           const ArDriveNewButtonDivider(),
         ],

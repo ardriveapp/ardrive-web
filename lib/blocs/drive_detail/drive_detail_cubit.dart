@@ -263,6 +263,20 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     });
   }
 
+  void openMarkdownEditor() {
+    final state = this.state as DriveDetailLoadSuccess;
+    emit(
+      state.copyWith(showMarkdownEditor: true),
+    );
+  }
+
+  void closeMarkdownEditor() {
+    final state = this.state as DriveDetailLoadSuccess;
+    emit(
+      state.copyWith(showMarkdownEditor: false),
+    );
+  }
+
   List<ArDriveDataTableItem> parseEntitiesToDatatableItem({
     required FolderWithContents folder,
     required bool isOwner,

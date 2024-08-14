@@ -43,6 +43,9 @@ class DriveDetailLoadSuccess extends DriveDetailState {
 
   final bool isShowingHiddenFiles;
 
+  final bool showMarkdownEditor;
+  final String? currentMarkdownText;
+
   DriveDetailLoadSuccess({
     required this.currentDrive,
     required this.hasWritePermissions,
@@ -64,6 +67,8 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     required this.isShowingHiddenFiles,
     required this.pathSegments,
     this.selectedPage,
+    this.showMarkdownEditor = false,
+    this.currentMarkdownText,
   });
 
   DriveDetailLoadSuccess copyWith({
@@ -86,6 +91,8 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     bool? isShowingHiddenFiles,
     List<BreadCrumbRowInfo>? pathSegments,
     int? selectedPage,
+    bool? showMarkdownEditor,
+    String? currentMarkdownText,
   }) =>
       DriveDetailLoadSuccess(
         selectedPage: selectedPage ?? this.selectedPage,
@@ -111,6 +118,8 @@ class DriveDetailLoadSuccess extends DriveDetailState {
             currentFolderContents ?? this.currentFolderContents,
         isShowingHiddenFiles: isShowingHiddenFiles ?? this.isShowingHiddenFiles,
         pathSegments: pathSegments ?? this.pathSegments,
+        showMarkdownEditor: showMarkdownEditor ?? this.showMarkdownEditor,
+        currentMarkdownText: currentMarkdownText ?? this.currentMarkdownText,
       );
 
   @override
