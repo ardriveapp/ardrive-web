@@ -13,11 +13,11 @@ abstract class UploadMarkdownState extends Equatable {
 
 /// Initial state where user begins by selecting a name for the markdown file
 class UploadMarkdownInitial extends UploadMarkdownState {
-  final String? existingMarkdownFilename;
+  final String markdownFilename;
   final FolderEntry parentFolderEntry;
 
   UploadMarkdownInitial(
-      {this.existingMarkdownFilename, required this.parentFolderEntry});
+      {required this.markdownFilename, required this.parentFolderEntry});
 }
 
 /// User has selected a folder and we are checking for name conflicts

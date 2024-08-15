@@ -181,6 +181,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   Widget? shellPage;
                   if (state is DrivesLoadSuccess) {
                     shellPage = !state.hasNoDrives
+                        // TODO: THIS IS HOW THE DRIVE DETAIL PAGE IS SET
                         ? DriveDetailPage(
                             context: navigatorKey.currentContext!,
                             anonymouslyShowDriveDetail:

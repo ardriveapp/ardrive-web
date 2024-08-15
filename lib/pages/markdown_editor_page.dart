@@ -4,13 +4,17 @@ import 'package:markdown_editor_plus/widgets/markdown_auto_preview.dart';
 
 class MarkdownEditorPage extends StatelessWidget {
   final VoidCallback onClose;
-  final VoidCallback onSave;
+  final void Function(String title, String markdownText) onSave;
+  final TextEditingController textController;
+  final TextEditingController titleController;
   final MarkdownAutoPreview _markdownAutoPreview;
 
   MarkdownEditorPage({
     super.key,
     required this.onClose,
     required this.onSave,
+    required this.titleController,
+    required this.textController,
     MarkdownAutoPreview? markdownAutoPreview,
   }) : _markdownAutoPreview = markdownAutoPreview ??
             MarkdownAutoPreview(
@@ -22,6 +26,7 @@ class MarkdownEditorPage extends StatelessWidget {
               enableToolBar: true,
               toolbarBackground: Colors.blue,
               expandableBackground: Colors.blue[200],
+              controller: textController,
             );
 
   @override
@@ -42,7 +47,7 @@ class MarkdownEditorPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Your New Markdown File',
+            'New Markdown File',
             style: typography.heading4(
               fontWeight: ArFontWeight.bold,
             ),
@@ -53,15 +58,15 @@ class MarkdownEditorPage extends StatelessWidget {
             child: SizedBox(
               width: 600,
               child: ArDriveTextFieldNew(
-                hintText: 'Give it a title',
-                hintStyle: typography.paragraphNormal(
-                  color: colorTokens.textLow,
-                  fontWeight: ArFontWeight.semiBold,
-                ),
-                onChanged: (text) {
-                  // TODO: set the title of the markdown file
-                },
-              ),
+                  hintText: 'Give it a title',
+                  hintStyle: ArDriveTypographyNew.of(context).paragraphNormal(
+                    color: colorTokens.textLow,
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                  controller: titleController,
+                  onChanged: (text) {
+                    // TODO: set the title of the markdown file
+                  }),
             ),
           ),
           const SizedBox(height: 8),
@@ -95,7 +100,11 @@ class MarkdownEditorPage extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         ArDriveButtonNew(
-                          onPressed: onSave,
+                          onPressed: () {
+                            debugPrint(
+                                'Calling onSave. markdownText: $markdownText, titleController: ${titleController}');
+                            onSave(titleController.text, markdownText);
+                          },
                           text: 'Save',
                           maxHeight: 40,
                           maxWidth: 100,
@@ -114,5 +123,6 @@ class MarkdownEditorPage extends StatelessWidget {
     );
   }
 
-  get markdownText => _markdownAutoPreview.controller?.text;
+  get markdownText =>
+      _markdownAutoPreview.controller?.text ?? this.textController.text;
 }

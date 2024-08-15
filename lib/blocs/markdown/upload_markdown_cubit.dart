@@ -24,7 +24,7 @@ class UploadMarkdownCubit extends Cubit<UploadMarkdownState> {
 
   final String _markdownText;
   final FolderEntry _parentFolderEntry;
-  final String? _existingMarkdownFilename;
+  final String _markdownFilename;
 
   UploadMarkdownCubit({
     required ProfileCubit profileCubit,
@@ -32,17 +32,17 @@ class UploadMarkdownCubit extends Cubit<UploadMarkdownState> {
     required MarkdownRepository markdownRepository,
     required ArDriveAuth auth,
     required String markdownText,
+    required String markdownFilename,
     required FolderEntry parentFolderEntry,
-    String? existingMarkdownFilename,
   })  : _drive = drive,
         _profileCubit = profileCubit,
         _markdownRepository = markdownRepository,
         _auth = auth,
         _markdownText = markdownText,
         _parentFolderEntry = parentFolderEntry,
-        _existingMarkdownFilename = existingMarkdownFilename,
+        _markdownFilename = markdownFilename,
         super(UploadMarkdownInitial(
-            existingMarkdownFilename: existingMarkdownFilename,
+            markdownFilename: markdownFilename,
             parentFolderEntry: parentFolderEntry)) {}
 
   void selectUploadMethod(
@@ -211,7 +211,7 @@ class UploadMarkdownCubit extends Cubit<UploadMarkdownState> {
   // TODO: excise?
   void backToName() {
     emit(UploadMarkdownInitial(
-      existingMarkdownFilename: _existingMarkdownFilename,
+      markdownFilename: _markdownFilename,
       parentFolderEntry: _parentFolderEntry,
     ));
   }

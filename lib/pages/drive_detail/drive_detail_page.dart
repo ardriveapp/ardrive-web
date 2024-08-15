@@ -696,11 +696,15 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                 (() {
                   final colorTokens =
                       ArDriveTheme.of(context).themeData.colorTokens;
+                  final textController = TextEditingController();
+                  final titleController = TextEditingController();
                   late MarkdownEditorPage markdownEditorPage;
                   markdownEditorPage = MarkdownEditorPage(
                     onClose: () {
                       context.read<DriveDetailCubit>().closeMarkdownEditor();
                     },
+                    textController: textController,
+                    titleController: titleController,
                     markdownAutoPreview: MarkdownAutoPreview(
                       decoration: InputDecoration(
                         hintText: 'Enter Markdown',
@@ -719,14 +723,18 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                         fontWeight: ArFontWeight.semiBold,
                       ),
                       iconColor: colorTokens.textOnPrimary,
+                      controller: textController,
                     ),
-                    onSave: () {
+                    onSave: (title, markdownText) {
                       // TODO: SHOULD AWAIT?
-                      debugPrint('ATTEMPTING TO SAVE MARKDOWN FILE');
+                      debugPrint(
+                          'ATTEMPTING TO SAVE MARKDOWN FILE. markdownText = ${markdownText}');
+                      // TODO: Might need an onCancel and onComplete handler to close the editor when the flow is done
                       promptToUploadMarkdown(
                         context,
                         drive: driveDetailState.currentDrive,
-                        markdownText: markdownEditorPage.markdownText,
+                        markdownText: markdownText,
+                        markdownFilename: title,
                         parentFolderEntry: driveDetailState.folderInView.folder,
                       );
                     },

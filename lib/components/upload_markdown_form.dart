@@ -11,7 +11,6 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/markdown/domain/markdown_repository.dart';
-import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -20,13 +19,11 @@ import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
-import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive/utils/validate_folder_name.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pst/pst.dart';
@@ -38,6 +35,7 @@ Future<void> promptToUploadMarkdown(
   BuildContext context, {
   required Drive drive,
   required String markdownText,
+  required String markdownFilename,
   required FolderEntry parentFolderEntry,
 }) {
   final pst = context.read<PstService>();
@@ -65,6 +63,7 @@ Future<void> promptToUploadMarkdown(
           context.read<FolderRepository>(),
         ),
         markdownText: markdownText,
+        markdownFilename: markdownFilename,
         parentFolderEntry: parentFolderEntry,
       ),
       child: const UploadMarkdownForm(),
@@ -162,7 +161,7 @@ class _UploadMarkdownFormState extends State<UploadMarkdownForm> {
         );
       } else if (state is UploadMarkdownNameConflict) {
         return _uploadMarkdownNameConflict(
-          contexty: context,
+          context: context,
           textStyle: textStyle,
         );
       } else if (state is UploadMarkdownRevisionConfirm) {
@@ -171,10 +170,8 @@ class _UploadMarkdownFormState extends State<UploadMarkdownForm> {
           textStyle: textStyle,
         );
       } else if (state is UploadMarkdownInitial) {
-        return _uploadMarkdownInitial(
-          context: context,
-          textStyle: textStyle,
-        );
+        final readCubitContext = context.read<UploadMarkdownCubit>();
+        readCubitContext.checkForConflicts(state.markdownFilename);
       }
       if (state is MarkdownUploadInProgress) {
         return ProgressDialog(
@@ -204,7 +201,7 @@ class _UploadMarkdownFormState extends State<UploadMarkdownForm> {
   }
 
   Widget _uploadMarkdownNameConflict({
-    required BuildContext contexty,
+    required BuildContext context,
     required TextStyle textStyle,
   }) {
     final readCubitContext = context.read<UploadMarkdownCubit>();
@@ -276,64 +273,64 @@ class _UploadMarkdownFormState extends State<UploadMarkdownForm> {
     );
   }
 
-  Widget _uploadMarkdownInitial({
-    required BuildContext context,
-    required TextStyle textStyle,
-  }) {
-    final readCubitContext = context.read<UploadMarkdownCubit>();
-    return ArDriveStandardModalNew(
-      width: kLargeDialogWidth,
-      title:
-          appLocalizationsOf(context).addnewManifestEmphasized, // TODO: UPDATE
-      actions: [
-        ModalAction(
-          action: () => Navigator.pop(context),
-          title: appLocalizationsOf(context).cancelEmphasized,
-        ),
-        ModalAction(
-          isEnable: _isFormValid,
-          action: () =>
-              readCubitContext.checkForConflicts(_markdownNameController.text),
-          title: appLocalizationsOf(context).nextEmphasized,
-        ),
-      ],
-      content: SizedBox(
-        height: 250,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              RichText(
-                text: TextSpan(children: [
-                  TextSpan(
-                    text: appLocalizationsOf(context)
-                        .aManifestIsASpecialKindOfFile, // trimmed spaces // TODO: EXCISE
-                    style: textStyle,
-                  ),
-                  const TextSpan(text: ' '),
-                  TextSpan(
-                    text: appLocalizationsOf(context).learnMore,
-                    style: textStyle.copyWith(
-                      decoration: TextDecoration.underline,
-                    ),
-                    recognizer: TapGestureRecognizer()
-                      ..onTap = () => openUrl(
-                            url:
-                                Resources.manifestLearnMoreLink, // TODO: EXCISE
-                          ),
-                  ),
-                ]),
-              ),
-              markdownNameForm()
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  // Widget _uploadMarkdownInitial({
+  //   required BuildContext context,
+  //   required TextStyle textStyle,
+  // }) {
+  //   final readCubitContext = context.read<UploadMarkdownCubit>();
+  //   return ArDriveStandardModalNew(
+  //     width: kLargeDialogWidth,
+  //     title:
+  //         appLocalizationsOf(context).addnewManifestEmphasized, // TODO: UPDATE
+  //     actions: [
+  //       ModalAction(
+  //         action: () => Navigator.pop(context),
+  //         title: appLocalizationsOf(context).cancelEmphasized,
+  //       ),
+  //       ModalAction(
+  //         isEnable: _isFormValid,
+  //         action: () =>
+  //             readCubitContext.checkForConflicts(_markdownNameController.text),
+  //         title: appLocalizationsOf(context).nextEmphasized,
+  //       ),
+  //     ],
+  //     content: SizedBox(
+  //       height: 250,
+  //       child: Padding(
+  //         padding: const EdgeInsets.symmetric(horizontal: 24),
+  //         child: Column(
+  //           mainAxisSize: MainAxisSize.min,
+  //           mainAxisAlignment: MainAxisAlignment.spaceAround,
+  //           crossAxisAlignment: CrossAxisAlignment.center,
+  //           children: [
+  //             RichText(
+  //               text: TextSpan(children: [
+  //                 TextSpan(
+  //                   text: appLocalizationsOf(context)
+  //                       .aManifestIsASpecialKindOfFile, // trimmed spaces // TODO: EXCISE
+  //                   style: textStyle,
+  //                 ),
+  //                 const TextSpan(text: ' '),
+  //                 TextSpan(
+  //                   text: appLocalizationsOf(context).learnMore,
+  //                   style: textStyle.copyWith(
+  //                     decoration: TextDecoration.underline,
+  //                   ),
+  //                   recognizer: TapGestureRecognizer()
+  //                     ..onTap = () => openUrl(
+  //                           url:
+  //                               Resources.manifestLearnMoreLink, // TODO: EXCISE
+  //                         ),
+  //                 ),
+  //               ]),
+  //             ),
+  //             markdownNameForm()
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _uploadMarkdownUploadReview({
     required MarkdownUploadReview state,
