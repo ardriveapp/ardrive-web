@@ -1525,10 +1525,11 @@ packages:
   markdown_editor_plus:
     dependency: "direct main"
     description:
-      name: markdown_editor_plus
-      sha256: "8a4749e5b80330674dc20c65281fb2171ff583136a5ffb269802bd8fe818a7ce"
-      url: "https://pub.dev"
-    source: hosted
+      path: "."
+      ref: main
+      resolved-ref: d843614db7612252520e64c06ef408db2829345e
+      url: "https://github.com/thiagocarvalhodev/markdown_editor_plus"
+    source: git
     version: "0.2.15"
   matcher:
     dependency: transitive

@@ -260,7 +260,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                       TextSpan(
                         text:
                             'By connecting your wallet, you agree to our ${width < TABLET ? '\n' : ''}',
-                        style: typography.paragraphNormal(
+                        style: typography.paragraphLarge(
                             color: colorTokens.textLow,
                             fontWeight: ArFontWeight.semiBold),
                       ),

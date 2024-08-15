@@ -165,6 +165,10 @@ dependency_overrides:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
       ref: v3.9.0
+  markdown_editor_plus:
+    git:
+      url: https://github.com/thiagocarvalhodev/markdown_editor_plus
+      ref: main
 
   ardrive_io:
     git:

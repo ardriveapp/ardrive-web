@@ -258,12 +258,13 @@ class AppShellState extends State<AppShell> {
                           child: Row(
                             children: [
                               const AppSideBar(),
-                              Container(
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .backgroundColor,
-                                width: 16,
-                              ),
+                              if (_addLeftPadding(context))
+                                Container(
+                                  color: ArDriveTheme.of(context)
+                                      .themeData
+                                      .backgroundColor,
+                                  width: 16,
+                                ),
                               Expanded(
                                 child: Scaffold(
                                   backgroundColor: ArDriveTheme.of(context)
@@ -285,6 +286,13 @@ class AppShellState extends State<AppShell> {
           );
         },
       );
+
+  bool _addLeftPadding(BuildContext context) {
+    final driveDetailCubitState = context.read<DriveDetailCubit>().state;
+
+    return (driveDetailCubitState is DriveDetailLoadSuccess &&
+        !driveDetailCubitState.showMarkdownEditor);
+  }
 
   Widget _syncStreamBuilder({
     required Widget Function(SyncProgress s) builderWithData,

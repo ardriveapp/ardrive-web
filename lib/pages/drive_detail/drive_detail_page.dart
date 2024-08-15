@@ -69,6 +69,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:markdown_editor_plus/widgets/markdown_auto_preview.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:synchronized/synchronized.dart';
 import 'package:timeago/timeago.dart';
@@ -693,19 +694,41 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
               if (driveDetailState.showMarkdownEditor &&
                   driveDetailState.currentMarkdownText == null)
                 (() {
+                  final colorTokens =
+                      ArDriveTheme.of(context).themeData.colorTokens;
                   late MarkdownEditorPage markdownEditorPage;
                   markdownEditorPage = MarkdownEditorPage(
                     onClose: () {
                       context.read<DriveDetailCubit>().closeMarkdownEditor();
                     },
+                    markdownAutoPreview: MarkdownAutoPreview(
+                      decoration: InputDecoration(
+                        hintText: 'Enter Markdown',
+                        hintStyle:
+                            ArDriveTypographyNew.of(context).paragraphNormal(
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
+                      ),
+                      hintText: 'Enter Markdown',
+                      emojiConvert: true,
+                      expands: true,
+                      enableToolBar: true,
+                      toolbarBackground: colorTokens.buttonPrimaryDefault,
+                      expandableBackground: colorTokens.containerL3,
+                      style: ArDriveTypographyNew.of(context).paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                      ),
+                      iconColor: colorTokens.textOnPrimary,
+                    ),
                     onSave: () {
                       // TODO: SHOULD AWAIT?
                       debugPrint('ATTEMPTING TO SAVE MARKDOWN FILE');
-                      promptToUploadMarkdown(context,
-                          drive: driveDetailState.currentDrive,
-                          markdownText: markdownEditorPage.markdownText,
-                          parentFolderEntry:
-                              driveDetailState.folderInView.folder);
+                      promptToUploadMarkdown(
+                        context,
+                        drive: driveDetailState.currentDrive,
+                        markdownText: markdownEditorPage.markdownText,
+                        parentFolderEntry: driveDetailState.folderInView.folder,
+                      );
                     },
                   );
                   return Positioned.fill(
