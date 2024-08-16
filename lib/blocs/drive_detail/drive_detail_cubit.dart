@@ -27,7 +27,7 @@ part 'drive_detail_state.dart';
 class DriveDetailCubit extends Cubit<DriveDetailState> {
   final String driveId;
   final ProfileCubit _profileCubit;
-  final DriveDao _driveDao;
+  final DriveDao driveDao;
   final ConfigService _configService;
   final ArDriveAuth _auth;
   final ActivityTracker _activityTracker;
@@ -54,7 +54,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     required this.driveId,
     String? initialFolderId,
     required ProfileCubit profileCubit,
-    required DriveDao driveDao,
+    required this.driveDao,
     required ConfigService configService,
     required ActivityTracker activityTracker,
     required ArDriveAuth auth,
@@ -63,7 +63,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     required DriveRepository driveRepository,
   })  : _profileCubit = profileCubit,
         _activityTracker = activityTracker,
-        _driveDao = driveDao,
         _auth = auth,
         _configService = configService,
         _breadcrumbBuilder = breadcrumbBuilder,
@@ -77,7 +76,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     if (initialFolderId != null) {
       // TODO: Handle deep-linking folders of unattached drives.
       Future.microtask(() async {
-        final folder = await _driveDao
+        final folder = await driveDao
             .folderById(driveId: driveId, folderId: initialFolderId)
             .getSingleOrNull();
         // Open the root folder if the deep-linked folder could not be found.
@@ -88,7 +87,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     } else {
       Future.microtask(() async {
         final drive =
-            await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+            await driveDao.driveById(driveId: driveId).getSingleOrNull();
         openFolder(folderId: drive?.rootFolderId);
       });
     }
@@ -122,7 +121,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       _folderSubscription =
           Rx.combineLatest3<Drive?, FolderWithContents, ProfileState, void>(
         _driveRepository.watchDrive(driveId: driveId),
-        _driveDao.watchFolderContents(
+        driveDao.watchFolderContents(
           driveId,
           orderBy: contentOrderBy,
           orderingMode: contentOrderingMode,
@@ -263,10 +262,13 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     });
   }
 
-  void openMarkdownEditor() {
+  void openMarkdownEditor({String? currentMarkdownText, String? filename}) {
     final state = this.state as DriveDetailLoadSuccess;
     emit(
-      state.copyWith(showMarkdownEditor: true),
+      state.copyWith(
+          showMarkdownEditor: true,
+          currentMarkdownText: currentMarkdownText,
+          markdownFilename: filename),
     );
   }
 

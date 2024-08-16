@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
@@ -6,6 +8,7 @@ import 'package:ardrive/components/fs_entry_license_form.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/pin_indicator.dart';
+import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/drive_explorer/thumbnail/thumbnail_bloc.dart';
@@ -457,6 +460,36 @@ class _DriveExplorerItemTileTrailingState
       ];
     }
     return [
+      if (item.contentType == 'text/markdown')
+        ArDriveDropdownItem(
+          onClick: () async {
+            final bloc = context.read<DriveDetailCubit>();
+
+            final latestRevision = (await bloc.driveDao
+                .latestFileRevisionByFileId(
+                    driveId: item.driveId, fileId: item.id)
+                .getSingleOrNull())!;
+            final latestFileEntity =
+                ARFSFactory().getARFSFileFromFileRevision(latestRevision);
+            promptToDownloadFileRevision(
+                context: context,
+                revision: latestFileEntity,
+                inMemory: true,
+                downloadDataTx: true,
+                onDownloadFinished: (context, state) {
+                  Navigator.of(context).pop();
+                  bloc.openMarkdownEditor(
+                      currentMarkdownText: utf8.decode(state.bytes),
+                      filename: item.name);
+                });
+          },
+          content: _buildItem(
+            'Edit',
+            ArDriveIcons.editFilled(
+              size: defaultIconSize,
+            ),
+          ),
+        ),
       ArDriveDropdownItem(
         onClick: () {
           promptToDownloadProfileFile(

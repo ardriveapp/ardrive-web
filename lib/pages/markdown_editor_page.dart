@@ -47,7 +47,9 @@ class MarkdownEditorPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'New Markdown File',
+            titleController.text.length == 0
+                ? 'New Markdown File'
+                : 'Edit Markdown File',
             style: typography.heading4(
               fontWeight: ArFontWeight.bold,
             ),
@@ -57,16 +59,20 @@ class MarkdownEditorPage extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: SizedBox(
               width: 600,
-              child: ArDriveTextFieldNew(
-                  hintText: 'Give it a title',
-                  hintStyle: ArDriveTypographyNew.of(context).paragraphNormal(
-                    color: colorTokens.textLow,
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                  controller: titleController,
-                  onChanged: (text) {
-                    // TODO: set the title of the markdown file
-                  }),
+              child: (titleController.text.length > 0)
+                  ? Text(titleController.text,
+                      style: typography.heading4(
+                        fontWeight: ArFontWeight.bold,
+                      ))
+                  : ArDriveTextFieldNew(
+                      hintText: 'Give it a title',
+                      hintStyle:
+                          ArDriveTypographyNew.of(context).paragraphNormal(
+                        color: colorTokens.textLow,
+                        fontWeight: ArFontWeight.semiBold,
+                      ),
+                      controller: titleController,
+                      onChanged: (text) {}),
             ),
           ),
           const SizedBox(height: 8),

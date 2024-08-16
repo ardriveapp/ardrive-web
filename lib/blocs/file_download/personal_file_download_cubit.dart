@@ -25,6 +25,8 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
   final io.ArDriveMobileDownloader _downloader;
   final ArDriveDownloader _arDriveDownloader;
   final ARFSRepository _arfsRepository;
+  final bool _inMemory;
+  final bool _downloadDataTx;
 
   ProfileFileDownloadCubit({
     required ARFSFileEntity file,
@@ -34,12 +36,16 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     required ArDriveDownloader arDriveDownloader,
     required ARFSRepository arfsRepository,
     required ArDriveCrypto crypto,
+    inMemory = false,
+    downloadDataTx = false,
   })  : _driveDao = driveDao,
         _arweave = arweave,
         _arDriveDownloader = arDriveDownloader,
         _file = file,
         _downloader = downloader,
         _arfsRepository = arfsRepository,
+        _inMemory = inMemory,
+        _downloadDataTx = downloadDataTx,
         super(FileDownloadStarting());
 
   Future<void> verifyUploadLimitationsAndDownload(SecretKey? cipherKey) async {
@@ -111,7 +117,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
             emit(FileDownloadFinishedWithSuccess(fileName: _file.name));
             break;
           }
-          await _downloadFile(drive, cipherKey);
+          await _downloadFile(drive, cipherKey, _inMemory);
           return;
 
         default:
@@ -121,10 +127,8 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     }
   }
 
-  Future<void> _downloadFile(
-    ARFSDriveEntity drive,
-    SecretKey? cipherKey,
-  ) async {
+  Future<void> _downloadFile(ARFSDriveEntity drive, SecretKey? cipherKey,
+      [bool inMemory = false]) async {
     emit(
       FileDownloadInProgress(
         fileName: _file.name,
@@ -140,7 +144,8 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
     final isPinFile = _file.pinnedDataOwnerAddress != null;
 
-    final dataTx = await (_arweave.getTransactionDetails(_file.txId));
+    final dataTx = await (_arweave
+        .getTransactionDetails(_downloadDataTx ? _file.dataTxId! : _file.txId));
 
     if (dataTx == null) {
       throw StateError('Data transaction not found');
@@ -171,48 +176,68 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     // log file size
     logger.d('File size: ${_file.size}');
 
-    final downloadStream = await _arDriveDownloader.downloadFile(
-      dataTx: dataTx,
-      fileName: _file.name,
-      fileSize: _file.size,
-      lastModifiedDate: _file.lastModifiedDate,
-      isManifest: _file.contentType == ContentType.manifest,
-      contentType:
-          _file.contentType ?? lookupMimeTypeWithDefaultType(_file.name),
-      cipher: cipher,
-      cipherIvString: cipherIvTag,
-      fileKey: fileKey,
-    );
+    if (inMemory) {
+      final downloadedFileBytes = await _arDriveDownloader.downloadToMemory(
+          dataTx: dataTx,
+          fileName: _file.name,
+          fileSize: _file.size,
+          lastModifiedDate: _file.lastModifiedDate,
+          isManifest: _file.contentType == ContentType.manifest,
+          contentType:
+              _file.contentType ?? lookupMimeTypeWithDefaultType(_file.name),
+          cipher: cipher,
+          cipherIvString: cipherIvTag,
+          fileKey: fileKey);
+      emit(FileDownloadSuccess(
+        fileName: _file.name,
+        bytes: downloadedFileBytes,
+        mimeType: _file.contentType,
+        lastModified: _file.lastModifiedDate,
+      ));
+    } else {
+      final downloadStream = await _arDriveDownloader.downloadFile(
+        dataTx: dataTx,
+        fileName: _file.name,
+        fileSize: _file.size,
+        lastModifiedDate: _file.lastModifiedDate,
+        isManifest: _file.contentType == ContentType.manifest,
+        contentType:
+            _file.contentType ?? lookupMimeTypeWithDefaultType(_file.name),
+        cipher: cipher,
+        cipherIvString: cipherIvTag,
+        fileKey: fileKey,
+      );
 
-    downloadStream.listen(
-      (progress) {
-        logger.d('Download progress: $progress');
+      downloadStream.listen(
+        (progress) {
+          logger.d('Download progress: $progress');
 
-        if (state is FileDownloadAborted) {
-          return;
-        }
+          if (state is FileDownloadAborted) {
+            return;
+          }
 
-        emit(
-          FileDownloadWithProgress(
-            fileName: _file.name,
-            progress: progress.toInt(),
-            fileSize: _file.size,
-            contentType:
-                _file.contentType ?? lookupMimeTypeWithDefaultType(_file.name),
-          ),
-        );
+          emit(
+            FileDownloadWithProgress(
+              fileName: _file.name,
+              progress: progress.toInt(),
+              fileSize: _file.size,
+              contentType: _file.contentType ??
+                  lookupMimeTypeWithDefaultType(_file.name),
+            ),
+          );
 
-        _downloadProgress.sink.add(FileDownloadProgress(progress / 100));
-      },
-      onError: (e) {
-        logger.e('Failed to download personal file', e);
-        addError(e);
-      },
-      onDone: () {
-        emit(FileDownloadFinishedWithSuccess(fileName: _file.name));
-      },
-      cancelOnError: true,
-    );
+          _downloadProgress.sink.add(FileDownloadProgress(progress / 100));
+        },
+        onError: (e) {
+          logger.e('Failed to download personal file', e);
+          addError(e);
+        },
+        onDone: () {
+          emit(FileDownloadFinishedWithSuccess(fileName: _file.name));
+        },
+        cancelOnError: true,
+      );
+    }
   }
 
   @visibleForTesting

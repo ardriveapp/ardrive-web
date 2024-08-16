@@ -691,13 +691,18 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                   folderId: driveDetailState.folderInView.folder.id,
                 ),
               // Top layer: Markdown Editor, conditionally visible
-              if (driveDetailState.showMarkdownEditor &&
-                  driveDetailState.currentMarkdownText == null)
+              if (driveDetailState.showMarkdownEditor)
                 (() {
                   final colorTokens =
                       ArDriveTheme.of(context).themeData.colorTokens;
                   final textController = TextEditingController();
+                  if (driveDetailState.currentMarkdownText != null) {
+                    textController.text = driveDetailState.currentMarkdownText!;
+                  }
                   final titleController = TextEditingController();
+                  if (driveDetailState.markdownFilename != null) {
+                    titleController.text = driveDetailState.markdownFilename!;
+                  }
                   late MarkdownEditorPage markdownEditorPage;
                   markdownEditorPage = MarkdownEditorPage(
                     onClose: () {

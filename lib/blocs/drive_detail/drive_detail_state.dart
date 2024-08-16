@@ -45,6 +45,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
 
   final bool showMarkdownEditor;
   final String? currentMarkdownText;
+  final String? markdownFilename;
 
   DriveDetailLoadSuccess({
     required this.currentDrive,
@@ -69,6 +70,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     this.selectedPage,
     this.showMarkdownEditor = false,
     this.currentMarkdownText,
+    this.markdownFilename,
   });
 
   DriveDetailLoadSuccess copyWith({
@@ -93,6 +95,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     int? selectedPage,
     bool? showMarkdownEditor,
     String? currentMarkdownText,
+    String? markdownFilename,
   }) =>
       DriveDetailLoadSuccess(
         selectedPage: selectedPage ?? this.selectedPage,
@@ -120,6 +123,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         pathSegments: pathSegments ?? this.pathSegments,
         showMarkdownEditor: showMarkdownEditor ?? this.showMarkdownEditor,
         currentMarkdownText: currentMarkdownText ?? this.currentMarkdownText,
+        markdownFilename: markdownFilename ?? this.markdownFilename,
       );
 
   @override

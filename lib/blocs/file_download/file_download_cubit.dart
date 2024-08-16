@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';

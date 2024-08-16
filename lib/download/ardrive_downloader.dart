@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
@@ -11,6 +10,7 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart' as arweave;
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
+import 'package:flutter/foundation.dart';
 
 abstract class ArDriveDownloader {
   Future<Stream<double>> downloadFile({
@@ -25,7 +25,7 @@ abstract class ArDriveDownloader {
     String? cipher,
     String? cipherIvString,
   });
-    Future<Uint8List> downloadToMemory({
+  Future<Uint8List> downloadToMemory({
     required TransactionCommonMixin dataTx,
     required int fileSize,
     required String fileName,

@@ -56,10 +56,13 @@ Future<void> promptToDownloadProfileFile({
   );
 }
 
-Future<void> promptToDownloadFileRevision({
-  required BuildContext context,
-  required ARFSFileEntity revision,
-}) {
+Future<void> promptToDownloadFileRevision(
+    {required BuildContext context,
+    required ARFSFileEntity revision,
+    void Function(BuildContext context, FileDownloadSuccess state)?
+        onDownloadFinished,
+    bool inMemory = false,
+    bool downloadDataTx = false}) {
   final ARFSFileEntity arfsFile = revision;
 
   final profileState = context.read<ProfileCubit>().state;
@@ -83,6 +86,8 @@ Future<void> promptToDownloadFileRevision({
     file: arfsFile,
     driveDao: context.read<DriveDao>(),
     arweave: arweave,
+    inMemory: inMemory,
+    downloadDataTx: downloadDataTx,
   )..verifyUploadLimitationsAndDownload(cipherKey);
 
   return showArDriveDialog(
@@ -90,7 +95,9 @@ Future<void> promptToDownloadFileRevision({
     barrierDismissible: false,
     content: BlocProvider<FileDownloadCubit>.value(
       value: cubit,
-      child: const FileDownloadDialog(),
+      child: FileDownloadDialog(
+        onDownloadFinished: onDownloadFinished,
+      ),
     ),
   );
 }
@@ -116,35 +123,49 @@ Future<void> promptToDownloadSharedFile({
     barrierDismissible: false,
     content: BlocProvider<FileDownloadCubit>.value(
       value: cubit,
-      child: const FileDownloadDialog(),
+      child: FileDownloadDialog(),
     ),
   );
 }
 
+Future<void> _defaultDownloadFinishedHandler(
+    BuildContext context, FileDownloadSuccess state) async {
+  final ArDriveIO io = ArDriveIO();
+  final file = await IOFile.fromData(
+    state.bytes,
+    name: state.fileName,
+    lastModifiedDate: state.lastModified,
+  );
+
+  // Close modal when save file
+  await io.saveFile(file);
+  Navigator.pop(context);
+}
+
 class FileDownloadDialog extends StatelessWidget {
-  const FileDownloadDialog({super.key});
+  final void Function(BuildContext context, FileDownloadSuccess state)
+      _onDownloadFinished;
+
+  const FileDownloadDialog({
+    super.key,
+    void Function(BuildContext context, FileDownloadSuccess state)?
+        onDownloadFinished,
+  }) : _onDownloadFinished =
+            onDownloadFinished ?? _defaultDownloadFinishedHandler;
 
   @override
   Widget build(BuildContext context) =>
       BlocConsumer<FileDownloadCubit, FileDownloadState>(
         listener: (context, state) async {
           if (state is FileDownloadSuccess) {
-            final ArDriveIO io = ArDriveIO();
-
-            final file = await IOFile.fromData(
-              state.bytes,
-              name: state.fileName,
-              lastModifiedDate: state.lastModified,
-            );
-
-            // Close modal when save file
-            io.saveFile(file).then((value) => Navigator.pop(context));
+            _onDownloadFinished(context, state);
           }
         },
         builder: (context, state) {
           if (state is FileDownloadStarting) {
             return _downloadStartingDialog(context);
           } else if (state is FileDownloadFinishedWithSuccess) {
+            debugPrint('WRONG SPOT');
             return downloadFinishedWithSuccessDialog(context, state);
           } else if (state is FileDownloadWithProgress) {
             return _downloadingFileWithProgressDialog(context, state);
