@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:js_util';
 
 import 'package:ario_sdk/ario_sdk.dart';
+import 'package:ario_sdk/src/models/arns_record.dart';
 import 'package:flutter/material.dart';
 import 'package:js/js.dart';
 
@@ -28,6 +29,32 @@ class ArioSDKWeb implements ArioSDK {
 
     return tokens;
   }
+
+  @override
+  Future setARNS(String jwtString, txId, domain, String undername) {
+    return _setARNSImpl(jwtString, txId, domain, undername);
+  }
+
+  @override
+  Future<ARNSRecord> getARNSRecord(String jwtString, String domain) {
+    return Future.value(
+      ARNSRecord(
+          domain: 'thiago',
+          processId: 'IyjqOErJOwAhVNCaDfDmZAMJHsyYM-vdV-algNqWF1M'),
+    );
+    // return _getARNSRecordsImpl(jwtString, domain);
+  }
+}
+
+@JS('setARNS')
+external Object _setARNS(String jwtString, txId, domain, String undername);
+
+Future<dynamic> _setARNSImpl(
+    String jwtString, String txId, String domain, String undername) async {
+  final promise = _setARNS(jwtString, txId, domain, undername);
+  final stringified = await promiseToFuture(promise);
+
+  return stringified.toString();
 }
 
 @JS('getGateways')
@@ -57,4 +84,15 @@ Future<dynamic> _getIOTokensImpl(String address) async {
   final stringified = await promiseToFuture(promise);
 
   return stringified.toString();
+}
+
+@JS('getARNSRecord')
+external Object _getARNSRecord(String jwtString, String domain);
+
+Future<Map<String, dynamic>> _getARNSRecordsImpl(
+    String jwtString, String domain) async {
+  final promise = _getARNSRecord(jwtString, domain);
+  final stringified = await promiseToFuture(promise);
+
+  return jsonDecode(stringified);
 }

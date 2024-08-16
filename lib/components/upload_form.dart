@@ -54,6 +54,7 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -184,6 +185,7 @@ Future<void> promptToUpload(
                 auth: context.read<ArDriveAuth>(),
                 licenseService: context.read<LicenseService>(),
                 configService: context.read<ConfigService>(),
+                arioSDK: ArioSDKFactory().create(),
                 manifestRepository: ManifestRepositoryImpl(
                   context.read<DriveDao>(),
                   ArDriveUploader(
@@ -295,6 +297,10 @@ class _UploadFormState extends State<UploadForm> {
                   folderId: state.manifestFiles.first.parentFolderId,
                   existingManifestFileId: state.manifestFiles.first.id,
                 );
+
+                if (state.arnsRecord != null) {
+                  cubit.setAntToUpdate(state.arnsRecord!);
+                }
 
                 final manifestSize =
                     await (cubit.state as CreateManifestUploadReview)
@@ -518,254 +524,7 @@ class _UploadFormState extends State<UploadForm> {
                 ),
               );
             } else if (state is UploadReady) {
-              final typography = ArDriveTypographyNew.of(context);
-              return ReactiveForm(
-                formGroup: context.watch<UploadCubit>().licenseCategoryForm,
-                child: ReactiveFormConsumer(builder: (_, form, __) {
-                  final LicenseCategory? licenseCategory =
-                      form.control('licenseCategory').value;
-                  return StatsScreen(
-                    readyState: state,
-                    // Don't show on first screen?
-                    hasCloseButton: false,
-                    modalActions: [
-                      ModalAction(
-                        action: () => Navigator.of(context).pop(false),
-                        title: appLocalizationsOf(context).cancelEmphasized,
-                      ),
-                      licenseCategory == null
-                          ? ModalAction(
-                              isEnable: state.isNextButtonEnabled,
-                              action: () {
-                                context
-                                    .read<UploadCubit>()
-                                    .initialScreenUpload();
-                              },
-                              title:
-                                  appLocalizationsOf(context).uploadEmphasized,
-                            )
-                          : ModalAction(
-                              isEnable: state.isNextButtonEnabled,
-                              action: () {
-                                context.read<UploadCubit>().initialScreenNext(
-                                      licenseCategory: licenseCategory,
-                                    );
-                              },
-                              title:
-                                  // TODO: Localize
-                                  // appLocalizationsOf(context).configureEmphasized,
-                                  'CONFIGURE',
-                            ),
-                    ],
-                    children: [
-                      RepositoryProvider.value(
-                        value: context.read<ArDriveUploadPreparationManager>(),
-                        child: UploadPaymentMethodView(
-                          onError: () {
-                            context
-                                .read<UploadCubit>()
-                                .emitErrorFromPreparation();
-                          },
-                          onTurboTopupSucess: () {
-                            context.read<UploadCubit>().startUploadPreparation(
-                                  isRetryingToPayWithTurbo: true,
-                                );
-                          },
-                          onUploadMethodChanged: (method, info, canUpload) {
-                            context
-                                .read<UploadCubit>()
-                                .setUploadMethod(method, info, canUpload);
-                          },
-                        ),
-                      ),
-                      if (state.params
-                          .containsSupportedImageTypeForThumbnailGeneration)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          child: Row(
-                            children: [
-                              ArDriveCheckBox(
-                                title: 'Upload with thumbnails',
-                                checked: context
-                                    .read<ConfigService>()
-                                    .config
-                                    .uploadThumbnails,
-                                titleStyle: typography.paragraphLarge(
-                                  fontWeight: ArFontWeight.semiBold,
-                                ),
-                                onChange: (value) {
-                                  context
-                                      .read<UploadCubit>()
-                                      .changeUploadThumbnailOption(value);
-                                },
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.only(left: 8.0),
-                                child: ArDriveIconButton(
-                                  icon: ArDriveIcons.info(),
-                                  tooltip:
-                                      'Uploading with thumbnails is free, but may make your upload take longer.\nYou can always attach a thumbnail later.',
-                                ),
-                              )
-                            ],
-                          ),
-                        ),
-                      if (state.manifestFiles.isNotEmpty)
-                        ArDriveAccordion(
-                          backgroundColor: Colors.transparent,
-                          contentPadding: const EdgeInsets.only(top: 0),
-                          children: [
-                            ArDriveAccordionItem(
-                              Text(
-                                'Manifest',
-                                style: typography.paragraphLarge(
-                                  fontWeight: ArFontWeight.bold,
-                                ),
-                              ),
-                              [
-                                ListView.separated(
-                                  shrinkWrap: true,
-                                  itemCount: state.manifestFiles.length,
-                                  padding: const EdgeInsets.only(left: 16),
-                                  separatorBuilder: (context, index) =>
-                                      const Divider(),
-                                  itemBuilder: (context, index) {
-                                    final manifestFile =
-                                        state.manifestFiles[index];
-                                    return Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        SizedBox(
-                                          width: 300,
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Flexible(
-                                                flex: 2,
-                                                child: Text(
-                                                  '',
-                                                  style:
-                                                      typography.paragraphLarge(
-                                                    fontWeight:
-                                                        ArFontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                              Flexible(
-                                                flex: 1,
-                                                child: Text(
-                                                  'Update',
-                                                  style:
-                                                      typography.paragraphLarge(
-                                                    fontWeight:
-                                                        ArFontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        SizedBox(
-                                          width: 300,
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Flexible(
-                                                flex: 2,
-                                                child: Text(
-                                                  manifestFile.name,
-                                                  style: typography
-                                                      .paragraphNormal(
-                                                    fontWeight:
-                                                        ArFontWeight.semiBold,
-                                                  ),
-                                                ),
-                                              ),
-                                              Flexible(
-                                                flex: 1,
-                                                child: ArDriveCheckBox(
-                                                  onChange: (value) {
-                                                    if (value) {
-                                                      context
-                                                          .read<UploadCubit>()
-                                                          .selectManifestFile(
-                                                              manifestFile);
-                                                    } else {
-                                                      context
-                                                          .read<UploadCubit>()
-                                                          .unselectManifestFile(
-                                                            manifestFile,
-                                                          );
-                                                    }
-                                                  },
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                ),
-                              ],
-                            )
-                          ],
-                        ),
-                      SizedBox(
-                        child: ReactiveForm(
-                          formGroup:
-                              context.watch<UploadCubit>().licenseCategoryForm,
-                          child: ReactiveDropdownField<LicenseCategory?>(
-                            alignment: AlignmentDirectional.centerStart,
-                            isExpanded: true,
-                            formControlName: 'licenseCategory',
-                            decoration: InputDecoration(
-                              border: InputBorder.none,
-                              label: Text(
-                                'License',
-                                // TODO: Localize
-                                // appLocalizationsOf(context).licenseType,
-                                style: ArDriveTheme.of(context)
-                                    .themeData
-                                    .textFieldTheme
-                                    .inputTextStyle
-                                    .copyWith(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeFgDisabled,
-                                      fontSize: 16,
-                                    ),
-                              ),
-                              focusedBorder: InputBorder.none,
-                            ),
-                            showErrors: (control) =>
-                                control.dirty && control.invalid,
-                            validationMessages: kValidationMessages(
-                                appLocalizationsOf(context)),
-                            items: [null, ...LicenseCategory.values].map(
-                              (value) {
-                                return DropdownMenuItem(
-                                  value: value,
-                                  child: Text(
-                                    licenseCategoryNames[value] ?? 'None',
-                                    // TODO: Localize
-                                    // appLocalizationsOf(context).none,
-                                  ),
-                                );
-                              },
-                            ).toList(),
-                          ),
-                        ),
-                      ),
-                      const LearnAboutLicensing(),
-                    ],
-                  );
-                }),
-              );
+              return const UploadReadyModal();
             } else if (state is UploadConfiguringLicense) {
               final headingText =
                   'Configure ${licenseCategoryNames[state.licenseCategory]}';
@@ -864,7 +623,8 @@ class _UploadFormState extends State<UploadForm> {
                 content: SizedBox(
                   width: kMediumDialogWidth,
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 256),
+                    constraints: BoxConstraints(
+                        maxHeight: MediaQuery.of(context).size.height * 0.3),
                     child: Scrollbar(
                       child: ListView.builder(
                         shrinkWrap: true,
@@ -1584,6 +1344,12 @@ class _StatsScreenState extends State<StatsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    logger.d('StatsScreen build');
+
+    final typography = ArDriveTypographyNew.of(context);
+
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
     return UploadReadyModalBase(
       readyState: widget.readyState,
       hasCloseButton: widget.hasCloseButton,
@@ -1595,75 +1361,65 @@ class _StatsScreenState extends State<StatsScreen> {
             : Align(
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 120),
+                  constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.25),
                   child: ArDriveScrollBar(
                       controller: _scrollController,
                       alwaysVisible: true,
                       child: ListView.builder(
-                        padding: const EdgeInsets.only(top: 0),
+                        padding: const EdgeInsets.only(right: 8),
                         controller: _scrollController,
                         shrinkWrap: true,
                         itemCount: files!.length,
                         itemBuilder: (BuildContext context, int index) {
                           final file = files![index];
                           if (file is FileV2UploadHandle) {
-                            return Row(
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    '${file.entity.name!} ',
-                                    style: ArDriveTypography.body.smallBold(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeFgSubtle,
-                                    ),
-                                  ),
+                            return ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(
+                                file.entity.name!,
+                                style: typography.paragraphNormal(
+                                  fontWeight: ArFontWeight.bold,
                                 ),
-                                Text(
-                                  filesize(file.size),
-                                  style: ArDriveTypography.body.smallRegular(
-                                    color: ArDriveTheme.of(context)
-                                        .themeData
-                                        .colors
-                                        .themeFgMuted,
-                                  ),
+                              ),
+                              leading: Text(
+                                filesize(file.size),
+                                style: typography.paragraphNormal(
+                                  fontWeight: ArFontWeight.semiBold,
                                 ),
-                              ],
+                              ),
+                              trailing: getIconForContentType(
+                                file.entity.dataContentType ?? '',
+                              ),
                             );
                           } else {
                             final bundle = file as BundleUploadHandle;
 
                             return ListView(
-                                padding: EdgeInsets.zero,
+                                padding: const EdgeInsets.only(right: 8),
                                 shrinkWrap: true,
                                 children: bundle.fileEntities.map((e) {
-                                  return Row(
-                                    children: [
-                                      Flexible(
-                                        child: Text(
-                                          '${e.name!} ',
-                                          style:
-                                              ArDriveTypography.body.smallBold(
-                                            color: ArDriveTheme.of(context)
-                                                .themeData
-                                                .colors
-                                                .themeFgSubtle,
-                                          ),
+                                  final file = e;
+                                  return ListTile(
+                                      contentPadding: EdgeInsets.zero,
+                                      title: Text(
+                                        file.name!,
+                                        style: typography.paragraphNormal(
+                                          fontWeight: ArFontWeight.bold,
+                                          color: colorTokens.textMid,
                                         ),
                                       ),
-                                      Text(
-                                        filesize(e.size),
-                                        style:
-                                            ArDriveTypography.body.smallRegular(
-                                          color: ArDriveTheme.of(context)
-                                              .themeData
-                                              .colors
-                                              .themeFgMuted,
+                                      trailing: Text(
+                                        filesize(file.size),
+                                        style: typography.paragraphNormal(
+                                          fontWeight: ArFontWeight.semiBold,
+                                          color: colorTokens.textMid,
                                         ),
                                       ),
-                                    ],
-                                  );
+                                      leading: getIconForContentType(
+                                        file.dataContentType ?? '',
+                                        color: colorTokens.textMid,
+                                      ));
                                 }).toList());
                           }
                         },
@@ -1676,43 +1432,38 @@ class _StatsScreenState extends State<StatsScreen> {
             children: [
               TextSpan(
                 text: 'Size: ',
-                style: ArDriveTypography.body.buttonNormalRegular(
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeFgOnDisabled,
+                style: typography.paragraphNormal(
+                  fontWeight: ArFontWeight.semiBold,
+                  color: colorTokens.textMid,
                 ),
               ),
               TextSpan(
                 text: filesize(
                   widget.readyState.paymentInfo.totalSize,
                 ),
-                style: ArDriveTypography.body
-                    .buttonNormalBold(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDefault)
-                    .copyWith(fontWeight: FontWeight.bold),
+                style: typography.paragraphNormal(
+                  fontWeight: ArFontWeight.bold,
+                  color: colorTokens.textHigh,
+                ),
               ),
             ],
           ),
         ),
-        Text.rich(
-          TextSpan(
-            children: [
-              if (widget.readyState.paymentInfo.isFreeThanksToTurbo) ...[
+        if (widget.readyState.paymentInfo.isFreeThanksToTurbo)
+          Text.rich(
+            TextSpan(
+              children: [
                 TextSpan(
                   text: appLocalizationsOf(context).freeTurboTransaction,
                   style: ArDriveTypography.body.buttonNormalRegular(),
                 ),
-              ]
-            ],
-            style: ArDriveTypography.body.buttonNormalRegular(),
+              ],
+              style: ArDriveTypography.body.buttonNormalRegular(),
+            ),
           ),
+        const Divider(
+          height: 20,
         ),
-        const SizedBox(height: 10),
-        const Divider(height: 10),
         ...widget.children,
       ],
     );
@@ -1771,7 +1522,7 @@ class ConfiguringLicenseScreen extends StatelessWidget {
   }
 }
 
-class UploadReadyModalBase extends StatelessWidget {
+class UploadReadyModalBase extends StatefulWidget {
   final UploadReady readyState;
   final List<ModalAction> actions;
   final List<Widget> children;
@@ -1789,26 +1540,428 @@ class UploadReadyModalBase extends StatelessWidget {
   });
 
   @override
+  State<UploadReadyModalBase> createState() => _UploadReadyModalBaseState();
+}
+
+class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
+  bool showSettings = true;
+
+  @override
   Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return ArDriveScrollBar(
       child: SingleChildScrollView(
-        child: ArDriveStandardModal(
-          title: appLocalizationsOf(context)
-              .uploadNFiles(readyState.numberOfFiles),
-          width: width,
-          hasCloseButton: hasCloseButton,
-          content: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 185),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: children,
-            ),
-          ),
-          actions: actions,
+        child: BlocBuilder<UploadCubit, UploadState>(
+          builder: (context, state) {
+            return ArDriveStandardModalNew(
+              width: (state as UploadReady).showSettings
+                  ? widget.width * 2
+                  : widget.width,
+              hasCloseButton: widget.hasCloseButton,
+              content: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minHeight: 185,
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
+                          flex: 1,
+                          child: Text(
+                            appLocalizationsOf(context)
+                                .uploadNFiles(widget.readyState.numberOfFiles),
+                            style: typography.heading3(
+                              fontWeight: ArFontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        if (state.showSettings)
+                          Flexible(
+                            flex: 1,
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      'Upload Settings',
+                                      style: typography.heading3(
+                                        fontWeight: ArFontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  ArDriveIconButton(
+                                    icon: ArDriveIcons.x(),
+                                    onPressed: () {
+                                      context
+                                          .read<UploadCubit>()
+                                          .hideSettings();
+                                    },
+                                  )
+                                ],
+                              ),
+                            ),
+                          )
+                      ],
+                    ),
+                    Divider(
+                      height: 20,
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Flexible(
+                          flex: 1,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: widget.children,
+                          ),
+                        ),
+                        VerticalDivider(
+                          color: colorTokens.strokeHigh,
+                          thickness: 1,
+                          width: 15,
+                        ),
+                        if (state.showSettings)
+                          Flexible(
+                            flex: 1,
+                            child: BlocBuilder<UploadCubit, UploadState>(
+                              builder: (context, state) {
+                                if (state is UploadReady &&
+                                    state.showSettings) {
+                                  return manifestOptionsView(
+                                      state, context, typography);
+                                }
+                                return const SizedBox();
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: widget.actions,
+            );
+          },
         ),
       ),
     );
+  }
+
+  Widget manifestOptionsView(UploadReady state, BuildContext context,
+      ArdriveTypographyNew typography) {
+    return Column(
+        mainAxisSize: MainAxisSize.max,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          // Row(
+          //   mainAxisSize: MainAxisSize.max,
+          //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          //   children: [
+          //     Text(
+          //       'Upload Settings',
+          //       style: typography.heading3(
+          //         fontWeight: ArFontWeight.bold,
+          //       ),
+          //     ),
+          // ArDriveIconButton(
+          //   icon: ArDriveIcons.x(),
+          //   onPressed: () {
+          //     context.read<UploadCubit>().hideSettings();
+          //   },
+          // )
+          //   ],
+          // ),
+          // const Divider(),
+          if (state.manifestFiles.isNotEmpty) ...[
+            Text(
+              'Manifest Settings',
+              style: typography.heading6(
+                fontWeight: ArFontWeight.bold,
+              ),
+            ),
+            SizedBox(
+              width: 400,
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: Text('',
+                        style: typography.paragraphLarge(
+                          fontWeight: ArFontWeight.bold,
+                        )),
+                  ),
+                  Expanded(
+                    flex: 1,
+                    child: Text('Update',
+                        style: typography.paragraphLarge(
+                            fontWeight: ArFontWeight.bold)),
+                  ),
+                  Expanded(
+                    flex: 1,
+                    child: Text('Update ANT',
+                        style: typography.paragraphLarge(
+                          fontWeight: ArFontWeight.bold,
+                        )),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: 400,
+              child: ListView.separated(
+                shrinkWrap: true,
+                separatorBuilder: (context, index) => const Divider(),
+                itemCount: state.manifestFiles.length,
+                itemBuilder: (context, index) {
+                  return Row(
+                    mainAxisSize: MainAxisSize.max,
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          state.manifestFiles[index].name,
+                          style: typography.paragraphNormal(),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 1,
+                        child: ArDriveCheckBox(
+                          onChange: (value) {
+                            if (value) {
+                              context.read<UploadCubit>().selectManifestFile(
+                                  state.manifestFiles[index]);
+                            } else {
+                              context.read<UploadCubit>().unselectManifestFile(
+                                  state.manifestFiles[index]);
+                            }
+                          },
+                        ),
+                      ),
+                      Expanded(
+                        flex: 1,
+                        child: AntSelector(state: state),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+            const Divider(
+              height: 24,
+            ),
+          ],
+
+          if (state
+              .params.containsSupportedImageTypeForThumbnailGeneration) ...[
+            Text(
+              'Thubmnail Settings',
+              style: typography.heading6(
+                fontWeight: ArFontWeight.bold,
+              ),
+            ),
+            SizedBox(
+              height: 8,
+            ),
+            Row(
+              children: [
+                ArDriveCheckBox(
+                  title: 'Upload with thumbnails',
+                  checked:
+                      context.read<ConfigService>().config.uploadThumbnails,
+                  titleStyle: typography.paragraphLarge(
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                  onChange: (value) {
+                    context
+                        .read<UploadCubit>()
+                        .changeUploadThumbnailOption(value);
+                  },
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: ArDriveIconButton(
+                    icon: ArDriveIcons.info(),
+                    tooltip:
+                        'Uploading with thumbnails is free, but may make your upload take longer.\nYou can always attach a thumbnail later.',
+                  ),
+                )
+              ],
+            ),
+            const Divider(
+              height: 24,
+            ),
+          ],
+
+          Text('License Settings',
+              style: typography.heading6(
+                fontWeight: ArFontWeight.bold,
+              )),
+          SizedBox(
+            child: ReactiveForm(
+              formGroup: context.watch<UploadCubit>().licenseCategoryForm,
+              child: ReactiveDropdownField<LicenseCategory?>(
+                alignment: AlignmentDirectional.centerStart,
+                isExpanded: true,
+                formControlName: 'licenseCategory',
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  label: Text(
+                    'License',
+                    // TODO: Localize
+                    // appLocalizationsOf(context).licenseType,
+                    style: ArDriveTheme.of(context)
+                        .themeData
+                        .textFieldTheme
+                        .inputTextStyle
+                        .copyWith(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgDisabled,
+                          fontSize: 16,
+                        ),
+                  ),
+                  focusedBorder: InputBorder.none,
+                ),
+                showErrors: (control) => control.dirty && control.invalid,
+                validationMessages:
+                    kValidationMessages(appLocalizationsOf(context)),
+                items: [null, ...LicenseCategory.values].map(
+                  (value) {
+                    return DropdownMenuItem(
+                      value: value,
+                      child: Text(
+                        licenseCategoryNames[value] ?? 'None',
+                        // TODO: Localize
+                        // appLocalizationsOf(context).none,
+                      ),
+                    );
+                  },
+                ).toList(),
+              ),
+            ),
+          ),
+          const LearnAboutLicensing(),
+          // Flexible(
+          //   flex: 1,
+          //   child: ArDriveAccordion(
+          //     backgroundColor: Colors.transparent,
+          //     contentPadding: const EdgeInsets.only(top: 0),
+          //     children: [
+          //       ArDriveAccordionItem(
+          //         Text(
+          //           'Manifest',
+          //           style: typography.paragraphLarge(
+          //             fontWeight: ArFontWeight.bold,
+          //           ),
+          //         ),
+          //         [
+          //           ListView.separated(
+          //             shrinkWrap: true,
+          //             itemCount: state.manifestFiles.length,
+          //             padding: const EdgeInsets.only(left: 16),
+          //             separatorBuilder: (context, index) => const Divider(),
+          //             itemBuilder: (context, index) {
+          //               final manifestFile = state.manifestFiles[index];
+          //               return Column(
+          //                 crossAxisAlignment: CrossAxisAlignment.start,
+          //                 children: [
+          //                   SizedBox(
+          //                     width: 300,
+          //                     child: Row(
+          //                       mainAxisAlignment:
+          //                           MainAxisAlignment.spaceBetween,
+          //                       children: [
+          //                         Flexible(
+          //                           flex: 2,
+          //                           child: Text(
+          //                             '',
+          //                             style: typography.paragraphLarge(
+          //                               fontWeight: ArFontWeight.bold,
+          //                             ),
+          //                           ),
+          //                         ),
+          //                         Flexible(
+          //                           flex: 1,
+          //                           child: Text(
+          //                             'Update',
+          //                             style: typography.paragraphLarge(
+          //                               fontWeight: ArFontWeight.bold,
+          //                             ),
+          //                           ),
+          //                         ),
+          //                         Flexible(
+          //                           flex: 1,
+          //                           child: Text(
+          //                             'Update ANT',
+          //                             style: typography.paragraphLarge(
+          //                               fontWeight: ArFontWeight.bold,
+          //                             ),
+          //                           ),
+          //                         ),
+          //                       ],
+          //                     ),
+          //                   ),
+          //                   SizedBox(
+          //                     width: 300,
+          //                     child: Row(
+          //                       mainAxisAlignment:
+          //                           MainAxisAlignment.spaceBetween,
+          //                       children: [
+          //                         Flexible(
+          //                           flex: 2,
+          //                           child: Text(
+          //                             manifestFile.name,
+          //                             style: typography.paragraphNormal(
+          //                               fontWeight: ArFontWeight.semiBold,
+          //                             ),
+          //                           ),
+          //                         ),
+          //                         Flexible(
+          //                           flex: 1,
+          //                           child: ArDriveCheckBox(
+          //                             onChange: (value) {
+          //                               if (value) {
+          //                                 context
+          //                                     .read<UploadCubit>()
+          //                                     .selectManifestFile(manifestFile);
+          //                               } else {
+          //                                 context
+          //                                     .read<UploadCubit>()
+          //                                     .unselectManifestFile(
+          //                                       manifestFile,
+          //                                     );
+          //                               }
+          //                             },
+          //                           ),
+          //                         ),
+          //                         Flexible(
+          //                             flex: 1,
+          //                             child: AntSelector(
+          //                               state: state,
+          //                             )),
+          //                       ],
+          //                     ),
+          //                   ),
+          //                 ],
+          //               );
+          //             },
+          //           ),
+          //         ],
+          //       )
+          //   ],
+          // ),
+          // ),
+        ]);
   }
 }
 
@@ -1941,6 +2094,228 @@ class _LicenseNameWithPopoverButtonState
           ),
         ),
       ),
+    );
+  }
+}
+
+class AntSelector extends StatefulWidget {
+  const AntSelector({super.key, required this.state});
+
+  final UploadReady state;
+
+  @override
+  State<AntSelector> createState() => _AntSelectorState();
+}
+
+class _AntSelectorState extends State<AntSelector> {
+  bool isVisible = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+
+    return ArDriveOverlay(
+      anchor: const Aligned(
+        follower: Alignment.topRight,
+        target: Alignment.bottomRight,
+        offset: Offset(0, 18),
+      ),
+      visible: isVisible,
+      content: ArDriveStandardModalNew(
+        content: SizedBox(
+          height: 300,
+          child: SingleChildScrollView(
+            child: SizedBox(
+              height: 300,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Select the ANTs you want to update',
+                    style: typography.paragraphXLarge(
+                      fontWeight: ArFontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 8,
+                  ),
+                  Flexible(
+                    flex: 1,
+                    child: BlocBuilder<UploadCubit, UploadState>(
+                      builder: (context, state) {
+                        if (state is UploadReady) {
+                          logger.d('Building ARNS record');
+                          final selectedARNSRecord = state.selectedARNSRecord;
+                          final arnsRecord = state.arnsRecord;
+
+                          logger.d(selectedARNSRecord?.processId ?? 'null');
+                          logger.d(arnsRecord?.processId ?? 'null');
+
+                          return ArDriveCheckBox(
+                            title: state.arnsRecord!.domain,
+                            checked: state.selectedARNSRecord?.processId ==
+                                state.arnsRecord?.processId,
+                            onChange: (value) {
+                              if (value) {
+                                logger.d('Selecting ARNS record');
+
+                                context
+                                    .read<UploadCubit>()
+                                    .selectARNSRecord(widget.state.arnsRecord!);
+                              } else {
+                                context
+                                    .read<UploadCubit>()
+                                    .selectARNSRecord(null);
+                              }
+                            },
+                          );
+                        }
+
+                        return const SizedBox();
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            isVisible = !isVisible;
+          });
+        },
+        child: BlocBuilder<UploadCubit, UploadState>(
+          builder: (context, state) {
+            final typography = ArDriveTypographyNew.of(context);
+
+            if (state is UploadReady) {
+              logger.d('Building ARNS record');
+
+              final hasSelectedManifest = state.selectedManifests.isNotEmpty;
+              logger.d('hasSelectedManifest: $hasSelectedManifest');
+              if (!hasSelectedManifest) {
+                return const SizedBox();
+              }
+
+              return Text(
+                state.selectedARNSRecord != null
+                    ? state.arnsRecord!.domain
+                    : 'Ants',
+                style: typography.paragraphNormal(
+                  fontWeight: ArFontWeight.bold,
+                ),
+              );
+            }
+
+            return const SizedBox();
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class UploadReadyModal extends StatefulWidget {
+  const UploadReadyModal({super.key});
+
+  @override
+  State<UploadReadyModal> createState() => _UploadReadyModalState();
+}
+
+class _UploadReadyModalState extends State<UploadReadyModal> {
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    return BlocBuilder<UploadCubit, UploadState>(
+      builder: (context, state) {
+        if (state is UploadReady) {
+          return ReactiveForm(
+            formGroup: context.watch<UploadCubit>().licenseCategoryForm,
+            child: ReactiveFormConsumer(builder: (_, form, __) {
+              final LicenseCategory? licenseCategory =
+                  form.control('licenseCategory').value;
+              return Flexible(
+                flex: 1,
+                child: StatsScreen(
+                  readyState: state,
+                  // Don't show on first screen?
+                  hasCloseButton: false,
+                  modalActions: [
+                    ModalAction(
+                      action: () => Navigator.of(context).pop(false),
+                      title: appLocalizationsOf(context).cancelEmphasized,
+                    ),
+                    licenseCategory == null
+                        ? ModalAction(
+                            isEnable: state.isNextButtonEnabled,
+                            action: () {
+                              context.read<UploadCubit>().initialScreenUpload();
+                            },
+                            title: appLocalizationsOf(context).uploadEmphasized,
+                          )
+                        : ModalAction(
+                            isEnable: state.isNextButtonEnabled,
+                            action: () {
+                              context.read<UploadCubit>().initialScreenNext(
+                                    licenseCategory: licenseCategory,
+                                  );
+                            },
+                            title:
+                                // TODO: Localize
+                                // appLocalizationsOf(context).configureEmphasized,
+                                'CONFIGURE',
+                          ),
+                  ],
+                  children: [
+                    RepositoryProvider.value(
+                      value: context.read<ArDriveUploadPreparationManager>(),
+                      child: UploadPaymentMethodView(
+                        onError: () {
+                          context
+                              .read<UploadCubit>()
+                              .emitErrorFromPreparation();
+                        },
+                        onTurboTopupSucess: () {
+                          context.read<UploadCubit>().startUploadPreparation(
+                                isRetryingToPayWithTurbo: true,
+                              );
+                        },
+                        onUploadMethodChanged: (method, info, canUpload) {
+                          context
+                              .read<UploadCubit>()
+                              .setUploadMethod(method, info, canUpload);
+                        },
+                      ),
+                    ),
+                    if (!state.showSettings)
+                      ArDriveButtonNew(
+                        variant: ButtonVariant.outline,
+                        text: 'Show Advanced Settings',
+                        maxHeight: 32,
+                        typography: typography,
+                        onPressed: () {
+                          context.read<UploadCubit>().showSettings();
+                        },
+                      )
+                    // IconButton(
+                    //   icon: Icon(Icons.settings),
+                    //   onPressed: () {
+                    //     context.read<UploadCubit>().showSettings();
+                    //   },
+                    // )
+                  ],
+                ),
+              );
+            }),
+          );
+        } else {
+          return const SizedBox();
+        }
+      },
     );
   }
 }

@@ -1,4 +1,4 @@
-import { IO, mIOToken } from '@ar.io/sdk';
+import { ANT, ArweaveSigner, IO, mIOToken } from '@ar.io/sdk';
 
 // async function getAllGateways(limit = 100, sortBy = 'operatorStake', sortOrder = 'desc') {
   // const io = IO.init();
@@ -59,4 +59,50 @@ async function getIOTokens(address) {
 window.ario = {
   getGateways,
   getIOTokens,
+  setARNS,
+  setAnt,
+  getARNSRecord,
 };
+
+async function setAnt(JWKString, processId, txId, undername) {
+  const ant = ANT.init({
+    signer: new ArweaveSigner(JSON.parse(JWKString)),
+    processId: processId,
+  });
+
+  const { id } = await ant.setRecord(
+    {
+      undername: undername,
+      transactionId: txId,
+      ttlSeconds: 3600
+    },
+
+    { tags: [{ name: 'App-Name', value: 'ArDrive-App' }] },
+  );
+  
+  return id;
+}
+
+async function setARNS(JWKString, txId, domain, undername) {
+  const io = IO.init();
+  const record = await io.getArNSRecord({ name: domain }); 
+
+  const processId = record.processId;
+
+  const setRecordResult = await setAnt(JWKString, processId, txId, undername);
+
+  return JSON.stringify(setRecordResult);
+}
+
+async function getARNSRecord(JWKString, domain) {
+  // const io = IO.init({ signer: new ArweaveSigner(JSON.parse(JWKString)) });
+  const io = IO.init();
+  
+  const record = await io.getArNSRecord({ name: domain });
+
+  console.log(record);
+
+  return JSON.stringify(record);
+}
+
+

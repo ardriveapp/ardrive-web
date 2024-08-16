@@ -21,7 +21,7 @@ abstract class ManifestRepository {
     String? existingManifestFileId,
   });
 
-  Future<void> uploadManifest({
+  Future<String> uploadManifest({
     required ManifestUploadParams params,
   });
 
@@ -101,11 +101,11 @@ class ManifestRepositoryImpl implements ManifestRepository {
   }
 
   @override
-  Future<void> uploadManifest({
+  Future<String> uploadManifest({
     required ManifestUploadParams params,
   }) async {
     try {
-      final completer = Completer<void>();
+      final completer = Completer<String>();
 
       final controller = await _uploader.upload(
         file: params.manifestFile,
@@ -130,12 +130,14 @@ class ManifestRepositoryImpl implements ManifestRepository {
           existingManifestFileId: params.existingManifestFileId,
         );
 
-        completer.complete();
+        completer.complete(manifestMetadata.dataTxId);
       });
 
       controller.onError((err) => completer.completeError(err));
 
-      await completer.future;
+      final result = await completer.future;
+
+      return result;
     } catch (e) {
       throw ManifestCreationException(
         'Failed to upload manifest.',

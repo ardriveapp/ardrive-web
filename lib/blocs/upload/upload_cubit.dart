@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
@@ -25,6 +26,7 @@ import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -54,6 +56,7 @@ class UploadCubit extends Cubit<UploadState> {
   final LicenseService _licenseService;
   final ConfigService _configService;
   final ManifestRepository _manifestRepository;
+  final ArioSDK _arioSDK;
 
   late bool uploadFolders;
   late Drive _targetDrive;
@@ -63,6 +66,14 @@ class UploadCubit extends Cubit<UploadState> {
 
   void changeUploadThumbnailOption(bool uploadThumbnail) {
     _uploadThumbnail = uploadThumbnail;
+  }
+
+  void showSettings() {
+    emit((state as UploadReady).copyWith(showSettings: true));
+  }
+
+  void hideSettings() {
+    emit((state as UploadReady).copyWith(showSettings: false));
   }
 
   void setUploadMethod(
@@ -92,6 +103,8 @@ class UploadCubit extends Cubit<UploadState> {
           isNextButtonEnabled: canUpload,
           isArConnect: (state as UploadReadyToPrepare).isArConnect,
           manifestFiles: (state as UploadReadyToPrepare).manifestFiles,
+          arnsRecord: (state as UploadReadyToPrepare).arnsRecord,
+          selectedARNSRecord: _selectedARNSRecord,
         ),
       );
     }
@@ -214,6 +227,7 @@ class UploadCubit extends Cubit<UploadState> {
     required LicenseService licenseService,
     required ConfigService configService,
     required ManifestRepository manifestRepository,
+    required ArioSDK arioSDK,
     this.folder,
     this.uploadFolders = false,
     this.isDragNDrop = false,
@@ -227,6 +241,7 @@ class UploadCubit extends Cubit<UploadState> {
         _configService = configService,
         _manifestRepository = manifestRepository,
         _uploadThumbnail = configService.config.uploadThumbnails,
+        _arioSDK = arioSDK,
         super(UploadPreparationInProgress());
 
   Future<void> startUploadPreparation({
@@ -259,13 +274,52 @@ class UploadCubit extends Cubit<UploadState> {
 
   List<FileEntry> _manifestFiles = [];
   final List<FileEntry> _selectedManifestFiles = [];
+  ARNSRecord? _selectedARNSRecord;
 
   void selectManifestFile(FileEntry file) {
     _selectedManifestFiles.add(file);
+
+    emit((state as UploadReady).copyWith(
+        selectedManifests: _selectedManifestFiles, equatableBust: UniqueKey()));
+  }
+
+  List<FileEntry> get selectedManifestFiles => _selectedManifestFiles;
+
+  void selectARNSRecord(ARNSRecord? arnsRecord) {
+    logger.d('Selected ARNS record: $arnsRecord');
+
+    if (arnsRecord == null) {
+      emit(UploadReady(
+        params: (state as UploadReady).params,
+        paymentInfo: (state as UploadReady).paymentInfo,
+        numberOfFiles: files.length,
+        uploadIsPublic: !_targetDrive.isPrivate,
+        isDragNDrop: isDragNDrop,
+        isNextButtonEnabled: false,
+        isArConnect: (state as UploadReady).isArConnect,
+        manifestFiles: (state as UploadReady).manifestFiles,
+        arnsRecord: null,
+        selectedARNSRecord: null,
+        selectedManifests: (state as UploadReady).selectedManifests,
+      ));
+      return;
+    }
+
+    _selectedARNSRecord = arnsRecord;
+
+    emit((state as UploadReady).copyWith(selectedARNSRecord: arnsRecord));
   }
 
   void unselectManifestFile(FileEntry file) {
     _selectedManifestFiles.remove(file);
+
+    logger.d('selectedManifestFiles.length: ${_selectedManifestFiles.length}');
+
+    emit(
+      (state as UploadReady).copyWith(
+          selectedManifests: _selectedManifestFiles,
+          equatableBust: UniqueKey()),
+    );
   }
 
   /// Tries to find a files that conflict with the files in the target folder.
@@ -463,6 +517,11 @@ class UploadCubit extends Cubit<UploadState> {
       _manifestFiles = await _manifestRepository.getManifestFilesInFolder(
           folderId: parentFolderId);
 
+      final record = await _arioSDK.getARNSRecord(
+        json.encode(_auth.currentUser.wallet.toJwk()),
+        'thiago',
+      );
+
       emit(
         UploadReadyToPrepare(
           params: UploadParams(
@@ -477,6 +536,7 @@ class UploadCubit extends Cubit<UploadState> {
           ),
           manifestFiles: _manifestFiles,
           isArConnect: await _profileCubit.isCurrentProfileArConnect(),
+          arnsRecord: record,
         ),
       );
     } catch (error, stacktrace) {
@@ -688,6 +748,7 @@ class UploadCubit extends Cubit<UploadState> {
       (tasks) async {
         emit(UploadComplete(
           manifestFiles: _selectedManifestFiles,
+          arnsRecord: _selectedARNSRecord,
         ));
 
         unawaited(_profileCubit.refreshBalance());
@@ -809,6 +870,7 @@ class UploadCubit extends Cubit<UploadState> {
 
         emit(UploadComplete(
           manifestFiles: _selectedManifestFiles,
+          arnsRecord: _selectedARNSRecord,
         ));
 
         PlausibleEventTracker.trackUploadSuccess();

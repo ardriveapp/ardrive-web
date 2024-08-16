@@ -3,7 +3,6 @@ import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/logger.dart';
-import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 
 abstract class UserRepository {
@@ -49,11 +48,11 @@ class _UserRepository implements UserRepository {
 
     String? ioTokens;
 
-    if (arioSdkIsPlaformSupported()) {
-      ioTokens = await ArioSDKFactory()
-          .create()
-          .getIOTokens(await profileDetails.wallet.getAddress());
-    }
+    // if (arioSdkIsPlaformSupported()) {
+    //   ioTokens = await ArioSDKFactory()
+    //       .create()
+    //       .getIOTokens(await profileDetails.wallet.getAddress());
+    // }
 
     final user = User(
       profileType: ProfileType.values[profileDetails.details.profileType],

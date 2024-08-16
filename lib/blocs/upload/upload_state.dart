@@ -64,11 +64,13 @@ class UploadReadyToPrepare extends UploadState {
   final UploadParams params;
   final bool isArConnect;
   final List<FileEntry> manifestFiles;
+  final ARNSRecord? arnsRecord;
 
   UploadReadyToPrepare({
     required this.params,
     this.isArConnect = false,
     required this.manifestFiles,
+    this.arnsRecord,
   });
 
   @override
@@ -84,8 +86,13 @@ class UploadReady extends UploadState {
   final int numberOfFiles;
   final UploadParams params;
   final List<FileEntry> manifestFiles;
+  final ARNSRecord? arnsRecord;
+  final ARNSRecord? selectedARNSRecord;
+  final List<FileEntry> selectedManifests;
+  final bool showSettings;
 
   final bool isArConnect;
+  final dynamic? equatableBust;
 
   UploadReady({
     required this.paymentInfo,
@@ -96,6 +103,11 @@ class UploadReady extends UploadState {
     required this.numberOfFiles,
     required this.isArConnect,
     required this.manifestFiles,
+    this.arnsRecord,
+    this.selectedARNSRecord,
+    this.selectedManifests = const [],
+    this.equatableBust,
+    this.showSettings = false,
   });
 
   // copyWith
@@ -109,6 +121,11 @@ class UploadReady extends UploadState {
     UploadParams? params,
     bool? isArConnect,
     List<FileEntry>? manifestFiles,
+    ARNSRecord? arnsRecord,
+    ARNSRecord? selectedARNSRecord,
+    List<FileEntry>? selectedManifests,
+    dynamic equatableBust,
+    bool? showSettings,
   }) {
     return UploadReady(
       isArConnect: isArConnect ?? this.isArConnect,
@@ -119,6 +136,11 @@ class UploadReady extends UploadState {
       isNextButtonEnabled: isNextButtonEnabled ?? this.isNextButtonEnabled,
       numberOfFiles: numberOfFiles ?? this.numberOfFiles,
       manifestFiles: manifestFiles ?? this.manifestFiles,
+      arnsRecord: arnsRecord ?? this.arnsRecord,
+      selectedARNSRecord: selectedARNSRecord ?? this.selectedARNSRecord,
+      selectedManifests: selectedManifests ?? this.selectedManifests,
+      equatableBust: equatableBust ?? this.equatableBust,
+      showSettings: showSettings ?? this.showSettings,
     );
   }
 
@@ -126,6 +148,9 @@ class UploadReady extends UploadState {
   List<Object?> get props => [
         paymentInfo,
         isNextButtonEnabled,
+        selectedARNSRecord?.processId,
+        equatableBust,
+        showSettings,
       ];
 
   @override
@@ -222,8 +247,9 @@ class UploadFailure extends UploadState {
 
 class UploadComplete extends UploadState {
   final List<FileEntry> manifestFiles;
+  final ARNSRecord? arnsRecord;
 
-  UploadComplete({required this.manifestFiles});
+  UploadComplete({required this.manifestFiles, this.arnsRecord});
 }
 
 class UploadWalletMismatch extends UploadState {}

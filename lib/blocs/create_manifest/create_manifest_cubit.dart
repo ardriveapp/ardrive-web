@@ -10,6 +10,7 @@ import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -52,6 +53,12 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       // Private manifests need more consideration and are currently unavailable
       emit(CreateManifestPrivacyMismatch());
     }
+  }
+
+  ARNSRecord? _antToUpdate;
+
+  void setAntToUpdate(ARNSRecord ant) {
+    _antToUpdate = ant;
   }
 
   void selectUploadMethod(
@@ -248,7 +255,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         logger.d(
             'Uploading manifest file with existing manifest file id: ${createManifestUploadReview.existingManifestFileId}');
 
-        await _manifestRepository.uploadManifest(
+        final manifestTxId = await _manifestRepository.uploadManifest(
           params: ManifestUploadParams(
             manifestFile: createManifestUploadReview.manifestFile,
             driveId: _drive.id,
@@ -259,6 +266,18 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
             wallet: _auth.currentUser.wallet,
           ),
         );
+
+        if (_antToUpdate != null) {
+          final sdk = ArioSDKFactory().create();
+
+          logger.d('Updating ARNS record for ${_antToUpdate!.domain}');
+          await sdk.setARNS(
+            _auth.getJWTAsString(),
+            manifestTxId,
+            _antToUpdate!.domain,
+            '@',
+          );
+        }
 
         emit(CreateManifestSuccess());
       } catch (e) {
