@@ -275,6 +275,7 @@ class UploadCubit extends Cubit<UploadState> {
   List<FileEntry> _manifestFiles = [];
   final List<FileEntry> _selectedManifestFiles = [];
   ARNSRecord? _selectedARNSRecord;
+  ARNSRecord? _arnsRecord;
 
   void selectManifestFile(FileEntry file) {
     _selectedManifestFiles.add(file);
@@ -295,13 +296,15 @@ class UploadCubit extends Cubit<UploadState> {
         numberOfFiles: files.length,
         uploadIsPublic: !_targetDrive.isPrivate,
         isDragNDrop: isDragNDrop,
-        isNextButtonEnabled: false,
+        isNextButtonEnabled: (state as UploadReady).isNextButtonEnabled,
         isArConnect: (state as UploadReady).isArConnect,
         manifestFiles: (state as UploadReady).manifestFiles,
-        arnsRecord: null,
+        arnsRecord: _arnsRecord,
         selectedARNSRecord: null,
         selectedManifests: (state as UploadReady).selectedManifests,
+        showSettings: (state as UploadReady).showSettings,
       ));
+      _selectedARNSRecord = null;
       return;
     }
 
@@ -517,7 +520,7 @@ class UploadCubit extends Cubit<UploadState> {
       _manifestFiles = await _manifestRepository.getManifestFilesInFolder(
           folderId: parentFolderId);
 
-      final record = await _arioSDK.getARNSRecord(
+      _arnsRecord = await _arioSDK.getARNSRecord(
         json.encode(_auth.currentUser.wallet.toJwk()),
         'thiago',
       );
@@ -536,7 +539,7 @@ class UploadCubit extends Cubit<UploadState> {
           ),
           manifestFiles: _manifestFiles,
           isArConnect: await _profileCubit.isCurrentProfileArConnect(),
-          arnsRecord: record,
+          arnsRecord: _arnsRecord,
         ),
       );
     } catch (error, stacktrace) {

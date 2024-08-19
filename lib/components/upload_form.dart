@@ -324,6 +324,8 @@ class _UploadFormState extends State<UploadForm> {
                     ),
                   );
                 }
+              } else {
+                Navigator.pop(context);
               }
 
               if (!_isShowingCancelDialog) {
@@ -622,112 +624,7 @@ class _UploadFormState extends State<UploadForm> {
                     '${appLocalizationsOf(context).uploadingNFiles(numberOfFilesInBundles + numberOfV2Files)} ${(state.progress * 100).toStringAsFixed(2)}%',
                 content: SizedBox(
                   width: kMediumDialogWidth,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                        maxHeight: MediaQuery.of(context).size.height * 0.3),
-                    child: Scrollbar(
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: files.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          if (files[index] is FileV2UploadHandle) {
-                            final file = files[index] as FileV2UploadHandle;
-                            return Column(
-                              children: [
-                                ListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  title: Row(
-                                    children: [
-                                      Text(
-                                        file.entity.name!,
-                                        style: ArDriveTypography.body
-                                            .buttonNormalBold(
-                                          color: ArDriveTheme.of(context)
-                                              .themeData
-                                              .colors
-                                              .themeFgDefault,
-                                        ),
-                                      ),
-                                      Text(
-                                        filesize(file.entity.size),
-                                        style: ArDriveTypography.body
-                                            .buttonNormalBold(
-                                          color: ArDriveTheme.of(context)
-                                              .themeData
-                                              .colors
-                                              .themeFgDefault,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  subtitle: Text(
-                                    '${filesize(file.uploadedSize)}/${filesize(file.size)}',
-                                    style: ArDriveTypography.body
-                                        .buttonNormalRegular(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeFgOnDisabled,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          } else {
-                            final file = files[index] as BundleUploadHandle;
-                            return Column(
-                              children: [
-                                ListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  title: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      for (var fileEntity in file.fileEntities)
-                                        Row(
-                                          children: [
-                                            Text(
-                                              fileEntity.name!,
-                                              style: ArDriveTypography.body
-                                                  .buttonNormalBold(
-                                                color: ArDriveTheme.of(context)
-                                                    .themeData
-                                                    .colors
-                                                    .themeFgDefault,
-                                              ),
-                                            ),
-                                            Text(
-                                              filesize(fileEntity.size),
-                                              style: ArDriveTypography.body
-                                                  .buttonNormalBold(
-                                                color: ArDriveTheme.of(context)
-                                                    .themeData
-                                                    .colors
-                                                    .themeFgDefault,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                    ],
-                                  ),
-                                  subtitle: Text(
-                                    '${filesize(file.uploadedSize)}/${filesize(file.size)}',
-                                    style: ArDriveTypography.body
-                                        .buttonNormalRegular(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeFgOnDisabled,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          }
-                        },
-                      ),
-                    ),
-                  ),
+                  child: _uploadInProgressView(context, state, files),
                 ),
               );
             } else if (state is UploadCanceled) {
@@ -827,11 +724,127 @@ class _UploadFormState extends State<UploadForm> {
         ),
       );
 
+  Widget _uploadInProgressView(
+      BuildContext context, UploadInProgress state, List<UploadHandle> files) {
+    return Column(
+      children: [
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 256),
+          child: Scrollbar(
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: files.length,
+              itemBuilder: (BuildContext context, int index) {
+                if (files[index] is FileV2UploadHandle) {
+                  final file = files[index] as FileV2UploadHandle;
+                  return Column(
+                    children: [
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Row(
+                          children: [
+                            Text(
+                              file.entity.name!,
+                              style: ArDriveTypography.body.buttonNormalBold(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgDefault,
+                              ),
+                            ),
+                            Text(
+                              filesize(file.entity.size),
+                              style: ArDriveTypography.body.buttonNormalBold(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgDefault,
+                              ),
+                            ),
+                          ],
+                        ),
+                        subtitle: Text(
+                          '${filesize(file.uploadedSize)}/${filesize(file.size)}',
+                          style: ArDriveTypography.body.buttonNormalRegular(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgOnDisabled,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                } else {
+                  final file = files[index] as BundleUploadHandle;
+                  return Column(
+                    children: [
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            for (var fileEntity in file.fileEntities)
+                              Row(
+                                children: [
+                                  Text(
+                                    fileEntity.name!,
+                                    style:
+                                        ArDriveTypography.body.buttonNormalBold(
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colors
+                                          .themeFgDefault,
+                                    ),
+                                  ),
+                                  Text(
+                                    filesize(fileEntity.size),
+                                    style:
+                                        ArDriveTypography.body.buttonNormalBold(
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colors
+                                          .themeFgDefault,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                          ],
+                        ),
+                        subtitle: Text(
+                          '${filesize(file.uploadedSize)}/${filesize(file.size)}',
+                          style: ArDriveTypography.body.buttonNormalRegular(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgOnDisabled,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+              },
+            ),
+          ),
+        ),
+        const Row(
+          children: [
+            Flexible(flex: 1, child: Text('Phase 1')),
+            Flexible(flex: 1, child: Text('Phase 2')),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _uploadUsingNewUploader({
     required UploadInProgressUsingNewUploader state,
   }) {
     final progress = state.progress;
-    return ArDriveStandardModal(
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
+    return ArDriveStandardModalNew(
       actions: [
         if (state.progress.hasUploadInProgress)
           ModalAction(
@@ -997,28 +1010,19 @@ class _UploadFormState extends State<UploadForm> {
                                 title: Row(
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   mainAxisSize: MainAxisSize.max,
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Flexible(
-                                      flex: 1,
+                                      flex: 3,
                                       child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             file.name,
-                                            style: ArDriveTypography.body
-                                                .buttonNormalBold(
-                                                  color:
-                                                      ArDriveTheme.of(context)
-                                                          .themeData
-                                                          .colors
-                                                          .themeFgDefault,
-                                                )
-                                                .copyWith(
-                                                    fontWeight:
-                                                        FontWeight.bold),
+                                            style: typography.paragraphNormal(
+                                              fontWeight: ArFontWeight.bold,
+                                              color: colorTokens.textMid,
+                                            ),
                                           ),
                                           AnimatedSwitcher(
                                             duration:
@@ -1030,14 +1034,13 @@ class _UploadFormState extends State<UploadForm> {
                                                     Flexible(
                                                       child: Text(
                                                         status,
-                                                        style: ArDriveTypography
-                                                            .body
-                                                            .buttonNormalBold(
-                                                          color: ArDriveTheme
-                                                                  .of(context)
-                                                              .themeData
-                                                              .colors
-                                                              .themeFgOnDisabled,
+                                                        style: typography
+                                                            .paragraphNormal(
+                                                          fontWeight:
+                                                              ArFontWeight
+                                                                  .semiBold,
+                                                          color: colorTokens
+                                                              .textMid,
                                                         ),
                                                       ),
                                                     ),
@@ -1049,12 +1052,10 @@ class _UploadFormState extends State<UploadForm> {
                                           if (progressText != null)
                                             Text(
                                               progressText,
-                                              style: ArDriveTypography.body
-                                                  .buttonNormalBold(
-                                                color: ArDriveTheme.of(context)
-                                                    .themeData
-                                                    .colors
-                                                    .themeFgOnDisabled,
+                                              style: typography.paragraphNormal(
+                                                fontWeight:
+                                                    ArFontWeight.semiBold,
+                                                color: colorTokens.textLow,
                                               ),
                                             ),
                                         ],
@@ -1075,30 +1076,24 @@ class _UploadFormState extends State<UploadForm> {
                                               width: 8,
                                             ),
                                             Flexible(
-                                              flex: 2,
-                                              child: ArDriveProgressBar(
-                                                height: 4,
-                                                indicatorColor:
-                                                    _getUploadStatusColor(
-                                                  context,
-                                                  task,
-                                                ),
-                                                percentage: task.progress,
+                                              // flex: 2,
+                                              child: CircularProgressWidget(
+                                                progress: task.progress,
                                               ),
                                             ),
-                                            Flexible(
-                                              child: Text(
-                                                '${(task.progress * 100).toInt()}%',
-                                                style: ArDriveTypography.body
-                                                    .buttonNormalBold(
-                                                  color:
-                                                      ArDriveTheme.of(context)
-                                                          .themeData
-                                                          .colors
-                                                          .themeFgDefault,
-                                                ),
-                                              ),
-                                            ),
+                                            // Flexible(
+                                            //   child: Text(
+                                            //     '${(task.progress * 100).toInt()}%',
+                                            //     style: ArDriveTypography.body
+                                            //         .buttonNormalBold(
+                                            //       color:
+                                            //           ArDriveTheme.of(context)
+                                            //               .themeData
+                                            //               .colors
+                                            //               .themeFgDefault,
+                                            //     ),
+                                            //   ),
+                                            // ),
                                           ],
                                           if (!task.isProgressAvailable ||
                                               task.status ==
@@ -1167,6 +1162,27 @@ class _UploadFormState extends State<UploadForm> {
                   color:
                       ArDriveTheme.of(context).themeData.colors.themeFgDefault),
             ),
+          // Row(
+          //   mainAxisSize: MainAxisSize.max,
+          //   children: [
+          //     Flexible(
+          //       flex: 1,
+          //       child: Container(
+          //         color: colorTokens.containerL2,
+          //         alignment: Alignment.center,
+          //         child: Text('Phase 1', style: typography.paragraphLarge()),
+          //       ),
+          //     ),
+          //     Flexible(
+          //       flex: 1,
+          //       child: Container(
+          //         color: colorTokens.containerL3,
+          //         alignment: Alignment.center,
+          //         child: Text('Phase 2', style: typography.paragraphLarge()),
+          //       ),
+          //     ),
+          //   ],
+          // ),
         ],
       ),
     );
@@ -1585,6 +1601,17 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
                               alignment: Alignment.centerLeft,
                               child: Row(
                                 children: [
+                                  ArDriveIconButton(
+                                    icon: ArDriveIcons.arrowLeft(),
+                                    onPressed: () {
+                                      context
+                                          .read<UploadCubit>()
+                                          .hideSettings();
+                                    },
+                                  ),
+                                  const SizedBox(
+                                    width: 4,
+                                  ),
                                   Expanded(
                                     child: Text(
                                       'Upload Settings',
@@ -1593,14 +1620,14 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
                                       ),
                                     ),
                                   ),
-                                  ArDriveIconButton(
-                                    icon: ArDriveIcons.x(),
-                                    onPressed: () {
-                                      context
-                                          .read<UploadCubit>()
-                                          .hideSettings();
-                                    },
-                                  )
+                                  // ArDriveIconButton(
+                                  //   icon: ArDriveIcons.x(),
+                                  //   onPressed: () {
+                                  //     context
+                                  //         .read<UploadCubit>()
+                                  //         .hideSettings();
+                                  //   },
+                                  // )
                                 ],
                               ),
                             ),
@@ -1655,6 +1682,8 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
 
   Widget manifestOptionsView(UploadReady state, BuildContext context,
       ArdriveTypographyNew typography) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
     return Column(
         mainAxisSize: MainAxisSize.max,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1727,9 +1756,21 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
                     children: [
                       Expanded(
                         flex: 2,
-                        child: Text(
-                          state.manifestFiles[index].name,
-                          style: typography.paragraphNormal(),
+                        child: Row(
+                          children: [
+                            ArDriveIcons.manifest(),
+                            SizedBox(
+                              width: 4,
+                            ),
+                            Flexible(
+                              child: Text(
+                                state.manifestFiles[index].name,
+                                style: typography.paragraphNormal(
+                                  fontWeight: ArFontWeight.semiBold,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       Expanded(
@@ -1756,7 +1797,7 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
               ),
             ),
             const Divider(
-              height: 24,
+              height: 40,
             ),
           ],
 
@@ -1768,9 +1809,7 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
                 fontWeight: ArFontWeight.bold,
               ),
             ),
-            SizedBox(
-              height: 8,
-            ),
+            SizedBox(height: 8),
             Row(
               children: [
                 ArDriveCheckBox(
@@ -1779,6 +1818,7 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
                       context.read<ConfigService>().config.uploadThumbnails,
                   titleStyle: typography.paragraphLarge(
                     fontWeight: ArFontWeight.semiBold,
+                    color: colorTokens.textMid,
                   ),
                   onChange: (value) {
                     context
@@ -1789,7 +1829,9 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
                 Padding(
                   padding: const EdgeInsets.only(left: 8.0),
                   child: ArDriveIconButton(
-                    icon: ArDriveIcons.info(),
+                    icon: ArDriveIcons.info(
+                      color: colorTokens.textMid,
+                    ),
                     tooltip:
                         'Uploading with thumbnails is free, but may make your upload take longer.\nYou can always attach a thumbnail later.',
                   ),
@@ -1797,7 +1839,7 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
               ],
             ),
             const Divider(
-              height: 24,
+              height: 40,
             ),
           ],
 
@@ -2153,7 +2195,7 @@ class _AntSelectorState extends State<AntSelector> {
                           logger.d(arnsRecord?.processId ?? 'null');
 
                           return ArDriveCheckBox(
-                            title: state.arnsRecord!.domain,
+                            title: state.arnsRecord?.domain,
                             checked: state.selectedARNSRecord?.processId ==
                                 state.arnsRecord?.processId,
                             onChange: (value) {
@@ -2203,7 +2245,7 @@ class _AntSelectorState extends State<AntSelector> {
 
               return Text(
                 state.selectedARNSRecord != null
-                    ? state.arnsRecord!.domain
+                    ? state.selectedARNSRecord!.domain
                     : 'Ants',
                 style: typography.paragraphNormal(
                   fontWeight: ArFontWeight.bold,
@@ -2238,77 +2280,73 @@ class _UploadReadyModalState extends State<UploadReadyModal> {
             child: ReactiveFormConsumer(builder: (_, form, __) {
               final LicenseCategory? licenseCategory =
                   form.control('licenseCategory').value;
-              return Flexible(
-                flex: 1,
-                child: StatsScreen(
-                  readyState: state,
-                  // Don't show on first screen?
-                  hasCloseButton: false,
-                  modalActions: [
-                    ModalAction(
-                      action: () => Navigator.of(context).pop(false),
-                      title: appLocalizationsOf(context).cancelEmphasized,
+              return StatsScreen(
+                readyState: state,
+                // Don't show on first screen?
+                hasCloseButton: false,
+                modalActions: [
+                  ModalAction(
+                    action: () => Navigator.of(context).pop(false),
+                    title: appLocalizationsOf(context).cancelEmphasized,
+                  ),
+                  licenseCategory == null
+                      ? ModalAction(
+                          isEnable: state.isNextButtonEnabled,
+                          action: () {
+                            context.read<UploadCubit>().initialScreenUpload();
+                          },
+                          title: appLocalizationsOf(context).uploadEmphasized,
+                        )
+                      : ModalAction(
+                          isEnable: state.isNextButtonEnabled,
+                          action: () {
+                            context.read<UploadCubit>().initialScreenNext(
+                                  licenseCategory: licenseCategory,
+                                );
+                          },
+                          title:
+                              // TODO: Localize
+                              // appLocalizationsOf(context).configureEmphasized,
+                              'CONFIGURE',
+                        ),
+                ],
+                children: [
+                  RepositoryProvider.value(
+                    value: context.read<ArDriveUploadPreparationManager>(),
+                    child: UploadPaymentMethodView(
+                      useNewArDriveUI: true,
+                      onError: () {
+                        context.read<UploadCubit>().emitErrorFromPreparation();
+                      },
+                      onTurboTopupSucess: () {
+                        context.read<UploadCubit>().startUploadPreparation(
+                              isRetryingToPayWithTurbo: true,
+                            );
+                      },
+                      onUploadMethodChanged: (method, info, canUpload) {
+                        context
+                            .read<UploadCubit>()
+                            .setUploadMethod(method, info, canUpload);
+                      },
                     ),
-                    licenseCategory == null
-                        ? ModalAction(
-                            isEnable: state.isNextButtonEnabled,
-                            action: () {
-                              context.read<UploadCubit>().initialScreenUpload();
-                            },
-                            title: appLocalizationsOf(context).uploadEmphasized,
-                          )
-                        : ModalAction(
-                            isEnable: state.isNextButtonEnabled,
-                            action: () {
-                              context.read<UploadCubit>().initialScreenNext(
-                                    licenseCategory: licenseCategory,
-                                  );
-                            },
-                            title:
-                                // TODO: Localize
-                                // appLocalizationsOf(context).configureEmphasized,
-                                'CONFIGURE',
-                          ),
-                  ],
-                  children: [
-                    RepositoryProvider.value(
-                      value: context.read<ArDriveUploadPreparationManager>(),
-                      child: UploadPaymentMethodView(
-                        onError: () {
-                          context
-                              .read<UploadCubit>()
-                              .emitErrorFromPreparation();
-                        },
-                        onTurboTopupSucess: () {
-                          context.read<UploadCubit>().startUploadPreparation(
-                                isRetryingToPayWithTurbo: true,
-                              );
-                        },
-                        onUploadMethodChanged: (method, info, canUpload) {
-                          context
-                              .read<UploadCubit>()
-                              .setUploadMethod(method, info, canUpload);
-                        },
-                      ),
-                    ),
-                    if (!state.showSettings)
-                      ArDriveButtonNew(
-                        variant: ButtonVariant.outline,
-                        text: 'Show Advanced Settings',
-                        maxHeight: 32,
-                        typography: typography,
-                        onPressed: () {
-                          context.read<UploadCubit>().showSettings();
-                        },
-                      )
-                    // IconButton(
-                    //   icon: Icon(Icons.settings),
-                    //   onPressed: () {
-                    //     context.read<UploadCubit>().showSettings();
-                    //   },
-                    // )
-                  ],
-                ),
+                  ),
+                  if (!state.showSettings)
+                    ArDriveButtonNew(
+                      variant: ButtonVariant.outline,
+                      text: 'Show Advanced Settings',
+                      maxHeight: 32,
+                      typography: typography,
+                      onPressed: () {
+                        context.read<UploadCubit>().showSettings();
+                      },
+                    )
+                  // IconButton(
+                  //   icon: Icon(Icons.settings),
+                  //   onPressed: () {
+                  //     context.read<UploadCubit>().showSettings();
+                  //   },
+                  // )
+                ],
               );
             }),
           );
@@ -2316,6 +2354,43 @@ class _UploadReadyModalState extends State<UploadReadyModal> {
           return const SizedBox();
         }
       },
+    );
+  }
+}
+
+class CircularProgressWidget extends StatelessWidget {
+  final double progress; // progress value from 0 to 100
+
+  const CircularProgressWidget({Key? key, required this.progress})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        SizedBox(
+          width: 40,
+          height: 40,
+          child: CircularProgressIndicator(
+            value: progress,
+            strokeWidth: 4,
+            valueColor: AlwaysStoppedAnimation<Color>(colorTokens.strokeRed),
+            backgroundColor: Colors.grey[850], // or any other background color
+          ),
+        ),
+        Center(
+          child: Text(
+            '${(progress * 100).toInt()}%',
+            style: typography.paragraphSmall(
+              color: colorTokens.textHigh,
+              fontWeight: ArFontWeight.semiBold,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
