@@ -10,6 +10,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -96,15 +97,6 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Align(
-              alignment: Alignment.centerRight,
-              child: IconButton(
-                icon: Icon(Icons.settings),
-                onPressed: () {
-                  showGatewaySwitcherModal(context);
-                },
-              ),
-            ),
             Center(
                 child: ArDriveImage(
               image: AssetImage(Resources.images.brand.logo1),
@@ -237,7 +229,17 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                   ],
                 ),
               )
-            ]
+            ],
+            if (arioSdkIsPlaformSupported())
+              ArDriveButtonNew(
+                variant: ButtonVariant.outline,
+                text: 'Show Advanced Settings',
+                maxHeight: 32,
+                typography: typography,
+                onPressed: () {
+                  showGatewaySwitcherModal(context);
+                },
+              )
           ],
         ),
       ),
