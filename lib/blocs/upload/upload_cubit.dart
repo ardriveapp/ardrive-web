@@ -194,6 +194,7 @@ class UploadCubit extends Cubit<UploadState> {
   /// Map of conflicting file ids keyed by their file names.
   final Map<String, String> conflictingFiles = {};
   final List<String> conflictingFolders = [];
+  List<String> failedFiles = [];
 
   UploadCubit({
     required this.driveId,
@@ -312,32 +313,81 @@ class UploadCubit extends Cubit<UploadState> {
     checkConflicts();
   }
 
-  Future<void> checkConflictingFiles() async {
+  Future<void> checkConflictingFiles({
+    bool checkFailedFiles = true,
+  }) async {
     emit(UploadPreparationInProgress());
 
     _removeFilesWithFolderNameConflicts();
 
     for (final file in files) {
       final fileName = file.ioFile.name;
-      final existingFileId = await _driveDao
+      final existingFileIds = await _driveDao
           .filesInFolderWithName(
             driveId: _targetDrive.id,
             parentFolderId: file.parentFolderId,
             name: fileName,
           )
           .map((f) => f.id)
-          .getSingleOrNull();
+          .get();
 
-      if (existingFileId != null) {
+      if (existingFileIds.isNotEmpty) {
+        final existingFileId = existingFileIds.first;
+
         logger.d('Found conflicting file. Existing file id: $existingFileId');
         conflictingFiles[file.getIdentifier()] = existingFileId;
       }
     }
+
     if (conflictingFiles.isNotEmpty) {
+      if (checkFailedFiles) {
+        failedFiles.clear();
+
+        conflictingFiles.forEach((key, value) {
+          logger.d('Checking if file $key has failed');
+        });
+
+        for (final fileNameKey in conflictingFiles.keys) {
+          final fileId = conflictingFiles[fileNameKey];
+
+          final fileRevision = await _driveDao
+              .latestFileRevisionByFileId(
+                driveId: driveId,
+                fileId: fileId!,
+              )
+              .getSingleOrNull();
+
+          final status = _driveDao.select(_driveDao.networkTransactions)
+            ..where((tbl) => tbl.id.equals(fileRevision!.dataTxId));
+
+          final transaction = await status.getSingleOrNull();
+
+          logger.d('Transaction status: ${transaction?.status}');
+
+          if (transaction?.status == TransactionStatus.failed) {
+            failedFiles.add(fileNameKey);
+          }
+        }
+
+        logger.d('Failed files: $failedFiles');
+
+        if (failedFiles.isNotEmpty) {
+          emit(
+            UploadConflictWithFailedFiles(
+              areAllFilesConflicting: conflictingFiles.length == files.length,
+              conflictingFileNames: conflictingFiles.keys.toList(),
+              conflictingFileNamesForFailedFiles: failedFiles,
+            ),
+          );
+          return;
+        }
+      }
+
       emit(
         UploadFileConflict(
           areAllFilesConflicting: conflictingFiles.length == files.length,
           conflictingFileNames: conflictingFiles.keys.toList(),
+          conflictingFileNamesForFailedFiles: const [],
         ),
       );
     } else {
@@ -369,19 +419,20 @@ class UploadCubit extends Cubit<UploadState> {
           )
           .map((f) => f.id)
           .getSingleOrNull();
-      final existingFileId = await _driveDao
+      final existingFileIds = await _driveDao
           .filesInFolderWithName(
             driveId: driveId,
             name: folder.name,
             parentFolderId: folder.parentFolderId,
           )
           .map((f) => f.id)
-          .getSingleOrNull();
+          .get();
+
       if (existingFolderId != null) {
         folder.id = existingFolderId;
         foldersToSkip.add(folder);
       }
-      if (existingFileId != null) {
+      if (existingFileIds.isNotEmpty) {
         conflictingFolders.add(folder.name);
       }
     }
@@ -419,6 +470,8 @@ class UploadCubit extends Cubit<UploadState> {
 
     if (uploadAction == UploadActions.skip) {
       _removeFilesWithFileNameConflicts();
+    } else if (uploadAction == UploadActions.skipSuccessfulUploads) {
+      _removeSuccessfullyUploadedFiles();
     }
 
     logger.d(
@@ -936,6 +989,12 @@ class UploadCubit extends Cubit<UploadState> {
   void _removeFilesWithFileNameConflicts() {
     files.removeWhere(
       (file) => conflictingFiles.containsKey(file.getIdentifier()),
+    );
+  }
+
+  void _removeSuccessfullyUploadedFiles() {
+    files.removeWhere(
+      (file) => !failedFiles.contains(file.getIdentifier()),
     );
   }
 
