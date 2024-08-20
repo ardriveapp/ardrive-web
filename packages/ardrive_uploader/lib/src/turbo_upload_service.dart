@@ -114,6 +114,7 @@ class TurboUploadService {
         }, onError: (error) {
           onSendProgressTimer?.cancel();
           _cancelTokens.remove(cancelToken);
+
           throw error;
         });
       } catch (e) {
@@ -212,7 +213,8 @@ class TurboUploadService {
           logger.i('[$dataItemId] DataItem confirmed!');
           return response;
         case 'UNDERFUNDED':
-          throw UploadCanceledException('Upload canceled. Underfunded.');
+          throw UnderFundException(
+              message: 'Upload canceled. Underfunded.', error: response.data);
         case 'ASSEMBLING':
         case 'VALIDATING':
         case 'FINALIZING':

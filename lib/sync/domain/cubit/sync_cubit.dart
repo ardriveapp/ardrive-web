@@ -87,8 +87,12 @@ class SyncCubit extends Cubit<SyncState> {
     _syncSub = Stream.periodic(
             Duration(seconds: _configService.config.autoSyncIntervalInSeconds))
         // Do not start another sync until the previous sync has completed.
-        .map((value) => Stream.fromFuture(startSync()))
-        .listen((_) {
+        .map((value) {
+      /// Only start sync if autoSync is enabled.
+      if (_configService.config.autoSync) {
+        return Stream.fromFuture(startSync());
+      }
+    }).listen((_) {
       logger.d('Listening to startSync periodic stream');
     });
 
@@ -120,7 +124,8 @@ class SyncCubit extends Cubit<SyncState> {
     /// This delay is for don't abruptly open the modal when the user is back
     ///  to ArDrive browser tab
     Future.delayed(const Duration(seconds: 2)).then((value) {
-      createSyncStream();
+      /// Only restart sync if autoSync is enabled.
+      if (_configService.config.autoSync) createSyncStream();
     });
   }
 
@@ -131,8 +136,12 @@ class SyncCubit extends Cubit<SyncState> {
         _arconnectSyncSub = Stream.periodic(
                 const Duration(minutes: kArConnectSyncTimerDuration))
             // Do not start another sync until the previous sync has completed.
-            .map((value) => Stream.fromFuture(arconnectSync()))
-            .listen((_) {});
+            .map((value) {
+          /// Only start sync if autoSync is enabled.
+          if (_configService.config.autoSync) {
+            return Stream.fromFuture(arconnectSync());
+          }
+        }).listen((_) {});
         arconnectSync();
       }
     });
@@ -255,7 +264,29 @@ class SyncCubit extends Cubit<SyncState> {
     );
 
     _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
+
+    unawaited(_updateContext());
+
     emit(SyncIdle());
+  }
+
+  Future<void> _updateContext() async {
+    try {
+      var context = logger.context;
+
+      final numberOfFiles = await _syncRepository.numberOfFilesInWallet();
+      final numberOfFolders = await _syncRepository.numberOfFoldersInWallet();
+
+    logger.setContext(
+        context.copyWith(
+          numberOfDrives: _syncProgress.drivesCount,
+          numberOfFiles: numberOfFiles,
+          numberOfFolders: numberOfFolders,
+        ),
+      );
+    } catch (e) {
+      logger.w('Error setting context after sync');
+    }
   }
 
   int calculateSyncLastBlockHeight(int lastBlockHeight) {

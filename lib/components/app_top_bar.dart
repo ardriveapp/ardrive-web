@@ -5,7 +5,6 @@ import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/search/search_modal.dart';
 import 'package:ardrive/search/search_text_field.dart';
-import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
@@ -19,7 +18,6 @@ class AppTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final enableSearch = context.read<ConfigService>().config.enableSearch;
     final controller = TextEditingController();
 
     return SizedBox(
@@ -31,24 +29,22 @@ class AppTopBar extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            if (enableSearch) ...[
-              Expanded(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 400),
-                  child: SearchTextField(
-                    controller: controller,
-                    onFieldSubmitted: (query) {
-                      showSearchModalDesktop(
-                        context: context,
-                        driveDetailCubit: context.read<DriveDetailCubit>(),
-                        controller: controller,
-                      );
-                    },
-                  ),
+            Expanded(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 400),
+                child: SearchTextField(
+                  controller: controller,
+                  onFieldSubmitted: (query) {
+                    showSearchModalDesktop(
+                      context: context,
+                      driveDetailCubit: context.read<DriveDetailCubit>(),
+                      controller: controller,
+                    );
+                  },
                 ),
               ),
-              const SizedBox(width: 24),
-            ],
+            ),
+            const SizedBox(width: 24),
             const Spacer(),
             const SyncButton(),
             const SizedBox(width: 8),

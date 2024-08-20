@@ -3,9 +3,11 @@ import 'dart:convert';
 
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/models/daos/drive_dao/exception.dart';
 import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/search/search_result.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -50,108 +52,165 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   }
 
   Future<void> deleteSharedPrivateDrives(String? owner) async {
-    final drives = (await allDrives().get()).where(
-      (drive) =>
-          drive.ownerAddress != owner &&
-          drive.privacy == DrivePrivacyTag.private,
-    );
-    for (var drive in drives) {
-      await detachDrive(drive.id);
+    try {
+      final drives = (await allDrives().get()).where(
+        (drive) =>
+            drive.ownerAddress != owner &&
+            drive.privacy == DrivePrivacyTag.private,
+      );
+      for (var drive in drives) {
+        await detachDrive(drive.id);
+      }
+    } catch (e) {
+      logger.e('Error deleting shared private drives', e);
     }
   }
 
   Future<void> detachDrive(String driveId) async {
-    return db.transaction(() async {
-      await deleteDriveById(driveId: driveId);
-      await deleteAllDriveRevisionsByDriveId(driveId: driveId);
-      await deleteFoldersByDriveId(driveId: driveId);
-      await deleteFolderRevisionsByDriveId(driveId: driveId);
-      await deleteFilesForDriveId(driveId: driveId);
-      await deleteFileRevisionsByDriveId(driveId: driveId);
-      await deleteLicensesByDriveId(driveId: driveId);
-    });
+    try {
+      return db.transaction(() async {
+        await deleteDriveById(driveId: driveId);
+        await deleteAllDriveRevisionsByDriveId(driveId: driveId);
+        await deleteFoldersByDriveId(driveId: driveId);
+        await deleteFolderRevisionsByDriveId(driveId: driveId);
+        await deleteFilesForDriveId(driveId: driveId);
+        await deleteFileRevisionsByDriveId(driveId: driveId);
+        await deleteLicensesByDriveId(driveId: driveId);
+      });
+    } catch (e) {
+      throw _handleError('Error detaching drive', e);
+    }
   }
 
   Future<SecretKey?> getDriveKeyFromMemory(DriveID driveID) async {
-    return await _driveKeyVault.get(driveID);
+    try {
+      return await _driveKeyVault.get(driveID);
+    } catch (e) {
+      throw _handleError('Error getting drive key from memory', e);
+    }
   }
 
   Future<void> putDriveKeyInMemory({
     required DriveID driveID,
     required SecretKey driveKey,
   }) async {
-    return await _driveKeyVault.put(driveID, driveKey);
+    try {
+      return await _driveKeyVault.put(driveID, driveKey);
+    } catch (e) {
+      throw _handleError('Error putting drive key in memory', e);
+    }
   }
 
   Future<Uint8List?> getPreviewDataFromMemory(TxID dataTxId) async {
-    return await _previewVault.get(dataTxId);
+    try {
+      return await _previewVault.get(dataTxId);
+    } catch (e) {
+      throw _handleError('Error getting preview data from memory', e);
+    }
   }
 
   Future<void> putPreviewDataInMemory({
     required TxID dataTxId,
     required Uint8List bytes,
   }) async {
-    return await _previewVault.put(dataTxId, bytes);
+    try {
+      await _previewVault.put(dataTxId, bytes);
+    } catch (e) {
+      throw _handleError('Error putting preview data in memory', e);
+    }
   }
 
   Future<void> insertNewDriveRevisions(
     List<DriveRevisionsCompanion> revisions,
   ) async {
-    await db.batch((b) async {
-      b.insertAllOnConflictUpdate(db.driveRevisions, revisions);
-    });
+    try {
+      await db.batch((b) async {
+        b.insertAllOnConflictUpdate(db.driveRevisions, revisions);
+      });
+    } catch (e) {
+      throw _handleError('Error inserting new drive revisions', e);
+    }
   }
 
   Future<void> insertNewFileRevisions(
     List<FileRevisionsCompanion> revisions,
   ) async {
-    await db.batch((b) async {
-      b.insertAllOnConflictUpdate(db.fileRevisions, revisions);
-    });
+    try {
+      await db.batch((b) async {
+        b.insertAllOnConflictUpdate(db.fileRevisions, revisions);
+      });
+    } catch (e) {
+      throw _handleError('Error inserting new file revisions', e);
+    }
   }
 
   Future<void> insertNewFolderRevisions(
     List<FolderRevisionsCompanion> revisions,
   ) async {
-    await db.batch((b) async {
-      b.insertAllOnConflictUpdate(db.folderRevisions, revisions);
-    });
+    try {
+      await db.batch((b) async {
+        b.insertAllOnConflictUpdate(db.folderRevisions, revisions);
+      });
+    } catch (e) {
+      throw _handleError('Error inserting new folder revisions', e);
+    }
   }
 
   Future<void> insertNewNetworkTransactions(
     List<NetworkTransactionsCompanion> transactions,
   ) async {
-    await db.batch((b) async {
-      b.insertAllOnConflictUpdate(db.networkTransactions, transactions);
-    });
+    try {
+      await db.batch((b) async {
+        b.insertAllOnConflictUpdate(db.networkTransactions, transactions);
+      });
+    } catch (e) {
+      throw _handleError('Error inserting new network transactions', e);
+    }
   }
 
   Future<void> updateFolderEntries(
     List<FolderEntriesCompanion> entries,
   ) async {
-    await db.batch((b) async {
-      b.insertAllOnConflictUpdate(db.folderEntries, entries);
-    });
+    try {
+      await db.batch((b) async {
+        b.insertAllOnConflictUpdate(db.folderEntries, entries);
+      });
+    } catch (e) {
+      throw _handleError('Error updating folder entries', e);
+    }
   }
 
   Future<void> updateFileEntries(
     List<FileEntriesCompanion> entries,
   ) async {
-    await db.batch((b) async {
-      b.insertAllOnConflictUpdate(db.fileEntries, entries);
-    });
+    try {
+      await db.batch((b) async {
+        b.insertAllOnConflictUpdate(db.fileEntries, entries);
+      });
+    } catch (e) {
+      throw _handleError('Error updating file entries', e);
+    }
   }
 
   Future<void> updateDrive(
     DrivesCompanion drive,
   ) async {
-    await (db.update(drives)..whereSamePrimaryKey(drive)).write(drive);
+    try {
+      await (db.update(drives)..whereSamePrimaryKey(drive)).write(drive);
+    } catch (e) {
+      throw _handleError('Error updating drive', e);
+    }
   }
 
   Future<void> runTransaction(
     Future<void> Function() transaction,
   ) async {
     await db.transaction(transaction);
+  }
+
+  DriveDAOException _handleError(String description, Object error) {
+    logger.i(description);
+    return DriveDAOException(message: description, error: error);
   }
 
   /// Creates a drive with its accompanying root folder.
@@ -659,6 +718,14 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       await delete(driveRevisions).go();
       await delete(networkTransactions).go();
     });
+  }
+
+  Future<int> numberOfFiles() {
+    return (select(fileEntries).table.count()).getSingle();
+  }
+
+  Future<int> numberOfFolders() {
+    return (select(folderEntries).table.count()).getSingle();
   }
 }
 

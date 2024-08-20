@@ -6,13 +6,7 @@
   "defaultTurboUploadUrl": "https://upload.ardrive.io",
   "defaultTurboPaymentUrl": "https://payment.ardrive.io",
   "allowedDataItemSizeForTurbo": 100000,
-  "enableQuickSyncAuthoring": true,
-  "enableMultipleFileDownload": true,
-  "enableVideoPreview": true,
-  "enableAudioPreview": true,
   "stripePublishableKey": "pk_live_51JUAtwC8apPOWkDLMQqNF9sPpfneNSPnwX8YZ8y1FNDl6v94hZIwzgFSYl27bWE4Oos8CLquunUswKrKcaDhDO6m002Yj9AeKj",
-  "enablePins": true,
-  "useNewUploader": true,
-  "enableMetamaskLogin": true,
-  "enableSearch": true
+  "uploadThumbnails": true,
+  "autoSync": false
 }

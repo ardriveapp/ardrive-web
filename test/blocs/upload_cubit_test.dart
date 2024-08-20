@@ -12,6 +12,7 @@ import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/user/user.dart';
@@ -68,6 +69,7 @@ void main() {
   late MockTurboUploadCostCalculator mockTurboUploadCostCalculator;
   late MockArDriveUploadPreparationManager mockArDriveUploadPreparationManager;
   late MockLicenseService mockLicense;
+  late MockConfigService mockConfigService;
 
   const tDriveId = 'drive_id';
   const tRootFolderId = 'root-folder-id';
@@ -93,8 +95,15 @@ void main() {
 
   final tKeyBytes = Uint8List(32);
   fillBytesWithSecureRandom(tKeyBytes);
+  mockConfigService = MockConfigService();
 
   setUpAll(() async {
+    when(() => mockConfigService.config).thenReturn(AppConfig(
+      allowedDataItemSizeForTurbo: 1,
+      stripePublishableKey: 'stripePublishableKey',
+      defaultTurboUploadUrl: 'defaultTurboUploadUrl',
+    ));
+
     registerFallbackValue(SecretKey([]));
     registerFallbackValue(Wallet());
     registerFallbackValue(getFakeUser());
@@ -126,6 +135,7 @@ void main() {
       targetDrive: getFakeDrive(),
       conflictingFiles: {},
       foldersByPath: {},
+      containsSupportedImageTypeForThumbnailGeneration: false,
     ));
 
     tWalletAddress = await tWallet.getAddress();
@@ -256,6 +266,7 @@ void main() {
       auth: mockArDriveAuth,
       pst: mockPst,
       licenseService: mockLicense,
+      configService: mockConfigService,
     );
   }
 
@@ -333,7 +344,12 @@ void main() {
               const TypeMatcher<UploadPreparationInProgress>(),
               UploadFileConflict(
                   areAllFilesConflicting: true,
-                  conflictingFileNames: const ['${tRootFolderId}1']),
+                  conflictingFileNames: const [
+                    '${tRootFolderId}1'
+                  ],
+                  conflictingFileNamesForFailedFiles: const [
+                    '${tRootFolderId}1'
+                  ]),
             ]);
 
     blocTest<UploadCubit, UploadState>(
@@ -351,8 +367,10 @@ void main() {
               const TypeMatcher<UploadPreparationInitialized>(),
               const TypeMatcher<UploadPreparationInProgress>(),
               UploadFileConflict(
-                  areAllFilesConflicting: false,
-                  conflictingFileNames: const ['${tRootFolderId}1'])
+                areAllFilesConflicting: false,
+                conflictingFileNames: const ['${tRootFolderId}1'],
+                conflictingFileNamesForFailedFiles: const ['${tRootFolderId}1'],
+              )
             ]);
 
     blocTest<UploadCubit, UploadState>(

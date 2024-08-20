@@ -21,6 +21,7 @@ import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
 import 'package:ardrive/shared/blocs/banner/app_banner_bloc.dart';
 import 'package:ardrive/sharing/blocs/sharing_file_bloc.dart';
+import 'package:ardrive/sync/data/snapshot_validation_service.dart';
 import 'package:ardrive/sync/domain/repositories/sync_repository.dart';
 import 'package:ardrive/sync/utils/batch_processor.dart';
 import 'package:ardrive/theme/theme_switcher_bloc.dart';
@@ -423,6 +424,9 @@ class AppState extends State<App> {
             driveDao: _.read<DriveDao>(),
             licenseService: _.read<LicenseService>(),
             batchProcessor: BatchProcessor(),
+            snapshotValidationService: SnapshotValidationService(
+              configService: configService,
+            ),
           ),
         ),
         RepositoryProvider(

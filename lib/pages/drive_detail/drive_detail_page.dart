@@ -154,7 +154,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           },
           child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
             buildWhen: (previous, current) {
-              return context.read<SyncCubit>().state is! SyncInProgress;
+              return widget.context.read<SyncCubit>().state is! SyncInProgress;
             },
             builder: (context, driveDetailState) {
               if (driveDetailState is DriveDetailLoadInProgress) {
@@ -374,11 +374,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                   ),
                                 ],
                                 const SizedBox(width: 8),
-                                if (canDownloadMultipleFiles &&
-                                    context
-                                        .read<ConfigService>()
-                                        .config
-                                        .enableMultipleFileDownload) ...[
+                                if (canDownloadMultipleFiles) ...[
                                   ArDriveIconButton(
                                     tooltip: 'Download selected files',
                                     icon: ArDriveIcons.download(),

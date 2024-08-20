@@ -170,6 +170,7 @@ Future<void> promptToUpload(
                 uploadFolders: isFolderUpload,
                 auth: context.read<ArDriveAuth>(),
                 licenseService: context.read<LicenseService>(),
+                configService: context.read<ConfigService>(),
               )..startUploadPreparation(),
             ),
             BlocProvider(
@@ -287,63 +288,111 @@ class _UploadFormState extends State<UploadForm> {
                   ),
                 ],
               );
+            } else if (state is UploadConflictWithFailedFiles) {
+              return ArDriveStandardModal(
+                title: 'Retry Failed Uploads?',
+                content: SizedBox(
+                  width: kMediumDialogWidth,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'There are ${state.conflictingFileNamesForFailedFiles.length} file(s) marked with a red dot, indicating they failed to upload. Would you like to retry uploading these files by replacing the failed versions? This action will only affect the failed uploads and will not alter any successfully uploaded files. Alternatively, you can choose to skip these files and proceed with the others.',
+                        style: ArDriveTypography.body.buttonNormalRegular(),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Conflicting files',
+                        style: ArDriveTypography.body.buttonNormalRegular(),
+                      ),
+                      const SizedBox(height: 8),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 320),
+                        child: SingleChildScrollView(
+                          child: Text(
+                            state.conflictingFileNamesForFailedFiles
+                                .join(', \n'),
+                            style: ArDriveTypography.body.buttonNormalRegular(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  ModalAction(
+                    action: () => context
+                        .read<UploadCubit>()
+                        .checkConflictingFiles(checkFailedFiles: false),
+                    title: appLocalizationsOf(context).skipEmphasized,
+                  ),
+                  ModalAction(
+                    action: () => context
+                        .read<UploadCubit>()
+                        .prepareUploadPlanAndCostEstimates(
+                            uploadAction: UploadActions.skipSuccessfulUploads),
+                    title: 'Replace failed uploads',
+                  ),
+                ],
+              );
             } else if (state is UploadFileConflict) {
               return ArDriveStandardModal(
-                  title: appLocalizationsOf(context)
-                      .duplicateFiles(state.conflictingFileNames.length),
-                  content: SizedBox(
-                    width: kMediumDialogWidth,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          appLocalizationsOf(context)
-                              .filesWithTheSameNameAlreadyExists(
-                            state.conflictingFileNames.length,
-                          ),
-                          style: ArDriveTypography.body.buttonNormalRegular(),
+                title: appLocalizationsOf(context)
+                    .duplicateFiles(state.conflictingFileNames.length),
+                content: SizedBox(
+                  width: kMediumDialogWidth,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        appLocalizationsOf(context)
+                            .filesWithTheSameNameAlreadyExists(
+                          state.conflictingFileNames.length,
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          appLocalizationsOf(context).conflictingFiles,
-                          style: ArDriveTypography.body.buttonNormalRegular(),
-                        ),
-                        const SizedBox(height: 8),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 320),
-                          child: SingleChildScrollView(
-                            child: Text(
-                              state.conflictingFileNames.join(', \n'),
-                              style:
-                                  ArDriveTypography.body.buttonNormalRegular(),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  actions: [
-                    if (!state.areAllFilesConflicting)
-                      ModalAction(
-                        action: () => context
-                            .read<UploadCubit>()
-                            .prepareUploadPlanAndCostEstimates(
-                                uploadAction: UploadActions.skip),
-                        title: appLocalizationsOf(context).skipEmphasized,
+                        style: ArDriveTypography.body.buttonNormalRegular(),
                       ),
-                    ModalAction(
-                      action: () => Navigator.of(context).pop(false),
-                      title: appLocalizationsOf(context).cancelEmphasized,
-                    ),
+                      const SizedBox(height: 16),
+                      Text(
+                        appLocalizationsOf(context).conflictingFiles,
+                        style: ArDriveTypography.body.buttonNormalRegular(),
+                      ),
+                      const SizedBox(height: 8),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 320),
+                        child: SingleChildScrollView(
+                          child: Text(
+                            state.conflictingFileNames.join(', \n'),
+                            style: ArDriveTypography.body.buttonNormalRegular(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  if (!state.areAllFilesConflicting)
                     ModalAction(
                       action: () => context
                           .read<UploadCubit>()
                           .prepareUploadPlanAndCostEstimates(
-                              uploadAction: UploadActions.replace),
-                      title: appLocalizationsOf(context).replaceEmphasized,
+                              uploadAction: UploadActions.skip),
+                      title: appLocalizationsOf(context).skipEmphasized,
                     ),
-                  ]);
+                  ModalAction(
+                    action: () => Navigator.of(context).pop(false),
+                    title: appLocalizationsOf(context).cancelEmphasized,
+                  ),
+                  ModalAction(
+                    action: () => context
+                        .read<UploadCubit>()
+                        .prepareUploadPlanAndCostEstimates(
+                            uploadAction: UploadActions.replace),
+                    title: appLocalizationsOf(context).replaceEmphasized,
+                  ),
+                ],
+              );
             } else if (state is UploadFileTooLarge) {
               return ArDriveStandardModal(
                 title: appLocalizationsOf(context)
@@ -479,33 +528,38 @@ class _UploadFormState extends State<UploadForm> {
                           },
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Row(
-                          children: [
-                            ArDriveCheckBox(
-                              title: 'Upload with thumbnails',
-                              checked: true,
-                              titleStyle: typography.paragraphLarge(
-                                fontWeight: ArFontWeight.semiBold,
+                      if (state.params
+                          .containsSupportedImageTypeForThumbnailGeneration)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: Row(
+                            children: [
+                              ArDriveCheckBox(
+                                title: 'Upload with thumbnails',
+                                checked: context
+                                    .read<ConfigService>()
+                                    .config
+                                    .uploadThumbnails,
+                                titleStyle: typography.paragraphLarge(
+                                  fontWeight: ArFontWeight.semiBold,
+                                ),
+                                onChange: (value) {
+                                  context
+                                      .read<UploadCubit>()
+                                      .changeUploadThumbnailOption(value);
+                                },
                               ),
-                              onChange: (value) {
-                                context
-                                    .read<UploadCubit>()
-                                    .changeUploadThumbnailOption(value);
-                              },
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(left: 8.0),
-                              child: ArDriveIconButton(
-                                icon: ArDriveIcons.info(),
-                                tooltip:
-                                    'Uploading with thumbnails is free, but may make your upload take longer.\nYou can always attach a thumbnail later.',
-                              ),
-                            )
-                          ],
+                              Padding(
+                                padding: const EdgeInsets.only(left: 8.0),
+                                child: ArDriveIconButton(
+                                  icon: ArDriveIcons.info(),
+                                  tooltip:
+                                      'Uploading with thumbnails is free, but may make your upload take longer.\nYou can always attach a thumbnail later.',
+                                ),
+                              )
+                            ],
+                          ),
                         ),
-                      ),
                       SizedBox(
                         child: ReactiveForm(
                           formGroup:

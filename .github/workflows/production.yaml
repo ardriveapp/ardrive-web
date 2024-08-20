@@ -59,6 +59,15 @@ jobs:
           firebaseServiceAccount: '${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}'
           channelId: live
 
+      # Deploy to Arweave
+      - run: |
+          scr deploy-to-arweave
+        env:
+          DEPLOY_ANT_PROCESS_ID: ${{ secrets.DEPLOY_ANT_PROCESS_ID }}
+          DEPLOY_ANT_UNDERNAME: ${{ secrets.DEPLOY_ANT_UNDERNAME }}
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+
+
   build-ios:
     # skipped for now
     if: false

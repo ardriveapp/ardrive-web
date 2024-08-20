@@ -10,9 +10,11 @@ import 'package:ardrive/gift/redeem_gift_modal.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
+import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/components/turbo_balance_widget.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
+import 'package:ardrive/user/download_wallet/download_wallet_modal.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/open_url_utils.dart';
@@ -112,6 +114,7 @@ class _ProfileCardState extends State<ProfileCard> {
     required bool isMobile,
   }) {
     final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return ArDriveCard(
       contentPadding: const EdgeInsets.all(0),
       width: 281,
@@ -178,6 +181,7 @@ class _ProfileCardState extends State<ProfileCard> {
           ),
           ArDriveAccordion(
             backgroundColor: Colors.transparent,
+            automaticallyCloseWhenOpenAnotherItem: true,
             children: [
               ArDriveAccordionItem(
                 Text(
@@ -188,13 +192,13 @@ class _ProfileCardState extends State<ProfileCard> {
                 ),
                 [
                   _ProfileMenuAccordionItem(
-                    text: 'Gift',
+                    text: 'Send',
                     onTap: () {
                       openUrl(url: Resources.sendGiftLink);
                     },
                   ),
                   _ProfileMenuAccordionItem(
-                    text: 'Reedem Gift',
+                    text: 'Reedem',
                     onTap: () {
                       showArDriveDialog(
                         context,
@@ -245,35 +249,98 @@ class _ProfileCardState extends State<ProfileCard> {
                   ),
                 ],
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (isArioSDKSupportedOnPlatform())
-            ArDriveAccordion(backgroundColor: Colors.transparent, children: [
-              // gateway switcher
               ArDriveAccordionItem(
                 Text(
-                  'Advanced',
+                  'Advanced Settings',
                   style: typography.paragraphNormal(
                     fontWeight: ArFontWeight.semiBold,
                   ),
                 ),
                 [
-                  _ProfileMenuAccordionItem(
-                    text: 'Switch Gateway',
-                    onTap: () {
-                      setState(() {
-                        _showProfileCard = false;
-                      });
-                      showGatewaySwitcherModal(context);
-                    },
+                  const SizedBox(height: 6),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16.0, right: 16),
+                    child: ArDriveToggleSwitch(
+                      alignRight: true,
+                      value: context.read<ConfigService>().config.autoSync,
+                      text: 'Automatic Sync',
+                      textStyle: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colorTokens.textMid,
+                      ),
+                      onChanged: (value) {
+                        final config = context.read<ConfigService>().config;
+                        context.read<ConfigService>().updateAppConfig(
+                              config.copyWith(
+                                autoSync: value,
+                              ),
+                            );
+                      },
+                    ),
                   ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16.0, right: 16),
+                    child: ArDriveToggleSwitch(
+                      alignRight: true,
+                      value:
+                          context.read<ConfigService>().config.uploadThumbnails,
+                      text: 'Upload with thumbnails',
+                      textStyle: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colorTokens.textMid,
+                      ),
+                      onChanged: (value) {
+                        final config = context.read<ConfigService>().config;
+                        context.read<ConfigService>().updateAppConfig(
+                              config.copyWith(
+                                uploadThumbnails: value,
+                              ),
+                            );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16.0, right: 16),
+                    child: ArDriveToggleSwitch(
+                      alignRight: true,
+                      value: context
+                          .read<ConfigService>()
+                          .config
+                          .enableSyncFromSnapshot,
+                      text: 'Sync From Snapshots',
+                      textStyle: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colorTokens.textMid,
+                      ),
+                      onChanged: (value) {
+                        final config = context.read<ConfigService>().config;
+                        context.read<ConfigService>().updateAppConfig(
+                              config.copyWith(
+                                enableSyncFromSnapshot: value,
+                              ),
+                            );
+                      },
+                    ),
+                  ),
+                  if (isArioSDKSupportedOnPlatform())
+                    _ProfileMenuAccordionItem(
+                      text: 'Switch Gateway',
+                      onTap: () {
+                        setState(() {
+                          _showProfileCard = false;
+                        });
+                        showGatewaySwitcherModal(context);
+                      },
+                    ),
                 ],
               ),
-            ]),
+            ],
+          ),
           const SizedBox(height: 8),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            padding: const EdgeInsets.only(right: 12.0, left: 16, top: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -325,7 +392,12 @@ class _ProfileCardState extends State<ProfileCard> {
               const Spacer(),
               ArDriveIconButton(
                 icon: ArDriveIcons.download(
-                    color: colorTokens.textHigh, size: 21),
+                  color: colorTokens.textHigh,
+                  size: 21,
+                ),
+                onPressed: () {
+                  showDownloadWalletModal(context);
+                },
               ),
               CopyButton(
                 size: 21,
@@ -491,16 +563,18 @@ class _ProfileMenuAccordionItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
 
     return ArDriveClickArea(
       child: GestureDetector(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.only(left: 30.0, right: 15),
+          padding: const EdgeInsets.only(left: 16.0, right: 15),
           child: Text(
             text,
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
+              color: colors.textMid,
             ),
           ),
         ),

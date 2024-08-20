@@ -1,0 +1,1 @@
+- Fixes an issue syncing from non-existent Snapshots.

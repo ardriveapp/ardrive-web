@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/services/arweave/arweave_service_exception.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
 import 'package:ardrive/services/arweave/get_segmented_transaction_from_drive_strategy.dart';
 import 'package:ardrive/services/services.dart';
@@ -126,8 +127,18 @@ class ArweaveService {
 
   /// Returns the pending transaction fees of the specified address that is not reflected by `getWalletBalance()`.
   Future<BigInt> getPendingTxFees(String address) async {
-    final query = await graphQLRetry.execute(PendingTxFeesQuery(
-        variables: PendingTxFeesArguments(walletAddress: address)));
+    final query = await graphQLRetry.execute(
+      PendingTxFeesQuery(
+        variables: PendingTxFeesArguments(
+          walletAddress: address,
+        ),
+      ),
+    );
+
+    if (query.data == null) {
+      throw ArweaveServiceException(
+          'Error fetching pending transaction fees. The query `PendingTxFeesQuery` returned null');
+    }
 
     return query.data!.transactions.edges
         .map((edge) => edge.node)
