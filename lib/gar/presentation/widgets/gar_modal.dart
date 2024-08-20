@@ -48,21 +48,6 @@ class _GatewaySwitcherModalState extends State<_GatewaySwitcherModal> {
   Widget build(BuildContext context) {
     return BlocBuilder<GarBloc, GarState>(
       builder: (context, state) {
-        if (state is LoadingGateways) {
-          return ProgressDialog(
-            title: 'Loading Gateways',
-            useNewArDriveUI: true,
-            actions: [
-              ModalAction(
-                action: () {
-                  Navigator.of(context).pop();
-                },
-                title: 'Cancel',
-              ),
-            ],
-          );
-        }
-
         if (state is GatewaysLoaded) {
           final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
           final typography = ArDriveTypographyNew.of(context);
@@ -190,24 +175,19 @@ class _GatewaySwitcherModalState extends State<_GatewaySwitcherModal> {
           );
         }
 
-        return ArDriveStandardModalNew(
-          title: 'Gateway Switcher',
-          content: _form(),
-          actions: [],
+        return ProgressDialog(
+          title: 'Loading Gateways',
+          useNewArDriveUI: true,
+          actions: [
+            ModalAction(
+              action: () {
+                Navigator.of(context).pop();
+              },
+              title: 'Cancel',
+            ),
+          ],
         );
       },
-    );
-  }
-
-  Widget _form() {
-    return Column(
-      children: [
-        ArDriveTextFieldNew(
-          controller: _arweaveGatewayUrlController,
-          label: 'Arweave Gateway URL',
-          onChanged: (value) {},
-        ),
-      ],
     );
   }
 }
