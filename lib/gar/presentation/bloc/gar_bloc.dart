@@ -1,5 +1,4 @@
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/logger.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
@@ -37,7 +36,8 @@ class GarBloc extends Bloc<GarEvent, GarState> {
       if (event is UpdateArweaveGatewayUrl) {
         configService.updateAppConfig(
           configService.config.copyWith(
-            defaultArweaveGatewayUrl: 'https://${event.gateway.settings.fqdn}',
+            defaultArweaveGatewayForDataRequest:
+                'https://${event.gateway.settings.fqdn}',
           ),
         );
 
@@ -54,8 +54,6 @@ class GarBloc extends Bloc<GarEvent, GarState> {
         final searchResults = currentState.gateways.where(
           (gateway) => gateway.settings.fqdn.contains(event.query),
         );
-
-        logger.d('Search results: $searchResults');
 
         emit(currentState.copyWith(searchResults: searchResults.toList()));
       }

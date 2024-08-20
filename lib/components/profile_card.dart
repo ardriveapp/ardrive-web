@@ -156,7 +156,7 @@ class _ProfileCardState extends State<ProfileCard> {
                   endIndent: 16,
                 ),
                 _buildBalanceRow(context, state),
-                if (arioSdkIsPlaformSupported())
+                if (isArioSDKSupportedOnPlatform())
                   _buildIOTokenRow(context, state),
                 if (context.read<PaymentService>().useTurboPayment) ...[
                   Padding(
@@ -248,7 +248,7 @@ class _ProfileCardState extends State<ProfileCard> {
             ],
           ),
           const SizedBox(height: 8),
-          if (arioSdkIsPlaformSupported())
+          if (isArioSDKSupportedOnPlatform())
             ArDriveAccordion(backgroundColor: Colors.transparent, children: [
               // gateway switcher
               ArDriveAccordionItem(

@@ -40,7 +40,7 @@ class _GatewaySwitcherModalState extends State<_GatewaySwitcherModal> {
     _arweaveGatewayUrlController.text = context
         .read<ConfigService>()
         .config
-        .defaultArweaveGatewayUrl
+        .defaultArweaveGatewayForDataRequest
         .toString();
   }
 

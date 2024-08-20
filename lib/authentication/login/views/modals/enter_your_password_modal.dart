@@ -230,15 +230,18 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                 ),
               )
             ],
-            if (arioSdkIsPlaformSupported())
-              ArDriveButtonNew(
-                variant: ButtonVariant.outline,
-                text: 'Show Advanced Settings',
-                maxHeight: 32,
-                typography: typography,
-                onPressed: () {
-                  showGatewaySwitcherModal(context);
-                },
+            if (isArioSDKSupportedOnPlatform())
+              Padding(
+                padding: const EdgeInsets.only(top: 16.0),
+                child: ArDriveButtonNew(
+                  variant: ButtonVariant.outline,
+                  text: 'Advanced Settings',
+                  maxHeight: 32,
+                  typography: typography,
+                  onPressed: () {
+                    showGatewaySwitcherModal(context);
+                  },
+                ),
               )
           ],
         ),

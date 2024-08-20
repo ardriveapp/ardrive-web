@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
 
-bool arioSdkIsPlaformSupported() {
+bool isArioSDKSupportedOnPlatform() {
   return kIsWeb;
 }
