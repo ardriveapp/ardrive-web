@@ -1,4 +1,5 @@
 import 'package:ardrive/components/progress_dialog.dart';
+import 'package:ardrive/gar/domain/repositories/gar_repository.dart';
 import 'package:ardrive/gar/presentation/bloc/gar_bloc.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config_service.dart';
@@ -15,9 +16,11 @@ class GatewaySwitcherModal extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => GarBloc(
-        configService: context.read<ConfigService>(),
-        arweave: context.read<ArweaveService>(),
-        arioSDK: ArioSDKFactory().create(),
+        garRepository: GarRepositoryImpl(
+          configService: context.read<ConfigService>(),
+          arweave: context.read<ArweaveService>(),
+          arioSDK: ArioSDKFactory().create(),
+        ),
       )..add(GetGateways()),
       child: _GatewaySwitcherModal(),
     );

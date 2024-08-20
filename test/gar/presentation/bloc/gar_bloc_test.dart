@@ -1,23 +1,17 @@
+import 'package:ardrive/gar/domain/repositories/gar_repository.dart';
 import 'package:ardrive/gar/presentation/bloc/gar_bloc.dart';
-import 'package:ardrive/services/config/app_config.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../test_utils/mocks.dart';
-
-class MockArioSDK extends Mock implements ArioSDK {}
+class MockGarRepository extends Mock implements GarRepository {}
 
 class MockGateway extends Mock implements Gateway {}
 
-class MockSettings extends Mock implements Settings {}
-
 void main() {
   late GarBloc garBloc;
-  late MockConfigService configService;
-  late MockArweaveService arweaveService;
-  late MockArioSDK arioSDK;
+  late MockGarRepository garRepository;
 
   final settings = Settings(
     protocol: 'http',
@@ -53,27 +47,8 @@ void main() {
   );
 
   setUp(() {
-    configService = MockConfigService();
-    arweaveService = MockArweaveService();
-    arioSDK = MockArioSDK();
-    garBloc = GarBloc(
-      configService: configService,
-      arweave: arweaveService,
-      arioSDK: arioSDK,
-    );
-
-    when(() => configService.config.defaultArweaveGatewayUrl)
-        .thenReturn('https://current.gateway.com');
-  });
-
-  setUpAll(() {
-    registerFallbackValue(AppConfig(
-      allowedDataItemSizeForTurbo: 1,
-      stripePublishableKey: '',
-      defaultArweaveGatewayForDataRequest: 'https://current.gateway.com',
-    ));
-
-    registerFallbackValue(gateway);
+    garRepository = MockGarRepository();
+    garBloc = GarBloc(garRepository: garRepository);
   });
 
   tearDown(() {
@@ -86,27 +61,11 @@ void main() {
 
   blocTest<GarBloc, GarState>(
     'emits [LoadingGateways, GatewaysLoaded] when GetGateways is added',
-    setUp: () {},
     build: () {
-      final gateway = MockGateway();
-      final settings = MockSettings();
-
-      final gateways = [gateway];
-      when(() => arioSDK.getGateways()).thenAnswer((_) async => gateways);
-      when(() => gateway.settings).thenReturn(settings);
-      when(() => settings.fqdn).thenReturn('test.com');
-
-      when(() => configService.config).thenReturn(AppConfig(
-        allowedDataItemSizeForTurbo: 1,
-        stripePublishableKey: '',
-        defaultArweaveGatewayForDataRequest: 'https://current.gateway.com',
-      ));
-
-      return GarBloc(
-        configService: configService,
-        arweave: arweaveService,
-        arioSDK: arioSDK,
-      );
+      final gateways = [MockGateway()];
+      when(() => garRepository.getGateways()).thenAnswer((_) async => gateways);
+      when(() => garRepository.getSelectedGateway()).thenReturn(MockGateway());
+      return garBloc;
     },
     act: (bloc) => bloc.add(GetGateways()),
     expect: () => [
@@ -114,66 +73,37 @@ void main() {
       isA<GatewaysLoaded>(),
     ],
     verify: (_) {
-      verify(() => arioSDK.getGateways()).called(1);
+      verify(() => garRepository.getGateways()).called(1);
+      verify(() => garRepository.getSelectedGateway()).called(1);
     },
   );
 
   blocTest<GarBloc, GarState>(
     'emits [GatewayChanged] when UpdateArweaveGatewayUrl is added',
     build: () {
-      when(() => configService.config).thenReturn(AppConfig(
-        allowedDataItemSizeForTurbo: 1,
-        stripePublishableKey: '',
-        defaultArweaveGatewayForDataRequest: 'https://current.gateway.com',
-      ));
-
-      when(() => configService.updateAppConfig(any())).thenReturn(null);
-      when(() => arweaveService.setGateway(any())).thenReturn(null);
+      final gateway = MockGateway();
+      when(() => garRepository.updateGateway(gateway)).thenReturn(null);
       return garBloc;
     },
-    act: (bloc) {
-      bloc.add(UpdateArweaveGatewayUrl(gateway: gateway));
-    },
+    act: (bloc) => bloc.add(UpdateArweaveGatewayUrl(gateway: gateway)),
     expect: () => [
       isA<GatewayChanged>(),
     ],
     verify: (_) {
-      verify(() => configService.updateAppConfig(any())).called(1);
-      verify(() => arweaveService.setGateway(any())).called(1);
+      verify(() => garRepository.updateGateway(gateway)).called(1);
     },
   );
 
   blocTest<GarBloc, GarState>(
     'emits updated GatewaysLoaded with search results when SearchGateways is added',
     build: () {
-      final gateway = MockGateway();
-      final settings = MockSettings();
-
-      final gateways = [gateway];
-      when(() => arioSDK.getGateways()).thenAnswer((_) async => gateways);
-      when(() => gateway.settings).thenReturn(settings);
-      when(() => settings.fqdn).thenReturn('test.com');
-
-      when(() => configService.config).thenReturn(AppConfig(
-        allowedDataItemSizeForTurbo: 1,
-        stripePublishableKey: '',
-        defaultArweaveGatewayForDataRequest: 'https://current.gateway.com',
-      ));
-
-      return GarBloc(
-        configService: configService,
-        arweave: arweaveService,
-        arioSDK: arioSDK,
-      );
+      final gateways = [MockGateway()];
+      when(() => garRepository.searchGateways('test')).thenReturn(gateways);
+      return garBloc;
     },
     seed: () => GatewaysLoaded(gateways: [MockGateway()]),
-    act: (bloc) {
-      bloc.add(GetGateways());
-      bloc.add(const SearchGateways(query: 'test'));
-    },
+    act: (bloc) => bloc.add(const SearchGateways(query: 'test')),
     expect: () => [
-      isA<LoadingGateways>(),
-      isA<GatewaysLoaded>(),
       isA<GatewaysLoaded>()
           .having((state) => state.searchResults, 'searchResults', isNotEmpty),
     ],
