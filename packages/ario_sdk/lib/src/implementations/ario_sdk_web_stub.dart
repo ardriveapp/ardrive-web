@@ -7,7 +7,7 @@ class ArioSDKWeb implements ArioSDK {
   }
 
   @override
-  Future<dynamic> getIOTokens(String address) async {
+  Future<String> getIOTokens(String address) async {
     throw UnimplementedError();
   }
 }

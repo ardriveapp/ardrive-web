@@ -1,10 +1,11 @@
-@JS('ario')
 library ario;
 
 import 'package:ario_sdk/src/models/gateway.dart';
-import 'package:js/js.dart';
 
 abstract class ArioSDK {
+  /// Get the list of available gateways
   Future<List<Gateway>> getGateways();
-  Future<dynamic> getIOTokens(String address);
+
+  /// Get the amount of IO tokens for the given address
+  Future<String> getIOTokens(String address);
 }

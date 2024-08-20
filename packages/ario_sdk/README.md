@@ -1,39 +1,96 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# Ario SDK for Dart
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/guides/libraries/writing-package-pages).
+This SDK facilitates interaction with the Ario network by providing Dart APIs for retrieving gateways and IO token balances. Currently, it supports web platforms only.
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-library-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/developing-packages).
--->
+## Table of Contents
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+- [Ario SDK for Dart](#ario-sdk-for-dart)
+  - [Table of Contents](#table-of-contents)
+  - [Installation](#installation)
+  - [Getting Started](#getting-started)
+  - [Usage](#usage)
+    - [Creating an Instance](#creating-an-instance)
+    - [Fetching Gateways](#fetching-gateways)
+    - [Fetching IO Token Balance](#fetching-io-token-balance)
+  - [Models](#models)
+  - [Platform Support](#platform-support)
 
-## Features
+## Installation
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+Add the `ario_sdk` package to your `pubspec.yaml`:
 
-## Getting started
+```yaml
+dependencies:
+  ario_sdk: ^1.0.0
+```
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+Then, run the following command:
+
+```bash
+flutter pub get
+```
+
+## Getting Started
+
+To use the Ario SDK, first, import the package:
+
+```dart
+import 'package:ario_sdk/ario_sdk.dart';
+```
+
+The SDK can be used only on web platforms. Attempting to use it on other platforms will result in an `UnsupportedError`.
 
 ## Usage
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
+### Creating an Instance
+
+Use the `ArioSDKFactory` to create an instance of the SDK:
 
 ```dart
-const like = 'sample';
+final arioSDK = ArioSDKFactory().create();
 ```
 
-## Additional information
+### Fetching Gateways
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+Retrieve the list of available gateways:
+
+```dart
+Future<void> fetchGateways() async {
+  final gateways = await arioSDK.getGateways();
+  print('Gateways: $gateways');
+}
+```
+
+### Fetching IO Token Balance
+
+Fetch the IO token balance for a specific address:
+
+```dart
+Future<void> fetchIOTokens(String address) async {
+  final balance = await arioSDK.getIOTokens(address);
+  print('IO Token Balance: $balance');
+}
+```
+
+## Models
+
+The SDK include the Gateway model that represent the data structures used by the Ario network:
+
+- `Gateway`: Represents a gateway in the Ario network.
+
+These models are JSON-serializable, making it easy to work with network responses.
+
+## Platform Support
+
+The Ario SDK currently supports only web platforms. It will throw an `UnsupportedError` if used on other platforms.
+
+To check if the platform is supported, you can use:
+
+```dart
+bool isSupported = isArioSDKSupportedOnPlatform();
+if (isSupported) {
+  // Proceed with using the SDK
+} else {
+  // Handle unsupported platform
+}
+```

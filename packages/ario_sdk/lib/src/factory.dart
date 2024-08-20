@@ -6,6 +6,7 @@ import 'package:ario_sdk/src/implementations/ario_sdk_web_stub.dart'
 import 'package:flutter/foundation.dart';
 
 class ArioSDKFactory {
+  /// Create a new instance of the Ario SDK
   ArioSDK create() {
     if (kIsWeb) {
       return ArioSDKWeb();

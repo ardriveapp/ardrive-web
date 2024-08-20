@@ -1,7 +1,7 @@
 name: ario_sdk
 description: "A new Flutter package project."
 version: 0.0.1
-homepage:
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -12,6 +12,8 @@ dependencies:
     sdk: flutter
   js: ^0.6.3
   mocktail: ^1.0.4
+  ardrive_utils:
+    path: ../ardrive_utils
 
 dev_dependencies:
   flutter_test:
