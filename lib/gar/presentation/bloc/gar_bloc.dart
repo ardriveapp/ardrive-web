@@ -22,7 +22,8 @@ class GarBloc extends Bloc<GarEvent, GarState> {
 
       final gateways = await arioSDK.getGateways();
 
-      final currentGatewayUrl = configService.config.defaultArweaveGatewayUrl;
+      final currentGatewayUrl =
+          configService.config.defaultArweaveGatewayForDataRequest;
       final currentGatewayDomain = Uri.parse(currentGatewayUrl!).host;
 
       final currentGateway = gateways.firstWhereOrNull(
@@ -32,19 +33,17 @@ class GarBloc extends Bloc<GarEvent, GarState> {
       emit(GatewaysLoaded(gateways: gateways, currentGateway: currentGateway));
     });
 
-    on<GarEvent>((event, emit) {
-      if (event is UpdateArweaveGatewayUrl) {
-        configService.updateAppConfig(
-          configService.config.copyWith(
-            defaultArweaveGatewayForDataRequest:
-                'https://${event.gateway.settings.fqdn}',
-          ),
-        );
+    on<UpdateArweaveGatewayUrl>((event, emit) {
+      configService.updateAppConfig(
+        configService.config.copyWith(
+          defaultArweaveGatewayForDataRequest:
+              'https://${event.gateway.settings.fqdn}',
+        ),
+      );
 
-        arweave.setGateway(event.gateway);
+      arweave.setGateway(event.gateway);
 
-        emit(GatewayChanged(event.gateway));
-      }
+      emit(GatewayChanged(event.gateway));
     });
 
     on<SearchGateways>((event, emit) {
