@@ -48,11 +48,11 @@ class _UserRepository implements UserRepository {
 
     String? ioTokens;
 
-    // if (arioSdkIsPlaformSupported()) {
-    //   ioTokens = await ArioSDKFactory()
-    //       .create()
-    //       .getIOTokens(await profileDetails.wallet.getAddress());
-    // }
+    if (isArioSDKSupportedOnPlatform()) {
+      ioTokens = await ArioSDKFactory()
+          .create()
+          .getIOTokens(await profileDetails.wallet.getAddress());
+    }
 
     final user = User(
       profileType: ProfileType.values[profileDetails.details.profileType],

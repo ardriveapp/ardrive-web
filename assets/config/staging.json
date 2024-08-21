@@ -1,5 +1,6 @@
 {
   "defaultArweaveGatewayUrl": "https://arweave.net",
+  "defaultArweaveGatewayForDataRequest": "https://arweave.net",
   "useTurboUpload": true,
   "useTurboPayment": true,
   "defaultTurboUploadUrl": "https://upload.ardrive.io",

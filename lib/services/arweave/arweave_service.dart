@@ -43,7 +43,7 @@ class ArweaveService {
   Arweave client;
   final ArDriveCrypto _crypto;
 
-  ArtemisClient _gql;
+  final ArtemisClient _gql;
 
   ArweaveService(
     this.client,

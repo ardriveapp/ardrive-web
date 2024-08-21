@@ -162,7 +162,7 @@ class _ProfileCardState extends State<ProfileCard> {
                   endIndent: 16,
                 ),
                 _buildBalanceRow(context, state),
-                if (arioSdkIsPlaformSupported())
+                if (isArioSDKSupportedOnPlatform())
                   _buildIOTokenRow(context, state),
                 if (context.read<PaymentService>().useTurboPayment) ...[
                   Padding(
@@ -340,34 +340,20 @@ class _ProfileCardState extends State<ProfileCard> {
                       },
                     ),
                   ),
+                  if (isArioSDKSupportedOnPlatform())
+                    _ProfileMenuAccordionItem(
+                      text: 'Switch Gateway',
+                      onTap: () {
+                        setState(() {
+                          _showProfileCard = false;
+                        });
+                        showGatewaySwitcherModal(context);
+                      },
+                    ),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          if (arioSdkIsPlaformSupported())
-            ArDriveAccordion(backgroundColor: Colors.transparent, children: [
-              // gateway switcher
-              ArDriveAccordionItem(
-                Text(
-                  'Advanced',
-                  style: typography.paragraphNormal(
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                ),
-                [
-                  _ProfileMenuAccordionItem(
-                    text: 'Switch Gateway',
-                    onTap: () {
-                      setState(() {
-                        _showProfileCard = false;
-                      });
-                      showGatewaySwitcherModal(context);
-                    },
-                  ),
-                ],
-              ),
-            ]),
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.only(right: 12.0, left: 16, top: 12),

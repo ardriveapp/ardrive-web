@@ -1,4 +1,5 @@
 import 'package:ardrive/components/progress_dialog.dart';
+import 'package:ardrive/gar/domain/repositories/gar_repository.dart';
 import 'package:ardrive/gar/presentation/bloc/gar_bloc.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config_service.dart';
@@ -15,9 +16,11 @@ class GatewaySwitcherModal extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => GarBloc(
-        configService: context.read<ConfigService>(),
-        arweave: context.read<ArweaveService>(),
-        arioSDK: ArioSDKFactory().create(),
+        garRepository: GarRepositoryImpl(
+          configService: context.read<ConfigService>(),
+          arweave: context.read<ArweaveService>(),
+          arioSDK: ArioSDKFactory().create(),
+        ),
       )..add(GetGateways()),
       child: _GatewaySwitcherModal(),
     );
@@ -40,7 +43,7 @@ class _GatewaySwitcherModalState extends State<_GatewaySwitcherModal> {
     _arweaveGatewayUrlController.text = context
         .read<ConfigService>()
         .config
-        .defaultArweaveGatewayUrl
+        .defaultArweaveGatewayForDataRequest
         .toString();
   }
 
@@ -48,21 +51,6 @@ class _GatewaySwitcherModalState extends State<_GatewaySwitcherModal> {
   Widget build(BuildContext context) {
     return BlocBuilder<GarBloc, GarState>(
       builder: (context, state) {
-        if (state is LoadingGateways) {
-          return ProgressDialog(
-            title: 'Loading Gateways',
-            useNewArDriveUI: true,
-            actions: [
-              ModalAction(
-                action: () {
-                  Navigator.of(context).pop();
-                },
-                title: 'Cancel',
-              ),
-            ],
-          );
-        }
-
         if (state is GatewaysLoaded) {
           final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
           final typography = ArDriveTypographyNew.of(context);
@@ -190,24 +178,19 @@ class _GatewaySwitcherModalState extends State<_GatewaySwitcherModal> {
           );
         }
 
-        return ArDriveStandardModalNew(
-          title: 'Gateway Switcher',
-          content: _form(),
-          actions: [],
+        return ProgressDialog(
+          title: 'Loading Gateways',
+          useNewArDriveUI: true,
+          actions: [
+            ModalAction(
+              action: () {
+                Navigator.of(context).pop();
+              },
+              title: 'Cancel',
+            ),
+          ],
         );
       },
-    );
-  }
-
-  Widget _form() {
-    return Column(
-      children: [
-        ArDriveTextFieldNew(
-          controller: _arweaveGatewayUrlController,
-          label: 'Arweave Gateway URL',
-          onChanged: (value) {},
-        ),
-      ],
     );
   }
 }
