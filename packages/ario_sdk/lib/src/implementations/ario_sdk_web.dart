@@ -1,8 +1,9 @@
+// ignore_for_file: avoid_web_libraries_in_flutter
+
 @JS('ario')
 library ario;
 
 import 'dart:convert';
-// ignore: avoid_web_libraries_in_flutter
 import 'dart:js_util';
 
 import 'package:ario_sdk/ario_sdk.dart';
@@ -26,7 +27,6 @@ class ArioSDKWeb implements ArioSDK {
 
     return tokens;
   }
-
 }
 
 @JS('getGateways')
