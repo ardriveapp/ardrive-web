@@ -1,5 +1,4 @@
 import 'package:ario_sdk/ario_sdk.dart';
-import 'package:ario_sdk/src/models/arns_record.dart';
 
 class ArioSDKWeb implements ArioSDK {
   @override
@@ -13,14 +12,37 @@ class ArioSDKWeb implements ArioSDK {
   }
 
   @override
-  Future setARNS(String jwtString, txId, domain, String undername) {
+  Future<ARNSRecord> getARNSRecord(String jwtString, String domain) {
+    // TODO: implement getARNSRecords
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<ARNSRecord>> getARNSRecords(String jwtString) {
+    // TODO: implement getARNSRecords
+    throw UnimplementedError();
+  }
+
+  @override
+  Future setUndername(
+      {required String jwtString,
+      required String txId,
+      required String domain,
+      String undername = '@'}) {
     // TODO: implement setARNS
     throw UnimplementedError();
   }
 
   @override
-  Future<ARNSRecord> getARNSRecord(String jwtString, String domain) {
-    // TODO: implement getARNSRecords
+  Future<List<ARNSUndername>> getUndernames(
+      String jwtString, ARNSRecord record) {
+    // TODO: implement getUndernames
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> fetchUndernames(String jwtString, ARNSRecord record) {
+    // TODO: implement fetchUndernames
     throw UnimplementedError();
   }
 }

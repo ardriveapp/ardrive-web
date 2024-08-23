@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/details_panel.dart';
@@ -18,7 +16,6 @@ import 'package:ardrive/turbo/topup/components/turbo_balance_widget.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/user/download_wallet/download_wallet_modal.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/open_url_utils.dart';
 import 'package:ardrive/utils/open_urls.dart';
@@ -260,19 +257,6 @@ class _ProfileCardState extends State<ProfileCard> {
                   ),
                 ),
                 [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 16.0, right: 16),
-                    child: ArDriveButtonNew(
-                      text: 'Set arns',
-                      typography: typography,
-                      onPressed: () {
-                        showArDriveDialog(
-                          context,
-                          content: SetARNSExperiment(),
-                        );
-                      },
-                    ),
-                  ),
                   const SizedBox(height: 6),
                   Padding(
                     padding: const EdgeInsets.only(left: 16.0, right: 16),
@@ -594,63 +578,6 @@ class _ProfileMenuAccordionItem extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class SetARNSExperiment extends StatefulWidget {
-  const SetARNSExperiment({super.key});
-
-  @override
-  State<SetARNSExperiment> createState() => _SetARNSExperimentState();
-}
-
-class _SetARNSExperimentState extends State<SetARNSExperiment> {
-  final controller = TextEditingController();
-  final antController = TextEditingController();
-
-  @override
-  Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-
-    return ArDriveStandardModalNew(
-      title: 'ARNS',
-      content: Column(
-        children: [
-          ArDriveTextFieldNew(
-            controller: controller,
-            hintText: 'txId',
-          ),
-          SizedBox(height: 8),
-          ArDriveTextFieldNew(
-            hintText: 'undername',
-            controller: antController,
-          ),
-          ArDriveButtonNew(
-              text: 'Confirmn',
-              typography: typography,
-              onPressed: () {
-                final sdk = ArioSDKFactory().create();
-                final jwk = json.encode(
-                    context.read<ArDriveAuth>().currentUser.wallet.toJwk());
-                logger.d('calling set arns with jwk and domain thiago');
-
-                sdk
-                    .setARNS(jwk, controller.text, 'thiago', antController.text)
-                    .then((value) {
-                  logger.d('set arns response $value');
-                  Navigator.pop(context);
-
-                  showArDriveDialog(context,
-                      content: ArDriveStandardModalNew(
-                        title: 'Set ARNS',
-                        content: Text('Set ARNS response: $value'),
-                        hasCloseButton: true,
-                      ));
-                });
-              }),
-        ],
       ),
     );
   }

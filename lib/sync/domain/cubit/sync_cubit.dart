@@ -277,7 +277,7 @@ class SyncCubit extends Cubit<SyncState> {
       final numberOfFiles = await _syncRepository.numberOfFilesInWallet();
       final numberOfFolders = await _syncRepository.numberOfFoldersInWallet();
 
-    logger.setContext(
+      logger.setContext(
         context.copyWith(
           numberOfDrives: _syncProgress.drivesCount,
           numberOfFiles: numberOfFiles,

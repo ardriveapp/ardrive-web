@@ -5,7 +5,6 @@ analyzer:
     - 'lib/services/arweave/graphql/**'
     - '**.g.dart'
     - 'build/**'
-    - 'packages/**'
     - 'node_modules/**'
     - 'macos/**'
     - 'ios/**'

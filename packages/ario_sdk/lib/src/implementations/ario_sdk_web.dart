@@ -6,19 +6,22 @@ import 'dart:convert';
 import 'dart:js_util';
 
 import 'package:ario_sdk/ario_sdk.dart';
-import 'package:ario_sdk/src/models/arns_record.dart';
-import 'package:flutter/material.dart';
 import 'package:js/js.dart';
 
 class ArioSDKWeb implements ArioSDK {
   List<Gateway>? _cachedGateways;
+
+  List<ARNSRecord> _cachedARNSRecords = [];
+  Map<String, List<ARNSUndername>> _cachedUndernames = {};
 
   @override
   Future<List<Gateway>> getGateways() async {
     if (_cachedGateways != null) {
       return _cachedGateways!;
     }
+
     _cachedGateways = await getGatewaysList();
+
     return _cachedGateways!;
   }
 
@@ -30,27 +33,85 @@ class ArioSDKWeb implements ArioSDK {
   }
 
   @override
-  Future setARNS(String jwtString, txId, domain, String undername) {
-    return _setARNSImpl(jwtString, txId, domain, undername);
+  Future setUndername({
+    required String jwtString,
+    required String txId,
+    required String domain,
+    String undername = '@',
+  }) {
+    final arnsUndername = ARNSUndername(
+      record: AntRecord(transactionId: txId, ttlSeconds: 3600),
+      name: undername,
+      domain: domain,
+    );
+
+    return _setARNSImpl(jwtString, arnsUndername);
   }
 
   @override
   Future<ARNSRecord> getARNSRecord(String jwtString, String domain) {
     return Future.value(
       ARNSRecord(
-          domain: 'thiago',
-          processId: 'IyjqOErJOwAhVNCaDfDmZAMJHsyYM-vdV-algNqWF1M'),
+        domain: 'thiago',
+        processId: 'IyjqOErJOwAhVNCaDfDmZAMJHsyYM-vdV-algNqWF1M',
+      ),
     );
     // return _getARNSRecordsImpl(jwtString, domain);
+  }
+
+  @override
+  Future<List<ARNSRecord>> getARNSRecords(String jwtString) async {
+    if (_cachedARNSRecords.isNotEmpty) {
+      return _cachedARNSRecords;
+    }
+
+    _cachedARNSRecords = await Future.value([
+      ARNSRecord(
+        domain: 'thiago',
+        processId: 'IyjqOErJOwAhVNCaDfDmZAMJHsyYM-vdV-algNqWF1M',
+      ),
+      ARNSRecord(
+        domain: 'thiago2',
+        processId: 'wU3baSpUTh8E-oDI-mLezVsj21WJwuf7ftoXYhHWYbA',
+      ),
+    ]);
+
+    return _cachedARNSRecords;
+  }
+
+  @override
+  Future<List<ARNSUndername>> getUndernames(
+      String jwtString, ARNSRecord record) async {
+    if (_cachedUndernames.containsKey(record.domain) &&
+        _cachedUndernames[record.domain]!.isNotEmpty) {
+      return _cachedUndernames[record.domain]!;
+    }
+
+    _cachedUndernames[record.domain] =
+        await _getUndernamesImpl(jwtString, record);
+
+    return _cachedUndernames[record.domain]!;
+  }
+
+  @override
+  Future<void> fetchUndernames(String jwtString, ARNSRecord record) async {
+    _cachedUndernames[record.domain] = [];
+
+    _cachedUndernames[record.domain] = (await getUndernames(jwtString, record));
   }
 }
 
 @JS('setARNS')
 external Object _setARNS(String jwtString, txId, domain, String undername);
 
-Future<dynamic> _setARNSImpl(
-    String jwtString, String txId, String domain, String undername) async {
-  final promise = _setARNS(jwtString, txId, domain, undername);
+Future<dynamic> _setARNSImpl(String jwtString, ARNSUndername undername) async {
+  final promise = _setARNS(
+    jwtString,
+    undername.record.transactionId,
+    undername.domain,
+    undername.name,
+  );
+
   final stringified = await promiseToFuture(promise);
 
   return stringified.toString();
@@ -94,4 +155,34 @@ Future<Map<String, dynamic>> _getARNSRecordsImpl(
   final stringified = await promiseToFuture(promise);
 
   return jsonDecode(stringified);
+}
+
+@JS('getUndernames')
+external Object _getUndernames(String jwtString, String domain);
+
+Future<List<ARNSUndername>> _getUndernamesImpl(
+    String jwtString, ARNSRecord arnsRecord) async {
+  final promise = _getUndernames(jwtString, arnsRecord.processId);
+  final stringified = await promiseToFuture(promise);
+
+  final jsonParsed = jsonDecode(stringified) as Map<String, dynamic>;
+
+  final undernames = <ARNSUndername>[];
+
+  for (var item in jsonParsed.keys) {
+    final antRecord = AntRecord(
+      transactionId: jsonParsed[item]['transactionId'],
+      ttlSeconds: jsonParsed[item]['ttlSeconds'],
+    );
+
+    final undername = ARNSUndername(
+      record: antRecord,
+      name: item,
+      domain: arnsRecord.domain,
+    );
+
+    undernames.add(undername);
+  }
+
+  return undernames;
 }

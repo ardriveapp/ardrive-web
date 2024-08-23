@@ -1862,7 +1862,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"arweave@npm:1.14.4":
+"arweave@npm:1.14.4, arweave@npm:^1.10.13, arweave@npm:^1.13.7":
   version: 1.14.4
   resolution: "arweave@npm:1.14.4"
   dependencies:
@@ -1871,18 +1871,6 @@ __metadata:
     base64-js: "npm:^1.5.1"
     bignumber.js: "npm:^9.0.2"
   checksum: 10c0/2d8800c61bb38dd0529190ec2357ed7ee0d7c34e2a100e6fc0a1d44abeedb265677befb4049a926078f4ee7cb0e51a9d5ed2628f7e82cbec88fa5cdbb866d569
-  languageName: node
-  linkType: hard
-
-"arweave@npm:^1.10.13, arweave@npm:^1.13.7":
-  version: 1.15.1
-  resolution: "arweave@npm:1.15.1"
-  dependencies:
-    arconnect: "npm:^0.4.2"
-    asn1.js: "npm:^5.4.1"
-    base64-js: "npm:^1.5.1"
-    bignumber.js: "npm:^9.0.2"
-  checksum: 10c0/2af04ee2071d3aa95f4ebf11463542ea18bc5eab810025a7b2ce60a6175ff7859f1447a925234e8bee31631f2fd2d67af80826909f65bc793d72dcb080cab26f
   languageName: node
   linkType: hard
 
@@ -1932,7 +1920,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:1.7.2":
+"axios@npm:1.7.2, axios@npm:^1.4.0":
   version: 1.7.2
   resolution: "axios@npm:1.7.2"
   dependencies:
@@ -1940,17 +1928,6 @@ __metadata:
     form-data: "npm:^4.0.0"
     proxy-from-env: "npm:^1.1.0"
   checksum: 10c0/cbd47ce380fe045313364e740bb03b936420b8b5558c7ea36a4563db1258c658f05e40feb5ddd41f6633fdd96d37ac2a76f884dad599c5b0224b4c451b3fa7ae
-  languageName: node
-  linkType: hard
-
-"axios@npm:^1.4.0":
-  version: 1.7.4
-  resolution: "axios@npm:1.7.4"
-  dependencies:
-    follow-redirects: "npm:^1.15.6"
-    form-data: "npm:^4.0.0"
-    proxy-from-env: "npm:^1.1.0"
-  checksum: 10c0/5ea1a93140ca1d49db25ef8e1bd8cfc59da6f9220159a944168860ad15a2743ea21c5df2967795acb15cbe81362f5b157fdebbea39d53117ca27658bab9f7f17
   languageName: node
   linkType: hard
 
@@ -2423,13 +2400,13 @@ __metadata:
   linkType: hard
 
 "electron-to-chromium@npm:^1.5.4":
-  version: 1.5.12
-  resolution: "electron-to-chromium@npm:1.5.12"
-  checksum: 10c0/16cbb2fe17e138c409ca2f4575a7965987b21e66dcd61df664e7f9a60c7e9ed405fcc352483b2b5569e5e57aa3cc8a259a1a745d541d0b8ffae612724ca2887e
+  version: 1.5.13
+  resolution: "electron-to-chromium@npm:1.5.13"
+  checksum: 10c0/1d88ac39447e1d718c4296f92fe89836df4688daf2d362d6c49108136795f05a56dd9c950f1c6715e0395fa037c3b5f5ea686c543fdc90e6d74a005877c45022
   languageName: node
   linkType: hard
 
-"elliptic@npm:6.5.4":
+"elliptic@npm:6.5.4, elliptic@npm:^6.5.4":
   version: 6.5.4
   resolution: "elliptic@npm:6.5.4"
   dependencies:
@@ -2441,21 +2418,6 @@ __metadata:
     minimalistic-assert: "npm:^1.0.1"
     minimalistic-crypto-utils: "npm:^1.0.1"
   checksum: 10c0/5f361270292c3b27cf0843e84526d11dec31652f03c2763c6c2b8178548175ff5eba95341dd62baff92b2265d1af076526915d8af6cc9cb7559c44a62f8ca6e2
-  languageName: node
-  linkType: hard
-
-"elliptic@npm:^6.5.4":
-  version: 6.5.7
-  resolution: "elliptic@npm:6.5.7"
-  dependencies:
-    bn.js: "npm:^4.11.9"
-    brorand: "npm:^1.1.0"
-    hash.js: "npm:^1.0.0"
-    hmac-drbg: "npm:^1.0.1"
-    inherits: "npm:^2.0.4"
-    minimalistic-assert: "npm:^1.0.1"
-    minimalistic-crypto-utils: "npm:^1.0.1"
-  checksum: 10c0/799959b6c54ea3564e8961f35abdf8c77e37617f3051614b05ab1fb6a04ddb65bd1caa75ed1bae375b15dda312a0f79fed26ebe76ecf05c5a7af244152a601b8
   languageName: node
   linkType: hard
 
@@ -3387,17 +3349,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ms@npm:2.1.2":
+"ms@npm:2.1.2, ms@npm:^2.1.1":
   version: 2.1.2
   resolution: "ms@npm:2.1.2"
   checksum: 10c0/a437714e2f90dbf881b5191d35a6db792efbca5badf112f87b9e1c712aace4b4b9b742dd6537f3edf90fd6f684de897cec230abde57e87883766712ddda297cc
-  languageName: node
-  linkType: hard
-
-"ms@npm:^2.1.1":
-  version: 2.1.3
-  resolution: "ms@npm:2.1.3"
-  checksum: 10c0/d924b57e7312b3b63ad21fc5b3dc0af5e78d61a1fc7cfb5457edaf26326bf62be5307cc87ffb6862ef1c2b33b0233cdb5d4f01c4c958cc0d660948b65a287a48
   languageName: node
   linkType: hard
 

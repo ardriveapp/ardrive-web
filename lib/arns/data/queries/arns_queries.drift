@@ -1,0 +1,4 @@
+import '../../../models/tables/arns_records.drift';
+
+fetchRecordById:
+SELECT * FROM arns_records WHERE record_id = :recordId;

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
@@ -10,7 +9,6 @@ import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/entities/folder_entity.dart';
-import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/models/forms/cc.dart';
 import 'package:ardrive/models/forms/udl.dart';
 import 'package:ardrive/models/models.dart';
@@ -26,7 +24,6 @@ import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -55,8 +52,6 @@ class UploadCubit extends Cubit<UploadState> {
   final ActivityTracker _activityTracker;
   final LicenseService _licenseService;
   final ConfigService _configService;
-  final ManifestRepository _manifestRepository;
-  final ArioSDK _arioSDK;
 
   late bool uploadFolders;
   late Drive _targetDrive;
@@ -102,9 +97,6 @@ class UploadCubit extends Cubit<UploadState> {
           isDragNDrop: isDragNDrop,
           isNextButtonEnabled: canUpload,
           isArConnect: (state as UploadReadyToPrepare).isArConnect,
-          manifestFiles: (state as UploadReadyToPrepare).manifestFiles,
-          arnsRecord: (state as UploadReadyToPrepare).arnsRecord,
-          selectedARNSRecord: _selectedARNSRecord,
         ),
       );
     }
@@ -227,8 +219,6 @@ class UploadCubit extends Cubit<UploadState> {
     required ActivityTracker activityTracker,
     required LicenseService licenseService,
     required ConfigService configService,
-    required ManifestRepository manifestRepository,
-    required ArioSDK arioSDK,
     this.folder,
     this.uploadFolders = false,
     this.isDragNDrop = false,
@@ -240,9 +230,7 @@ class UploadCubit extends Cubit<UploadState> {
         _activityTracker = activityTracker,
         _licenseService = licenseService,
         _configService = configService,
-        _manifestRepository = manifestRepository,
         _uploadThumbnail = configService.config.uploadThumbnails,
-        _arioSDK = arioSDK,
         super(UploadPreparationInProgress());
 
   Future<void> startUploadPreparation({
@@ -271,59 +259,6 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     await checkConflictingFiles();
-  }
-
-  List<FileEntry> _manifestFiles = [];
-  final List<FileEntry> _selectedManifestFiles = [];
-  ARNSRecord? _selectedARNSRecord;
-  ARNSRecord? _arnsRecord;
-
-  void selectManifestFile(FileEntry file) {
-    _selectedManifestFiles.add(file);
-
-    emit((state as UploadReady).copyWith(
-        selectedManifests: _selectedManifestFiles, equatableBust: UniqueKey()));
-  }
-
-  List<FileEntry> get selectedManifestFiles => _selectedManifestFiles;
-
-  void selectARNSRecord(ARNSRecord? arnsRecord) {
-    logger.d('Selected ARNS record: $arnsRecord');
-
-    if (arnsRecord == null) {
-      emit(UploadReady(
-        params: (state as UploadReady).params,
-        paymentInfo: (state as UploadReady).paymentInfo,
-        numberOfFiles: files.length,
-        uploadIsPublic: !_targetDrive.isPrivate,
-        isDragNDrop: isDragNDrop,
-        isNextButtonEnabled: (state as UploadReady).isNextButtonEnabled,
-        isArConnect: (state as UploadReady).isArConnect,
-        manifestFiles: (state as UploadReady).manifestFiles,
-        arnsRecord: _arnsRecord,
-        selectedARNSRecord: null,
-        selectedManifests: (state as UploadReady).selectedManifests,
-        showSettings: (state as UploadReady).showSettings,
-      ));
-      _selectedARNSRecord = null;
-      return;
-    }
-
-    _selectedARNSRecord = arnsRecord;
-
-    emit((state as UploadReady).copyWith(selectedARNSRecord: arnsRecord));
-  }
-
-  void unselectManifestFile(FileEntry file) {
-    _selectedManifestFiles.remove(file);
-
-    logger.d('selectedManifestFiles.length: ${_selectedManifestFiles.length}');
-
-    emit(
-      (state as UploadReady).copyWith(
-          selectedManifests: _selectedManifestFiles,
-          equatableBust: UniqueKey()),
-    );
   }
 
   /// Tries to find a files that conflict with the files in the target folder.
@@ -570,14 +505,6 @@ class UploadCubit extends Cubit<UploadState> {
         _uploadThumbnail = false;
       }
 
-      _manifestFiles = await _manifestRepository.getManifestFilesInFolder(
-          folderId: parentFolderId);
-
-      _arnsRecord = await _arioSDK.getARNSRecord(
-        json.encode(_auth.currentUser.wallet.toJwk()),
-        'thiago',
-      );
-
       emit(
         UploadReadyToPrepare(
           params: UploadParams(
@@ -590,9 +517,7 @@ class UploadCubit extends Cubit<UploadState> {
             containsSupportedImageTypeForThumbnailGeneration:
                 containsSupportedImageTypeForThumbnailGeneration,
           ),
-          manifestFiles: _manifestFiles,
           isArConnect: await _profileCubit.isCurrentProfileArConnect(),
-          arnsRecord: _arnsRecord,
         ),
       );
     } catch (error, stacktrace) {
@@ -802,10 +727,7 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onDone(
       (tasks) async {
-        emit(UploadComplete(
-          manifestFiles: _selectedManifestFiles,
-          arnsRecord: _selectedARNSRecord,
-        ));
+        emit(UploadComplete());
 
         unawaited(_profileCubit.refreshBalance());
       },
@@ -924,10 +846,7 @@ class UploadCubit extends Cubit<UploadState> {
           'Upload finished with success. Number of tasks: ${tasks.length}',
         );
 
-        emit(UploadComplete(
-          manifestFiles: _selectedManifestFiles,
-          arnsRecord: _selectedARNSRecord,
-        ));
+        emit(UploadComplete());
 
         PlausibleEventTracker.trackUploadSuccess();
       },

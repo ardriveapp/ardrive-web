@@ -1,3 +1,4 @@
+import 'package:ardrive/arns/presentation/ant_icon.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/app_version_widget.dart';
@@ -9,6 +10,7 @@ import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/license_details_popover.dart';
 import 'package:ardrive/components/pin_indicator.dart';
 import 'package:ardrive/components/sizes.dart';
+import 'package:ardrive/components/tooltip.dart';
 import 'package:ardrive/components/truncated_address.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
@@ -288,7 +290,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                         width: 8,
                       ),
                       Expanded(
-                        child: Tooltip(
+                        child: ArDriveTooltip(
                           message: widget.item.name,
                           child: Text(
                             widget.item.name,
@@ -303,6 +305,14 @@ class _DetailsPanelState extends State<DetailsPanel> {
                               null) ...{
                         const PinIndicator(
                           size: 32,
+                        ),
+                      },
+                      if (widget.item is FileDataTableItem &&
+                          (widget.item as FileDataTableItem)
+                              .antRegistries!
+                              .isNotEmpty) ...{
+                        AntIcon(
+                          fileDataTableItem: widget.item as FileDataTableItem,
                         ),
                       },
                       if (widget.item is FileDataTableItem &&
@@ -457,7 +467,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: DriveExplorerItemTileLeading(item: widget.item),
-                  title: Tooltip(
+                  title: ArDriveTooltip(
                     message: widget.item.name,
                     child: Text(
                       widget.item.name,
@@ -969,6 +979,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
           fileKey: key,
         );
         break;
+      case RevisionAction.assignName:
+        title = 'File had name assigned to ${file.name}';
+        break;
       case RevisionAction.assertLicense:
         if (licenseState == null) {
           title = 'File had license updated';
@@ -1011,7 +1024,7 @@ class _TxIdTextLink extends StatelessWidget {
         onTap: () {
           openUrl(url: 'https://viewblock.io/arweave/tx/$txId');
         },
-        child: Tooltip(
+        child: ArDriveTooltip(
           message: txId,
           child: Text(
             '${txId.substring(0, 4)}...',

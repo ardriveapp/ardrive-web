@@ -22,6 +22,8 @@ class ArDriveDropdown extends StatefulWidget {
     this.maxHeight,
     this.showScrollbars = false,
     this.onClick,
+    this.hasDivider = true,
+    this.hasBorder = true,
   });
 
   final double height;
@@ -33,6 +35,8 @@ class ArDriveDropdown extends StatefulWidget {
   final double? maxHeight;
   final bool showScrollbars;
   final Function? onClick;
+  final bool hasDivider;
+  final bool hasBorder;
 
   // retruns the alignment based if the current widget y coordinate is greater than half the screen height
   final Alignment Function(bool)? calculateVerticalAlignment;
@@ -102,13 +106,15 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
       content: _ArDriveDropdownContent(
         height: dropdownHeight,
         child: ArDriveCard(
-          border: Border.all(
-            color: ArDriveTheme.of(context)
-                .themeData
-                .dropdownTheme
-                .backgroundColor,
-            width: 1,
-          ),
+          border: widget.hasBorder
+              ? Border.all(
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .dropdownTheme
+                      .backgroundColor,
+                  width: 1,
+                )
+              : null,
           boxShadow: BoxShadowCard.shadow80,
           elevation: 5,
           contentPadding: widget.contentPadding ?? EdgeInsets.zero,
@@ -142,15 +148,16 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     widget.items[index],
-                                    if (index != widget.items.length - 1)
-                                      Divider(
-                                        height: 0,
-                                        thickness: widget.dividerThickness ?? 1,
-                                        color: ArDriveTheme.of(context)
-                                            .themeData
-                                            .colors
-                                            .themeBorderDefault,
-                                      ),
+                                    // if (widget.hasDivider &&
+                                    //     index != widget.items.length - 1)
+                                    //   Divider(
+                                    //     height: 0,
+                                    //     thickness: widget.dividerThickness ?? 1,
+                                    //     color: ArDriveTheme.of(context)
+                                    //         .themeData
+                                    //         .colors
+                                    //         .themeBorderDefault,
+                                    //   ),
                                   ],
                                 ),
                               ],

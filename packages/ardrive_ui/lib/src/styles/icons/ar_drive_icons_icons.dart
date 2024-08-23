@@ -13,10 +13,6 @@
 ///
 ///
 ///
-// ignore_for_file: constant_identifier_names
-
-library;
-
 import 'package:flutter/widgets.dart';
 
 class ArDriveIconsData {
@@ -177,6 +173,10 @@ class ArDriveIconsData {
       IconData(0xe84b, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData copy_1 =
       IconData(0xe84c, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData arns_name =
+      IconData(0xe84d, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData add_arns_name =
+      IconData(0xe84e, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData arrow_download =
       IconData(0xe880, fontFamily: _kFontFam, fontPackage: _kFontPkg);
 }

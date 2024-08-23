@@ -1,3 +1,4 @@
+import 'package:ardrive/arns/data/arns_dao.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:drift/drift.dart';
@@ -20,9 +21,10 @@ part 'database.g.dart';
     '../tables/licenses.drift',
     '../tables/network_transactions.drift',
     '../tables/profiles.drift',
-    '../tables/snapshot_entries.drift'
+    '../tables/snapshot_entries.drift',
+    '../tables/arns_records.drift'
   },
-  daos: [DriveDao, ProfileDao],
+  daos: [DriveDao, ProfileDao, ARNSDao],
 )
 class Database extends _$Database {
   Database([QueryExecutor? e]) : super(e ?? openConnection());

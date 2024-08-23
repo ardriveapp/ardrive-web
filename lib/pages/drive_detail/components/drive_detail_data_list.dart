@@ -98,6 +98,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
   final NetworkTransaction? dataTx;
   final String? pinnedDataOwnerAddress;
   final Thumbnail? thumbnail;
+  final List<String>? antRegistries;
 
   FileDataTableItem(
       {required super.driveId,
@@ -117,6 +118,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
       required this.metadataTx,
       required this.dataTx,
       required this.pinnedDataOwnerAddress,
+      this.antRegistries,
       this.thumbnail,
       super.licenseType,
       this.licenseTxId,
@@ -286,6 +288,7 @@ Widget _buildDataListContent(
           size: row.size == null ? '-' : filesize(row.size),
           lastUpdated: yMMdDateFormatter.format(row.lastUpdated),
           dateCreated: yMMdDateFormatter.format(row.dateCreated),
+          dataTableItem: row,
           license: row.licenseType == null
               ? ''
               : context
@@ -389,6 +392,8 @@ class DriveDataTableItemMapper {
     int index,
     bool isOwner,
   ) {
+    logger.d('fileEntry ant registries: ${file.antRegistries}');
+
     return FileDataTableItem(
       isOwner: isOwner,
       lastModifiedDate: file.lastModifiedDate,
@@ -413,6 +418,7 @@ class DriveDataTableItemMapper {
       index: index,
       pinnedDataOwnerAddress: file.pinnedDataOwnerAddress,
       isHidden: file.isHidden,
+      antRegistries: parseAntRegistries(file.antRegistries),
       thumbnail: file.thumbnail != null && file.thumbnail != 'null'
           ? Thumbnail.fromJson(jsonDecode(file.thumbnail!))
           : null,
@@ -422,6 +428,8 @@ class DriveDataTableItemMapper {
   static FileDataTableItem fromFileEntryForSearchModal(
     FileEntry fileEntry,
   ) {
+    logger.d('fileEntry ant registries: ${fileEntry.antRegistries}');
+
     return FileDataTableItem(
       isOwner: true,
       lastModifiedDate: fileEntry.lastModifiedDate,
@@ -442,6 +450,7 @@ class DriveDataTableItemMapper {
       index: 0,
       pinnedDataOwnerAddress: fileEntry.pinnedDataOwnerAddress,
       isHidden: fileEntry.isHidden,
+      antRegistries: parseAntRegistries(fileEntry.antRegistries),
       thumbnail: fileEntry.thumbnail != null && fileEntry.thumbnail != 'null'
           ? Thumbnail.fromJson(jsonDecode(fileEntry.thumbnail!))
           : null,
@@ -489,6 +498,8 @@ class DriveDataTableItemMapper {
   }
 
   static FileDataTableItem fromRevision(FileRevision revision, bool isOwner) {
+    logger.d('revision ant registries: ${revision.antRegistries}');
+
     return FileDataTableItem(
       isOwner: isOwner,
       lastModifiedDate: revision.lastModifiedDate,
@@ -509,9 +520,26 @@ class DriveDataTableItemMapper {
       index: 0,
       pinnedDataOwnerAddress: revision.pinnedDataOwnerAddress,
       isHidden: revision.isHidden,
+      antRegistries: parseAntRegistries(revision.antRegistries),
       thumbnail: revision.thumbnail != null && revision.thumbnail != 'null'
           ? Thumbnail.fromJson(jsonDecode(revision.thumbnail!))
           : null,
     );
   }
+}
+
+List<String> parseAntRegistries(
+  String? antRegistries,
+) {
+  if (antRegistries == null) {
+    return [];
+  }
+
+  if (antRegistries.isEmpty) {
+    return [];
+  }
+
+  final antList = jsonDecode(antRegistries) as List<dynamic>;
+
+  return antList.map((e) => e.toString()).toList();
 }

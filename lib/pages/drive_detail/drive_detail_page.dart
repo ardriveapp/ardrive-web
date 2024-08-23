@@ -24,6 +24,7 @@ import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/components/pin_file_dialog.dart';
 import 'package:ardrive/components/prompt_to_snapshot_dialog.dart';
 import 'package:ardrive/components/side_bar.dart';
+import 'package:ardrive/components/tooltip.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/dev_tools/shortcut_handler.dart';
