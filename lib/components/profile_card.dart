@@ -324,7 +324,8 @@ class _ProfileCardState extends State<ProfileCard> {
                       },
                     ),
                   ),
-                  if (isArioSDKSupportedOnPlatform())
+                  if (isArioSDKSupportedOnPlatform()) ...[
+                    const SizedBox(height: 8),
                     _ProfileMenuAccordionItem(
                       text: 'Switch Gateway',
                       onTap: () {
@@ -334,6 +335,7 @@ class _ProfileCardState extends State<ProfileCard> {
                         showGatewaySwitcherModal(context);
                       },
                     ),
+                  ],
                 ],
               ),
             ],
