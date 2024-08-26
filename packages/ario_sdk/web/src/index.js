@@ -42,8 +42,6 @@ async function getIOTokens(address) {
     })
     .then((balance) => new mIOToken(balance).toIO());
 
-  console.log(balance);
-
   return balance;
   } catch(e) {
     console.error(e);
