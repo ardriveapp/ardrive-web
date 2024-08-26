@@ -43,13 +43,13 @@ external Object _getGateways();
 
 Future<List<Gateway>> getGatewaysList() async {
   final promise = _getGateways();
-  final stringified = await promiseToFuture(promise);
-
-  final jsonParsed = jsonDecode(stringified);
+  final stringifiedJson = await promiseToFuture(promise);
 
   final gateways = <Gateway>[];
 
-  for (var item in jsonParsed['items']) {
+  final list = jsonDecode(stringifiedJson);
+
+  for (var item in list) {
     final gateway = Gateway.fromJson(item);
     gateways.add(gateway);
   }

@@ -178,6 +178,13 @@ class _GatewaySwitcherModalState extends State<_GatewaySwitcherModal> {
           );
         }
 
+        if (state is GatewaysError) {
+          return const ArDriveStandardModalNew(
+            title: 'Error',
+            description: 'An error occurred while loading the gateways',
+          );
+        }
+
         return ProgressDialog(
           title: 'Loading Gateways',
           useNewArDriveUI: true,

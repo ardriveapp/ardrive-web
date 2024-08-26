@@ -13,12 +13,21 @@ class GarBloc extends Bloc<GarEvent, GarState> {
     required this.garRepository,
   }) : super(GarInitial()) {
     on<GetGateways>((event, emit) async {
-      emit(LoadingGateways());
+      try {
+        emit(LoadingGateways());
 
-      final gateways = await garRepository.getGateways();
-      final currentGateway = garRepository.getSelectedGateway();
+        final gateways = await garRepository.getGateways();
+        final currentGateway = garRepository.getSelectedGateway();
 
-      emit(GatewaysLoaded(gateways: gateways, currentGateway: currentGateway));
+        emit(
+          GatewaysLoaded(
+            gateways: gateways,
+            currentGateway: currentGateway,
+          ),
+        );
+      } catch (e) {
+        emit(const GatewaysError());
+      }
     });
 
     on<UpdateArweaveGatewayUrl>((event, emit) {

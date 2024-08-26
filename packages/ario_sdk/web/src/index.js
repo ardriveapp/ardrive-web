@@ -15,10 +15,10 @@ async function getGateways() {
     });
 
     // Add the retrieved gateways to the array
-    allGateways = allGateways.concat(response.gateways);
+    allGateways = allGateways.concat(response.items);
 
     // Break the loop if there are no more gateways to fetch
-    if (!response.gateways.length || !response.nextCursor) {
+    if (!response.items.length || !response.nextCursor) {
       break;
     }
 
@@ -33,16 +33,15 @@ async function getGateways() {
 
 async function getIOTokens(address) {
   try{
-    console.log(address);
-  const io = IO.init();
-  // the balance will be returned in mIO as a value
-  const balance = await io
-    .getBalance({
-      address: address,
-    })
-    .then((balance) => new mIOToken(balance).toIO());
+    const io = IO.init();
+    // the balance will be returned in mIO as a value
+    const balance = await io
+      .getBalance({
+        address: address,
+      })
+      .then((balance) => new mIOToken(balance).toIO());
 
-  return balance;
+    return balance;
   } catch(e) {
     console.error(e);
   }

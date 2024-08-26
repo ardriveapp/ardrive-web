@@ -46,3 +46,7 @@ class GatewaysLoaded extends GarState {
     );
   }
 }
+
+class GatewaysError extends GarState {
+  const GatewaysError();
+}
