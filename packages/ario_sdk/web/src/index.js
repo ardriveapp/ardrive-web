@@ -26,8 +26,6 @@ async function getGateways() {
     cursor = response.nextCursor;
   }
 
-  console.log(allGateways.length);
-
   return JSON.stringify(allGateways);
 }
 
