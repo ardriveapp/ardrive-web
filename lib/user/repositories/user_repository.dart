@@ -47,13 +47,7 @@ class _UserRepository implements UserRepository {
 
     final profileDetails = await _profileDao.loadDefaultProfile(password);
 
-    String? ioTokens;
-
-    if (isArioSDKSupportedOnPlatform()) {
-      ioTokens = await ArioSDKFactory()
-          .create()
-          .getIOTokens(await profileDetails.wallet.getAddress());
-    }
+    final ioTokens = await _getIOTokens(profileDetails: profileDetails);
 
     final user = User(
       profileType: ProfileType.values[profileDetails.details.profileType],
@@ -110,6 +104,25 @@ class _UserRepository implements UserRepository {
     }
 
     return profile.walletPublicKey;
+  }
+
+  Future<String?> _getIOTokens({
+    required ProfileLoadDetails profileDetails,
+  }) async {
+    try {
+      String? ioTokens;
+
+      if (isArioSDKSupportedOnPlatform()) {
+        ioTokens = await ArioSDKFactory()
+            .create()
+            .getIOTokens(await profileDetails.wallet.getAddress());
+      }
+
+      return ioTokens;
+    } catch (e, stacktrace) {
+      logger.e('Failed to get IO tokens', e, stacktrace);
+      return null;
+    }
   }
 }
 

@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'dart:js_util';
 
 import 'package:ario_sdk/ario_sdk.dart';
+import 'package:ario_sdk/src/exceptions.dart';
 import 'package:js/js.dart';
 
 class ArioSDKWeb implements ArioSDK {
@@ -14,18 +15,26 @@ class ArioSDKWeb implements ArioSDK {
 
   @override
   Future<List<Gateway>> getGateways() async {
-    if (_cachedGateways != null) {
+    try {
+      if (_cachedGateways != null) {
+        return _cachedGateways!;
+      }
+      _cachedGateways = await getGatewaysList();
       return _cachedGateways!;
+    } catch (e) {
+      throw GetGatewaysException(e.toString());
     }
-    _cachedGateways = await getGatewaysList();
-    return _cachedGateways!;
   }
 
   @override
   Future<String> getIOTokens(String address) async {
-    final tokens = await _getIOTokensImpl(address);
+    try {
+      final tokens = await _getIOTokensImpl(address);
 
-    return tokens;
+      return tokens;
+    } catch (e) {
+      throw GetIOTokensException(e.toString());
+    }
   }
 }
 

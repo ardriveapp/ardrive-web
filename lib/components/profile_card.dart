@@ -461,13 +461,22 @@ class _ProfileCardState extends State<ProfileCard> {
               color: colorTokens.textHigh,
             ),
           ),
-          Text(
-            '$ioTokens',
-            style: typography.paragraphNormal(
-              color: colorTokens.textLow,
-              fontWeight: ArFontWeight.semiBold,
+          if (ioTokens != null)
+            Text(
+              ioTokens,
+              style: typography.paragraphNormal(
+                color: colorTokens.textLow,
+                fontWeight: ArFontWeight.semiBold,
+              ),
             ),
-          ),
+          if (ioTokens == null)
+            Text(
+              'An error occurred while fetching IO tokens',
+              style: typography.paragraphNormal(
+                color: colorTokens.textLow,
+                fontWeight: ArFontWeight.semiBold,
+              ),
+            ),
         ],
       ),
     );
