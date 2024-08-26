@@ -1,6 +1,7 @@
 import 'package:ardrive/components/progress_dialog.dart';
 import 'package:ardrive/gar/domain/repositories/gar_repository.dart';
 import 'package:ardrive/gar/presentation/bloc/gar_bloc.dart';
+import 'package:ardrive/search/search_text_field.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
@@ -33,18 +34,11 @@ class _GatewaySwitcherModal extends StatefulWidget {
 }
 
 class _GatewaySwitcherModalState extends State<_GatewaySwitcherModal> {
-  final TextEditingController _arweaveGatewayUrlController =
-      TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   initState() {
     super.initState();
-
-    _arweaveGatewayUrlController.text = context
-        .read<ConfigService>()
-        .config
-        .defaultArweaveGatewayForDataRequest
-        .toString();
   }
 
   @override
@@ -73,8 +67,8 @@ class _GatewaySwitcherModalState extends State<_GatewaySwitcherModal> {
                     ),
                     const SizedBox(height: 16)
                   ],
-                  ArDriveTextFieldNew(
-                    label: 'Search gateway',
+                  SearchTextField(
+                    labelText: 'Search gateway',
                     hintText: 'Search for a gateway',
                     onChanged: (value) {
                       if (value.isEmpty) {
@@ -84,12 +78,10 @@ class _GatewaySwitcherModalState extends State<_GatewaySwitcherModal> {
 
                       garBloc.add(SearchGateways(query: value));
                     },
-                    suffixIcon: GestureDetector(
-                      child: ArDriveIcons.closeRectangle(),
-                      onTap: () {
-                        garBloc.add(CleanSearchResults());
-                      },
-                    ),
+                    controller: _searchController,
+                    onFieldSubmitted: (value) {
+                      garBloc.add(SearchGateways(query: value));
+                    },
                   ),
                   const SizedBox(height: 16),
                   Expanded(
