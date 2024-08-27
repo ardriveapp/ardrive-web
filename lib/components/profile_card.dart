@@ -324,7 +324,8 @@ class _ProfileCardState extends State<ProfileCard> {
                       },
                     ),
                   ),
-                  if (isArioSDKSupportedOnPlatform())
+                  if (isArioSDKSupportedOnPlatform()) ...[
+                    const SizedBox(height: 8),
                     _ProfileMenuAccordionItem(
                       text: 'Switch Gateway',
                       onTap: () {
@@ -334,6 +335,7 @@ class _ProfileCardState extends State<ProfileCard> {
                         showGatewaySwitcherModal(context);
                       },
                     ),
+                  ],
                 ],
               ),
             ],
@@ -459,13 +461,22 @@ class _ProfileCardState extends State<ProfileCard> {
               color: colorTokens.textHigh,
             ),
           ),
-          Text(
-            '$ioTokens',
-            style: typography.paragraphNormal(
-              color: colorTokens.textLow,
-              fontWeight: ArFontWeight.semiBold,
+          if (ioTokens != null)
+            Text(
+              ioTokens,
+              style: typography.paragraphNormal(
+                color: colorTokens.textLow,
+                fontWeight: ArFontWeight.semiBold,
+              ),
             ),
-          ),
+          if (ioTokens == null)
+            Text(
+              'An error occurred while fetching IO tokens',
+              style: typography.paragraphNormal(
+                color: colorTokens.textLow,
+                fontWeight: ArFontWeight.semiBold,
+              ),
+            ),
         ],
       ),
     );

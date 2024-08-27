@@ -57,12 +57,11 @@ class GarRepositoryImpl implements GarRepository {
 
   @override
   List<Gateway> searchGateways(String query) {
-    final gateways = _gateways
-        .where(
-          (gateway) => gateway.settings.fqdn.contains(query),
-        )
-        .toList();
-
-    return gateways;
+    final lowercaseQuery = query.toLowerCase();
+    return _gateways.where((gateway) {
+      final settings = gateway.settings;
+      return settings.fqdn.toLowerCase().contains(lowercaseQuery) ||
+          settings.label.toLowerCase().contains(lowercaseQuery);
+    }).toList();
   }
 }

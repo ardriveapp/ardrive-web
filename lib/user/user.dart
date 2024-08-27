@@ -21,7 +21,7 @@ abstract class User with EquatableMixin {
     required BigInt walletBalance,
     required SecretKey cipherKey,
     required ProfileType profileType,
-    dynamic ioTokens,
+    String? ioTokens,
   }) =>
       _User(
         password: password,
@@ -74,5 +74,5 @@ class _User implements User {
   bool? get stringify => true;
 
   @override
-  toString() => 'User { walletAddress: $walletAddress }';
+  String toString() => 'User { walletAddress: $walletAddress }';
 }

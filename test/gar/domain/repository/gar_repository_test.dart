@@ -99,17 +99,25 @@ void main() {
     test('searchGateways returns gateways matching the query', () async {
       final gateway1 = MockGateway();
       final gateway2 = MockGateway();
+      final gateway3 = MockGateway();
 
-      final gateways = [gateway1, gateway2];
+      final gateways = [gateway1, gateway2, gateway3];
 
       final settings1 = MockSettings();
       final settings2 = MockSettings();
+      final settings3 = MockSettings();
 
       when(() => gateway1.settings).thenReturn(settings1);
       when(() => gateway2.settings).thenReturn(settings2);
+      when(() => gateway3.settings).thenReturn(settings3);
 
       when(() => settings1.fqdn).thenReturn('first.gateway.com');
       when(() => settings2.fqdn).thenReturn('second.gateway.com');
+      when(() => settings3.fqdn).thenReturn('third.gateway.com');
+      // now search for labels
+      when(() => settings1.label).thenReturn('first gateway');
+      when(() => settings2.label).thenReturn('second gateway');
+      when(() => settings3.label).thenReturn('first');
 
       when(() => arioSDK.getGateways()).thenAnswer((_) async => gateways);
 
@@ -118,7 +126,54 @@ void main() {
 
       final results = repository.searchGateways('first');
 
-      expect(results, equals([gateway1]));
+      ///  The search for 'first' returns two gateways:
+      ///  1. gateway1: matches because its FQDN is 'first.gateway.com'
+      ///  2. gateway3: matches because its label is 'first'
+      ///
+      ///  The search is case-insensitive and matches partial strings in both
+      ///  the FQDN and the label of the gateway settings.
+
+      expect(results, equals([gateway1, gateway3]));
+    });
+
+    test('searchGateways returns gateways matching the query only in labels',
+        () async {
+      final gateway1 = MockGateway();
+      final gateway2 = MockGateway();
+      final gateway3 = MockGateway();
+
+      final gateways = [gateway1, gateway2, gateway3];
+
+      final settings1 = MockSettings();
+      final settings2 = MockSettings();
+      final settings3 = MockSettings();
+
+      when(() => gateway1.settings).thenReturn(settings1);
+      when(() => gateway2.settings).thenReturn(settings2);
+      when(() => gateway3.settings).thenReturn(settings3);
+
+      when(() => settings1.fqdn).thenReturn('first.gateway.com');
+      when(() => settings2.fqdn).thenReturn('second.gateway.com');
+      when(() => settings3.fqdn).thenReturn('third.gateway.com');
+
+      when(() => settings1.label).thenReturn('Alpha Gateway');
+      when(() => settings2.label).thenReturn('Beta Gateway');
+      when(() => settings3.label).thenReturn('Gamma Gateway');
+
+      when(() => arioSDK.getGateways()).thenAnswer((_) async => gateways);
+
+      // Manually populate the _gateways list
+      await repository.getGateways();
+
+      final results = repository.searchGateways('gateway');
+
+      // The search for 'gateway' returns all three gateways because it matches their labels,
+      // even though it doesn't match any of their FQDNs.
+      expect(results, equals([gateway1, gateway2, gateway3]));
+
+      // Verify that the search is case-insensitive
+      final caseInsensitiveResults = repository.searchGateways('GaTewAy');
+      expect(caseInsensitiveResults, equals([gateway1, gateway2, gateway3]));
     });
 
     test(
@@ -126,19 +181,28 @@ void main() {
         () {
       final gateway1 = MockGateway();
       final gateway2 = MockGateway();
+      final gateway3 = MockGateway();
 
-      final gateways = [gateway1, gateway2];
+      final gateways = [gateway1, gateway2, gateway3];
 
       final settings1 = MockSettings();
       final settings2 = MockSettings();
+      final settings3 = MockSettings();
 
       when(() => gateway1.settings).thenReturn(settings1);
       when(() => gateway2.settings).thenReturn(settings2);
-
+      when(() => gateway3.settings).thenReturn(settings3);
       when(() => settings1.fqdn).thenReturn('first.gateway.com');
       when(() => settings2.fqdn).thenReturn('second.gateway.com');
+      when(() => settings3.fqdn).thenReturn('third.gateway.com');
+
+      // labels
+      when(() => settings1.label).thenReturn('first gateway');
+      when(() => settings2.label).thenReturn('second gateway');
+      when(() => settings3.label).thenReturn('third gateway');
 
       when(() => arioSDK.getGateways()).thenAnswer((_) async => gateways);
+
       final results = repository.searchGateways('nonexistent');
 
       expect(results, isEmpty);
