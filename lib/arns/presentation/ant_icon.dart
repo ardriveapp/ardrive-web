@@ -57,8 +57,6 @@ class _AntIconState extends State<AntIcon> {
     }
 
     if (stillAvailable!) {
-      final typography = ArDriveTypographyNew.of(context);
-      final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
       return GestureDetector(
         onTap: () {
           String address = '';
@@ -80,10 +78,7 @@ class _AntIconState extends State<AntIcon> {
         child: ArDriveTooltip(
           message: '${undername?.name ?? '@'}_${undername?.domain}.ar-io.dev',
           child: ArDriveClickArea(
-            child: ArDriveIcons.arnsName(
-              size: 18,
-              color: const Color(0xffFFBB38),
-            ),
+            child: ArDriveIcons.arnsName(size: 18),
           ),
         ),
       );

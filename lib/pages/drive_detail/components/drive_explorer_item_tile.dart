@@ -1,9 +1,5 @@
-import 'package:ardrive/arns/data/arns_dao.dart';
-import 'package:ardrive/arns/domain/arns_repository.dart';
-import 'package:ardrive/arns/presentation/add_or_update_ant_and_undernames.dart';
 import 'package:ardrive/arns/presentation/ant_icon.dart';
-import 'package:ardrive/arns/presentation/assign_name_bloc/assign_name_bloc.dart';
-import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/arns/presentation/assign_name_modal.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
@@ -12,7 +8,6 @@ import 'package:ardrive/components/fs_entry_license_form.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/pin_indicator.dart';
-import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/drive_explorer/thumbnail/thumbnail_bloc.dart';
@@ -23,11 +18,9 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
-import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -42,6 +35,7 @@ class DriveExplorerItemTile extends TableRowWidget {
     required bool isHidden,
     required ArdriveTypographyNew typography,
     required ArDriveDataTableItem dataTableItem,
+    required ArDriveColorTokens colorTokens,
   }) : super(
           [
             Padding(
@@ -52,7 +46,7 @@ class DriveExplorerItemTile extends TableRowWidget {
                     name,
                     style: typography.paragraphNormal(
                       color: isHidden ? Colors.grey : null,
-                      fontWeight: ArFontWeight.bold,
+                      fontWeight: ArFontWeight.semiBold,
                     ),
                     overflow: TextOverflow.fade,
                     maxLines: 1,
@@ -61,7 +55,7 @@ class DriveExplorerItemTile extends TableRowWidget {
                   if (dataTableItem is FileDataTableItem &&
                       dataTableItem.antRegistries != null &&
                       dataTableItem.antRegistries!.isNotEmpty) ...[
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 8),
                     Transform(
                         transform: Matrix4.translationValues(0, 2, 0),
                         child: AntIcon(fileDataTableItem: dataTableItem)),
@@ -70,21 +64,24 @@ class DriveExplorerItemTile extends TableRowWidget {
               ),
             ),
             Text(size,
-                style: _driveExplorerItemTileTextStyle(isHidden, typography)),
+                style: _driveExplorerItemTileTextStyle(
+                    isHidden, typography, colorTokens)),
             Text(lastUpdated,
-                style: _driveExplorerItemTileTextStyle(isHidden, typography)),
+                style: _driveExplorerItemTileTextStyle(
+                    isHidden, typography, colorTokens)),
             Text(dateCreated,
-                style: _driveExplorerItemTileTextStyle(isHidden, typography)),
+                style: _driveExplorerItemTileTextStyle(
+                    isHidden, typography, colorTokens)),
             Text(license, style: ArDriveTypography.body.captionRegular()),
           ],
         );
 }
 
-TextStyle _driveExplorerItemTileTextStyle(
-        bool isHidden, ArdriveTypographyNew typography) =>
+TextStyle _driveExplorerItemTileTextStyle(bool isHidden,
+        ArdriveTypographyNew typography, ArDriveColorTokens colorTokens) =>
     typography.paragraphNormal(
       color: isHidden ? Colors.grey : null,
-      fontWeight: ArFontWeight.bold,
+      fontWeight: ArFontWeight.semiBold,
     );
 
 class DriveExplorerItemTileLeading extends StatelessWidget {
@@ -268,6 +265,11 @@ ArDriveIcon getIconForContentType(
       size: size,
       color: color,
     );
+  } else if (contentType == 'drive') {
+    return ArDriveIcons.publicDrive(
+      size: size,
+      color: color,
+    );
   } else if (FileTypeHelper.isZip(contentType)) {
     return ArDriveIcons.zip(
       size: size,
@@ -326,6 +328,8 @@ class _DriveExplorerItemTileTrailingState
   Widget build(BuildContext context) {
     final item = widget.item;
 
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisSize: MainAxisSize.max,
@@ -373,7 +377,9 @@ class _DriveExplorerItemTileTrailingState
           items: _getItems(widget.item, context),
           child: HoverWidget(
             tooltip: appLocalizationsOf(context).showMenu,
-            child: ArDriveIcons.kebabMenu(),
+            child: ArDriveIcons.kebabMenu(
+              color: colorTokens.iconMid,
+            ),
           ),
         ),
       ],
@@ -578,38 +584,22 @@ class _DriveExplorerItemTileTrailingState
               ),
             ),
           ),
-        ArDriveDropdownItem(
-          onClick: () {
-            showArDriveDialog(
-              context,
-              content: BlocProvider(
-                create: (context) => AssignNameBloc(
-                    auth: context.read<ArDriveAuth>(),
-                    sdk: ArioSDKFactory().create(),
-                    fileRepository: context.read<FileRepository>(),
-                    fileDataTableItem: item,
-                    arnsRepository: ARNSRepository(
-                      arnsDao: ARNSDao(context.read<Database>()),
-                      auth: context.read<ArDriveAuth>(),
-                      fileRepository: context.read<FileRepository>(),
-                      sdk: sdk,
-                    ))
-                  ..add(
-                    LoadNames(),
-                  ),
-                child: SetARNSExperiment(
-                  file: item as FileDataTableItem,
-                ),
+        if (widget.drive.isPublic)
+          ArDriveDropdownItem(
+            onClick: () {
+              showAssignArNSNameModal(
+                context,
+                file: item as FileDataTableItem,
+                driveDetailCubit: context.read<DriveDetailCubit>(),
+              );
+            },
+            content: _buildItem(
+              'Assign ArNS name',
+              ArDriveIcons.addArnsName(
+                size: defaultIconSize,
               ),
-            );
-          },
-          content: _buildItem(
-            'Add ARNS',
-            ArDriveIcons.addArnsName(
-              size: defaultIconSize,
             ),
           ),
-        ),
         hideFileDropdownItem(context, item),
       ],
       ArDriveDropdownItem(

@@ -29,6 +29,8 @@ class Resources {
       'https://help.ardrive.io/hc/en-us/articles/5300389777179-ArDrive-App-';
   static const priceCalculatorLink = 'https://prices.ardrive.io/';
   static const docsLink = 'https://docs.ardrive.io/';
+  static const arnsLink = 'https://arns.app/';
+  static const arnsArcssLink = 'https://docs.ar.io/arcss/';
 }
 
 class Images {

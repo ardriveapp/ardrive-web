@@ -153,12 +153,19 @@ Widget _buildDataListContent(
   }
 
   return LayoutBuilder(builder: (context, constraints) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
     final columns = [
       TableColumn(
         appLocalizationsOf(context).name,
         9,
         index: 0,
         canHide: false,
+        textStyle: typography.paragraphNormal(
+          color: colorTokens.textMid,
+          fontWeight: ArFontWeight.semiBold,
+        ),
       ),
       // if (constraints.maxWidth > 500)
       TableColumn(
@@ -168,6 +175,10 @@ Widget _buildDataListContent(
         canHide: false,
         isVisible:
             (constraints.maxWidth > 500 && (columnVisibility[1] ?? true)),
+        textStyle: typography.paragraphNormal(
+          color: colorTokens.textMid,
+          fontWeight: ArFontWeight.semiBold,
+        ),
       ),
       // if (constraints.maxWidth > 640)
       TableColumn(
@@ -176,6 +187,10 @@ Widget _buildDataListContent(
         index: 2,
         isVisible:
             (constraints.maxWidth > 640 && (columnVisibility[2] ?? true)),
+        textStyle: typography.paragraphNormal(
+          color: colorTokens.textMid,
+          fontWeight: ArFontWeight.semiBold,
+        ),
       ),
       // if (constraints.maxWidth > 700)
       TableColumn(
@@ -184,6 +199,10 @@ Widget _buildDataListContent(
         index: 3,
         isVisible:
             (constraints.maxWidth > 700 && (columnVisibility[3] ?? true)),
+        textStyle: typography.paragraphNormal(
+          color: colorTokens.textMid,
+          fontWeight: ArFontWeight.semiBold,
+        ),
       ),
       // if (constraints.maxWidth > 820)
       TableColumn(
@@ -192,6 +211,10 @@ Widget _buildDataListContent(
         'License',
         2,
         index: 4,
+        textStyle: typography.paragraphNormal(
+          color: colorTokens.textMid,
+          fontWeight: ArFontWeight.semiBold,
+        ),
         isVisible:
             (constraints.maxWidth > 820 && (columnVisibility[4] ?? true)),
       ),
@@ -282,7 +305,9 @@ Widget _buildDataListContent(
       },
       buildRow: (row) {
         final typography = ArDriveTypographyNew.of(context);
+        final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
         return DriveExplorerItemTile(
+          colorTokens: colorTokens,
           name: row.name,
           typography: typography,
           size: row.size == null ? '-' : filesize(row.size),

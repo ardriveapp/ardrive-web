@@ -1,6 +1,5 @@
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
-import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ario_sdk/ario_sdk.dart';
@@ -11,25 +10,19 @@ part 'assign_name_event.dart';
 part 'assign_name_state.dart';
 
 class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
+  final ARNSRepository _arnsRepository;
   final ArioSDK _sdk;
   final ArDriveAuth _auth;
-  final FileRepository _fileRepository;
-  final FileDataTableItem _fileDataTableItem;
-  final ARNSRepository _arnsRepository;
-
   ARNSUndername? _selectedUndername;
   ARNSRecord? _selectedARNSRecord;
 
   AssignNameBloc({
     required ArioSDK sdk,
     required ArDriveAuth auth,
-    required FileRepository fileRepository,
     required FileDataTableItem fileDataTableItem,
     required ARNSRepository arnsRepository,
   })  : _sdk = sdk,
         _auth = auth,
-        _fileRepository = fileRepository,
-        _fileDataTableItem = fileDataTableItem,
         _arnsRepository = arnsRepository,
         super(AssignNameInitial()) {
     on<LoadNames>((event, emit) async {
@@ -37,9 +30,11 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
 
       final names = await _sdk.getARNSRecords(_auth.getJWTAsString());
 
-      await Future.delayed(const Duration(seconds: 1));
-
-      emit(NamesLoaded(names: names));
+      if (names.isEmpty) {
+        emit(AssignNameEmptyState());
+      } else {
+        emit(NamesLoaded(names: names));
+      }
     });
 
     on<SelectName>((event, emit) async {
@@ -81,20 +76,15 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
     );
 
     on<SelectUndername>((event, emit) async {
-      // if (!_selectedUndernames.contains(event.undername)) {
-      //   _selectedUndernames.add(event.undername);
-      // } else {
-      //   logger.d('Removing ${event.undername.name}');
-
-      //   _selectedUndernames.remove(event.undername);
-      // }
       _selectedUndername = event.undername;
 
-      emit(
-        (state as UndernamesLoaded).copyWith(
-          selectedUndername: _selectedUndername,
-        ),
-      );
+      if (state is UndernamesLoaded) {
+        emit(
+          (state as UndernamesLoaded).copyWith(
+            selectedUndername: _selectedUndername,
+          ),
+        );
+      }
     });
 
     on<ConfirmSelection>((event, emit) async {
@@ -130,23 +120,15 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
           logger.e('Failed to set ARNS', e);
         }
 
-        String address = 'https://';
-
-        if (_selectedUndername != null) {
-          address = '$address${_selectedUndername!.name}_';
-        }
-
-        address = address + _selectedARNSRecord!.domain;
-        address = '$address.ar-io.dev';
+        final (address, arAddress) = _getAddresses();
 
         emit(SelectionConfirmed(
           address: address,
+          arAddress: arAddress,
         ));
-      } catch (e) {
-        logger.e('Failed to confirm selection', e);
-        // emit(SelectionFailed());
-        emit(SelectionConfirmed(
-            address: 'https://arweave.net/${fileDataTableItem.dataTxId}'));
+      } catch (e, stackTrace) {
+        logger.e('Failed to confirm ArNS name assignment', e, stackTrace);
+        emit(SelectionFailed());
       }
     });
 
@@ -159,5 +141,22 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
         ),
       );
     });
+  }
+
+  (String, String) _getAddresses() {
+    String address = 'https://';
+    String arAddress = 'ar://';
+
+    if (_selectedUndername != null) {
+      address = '$address${_selectedUndername!.name}_';
+      arAddress = '$arAddress${_selectedUndername!.name}_';
+    }
+
+    address = address + _selectedARNSRecord!.domain;
+    arAddress = arAddress + _selectedARNSRecord!.domain;
+
+    address = '$address.ar-io.dev';
+
+    return (address, arAddress);
   }
 }

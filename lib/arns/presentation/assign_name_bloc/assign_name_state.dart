@@ -31,6 +31,8 @@ final class NamesLoaded extends AssignNameState {
   }
 }
 
+final class AssignNameEmptyState extends AssignNameState {}
+
 final class UndernamesLoaded extends AssignNameState {
   final List<ARNSRecord> names;
   final ARNSRecord selectedName;
@@ -71,8 +73,9 @@ final class ConfirmingSelection extends AssignNameState {}
 
 final class SelectionConfirmed extends AssignNameState {
   final String address;
+  final String arAddress;
 
-  const SelectionConfirmed({required this.address});
+  const SelectionConfirmed({required this.address, required this.arAddress});
 }
 
 final class LoadingUndernames extends AssignNameState {}
@@ -91,3 +94,5 @@ final class ReviewingSelection extends AssignNameState {
   @override
   List<Object?> get props => [domain, undername, txId];
 }
+
+class SelectionFailed extends AssignNameState {}

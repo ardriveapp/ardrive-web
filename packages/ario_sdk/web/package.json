@@ -4,7 +4,7 @@
   "source": "src/index.js",
   "packageManager": "yarn@4.4.0",
   "scripts": {
-    "build": "parcel build --no-optimize && terser dist/index.js -o ../../../web/js/ario_sdk.min.js"
+    "build": "parcel build --no-optimize && terser dist/index.js -o ../../../web/js/ario_sdk.min.js && echo 'saved to web/js/ario_sdk.min.js'"
   },
   "devDependencies": {
     "@parcel/core": "^2.10.3",

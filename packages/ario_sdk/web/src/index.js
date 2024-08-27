@@ -14,6 +14,8 @@ async function getGateways() {
       sortBy: 'operatorStake',
     });
 
+    console.log(response);
+
     // Add the retrieved gateways to the array
     allGateways = allGateways.concat(response.gateways);
 
@@ -98,8 +100,6 @@ async function getARNSRecord(JWKString, domain) {
   const io = IO.init();
 
   const record = await io.getArNSRecord({ name: domain });
-
-  console.log(record);
 
   return JSON.stringify(record);
 }
