@@ -15,7 +15,6 @@ import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/components/turbo_balance_widget.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/user/download_wallet/download_wallet_modal.dart';
-import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/open_url_utils.dart';
@@ -84,7 +83,7 @@ class _ProfileCardState extends State<ProfileCard> {
     required bool isMobile,
   }) {
     final state = context.read<ProfileCubit>().state as ProfileLoggedIn;
-    final walletAddress = state.walletAddress;
+    final walletAddress = state.user.walletAddress;
 
     return ArDriveOverlay(
       onVisibleChange: (visible) {
@@ -151,7 +150,7 @@ class _ProfileCardState extends State<ProfileCard> {
                   ),
                 const SizedBox(height: 8),
                 _buildWalletAddressRow(context, state),
-                if (state.wallet is! ArConnectWallet) ...[
+                if (state.user.wallet is! ArConnectWallet) ...[
                   const SizedBox(height: 8),
                 ],
                 const Divider(
@@ -167,7 +166,7 @@ class _ProfileCardState extends State<ProfileCard> {
                     padding: const EdgeInsets.only(top: 20.0),
                     child: TurboBalance(
                       paymentService: context.read<PaymentService>(),
-                      wallet: state.wallet,
+                      wallet: state.user.wallet,
                       onTapAddButton: () {
                         setState(() {
                           _showProfileCard = false;
@@ -360,9 +359,14 @@ class _ProfileCardState extends State<ProfileCard> {
               ],
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.only(top: 20.0),
-            child: _LogoutButton(),
+          Padding(
+            padding: const EdgeInsets.only(top: 20.0),
+            child: _LogoutButton(
+              onLogout: () {
+                _showProfileCard = false;
+                setState(() {});
+              },
+            ),
           ),
           if (isMobile)
             Expanded(
@@ -376,7 +380,7 @@ class _ProfileCardState extends State<ProfileCard> {
   }
 
   Widget _buildWalletAddressRow(BuildContext context, ProfileLoggedIn state) {
-    final walletAddress = state.walletAddress;
+    final walletAddress = state.user.walletAddress;
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Padding(
@@ -415,7 +419,8 @@ class _ProfileCardState extends State<ProfileCard> {
   }
 
   Widget _buildBalanceRow(BuildContext context, ProfileLoggedIn state) {
-    final walletBalance = convertWinstonToLiteralString(state.walletBalance);
+    final walletBalance =
+        convertWinstonToLiteralString(state.user.walletBalance);
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
@@ -448,48 +453,39 @@ class _ProfileCardState extends State<ProfileCard> {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    return StreamBuilder<User?>(
-      stream: context.read<ArDriveAuth>().onAuthStateChanged(),
-      builder: (context, userSnapshot) {
-        if (!userSnapshot.hasData) {
-          return const SizedBox();
-        }
+    final ioTokens = state.user.ioTokens;
 
-        final ioTokens = userSnapshot.data!.ioTokens;
-
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'tIO Tokens',
-                style: typography.paragraphNormal(
-                  fontWeight: ArFontWeight.semiBold,
-                  color: colorTokens.textHigh,
-                ),
-              ),
-              if (ioTokens != null)
-                Text(
-                  ioTokens,
-                  style: typography.paragraphNormal(
-                    color: colorTokens.textLow,
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                ),
-              if (ioTokens == null)
-                Text(
-                  'An error occurred while fetching IO tokens',
-                  style: typography.paragraphNormal(
-                    color: colorTokens.textLow,
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                ),
-            ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'tIO Tokens',
+            style: typography.paragraphNormal(
+              fontWeight: ArFontWeight.semiBold,
+              color: colorTokens.textHigh,
+            ),
           ),
-        );
-      },
+          if (ioTokens != null)
+            Text(
+              ioTokens,
+              style: typography.paragraphNormal(
+                color: colorTokens.textLow,
+                fontWeight: ArFontWeight.semiBold,
+              ),
+            ),
+          if (ioTokens == null)
+            Text(
+              'An error occurred while fetching IO tokens',
+              style: typography.paragraphNormal(
+                color: colorTokens.textLow,
+                fontWeight: ArFontWeight.semiBold,
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -510,7 +506,11 @@ class _ProfileCardState extends State<ProfileCard> {
 }
 
 class _LogoutButton extends StatefulWidget {
-  const _LogoutButton();
+  const _LogoutButton({
+    required this.onLogout,
+  });
+
+  final Function onLogout;
 
   @override
   State<_LogoutButton> createState() => __LogoutButtonState();
@@ -538,6 +538,8 @@ class __LogoutButtonState extends State<_LogoutButton> {
         onTap: () {
           final arDriveAuth = context.read<ArDriveAuth>();
           final profileCubit = context.read<ProfileCubit>();
+
+          widget.onLogout();
 
           arDriveAuth.logout().then(
             (value) {

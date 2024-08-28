@@ -314,7 +314,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     if (profile is ProfileLoggedIn) {
       driveKey = await _driveDao.getDriveKey(
         driveId,
-        profile.cipherKey,
+        profile.user.cipherKey,
       );
     } else {
       driveKey = await _driveDao.getDriveKeyFromMemory(driveId);

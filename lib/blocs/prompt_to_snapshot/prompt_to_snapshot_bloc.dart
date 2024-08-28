@@ -161,7 +161,7 @@ class PromptToSnapshotBloc
         : await driveDao.driveById(driveId: driveId).getSingleOrNull();
     final profileState = profileCubit.state;
     final hasWritePermissions = profileState is ProfileLoggedIn &&
-        selectedDrive?.ownerAddress == profileState.walletAddress;
+        selectedDrive?.ownerAddress == profileState.user.walletAddress;
 
     return hasWritePermissions;
   }

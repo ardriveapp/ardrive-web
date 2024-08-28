@@ -2,9 +2,11 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_state.dart';
+import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
+import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/key_value_store.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -50,12 +52,14 @@ void main() {
 
       profileCubit = MockProfileCubit();
       when(() => profileCubit.state).thenReturn(ProfileLoggedIn(
-        username: 'test-username',
-        password: 'test-password',
-        wallet: testWallet,
-        walletAddress: walletAddress,
-        walletBalance: BigInt.one,
-        cipherKey: SecretKey(List.generate(32, (index) => index)),
+        user: User(
+          password: 'test-password',
+          wallet: testWallet,
+          walletAddress: walletAddress,
+          walletBalance: BigInt.one,
+          cipherKey: SecretKey(List.generate(32, (index) => index)),
+          profileType: ProfileType.json,
+        ),
         useTurbo: false,
       ));
 
@@ -228,15 +232,15 @@ void main() {
       'selecting a drive whith no write permissions does nothing',
       build: () => promptToSnapshotBloc,
       act: (PromptToSnapshotBloc bloc) async {
-        final aDifferentWallet = getTestWallet();
-        final aDifferentWalletAddress = await aDifferentWallet.getAddress();
         when(() => profileCubit.state).thenReturn(ProfileLoggedIn(
-          username: 'another-test-username',
-          password: 'another-test-password',
-          wallet: aDifferentWallet,
-          walletAddress: aDifferentWalletAddress,
-          walletBalance: BigInt.one,
-          cipherKey: SecretKey(List.generate(32, (index) => index)),
+          user: User(
+            password: 'test-password',
+            wallet: testWallet,
+            walletAddress: walletAddress,
+            walletBalance: BigInt.one,
+            cipherKey: SecretKey(List.generate(32, (index) => index)),
+            profileType: ProfileType.json,
+          ),
           useTurbo: false,
         ));
         bloc.add(SelectedDrive(driveId: driveId));

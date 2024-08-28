@@ -29,7 +29,7 @@ Future<void> promptToDownloadProfileFile({
   final profileState = context.read<ProfileCubit>().state;
   final arweave = context.read<ArweaveService>();
   final cipherKey =
-      profileState is ProfileLoggedIn ? profileState.cipherKey : null;
+      profileState is ProfileLoggedIn ? profileState.user.cipherKey : null;
   final cubit = ProfileFileDownloadCubit(
     crypto: ArDriveCrypto(),
     arfsRepository: ARFSRepository(
@@ -67,7 +67,7 @@ Future<void> promptToDownloadFileRevision({
   final arweave = context.read<ArweaveService>();
 
   final cipherKey =
-      profileState is ProfileLoggedIn ? profileState.cipherKey : null;
+      profileState is ProfileLoggedIn ? profileState.user.cipherKey : null;
   final cubit = ProfileFileDownloadCubit(
     crypto: ArDriveCrypto(),
     arfsRepository: ARFSRepository(
@@ -220,7 +220,7 @@ class FileDownloadDialog extends StatelessWidget {
               final profileState = context.read<ProfileCubit>().state;
 
               final cipherKey = profileState is ProfileLoggedIn
-                  ? profileState.cipherKey
+                  ? profileState.user.cipherKey
                   : null;
 
               (context.read<FileDownloadCubit>() as ProfileFileDownloadCubit)

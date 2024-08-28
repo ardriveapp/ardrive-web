@@ -73,8 +73,9 @@ class DrivesCubit extends Cubit<DrivesState> {
             (drives.isNotEmpty ? drives.first.id : null);
       }
 
-      final walletAddress =
-          profileState is ProfileLoggedIn ? profileState.walletAddress : null;
+      final walletAddress = profileState is ProfileLoggedIn
+          ? profileState.user.walletAddress
+          : null;
 
       final ghostFolders = await _driveDao.ghostFolders().get();
 

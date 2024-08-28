@@ -136,7 +136,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             // Cleans up any shared drives from previous sessions
             // TODO: Find a better place to do this
             final lastLoggedInUser =
-                state is ProfileLoggedIn ? state.walletAddress : null;
+                state is ProfileLoggedIn ? state.user.walletAddress : null;
             if (lastLoggedInUser != null) {
               context
                   .read<DriveDao>()

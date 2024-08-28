@@ -292,12 +292,14 @@ void main() {
     setUp(() {
       when(() => mockProfileCubit!.state).thenReturn(
         ProfileLoggedIn(
-          username: 'Test',
-          password: '123',
-          wallet: tWallet,
-          walletAddress: tWalletAddress!,
-          walletBalance: BigInt.one,
-          cipherKey: SecretKey(tKeyBytes),
+          user: User(
+            password: '123',
+            wallet: tWallet,
+            walletAddress: tWalletAddress!,
+            walletBalance: BigInt.one,
+            cipherKey: SecretKey(tKeyBytes),
+            profileType: ProfileType.json,
+          ),
           useTurbo: false,
         ),
       );
@@ -397,12 +399,14 @@ void main() {
         when(() => mockProfileCubit!.state).thenReturn(
           ProfileLoggedIn(
             useTurbo: false,
-            username: 'Test',
-            password: '123',
-            wallet: tWallet,
-            walletAddress: tWalletAddress!,
-            walletBalance: BigInt.one,
-            cipherKey: SecretKey(tKeyBytes),
+            user: User(
+              password: '123',
+              wallet: tWallet,
+              walletAddress: tWalletAddress!,
+              walletBalance: BigInt.one,
+              cipherKey: SecretKey(tKeyBytes),
+              profileType: ProfileType.json,
+            ),
           ),
         );
         when(() => mockProfileCubit!.checkIfWalletMismatch())
@@ -500,12 +504,14 @@ void main() {
     setUp(() {
       when(() => mockProfileCubit!.state).thenReturn(
         ProfileLoggedIn(
-          username: 'Test',
-          password: '123',
-          wallet: tWallet,
-          walletAddress: tWalletAddress!,
-          walletBalance: BigInt.one,
-          cipherKey: SecretKey(tKeyBytes),
+          user: User(
+            password: '123',
+            wallet: tWallet,
+            walletAddress: tWalletAddress!,
+            walletBalance: BigInt.one,
+            cipherKey: SecretKey(tKeyBytes),
+            profileType: ProfileType.json,
+          ),
           useTurbo: false,
         ),
       );

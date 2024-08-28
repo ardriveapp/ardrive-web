@@ -265,11 +265,11 @@ class AppState extends State<App> {
         ),
         BlocProvider(
           create: (context) => ProfileCubit(
-            arweave: context.read<ArweaveService>(),
             turboUploadService: context.read<TurboUploadService>(),
             profileDao: context.read<ProfileDao>(),
             db: context.read<Database>(),
             tabVisibilitySingleton: TabVisibilitySingleton(),
+            arDriveAuth: context.read<ArDriveAuth>(),
           ),
         ),
         BlocProvider(
