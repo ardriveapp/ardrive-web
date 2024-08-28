@@ -1,3 +1,4 @@
+import 'package:ardrive/services/config/selected_gateway.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:json_annotation/json_annotation.dart';
 
@@ -6,7 +7,8 @@ part 'app_config.g.dart';
 @JsonSerializable()
 class AppConfig {
   final String? defaultArweaveGatewayUrl;
-  final String? defaultArweaveGatewayForDataRequest;
+  @JsonKey(name: 'defaultArweaveGatewayForDataRequest')
+  final SelectedGateway defaultArweaveGatewayForDataRequest;
   final bool useTurboUpload;
   final bool useTurboPayment;
   final String? defaultTurboUploadUrl;
@@ -20,7 +22,10 @@ class AppConfig {
 
   AppConfig({
     this.defaultArweaveGatewayUrl,
-    this.defaultArweaveGatewayForDataRequest,
+    this.defaultArweaveGatewayForDataRequest = const SelectedGateway(
+      label: 'Arweave.net',
+      url: 'https://arweave.net',
+    ),
     this.useTurboUpload = false,
     this.useTurboPayment = false,
     this.defaultTurboUploadUrl,
@@ -35,7 +40,7 @@ class AppConfig {
 
   AppConfig copyWith({
     String? defaultArweaveGatewayUrl,
-    String? defaultArweaveGatewayForDataRequest,
+    SelectedGateway? defaultArweaveGatewayForDataRequest,
     bool? useTurboUpload,
     bool? useTurboPayment,
     String? defaultTurboUploadUrl,

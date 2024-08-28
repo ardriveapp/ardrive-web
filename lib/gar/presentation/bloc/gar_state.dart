@@ -53,6 +53,12 @@ class GatewaysError extends GarState {
 
 class VerifyingGateway extends GarState {}
 
+class GatewayActive extends GarState {
+  final Gateway gateway;
+
+  const GatewayActive(this.gateway);
+}
+
 class GatewayIsInactive extends GarState {
   const GatewayIsInactive();
 }

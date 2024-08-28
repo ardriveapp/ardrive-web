@@ -1,5 +1,6 @@
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config.dart';
+import 'package:ardrive/services/config/selected_gateway.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:collection/collection.dart';
@@ -39,20 +40,37 @@ class GarRepositoryImpl implements GarRepository {
   Gateway getSelectedGateway() {
     final currentGatewayUrl =
         configService.config.defaultArweaveGatewayForDataRequest;
-    final currentGatewayDomain = Uri.parse(currentGatewayUrl!).host;
+    final currentGatewayDomain = Uri.parse(currentGatewayUrl.url).host;
 
     final currentGateway = _gateways.firstWhereOrNull(
-      (gateway) => gateway.settings.fqdn == currentGatewayDomain,
+      (gateway) {
+        return gateway.settings.fqdn == currentGatewayDomain;
+      },
     );
 
-    return currentGateway!;
+    /// if the gateway it not on the list of available gateways
+    /// set the default the first one from the list.
+    ///
+    /// It can happen when the user change the gateway in the settings
+    /// but the gateway is not available anymore.
+    if (currentGateway == null) {
+      /// Update the gateway in the config and the arweave gateway
+      updateGateway(_gateways.first);
+
+      return _gateways.first;
+    }
+
+    return currentGateway;
   }
 
   @override
   void updateGateway(Gateway gateway) {
     configService.updateAppConfig(
       configService.config.copyWith(
-        defaultArweaveGatewayForDataRequest: 'https://${gateway.settings.fqdn}',
+        defaultArweaveGatewayForDataRequest: SelectedGateway(
+          label: gateway.settings.label,
+          url: 'https://${gateway.settings.fqdn}',
+        ),
       ),
     );
 

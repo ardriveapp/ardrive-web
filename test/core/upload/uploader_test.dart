@@ -7,6 +7,7 @@ import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/database/database.dart';
+import 'package:ardrive/services/config/selected_gateway.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
@@ -993,6 +994,10 @@ AppConfig getFakeConfig() => AppConfig(
       stripePublishableKey: '',
       useTurboUpload: true,
       useTurboPayment: true,
+      defaultArweaveGatewayForDataRequest: const SelectedGateway(
+        label: 'Arweave.net',
+        url: 'https://arweave.net',
+      ),
     );
 
 AppConfig getFakeConfigForDisabledTurbo() => AppConfig(
@@ -1000,6 +1005,10 @@ AppConfig getFakeConfigForDisabledTurbo() => AppConfig(
       stripePublishableKey: '',
       useTurboUpload: false,
       useTurboPayment: false,
+      defaultArweaveGatewayForDataRequest: const SelectedGateway(
+        label: 'Arweave.net',
+        url: 'https://arweave.net',
+      ),
     );
 User getFakeUser() => User(
     password: 'password',

@@ -1,4 +1,3 @@
-import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 
 /// import stub if we cant use web
@@ -8,11 +7,6 @@ import 'package:ario_sdk/src/implementations/ario_sdk_web_stub.dart'
 class ArioSDKFactory {
   /// Create a new instance of the Ario SDK
   ArioSDK create() {
-    if (AppPlatform.isWeb()) {
-      return ArioSDKWeb();
-    }
-
-    /// Mobile and Desktop platforms are not supported yet.
-    throw UnsupportedError('Platform not supported');
+    return ArioSDKWeb();
   }
 }

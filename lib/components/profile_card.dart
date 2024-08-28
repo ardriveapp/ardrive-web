@@ -7,6 +7,7 @@ import 'package:ardrive/components/truncated_address.dart';
 import 'package:ardrive/gar/presentation/widgets/gar_modal.dart';
 import 'package:ardrive/gift/bloc/redeem_gift_bloc.dart';
 import 'package:ardrive/gift/redeem_gift_modal.dart';
+import 'package:ardrive/main.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
@@ -335,12 +336,33 @@ class _ProfileCardState extends State<ProfileCard> {
                         showGatewaySwitcherModal(context);
                       },
                     ),
+                    Padding(
+                      padding:
+                          const EdgeInsets.only(left: 16.0, right: 16, top: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Current Gateway:',
+                            style: typography.paragraphNormal(
+                              fontWeight: ArFontWeight.semiBold,
+                            ),
+                          ),
+                          Text(
+                            configService.config
+                                .defaultArweaveGatewayForDataRequest.label,
+                            style: typography.paragraphNormal(
+                              fontWeight: ArFontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
                   ],
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.only(right: 12.0, left: 16, top: 12),
             child: Row(

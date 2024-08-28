@@ -12,6 +12,7 @@ import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
+import 'package:ardrive/services/config/selected_gateway.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
@@ -102,6 +103,10 @@ void main() {
       allowedDataItemSizeForTurbo: 1,
       stripePublishableKey: 'stripePublishableKey',
       defaultTurboUploadUrl: 'defaultTurboUploadUrl',
+      defaultArweaveGatewayForDataRequest: const SelectedGateway(
+        label: 'Arweave.net',
+        url: 'https://arweave.net',
+      ),
     ));
 
     registerFallbackValue(SecretKey([]));

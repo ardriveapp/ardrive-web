@@ -47,6 +47,14 @@ class _GatewaySwitcherModalState extends State<_GatewaySwitcherModal> {
   Widget build(BuildContext context) {
     return BlocBuilder<GarBloc, GarState>(
       builder: (context, state) {
+        if (state is GatewayActive) {
+          return _ConfirmGatewayChange(
+            gateway: state.gateway,
+            garBloc: context.read<GarBloc>(),
+            searchQuery: _searchController.text,
+          );
+        }
+
         if (state is GatewaysLoaded) {
           final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
           final typography = ArDriveTypographyNew.of(context);
@@ -113,7 +121,7 @@ class _GatewaySwitcherModalState extends State<_GatewaySwitcherModal> {
                                     : colorTokens.textMid,
                                 fontWeight: state.currentGateway == gateway
                                     ? ArFontWeight.bold
-                                    : ArFontWeight.book,
+                                    : ArFontWeight.semiBold,
                               ),
                             ),
                             subtitle: Text(
@@ -129,13 +137,9 @@ class _GatewaySwitcherModalState extends State<_GatewaySwitcherModal> {
                             ),
                             trailing: ArDriveIcons.carretRight(),
                             onTap: () {
-                              showArDriveDialog(
-                                context,
-                                content: _ConfirmGatewayChange(
-                                  gateway: gateway,
-                                  garBloc: garBloc,
-                                ),
-                              );
+                              context
+                                  .read<GarBloc>()
+                                  .add(SelectGateway(gateway: gateway));
                             },
                           ),
                         );
@@ -164,10 +168,36 @@ class _GatewaySwitcherModalState extends State<_GatewaySwitcherModal> {
         }
 
         if (state is GatewayChanged) {
+          final typography = ArDriveTypographyNew.of(context);
+          final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
           return ArDriveStandardModalNew(
             title: 'Gateway Changed',
-            description:
-                'You have successfully changed the gateway to ${state.gateway.settings.label}!',
+            content: Column(
+              children: [
+                RichText(
+                  text: TextSpan(
+                    style:
+                        typography.paragraphLarge(color: colorTokens.textMid),
+                    children: [
+                      const TextSpan(
+                          text:
+                              'You have successfully changed the gateway to '),
+                      TextSpan(
+                        text: state.gateway.settings.label,
+                        style: typography.paragraphLarge(
+                          color: colorTokens.textHigh,
+                          fontWeight: ArFontWeight.bold,
+                        ),
+                      ),
+                      TextSpan(
+                          text: '!',
+                          style: typography.paragraphLarge(
+                              color: colorTokens.textMid)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
             actions: [
               ModalAction(
                 action: () {
@@ -201,9 +231,25 @@ class _GatewaySwitcherModalState extends State<_GatewaySwitcherModal> {
         }
 
         if (state is GatewaysError) {
-          return const ArDriveStandardModalNew(
+          return ArDriveStandardModalNew(
+            hasCloseButton: true,
             title: 'Error',
-            description: 'An error occurred while loading the gateways',
+            description:
+                'An error occurred while loading the gateways. Please try again.',
+            actions: [
+              ModalAction(
+                action: () {
+                  Navigator.of(context).pop();
+                },
+                title: 'Close',
+              ),
+              ModalAction(
+                action: () {
+                  context.read<GarBloc>().add(GetGateways());
+                },
+                title: 'Try again',
+              ),
+            ],
           );
         }
 
@@ -232,33 +278,68 @@ Future<void> showGatewaySwitcherModal(BuildContext context) {
 }
 
 class _ConfirmGatewayChange extends StatelessWidget {
-  const _ConfirmGatewayChange({required this.gateway, required this.garBloc});
+  const _ConfirmGatewayChange({
+    required this.gateway,
+    required this.garBloc,
+    this.searchQuery,
+  });
 
   final Gateway gateway;
   final GarBloc garBloc;
+  final String? searchQuery;
 
   @override
   Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+
     return ArDriveStandardModalNew(
       title: 'Switch Gateway',
-      description:
-          'Are you sure you want to change the gateway to ${gateway.settings.label}?',
+      content: Column(
+        children: [
+          RichText(
+            text: TextSpan(
+              style: DefaultTextStyle.of(context).style,
+              children: <TextSpan>[
+                TextSpan(
+                  text: 'Are you sure you want to change the gateway to: ',
+                  style: typography.paragraphLarge(
+                    fontWeight: ArFontWeight.book,
+                  ),
+                ),
+                TextSpan(
+                  text: gateway.settings.label,
+                  style: typography.paragraphLarge(
+                    fontWeight: ArFontWeight.bold,
+                  ),
+                ),
+                TextSpan(
+                  text: '?',
+                  style: typography.paragraphLarge(
+                    fontWeight: ArFontWeight.book,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
       actions: [
         ModalAction(
           action: () {
-            Navigator.of(context).pop();
+            garBloc.add(GetGateways());
+
+            if (searchQuery != null && searchQuery!.isNotEmpty) {
+              garBloc.add(SearchGateways(query: searchQuery!));
+            }
           },
           title: 'No',
         ),
         ModalAction(
           action: () {
             garBloc.add(
-              UpdateArweaveGatewayUrl(
-                gateway: gateway,
-              ),
+              ConfirmGatewayChange(gateway: gateway),
             );
-
-            Navigator.of(context).pop();
           },
           title: 'Yes',
         ),

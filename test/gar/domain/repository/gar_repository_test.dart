@@ -2,6 +2,7 @@ import 'package:ardrive/gar/domain/repositories/gar_repository.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/services/config/config_service.dart';
+import 'package:ardrive/services/config/selected_gateway.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -45,7 +46,10 @@ void main() {
     registerFallbackValue(AppConfig(
       allowedDataItemSizeForTurbo: 1,
       stripePublishableKey: '',
-      defaultArweaveGatewayForDataRequest: 'https://current.gateway.com',
+      defaultArweaveGatewayForDataRequest: const SelectedGateway(
+        label: 'Arweave.net',
+        url: 'https://arweave.net',
+      ),
     ));
   });
 
@@ -127,10 +131,15 @@ void main() {
           when(() => configService.config).thenReturn(AppConfig(
             allowedDataItemSizeForTurbo: 1,
             stripePublishableKey: '',
-            defaultArweaveGatewayForDataRequest: 'https://current.gateway.com',
+            defaultArweaveGatewayForDataRequest: const SelectedGateway(
+              label: 'Arweave.net',
+              url: 'https://current.gateway.com',
+            ),
           ));
           when(() => arioSDK.getGateways()).thenAnswer((_) async => gateways);
           when(() => gateway.settings).thenReturn(settings);
+          when(() => settings.label).thenReturn('New Gateway');
+
           when(() => settings.fqdn).thenReturn('current.gateway.com');
 
           // Manually populate the _gateways list for this test
@@ -139,6 +148,46 @@ void main() {
           final selectedGateway = repository.getSelectedGateway();
 
           expect(selectedGateway, equals(gateway));
+        },
+      );
+
+      test(
+        'if the current gateway is not in the list, it returns the first one',
+        () async {
+          final gateway1 = MockGateway();
+          final gateway2 = MockGateway();
+          final gateway3 = MockGateway();
+
+          final gateways = [gateway1, gateway2, gateway3];
+
+          final settings = MockSettings();
+
+          when(() => configService.config).thenReturn(AppConfig(
+            allowedDataItemSizeForTurbo: 1,
+            stripePublishableKey: '',
+            defaultArweaveGatewayForDataRequest: const SelectedGateway(
+              label: 'Arweave.net',
+              url: 'https://not.in.list.com',
+            ),
+          ));
+          when(() => arioSDK.getGateways()).thenAnswer((_) async => gateways);
+          when(() => gateway1.settings).thenReturn(settings);
+          when(() => gateway2.settings).thenReturn(settings);
+          when(() => gateway3.settings).thenReturn(settings);
+          when(() => settings.label).thenReturn('New Gateway');
+
+          when(() => settings.fqdn).thenReturn('gateway.com');
+
+          // Manually populate the _gateways list for this test
+          await repository.getGateways();
+
+          final selectedGateway = repository.getSelectedGateway();
+
+          expect(selectedGateway, equals(gateway1));
+
+          /// Verify that the config and arweave service are updated correctly
+          verify(() => configService.updateAppConfig(any())).called(1);
+          verify(() => arweaveService.setGateway(gateway1)).called(1);
         },
       );
 
@@ -151,10 +200,13 @@ void main() {
             when(() => configService.config).thenReturn(AppConfig(
               allowedDataItemSizeForTurbo: 1,
               stripePublishableKey: '',
-              defaultArweaveGatewayForDataRequest:
-                  'https://current.gateway.com',
+              defaultArweaveGatewayForDataRequest: const SelectedGateway(
+                label: 'Arweave.net',
+                url: 'https://arweave.net',
+              ),
             ));
             when(() => gateway.settings).thenReturn(settings);
+            when(() => settings.label).thenReturn('New Gateway');
             when(() => settings.fqdn).thenReturn('new.gateway.com');
 
             repository.updateGateway(gateway);
