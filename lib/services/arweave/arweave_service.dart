@@ -42,18 +42,17 @@ const kMaxNumberOfTransactionsPerPage = 100;
 class ArweaveService {
   Arweave client;
   final ArDriveCrypto _crypto;
-  final ConfigService _configService;
 
   final ArtemisClient _gql;
 
   ArweaveService(
     this.client,
     this._crypto,
-    this._configService, {
+    ConfigService configService, {
     ArtemisClient? artemisClient,
   }) : _gql = artemisClient ??
             ArtemisClient(
-                '${_configService.config.defaultArweaveGatewayUrl}/graphql') {
+                '${configService.config.defaultArweaveGatewayUrl}/graphql') {
     graphQLRetry = GraphQLRetry(
       _gql,
       internetChecker: InternetChecker(
