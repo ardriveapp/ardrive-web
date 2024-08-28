@@ -16,11 +16,13 @@ class GarRepositoryImpl implements GarRepository {
   final ArioSDK arioSDK;
   final ConfigService configService;
   final ArweaveService arweave;
+  final ArDriveHTTP http;
 
   GarRepositoryImpl({
     required this.arioSDK,
     required this.configService,
     required this.arweave,
+    required this.http,
   });
 
   final List<Gateway> _gateways = [];
@@ -70,8 +72,6 @@ class GarRepositoryImpl implements GarRepository {
   @override
   Future<bool> isGatewayActive(Gateway gateway) async {
     try {
-      final http = ArDriveHTTP();
-
       final response = await http.getAsBytes(
         'https://${gateway.settings.fqdn}',
       );

@@ -5,6 +5,7 @@ import 'package:ardrive/search/search_text_field.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
+import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +22,7 @@ class GatewaySwitcherModal extends StatelessWidget {
           configService: context.read<ConfigService>(),
           arweave: context.read<ArweaveService>(),
           arioSDK: ArioSDKFactory().create(),
+          http: ArDriveHTTP(),
         ),
       )..add(GetGateways()),
       child: _GatewaySwitcherModal(),
