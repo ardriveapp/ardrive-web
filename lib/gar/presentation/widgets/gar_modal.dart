@@ -154,17 +154,45 @@ class _GatewaySwitcherModalState extends State<_GatewaySwitcherModal> {
           );
         }
 
+        if (state is VerifyingGateway) {
+          return const ProgressDialog(
+            title: 'Verifying if gateway is active',
+            useNewArDriveUI: true,
+          );
+        }
+
         if (state is GatewayChanged) {
           return ArDriveStandardModalNew(
-            title: 'Gateway Switcher',
+            title: 'Gateway Changed',
             description:
-                'You have successfully changed the gateway to ${state.gateway.settings.fqdn}!!!',
+                'You have successfully changed the gateway to ${state.gateway.settings.label}!',
             actions: [
               ModalAction(
                 action: () {
                   Navigator.of(context).pop();
                 },
                 title: 'Close',
+              ),
+            ],
+          );
+        }
+
+        if (state is GatewayIsInactive) {
+          return ArDriveStandardModalNew(
+            title: 'Inactive Gateway',
+            description:
+                'The selected gateway is inactive. Please select a different gateway.',
+            actions: [
+              ModalAction(
+                action: () {
+                  final garBloc = context.read<GarBloc>();
+                  garBloc.add(GetGateways());
+
+                  if (_searchController.text.isNotEmpty) {
+                    garBloc.add(SearchGateways(query: _searchController.text));
+                  }
+                },
+                title: 'OK',
               ),
             ],
           );

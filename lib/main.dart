@@ -123,13 +123,12 @@ Future<void> _initializeServices() async {
 
   final config = configService.config;
 
-  logger.d('Initializing app with config: $config');
-
   arweave = ArweaveService(
     Arweave(
-      gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!),
+      gatewayUrl: Uri.parse(config.defaultArweaveGatewayForDataRequest!),
     ),
     ArDriveCrypto(),
+    configService,
   );
   _turboUpload = config.useTurboUpload
       ? TurboUploadService(

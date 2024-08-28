@@ -15,6 +15,7 @@ import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/components/turbo_balance_widget.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/user/download_wallet/download_wallet_modal.dart';
+import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/open_url_utils.dart';
@@ -446,39 +447,49 @@ class _ProfileCardState extends State<ProfileCard> {
   Widget _buildIOTokenRow(BuildContext context, ProfileLoggedIn state) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final ioTokens = context.read<ArDriveAuth>().currentUser.ioTokens;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'IO Tokens',
-            style: typography.paragraphNormal(
-              fontWeight: ArFontWeight.semiBold,
-              color: colorTokens.textHigh,
-            ),
+    return StreamBuilder<User?>(
+      stream: context.read<ArDriveAuth>().onAuthStateChanged(),
+      builder: (context, userSnapshot) {
+        if (!userSnapshot.hasData) {
+          return const SizedBox();
+        }
+
+        final ioTokens = userSnapshot.data!.ioTokens;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'tIO Tokens',
+                style: typography.paragraphNormal(
+                  fontWeight: ArFontWeight.semiBold,
+                  color: colorTokens.textHigh,
+                ),
+              ),
+              if (ioTokens != null)
+                Text(
+                  ioTokens,
+                  style: typography.paragraphNormal(
+                    color: colorTokens.textLow,
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                ),
+              if (ioTokens == null)
+                Text(
+                  'An error occurred while fetching IO tokens',
+                  style: typography.paragraphNormal(
+                    color: colorTokens.textLow,
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                ),
+            ],
           ),
-          if (ioTokens != null)
-            Text(
-              ioTokens,
-              style: typography.paragraphNormal(
-                color: colorTokens.textLow,
-                fontWeight: ArFontWeight.semiBold,
-              ),
-            ),
-          if (ioTokens == null)
-            Text(
-              'An error occurred while fetching IO tokens',
-              style: typography.paragraphNormal(
-                color: colorTokens.textLow,
-                fontWeight: ArFontWeight.semiBold,
-              ),
-            ),
-        ],
-      ),
+        );
+      },
     );
   }
 

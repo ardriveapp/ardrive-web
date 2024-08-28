@@ -30,9 +30,18 @@ class GarBloc extends Bloc<GarEvent, GarState> {
       }
     });
 
-    on<UpdateArweaveGatewayUrl>((event, emit) {
-      garRepository.updateGateway(event.gateway);
-      emit(GatewayChanged(event.gateway));
+    on<UpdateArweaveGatewayUrl>((event, emit) async {
+      emit(VerifyingGateway());
+
+      final isGatewayActive =
+          await garRepository.isGatewayActive(event.gateway);
+
+      if (isGatewayActive) {
+        garRepository.updateGateway(event.gateway);
+        emit(GatewayChanged(event.gateway));
+      } else {
+        emit(const GatewayIsInactive());
+      }
     });
 
     on<SearchGateways>((event, emit) {

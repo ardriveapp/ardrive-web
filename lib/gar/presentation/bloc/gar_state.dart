@@ -50,3 +50,9 @@ class GatewaysLoaded extends GarState {
 class GatewaysError extends GarState {
   const GatewaysError();
 }
+
+class VerifyingGateway extends GarState {}
+
+class GatewayIsInactive extends GarState {
+  const GatewayIsInactive();
+}

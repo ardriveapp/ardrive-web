@@ -1,5 +1,6 @@
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config.dart';
+import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:collection/collection.dart';
 
@@ -8,6 +9,7 @@ abstract class GarRepository {
   List<Gateway> searchGateways(String query);
   Gateway getSelectedGateway();
   void updateGateway(Gateway gateway);
+  Future<bool> isGatewayActive(Gateway gateway);
 }
 
 class GarRepositoryImpl implements GarRepository {
@@ -63,5 +65,19 @@ class GarRepositoryImpl implements GarRepository {
       return settings.fqdn.toLowerCase().contains(lowercaseQuery) ||
           settings.label.toLowerCase().contains(lowercaseQuery);
     }).toList();
+  }
+
+  @override
+  Future<bool> isGatewayActive(Gateway gateway) async {
+    try {
+      final http = ArDriveHTTP();
+
+      final response = await http.getAsBytes(
+        'https://${gateway.settings.fqdn}',
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
   }
 }
