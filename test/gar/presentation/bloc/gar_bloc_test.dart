@@ -79,18 +79,38 @@ void main() {
   );
 
   blocTest<GarBloc, GarState>(
-    'emits [GatewayChanged] when UpdateArweaveGatewayUrl is added',
+    'emits [GatewayChanged] when UpdateArweaveGatewayUrl is added and gateway is active',
     build: () {
-      final gateway = MockGateway();
       when(() => garRepository.updateGateway(gateway)).thenReturn(null);
+      when(() => garRepository.isGatewayActive(gateway))
+          .thenAnswer((_) async => true);
       return garBloc;
     },
     act: (bloc) => bloc.add(UpdateArweaveGatewayUrl(gateway: gateway)),
     expect: () => [
+      isA<VerifyingGateway>(),
       isA<GatewayChanged>(),
     ],
     verify: (_) {
       verify(() => garRepository.updateGateway(gateway)).called(1);
+      verify(() => garRepository.isGatewayActive(gateway)).called(1);
+    },
+  );
+
+  blocTest<GarBloc, GarState>(
+    'emits [GatewayIsInactive] when UpdateArweaveGatewayUrl is added and gateway is inactive',
+    build: () {
+      when(() => garRepository.isGatewayActive(gateway))
+          .thenAnswer((_) async => false);
+      return garBloc;
+    },
+    act: (bloc) => bloc.add(UpdateArweaveGatewayUrl(gateway: gateway)),
+    expect: () => [
+      isA<VerifyingGateway>(),
+      isA<GatewayIsInactive>(),
+    ],
+    verify: (_) {
+      verify(() => garRepository.isGatewayActive(gateway)).called(1);
     },
   );
 
