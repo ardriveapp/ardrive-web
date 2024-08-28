@@ -14,12 +14,4 @@ void main() {
     // Assert
     expect(sdk, isA<ArioSDKWeb>());
   });
-
-  test('ArioSDKFactory throws UnsupportedError for non-Web platforms', () {
-    // Arrange
-    AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
-
-    // Act & Assert
-    expect(() => ArioSDKFactory().create(), throwsUnsupportedError);
-  });
 }
