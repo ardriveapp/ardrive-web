@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
@@ -63,9 +65,29 @@ Future<void> promptToUpload(
   final selectedFiles = <UploadFile>[];
   final io = ArDriveIO();
   IOFolder? ioFolder;
+  Future.delayed(const Duration(milliseconds: 500), () {
+    showArDriveDialog(
+      context,
+      content: const ArDriveStandardModalNew(
+        title: 'Loading...',
+        description:
+            'Getting everything ready... We are fetching your selected files, checking for conflicts, and ensuring all is set for your upload. Please hold on...',
+      ),
+      barrierDismissible: false,
+    );
+  });
+
   if (files == null) {
     if (isFolderUpload) {
       ioFolder = await io.pickFolder();
+      showArDriveDialog(
+        context,
+        content: const ArDriveStandardModal(
+          title: 'Loading...',
+          description: 'We are preparing your upload... Please wait.',
+        ),
+        barrierDismissible: false,
+      );
       final ioFiles = await ioFolder.listFiles();
 
       final isMobilePlatform = AppPlatform.isMobile;
@@ -89,8 +111,8 @@ Future<void> promptToUpload(
       // Open file picker on Web
       final ioFiles = kIsWeb
           ? await io.pickFiles(fileSource: FileSource.fileSystem)
-          // ignore: use_build_context_synchronously
           : await showMultipleFilesFilePickerModal(context);
+
       final uploadFiles = ioFiles
           .map((file) =>
               UploadFile(ioFile: file, parentFolderId: parentFolderId))
@@ -107,7 +129,24 @@ Future<void> promptToUpload(
     }));
   }
 
-  // ignore: use_build_context_synchronously
+  Navigator.pop(context);
+
+  if (selectedFiles.length > 500) {
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    showArDriveDialog(
+      context,
+      content: const ArDriveStandardModalNew(
+        title: 'All set!',
+        description: 'We are ready to start preparing your upload.',
+      ),
+      barrierDismissible: false,
+    );
+
+    await Future.delayed(const Duration(milliseconds: 2000));
+    Navigator.pop(context);
+  }
+
   await showCongestionDependentModalDialog(context, () {
     if (!context.mounted) {
       return;
@@ -443,6 +482,7 @@ class _UploadFormState extends State<UploadForm> {
               );
             } else if (state is UploadPreparationInProgress ||
                 state is UploadPreparationInitialized) {
+              logger.d('UploadPreparationInProgress');
               return ArDriveStandardModal(
                 title: appLocalizationsOf(context).preparingUpload,
                 content: SizedBox(
@@ -450,7 +490,6 @@ class _UploadFormState extends State<UploadForm> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      const CircularProgressIndicator(),
                       const SizedBox(height: 16),
                       if (state is UploadPreparationInProgress &&
                           state.isArConnect)
