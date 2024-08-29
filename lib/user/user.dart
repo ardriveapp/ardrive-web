@@ -71,13 +71,14 @@ class _User implements User {
   });
 
   @override
-  List<Object> get props => [
+  List<Object?> get props => [
         password,
         walletAddress,
         walletBalance,
         cipherKey,
         profileType,
         wallet,
+        ioTokens,
       ];
 
   @override

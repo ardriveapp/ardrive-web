@@ -3,6 +3,8 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,10 +14,13 @@ import '../../test_utils/utils.dart';
 
 class MockTransaction extends Mock implements TransactionCommonMixin {}
 
+class MockArioSDK extends Mock implements ArioSDK {}
+
 void main() {
   late UserRepository userRepository;
   late ArweaveService mockArweaveService;
   late ProfileDao mockProfileDao;
+  late MockArioSDK mockArioSDK;
 
   const rightPassword = 'right-password';
 
@@ -27,10 +32,12 @@ void main() {
   setUp(() {
     mockArweaveService = MockArweaveService();
     mockProfileDao = MockProfileDao();
+    mockArioSDK = MockArioSDK();
 
     userRepository = UserRepository(
       mockProfileDao,
       mockArweaveService,
+      mockArioSDK,
     );
 
     // register fallback values
@@ -231,6 +238,90 @@ void main() {
 
         expect(result, null);
         verify(() => mockProfileDao.getDefaultProfile()).called(1);
+      });
+    });
+
+    group('getIOTokens method', () {
+      test('should return IO tokens when ArioSDK is supported', () async {
+        final wallet = getTestWallet();
+        const expectedIOTokens = '100';
+        final walletAddress = await wallet.getAddress();
+
+        AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
+
+        when(() => mockArioSDK.getIOTokens(walletAddress))
+            .thenAnswer((_) async => expectedIOTokens);
+
+        final result = await userRepository.getIOTokens(wallet);
+
+        expect(result, expectedIOTokens);
+        verify(() => mockArioSDK.getIOTokens(walletAddress)).called(1);
+      });
+
+      test('should return null when ArioSDK is not supported', () async {
+        final wallet = getTestWallet();
+
+        AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
+
+        final result = await userRepository.getIOTokens(wallet);
+
+        expect(result, isNull);
+
+        verifyNever(() => mockArioSDK.getIOTokens(any()));
+      });
+
+      test('should return null when ArioSDK is not supported', () async {
+        final wallet = getTestWallet();
+
+        AppPlatform.setMockPlatform(platform: SystemPlatform.iOS);
+
+        final result = await userRepository.getIOTokens(wallet);
+
+        expect(result, isNull);
+
+        verifyNever(() => mockArioSDK.getIOTokens(any()));
+      });
+    });
+
+    group('getBalance method', () {
+      test('should return the correct balance', () async {
+        final wallet = getTestWallet();
+        final expectedBalance = BigInt.from(100);
+        final walletAddress = await wallet.getAddress();
+
+        when(() => mockArweaveService.getWalletBalance(walletAddress))
+            .thenAnswer((_) async => expectedBalance);
+        when(() => mockArweaveService.getPendingTxFees(walletAddress))
+            .thenAnswer((_) async => BigInt.from(0));
+
+        final result = await userRepository.getBalance(wallet);
+
+        expect(result, expectedBalance);
+        verify(() => mockArweaveService.getWalletBalance(walletAddress))
+            .called(1);
+        verify(() => mockArweaveService.getPendingTxFees(walletAddress))
+            .called(1);
+      });
+
+      test('should return the correct balance when has pending transactions',
+          () async {
+        final wallet = getTestWallet();
+        final expectedBalance = BigInt.from(100);
+        final expectedPendingTxFees = BigInt.from(10);
+        final walletAddress = await wallet.getAddress();
+
+        when(() => mockArweaveService.getWalletBalance(walletAddress))
+            .thenAnswer((_) async => expectedBalance);
+        when(() => mockArweaveService.getPendingTxFees(walletAddress))
+            .thenAnswer((_) async => expectedPendingTxFees);
+
+        final result = await userRepository.getBalance(wallet);
+
+        expect(result, expectedBalance - expectedPendingTxFees);
+        verify(() => mockArweaveService.getWalletBalance(walletAddress))
+            .called(1);
+        verify(() => mockArweaveService.getPendingTxFees(walletAddress))
+            .called(1);
       });
     });
   });

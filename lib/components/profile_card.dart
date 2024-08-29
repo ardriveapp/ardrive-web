@@ -500,7 +500,7 @@ class _ProfileCardState extends State<ProfileCard> {
             ),
           if (ioTokens == null)
             Text(
-              'An error occurred while fetching IO tokens',
+              'Loading...',
               style: typography.paragraphNormal(
                 color: colorTokens.textLow,
                 fontWeight: ArFontWeight.semiBold,

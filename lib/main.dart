@@ -44,6 +44,7 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -391,6 +392,7 @@ class AppState extends State<App> {
           create: (context) => UserRepository(
             context.read<ProfileDao>(),
             context.read<ArweaveService>(),
+            ArioSDKFactory().create(),
           ),
         ),
         RepositoryProvider(

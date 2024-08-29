@@ -140,7 +140,10 @@ void main() {
           when(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
                   maxRetries: any(named: 'maxRetries')))
               .thenAnswer((_) async => 'some_id');
-
+          when(() => mockUserRepository.getIOTokens(wallet))
+              .thenAnswer((_) async => '0.4');
+          when(() => mockUserRepository.getBalance(wallet))
+              .thenAnswer((_) async => BigInt.one);
           when(() => mockBiometricAuthentication.isEnabled())
               .thenAnswer((_) async => false);
 
@@ -222,6 +225,10 @@ void main() {
 
           when(() => mockUserRepository.hasUser())
               .thenAnswer((invocation) => Future.value(true));
+          when(() => mockUserRepository.getIOTokens(wallet))
+              .thenAnswer((_) async => '0.4');
+          when(() => mockUserRepository.getBalance(wallet))
+              .thenAnswer((_) async => BigInt.one);
 
           when(
             () => mockArweaveService.getLatestDriveEntityWithId(
@@ -277,6 +284,11 @@ void main() {
           when(() => mockUserRepository.hasUser())
               .thenAnswer((invocation) => Future.value(true));
 
+          when(() => mockUserRepository.getIOTokens(wallet))
+              .thenAnswer((_) async => '0.4');
+          when(() => mockUserRepository.getBalance(wallet))
+              .thenAnswer((_) async => BigInt.one);
+
           when(() => mockUserRepository.deleteUser())
               .thenAnswer((invocation) async {});
 
@@ -320,6 +332,11 @@ void main() {
 
           when(() => mockUserRepository.deleteUser())
               .thenAnswer((invocation) async {});
+
+          when(() => mockUserRepository.getIOTokens(wallet))
+              .thenAnswer((_) async => '0.4');
+          when(() => mockUserRepository.getBalance(wallet))
+              .thenAnswer((_) async => BigInt.one);
 
           when(() => mockUserRepository.saveUser(
                   'password', ProfileType.json, wallet))
@@ -389,6 +406,11 @@ void main() {
 
           when(() => mockUserRepository.hasUser())
               .thenAnswer((_) async => true);
+
+          when(() => mockUserRepository.getIOTokens(wallet))
+              .thenAnswer((_) async => '0.4');
+          when(() => mockUserRepository.getBalance(wallet))
+              .thenAnswer((_) async => BigInt.one);
 
           when(() => mockUserRepository.getUser('password123'))
               .thenAnswer((invocation) => Future.value(loggedUser));
@@ -491,6 +513,10 @@ void main() {
             .thenAnswer((_) async => false);
         when(() => mockUserRepository.getUser('password'))
             .thenAnswer((invocation) async => unlockedUser);
+        when(() => mockUserRepository.getIOTokens(wallet))
+            .thenAnswer((_) async => '0.4');
+        when(() => mockUserRepository.getBalance(wallet))
+            .thenAnswer((_) async => BigInt.one);
 
         when(() => mockBiometricAuthentication.isEnabled())
             .thenAnswer((_) async => false);
@@ -532,6 +558,11 @@ void main() {
             .thenAnswer((_) async => false);
         when(() => mockUserRepository.hasUser())
             .thenAnswer((invocation) => Future.value(true));
+        when(() => mockUserRepository.getIOTokens(wallet))
+            .thenAnswer((_) async => '0.4');
+        when(() => mockUserRepository.getBalance(wallet))
+            .thenAnswer((_) async => BigInt.one);
+
         when(() => mockUserRepository.getUser('password'))
             .thenAnswer((invocation) async => unlockedUser);
         when(() => mockBiometricAuthentication.isEnabled())
@@ -597,6 +628,11 @@ void main() {
         ).thenAnswer((_) async => 'some_id');
         when(() => mockBiometricAuthentication.isEnabled())
             .thenAnswer((_) async => false);
+        when(() => mockUserRepository.getIOTokens(wallet))
+            .thenAnswer((_) async => '0.4');
+        when(() => mockUserRepository.getBalance(wallet))
+            .thenAnswer((_) async => BigInt.one);
+
         when(
           () => mockArDriveCrypto.deriveDriveKey(
             wallet,
@@ -674,6 +710,11 @@ void main() {
         ).thenAnswer((invocation) => Future.value(SecretKey([])));
         when(() => mockUserRepository.hasUser())
             .thenAnswer((invocation) => Future.value(true));
+        when(() => mockUserRepository.getIOTokens(wallet))
+            .thenAnswer((_) async => '0.4');
+        when(() => mockUserRepository.getBalance(wallet))
+            .thenAnswer((_) async => BigInt.one);
+
         when(
           () => mockArweaveService.getLatestDriveEntityWithId(
             any(),
@@ -773,6 +814,41 @@ void main() {
       final walletAddress = await arDriveAuth.getWalletAddress();
 
       expect(walletAddress, null);
+    });
+
+    group('refreshBalance method', () {
+      test('should update current user balance and notify listeners', () async {
+        // Arrange
+        final initialBalance = BigInt.one;
+        final updatedBalance = BigInt.two;
+        final initialUser = User(
+          password: 'password',
+          wallet: wallet,
+          walletAddress: 'walletAddress',
+          walletBalance: initialBalance,
+          cipherKey: SecretKey([]),
+          profileType: ProfileType.json,
+        );
+        // Updated user with new balance
+        final updatedUser = initialUser.copyWith(walletBalance: updatedBalance);
+
+        arDriveAuth.currentUser = initialUser;
+
+        when(() => mockUserRepository.getBalance(wallet))
+            .thenAnswer((_) async => updatedBalance);
+
+        // Act
+        await arDriveAuth.refreshBalance();
+
+        // Assert
+        expect(arDriveAuth.currentUser.walletBalance, equals(updatedBalance));
+        verify(() => mockUserRepository.getBalance(wallet)).called(1);
+
+        // Verify that listeners are notified
+        arDriveAuth.onAuthStateChanged().listen((user) {
+          expect(user, equals(updatedUser));
+        });
+      });
     });
   });
 }

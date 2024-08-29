@@ -169,6 +169,8 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
       currentUser = await _userRepository.getUser(password);
 
+      _updateBalance();
+
       if (await _biometricAuthentication.isEnabled()) {
         logger.i('Saving password in secure storage');
 
@@ -306,9 +308,18 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
     currentUser = await _userRepository.getUser(password);
 
+    _updateBalance();
+
     _userStreamController.add(_currentUser);
 
     return currentUser;
+  }
+
+  void _updateBalance() {
+    _userRepository.getIOTokens(currentUser.wallet).then(
+        (value) => _currentUser = _currentUser!.copyWith(ioTokens: value));
+    _userRepository.getBalance(currentUser.wallet).then(
+        (value) => _currentUser = _currentUser!.copyWith(walletBalance: value));
   }
 
   Future<void> _saveUser(
