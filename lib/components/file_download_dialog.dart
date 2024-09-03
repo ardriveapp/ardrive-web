@@ -7,7 +7,7 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/download/ardrive_downloader.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
-import 'package:ardrive/pages/pages.dart';
+import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';

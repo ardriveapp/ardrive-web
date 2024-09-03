@@ -1,4 +1,4 @@
-import 'package:ario_sdk/src/models/ant_record.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
 
@@ -8,7 +8,7 @@ part 'undername.g.dart';
 class ARNSUndername extends Equatable {
   final String name;
   final String domain;
-  final AntRecord record;
+  final ARNSRecord record;
 
   const ARNSUndername({
     required this.name,
@@ -21,4 +21,5 @@ class ARNSUndername extends Equatable {
 
   factory ARNSUndername.fromJson(Map<String, dynamic> json) =>
       _$ARNSUndernameFromJson(json);
+  Map<String, dynamic> toJson() => _$ARNSUndernameToJson(this);
 }

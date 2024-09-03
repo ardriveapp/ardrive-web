@@ -7,6 +7,6 @@ ARNSUndername fromJsonDataBase(String json) {
   return ARNSUndername(
     name: map['name'],
     domain: map['domain'],
-    record: AntRecord.fromJson(map['record']),
+    record: ARNSRecord.fromJson(map['record']),
   );
 }

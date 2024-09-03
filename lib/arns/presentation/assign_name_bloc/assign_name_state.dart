@@ -12,8 +12,8 @@ final class AssignNameInitial extends AssignNameState {}
 final class LoadingNames extends AssignNameState {}
 
 final class NamesLoaded extends AssignNameState {
-  final List<ARNSRecord> names;
-  final ARNSRecord? selectedName;
+  final List<ANTRecord> names;
+  final ANTRecord? selectedName;
 
   const NamesLoaded({required this.names, this.selectedName});
 
@@ -21,8 +21,8 @@ final class NamesLoaded extends AssignNameState {
   List<Object?> get props => [names, selectedName];
 
   NamesLoaded copyWith({
-    List<ARNSRecord>? names,
-    ARNSRecord? selectedName,
+    List<ANTRecord>? names,
+    ANTRecord? selectedName,
   }) {
     return NamesLoaded(
       names: names ?? this.names,
@@ -34,8 +34,8 @@ final class NamesLoaded extends AssignNameState {
 final class AssignNameEmptyState extends AssignNameState {}
 
 final class UndernamesLoaded extends AssignNameState {
-  final List<ARNSRecord> names;
-  final ARNSRecord selectedName;
+  final List<ANTRecord> names;
+  final ANTRecord selectedName;
   final List<ARNSUndername> undernames;
   final ARNSUndername? selectedUndername;
 
@@ -55,8 +55,8 @@ final class UndernamesLoaded extends AssignNameState {
       ];
 
   UndernamesLoaded copyWith({
-    List<ARNSRecord>? names,
-    ARNSRecord? selectedName,
+    List<ANTRecord>? names,
+    ANTRecord? selectedName,
     List<ARNSUndername>? undernames,
     ARNSUndername? selectedUndername,
   }) {

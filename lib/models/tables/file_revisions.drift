@@ -30,7 +30,7 @@ CREATE TABLE file_revisions (
 
     isHidden BOOLEAN NOT NULL DEFAULT FALSE,
 
-    antRegistries TEXT,
+    assignedNames TEXT,
 
     PRIMARY KEY (fileId, driveId, dateCreated),
     FOREIGN KEY (licenseTxId) REFERENCES network_transactions(id),

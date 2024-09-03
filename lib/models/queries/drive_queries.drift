@@ -163,9 +163,14 @@ pendingTransactionsForDrive:
         WHERE driveId = :driveId
     );
 
+getFilesWithAssignedNames:
+SELECT * FROM file_entries
+WHERE assignedNames IS NOT NULL;
+
+
 deleteDriveById: DELETE FROM drives WHERE id = :driveId;
 deleteAllDriveRevisionsByDriveId:
-    DELETE FROM drive_revisions
+  DELETE FROM drive_revisions
     WHERE driveId = :driveId;
 deleteFoldersByDriveId:
     DELETE FROM folder_entries

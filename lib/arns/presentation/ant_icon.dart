@@ -1,15 +1,11 @@
-import 'package:ardrive/arns/data/arns_dao.dart';
 import 'package:ardrive/arns/domain/arns_repository.dart';
-import 'package:ardrive/authentication/ardrive_auth.dart';
-import 'package:ardrive/components/tooltip.dart';
-import 'package:ardrive/core/arfs/repository/file_repository.dart';
-import 'package:ardrive/models/database/database.dart';
-import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
+import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 
 class AntIcon extends StatefulWidget {
   const AntIcon({super.key, required this.fileDataTableItem});
@@ -23,40 +19,35 @@ class AntIcon extends StatefulWidget {
 final sdk = ArioSDKFactory().create();
 
 class _AntIconState extends State<AntIcon> {
+  ArnsRecord? undername;
   bool? stillAvailable;
-  ARNSUndername? undername;
 
   @override
   void initState() {
     super.initState();
 
-    checkAvailability();
+    _checkIfStillAvailable();
   }
 
-  Future<void> checkAvailability() async {
-    final arnsRepository = ARNSRepository(
-      sdk: sdk,
-      auth: context.read<ArDriveAuth>(),
-      fileRepository: context.read<FileRepository>(),
-      arnsDao: ARNSDao(context.read<Database>()),
-    );
-    final stillAvailableResult =
-        await arnsRepository.nameIsStillAvailableToFile(
-            widget.fileDataTableItem.fileId, widget.fileDataTableItem.driveId);
+  Future<void> _checkIfStillAvailable() async {
+    final arnsRepository = context.read<ARNSRepository>();
 
-    stillAvailable = stillAvailableResult.$1;
-    undername = stillAvailableResult.$2;
+    final activeARNSRecords = await arnsRepository
+        .getActiveARNSRecordsForFile(widget.fileDataTableItem.fileId);
+
+    if (activeARNSRecords.isNotEmpty) {
+      stillAvailable = true;
+      undername = activeARNSRecords.first;
+    } else {
+      stillAvailable = false;
+    }
 
     setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-    if (stillAvailable == null) {
-      return const SizedBox();
-    }
-
-    if (stillAvailable!) {
+    if (stillAvailable ?? false) {
       return GestureDetector(
         onTap: () {
           String address = '';

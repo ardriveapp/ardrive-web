@@ -22,6 +22,11 @@ extension FileEntryExtensions on FileEntry {
       thumbnail: thumbnail != null && thumbnail != 'null'
           ? Thumbnail.fromJson(jsonDecode(thumbnail!))
           : null,
+      assignedNames: assignedNames != null
+          ? (jsonDecode(assignedNames!)['assignedNames'] as List<dynamic>)
+              .map((e) => e.toString())
+              .toList()
+          : null,
     );
 
     file.customJsonMetadata = parseCustomJsonMetadata(customJsonMetadata);

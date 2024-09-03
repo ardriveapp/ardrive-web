@@ -66,7 +66,6 @@ class ArDriveDockState extends State<ArDriveDock> {
 
 class _DockContent extends StatefulWidget {
   const _DockContent({
-    super.key,
     required this.content,
     this.height,
   });

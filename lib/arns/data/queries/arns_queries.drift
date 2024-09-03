@@ -1,4 +1,33 @@
 import '../../../models/tables/arns_records.drift';
+import '../../../models/tables/ant_records.drift';
 
-fetchRecordById:
-SELECT * FROM arns_records WHERE record_id = :recordId;
+getARNSRecordByName as ARNSRecordQueryResult:
+SELECT * FROM arns_records
+WHERE domain = :domain AND name = :name;
+
+getActiveARNSRecordsForFileId as ARNSRecordQueryResult:
+SELECT * FROM arns_records
+WHERE file_id = :fileId
+  AND is_active = TRUE;
+
+getARNSRecordByDomain as ARNSRecordQueryResult:
+SELECT * FROM arns_records WHERE domain = :domain;
+
+getAllARNSRecords as ARNSRecordQueryResult:
+SELECT * FROM arns_records;
+
+getAllANTRecords as ANTRecordQueryResult:
+SELECT * FROM ant_records;
+
+getANTRecordByDomain as ANTRecordQueryResult:
+SELECT * FROM ant_records WHERE domain = :domain;
+
+getARNSRecordById as ANTRecordQueryResult:
+SELECT * FROM arns_records WHERE id = :id;
+
+getARNSRecordByNameAndFileId
+ as ARNSRecordQueryResult:
+SELECT * FROM arns_records
+WHERE domain = :domain
+  AND name = :name
+  AND file_id = :fileId;

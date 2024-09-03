@@ -370,6 +370,13 @@ class ArweaveService {
             driveKey: driveKey,
             crypto: _crypto,
           );
+
+          if (entity is FileEntity) {
+            if (entity.assignedNames != null) {
+              logger
+                  .d('FileEntity has assigned names: ${entity.assignedNames}');
+            }
+          }
         } else if (entityType == EntityTypeTag.snapshot) {
           // TODO: instantiate entity and add to blockHistory
         }

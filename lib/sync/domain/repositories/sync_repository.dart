@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/drive_entity.dart';
@@ -91,6 +92,7 @@ abstract class SyncRepository {
     required LicenseService licenseService,
     required BatchProcessor batchProcessor,
     required SnapshotValidationService snapshotValidationService,
+    required ARNSRepository arnsRepository,
   }) {
     return _SyncRepository(
       arweave: arweave,
@@ -99,6 +101,7 @@ abstract class SyncRepository {
       licenseService: licenseService,
       batchProcessor: batchProcessor,
       snapshotValidationService: snapshotValidationService,
+      arnsRepository: arnsRepository,
     );
   }
 }
@@ -110,6 +113,7 @@ class _SyncRepository implements SyncRepository {
   final LicenseService _licenseService;
   final BatchProcessor _batchProcessor;
   final SnapshotValidationService _snapshotValidationService;
+  final ARNSRepository _arnsRepository;
 
   final Map<String, GhostFolder> _ghostFolders = {};
   final Set<String> _folderIds = <String>{};
@@ -123,12 +127,14 @@ class _SyncRepository implements SyncRepository {
     required LicenseService licenseService,
     required BatchProcessor batchProcessor,
     required SnapshotValidationService snapshotValidationService,
+    required ARNSRepository arnsRepository,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _configService = configService,
         _licenseService = licenseService,
         _snapshotValidationService = snapshotValidationService,
-        _batchProcessor = batchProcessor;
+        _batchProcessor = batchProcessor,
+        _arnsRepository = arnsRepository;
 
   @override
   Stream<SyncProgress> syncAllDrives({
@@ -138,6 +144,13 @@ class _SyncRepository implements SyncRepository {
     SecretKey? cipherKey,
     Function(String driveId, int txCount)? txFechedCallback,
   }) async* {
+    if (wallet != null) {
+      await _arnsRepository.getAntRecordsForWallet(
+        await wallet.getAddress(),
+        update: true,
+      );
+    }
+
     // Sync the contents of each drive attached in the app.
     final drives = await _driveDao.allDrives().map((d) => d).get();
 
@@ -243,6 +256,7 @@ class _SyncRepository implements SyncRepository {
           .where((file) => metadataTxsFromSnapshots.contains(file.metadataTxId))
           .map((file) => file.dataTxId)
           .toList();
+      await _arnsRepository.saveAllFilesWithAssignedNames();
 
       await Future.wait(
         [
@@ -971,6 +985,10 @@ class _SyncRepository implements SyncRepository {
 
     final newRevisions = <FileRevisionsCompanion>[];
     for (final entity in newEntities) {
+      if (entity.assignedNames != null) {
+        logger.d('Entity has assigned names: ${entity.assignedNames}');
+      }
+
       if (!latestRevisions.containsKey(entity.id) &&
           entity.parentFolderId != null) {
         final revisions = await _driveDao

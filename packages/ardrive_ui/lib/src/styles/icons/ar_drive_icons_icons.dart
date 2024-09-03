@@ -13,6 +13,10 @@
 ///
 ///
 ///
+// ignore_for_file: constant_identifier_names
+
+library;
+
 import 'package:flutter/widgets.dart';
 
 class ArDriveIconsData {

@@ -1,7 +1,6 @@
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/utils/logger.dart';
 
 abstract class FileRepository {
   Future<String> getFilePath(String driveId, String fileId);
@@ -63,14 +62,12 @@ class _FileRepository implements FileRepository {
   }
 
   @override
-  Future<void> updateFile(FileEntry fileEntry) {
-    return _driveDao.writeToFile(fileEntry);
+  Future<void> updateFile(FileEntry fileEntry) async {
+    await _driveDao.writeFileEntity(fileEntry.asEntity());
   }
 
   @override
   Future<void> updateFileRevision(FileEntity fileEntity, String revision) {
-    logger.d('Updating file revision: $revision');
-
     return _driveDao.insertFileRevision(
       fileEntity.toRevisionCompanion(
         performedAction: revision,

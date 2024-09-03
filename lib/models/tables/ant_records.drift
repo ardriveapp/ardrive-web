@@ -1,0 +1,4 @@
+CREATE TABLE ant_records (
+    domain TEXT NOT NULL PRIMARY KEY,
+    process_id TEXT NOT NULL
+);

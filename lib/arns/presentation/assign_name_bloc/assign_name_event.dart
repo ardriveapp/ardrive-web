@@ -10,7 +10,7 @@ sealed class AssignNameEvent extends Equatable {
 final class LoadNames extends AssignNameEvent {}
 
 final class SelectName extends AssignNameEvent {
-  final ARNSRecord name;
+  final ANTRecord name;
   final bool loadUndernames;
 
   const SelectName(this.name, this.loadUndernames);

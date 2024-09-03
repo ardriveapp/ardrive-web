@@ -15,7 +15,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
-import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
+import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/size_constants.dart';
@@ -53,8 +53,8 @@ class DriveExplorerItemTile extends TableRowWidget {
                     softWrap: false,
                   ),
                   if (dataTableItem is FileDataTableItem &&
-                      dataTableItem.antRegistries != null &&
-                      dataTableItem.antRegistries!.isNotEmpty) ...[
+                      dataTableItem.assignedNames != null &&
+                      dataTableItem.assignedNames!.isNotEmpty) ...[
                     const SizedBox(width: 8),
                     Transform(
                         transform: Matrix4.translationValues(0, 2, 0),

@@ -1,4 +1,4 @@
-import { ANT, ArweaveSigner, IO, mIOToken } from '@ar.io/sdk';
+import { ANT, ArNSEventEmitter, ArweaveSigner, IO, mIOToken } from '@ar.io/sdk';
 
 async function getGateways() {
   const io = IO.init();
@@ -54,6 +54,7 @@ window.ario = {
   setAnt,
   getUndernames,
   getARNSRecord,
+  getARNSRecordsForWallet,
 };
 
 
@@ -110,4 +111,49 @@ async function getUndernames(JWKString, processId) {
   return JSON.stringify(records);
 }
 
+async function getARNSRecordsForWallet(address) {
+  try {
+    const jsonResult = await getProcesses(address);
+    console.log('JSON Result:', jsonResult);
+    return jsonResult;
+  } catch (error) {
+    console.error('Failed to fetch processes:', error);
+    throw error;
+  }
+}
+
+async function getProcesses(address) {
+  return new Promise((resolve, reject) => {
+    // Initialize the emitter
+    const arnsEmitter = new ArNSEventEmitter({
+      timeoutMs: 60000, // You can adjust the timeout as needed
+      concurrency: 10, // Adjust concurrency based on your needs
+    });
+
+    // Set up event listeners
+    arnsEmitter.on('progress', (current, total) => {
+      console.log(`Progress: ${current}/${total}`);
+    });
+
+    arnsEmitter.on('process', (processId, processData) => {
+      console.log(`Process ${processId} details:`, processData);
+    });
+
+    arnsEmitter.on('error', (error) => {
+      console.error('Error:', error);
+      reject(error); // Reject the promise if there's an error
+    });
+
+    arnsEmitter.on('end', (result) => {
+      console.log('Completed fetching processes:', result);
+      resolve(JSON.stringify(result)); // Resolve the promise with the JSON stringified result
+    });
+
+    // Fetch processes owned by the wallet
+    arnsEmitter.fetchProcessesOwnedByWallet({
+      address: address,
+      pageSize: 1000, // Adjust pageSize as needed
+    });
+  });
+}
 

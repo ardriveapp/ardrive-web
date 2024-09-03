@@ -4,7 +4,7 @@ import 'package:ardrive/blocs/fs_entry_preview/image_preview_notification.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/pages/pages.dart';
+import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/logger.dart';

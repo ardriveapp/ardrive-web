@@ -22,7 +22,8 @@ part 'database.g.dart';
     '../tables/network_transactions.drift',
     '../tables/profiles.drift',
     '../tables/snapshot_entries.drift',
-    '../tables/arns_records.drift'
+    '../tables/arns_records.drift',
+    '../tables/ant_records.drift',
   },
   daos: [DriveDao, ProfileDao, ARNSDao],
 )
@@ -30,7 +31,7 @@ class Database extends _$Database {
   Database([QueryExecutor? e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 20;
+  int get schemaVersion => 21;
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) {
@@ -118,6 +119,17 @@ class Database extends _$Database {
                 await m.addColumn(fileEntries, fileEntries.thumbnail);
                 await m.addColumn(fileRevisions, fileRevisions.thumbnail);
               }
+            }
+
+            if (from < 21) {
+              // Adding assigned names
+              logger.d('Migrating schema from v20 to v21');
+
+              await m.addColumn(fileRevisions, fileRevisions.assignedNames);
+              await m.addColumn(fileEntries, fileEntries.assignedNames);
+
+              await m.createTable(arnsRecords);
+              await m.createTable(antRecords);
             }
           } catch (e, stacktrace) {
             logger.e(

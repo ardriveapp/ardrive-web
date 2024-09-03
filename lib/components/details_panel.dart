@@ -10,7 +10,6 @@ import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/license_details_popover.dart';
 import 'package:ardrive/components/pin_indicator.dart';
 import 'package:ardrive/components/sizes.dart';
-import 'package:ardrive/components/tooltip.dart';
 import 'package:ardrive/components/truncated_address.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
@@ -21,6 +20,7 @@ import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
+import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -320,8 +320,10 @@ class _DetailsPanelState extends State<DetailsPanel> {
                         ),
                       },
                       if (widget.item is FileDataTableItem &&
+                          (widget.item as FileDataTableItem).assignedNames !=
+                              null &&
                           (widget.item as FileDataTableItem)
-                              .antRegistries!
+                              .assignedNames!
                               .isNotEmpty) ...{
                         AntIcon(
                           fileDataTableItem: widget.item as FileDataTableItem,
@@ -999,7 +1001,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         );
         break;
       case RevisionAction.assignName:
-        title = 'File had name assigned to ${file.name}';
+        title = 'File had name assigned ${file.assignedNames?.last}';
         break;
       case RevisionAction.assertLicense:
         if (licenseState == null) {

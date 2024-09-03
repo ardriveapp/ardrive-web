@@ -1,15 +1,11 @@
 // ignore_for_file: unnecessary_string_escapes, unused_element
 
-import 'package:ardrive/arns/data/arns_dao.dart';
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/arns/presentation/assign_name_bloc/assign_name_bloc.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
-import 'package:ardrive/components/tooltip.dart';
-import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/misc/resources.dart';
-import 'package:ardrive/models/database/database.dart';
-import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
+import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
@@ -46,14 +42,8 @@ class AssignArNSNameModal extends StatelessWidget {
     return BlocProvider(
       create: (context) => AssignNameBloc(
           auth: context.read<ArDriveAuth>(),
-          sdk: ArioSDKFactory().create(),
           fileDataTableItem: file,
-          arnsRepository: ARNSRepository(
-            arnsDao: ARNSDao(context.read<Database>()),
-            auth: context.read<ArDriveAuth>(),
-            fileRepository: context.read<FileRepository>(),
-            sdk: ArioSDKFactory().create(),
-          ))
+          arnsRepository: context.read<ARNSRepository>())
         ..add(
           LoadNames(),
         ),
@@ -111,7 +101,9 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
       },
       builder: (context, state) {
         return ArDriveStandardModalNew(
-          hasCloseButton: state is NamesLoaded || state is UndernamesLoaded,
+          hasCloseButton: state is NamesLoaded ||
+              state is UndernamesLoaded ||
+              state is AssignNameEmptyState,
           title: _getTitle(state),
           width: (state is! NamesLoaded && state is! UndernamesLoaded)
               ? null
@@ -131,7 +123,7 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                     const SizedBox(
                       height: 16,
                     ),
-                    _NameSelectorDropdown<ARNSRecord>(
+                    _NameSelectorDropdown<ANTRecord>(
                       label: 'ArNS name',
                       names: state.names,
                       hintText: 'Choose ArNS name',
@@ -156,8 +148,8 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                           child: LinearProgressIndicator(),
                         );
                       } else if (state is NamesLoaded) {
-                        return _NameSelectorDropdown<ARNSRecord>(
-                          names: state.names,
+                        return _NameSelectorDropdown<ARNSUndername>(
+                          names: const [],
                           label: 'under_name (optional)',
                           hintText: 'Select under_name',
                           onSelected: (name) {},
@@ -183,7 +175,7 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                       const SizedBox(
                         height: 16,
                       ),
-                      _NameSelectorDropdown<ARNSRecord>(
+                      _NameSelectorDropdown<ANTRecord>(
                         selectedName: state.selectedName,
                         label: 'ArNS name',
                         names: state.names,
@@ -464,7 +456,7 @@ class __NameSelectorDropdownState<T> extends State<_NameSelectorDropdown<T>> {
   String _getName(T item) {
     String name;
 
-    if (item is ARNSRecord) {
+    if (item is ANTRecord) {
       name = item.domain;
     } else if (item is ARNSUndername) {
       name = item.name;

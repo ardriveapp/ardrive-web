@@ -8,22 +8,22 @@ import 'dart:js_util';
 
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:ario_sdk/src/exceptions.dart';
+import 'package:ario_sdk/src/models/response_object.dart';
 import 'package:js/js.dart';
 
 class ArioSDKWeb implements ArioSDK {
-  List<Gateway>? _cachedGateways;
+  Set<Gateway>? _cachedGateways;
 
-  List<ARNSRecord> _cachedARNSRecords = [];
-  Map<String, List<ARNSUndername>> _cachedUndernames = {};
+  final Map<String, Set<ARNSUndername>> _cachedUndernames = {};
 
   @override
   Future<List<Gateway>> getGateways() async {
     try {
       if (_cachedGateways != null) {
-        return _cachedGateways!;
+        return _cachedGateways!.toList();
       }
-      _cachedGateways = await getGatewaysList();
-      return _cachedGateways!;
+      _cachedGateways = (await getGatewaysList()).toSet();
+      return _cachedGateways!.toList();
     } catch (e) {
       throw GetGatewaysException(e.toString());
     }
@@ -48,7 +48,7 @@ class ArioSDKWeb implements ArioSDK {
     String undername = '@',
   }) {
     final arnsUndername = ARNSUndername(
-      record: AntRecord(transactionId: txId, ttlSeconds: 3600),
+      record: ARNSRecord(transactionId: txId, ttlSeconds: 3600),
       name: undername,
       domain: domain,
     );
@@ -57,55 +57,27 @@ class ArioSDKWeb implements ArioSDK {
   }
 
   @override
-  Future<ARNSRecord> getARNSRecord(String jwtString, String domain) {
-    return Future.value(
-      ARNSRecord(
-        domain: 'thiago',
-        processId: 'IyjqOErJOwAhVNCaDfDmZAMJHsyYM-vdV-algNqWF1M',
-      ),
-    );
-    // return _getARNSRecordsImpl(jwtString, domain);
+  Future<List<ARNSProcessData>> getAntRecordsForWallet(
+    String address,
+  ) async {
+    final processes = await _getARNSRecordsForWalletImpl(address);
+
+    return processes;
   }
 
   @override
-  Future<List<ARNSRecord>> getARNSRecords(String jwtString) async {
-    if (_cachedARNSRecords.isNotEmpty) {
-      return _cachedARNSRecords;
-    }
-
-    _cachedARNSRecords = await Future.value([
-      ARNSRecord(
-        domain: 'thiago',
-        processId: 'IyjqOErJOwAhVNCaDfDmZAMJHsyYM-vdV-algNqWF1M',
-      ),
-      ARNSRecord(
-        domain: 'thiago2',
-        processId: 'wU3baSpUTh8E-oDI-mLezVsj21WJwuf7ftoXYhHWYbA',
-      ),
-    ]);
-
-    return _cachedARNSRecords;
-  }
-
-  @override
-  Future<List<ARNSUndername>> getUndernames(
-      String jwtString, ARNSRecord record) async {
-    if (_cachedUndernames.containsKey(record.domain) &&
+  Future<List<ARNSUndername>> getUndernames(String jwtString, ANTRecord record,
+      {bool update = false}) async {
+    if (!update &&
+        _cachedUndernames.containsKey(record.domain) &&
         _cachedUndernames[record.domain]!.isNotEmpty) {
-      return _cachedUndernames[record.domain]!;
+      return _cachedUndernames[record.domain]!.toList();
     }
 
     _cachedUndernames[record.domain] =
-        await _getUndernamesImpl(jwtString, record);
+        (await _getUndernamesImpl(jwtString, record)).toSet();
 
-    return _cachedUndernames[record.domain]!;
-  }
-
-  @override
-  Future<void> fetchUndernames(String jwtString, ARNSRecord record) async {
-    _cachedUndernames[record.domain] = [];
-
-    _cachedUndernames[record.domain] = (await getUndernames(jwtString, record));
+    return _cachedUndernames[record.domain]!.toList();
   }
 }
 
@@ -154,22 +126,11 @@ Future<dynamic> _getIOTokensImpl(String address) async {
   return stringified.toString();
 }
 
-@JS('getARNSRecord')
-external Object _getARNSRecord(String jwtString, String domain);
-
-Future<Map<String, dynamic>> _getARNSRecordsImpl(
-    String jwtString, String domain) async {
-  final promise = _getARNSRecord(jwtString, domain);
-  final stringified = await promiseToFuture(promise);
-
-  return jsonDecode(stringified);
-}
-
 @JS('getUndernames')
 external Object _getUndernames(String jwtString, String domain);
 
 Future<List<ARNSUndername>> _getUndernamesImpl(
-    String jwtString, ARNSRecord arnsRecord) async {
+    String jwtString, ANTRecord arnsRecord) async {
   final promise = _getUndernames(jwtString, arnsRecord.processId);
   final stringified = await promiseToFuture(promise);
 
@@ -178,7 +139,7 @@ Future<List<ARNSUndername>> _getUndernamesImpl(
   final undernames = <ARNSUndername>[];
 
   for (var item in jsonParsed.keys) {
-    final antRecord = AntRecord(
+    final antRecord = ARNSRecord(
       transactionId: jsonParsed[item]['transactionId'],
       ttlSeconds: jsonParsed[item]['ttlSeconds'],
     );
@@ -193,4 +154,17 @@ Future<List<ARNSUndername>> _getUndernamesImpl(
   }
 
   return undernames;
+}
+
+@JS('getARNSRecordsForWallet')
+external Object _getARNSRecordsForWallet(String address);
+
+Future<List<ARNSProcessData>> _getARNSRecordsForWalletImpl(
+    String address) async {
+  final promise = _getARNSRecordsForWallet(address);
+  final stringified = await promiseToFuture(promise);
+
+  final object = ResponseObject.fromJson(jsonDecode(stringified));
+
+  return object.data.values.toList();
 }
