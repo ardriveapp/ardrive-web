@@ -1,3 +1,4 @@
+import 'package:ardrive/services/config/selected_gateway.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/models/payment_user_information.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
@@ -58,6 +59,10 @@ void main() {
       initializeStripe(AppConfig(
         stripePublishableKey: 'stripePublishableKey',
         allowedDataItemSizeForTurbo: 100,
+        defaultArweaveGatewayForDataRequest: const SelectedGateway(
+          label: 'Arweave.net',
+          url: 'https://arweave.net',
+        ),
       ));
 
       // assert
@@ -70,14 +75,26 @@ void main() {
       initializeStripe(AppConfig(
         stripePublishableKey: 'stripePublishableKey',
         allowedDataItemSizeForTurbo: 100,
+        defaultArweaveGatewayForDataRequest: const SelectedGateway(
+          label: 'Arweave.net',
+          url: 'https://arweave.net',
+        ),
       ));
       initializeStripe(AppConfig(
         stripePublishableKey: 'stripePublishableKey1',
         allowedDataItemSizeForTurbo: 100,
+        defaultArweaveGatewayForDataRequest: const SelectedGateway(
+          label: 'Arweave.net',
+          url: 'https://arweave.net',
+        ),
       ));
       initializeStripe(AppConfig(
         stripePublishableKey: 'stripePublishableKey2',
         allowedDataItemSizeForTurbo: 100,
+        defaultArweaveGatewayForDataRequest: const SelectedGateway(
+          label: 'Arweave.net',
+          url: 'https://arweave.net',
+        ),
       ));
 
       // assert

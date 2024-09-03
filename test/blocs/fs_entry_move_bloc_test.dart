@@ -1,10 +1,12 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/user/user.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -263,12 +265,15 @@ void main() {
 
       when(() => profileCubit.state).thenReturn(
         ProfileLoggedIn(
-          username: '',
-          password: '123',
-          wallet: wallet,
-          cipherKey: SecretKey(keyBytes),
-          walletAddress: await wallet.getAddress(),
-          walletBalance: BigInt.one,
+          user: User(
+            password: '123',
+            wallet: wallet,
+            cipherKey: SecretKey(keyBytes),
+            walletAddress: await wallet.getAddress(),
+            walletBalance: BigInt.one,
+            profileType: ProfileType.json,
+            ioTokens: 'ioTokens',
+          ),
           useTurbo: false,
         ),
       );

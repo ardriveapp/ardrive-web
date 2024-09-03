@@ -34,6 +34,7 @@ abstract class ArDriveAuth {
   Future<bool> isBiometricsEnabled();
   Future<String?> getWalletAddress();
   String getJWTAsString();
+  Future<void> refreshBalance();
 
   factory ArDriveAuth({
     required ArweaveService arweave,
@@ -359,6 +360,15 @@ class ArDriveAuthImpl implements ArDriveAuth {
     }
 
     return json.encode(_currentUser!.wallet.toJwk());
+  }
+
+  @override
+  Future<void> refreshBalance() async {
+    final balance = await _userRepository.getBalance(currentUser.wallet);
+
+    currentUser = currentUser.copyWith(walletBalance: balance);
+
+    _userStreamController.add(_currentUser);
   }
 }
 

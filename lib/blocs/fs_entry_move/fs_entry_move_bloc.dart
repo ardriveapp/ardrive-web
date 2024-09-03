@@ -179,7 +179,8 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     List<ArDriveDataTableItem> conflictingItems = const [],
     required ProfileLoggedIn profile,
   }) async {
-    final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
+    final driveKey =
+        await _driveDao.getDriveKey(driveId, profile.user.cipherKey);
     final moveTxDataItems = <DataItem>[];
     final isShowingHiddenItems =
         (_driveDetailCubit.state as DriveDetailLoadSuccess)
@@ -230,7 +231,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
         final fileDataItem = await _arweave.prepareEntityDataItem(
           fileEntity,
-          profile.wallet,
+          profile.user.wallet,
           key: fileKey,
         );
 
@@ -257,7 +258,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
         final folderDataItem = await _arweave.prepareEntityDataItem(
           folderEntity,
-          profile.wallet,
+          profile.user.wallet,
           key: driveKey,
         );
 
@@ -279,7 +280,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
       for (var dataItem in moveTxDataItems) {
         await _turboUploadService.postDataItem(
           dataItem: dataItem,
-          wallet: profile.wallet,
+          wallet: profile.user.wallet,
         );
       }
     } else {
@@ -287,7 +288,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
         await DataBundle.fromDataItems(
           items: moveTxDataItems,
         ),
-        profile.wallet,
+        profile.user.wallet,
       );
       await _arweave.postTx(moveTx);
     }

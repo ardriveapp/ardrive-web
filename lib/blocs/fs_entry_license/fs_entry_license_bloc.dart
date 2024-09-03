@@ -248,12 +248,13 @@ class FsEntryLicenseBloc
       params: licenseParams,
     );
 
-    final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
+    final driveKey =
+        await _driveDao.getDriveKey(driveId, profile.user.cipherKey);
 
     final licenseAssertionTxDataItems = <DataItem>[];
     final fileRevisionTxDataItems = <DataItem>[];
 
-    final signer = ArweaveSigner(profile.wallet);
+    final signer = ArweaveSigner(profile.user.wallet);
 
     await _driveDao.transaction(() async {
       for (var file in filesToLicense!) {
@@ -269,9 +270,9 @@ class FsEntryLicenseBloc
           final licenseAssertionEntity = _licenseService.toEntity(
             licenseState: licenseState,
             dataTxId: dataTxId,
-          )..ownerAddress = profile.walletAddress;
+          )..ownerAddress = profile.user.walletAddress;
 
-          final owner = await profile.wallet.getOwner();
+          final owner = await profile.user.wallet.getOwner();
           final appInfo = AppInfoServices().appInfo;
           final licenseAssertionDataItem = await licenseAssertionEntity
               .asPreparedDataItem(owner: owner, appInfo: appInfo);
@@ -300,7 +301,7 @@ class FsEntryLicenseBloc
             : null;
         final fileDataItem = await _arweave.prepareEntityDataItem(
           fileEntity,
-          profile.wallet,
+          profile.user.wallet,
           key: fileKey,
         );
 
@@ -320,7 +321,7 @@ class FsEntryLicenseBloc
       for (var dataItem in dataItems) {
         await _turboUploadService.postDataItem(
           dataItem: dataItem,
-          wallet: profile.wallet,
+          wallet: profile.user.wallet,
         );
       }
     } else {
@@ -328,7 +329,7 @@ class FsEntryLicenseBloc
         await DataBundle.fromDataItems(
           items: dataItems,
         ),
-        profile.wallet,
+        profile.user.wallet,
       );
       await _arweave.postTx(dataBundle);
     }

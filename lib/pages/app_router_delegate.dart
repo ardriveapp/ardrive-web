@@ -113,20 +113,20 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               final showingAnonymousRoute =
                   anonymouslyShowDriveDetail || isViewingSharedFile;
 
-            if (!signingIn &&
-                !gettingStarted &&
-                (!showingAnonymousRoute || state is ProfileLoggingOut)) {
-              signingIn = true;
-              gettingStarted = false;
-              notifyListeners();
-            }
+              if (!signingIn &&
+                  !gettingStarted &&
+                  (!showingAnonymousRoute || state is ProfileLoggingOut)) {
+                signingIn = true;
+                gettingStarted = false;
+                notifyListeners();
+              }
 
-            if (state is ProfileLoggingOut) {
-              driveId = null;
-              driveName = null;
-              sharedDriveKey = null;
-              notifyListeners();
-            }
+              if (state is ProfileLoggingOut) {
+                driveId = null;
+                driveName = null;
+                sharedDriveKey = null;
+                notifyListeners();
+              }
 
               // Redirect the user away from sign in if they are already signed in.
               if ((signingIn || gettingStarted) && state is ProfileLoggedIn) {
@@ -138,7 +138,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               // Cleans up any shared drives from previous sessions
               // TODO: Find a better place to do this
               final lastLoggedInUser =
-                  state is ProfileLoggedIn ? state.walletAddress : null;
+                  state is ProfileLoggedIn ? state.user.walletAddress : null;
               if (lastLoggedInUser != null) {
                 context
                     .read<DriveDao>()

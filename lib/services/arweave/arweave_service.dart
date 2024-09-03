@@ -47,10 +47,12 @@ class ArweaveService {
 
   ArweaveService(
     this.client,
-    this._crypto, {
+    this._crypto,
+    ConfigService configService, {
     ArtemisClient? artemisClient,
   }) : _gql = artemisClient ??
-            ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
+            ArtemisClient(
+                '${configService.config.defaultArweaveGatewayUrl}/graphql') {
     graphQLRetry = GraphQLRetry(
       _gql,
       internetChecker: InternetChecker(

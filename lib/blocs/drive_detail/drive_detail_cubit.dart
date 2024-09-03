@@ -208,7 +208,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 selectedItem: _selectedItem,
                 currentDrive: drive,
                 hasWritePermissions: profile is ProfileLoggedIn &&
-                    drive.ownerAddress == profile.walletAddress,
+                    drive.ownerAddress == profile.user.walletAddress,
                 folderInView: folderContents,
                 contentOrderBy: contentOrderBy,
                 contentOrderingMode: contentOrderingMode,
@@ -230,7 +230,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 selectedItem: _selectedItem,
                 currentDrive: drive,
                 hasWritePermissions: profile is ProfileLoggedIn &&
-                    drive.ownerAddress == profile.walletAddress,
+                    drive.ownerAddress == profile.user.walletAddress,
                 folderInView: folderContents,
                 contentOrderBy: contentOrderBy,
                 contentOrderingMode: contentOrderingMode,

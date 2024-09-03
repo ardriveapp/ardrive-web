@@ -29,7 +29,7 @@ promptToDownloadMultipleFiles(
 
   final profileState = context.read<ProfileCubit>().state;
   final cipherKey =
-      profileState is ProfileLoggedIn ? profileState.cipherKey : null;
+      profileState is ProfileLoggedIn ? profileState.user.cipherKey : null;
 
   showArDriveDialog(
     context,

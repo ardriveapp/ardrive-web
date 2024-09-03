@@ -126,13 +126,12 @@ Future<void> _initializeServices() async {
 
   final config = configService.config;
 
-  logger.d('Initializing app with config: $config');
-
   arweave = ArweaveService(
     Arweave(
-      gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!),
+      gatewayUrl: Uri.parse(config.defaultArweaveGatewayForDataRequest.url),
     ),
     ArDriveCrypto(),
+    configService,
   );
   _turboUpload = config.useTurboUpload
       ? TurboUploadService(
@@ -269,11 +268,11 @@ class AppState extends State<App> {
         ),
         BlocProvider(
           create: (context) => ProfileCubit(
-            arweave: context.read<ArweaveService>(),
             turboUploadService: context.read<TurboUploadService>(),
             profileDao: context.read<ProfileDao>(),
             db: context.read<Database>(),
             tabVisibilitySingleton: TabVisibilitySingleton(),
+            arDriveAuth: context.read<ArDriveAuth>(),
           ),
         ),
         BlocProvider(

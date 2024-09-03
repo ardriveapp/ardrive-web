@@ -16,6 +16,7 @@ abstract class UserRepository {
   );
   Future<void> deleteUser();
   Future<String?> getOwnerOfDefaultProfile();
+  Future<BigInt> getBalance(Wallet wallet);
 
   factory UserRepository(ProfileDao profileDao, ArweaveService arweave) =>
       _UserRepository(
@@ -123,6 +124,18 @@ class _UserRepository implements UserRepository {
       logger.e('Failed to get IO tokens', e, stacktrace);
       return null;
     }
+  }
+
+  @override
+  Future<BigInt> getBalance(Wallet wallet) async {
+    final walletAddress = await wallet.getAddress();
+
+    final walletBalance = await Future.wait([
+      _arweave.getWalletBalance(walletAddress),
+      _arweave.getPendingTxFees(walletAddress),
+    ]).then((res) => res[0] - res[1]);
+
+    return walletBalance;
   }
 }
 

@@ -79,13 +79,62 @@ void main() {
   );
 
   blocTest<GarBloc, GarState>(
-    'emits [GatewayChanged] when UpdateArweaveGatewayUrl is added',
+    'emits [GatewaysError] when GetGateways fails',
     build: () {
-      final gateway = MockGateway();
-      when(() => garRepository.updateGateway(gateway)).thenReturn(null);
+      when(() => garRepository.getGateways()).thenThrow(Exception());
       return garBloc;
     },
-    act: (bloc) => bloc.add(UpdateArweaveGatewayUrl(gateway: gateway)),
+    act: (bloc) => bloc.add(GetGateways()),
+    expect: () => [
+      LoadingGateways(),
+      isA<GatewaysError>(),
+    ],
+    verify: (_) {
+      verify(() => garRepository.getGateways()).called(1);
+    },
+  );
+
+  blocTest<GarBloc, GarState>(
+    'emits [VerifyingGateway, GatewayActive] when SelectGateway is added and gateway is active',
+    build: () {
+      when(() => garRepository.updateGateway(gateway)).thenReturn(null);
+      when(() => garRepository.isGatewayActive(gateway))
+          .thenAnswer((_) async => true);
+      return garBloc;
+    },
+    act: (bloc) => bloc.add(SelectGateway(gateway: gateway)),
+    expect: () => [
+      isA<VerifyingGateway>(),
+      isA<GatewayActive>(),
+    ],
+    verify: (_) {
+      verify(() => garRepository.isGatewayActive(gateway)).called(1);
+    },
+  );
+
+  blocTest<GarBloc, GarState>(
+    'emits [VerifyingGateway, GatewayIsInactive] when SelectGateway is added and gateway is inactive',
+    build: () {
+      when(() => garRepository.isGatewayActive(gateway))
+          .thenAnswer((_) async => false);
+      return garBloc;
+    },
+    act: (bloc) => bloc.add(SelectGateway(gateway: gateway)),
+    expect: () => [
+      isA<VerifyingGateway>(),
+      isA<GatewayIsInactive>(),
+    ],
+    verify: (_) {
+      verify(() => garRepository.isGatewayActive(gateway)).called(1);
+    },
+  );
+
+  blocTest<GarBloc, GarState>(
+    'emits [GatewayChanged] when ConfirmGatewayChange is added',
+    build: () {
+      return garBloc;
+    },
+    act: (bloc) => bloc.add(ConfirmGatewayChange(gateway: gateway)),
     expect: () => [
       isA<GatewayChanged>(),
     ],

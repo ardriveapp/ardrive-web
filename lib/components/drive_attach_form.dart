@@ -23,7 +23,7 @@ Future<void> attachDrive({
 }) {
   final profileState = context.read<ProfileCubit>().state;
   final profileKey =
-      profileState is ProfileLoggedIn ? profileState.cipherKey : null;
+      profileState is ProfileLoggedIn ? profileState.user.cipherKey : null;
   return showModalDialog(
     context,
     () => showArDriveDialog(

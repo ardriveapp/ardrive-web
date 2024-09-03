@@ -32,6 +32,16 @@ abstract class User with EquatableMixin {
         profileType: profileType,
         ioTokens: ioTokens,
       );
+
+  User copyWith({
+    String? password,
+    Wallet? wallet,
+    String? walletAddress,
+    BigInt? walletBalance,
+    SecretKey? cipherKey,
+    ProfileType? profileType,
+    String? ioTokens,
+  });
 }
 
 class _User implements User {
@@ -75,4 +85,25 @@ class _User implements User {
 
   @override
   String toString() => 'User { walletAddress: $walletAddress }';
+
+  @override
+  User copyWith({
+    String? password,
+    Wallet? wallet,
+    String? walletAddress,
+    BigInt? walletBalance,
+    SecretKey? cipherKey,
+    ProfileType? profileType,
+    String? ioTokens,
+  }) {
+    return _User(
+      password: password ?? this.password,
+      wallet: wallet ?? this.wallet,
+      walletAddress: walletAddress ?? this.walletAddress,
+      walletBalance: walletBalance ?? this.walletBalance,
+      cipherKey: cipherKey ?? this.cipherKey,
+      profileType: profileType ?? this.profileType,
+      ioTokens: ioTokens ?? this.ioTokens,
+    );
+  }
 }

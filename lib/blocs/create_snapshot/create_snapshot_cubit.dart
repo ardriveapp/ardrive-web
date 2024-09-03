@@ -117,7 +117,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     late Uint8List data;
     try {
       final profileState = _profileCubit.state as ProfileLoggedIn;
-      _ownerAddress = profileState.walletAddress;
+      _ownerAddress = profileState.user.walletAddress;
 
       _setTrustedRange(range);
 
@@ -254,7 +254,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   @visibleForTesting
   Future<void> prepareTx(bool isArConnectProfile) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
-    final wallet = profile.wallet;
+    final wallet = profile.user.wallet;
 
     try {
       logger.i(
@@ -299,7 +299,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   @visibleForTesting
   Future<void> signTx(bool isArConnectProfile) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
-    final wallet = profile.wallet;
+    final wallet = profile.user.wallet;
     final signer = ArweaveSigner(wallet);
 
     try {
@@ -393,7 +393,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
   Future<void> _computeCost() async {
     final profileState = _profileCubit.state as ProfileLoggedIn;
-    final wallet = profileState.wallet;
+    final wallet = profileState.user.wallet;
 
     UploadCostEstimateCalculatorForAR costCalculatorForAr =
         UploadCostEstimateCalculatorForAR(
@@ -423,7 +423,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
   Future<void> refreshTurboBalance() async {
     final profileState = _profileCubit.state as ProfileLoggedIn;
-    final wallet = profileState.wallet;
+    final wallet = profileState.user.wallet;
 
     /// necessary to wait for backend update the balance
     await Future.delayed(const Duration(seconds: 2));
@@ -468,7 +468,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
   Future<void> _computeBalanceEstimate() async {
     final ProfileLoggedIn profileState = _profileCubit.state as ProfileLoggedIn;
-    final Wallet wallet = profileState.wallet;
+    final Wallet wallet = profileState.user.wallet;
 
     final BigInt turboBalance =
         await turboBalanceRetriever.getBalance(wallet).catchError((e) {
@@ -493,7 +493,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final profileState = _profileCubit.state as ProfileLoggedIn;
 
     bool sufficientBalanceToPayWithAR =
-        profileState.walletBalance >= _costEstimateAr.totalCost;
+        profileState.user.walletBalance >= _costEstimateAr.totalCost;
     bool sufficientBalanceToPayWithTurbo =
         _costEstimateTurbo.totalCost <= _turboBalance;
 
@@ -617,7 +617,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
   Future<void> _postTurboDataItem({required DataItem dataItem}) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
-    final wallet = profile.wallet;
+    final wallet = profile.user.wallet;
 
     logger.d('Posting snapshot transaction to Turbo');
 
