@@ -11,9 +11,8 @@ final class LoadNames extends AssignNameEvent {}
 
 final class SelectName extends AssignNameEvent {
   final ANTRecord name;
-  final bool loadUndernames;
 
-  const SelectName(this.name, this.loadUndernames);
+  const SelectName(this.name);
 
   @override
   List<Object> get props => [name];

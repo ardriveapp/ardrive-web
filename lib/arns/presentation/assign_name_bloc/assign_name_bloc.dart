@@ -93,37 +93,34 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
     on<ConfirmSelection>((event, emit) async {
       try {
         emit(ConfirmingSelection());
-        try {
-          ARNSUndername undername;
 
-          if (_selectedUndername == null) {
-            undername = ARNSUndername(
-              name: '@',
-              record: ARNSRecord(
-                  transactionId: fileDataTableItem.dataTxId, ttlSeconds: 3600),
-              domain: _selectedANTRecord!.domain,
-            );
-          } else {
-            undername = ARNSUndername(
-              name: _selectedUndername!.name,
-              record: ARNSRecord(
-                transactionId: fileDataTableItem.dataTxId,
-                ttlSeconds: 3600,
-              ),
-              domain: _selectedANTRecord!.domain,
-            );
-          }
+        ARNSUndername undername;
 
-          await _arnsRepository.setUndernamesToFile(
-            undername: undername,
-            fileId: fileDataTableItem.fileId,
-            driveId: fileDataTableItem.driveId,
-            processId: _selectedANTRecord!.processId,
+        if (_selectedUndername == null) {
+          undername = ARNSUndername(
+            name: '@',
+            record: ARNSRecord(
+                transactionId: fileDataTableItem.dataTxId, ttlSeconds: 3600),
+            domain: _selectedANTRecord!.domain,
           );
-        } catch (e) {
-          logger.e('Failed to set ARNS', e);
+        } else {
+          undername = ARNSUndername(
+            name: _selectedUndername!.name,
+            record: ARNSRecord(
+              transactionId: fileDataTableItem.dataTxId,
+              ttlSeconds: 3600,
+            ),
+            domain: _selectedANTRecord!.domain,
+          );
         }
-        
+
+        await _arnsRepository.setUndernamesToFile(
+          undername: undername,
+          fileId: fileDataTableItem.fileId,
+          driveId: fileDataTableItem.driveId,
+          processId: _selectedANTRecord!.processId,
+        );
+
         final (address, arAddress) = getAddressesFromArns(
           domain: _selectedANTRecord!.domain,
           undername: _selectedUndername?.name,
