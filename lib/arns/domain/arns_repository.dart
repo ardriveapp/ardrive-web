@@ -6,7 +6,6 @@ import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
-import 'package:ardrive/utils/logger.dart';
 import 'package:ario_sdk/ario_sdk.dart' as sdk;
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:drift/drift.dart';
@@ -218,8 +217,6 @@ class _ARNSRepository implements ARNSRepository {
         _cachedUndernames[record.domain]!.isNotEmpty) {
       return _cachedUndernames[record.domain]!.values.toList();
     }
-
-    logger.d('Getting undernames for record: $record');
 
     final undernames = await _sdk.getUndernames(
       _auth.getJWTAsString(),
