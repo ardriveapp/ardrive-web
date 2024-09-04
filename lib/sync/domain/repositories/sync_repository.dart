@@ -145,10 +145,14 @@ class _SyncRepository implements SyncRepository {
     Function(String driveId, int txCount)? txFechedCallback,
   }) async* {
     if (wallet != null) {
-      await _arnsRepository.getAntRecordsForWallet(
-        await wallet.getAddress(),
-        update: true,
-      );
+      try {
+        await _arnsRepository.getAntRecordsForWallet(
+          await wallet.getAddress(),
+          update: true,
+        );
+      } catch (e) {
+        logger.e('Error getting ANT records for wallet. Continuing...', e);
+      }
     }
 
     // Sync the contents of each drive attached in the app.
