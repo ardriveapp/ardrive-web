@@ -36,6 +36,7 @@ import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
@@ -145,14 +146,14 @@ class _SyncRepository implements SyncRepository {
     Function(String driveId, int txCount)? txFechedCallback,
   }) async* {
     if (wallet != null) {
-      try {
-        await _arnsRepository.getAntRecordsForWallet(
-          await wallet.getAddress(),
-          update: true,
-        );
-      } catch (e) {
+      final address = await wallet.getAddress();
+
+      await _arnsRepository
+          .getAntRecordsForWallet(address, update: true)
+          .catchError((e) {
         logger.e('Error getting ANT records for wallet. Continuing...', e);
-      }
+        return Future.value(<ANTRecord>[]);
+      });
     }
 
     // Sync the contents of each drive attached in the app.

@@ -185,7 +185,7 @@ class _ARNSRepository implements ARNSRepository {
           record: ARNSRecord(
             transactionId: record!.transactionId,
             ttlSeconds: record.ttlSeconds,
-          ),
+        ),
           name: e,
           domain: process.names.keys.first,
         );

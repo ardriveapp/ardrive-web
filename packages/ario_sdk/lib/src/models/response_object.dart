@@ -42,7 +42,7 @@ class ARNSProcessData {
 
 class State {
   final int totalSupply;
-  final String sourceCodeTxId;
+  final String? sourceCodeTxId;
   final Map<String, int> balances;
   final List<String> controllers;
   final Map<String, ARNSRecord> records;
@@ -55,7 +55,7 @@ class State {
 
   State({
     required this.totalSupply,
-    required this.sourceCodeTxId,
+    this.sourceCodeTxId,
     required this.balances,
     required this.controllers,
     required this.records,
@@ -103,7 +103,7 @@ class State {
 }
 
 class ARNSName {
-  final int endTimestamp;
+  final int? endTimestamp;
   final String processId;
   final int startTimestamp;
   final String type;
@@ -111,7 +111,7 @@ class ARNSName {
   final int undernameLimit;
 
   ARNSName({
-    required this.endTimestamp,
+    this.endTimestamp,
     required this.processId,
     required this.startTimestamp,
     required this.type,
