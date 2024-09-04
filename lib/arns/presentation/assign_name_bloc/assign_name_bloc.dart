@@ -1,4 +1,5 @@
 import 'package:ardrive/arns/domain/arns_repository.dart';
+import 'package:ardrive/arns/utils/arns_address_utils.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -122,8 +123,11 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
         } catch (e) {
           logger.e('Failed to set ARNS', e);
         }
-
-        final (address, arAddress) = _getAddresses();
+        
+        final (address, arAddress) = getAddressesFromArns(
+          domain: _selectedANTRecord!.domain,
+          undername: _selectedUndername?.name,
+        );
 
         emit(SelectionConfirmed(
           address: address,
@@ -144,22 +148,5 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
         ),
       );
     });
-  }
-
-  (String, String) _getAddresses() {
-    String address = 'https://';
-    String arAddress = 'ar://';
-
-    if (_selectedUndername != null) {
-      address = '$address${_selectedUndername!.name}_';
-      arAddress = '$arAddress${_selectedUndername!.name}_';
-    }
-
-    address = address + _selectedANTRecord!.domain;
-    arAddress = arAddress + _selectedANTRecord!.domain;
-
-    address = '$address.ar-io.dev';
-
-    return (address, arAddress);
   }
 }

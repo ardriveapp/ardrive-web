@@ -1,4 +1,5 @@
 import 'package:ardrive/arns/domain/arns_repository.dart';
+import 'package:ardrive/arns/utils/arns_address_utils.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/utils/open_url.dart';
@@ -48,26 +49,17 @@ class _AntIconState extends State<AntIcon> {
   @override
   Widget build(BuildContext context) {
     if (stillAvailable ?? false) {
+      final (address, arAddress) = getAddressesFromArns(
+        domain: undername!.domain,
+        undername: undername!.name,
+      );
+
       return GestureDetector(
         onTap: () {
-          String address = '';
-
-          if (undername != null) {
-            if (undername!.name == '@') {
-              address = undername!.domain;
-            } else {
-              address = '${undername!.name}_${undername!.domain}';
-            }
-          }
-
-          address = '$address.ar-io.dev';
-
-          openUrl(
-            url: 'https://$address',
-          );
+          openUrl(url: address);
         },
         child: ArDriveTooltip(
-          message: '${undername?.name ?? '@'}_${undername?.domain}.ar-io.dev',
+          message: arAddress,
           child: ArDriveClickArea(
             child: ArDriveIcons.arnsName(size: 18),
           ),
