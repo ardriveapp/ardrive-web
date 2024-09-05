@@ -14,8 +14,6 @@ async function getGateways() {
       sortBy: 'operatorStake',
     });
 
-    console.log(response);
-
     // Add the retrieved gateways to the array
     allGateways = allGateways.concat(response.items);
 
