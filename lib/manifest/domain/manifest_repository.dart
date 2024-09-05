@@ -142,6 +142,11 @@ class ManifestRepositoryImpl implements ManifestRepository {
         final task = tasks.first;
         final manifestMetadata = task.content!.first as ARFSFileUploadMetadata;
 
+        await saveManifestOnDatabase(
+          manifest: manifestMetadata,
+          existingManifestFileId: params.existingManifestFileId,
+        );
+
         if (undername != null && processId != null) {
           onProgress?.call(CreateManifestUploadProgress.assigningArNS);
           final newUndername = ARNSUndername(
@@ -151,11 +156,6 @@ class ManifestRepositoryImpl implements ManifestRepository {
               transactionId: manifestMetadata.dataTxId!,
               ttlSeconds: undername.record.ttlSeconds,
             ),
-          );
-          
-          await saveManifestOnDatabase(
-            manifest: manifestMetadata,
-            existingManifestFileId: params.existingManifestFileId,
           );
 
           await _arnsRepository.setUndernamesToFile(
