@@ -13,6 +13,7 @@ analyzer:
     - 'scripts/**'
     - 'docs/**'
     - 'drift_schemas/**'
+    - 'packages/ario_sdk/lib/src/models/**'
   language:
     strict-casts: false
     strict-inference: false

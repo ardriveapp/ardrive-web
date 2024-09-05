@@ -148,7 +148,7 @@ class _SyncRepository implements SyncRepository {
     if (wallet != null) {
       final address = await wallet.getAddress();
 
-      await _arnsRepository
+      _arnsRepository
           .getAntRecordsForWallet(address, update: true)
           .catchError((e) {
         logger.e('Error getting ANT records for wallet. Continuing...', e);
@@ -261,6 +261,7 @@ class _SyncRepository implements SyncRepository {
           .where((file) => metadataTxsFromSnapshots.contains(file.metadataTxId))
           .map((file) => file.dataTxId)
           .toList();
+      await _arnsRepository.waitForARNSRecordsToUpdate();
       await _arnsRepository.saveAllFilesWithAssignedNames();
 
       await Future.wait(

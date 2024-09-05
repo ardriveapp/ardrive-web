@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
@@ -10,6 +11,7 @@ import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -26,12 +28,16 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
   final ManifestRepository _manifestRepository;
   final FolderRepository _folderRepository;
+  final ARNSRepository _arnsRepository;
 
   bool _hasPendingFiles = false;
 
   StreamSubscription? _selectedFolderSubscription;
 
   final ArDriveAuth _auth;
+
+  ANTRecord? _selectedAntRecord;
+  ARNSUndername? _selectedUndername;
 
   CreateManifestCubit({
     required ProfileCubit profileCubit,
@@ -40,11 +46,13 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     required FolderRepository folderRepository,
     required ArDriveAuth auth,
     bool hasPendingFiles = false,
+    required ARNSRepository arnsRepository,
   })  : _drive = drive,
         _profileCubit = profileCubit,
         _hasPendingFiles = hasPendingFiles,
         _manifestRepository = manifestRepository,
         _folderRepository = folderRepository,
+        _arnsRepository = arnsRepository,
         _auth = auth,
         super(CreateManifestInitial()) {
     if (_drive.isPrivate) {
@@ -52,6 +60,12 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       // Private manifests need more consideration and are currently unavailable
       emit(CreateManifestPrivacyMismatch());
     }
+
+    // updates the ARNS records
+    _arnsRepository.getAntRecordsForWallet(
+      _auth.currentUser.walletAddress,
+      update: true,
+    );
   }
 
   void selectUploadMethod(
@@ -62,6 +76,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
           uploadMethod: method,
           canUpload: canUpload,
           freeUpload: info.isFreeThanksToTurbo,
+          assignedName: (state as CreateManifestUploadReview).assignedName,
         ),
       );
     }
@@ -148,6 +163,11 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   }
 
   Future<void> checkNameConflicts(String name) async {
+    final arns = await _arnsRepository.getAntRecordsForWallet(
+      _auth.currentUser.walletAddress,
+      update: false,
+    );
+
     final parentFolder =
         (state as CreateManifestCheckingForConflicts).parentFolder;
     await _selectedFolderSubscription?.cancel();
@@ -182,11 +202,15 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       return;
     }
 
-    emit(CreateManifestPreparingManifest(parentFolder: parentFolder));
-
-    await prepareManifestTx(manifestName: name);
-
-    logger.d('No conflicts found');
+    if (arns.isNotEmpty) {
+      emit(CreateManifestPreparingManifestWithARNS(
+          parentFolder: parentFolder, manifestName: name));
+    } else {
+      emit(CreateManifestPreparingManifest(
+        parentFolder: parentFolder,
+      ));
+      await prepareManifestTx(manifestName: name);
+    }
   }
 
   Future<void> prepareManifestTx({
@@ -201,7 +225,12 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
           await _folderRepository.getFolderNode(_drive.id, folderId);
       parentFolder = rootFolderNode.folder;
     } else {
-      parentFolder = (state as CreateManifestPreparingManifest).parentFolder;
+      if (state is CreateManifestPreparingManifestWithARNS) {
+        parentFolder =
+            (state as CreateManifestPreparingManifestWithARNS).parentFolder;
+      } else {
+        parentFolder = (state as CreateManifestPreparingManifest).parentFolder;
+      }
     }
 
     try {
@@ -221,6 +250,9 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
           drive: _drive,
           parentFolder: parentFolder,
           existingManifestFileId: existingManifestFileId,
+          assignedName: _selectedUndername != null
+              ? getLiteralARNSRecordName(_selectedUndername!)
+              : null,
         ),
       );
     } catch (e) {
@@ -243,7 +275,9 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
                 ? UploadType.d2n
                 : UploadType.turbo;
 
-        emit(CreateManifestUploadInProgress());
+        emit(CreateManifestUploadInProgress(
+          progress: CreateManifestUploadProgress.preparingManifest,
+        ));
 
         logger.d(
             'Uploading manifest file with existing manifest file id: ${createManifestUploadReview.existingManifestFileId}');
@@ -258,14 +292,33 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
             uploadType: uploadType,
             wallet: _auth.currentUser.wallet,
           ),
+          processId: _selectedAntRecord?.processId,
+          undername: _selectedUndername,
+          onProgress: (progress) => emit(
+            CreateManifestUploadInProgress(
+              progress: progress,
+            ),
+          ),
         );
 
-        emit(CreateManifestSuccess());
+        emit(CreateManifestSuccess(
+          nameAssignedByArNS: _selectedUndername != null,
+        ));
       } catch (e) {
         logger.e('An error occured uploading the manifest.', e);
         addError(e);
       }
     }
+  }
+
+  void selectArns(ANTRecord? antRecord, ARNSUndername? undername) {
+    _selectedAntRecord = antRecord;
+    _selectedUndername = undername;
+
+    final manifestName =
+        (state as CreateManifestPreparingManifestWithARNS).manifestName;
+
+    prepareManifestTx(manifestName: manifestName);
   }
 
   @override

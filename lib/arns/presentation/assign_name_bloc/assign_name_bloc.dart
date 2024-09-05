@@ -18,7 +18,7 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
 
   AssignNameBloc({
     required ArDriveAuth auth,
-    required FileDataTableItem fileDataTableItem,
+    FileDataTableItem? fileDataTableItem,
     required ARNSRepository arnsRepository,
   })  : _auth = auth,
         _arnsRepository = arnsRepository,
@@ -27,10 +27,13 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
       emit(LoadingNames());
 
       final walletAddress = await _auth.getWalletAddress();
+      if (!event.updateARNSRecords) {
+        await _arnsRepository.waitForARNSRecordsToUpdate();
+      }
 
       final names = await _arnsRepository.getAntRecordsForWallet(
         walletAddress!,
-        update: true,
+        update: event.updateARNSRecords,
       );
 
       if (names.isEmpty) {
@@ -90,10 +93,14 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
       }
     });
 
-    on<ConfirmSelection>((event, emit) async {
+    on<ConfirmSelectionAndUpload>((event, emit) async {
       try {
         emit(ConfirmingSelection());
         try {
+          if (fileDataTableItem == null) {
+            throw StateError('File data table item is null');
+          }
+
           ARNSUndername undername;
 
           if (_selectedUndername == null) {
@@ -123,13 +130,13 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
         } catch (e) {
           logger.e('Failed to set ARNS', e);
         }
-        
+
         final (address, arAddress) = getAddressesFromArns(
           domain: _selectedANTRecord!.domain,
           undername: _selectedUndername?.name,
         );
 
-        emit(SelectionConfirmed(
+        emit(NameAssignedWithSuccess(
           address: address,
           arAddress: arAddress,
         ));
@@ -139,14 +146,11 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
       }
     });
 
-    on<ReviewSelection>((event, emit) async {
-      emit(
-        ReviewingSelection(
-          domain: _selectedANTRecord!.domain,
-          undername: _selectedUndername!,
-          txId: event.txId,
-        ),
-      );
+    on<ConfirmSelection>((event, emit) async {
+      emit(SelectionConfirmed(
+        selectedName: _selectedANTRecord!,
+        selectedUndername: _selectedUndername,
+      ));
     });
   }
 }

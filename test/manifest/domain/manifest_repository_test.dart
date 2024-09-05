@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/core/arfs/utils/arfs_revision_status_utils.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/manifest_data.dart';
@@ -48,7 +49,7 @@ void main() async {
       late IOFile mockManifestFile;
       late MockManifestDataBuilder mockBuilder;
       late ARFSRevisionStatusUtils mockVersionRevisionStatusUtils;
-
+      late MockArnsRepository mockArnsRepository;
       setUp(() {
         mockDriveDao = MockDriveDao();
         mockMetadata = MockARFSFileUploadMetadata();
@@ -57,6 +58,7 @@ void main() async {
         mockFolderRepository = MockFolderRepository();
         mockBuilder = MockManifestDataBuilder();
         mockVersionRevisionStatusUtils = MockARFSVersionRevisionStatusUtils();
+        mockArnsRepository = MockArnsRepository();
 
         registerFallbackValue(FileEntity());
         registerFallbackValue(const FileRevisionsCompanion());
@@ -67,6 +69,7 @@ void main() async {
           mockFolderRepository,
           mockBuilder,
           mockVersionRevisionStatusUtils,
+          mockArnsRepository,
         );
 
         // Setup mock data and behavior
@@ -487,3 +490,5 @@ void main() async {
     },
   );
 }
+
+class MockArnsRepository extends Mock implements ARNSRepository {}

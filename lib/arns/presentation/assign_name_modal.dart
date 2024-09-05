@@ -17,8 +17,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 Future<void> showAssignArNSNameModal(
   BuildContext context, {
-  required FileDataTableItem file,
+  FileDataTableItem? file,
   required DriveDetailCubit driveDetailCubit,
+  bool justSelectName = false,
+  Function(SelectionConfirmed)? onSelectionConfirmed,
+  bool updateARNSRecords = true,
 }) {
   return showArDriveDialog(
     context,
@@ -26,17 +29,29 @@ Future<void> showAssignArNSNameModal(
     content: AssignArNSNameModal(
       file: file,
       driveDetailCubit: driveDetailCubit,
+      justSelectName: justSelectName,
+      onSelectionConfirmed: onSelectionConfirmed,
+      updateARNSRecords: updateARNSRecords,
     ),
   );
 }
 
 class AssignArNSNameModal extends StatelessWidget {
-  const AssignArNSNameModal(
-      {super.key, required this.file, required this.driveDetailCubit});
+  const AssignArNSNameModal({
+    super.key,
+    this.file,
+    required this.driveDetailCubit,
+    required this.justSelectName,
+    this.onSelectionConfirmed,
+    this.updateARNSRecords = true,
+  });
 
-  final FileDataTableItem file;
+  final FileDataTableItem? file;
   final DriveDetailCubit driveDetailCubit;
-
+  final Function(SelectionConfirmed)? onSelectionConfirmed;
+  final bool justSelectName;
+  final bool updateARNSRecords;
+  
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -45,11 +60,13 @@ class AssignArNSNameModal extends StatelessWidget {
           fileDataTableItem: file,
           arnsRepository: context.read<ARNSRepository>())
         ..add(
-          LoadNames(),
+          LoadNames(updateARNSRecords: updateARNSRecords),
         ),
       child: _AssignArNSNameModal(
         file: file,
+        justSelectName: justSelectName,
         driveDetailCubit: driveDetailCubit,
+        onSelectionConfirmed: onSelectionConfirmed,
       ),
     );
   }
@@ -58,14 +75,16 @@ class AssignArNSNameModal extends StatelessWidget {
 class _AssignArNSNameModal extends StatefulWidget {
   const _AssignArNSNameModal({
     super.key,
-    required this.file,
+    this.file,
+    required this.justSelectName,
     required this.driveDetailCubit,
+    this.onSelectionConfirmed,
   });
 
   final DriveDetailCubit driveDetailCubit;
-
-  final FileDataTableItem file;
-
+  final bool justSelectName;
+  final FileDataTableItem? file;
+  final Function(SelectionConfirmed)? onSelectionConfirmed;
   @override
   State<_AssignArNSNameModal> createState() => _AssignArNSNameModalState();
 }
@@ -77,7 +96,7 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
 
     return BlocConsumer<AssignNameBloc, AssignNameState>(
       listener: (previous, current) {
-        if (current is SelectionConfirmed) {
+        if (current is NameAssignedWithSuccess) {
           showArDriveDialog(
             context,
             content: _ArNSAssignmentConfirmationModal(
@@ -90,6 +109,10 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
               },
             ),
           );
+        }
+
+        if (current is SelectionConfirmed) {
+          widget.onSelectionConfirmed?.call(current);
         }
       },
       buildWhen: (previous, current) {
@@ -129,9 +152,7 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                       hintText: 'Choose ArNS name',
                       selectedName: state.selectedName,
                       onSelected: (name) {
-                        context
-                            .read<AssignNameBloc>()
-                            .add(SelectName(name, true));
+                        context.read<AssignNameBloc>().add(SelectName(name));
                         context
                             .read<AssignNameBloc>()
                             .add(const LoadUndernames());
@@ -181,9 +202,7 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                         names: state.names,
                         hintText: 'Choose ArNS name',
                         onSelected: (name) {
-                          context
-                              .read<AssignNameBloc>()
-                              .add(SelectName(name, true));
+                          context.read<AssignNameBloc>().add(SelectName(name));
                           context
                               .read<AssignNameBloc>()
                               .add(const LoadUndernames());
@@ -198,51 +217,13 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                         selectedName: state.selectedUndername,
                         hintText: 'Select undername',
                         onSelected: (name) {
-                          context.read<AssignNameBloc>().add(SelectUndername(
-                              undername: name, txId: widget.file.dataTxId));
+                          context
+                              .read<AssignNameBloc>()
+                              .add(SelectUndername(undername: name));
                         },
                       ),
                     ],
                   ),
-                );
-              } else if (state is ReviewingSelection) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 16),
-                    Text(
-                      'File',
-                      style: typography.heading6(
-                        fontWeight: ArFontWeight.semiBold,
-                      ),
-                    ),
-                    Text(
-                      widget.file.name,
-                      style: typography.paragraphLarge(),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Name:',
-                      style: typography.heading6(
-                        fontWeight: ArFontWeight.semiBold,
-                      ),
-                    ),
-                    Text(
-                      state.domain,
-                      style: typography.paragraphLarge(),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Undernames:',
-                      style: typography.heading6(
-                        fontWeight: ArFontWeight.semiBold,
-                      ),
-                    ),
-                    Text(
-                      state.undername.name,
-                      style: typography.paragraphLarge(),
-                    ),
-                  ],
                 );
               } else if (state is ConfirmingSelection) {
                 return const Center(child: CircularProgressIndicator());
@@ -289,13 +270,18 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
     }
 
     return [
-      if (isButtonEnabled)
+      if (isButtonEnabled) ...[
         ModalAction(
           action: () {
-            context.read<AssignNameBloc>().add(ConfirmSelection());
+            if (widget.justSelectName) {
+              context.read<AssignNameBloc>().add(ConfirmSelection());
+            } else {
+              context.read<AssignNameBloc>().add(ConfirmSelection());
+            }
           },
           title: 'Add',
         ),
+      ]
     ];
   }
 }
