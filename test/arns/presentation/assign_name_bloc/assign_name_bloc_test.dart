@@ -61,7 +61,7 @@ void main() {
             update: true)).thenAnswer((_) async => antRecords);
 
         // Act
-        assignNameBloc.add(LoadNames());
+        assignNameBloc.add(const LoadNames());
 
         // Assert
         await expectLater(
@@ -91,7 +91,7 @@ void main() {
             update: true)).thenAnswer((_) async => antRecords);
 
         // Act
-        assignNameBloc.add(LoadNames());
+        assignNameBloc.add(const LoadNames());
 
         // Assert
         await expectLater(
@@ -315,7 +315,7 @@ void main() {
           return assignNameBloc;
         },
         act: (bloc) {
-          bloc.add(LoadNames());
+          bloc.add(const LoadNames());
           bloc.add(
               SelectName(ANTRecord(domain: 'domain', processId: 'process_id')));
           bloc.add(const LoadUndernames());
