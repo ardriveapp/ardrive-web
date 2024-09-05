@@ -38,7 +38,7 @@ class _AntIconState extends State<AntIcon> {
 
     if (activeARNSRecords.isNotEmpty) {
       stillAvailable = true;
-      undername = activeARNSRecords.first;
+      undername = activeARNSRecords.last;
     } else {
       stillAvailable = false;
     }

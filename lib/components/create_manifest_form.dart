@@ -312,37 +312,18 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
     required BuildContext context,
     required TextStyle textStyle,
   }) {
-    return ArDriveStandardModalNew(
-      width: kMediumDialogWidth,
-      title: 'Assign ArNS Name?',
-      description:
-          'You have ArNS names associated with your address. Do you want to assign one to this new manifest? You can always do this later.',
-      actions: [
-        ModalAction(
-          action: () {
-            context.read<CreateManifestCubit>().selectArns(null, null);
-          },
-          title: 'No',
-        ),
-        ModalAction(
-          action: () async {
-            await showAssignArNSNameModal(
-              context,
-              driveDetailCubit: context.read<DriveDetailCubit>(),
-              justSelectName: true,
-              updateARNSRecords: false,
-              onSelectionConfirmed: (selection) {
-                context.read<CreateManifestCubit>().selectArns(
-                      selection.selectedName,
-                      selection.selectedUndername,
-                    );
-                Navigator.of(context).pop();
-              },
+    return AssignArNSNameModal(
+      driveDetailCubit: context.read<DriveDetailCubit>(),
+      justSelectName: true,
+      updateARNSRecords: false,
+      customLoadingText: 'Fetching ArNS names...',
+      customNameSelectionTitle: 'Assign ArNS Name to New Manifest',
+      onSelectionConfirmed: (selection) {
+        context.read<CreateManifestCubit>().selectArns(
+              selection.selectedName,
+              selection.selectedUndername,
             );
-          },
-          title: 'Yes',
-        ),
-      ],
+      },
     );
   }
 

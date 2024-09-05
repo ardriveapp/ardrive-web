@@ -19,6 +19,7 @@ abstract class ARNSRepository {
     required String processId,
     bool uploadNewRevision = true,
   });
+
   Future<List<sdk.ANTRecord>> getAntRecordsForWallet(String address,
       {bool update = false});
   Future<List<sdk.ARNSUndername>> getARNSUndernames(sdk.ANTRecord record,
@@ -165,7 +166,7 @@ class _ARNSRepository implements ARNSRepository {
     bool update = false,
   }) async {
     if (!update &&
-      lastUpdated != null &&
+        lastUpdated != null &&
         lastUpdated!
             .isAfter(DateTime.now().subtract(const Duration(minutes: 15)))) {
       final allRecords = await _arnsDao.getAllANTRecords().get();
@@ -298,12 +299,13 @@ class _ARNSRepository implements ARNSRepository {
           continue;
         }
 
-        final existentRecord = await _arnsDao
+        final existentRecordResult = await _arnsDao
             .getARNSRecordByNameAndFileId(
                 domain: domain, name: name, fileId: file.id)
-            .getSingleOrNull();
+            .get();
 
-        if (existentRecord != null) {
+        if (existentRecordResult.isNotEmpty) {
+          final existentRecord = existentRecordResult.first;
           await updateARNSRecordsActiveStatus(
             domain: existentRecord.domain,
             name: existentRecord.name,

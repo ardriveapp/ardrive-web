@@ -22,6 +22,8 @@ Future<void> showAssignArNSNameModal(
   bool justSelectName = false,
   Function(SelectionConfirmed)? onSelectionConfirmed,
   bool updateARNSRecords = true,
+  String? customLoadingText,
+  String? customNameSelectionTitle,
 }) {
   return showArDriveDialog(
     context,
@@ -32,6 +34,8 @@ Future<void> showAssignArNSNameModal(
       justSelectName: justSelectName,
       onSelectionConfirmed: onSelectionConfirmed,
       updateARNSRecords: updateARNSRecords,
+      customLoadingText: customLoadingText,
+      customNameSelectionTitle: customNameSelectionTitle,
     ),
   );
 }
@@ -44,6 +48,8 @@ class AssignArNSNameModal extends StatelessWidget {
     required this.justSelectName,
     this.onSelectionConfirmed,
     this.updateARNSRecords = true,
+    this.customLoadingText,
+    this.customNameSelectionTitle,
   });
 
   final FileDataTableItem? file;
@@ -51,7 +57,9 @@ class AssignArNSNameModal extends StatelessWidget {
   final Function(SelectionConfirmed)? onSelectionConfirmed;
   final bool justSelectName;
   final bool updateARNSRecords;
-  
+  final String? customLoadingText;
+  final String? customNameSelectionTitle;
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -67,6 +75,8 @@ class AssignArNSNameModal extends StatelessWidget {
         justSelectName: justSelectName,
         driveDetailCubit: driveDetailCubit,
         onSelectionConfirmed: onSelectionConfirmed,
+        customLoadingText: customLoadingText,
+        customNameSelectionTitle: customNameSelectionTitle,
       ),
     );
   }
@@ -79,12 +89,17 @@ class _AssignArNSNameModal extends StatefulWidget {
     required this.justSelectName,
     required this.driveDetailCubit,
     this.onSelectionConfirmed,
+    this.customLoadingText,
+    this.customNameSelectionTitle,
   });
 
   final DriveDetailCubit driveDetailCubit;
   final bool justSelectName;
   final FileDataTableItem? file;
   final Function(SelectionConfirmed)? onSelectionConfirmed;
+  final String? customLoadingText;
+  final String? customNameSelectionTitle;
+
   @override
   State<_AssignArNSNameModal> createState() => _AssignArNSNameModalState();
 }
@@ -128,13 +143,20 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
               state is UndernamesLoaded ||
               state is AssignNameEmptyState,
           title: _getTitle(state),
-          width: (state is! NamesLoaded && state is! UndernamesLoaded)
+          width: (state is! NamesLoaded &&
+                  state is! UndernamesLoaded &&
+                  state is! LoadingNames)
               ? null
               : kLargeDialogWidth,
           content: Builder(
             builder: (context) {
-              if (state is LoadingNames) {
-                return const Center(child: CircularProgressIndicator());
+              if (state is LoadingNames || state is AssignNameInitial) {
+                return const SizedBox(
+                  height: 275,
+                  child: Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                );
               } else if (state is NamesLoaded) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,11 +266,11 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
     if (state is AssignNameEmptyState) {
       return 'Add ArNS Name';
     } else if (state is LoadingNames) {
-      return 'Loading ArNS names';
+      return widget.customLoadingText ?? 'Loading ArNS names';
     } else if (state is ConfirmingSelection) {
       return 'Assigning ArNS name';
     } else {
-      return 'Assign ArNS Name';
+      return widget.customNameSelectionTitle ?? 'Assign ArNS Name';
     }
   }
 

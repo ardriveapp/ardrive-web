@@ -97,13 +97,30 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     String name,
   ) async {
     final revisionConfirmationState = state as CreateManifestRevisionConfirm;
-    final parentFolder = revisionConfirmationState.parentFolder;
-    final existingManifestFileId =
-        revisionConfirmationState.existingManifestFileId;
 
-    emit(CreateManifestPreparingManifest(parentFolder: parentFolder));
-    await prepareManifestTx(
-        existingManifestFileId: existingManifestFileId, manifestName: name);
+    final arns = await _arnsRepository.getAntRecordsForWallet(
+      _auth.currentUser.walletAddress,
+      update: false,
+    );
+
+    if (arns.isNotEmpty) {
+      emit(
+        CreateManifestPreparingManifestWithARNS(
+          parentFolder: revisionConfirmationState.parentFolder,
+          manifestName: name,
+          existingManifestFileId:
+              revisionConfirmationState.existingManifestFileId,
+        ),
+      );
+    } else {
+      final parentFolder = revisionConfirmationState.parentFolder;
+      final existingManifestFileId =
+          revisionConfirmationState.existingManifestFileId;
+
+      emit(CreateManifestPreparingManifest(parentFolder: parentFolder));
+      await prepareManifestTx(
+          existingManifestFileId: existingManifestFileId, manifestName: name);
+    }
   }
 
   Future<void> loadParentFolder() async {
@@ -225,11 +242,14 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
           await _folderRepository.getFolderNode(_drive.id, folderId);
       parentFolder = rootFolderNode.folder;
     } else {
-      if (state is CreateManifestPreparingManifestWithARNS) {
-        parentFolder =
-            (state as CreateManifestPreparingManifestWithARNS).parentFolder;
-      } else {
-        parentFolder = (state as CreateManifestPreparingManifest).parentFolder;
+      switch (state) {
+        case CreateManifestPreparingManifestWithARNS s:
+          parentFolder = s.parentFolder;
+          existingManifestFileId = s.existingManifestFileId;
+        case CreateManifestPreparingManifest s:
+          parentFolder = s.parentFolder;
+        default:
+          throw StateError('Unexpected state: $state');
       }
     }
 
@@ -241,6 +261,8 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         driveId: _drive.id,
       );
 
+      ARNSUndername? undername = getSelectedUndername();
+
       emit(
         CreateManifestUploadReview(
           manifestSize: await manifestFile.length,
@@ -250,9 +272,8 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
           drive: _drive,
           parentFolder: parentFolder,
           existingManifestFileId: existingManifestFileId,
-          assignedName: _selectedUndername != null
-              ? getLiteralARNSRecordName(_selectedUndername!)
-              : null,
+          assignedName:
+              undername != null ? getLiteralARNSRecordName(undername) : null,
         ),
       );
     } catch (e) {
@@ -293,7 +314,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
             wallet: _auth.currentUser.wallet,
           ),
           processId: _selectedAntRecord?.processId,
-          undername: _selectedUndername,
+          undername: getSelectedUndername(),
           onProgress: (progress) => emit(
             CreateManifestUploadInProgress(
               progress: progress,
@@ -309,6 +330,25 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         addError(e);
       }
     }
+  }
+
+  ARNSUndername? getSelectedUndername() {
+    if (_selectedUndername != null) {
+      return _selectedUndername;
+    }
+
+    if (_selectedAntRecord != null) {
+      return ARNSUndername(
+        name: '@',
+        domain: _selectedAntRecord!.domain,
+        record: ARNSRecord(
+          transactionId: 'to_assign',
+          ttlSeconds: 3600,
+        ),
+      );
+    }
+
+    return null;
   }
 
   void selectArns(ANTRecord? antRecord, ARNSUndername? undername) {

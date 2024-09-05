@@ -78,14 +78,17 @@ class CreateManifestPreparingManifest extends CreateManifestState {
 class CreateManifestPreparingManifestWithARNS extends CreateManifestState {
   final FolderEntry parentFolder;
   final String manifestName;
+  final String? existingManifestFileId;
 
   CreateManifestPreparingManifestWithARNS({
     required this.parentFolder,
     required this.manifestName,
+    this.existingManifestFileId,
   });
 
   @override
-  List<Object> get props => [parentFolder, manifestName];
+  List<Object?> get props =>
+      [parentFolder, manifestName, existingManifestFileId];
 }
 
 class CreateManifestUploadReview extends CreateManifestState {
