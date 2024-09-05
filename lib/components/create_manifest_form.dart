@@ -79,6 +79,7 @@ Future<void> promptToCreateManifest(
               ),
               ARFSRevisionStatusUtils(context.read<FileRepository>()),
               context.read<ARNSRepository>(),
+              context.read<FileRepository>(),
             ),
             arnsRepository: context.read<ARNSRepository>(),
           ),
@@ -217,6 +218,13 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
       } else if (state is CreateManifestFolderLoadSuccess) {
         return _selectFolder(state, context);
       } else if (state is CreateManifestPreparingManifestWithARNS) {
+        if (state.showAssignNameModal) {
+          return _assignArNSNameModal(
+            context: context,
+            textStyle: textStyle,
+          );
+        }
+
         return _createManifestPreparingManifestWithARNS(
           context: context,
           textStyle: textStyle,
@@ -308,7 +316,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
     return folderNode.isEmpty();
   }
 
-  Widget _createManifestPreparingManifestWithARNS({
+  Widget _assignArNSNameModal({
     required BuildContext context,
     required TextStyle textStyle,
   }) {
@@ -324,6 +332,32 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
               selection.selectedUndername,
             );
       },
+    );
+  }
+
+  Widget _createManifestPreparingManifestWithARNS({
+    required BuildContext context,
+    required TextStyle textStyle,
+  }) {
+    return ArDriveStandardModalNew(
+      width: kMediumDialogWidth,
+      title: 'Assign ArNS Name?',
+      description:
+          'You have ArNS names associated with your address. Do you want to assign one to this new manifest? You can always do this later.',
+      actions: [
+        ModalAction(
+          action: () {
+            context.read<CreateManifestCubit>().selectArns(null, null);
+          },
+          title: 'No',
+        ),
+        ModalAction(
+          action: () async {
+            context.read<CreateManifestCubit>().openAssignNameModal();
+          },
+          title: 'Yes',
+        ),
+      ],
     );
   }
 

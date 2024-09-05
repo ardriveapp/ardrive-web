@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
+import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/core/arfs/utils/arfs_revision_status_utils.dart';
 import 'package:ardrive/entities/constants.dart';
@@ -58,6 +59,7 @@ class ManifestRepositoryImpl implements ManifestRepository {
   final ManifestDataBuilder _builder;
   final ARFSRevisionStatusUtils _versionRevisionStatusUtils;
   final ARNSRepository _arnsRepository;
+  final FileRepository _fileRepository;
 
   ManifestRepositoryImpl(
     this._driveDao,
@@ -66,6 +68,7 @@ class ManifestRepositoryImpl implements ManifestRepository {
     this._builder,
     this._versionRevisionStatusUtils,
     this._arnsRepository,
+    this._fileRepository,
   );
 
   @override
@@ -89,18 +92,14 @@ class ManifestRepositoryImpl implements ManifestRepository {
 
       manifestFileEntity.txId = manifest.metadataTxId!;
 
-      await _driveDao.runTransaction(
-        () async {
-          await _driveDao.writeFileEntity(manifestFileEntity);
+      final performedAction = existingManifestFileId == null
+          ? RevisionAction.create
+          : RevisionAction.uploadNewVersion;
 
-          await _driveDao.insertFileRevision(
-            manifestFileEntity.toRevisionCompanion(
-              performedAction: existingManifestFileId == null
-                  ? RevisionAction.create
-                  : RevisionAction.uploadNewVersion,
-            ),
-          );
-        },
+      await _fileRepository.updateFile(manifestFileEntity);
+      await _fileRepository.updateFileRevision(
+        manifestFileEntity,
+        performedAction,
       );
     } catch (e) {
       throw ManifestCreationException(

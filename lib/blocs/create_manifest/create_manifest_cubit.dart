@@ -332,6 +332,21 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     }
   }
 
+  void openAssignNameModal() {
+    emit(
+      CreateManifestPreparingManifestWithARNS(
+        parentFolder:
+            (state as CreateManifestPreparingManifestWithARNS).parentFolder,
+        manifestName:
+            (state as CreateManifestPreparingManifestWithARNS).manifestName,
+        existingManifestFileId:
+            (state as CreateManifestPreparingManifestWithARNS)
+                .existingManifestFileId,
+        showAssignNameModal: true,
+      ),
+    );
+  }
+
   ARNSUndername? getSelectedUndername() {
     if (_selectedUndername != null) {
       return _selectedUndername;

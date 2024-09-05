@@ -11,8 +11,16 @@ abstract class FileRepository {
   );
 
   Future<FileEntry> getFileEntryById(String driveId, String fileId);
-  Future<void> updateFile(FileEntry fileEntry);
+
+  /// Updates a file entry in the database.
+  ///
+  /// This method updates a file entry in the database. It takes a generic
+  /// parameter [T] which can be either a [FileEntry] or a [FileEntity].
+  /// The method then calls the appropriate DAO method to update the file entry.
+  Future<void> updateFile<T>(T fileEntry);
+
   Future<void> updateFileRevision(FileEntity fileEntity, String revision);
+
   Future<FileRevision> getLatestFileRevision(String driveId, String fileId);
 
   factory FileRepository(
@@ -62,8 +70,12 @@ class _FileRepository implements FileRepository {
   }
 
   @override
-  Future<void> updateFile(FileEntry fileEntry) async {
-    await _driveDao.writeFileEntity(fileEntry.asEntity());
+  Future<void> updateFile<T>(T fileEntry) async {
+    if (fileEntry is FileEntry) {
+      await _driveDao.writeFileEntity(fileEntry.asEntity());
+    } else if (fileEntry is FileEntity) {
+      await _driveDao.writeFileEntity(fileEntry);
+    }
   }
 
   @override
