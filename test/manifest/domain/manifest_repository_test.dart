@@ -10,6 +10,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
@@ -62,6 +63,16 @@ void main() async {
 
         registerFallbackValue(FileEntity());
         registerFallbackValue(const FileRevisionsCompanion());
+        registerFallbackValue(
+          ARNSUndername(
+            name: 'undername',
+            domain: 'domain',
+            record: ARNSRecord(
+              transactionId: 'transaction_id',
+              ttlSeconds: 1000,
+            ),
+          ),
+        );
 
         repository = ManifestRepositoryImpl(
           mockDriveDao,
@@ -256,6 +267,118 @@ void main() async {
           verify(() => mockDriveDao.runTransaction(any())).called(1);
           verify(() => mockDriveDao.writeFileEntity(any())).called(1);
           verify(() => mockDriveDao.insertFileRevision(any())).called(1);
+        });
+
+        test(
+            'Successfully uploads and saves manifest using Turbo and Saving a new ARNS record if undername is provided',
+            () async {
+          // TURBO
+          when(() => mockUploadParams.uploadType).thenReturn(UploadType.turbo);
+
+          when(() => mockUploadController.onDone(any()))
+              .thenAnswer((invocation) {
+            final onDone = invocation.positionalArguments.first as Function;
+            onDone([uploadTaskTurbo]);
+          });
+
+          when(() => mockArnsRepository.setUndernamesToFile(
+                undername: any(named: 'undername'),
+                fileId: any(named: 'fileId'),
+                uploadNewRevision: any(named: 'uploadNewRevision'),
+                driveId: any(named: 'driveId'),
+                processId: any(named: 'processId'),
+              )).thenAnswer((_) async {
+            // success
+          });
+
+          await repository.uploadManifest(
+            params: mockUploadParams,
+            processId: 'process_id',
+            undername: ARNSUndername(
+              name: 'undername',
+              domain: 'domain',
+              record: ARNSRecord(
+                transactionId: 'transaction_id',
+                ttlSeconds: 1000,
+              ),
+            ),
+          );
+          // Verify interactions
+          verify(() => mockUploader.upload(
+                file: mockManifestFile,
+                args: any(named: 'args'),
+                wallet: any(named: 'wallet'),
+
+                /// TURBO
+                type: UploadType.turbo,
+              )).called(1);
+
+          verify(() => mockDriveDao.runTransaction(any())).called(1);
+          verify(() => mockDriveDao.writeFileEntity(any())).called(1);
+          verify(() => mockDriveDao.insertFileRevision(any())).called(1);
+          verify(() => mockArnsRepository.setUndernamesToFile(
+                undername: any(named: 'undername'),
+                fileId: any(named: 'fileId'),
+                uploadNewRevision: any(named: 'uploadNewRevision'),
+                driveId: any(named: 'driveId'),
+                processId: any(named: 'processId'),
+              )).called(1);
+        });
+
+        test(
+            'Successfully uploads and saves manifest using Ar and Saving a new ARNS record if undername is provided',
+            () async {
+          // TURBO
+          when(() => mockUploadParams.uploadType).thenReturn(UploadType.d2n);
+
+          when(() => mockUploadController.onDone(any()))
+              .thenAnswer((invocation) {
+            final onDone = invocation.positionalArguments.first as Function;
+            onDone([uploadTaskTurbo]);
+          });
+
+          when(() => mockArnsRepository.setUndernamesToFile(
+                undername: any(named: 'undername'),
+                fileId: any(named: 'fileId'),
+                uploadNewRevision: any(named: 'uploadNewRevision'),
+                driveId: any(named: 'driveId'),
+                processId: any(named: 'processId'),
+              )).thenAnswer((_) async {
+            // success
+          });
+
+          await repository.uploadManifest(
+            params: mockUploadParams,
+            processId: 'process_id',
+            undername: ARNSUndername(
+              name: 'undername',
+              domain: 'domain',
+              record: ARNSRecord(
+                transactionId: 'transaction_id',
+                ttlSeconds: 1000,
+              ),
+            ),
+          );
+          // Verify interactions
+          verify(() => mockUploader.upload(
+                file: mockManifestFile,
+                args: any(named: 'args'),
+                wallet: any(named: 'wallet'),
+
+                /// Uploads using AR
+                type: UploadType.d2n,
+              )).called(1);
+
+          verify(() => mockDriveDao.runTransaction(any())).called(1);
+          verify(() => mockDriveDao.writeFileEntity(any())).called(1);
+          verify(() => mockDriveDao.insertFileRevision(any())).called(1);
+          verify(() => mockArnsRepository.setUndernamesToFile(
+                undername: any(named: 'undername'),
+                fileId: any(named: 'fileId'),
+                uploadNewRevision: any(named: 'uploadNewRevision'),
+                driveId: any(named: 'driveId'),
+                processId: any(named: 'processId'),
+              )).called(1);
         });
 
         test('Handles upload failure', () async {
