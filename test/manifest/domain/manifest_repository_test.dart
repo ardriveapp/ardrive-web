@@ -133,9 +133,7 @@ void main() async {
 
       group('uploadManifest', () {
         late FileUploadTask uploadTaskTurbo;
-        late FileUploadTask uploadTaskAR;
         late ARFSUploadMetadataArgs argsTurbo;
-        late ARFSUploadMetadataArgs argsAR;
         setUp(() async {
           mockManifestFile = await IOFileAdapter().fromData(Uint8List(1024),
               name: 'TestManifest', lastModifiedDate: DateTime.now());
@@ -155,15 +153,6 @@ void main() async {
             privacy: DrivePrivacyTag.public,
           );
 
-          argsAR = ARFSUploadMetadataArgs(
-            driveId: 'drive123',
-            parentFolderId: 'folder123',
-            entityId: null,
-            isPrivate: false,
-            type: UploadType.d2n,
-            privacy: DrivePrivacyTag.public,
-          );
-
           when(() => mockUploadParams.manifestFile)
               .thenReturn(mockManifestFile);
 
@@ -179,14 +168,6 @@ void main() async {
             file: mockManifestFile,
             metadata: mockMetadata,
             type: UploadType.turbo,
-            uploadThumbnail: true,
-          );
-
-          uploadTaskAR = FileUploadTask(
-            content: [mockMetadata],
-            file: mockManifestFile,
-            metadata: mockMetadata,
-            type: UploadType.d2n,
             uploadThumbnail: true,
           );
 
