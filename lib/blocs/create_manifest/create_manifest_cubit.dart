@@ -192,11 +192,19 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   Future<void> prepareManifestTx({
     FileID? existingManifestFileId,
     required String manifestName,
+    String? folderId,
   }) async {
-    try {
-      final parentFolder =
-          (state as CreateManifestPreparingManifest).parentFolder;
+    logger.d('Preparing manifest transaction');
+    FolderEntry parentFolder;
+    if (folderId != null) {
+      rootFolderNode =
+          await _folderRepository.getFolderNode(_drive.id, folderId);
+      parentFolder = rootFolderNode.folder;
+    } else {
+      parentFolder = (state as CreateManifestPreparingManifest).parentFolder;
+    }
 
+    try {
       final manifestFile = await _manifestRepository.getManifestFile(
         parentFolder: parentFolder,
         manifestName: manifestName,
@@ -236,6 +244,9 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
                 : UploadType.turbo;
 
         emit(CreateManifestUploadInProgress());
+
+        logger.d(
+            'Uploading manifest file with existing manifest file id: ${createManifestUploadReview.existingManifestFileId}');
 
         await _manifestRepository.uploadManifest(
           params: ManifestUploadParams(

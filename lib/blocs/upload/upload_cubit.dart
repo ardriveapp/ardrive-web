@@ -63,6 +63,14 @@ class UploadCubit extends Cubit<UploadState> {
     _uploadThumbnail = uploadThumbnail;
   }
 
+  void showSettings() {
+    emit((state as UploadReady).copyWith(showSettings: true));
+  }
+
+  void hideSettings() {
+    emit((state as UploadReady).copyWith(showSettings: false));
+  }
+
   void setUploadMethod(
     UploadMethod? method,
     UploadPaymentMethodInfo paymentInfo,
@@ -80,15 +88,17 @@ class UploadCubit extends Cubit<UploadState> {
         isNextButtonEnabled: canUpload,
       ));
     } else if (state is UploadReadyToPrepare) {
-      emit(UploadReady(
-        params: (state as UploadReadyToPrepare).params,
-        paymentInfo: paymentInfo,
-        numberOfFiles: files.length,
-        uploadIsPublic: !_targetDrive.isPrivate,
-        isDragNDrop: isDragNDrop,
-        isNextButtonEnabled: canUpload,
-        isArConnect: (state as UploadReadyToPrepare).isArConnect,
-      ));
+      emit(
+        UploadReady(
+          params: (state as UploadReadyToPrepare).params,
+          paymentInfo: paymentInfo,
+          numberOfFiles: files.length,
+          uploadIsPublic: !_targetDrive.isPrivate,
+          isDragNDrop: isDragNDrop,
+          isNextButtonEnabled: canUpload,
+          isArConnect: (state as UploadReadyToPrepare).isArConnect,
+        ),
+      );
     }
   }
 

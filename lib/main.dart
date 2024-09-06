@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:ardrive/arns/data/arns_dao.dart';
+import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
@@ -44,6 +46,7 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -417,18 +420,6 @@ class AppState extends State<App> {
           create: (_) => LicenseService(),
         ),
         RepositoryProvider(
-          create: (_) => SyncRepository(
-            arweave: arweave,
-            configService: configService,
-            driveDao: _.read<DriveDao>(),
-            licenseService: _.read<LicenseService>(),
-            batchProcessor: BatchProcessor(),
-            snapshotValidationService: SnapshotValidationService(
-              configService: configService,
-            ),
-          ),
-        ),
-        RepositoryProvider(
           create: (_) => FolderRepository(
             _.read<DriveDao>(),
           ),
@@ -439,6 +430,31 @@ class AppState extends State<App> {
             _.read<FolderRepository>(),
           ),
         ),
+        RepositoryProvider(
+          create: (context) => ARNSRepository(
+            sdk: ArioSDKFactory().create(),
+            auth: context.read<ArDriveAuth>(),
+            fileRepository: context.read<FileRepository>(),
+            arnsDao: ARNSDao(context.read<Database>()),
+            driveDao: context.read<DriveDao>(),
+            turboUploadService: context.read<TurboUploadService>(),
+            arweave: context.read<ArweaveService>(),
+          ),
+        ),
+        RepositoryProvider(
+          create: (_) => SyncRepository(
+            arweave: arweave,
+            configService: configService,
+            driveDao: _.read<DriveDao>(),
+            licenseService: _.read<LicenseService>(),
+            batchProcessor: BatchProcessor(),
+            snapshotValidationService: SnapshotValidationService(
+              configService: configService,
+            ),
+            arnsRepository: _.read<ARNSRepository>(),
+          ),
+        ),
+
         RepositoryProvider(
           create: (_) => ArDriveDownloader(
             ardriveIo: ArDriveIO(),
@@ -460,6 +476,7 @@ class AppState extends State<App> {
             pstService: _.read<PstService>(),
           ),
         ),
+
         RepositoryProvider(
           create: (context) => ThumbnailRepository(
             arDriveDownloader: ArDriveDownloader(

@@ -7,6 +7,7 @@ import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/entities/manifest_data.dart';
 import 'package:ardrive/manifest/domain/exceptions.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -20,7 +21,7 @@ abstract class ManifestRepository {
     String? existingManifestFileId,
   });
 
-  Future<void> uploadManifest({
+  Future<String> uploadManifest({
     required ManifestUploadParams params,
   });
 
@@ -32,6 +33,8 @@ abstract class ManifestRepository {
   });
 
   Future<bool> hasPendingFilesOnTargetFolder({required FolderNode folderNode});
+
+  Future<List<FileEntry>> getManifestFilesInFolder({required String folderId});
 
   /// Checks if there is a name conflict with the manifest file.
   /// Returns a tuple with the first value being a boolean indicating if there is a conflict. The second value is the existing manifest file id if there is a conflict.
@@ -98,11 +101,11 @@ class ManifestRepositoryImpl implements ManifestRepository {
   }
 
   @override
-  Future<void> uploadManifest({
+  Future<String> uploadManifest({
     required ManifestUploadParams params,
   }) async {
     try {
-      final completer = Completer<void>();
+      final completer = Completer<String>();
 
       final controller = await _uploader.upload(
         file: params.manifestFile,
@@ -127,12 +130,14 @@ class ManifestRepositoryImpl implements ManifestRepository {
           existingManifestFileId: params.existingManifestFileId,
         );
 
-        completer.complete();
+        completer.complete(manifestMetadata.dataTxId);
       });
 
       controller.onError((err) => completer.completeError(err));
 
-      await completer.future;
+      final result = await completer.future;
+
+      return result;
     } catch (e) {
       throw ManifestCreationException(
         'Failed to upload manifest.',
@@ -221,6 +226,17 @@ class ManifestRepositoryImpl implements ManifestRepository {
         error: e,
       );
     }
+  }
+
+  @override
+  Future<List<FileEntry>> getManifestFilesInFolder(
+      {required String folderId}) async {
+    final files =
+        await _driveDao.manifestInFolder(parentFolderId: folderId).get();
+
+    logger.d('Manifest files in folder: ${files.length}');
+
+    return files;
   }
 }
 

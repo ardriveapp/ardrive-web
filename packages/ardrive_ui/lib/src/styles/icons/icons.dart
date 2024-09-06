@@ -473,4 +473,15 @@ class ArDriveIcons {
         size: size,
         color: color,
       );
+
+  static ArDriveIcon addArnsName({double? size, Color? color}) => ArDriveIcon(
+        icon: ArDriveIconsData.add_arns_name,
+        size: size,
+        color: color,
+      );
+  static ArDriveIcon arnsName({double? size, Color? color}) => ArDriveIcon(
+        icon: ArDriveIconsData.arns_name,
+        size: size,
+        color: color,
+      );
 }

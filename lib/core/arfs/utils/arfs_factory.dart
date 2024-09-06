@@ -58,6 +58,7 @@ class _ARFSFactory implements ARFSFactory {
       id: file.fileId,
       licenseTxId: file.licenseTxId,
       pinnedDataOwnerAddress: file.pinnedDataOwnerAddress,
+      assignedNames: parseAssignedNamesFromString(file.assignedNames),
     );
   }
 
@@ -118,6 +119,7 @@ class _ARFSFactory implements ARFSFactory {
       contentType: fileRevision.dataContentType,
       dataTxId: fileRevision.dataTxId,
       pinnedDataOwnerAddress: fileRevision.pinnedDataOwnerAddress,
+      assignedNames: parseAssignedNamesFromString(fileRevision.assignedNames),
     );
   }
 }
