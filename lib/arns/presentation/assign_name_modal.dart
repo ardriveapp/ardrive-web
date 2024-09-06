@@ -266,9 +266,9 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
     if (state is AssignNameEmptyState) {
       return 'Add ArNS Name';
     } else if (state is LoadingNames) {
-      return widget.customLoadingText ?? 'Loading ArNS names';
+      return widget.customLoadingText ?? 'Loading ArNS Names';
     } else if (state is ConfirmingSelection) {
-      return 'Assigning ArNS name';
+      return 'Assigning ArNS Name';
     } else {
       return widget.customNameSelectionTitle ?? 'Assign ArNS Name';
     }

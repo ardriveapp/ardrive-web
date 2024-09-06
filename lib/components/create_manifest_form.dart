@@ -300,7 +300,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
       case CreateManifestUploadProgress.uploadingManifest:
         return 'Uploading Manifest...';
       case CreateManifestUploadProgress.assigningArNS:
-        return 'Assigning ArNS...';
+        return 'Assigning ArNS Name...';
       case CreateManifestUploadProgress.completed:
         return 'Completed';
     }
@@ -454,7 +454,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
         ),
       ],
       content: SizedBox(
-        height: 250,
+        height: 180,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
