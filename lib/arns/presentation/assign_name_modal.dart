@@ -298,7 +298,7 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
             if (widget.justSelectName) {
               context.read<AssignNameBloc>().add(ConfirmSelection());
             } else {
-              context.read<AssignNameBloc>().add(ConfirmSelection());
+              context.read<AssignNameBloc>().add(ConfirmSelectionAndUpload());
             }
           },
           title: 'Add',
