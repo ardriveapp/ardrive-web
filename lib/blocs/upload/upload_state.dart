@@ -121,7 +121,7 @@ class UploadReady extends UploadState {
     UploadParams? params,
     bool? isArConnect,
     bool? showSettings,
-    bool? hasUndernames,
+    bool? showArnsCheckbox,
     bool? showArnsNameSelection,
   }) {
     return UploadReady(
@@ -132,7 +132,7 @@ class UploadReady extends UploadState {
       params: params ?? this.params,
       isNextButtonEnabled: isNextButtonEnabled ?? this.isNextButtonEnabled,
       numberOfFiles: numberOfFiles ?? this.numberOfFiles,
-      showArnsCheckbox: hasUndernames ?? this.showArnsCheckbox,
+      showArnsCheckbox: showArnsCheckbox ?? this.showArnsCheckbox,
       showArnsNameSelection:
           showArnsNameSelection ?? this.showArnsNameSelection,
     );
