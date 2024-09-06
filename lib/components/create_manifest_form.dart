@@ -679,6 +679,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                   user: context.read<ArDriveAuth>().currentUser,
                   // Theres no thumbnail generation for manifests
                   containsSupportedImageTypeForThumbnailGeneration: false,
+
                 ),
               ),
             ),

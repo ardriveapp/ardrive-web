@@ -93,7 +93,8 @@ class UploadReady extends UploadState {
   final bool uploadIsPublic;
   final int numberOfFiles;
   final UploadParams params;
-  final bool showSettings;
+  final bool showArnsCheckbox;
+  final bool showArnsNameSelection;
 
   final bool isArConnect;
 
@@ -105,7 +106,8 @@ class UploadReady extends UploadState {
     required this.params,
     required this.numberOfFiles,
     required this.isArConnect,
-    this.showSettings = false,
+    required this.showArnsCheckbox,
+    required this.showArnsNameSelection,
   });
 
   // copyWith
@@ -119,6 +121,8 @@ class UploadReady extends UploadState {
     UploadParams? params,
     bool? isArConnect,
     bool? showSettings,
+    bool? hasUndernames,
+    bool? showArnsNameSelection,
   }) {
     return UploadReady(
       isArConnect: isArConnect ?? this.isArConnect,
@@ -128,7 +132,9 @@ class UploadReady extends UploadState {
       params: params ?? this.params,
       isNextButtonEnabled: isNextButtonEnabled ?? this.isNextButtonEnabled,
       numberOfFiles: numberOfFiles ?? this.numberOfFiles,
-      showSettings: showSettings ?? this.showSettings,
+      showArnsCheckbox: hasUndernames ?? this.showArnsCheckbox,
+      showArnsNameSelection:
+          showArnsNameSelection ?? this.showArnsNameSelection,
     );
   }
 
@@ -136,11 +142,20 @@ class UploadReady extends UploadState {
   List<Object?> get props => [
         paymentInfo,
         isNextButtonEnabled,
-        showSettings,
+        showArnsNameSelection,
       ];
 
   @override
   toString() => 'UploadReady { paymentInfo: $paymentInfo }';
+}
+
+class AssigningUndername extends UploadState {
+  final ARNSUndername undername;
+
+  AssigningUndername({required this.undername});
+
+  @override
+  List<Object?> get props => [undername];
 }
 
 /// [UploadConfiguringLicense] means that the upload is ready to be performed but the user is configuring the license.

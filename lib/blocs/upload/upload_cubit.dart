@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
@@ -24,6 +25,7 @@ import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -52,6 +54,7 @@ class UploadCubit extends Cubit<UploadState> {
   final ActivityTracker _activityTracker;
   final LicenseService _licenseService;
   final ConfigService _configService;
+  final ARNSRepository _arnsRepository;
 
   late bool uploadFolders;
   late Drive _targetDrive;
@@ -71,11 +74,25 @@ class UploadCubit extends Cubit<UploadState> {
     emit((state as UploadReady).copyWith(showSettings: false));
   }
 
+  bool showArnsNameSelectionCheckBoxValue = false;
+
+  void changeShowArnsNameSelection(bool showArnsNameSelection) {
+    showArnsNameSelectionCheckBoxValue = showArnsNameSelection;
+  }
+
+  void showArnsNameSelection() {
+    emit((state as UploadReady).copyWith(showArnsNameSelection: true));
+  }
+
+  void hideArnsNameSelection() {
+    emit((state as UploadReady).copyWith(showArnsNameSelection: false));
+  }
+
   void setUploadMethod(
     UploadMethod? method,
     UploadPaymentMethodInfo paymentInfo,
     bool canUpload,
-  ) {
+  ) async {
     logger.d('Upload method set to $method');
     _uploadMethod = method;
 
@@ -88,6 +105,10 @@ class UploadCubit extends Cubit<UploadState> {
         isNextButtonEnabled: canUpload,
       ));
     } else if (state is UploadReadyToPrepare) {
+      final hasUndernames = (await _arnsRepository
+              .getAntRecordsForWallet(_auth.currentUser.walletAddress))
+          .isNotEmpty;
+
       emit(
         UploadReady(
           params: (state as UploadReadyToPrepare).params,
@@ -97,6 +118,8 @@ class UploadCubit extends Cubit<UploadState> {
           isDragNDrop: isDragNDrop,
           isNextButtonEnabled: canUpload,
           isArConnect: (state as UploadReadyToPrepare).isArConnect,
+          showArnsCheckbox: hasUndernames,
+          showArnsNameSelection: false,
         ),
       );
     }
@@ -104,11 +127,15 @@ class UploadCubit extends Cubit<UploadState> {
 
   void initialScreenUpload() {
     if (state is UploadReady) {
-      final readyState = state as UploadReady;
-      startUpload(
-        uploadPlanForAr: readyState.paymentInfo.uploadPlanForAR!,
-        uploadPlanForTurbo: readyState.paymentInfo.uploadPlanForTurbo,
-      );
+      if (showArnsNameSelectionCheckBoxValue) {
+        showArnsNameSelection();
+      } else {
+        final readyState = state as UploadReady;
+        startUpload(
+          uploadPlanForAr: readyState.paymentInfo.uploadPlanForAR!,
+          uploadPlanForTurbo: readyState.paymentInfo.uploadPlanForTurbo,
+        );
+      }
     }
   }
 
@@ -219,6 +246,7 @@ class UploadCubit extends Cubit<UploadState> {
     required ActivityTracker activityTracker,
     required LicenseService licenseService,
     required ConfigService configService,
+    required ARNSRepository arnsRepository,
     this.folder,
     this.uploadFolders = false,
     this.isDragNDrop = false,
@@ -230,12 +258,18 @@ class UploadCubit extends Cubit<UploadState> {
         _activityTracker = activityTracker,
         _licenseService = licenseService,
         _configService = configService,
+        _arnsRepository = arnsRepository,
         _uploadThumbnail = configService.config.uploadThumbnails,
         super(UploadPreparationInProgress());
 
   Future<void> startUploadPreparation({
     bool isRetryingToPayWithTurbo = false,
   }) async {
+    _arnsRepository.getAntRecordsForWallet(
+      _auth.currentUser.walletAddress,
+      update: true,
+    );
+
     files.removeWhere((file) => filesNamesToExclude.contains(file.ioFile.name));
     _targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();
     _targetFolder = await _driveDao
@@ -526,6 +560,27 @@ class UploadCubit extends Cubit<UploadState> {
     }
   }
 
+  ANTRecord? _selectedAntRecord;
+  ARNSUndername? _selectedUndername;
+
+  void selectUndername(ANTRecord? antRecord, ARNSUndername? undername) {
+    _selectedAntRecord = antRecord;
+    _selectedUndername = undername;
+
+    logger.d('Selected undername: $_selectedUndername');
+
+    final readyState = state as UploadReady;
+
+    emit(readyState.copyWith(
+      showArnsNameSelection: false,
+    ));
+
+    startUpload(
+      uploadPlanForAr: readyState.paymentInfo.uploadPlanForAR!,
+      uploadPlanForTurbo: readyState.paymentInfo.uploadPlanForTurbo,
+    );
+  }
+
   bool hasEmittedError = false;
   bool hasEmittedWarning = false;
   bool uploadIsInProgress = false;
@@ -790,6 +845,9 @@ class UploadCubit extends Cubit<UploadState> {
             : UploadType.turbo,
         licenseDefinitionTxId: licenseStateResolved?.meta.licenseDefinitionTxId,
         licenseAdditionalTags: licenseStateResolved?.params?.toAdditionalTags(),
+        assignedName: getSelectedUndername() != null
+            ? getLiteralARNSRecordName(getSelectedUndername()!)
+            : null,
       );
 
       uploadFiles.add((args, file.ioFile));
@@ -840,6 +898,55 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onDone(
       (tasks) async {
+        if (tasks.length == 1) {
+          final task = tasks.first;
+          if (task is FileUploadTask) {
+            final metadata = task.metadata;
+            if (_selectedAntRecord != null || _selectedUndername != null) {
+              final updatedTask = task.copyWith(
+                status: UploadStatus.assigningUndername,
+              );
+
+              emit(
+                UploadInProgressUsingNewUploader(
+                  progress: UploadProgress(
+                    progressInPercentage: 1,
+                    numberOfItems: 1,
+                    numberOfUploadedItems: 1,
+                    tasks: {task.id: updatedTask},
+                    totalSize: task.uploadItem!.size,
+                    totalUploaded: task.uploadItem!.size,
+                    hasUploadInProgress: false,
+                  ),
+                  totalProgress: 1,
+                  controller: uploadController,
+                  equatableBust: UniqueKey(),
+                  uploadMethod: _uploadMethod!,
+                ),
+              );
+
+              final undername = getSelectedUndername()!;
+
+              final newUndername = ARNSUndername(
+                name: undername.name,
+                domain: undername.domain,
+                record: ARNSRecord(
+                  transactionId: metadata.dataTxId!,
+                  ttlSeconds: 3600,
+                ),
+              );
+
+              await _arnsRepository.setUndernamesToFile(
+                undername: newUndername,
+                driveId: _targetDrive.id,
+                fileId: metadata.id,
+                processId: _selectedAntRecord!.processId,
+                uploadNewRevision: false,
+              );
+            }
+          }
+        }
+
         unawaited(_profileCubit.refreshBalance());
 
         logger.i(
@@ -866,6 +973,25 @@ class UploadCubit extends Cubit<UploadState> {
         return;
       }
     }
+  }
+
+  ARNSUndername? getSelectedUndername() {
+    if (_selectedUndername != null) {
+      return _selectedUndername;
+    }
+
+    if (_selectedAntRecord != null) {
+      return ARNSUndername(
+        name: '@',
+        domain: _selectedAntRecord!.domain,
+        record: ARNSRecord(
+          transactionId: 'to_assign',
+          ttlSeconds: 3600,
+        ),
+      );
+    }
+
+    return null;
   }
 
   Future _saveEntityOnDB(UploadTask task) async {
@@ -902,6 +1028,9 @@ class UploadCubit extends Cubit<UploadState> {
             parentFolderId: fileMetadata.parentFolderId,
             size: fileMetadata.size,
             thumbnail: thumbnail,
+            assignedNames: fileMetadata.assignedName != null
+                ? [fileMetadata.assignedName!]
+                : [],
             // TODO: pinnedDataOwnerAddress
           );
 

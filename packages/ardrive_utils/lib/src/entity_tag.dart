@@ -38,6 +38,8 @@ class EntityTag {
   static const arFsPin = 'ArFS-Pin';
 
   static const tipType = 'Tip-Type';
+
+  static const arnsName = 'ArNS-Name';
 }
 
 class ContentTypeTag {
