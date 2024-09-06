@@ -29,6 +29,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pst/pst.dart';
 
 import '../core/upload/uploader_test.dart';
+import '../manifest/domain/manifest_repository_test.dart';
 import '../test_utils/utils.dart';
 import 'drives_cubit_test.dart';
 
@@ -71,6 +72,7 @@ void main() {
   late MockArDriveUploadPreparationManager mockArDriveUploadPreparationManager;
   late MockLicenseService mockLicense;
   late MockConfigService mockConfigService;
+  late MockArnsRepository mockArnsRepository;
 
   const tDriveId = 'drive_id';
   const tRootFolderId = 'root-folder-id';
@@ -190,6 +192,7 @@ void main() {
     mockTurboUploadCostCalculator = MockTurboUploadCostCalculator();
     mockArDriveUploadPreparationManager = MockArDriveUploadPreparationManager();
     mockLicense = MockLicenseService();
+    mockArnsRepository = MockArnsRepository();
     late MockUploadPlan uploadPlan;
 
     // Setup mock drive.
@@ -272,6 +275,7 @@ void main() {
       pst: mockPst,
       licenseService: mockLicense,
       configService: mockConfigService,
+      arnsRepository: mockArnsRepository,
     );
   }
 
@@ -343,6 +347,9 @@ void main() {
           return getUploadCubitInstanceWith(tAllConflictingFiles);
         },
         act: (cubit) async {
+          when(() => mockArnsRepository.getAntRecordsForWallet(any(),
+                  update: any(named: 'update')))
+              .thenAnswer((invocation) => Future.value([]));
           await cubit.startUploadPreparation();
           await cubit.checkConflictingFiles();
         },
