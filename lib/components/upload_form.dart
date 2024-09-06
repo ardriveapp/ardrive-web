@@ -742,133 +742,6 @@ class _UploadFormState extends State<UploadForm> {
               );
             } else if (state is UploadInProgressUsingNewUploader) {
               return _uploadUsingNewUploader(state: state);
-            } else if (state is UploadInProgress) {
-              final numberOfFilesInBundles =
-                  state.uploadPlan.bundleUploadHandles.isNotEmpty
-                      ? state.uploadPlan.bundleUploadHandles
-                          .map((e) => e.numberOfFiles)
-                          .reduce((value, element) => value += element)
-                      : 0;
-              final numberOfV2Files =
-                  state.uploadPlan.fileV2UploadHandles.length;
-
-              final v2Files =
-                  state.uploadPlan.fileV2UploadHandles.values.toList();
-              final bundles = state.uploadPlan.bundleUploadHandles.toList();
-              final files = [...v2Files, ...bundles];
-
-              return ArDriveStandardModalNew(
-                title:
-                    '${appLocalizationsOf(context).uploadingNFiles(numberOfFilesInBundles + numberOfV2Files)} ${(state.progress * 100).toStringAsFixed(2)}%',
-                content: SizedBox(
-                  width: kMediumDialogWidth,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 300),
-                    child: Scrollbar(
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: files.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          if (files[index] is FileV2UploadHandle) {
-                            final file = files[index] as FileV2UploadHandle;
-                            return Column(
-                              children: [
-                                ListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  title: Row(
-                                    children: [
-                                      Text(
-                                        file.entity.name!,
-                                        style: ArDriveTypography.body
-                                            .buttonNormalBold(
-                                          color: ArDriveTheme.of(context)
-                                              .themeData
-                                              .colors
-                                              .themeFgDefault,
-                                        ),
-                                      ),
-                                      Text(
-                                        filesize(file.entity.size),
-                                        style: ArDriveTypography.body
-                                            .buttonNormalBold(
-                                          color: ArDriveTheme.of(context)
-                                              .themeData
-                                              .colors
-                                              .themeFgDefault,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  subtitle: Text(
-                                    '${filesize(file.uploadedSize)}/${filesize(file.size)}',
-                                    style: ArDriveTypography.body
-                                        .buttonNormalRegular(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeFgOnDisabled,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          } else {
-                            final file = files[index] as BundleUploadHandle;
-                            return Column(
-                              children: [
-                                ListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  title: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      for (var fileEntity in file.fileEntities)
-                                        Row(
-                                          children: [
-                                            Text(
-                                              fileEntity.name!,
-                                              style: ArDriveTypography.body
-                                                  .buttonNormalBold(
-                                                color: ArDriveTheme.of(context)
-                                                    .themeData
-                                                    .colors
-                                                    .themeFgDefault,
-                                              ),
-                                            ),
-                                            Text(
-                                              filesize(fileEntity.size),
-                                              style: ArDriveTypography.body
-                                                  .buttonNormalBold(
-                                                color: ArDriveTheme.of(context)
-                                                    .themeData
-                                                    .colors
-                                                    .themeFgDefault,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                    ],
-                                  ),
-                                  subtitle: Text(
-                                    '${filesize(file.uploadedSize)}/${filesize(file.size)}',
-                                    style: ArDriveTypography.body
-                                        .buttonNormalRegular(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeFgOnDisabled,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          }
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              );
             } else if (state is UploadCanceled) {
               return ArDriveStandardModalNew(
                 title: 'Upload canceled',
@@ -1381,127 +1254,6 @@ class _UploadFormState extends State<UploadForm> {
       ),
     );
   }
-
-  Widget _uploadInProgressView(
-      BuildContext context, UploadInProgress state, List<UploadHandle> files) {
-    return Column(
-      children: [
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: 256),
-          child: Scrollbar(
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: files.length,
-              itemBuilder: (BuildContext context, int index) {
-                if (files[index] is FileV2UploadHandle) {
-                  final file = files[index] as FileV2UploadHandle;
-                  return Column(
-                    children: [
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Row(
-                          children: [
-                            Text(
-                              file.entity.name!,
-                              style: ArDriveTypography.body.buttonNormalBold(
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colors
-                                    .themeFgDefault,
-                              ),
-                            ),
-                            Text(
-                              filesize(file.entity.size),
-                              style: ArDriveTypography.body.buttonNormalBold(
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colors
-                                    .themeFgDefault,
-                              ),
-                            ),
-                          ],
-                        ),
-                        subtitle: Text(
-                          '${filesize(file.uploadedSize)}/${filesize(file.size)}',
-                          style: ArDriveTypography.body.buttonNormalRegular(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgOnDisabled,
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                } else {
-                  final file = files[index] as BundleUploadHandle;
-                  return Column(
-                    children: [
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            for (var fileEntity in file.fileEntities)
-                              Row(
-                                children: [
-                                  Text(
-                                    fileEntity.name!,
-                                    style:
-                                        ArDriveTypography.body.buttonNormalBold(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeFgDefault,
-                                    ),
-                                  ),
-                                  Text(
-                                    filesize(fileEntity.size),
-                                    style:
-                                        ArDriveTypography.body.buttonNormalBold(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeFgDefault,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                          ],
-                        ),
-                        subtitle: Text(
-                          '${filesize(file.uploadedSize)}/${filesize(file.size)}',
-                          style: ArDriveTypography.body.buttonNormalRegular(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgOnDisabled,
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                }
-              },
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Color _getUploadStatusColor(
-      BuildContext context, UploadTask uploadStatusColor) {
-    final themeColors = ArDriveTheme.of(context).themeData.colors;
-
-    if (uploadStatusColor.status == UploadStatus.failed) {
-      return themeColors.themeErrorDefault;
-    } else if (uploadStatusColor.progress == 1) {
-      return themeColors.themeSuccessDefault;
-    } else {
-      return themeColors.themeFgDefault;
-    }
-  }
 }
 
 class StatsScreen extends StatefulWidget {
@@ -1611,31 +1363,6 @@ class _StatsScreenState extends State<StatsScreen> {
                               trailing: getIconForContentType(
                                 file.entity.dataContentType ?? '',
                               ),
-                            );
-
-                            return Row(
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    '${file.entity.name!} ',
-                                    style: ArDriveTypography.body.smallBold(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeFgSubtle,
-                                    ),
-                                  ),
-                                ),
-                                Text(
-                                  filesize(file.size),
-                                  style: ArDriveTypography.body.smallRegular(
-                                    color: ArDriveTheme.of(context)
-                                        .themeData
-                                        .colors
-                                        .themeFgMuted,
-                                  ),
-                                ),
-                              ],
                             );
                           } else {
                             final bundle = file as BundleUploadHandle;
@@ -1798,7 +1525,6 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return ArDriveScrollBar(
       child: SingleChildScrollView(child:
           BlocBuilder<UploadCubit, UploadState>(builder: (context, state) {
@@ -2062,8 +1788,7 @@ class _UploadReadyModalState extends State<UploadReadyModal> {
 class CircularProgressWidget extends StatelessWidget {
   final double progress; // progress value from 0 to 100
 
-  const CircularProgressWidget({Key? key, required this.progress})
-      : super(key: key);
+  const CircularProgressWidget({super.key, required this.progress});
 
   @override
   Widget build(BuildContext context) {
