@@ -67,6 +67,10 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
         final undernames =
             await _arnsRepository.getARNSUndernames(_selectedANTRecord!);
 
+        if (undernames.length > 1) {
+          undernames.removeWhere((element) => element.name == '@');
+        }
+
         emit(
           UndernamesLoaded(
             selectedName: _selectedANTRecord!,
