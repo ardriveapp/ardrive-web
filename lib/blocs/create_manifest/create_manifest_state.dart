@@ -67,10 +67,34 @@ class CreateManifestRevisionConfirm extends CreateManifestState {
 class CreateManifestPreparingManifest extends CreateManifestState {
   final FolderEntry parentFolder;
 
-  CreateManifestPreparingManifest({required this.parentFolder});
+  CreateManifestPreparingManifest({
+    required this.parentFolder,
+  });
 
   @override
   List<Object> get props => [parentFolder];
+}
+
+class CreateManifestPreparingManifestWithARNS extends CreateManifestState {
+  final FolderEntry parentFolder;
+  final String manifestName;
+  final String? existingManifestFileId;
+  final bool showAssignNameModal;
+
+  CreateManifestPreparingManifestWithARNS({
+    required this.parentFolder,
+    required this.manifestName,
+    this.existingManifestFileId,
+    this.showAssignNameModal = false,
+  });
+
+  @override
+  List<Object?> get props => [
+        parentFolder,
+        manifestName,
+        existingManifestFileId,
+        showAssignNameModal,
+      ];
 }
 
 class CreateManifestUploadReview extends CreateManifestState {
@@ -84,6 +108,7 @@ class CreateManifestUploadReview extends CreateManifestState {
   final FolderEntry parentFolder;
   final String? existingManifestFileId;
   final bool canUpload;
+  final String? assignedName;
 
   CreateManifestUploadReview({
     required this.manifestSize,
@@ -96,6 +121,7 @@ class CreateManifestUploadReview extends CreateManifestState {
     required this.parentFolder,
     this.existingManifestFileId,
     this.canUpload = false,
+    this.assignedName,
   });
 
   @override
@@ -109,6 +135,7 @@ class CreateManifestUploadReview extends CreateManifestState {
         drive,
         parentFolder,
         existingManifestFileId,
+        assignedName,
       ];
 
   CreateManifestUploadReview copyWith({
@@ -122,6 +149,7 @@ class CreateManifestUploadReview extends CreateManifestState {
     FolderEntry? parentFolder,
     String? existingManifestFileId,
     bool? canUpload,
+    String? assignedName,
   }) {
     return CreateManifestUploadReview(
       manifestSize: manifestSize ?? this.manifestSize,
@@ -136,12 +164,20 @@ class CreateManifestUploadReview extends CreateManifestState {
       existingManifestFileId:
           existingManifestFileId ?? this.existingManifestFileId,
       canUpload: canUpload ?? this.canUpload,
+      assignedName: assignedName ?? this.assignedName,
     );
   }
 }
 
 /// User has confirmed the upload and the manifest transaction upload has started
-class CreateManifestUploadInProgress extends CreateManifestState {}
+class CreateManifestUploadInProgress extends CreateManifestState {
+  final CreateManifestUploadProgress progress;
+
+  CreateManifestUploadInProgress({required this.progress});
+
+  @override
+  List<Object> get props => [progress];
+}
 
 /// Private drive has been detected, create manifest must be aborted
 class CreateManifestPrivacyMismatch extends CreateManifestState {}
@@ -153,4 +189,15 @@ class CreateManifestWalletMismatch extends CreateManifestState {}
 class CreateManifestFailure extends CreateManifestState {}
 
 /// Manifest transaction has been successfully uploaded
-class CreateManifestSuccess extends CreateManifestState {}
+class CreateManifestSuccess extends CreateManifestState {
+  final bool nameAssignedByArNS;
+
+  CreateManifestSuccess({this.nameAssignedByArNS = false});
+}
+
+enum CreateManifestUploadProgress {
+  preparingManifest,
+  uploadingManifest,
+  assigningArNS,
+  completed,
+}

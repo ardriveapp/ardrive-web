@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/arns/data/arns_dao.dart';
@@ -16,7 +17,9 @@ abstract class ARNSRepository {
     required String driveId,
     required String fileId,
     required String processId,
+    bool uploadNewRevision = true,
   });
+
   Future<List<sdk.ANTRecord>> getAntRecordsForWallet(String address,
       {bool update = false});
   Future<List<sdk.ARNSUndername>> getARNSUndernames(sdk.ANTRecord record,
@@ -27,6 +30,7 @@ abstract class ARNSRepository {
   });
   Future<void> saveAllFilesWithAssignedNames();
   Future<List<ArnsRecord>> getActiveARNSRecordsForFile(String fileId);
+  Future<void> waitForARNSRecordsToUpdate();
 
   factory ARNSRepository({
     required ArioSDK sdk,
@@ -81,6 +85,7 @@ class _ARNSRepository implements ARNSRepository {
     required String driveId,
     required String fileId,
     required String processId,
+    bool uploadNewRevision = true,
   }) async {
     await _sdk.setUndername(
       jwtString: _auth.getJWTAsString(),
@@ -104,6 +109,10 @@ class _ARNSRepository implements ARNSRepository {
       domain: undername.domain,
       name: undername.name,
     );
+
+    if (!uploadNewRevision) {
+      return;
+    }
 
     // update file revision with new undernames
     final file = await _fileRepository.getFileEntryById(driveId, fileId);
@@ -149,6 +158,8 @@ class _ARNSRepository implements ARNSRepository {
     }
   }
 
+  Completer<List<sdk.ANTRecord>>? _getARNSUndernamesCompleter;
+
   @override
   Future<List<sdk.ANTRecord>> getAntRecordsForWallet(
     String address, {
@@ -164,6 +175,12 @@ class _ARNSRepository implements ARNSRepository {
           .map((e) => sdk.ANTRecord(domain: e.domain, processId: e.processId))
           .toList();
     }
+
+    if (_getARNSUndernamesCompleter != null) {
+      return _getARNSUndernamesCompleter!.future;
+    }
+
+    _getARNSUndernamesCompleter = Completer();
 
     final processes = await _sdk.getAntRecordsForWallet(address);
 
@@ -185,7 +202,7 @@ class _ARNSRepository implements ARNSRepository {
           record: ARNSRecord(
             transactionId: record!.transactionId,
             ttlSeconds: record.ttlSeconds,
-        ),
+          ),
           name: e,
           domain: process.names.keys.first,
         );
@@ -204,6 +221,9 @@ class _ARNSRepository implements ARNSRepository {
 
     lastUpdated = DateTime.now();
 
+    _getARNSUndernamesCompleter!.complete(records);
+
+    _getARNSUndernamesCompleter = null;
     return records;
   }
 
@@ -279,12 +299,13 @@ class _ARNSRepository implements ARNSRepository {
           continue;
         }
 
-        final existentRecord = await _arnsDao
+        final existentRecordResult = await _arnsDao
             .getARNSRecordByNameAndFileId(
                 domain: domain, name: name, fileId: file.id)
-            .getSingleOrNull();
+            .get();
 
-        if (existentRecord != null) {
+        if (existentRecordResult.isNotEmpty) {
+          final existentRecord = existentRecordResult.first;
           await updateARNSRecordsActiveStatus(
             domain: existentRecord.domain,
             name: existentRecord.name,
@@ -303,6 +324,15 @@ class _ARNSRepository implements ARNSRepository {
         );
       }
     }
+  }
+
+  @override
+  Future<void> waitForARNSRecordsToUpdate() async {
+    if (_getARNSUndernamesCompleter == null) {
+      return;
+    }
+
+    await _getARNSUndernamesCompleter!.future;
   }
 }
 

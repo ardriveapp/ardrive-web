@@ -169,6 +169,7 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata with ARFSUploadData {
     required super.name,
     required super.id,
     required super.isPrivate,
+    this.assignedName,
   });
 
   /// The size of the file in bytes.
@@ -204,6 +205,8 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata with ARFSUploadData {
   // Getter for thumbnailTxId
   List<ThumbnailUploadMetadata>? get thumbnailInfo => _thumbnailInfo;
 
+  String? assignedName;
+
   // Public method to set licenseTxId with validation or additional logic
   void updateLicenseTxId(String licenseTxId) {
     _licenseTxId = licenseTxId;
@@ -232,6 +235,7 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata with ARFSUploadData {
           ],
         },
       if (licenseTxId != null) 'licenseTxId': licenseTxId,
+      if (assignedName != null) 'assignedNames': [assignedName!],
     };
   }
 }

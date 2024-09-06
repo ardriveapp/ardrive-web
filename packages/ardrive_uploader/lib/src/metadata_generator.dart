@@ -86,16 +86,18 @@ class ARFSUploadMetadataGenerator
       );
 
       return ARFSFileUploadMetadata(
-          isPrivate: arguments.isPrivate,
-          size: await file.length,
-          lastModifiedDate: file.lastModifiedDate,
-          dataContentType: file.contentType,
-          driveId: arguments.driveId!,
-          parentFolderId: arguments.parentFolderId!,
-          name: file.name,
-          id: id,
-          licenseDefinitionTxId: arguments.licenseDefinitionTxId,
-          licenseAdditionalTags: arguments.licenseAdditionalTags)
+        isPrivate: arguments.isPrivate,
+        size: await file.length,
+        lastModifiedDate: file.lastModifiedDate,
+        dataContentType: file.contentType,
+        driveId: arguments.driveId!,
+        parentFolderId: arguments.parentFolderId!,
+        name: file.name,
+        id: id,
+        licenseDefinitionTxId: arguments.licenseDefinitionTxId,
+        licenseAdditionalTags: arguments.licenseAdditionalTags,
+        assignedName: arguments.assignedName,
+      )
         ..setDataTags(tags['data-item']!)
         ..setEntityMetadataTags(tags['entity']!);
     } else if (entity is IOFolder) {
@@ -170,6 +172,7 @@ class ARFSUploadMetadataArgs {
   final UploadType type;
   final String? licenseDefinitionTxId;
   final Map<String, String>? licenseAdditionalTags;
+  final String? assignedName;
 
   factory ARFSUploadMetadataArgs.file({
     required String driveId,
@@ -178,6 +181,7 @@ class ARFSUploadMetadataArgs {
     required UploadType type,
     String? entityId,
     Map<String, String>? customBundleTags,
+    String? assignedName,
   }) {
     return ARFSUploadMetadataArgs(
       driveId: driveId,
@@ -185,6 +189,7 @@ class ARFSUploadMetadataArgs {
       isPrivate: isPrivate,
       entityId: entityId,
       type: type,
+      assignedName: assignedName,
     );
   }
 
@@ -224,6 +229,7 @@ class ARFSUploadMetadataArgs {
     this.entityId,
     this.licenseDefinitionTxId,
     this.licenseAdditionalTags,
+    this.assignedName,
   });
 }
 

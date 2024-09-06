@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import 'package:ardrive/arns/domain/arns_repository.dart';
+import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
+import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/core/arfs/utils/arfs_revision_status_utils.dart';
 import 'package:ardrive/entities/constants.dart';
@@ -11,6 +14,7 @@ import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:collection/collection.dart';
 
@@ -23,6 +27,9 @@ abstract class ManifestRepository {
 
   Future<String> uploadManifest({
     required ManifestUploadParams params,
+    ARNSUndername? undername,
+    String? processId,
+    Function(CreateManifestUploadProgress)? onProgress,
   });
 
   Future<IOFile> getManifestFile({
@@ -51,6 +58,8 @@ class ManifestRepositoryImpl implements ManifestRepository {
   final FolderRepository _folderRepository;
   final ManifestDataBuilder _builder;
   final ARFSRevisionStatusUtils _versionRevisionStatusUtils;
+  final ARNSRepository _arnsRepository;
+  final FileRepository _fileRepository;
 
   ManifestRepositoryImpl(
     this._driveDao,
@@ -58,6 +67,8 @@ class ManifestRepositoryImpl implements ManifestRepository {
     this._folderRepository,
     this._builder,
     this._versionRevisionStatusUtils,
+    this._arnsRepository,
+    this._fileRepository,
   );
 
   @override
@@ -75,22 +86,20 @@ class ManifestRepositoryImpl implements ManifestRepository {
         driveId: manifest.driveId,
         dataTxId: manifest.dataTxId,
         dataContentType: ContentType.manifest,
+        assignedNames:
+            manifest.assignedName != null ? [manifest.assignedName!] : null,
       );
 
       manifestFileEntity.txId = manifest.metadataTxId!;
 
-      await _driveDao.runTransaction(
-        () async {
-          await _driveDao.writeFileEntity(manifestFileEntity);
+      final performedAction = existingManifestFileId == null
+          ? RevisionAction.create
+          : RevisionAction.uploadNewVersion;
 
-          await _driveDao.insertFileRevision(
-            manifestFileEntity.toRevisionCompanion(
-              performedAction: existingManifestFileId == null
-                  ? RevisionAction.create
-                  : RevisionAction.uploadNewVersion,
-            ),
-          );
-        },
+      await _fileRepository.updateFile(manifestFileEntity);
+      await _fileRepository.updateFileRevision(
+        manifestFileEntity,
+        performedAction,
       );
     } catch (e) {
       throw ManifestCreationException(
@@ -103,6 +112,9 @@ class ManifestRepositoryImpl implements ManifestRepository {
   @override
   Future<String> uploadManifest({
     required ManifestUploadParams params,
+    ARNSUndername? undername,
+    String? processId,
+    Function(CreateManifestUploadProgress)? onProgress,
   }) async {
     try {
       final completer = Completer<String>();
@@ -116,19 +128,45 @@ class ManifestRepositoryImpl implements ManifestRepository {
           isPrivate: false,
           type: params.uploadType,
           privacy: DrivePrivacyTag.public,
+          assignedName:
+              undername != null ? getLiteralARNSRecordName(undername) : null,
         ),
         wallet: params.wallet,
         type: params.uploadType,
       );
 
-      controller.onDone((tasks) {
+      onProgress?.call(CreateManifestUploadProgress.uploadingManifest);
+
+      controller.onDone((tasks) async {
         final task = tasks.first;
         final manifestMetadata = task.content!.first as ARFSFileUploadMetadata;
 
-        saveManifestOnDatabase(
+        await saveManifestOnDatabase(
           manifest: manifestMetadata,
           existingManifestFileId: params.existingManifestFileId,
         );
+
+        if (undername != null && processId != null) {
+          onProgress?.call(CreateManifestUploadProgress.assigningArNS);
+          final newUndername = ARNSUndername(
+            name: undername.name,
+            domain: undername.domain,
+            record: ARNSRecord(
+              transactionId: manifestMetadata.dataTxId!,
+              ttlSeconds: undername.record.ttlSeconds,
+            ),
+          );
+
+          await _arnsRepository.setUndernamesToFile(
+            undername: newUndername,
+            fileId: manifestMetadata.id,
+            uploadNewRevision: false,
+            driveId: params.driveId,
+            processId: processId,
+          );
+        }
+
+        onProgress?.call(CreateManifestUploadProgress.completed);
 
         completer.complete(manifestMetadata.dataTxId);
       });
