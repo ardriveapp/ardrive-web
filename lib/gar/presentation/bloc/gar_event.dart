@@ -9,15 +9,23 @@ abstract class GarEvent extends Equatable {
 
 final class GetGateways extends GarEvent {}
 
-final class UpdateArweaveGatewayUrl extends GarEvent {
+final class SelectGateway extends GarEvent {
   final Gateway gateway;
 
-  const UpdateArweaveGatewayUrl({
+  const SelectGateway({
     required this.gateway,
   });
 
   @override
   List<Object> get props => [gateway];
+}
+
+final class ConfirmGatewayChange extends GarEvent {
+  final Gateway gateway;
+
+  const ConfirmGatewayChange({
+    required this.gateway,
+  });
 }
 
 final class SearchGateways extends GarEvent {

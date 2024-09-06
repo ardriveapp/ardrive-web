@@ -1,3 +1,4 @@
+import 'package:ardrive/arns/presentation/ant_icon.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/app_version_widget.dart';
@@ -19,6 +20,7 @@ import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
+import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -141,6 +143,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
     final isNotSharePageInMobileView = !(widget.isSharePage && !mobileView);
     final isPreviewUnavailable = previewState is FsEntryPreviewUnavailable;
     final isSharePage = widget.isSharePage;
+    final typography = ArDriveTypographyNew.of(context);
 
     final tabs = [
       if (isNotSharePageInMobileView && !isPreviewUnavailable)
@@ -148,6 +151,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
           Tab(
             child: Text(
               appLocalizationsOf(context).itemPreviewEmphasized,
+              style: typography.paragraphNormal(
+                fontWeight: ArFontWeight.bold,
+              ),
             ),
           ),
           Column(
@@ -160,6 +166,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
         Tab(
           child: Text(
             appLocalizationsOf(context).itemDetailsEmphasized,
+            style: typography.paragraphNormal(
+              fontWeight: ArFontWeight.bold,
+            ),
           ),
         ),
         _buildDetails(infoState),
@@ -168,6 +177,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
         Tab(
           child: Text(
             appLocalizationsOf(context).itemActivityEmphasized,
+            style: typography.paragraphNormal(
+              fontWeight: ArFontWeight.bold,
+            ),
           ),
         ),
         BlocProvider(
@@ -288,11 +300,13 @@ class _DetailsPanelState extends State<DetailsPanel> {
                         width: 8,
                       ),
                       Expanded(
-                        child: Tooltip(
+                        child: ArDriveTooltip(
                           message: widget.item.name,
                           child: Text(
                             widget.item.name,
-                            style: ArDriveTypography.body.buttonLargeBold(),
+                            style: typography.paragraphLarge(
+                              fontWeight: ArFontWeight.semiBold,
+                            ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -303,6 +317,16 @@ class _DetailsPanelState extends State<DetailsPanel> {
                               null) ...{
                         const PinIndicator(
                           size: 32,
+                        ),
+                      },
+                      if (widget.item is FileDataTableItem &&
+                          (widget.item as FileDataTableItem).assignedNames !=
+                              null &&
+                          (widget.item as FileDataTableItem)
+                              .assignedNames!
+                              .isNotEmpty) ...{
+                        AntIcon(
+                          fileDataTableItem: widget.item as FileDataTableItem,
                         ),
                       },
                       if (widget.item is FileDataTableItem &&
@@ -457,7 +481,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: DriveExplorerItemTileLeading(item: widget.item),
-                  title: Tooltip(
+                  title: ArDriveTooltip(
                     message: widget.item.name,
                     child: Text(
                       widget.item.name,
@@ -557,6 +581,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
   List<Widget> _folderDetails(
     FsEntryInfoSuccess<FolderNode> folder,
   ) {
+    final typography = ArDriveTypographyNew.of(context);
     return [
       DetailsPanelItem(
         leading: CopyButton(text: folder.entry.folder.id),
@@ -570,7 +595,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
             fileCount: folder.entry.getRecursiveFileCount(),
             localizations: appLocalizationsOf(context),
           ),
-          style: ArDriveTypography.body.buttonNormalRegular(),
+          style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).itemContains,
       ),
@@ -578,7 +603,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       DetailsPanelItem(
         leading: Text(
           yMMdDateFormatter.format(widget.item.lastUpdated),
-          style: ArDriveTypography.body.buttonNormalRegular(),
+          style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
       ),
@@ -586,7 +611,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       DetailsPanelItem(
         leading: Text(
           yMMdDateFormatter.format(widget.item.dateCreated),
-          style: ArDriveTypography.body.buttonNormalRegular(),
+          style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
       ),
@@ -615,6 +640,8 @@ class _DetailsPanelState extends State<DetailsPanel> {
   }
 
   List<Widget> _driveDetails(FsEntryInfoSuccess state) {
+    final typography = ArDriveTypographyNew.of(context);
+
     return [
       DetailsPanelItem(
         leading: CopyButton(text: widget.item.id),
@@ -626,7 +653,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
           filesize((state as FsEntryDriveInfoSuccess)
               .rootFolderTree
               .computeFolderSize()),
-          style: ArDriveTypography.body.buttonNormalRegular(),
+          style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).size,
       ),
@@ -638,7 +665,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
             folderCount: state.rootFolderTree.getRecursiveSubFolderCount(),
             localizations: appLocalizationsOf(context),
           ),
-          style: ArDriveTypography.body.buttonNormalRegular(),
+          style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).itemContains,
       ),
@@ -646,7 +673,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       DetailsPanelItem(
         leading: Text(
           yMMdDateFormatter.format(widget.item.lastUpdated),
-          style: ArDriveTypography.body.buttonNormalRegular(),
+          style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
       ),
@@ -654,7 +681,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       DetailsPanelItem(
         leading: Text(
           yMMdDateFormatter.format(widget.item.dateCreated),
-          style: ArDriveTypography.body.buttonNormalRegular(),
+          style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
       ),
@@ -679,6 +706,8 @@ class _DetailsPanelState extends State<DetailsPanel> {
     final item = widget.item as FileDataTableItem;
     String? pinnedDataOwnerAddress = item.pinnedDataOwnerAddress;
 
+    final typography = ArDriveTypographyNew.of(context);
+
     return [
       DetailsPanelItem(
         leading: CopyButton(text: item.id),
@@ -688,7 +717,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       DetailsPanelItem(
         leading: Text(
           filesize(item.size),
-          style: ArDriveTypography.body.buttonNormalRegular(),
+          style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).size,
       ),
@@ -696,7 +725,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       DetailsPanelItem(
         leading: Text(
           yMMdDateFormatter.format(item.lastUpdated),
-          style: ArDriveTypography.body.buttonNormalRegular(),
+          style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
       ),
@@ -704,7 +733,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       DetailsPanelItem(
         leading: Text(
           yMMdDateFormatter.format(item.dateCreated),
-          style: ArDriveTypography.body.buttonNormalRegular(),
+          style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
       ),
@@ -713,7 +742,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: Text(
           item.contentType,
           textAlign: TextAlign.right,
-          style: ArDriveTypography.body.buttonNormalRegular(),
+          style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).fileType,
       ),
@@ -802,7 +831,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                           // appLocalizationsOf(context).noLicense,
                           'None',
                           textAlign: TextAlign.right,
-                          style: ArDriveTypography.body.buttonNormalRegular(),
+                          style: typography.paragraphNormal(),
                         ),
             ],
           ),
@@ -877,6 +906,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
               return DetailsPanelItem(
                 itemSubtitle: subtitle,
                 itemTitle: title,
+                expandLeading: false,
               );
             } else if (revision is FileRevisionWithLicenseAndTransactions) {
               final file = ARFSFactory()
@@ -919,6 +949,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
               return DetailsPanelItem(
                 itemSubtitle: subtitle,
                 itemTitle: title,
+                expandLeading: false,
               );
             }
 
@@ -969,6 +1000,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
           fileKey: key,
         );
         break;
+      case RevisionAction.assignName:
+        title = 'File had name assigned ${file.assignedNames?.last}';
+        break;
       case RevisionAction.assertLicense:
         if (licenseState == null) {
           title = 'File had license updated';
@@ -995,6 +1029,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       leading: leading ?? const SizedBox(),
       itemTitle: title,
       itemSubtitle: subtitle,
+      expandLeading: false,
     );
   }
 }
@@ -1011,7 +1046,7 @@ class _TxIdTextLink extends StatelessWidget {
         onTap: () {
           openUrl(url: 'https://viewblock.io/arweave/tx/$txId');
         },
-        child: Tooltip(
+        child: ArDriveTooltip(
           message: txId,
           child: Text(
             '${txId.substring(0, 4)}...',
@@ -1043,49 +1078,64 @@ class DetailsPanelItem extends StatelessWidget {
     required this.itemTitle,
     this.itemSubtitle,
     this.leading,
+    this.expandLeading = true,
   });
 
   final String itemTitle;
   final String? itemSubtitle;
   final Widget? leading;
+  final bool expandLeading;
 
   @override
   Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Flexible(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        itemTitle,
-                        style: ArDriveTypography.body.buttonNormalRegular(),
-                        maxLines: 4,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            Expanded(
+              flex: 4,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Flexible(
+                    flex: 1,
+                    child: Text(
+                      itemTitle,
+                      style: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.bold,
                       ),
+                      maxLines: 4,
                     ),
-                    if (itemSubtitle != null)
-                      Text(
+                  ),
+                  if (itemSubtitle != null)
+                    Flexible(
+                      flex: 3,
+                      child: Text(
                         itemSubtitle!,
                         style: ArDriveTypography.body.xSmallRegular(),
                       ),
-                  ],
+                    ),
+                ],
+              ),
+            ),
+            if (leading != null)
+              Expanded(
+                flex: expandLeading ? 6 : 1,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 8.0),
+                    child: leading!,
+                  ),
                 ),
               ),
-              if (leading != null)
-                Padding(
-                  padding: const EdgeInsets.only(left: 8.0),
-                  child: leading!,
-                ),
-            ],
-          ),
+          ],
         ),
         const SizedBox(
           height: 18,

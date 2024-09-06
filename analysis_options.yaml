@@ -5,6 +5,14 @@ analyzer:
     - 'lib/services/arweave/graphql/**'
     - '**.g.dart'
     - 'build/**'
+    - 'node_modules/**'
+    - 'macos/**'
+    - 'ios/**'
+    - 'android/**'
+    - 'web/**'
+    - 'scripts/**'
+    - 'docs/**'
+    - 'drift_schemas/**'
   language:
     strict-casts: false
     strict-inference: false

@@ -32,7 +32,8 @@ class DriveShareCubit extends Cubit<DriveShareState> {
     if (drive.isPrivate) {
       SecretKey? driveKey;
       if (_profileCubit.state is ProfileLoggedIn) {
-        final profileKey = (_profileCubit.state as ProfileLoggedIn).cipherKey;
+        final profileKey =
+            (_profileCubit.state as ProfileLoggedIn).user.cipherKey;
         driveKey = await _driveDao.getDriveKey(drive.id, profileKey);
       } else {
         driveKey = await _driveDao.getDriveKeyFromMemory(drive.id);

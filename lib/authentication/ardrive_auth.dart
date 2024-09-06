@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
@@ -32,6 +33,8 @@ abstract class ArDriveAuth {
   Stream<User?> onAuthStateChanged();
   Future<bool> isBiometricsEnabled();
   Future<String?> getWalletAddress();
+  String getJWTAsString();
+  Future<void> refreshBalance();
 
   factory ArDriveAuth({
     required ArweaveService arweave,
@@ -348,6 +351,24 @@ class ArDriveAuthImpl implements ArDriveAuth {
       return null;
     }
     return ownerToAddress(owner);
+  }
+
+  @override
+  String getJWTAsString() {
+    if (_currentUser == null) {
+      throw const AuthenticationUserIsNotLoggedInException();
+    }
+
+    return json.encode(_currentUser!.wallet.toJwk());
+  }
+
+  @override
+  Future<void> refreshBalance() async {
+    final balance = await _userRepository.getBalance(currentUser.wallet);
+
+    currentUser = currentUser.copyWith(walletBalance: balance);
+
+    _userStreamController.add(_currentUser);
   }
 }
 

@@ -39,6 +39,9 @@ class FileEntity extends EntityWithCustomMetadata {
   @JsonKey(includeIfNull: false)
   bool? isHidden;
 
+  @JsonKey(includeIfNull: false)
+  List<String>? assignedNames;
+
   @JsonKey(includeFromJson: true, includeToJson: true)
   Thumbnail? thumbnail;
 
@@ -75,6 +78,7 @@ class FileEntity extends EntityWithCustomMetadata {
     this.pinnedDataOwnerAddress,
     this.isHidden,
     this.thumbnail,
+    this.assignedNames,
   }) : super(ArDriveCrypto());
 
   FileEntity.withUserProvidedDetails({
@@ -161,6 +165,7 @@ class FileEntity extends EntityWithCustomMetadata {
 
   Map<String, dynamic> toJson() {
     final thisJson = _$FileEntityToJson(this);
+    thisJson['assignedNames'] = assignedNames;
     thisJson['thumbnail'] = thumbnail?.toJson();
 
     final custom = customJsonMetadata ?? {};

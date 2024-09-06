@@ -61,7 +61,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
 
         final driveKey = targetDrive.isPrivate
             ? await _driveDao.getDriveKey(
-                targetFolder.driveId, profile.cipherKey)
+                targetFolder.driveId, profile.user.cipherKey)
             : null;
 
         final newFolderId = await _driveDao.createFolder(
@@ -79,19 +79,19 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
         if (_turboUploadService.useTurboUpload) {
           final folderDataItem = await _arweave.prepareEntityDataItem(
             folderEntity,
-            profile.wallet,
+            profile.user.wallet,
             key: driveKey,
           );
 
           await _turboUploadService.postDataItem(
             dataItem: folderDataItem,
-            wallet: profile.wallet,
+            wallet: profile.user.wallet,
           );
           folderEntity.txId = folderDataItem.id;
         } else {
           final folderTx = await _arweave.prepareEntityTx(
             folderEntity,
-            profile.wallet,
+            profile.user.wallet,
             driveKey,
           );
 

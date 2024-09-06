@@ -2,7 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/misc/resources.dart';
-import 'package:ardrive/pages/pages.dart';
+import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';

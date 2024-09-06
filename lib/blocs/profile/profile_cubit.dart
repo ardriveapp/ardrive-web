@@ -1,14 +1,13 @@
 import 'dart:async';
 
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:arweave/arweave.dart';
-import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,23 +17,23 @@ part 'profile_state.dart';
 /// [ProfileCubit] includes logic for managing the user's profile login status
 /// and wallet balance.
 class ProfileCubit extends Cubit<ProfileState> {
-  final ArweaveService _arweave;
   final TurboUploadService _turboUploadService;
   final ProfileDao _profileDao;
   final Database _db;
   final TabVisibilitySingleton _tabVisibilitySingleton;
+  final ArDriveAuth _arDriveAuth;
 
   ProfileCubit({
-    required ArweaveService arweave,
     required TurboUploadService turboUploadService,
     required ProfileDao profileDao,
     required Database db,
     required TabVisibilitySingleton tabVisibilitySingleton,
-  })  : _arweave = arweave,
-        _turboUploadService = turboUploadService,
+    required ArDriveAuth arDriveAuth,
+  })  : _turboUploadService = turboUploadService,
         _profileDao = profileDao,
         _db = db,
         _tabVisibilitySingleton = tabVisibilitySingleton,
+        _arDriveAuth = arDriveAuth,
         super(ProfileCheckingAvailability()) {
     promptToAuthenticate();
   }
@@ -135,35 +134,14 @@ class ProfileCubit extends Cubit<ProfileState> {
   }
 
   Future<void> unlockDefaultProfile(
-    String password,
+    User user,
     ProfileType profileType,
   ) async {
     emit(ProfileLoggingIn());
 
-    final profile = await _profileDao.loadDefaultProfile(password);
-    final arconnect = ArConnectService();
-
-    final walletAddress = await (profileType == ProfileType.arConnect
-        ? arconnect.getWalletAddress()
-        : profile.wallet.getAddress());
-    final walletBalance = await _arweave.getWalletBalance(walletAddress);
-    final wallet = () {
-      switch (profileType) {
-        case ProfileType.json:
-          return profile.wallet;
-        case ProfileType.arConnect:
-          return ArConnectWallet(arconnect);
-      }
-    }();
-
     emit(
       ProfileLoggedIn(
-        username: profile.details.username,
-        password: password,
-        wallet: wallet,
-        walletAddress: walletAddress,
-        walletBalance: walletBalance,
-        cipherKey: profile.key,
+        user: user,
         useTurbo: _turboUploadService.useTurboUpload,
       ),
     );
@@ -172,13 +150,9 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<void> refreshBalance() async {
     final profile = state as ProfileLoggedIn;
 
-    final walletAddress = await profile.wallet.getAddress();
-    final walletBalance = await Future.wait([
-      _arweave.getWalletBalance(walletAddress),
-      _arweave.getPendingTxFees(walletAddress),
-    ]).then((res) => res[0] - res[1]);
+    await _arDriveAuth.refreshBalance();
 
-    emit(profile.copyWith(walletBalance: walletBalance));
+    emit(profile.copyWith(user: _arDriveAuth.currentUser));
   }
 
   Future<void> logoutProfile() async {

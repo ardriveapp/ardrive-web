@@ -779,12 +779,12 @@ class ArDriveStandardModalNew extends StatelessWidget {
       alignment: WrapAlignment.end,
       runSpacing: 8,
       children: [
-        if (actions.isNotEmpty)
+        if (actions.length == 1)
           ArDriveButtonNew(
             maxHeight: 40,
             maxWidth: 100,
             typography: typography,
-            variant: ButtonVariant.secondary,
+            variant: ButtonVariant.primary,
             text: actions.first.title,
             onPressed: actions.first.action,
           ),

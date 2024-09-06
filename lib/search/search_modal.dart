@@ -6,7 +6,7 @@ import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
-import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
+import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/search/domain/bloc/search_bloc.dart';
 import 'package:ardrive/search/domain/repository/search_repository.dart';
 import 'package:ardrive/search/search_result.dart';

@@ -246,7 +246,7 @@ Widget _buildFileIcon(
     }
   }
 
-  return Tooltip(
+  return ArDriveTooltip(
     message: tooltipMessage,
     child: Stack(
       children: [

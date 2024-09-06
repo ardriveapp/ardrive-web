@@ -197,9 +197,9 @@ class SyncCubit extends Cubit<SyncState> {
         logger.d('User is logged in');
 
         //Check if profile is ArConnect to skip sync while tab is hidden
-        wallet = profile.wallet;
-        password = profile.password;
-        cipherKey = profile.cipherKey;
+        wallet = profile.user.wallet;
+        password = profile.user.password;
+        cipherKey = profile.user.cipherKey;
 
         logger.d('Checking if user is from arconnect...');
 
@@ -222,7 +222,7 @@ class SyncCubit extends Cubit<SyncState> {
         await _syncRepository.updateUserDrives(
           wallet: wallet,
           password: password,
-          cipherKey: profile.cipherKey,
+          cipherKey: profile.user.cipherKey,
         );
       }
 
@@ -277,7 +277,7 @@ class SyncCubit extends Cubit<SyncState> {
       final numberOfFiles = await _syncRepository.numberOfFilesInWallet();
       final numberOfFolders = await _syncRepository.numberOfFoldersInWallet();
 
-    logger.setContext(
+      logger.setContext(
         context.copyWith(
           numberOfDrives: _syncProgress.drivesCount,
           numberOfFiles: numberOfFiles,

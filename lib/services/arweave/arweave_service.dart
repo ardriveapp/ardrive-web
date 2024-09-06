@@ -47,10 +47,12 @@ class ArweaveService {
 
   ArweaveService(
     this.client,
-    this._crypto, {
+    this._crypto,
+    ConfigService configService, {
     ArtemisClient? artemisClient,
   }) : _gql = artemisClient ??
-            ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
+            ArtemisClient(
+                '${configService.config.defaultArweaveGatewayUrl}/graphql') {
     graphQLRetry = GraphQLRetry(
       _gql,
       internetChecker: InternetChecker(
@@ -370,6 +372,13 @@ class ArweaveService {
             driveKey: driveKey,
             crypto: _crypto,
           );
+
+          if (entity is FileEntity) {
+            if (entity.assignedNames != null) {
+              logger
+                  .d('FileEntity has assigned names: ${entity.assignedNames}');
+            }
+          }
         } else if (entityType == EntityTypeTag.snapshot) {
           // TODO: instantiate entity and add to blockHistory
         }

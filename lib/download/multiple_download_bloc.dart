@@ -7,7 +7,7 @@ import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/download/download_utils.dart';
 import 'package:ardrive/entities/constants.dart' as constants;
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
+import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_http/ardrive_http.dart';

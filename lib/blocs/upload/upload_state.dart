@@ -93,6 +93,7 @@ class UploadReady extends UploadState {
   final bool uploadIsPublic;
   final int numberOfFiles;
   final UploadParams params;
+  final bool showSettings;
 
   final bool isArConnect;
 
@@ -104,6 +105,7 @@ class UploadReady extends UploadState {
     required this.params,
     required this.numberOfFiles,
     required this.isArConnect,
+    this.showSettings = false,
   });
 
   // copyWith
@@ -116,6 +118,7 @@ class UploadReady extends UploadState {
     int? numberOfFiles,
     UploadParams? params,
     bool? isArConnect,
+    bool? showSettings,
   }) {
     return UploadReady(
       isArConnect: isArConnect ?? this.isArConnect,
@@ -125,6 +128,7 @@ class UploadReady extends UploadState {
       params: params ?? this.params,
       isNextButtonEnabled: isNextButtonEnabled ?? this.isNextButtonEnabled,
       numberOfFiles: numberOfFiles ?? this.numberOfFiles,
+      showSettings: showSettings ?? this.showSettings,
     );
   }
 
@@ -132,6 +136,7 @@ class UploadReady extends UploadState {
   List<Object?> get props => [
         paymentInfo,
         isNextButtonEnabled,
+        showSettings,
       ];
 
   @override
@@ -226,7 +231,9 @@ class UploadFailure extends UploadState {
   UploadFailure({this.failedTasks, required this.error, this.controller});
 }
 
-class UploadComplete extends UploadState {}
+class UploadComplete extends UploadState {
+  UploadComplete();
+}
 
 class UploadWalletMismatch extends UploadState {}
 

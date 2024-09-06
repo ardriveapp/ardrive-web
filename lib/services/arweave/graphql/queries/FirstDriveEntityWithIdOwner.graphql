@@ -6,7 +6,6 @@ query FirstDriveEntityWithIdOwner($driveId: String!, $after: String) {
     tags: [
       { name: "Drive-Id", values: [$driveId] }
       { name: "Entity-Type", values: ["drive"] }
-      { name: "Drive-Privacy", values: ["public", "private"]}
     ]
   ) {
     edges {

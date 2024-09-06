@@ -110,7 +110,7 @@ class UploadPaymentMethodBloc
     final paymentInfo = uploadPreparation.uploadPaymentInfo;
 
     bool sufficientBalanceToPayWithAR =
-        profile.walletBalance >= paymentInfo.arCostEstimate.totalCost;
+        profile.user.walletBalance >= paymentInfo.arCostEstimate.totalCost;
     bool sufficientBalanceToPayWithTurbo =
         paymentInfo.turboCostEstimate.totalCost <=
             uploadPreparation.uploadPaymentInfo.turboBalance;

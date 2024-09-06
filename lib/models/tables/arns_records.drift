@@ -1,0 +1,9 @@
+CREATE TABLE arns_records (
+    transaction_id TEXT NOT NULL,
+    file_id TEXT NOT NULL,
+    ttl INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    domain TEXT NOT NULL,
+    id TEXT NOT NULL PRIMARY KEY,
+    is_active BOOLEAN
+);
