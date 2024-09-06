@@ -11,6 +11,7 @@ class TableColumn {
     required this.index,
     this.isVisible = true,
     this.canHide = true,
+    this.textStyle,
   });
 
   final String title;
@@ -18,6 +19,7 @@ class TableColumn {
   final bool isVisible;
   final int index;
   final bool canHide;
+  final TextStyle? textStyle;
 }
 
 class TableRowWidget {
@@ -543,7 +545,8 @@ class _ArDriveDataTableState<T extends IndexedItem>
                     padding: const EdgeInsets.only(right: 4),
                     child: Text(
                       column.title,
-                      style: ArDriveTypography.body.buttonNormalBold(),
+                      style: column.textStyle ??
+                          ArDriveTypography.body.buttonNormalBold(),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),

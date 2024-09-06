@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
 import 'package:ardrive/services/config/config_service.dart';
+import 'package:ardrive/services/config/selected_gateway.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,6 +31,10 @@ void main() {
     allowedDataItemSizeForTurbo: 100,
     stripePublishableKey: 'stripeKey',
     defaultArweaveGatewayUrl: 'devGatewayUrl',
+    defaultArweaveGatewayForDataRequest: const SelectedGateway(
+      label: 'Arweave.net',
+      url: 'https://arweave.net',
+    ),
   )..toJson());
 
   group('fetchConfig', () {
@@ -40,16 +45,38 @@ void main() {
 
       expect(result, isInstanceOf<AppConfig>());
       expect(result.defaultArweaveGatewayUrl, equals('devGatewayUrl'));
+      expect(
+          result.defaultArweaveGatewayForDataRequest,
+          equals(const SelectedGateway(
+            label: 'Arweave.net',
+            url: 'https://arweave.net',
+          )));
     });
 
-    test('returns the staging config when flavor is destagingv', () async {
-      when(() => localStore.getString('config')).thenReturn(
-          '{"defaultArweaveGatewayUrl": "devGatewayUrl", "enableQuickSyncAuthoring": false, "stripePublishableKey": "stripeKey", "allowedDataItemSizeForTurbo": 100}');
+    test('returns the staging config when flavor is staging', () async {
+      final configStringStaging = json.encode(AppConfig(
+        allowedDataItemSizeForTurbo: 100,
+        stripePublishableKey: 'stripeKey',
+        defaultArweaveGatewayUrl: 'stagingGatewayUrl',
+        defaultArweaveGatewayForDataRequest: const SelectedGateway(
+          label: 'Arweave.net',
+          url: 'https://arweave.net',
+        ),
+      )..toJson());
+
+      when(() => localStore.getString('config'))
+          .thenReturn(configStringStaging);
 
       final result = await configFetcher.fetchConfig(Flavor.staging);
 
       expect(result, isInstanceOf<AppConfig>());
-      expect(result.defaultArweaveGatewayUrl, equals('devGatewayUrl'));
+      expect(result.defaultArweaveGatewayUrl, equals('stagingGatewayUrl'));
+      expect(
+          result.defaultArweaveGatewayForDataRequest,
+          equals(const SelectedGateway(
+            label: 'Arweave.net',
+            url: 'https://arweave.net',
+          )));
     });
     test(
         'returns the dev config when flavor is dev from env when there is no previous dev config saved on dev tools',
@@ -67,6 +94,12 @@ void main() {
 
       expect(result, isInstanceOf<AppConfig>());
       expect(result.defaultArweaveGatewayUrl, equals('https://arweave.net'));
+      expect(
+          result.defaultArweaveGatewayForDataRequest,
+          equals(const SelectedGateway(
+            label: 'Arweave.net',
+            url: 'https://arweave.net',
+          )));
     });
   });
 
@@ -129,6 +162,10 @@ void main() {
         stripePublishableKey: '',
         defaultArweaveGatewayUrl: '',
         allowedDataItemSizeForTurbo: 100,
+        defaultArweaveGatewayForDataRequest: const SelectedGateway(
+          label: 'Arweave.net',
+          url: 'https://arweave.net',
+        ),
       );
 
       when(() => localStore.putString('config', any()))

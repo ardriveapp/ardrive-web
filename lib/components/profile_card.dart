@@ -4,8 +4,10 @@ import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/components/icon_theme_switcher.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/components/truncated_address.dart';
+import 'package:ardrive/gar/presentation/widgets/gar_modal.dart';
 import 'package:ardrive/gift/bloc/redeem_gift_bloc.dart';
 import 'package:ardrive/gift/redeem_gift_modal.dart';
+import 'package:ardrive/main.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
@@ -22,6 +24,7 @@ import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.da
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -81,7 +84,7 @@ class _ProfileCardState extends State<ProfileCard> {
     required bool isMobile,
   }) {
     final state = context.read<ProfileCubit>().state as ProfileLoggedIn;
-    final walletAddress = state.walletAddress;
+    final walletAddress = state.user.walletAddress;
 
     return ArDriveOverlay(
       onVisibleChange: (visible) {
@@ -148,7 +151,7 @@ class _ProfileCardState extends State<ProfileCard> {
                   ),
                 const SizedBox(height: 8),
                 _buildWalletAddressRow(context, state),
-                if (state.wallet is! ArConnectWallet) ...[
+                if (state.user.wallet is! ArConnectWallet) ...[
                   const SizedBox(height: 8),
                 ],
                 const Divider(
@@ -157,12 +160,14 @@ class _ProfileCardState extends State<ProfileCard> {
                   endIndent: 16,
                 ),
                 _buildBalanceRow(context, state),
+                if (isArioSDKSupportedOnPlatform())
+                  _buildIOTokenRow(context, state),
                 if (context.read<PaymentService>().useTurboPayment) ...[
                   Padding(
                     padding: const EdgeInsets.only(top: 20.0),
                     child: TurboBalance(
                       paymentService: context.read<PaymentService>(),
-                      wallet: state.wallet,
+                      wallet: state.user.wallet,
                       onTapAddButton: () {
                         setState(() {
                           _showProfileCard = false;
@@ -320,14 +325,44 @@ class _ProfileCardState extends State<ProfileCard> {
                       },
                     ),
                   ),
+                  if (isArioSDKSupportedOnPlatform()) ...[
+                    const SizedBox(height: 8),
+                    _ProfileMenuAccordionItem(
+                      text: 'Switch Gateway',
+                      onTap: () {
+                        setState(() {
+                          _showProfileCard = false;
+                        });
+                        showGatewaySwitcherModal(context);
+                      },
+                    ),
+                    Padding(
+                      padding:
+                          const EdgeInsets.only(left: 16.0, right: 16, top: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Current Gateway:',
+                            style: typography.paragraphNormal(
+                              fontWeight: ArFontWeight.semiBold,
+                            ),
+                          ),
+                          Text(
+                            configService.config
+                                .defaultArweaveGatewayForDataRequest.label,
+                            style: typography.paragraphNormal(
+                              fontWeight: ArFontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  ],
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          // ArDriveAccordion(backgroundColor: Colors.transparent, children: [
-
-          // ]),
           Padding(
             padding: const EdgeInsets.only(right: 12.0, left: 16, top: 12),
             child: Row(
@@ -346,9 +381,14 @@ class _ProfileCardState extends State<ProfileCard> {
               ],
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.only(top: 20.0),
-            child: _LogoutButton(),
+          Padding(
+            padding: const EdgeInsets.only(top: 20.0),
+            child: _LogoutButton(
+              onLogout: () {
+                _showProfileCard = false;
+                setState(() {});
+              },
+            ),
           ),
           if (isMobile)
             Expanded(
@@ -362,7 +402,7 @@ class _ProfileCardState extends State<ProfileCard> {
   }
 
   Widget _buildWalletAddressRow(BuildContext context, ProfileLoggedIn state) {
-    final walletAddress = state.walletAddress;
+    final walletAddress = state.user.walletAddress;
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Padding(
@@ -401,7 +441,8 @@ class _ProfileCardState extends State<ProfileCard> {
   }
 
   Widget _buildBalanceRow(BuildContext context, ProfileLoggedIn state) {
-    final walletBalance = convertWinstonToLiteralString(state.walletBalance);
+    final walletBalance =
+        convertWinstonToLiteralString(state.user.walletBalance);
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
@@ -430,6 +471,46 @@ class _ProfileCardState extends State<ProfileCard> {
     );
   }
 
+  Widget _buildIOTokenRow(BuildContext context, ProfileLoggedIn state) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    final ioTokens = state.user.ioTokens;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'tIO Tokens',
+            style: typography.paragraphNormal(
+              fontWeight: ArFontWeight.semiBold,
+              color: colorTokens.textHigh,
+            ),
+          ),
+          if (ioTokens != null)
+            Text(
+              ioTokens,
+              style: typography.paragraphNormal(
+                color: colorTokens.textLow,
+                fontWeight: ArFontWeight.semiBold,
+              ),
+            ),
+          if (ioTokens == null)
+            Text(
+              'An error occurred while fetching IO tokens',
+              style: typography.paragraphNormal(
+                color: colorTokens.textLow,
+                fontWeight: ArFontWeight.semiBold,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildProfileCardHeader(BuildContext context, String walletAddress) {
     final typography = ArDriveTypographyNew.of(context);
     return ArDriveButtonNew(
@@ -447,7 +528,11 @@ class _ProfileCardState extends State<ProfileCard> {
 }
 
 class _LogoutButton extends StatefulWidget {
-  const _LogoutButton();
+  const _LogoutButton({
+    required this.onLogout,
+  });
+
+  final Function onLogout;
 
   @override
   State<_LogoutButton> createState() => __LogoutButtonState();
@@ -475,6 +560,8 @@ class __LogoutButtonState extends State<_LogoutButton> {
         onTap: () {
           final arDriveAuth = context.read<ArDriveAuth>();
           final profileCubit = context.read<ProfileCubit>();
+
+          widget.onLogout();
 
           arDriveAuth.logout().then(
             (value) {

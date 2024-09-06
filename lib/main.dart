@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:ardrive/arns/data/arns_dao.dart';
+import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
@@ -44,6 +46,7 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -67,7 +70,7 @@ import 'theme/theme.dart';
 final overlayKey = GlobalKey<OverlayState>();
 
 late ConfigService configService;
-late ArweaveService _arweave;
+late ArweaveService arweave;
 late TurboUploadService _turboUpload;
 late PaymentService _turboPayment;
 
@@ -123,13 +126,12 @@ Future<void> _initializeServices() async {
 
   final config = configService.config;
 
-  logger.d('Initializing app with config: $config');
-
-  _arweave = ArweaveService(
+  arweave = ArweaveService(
     Arweave(
-      gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!),
+      gatewayUrl: Uri.parse(config.defaultArweaveGatewayForDataRequest.url),
     ),
     ArDriveCrypto(),
+    configService,
   );
   _turboUpload = config.useTurboUpload
       ? TurboUploadService(
@@ -266,11 +268,11 @@ class AppState extends State<App> {
         ),
         BlocProvider(
           create: (context) => ProfileCubit(
-            arweave: context.read<ArweaveService>(),
             turboUploadService: context.read<TurboUploadService>(),
             profileDao: context.read<ProfileDao>(),
             db: context.read<Database>(),
             tabVisibilitySingleton: TabVisibilitySingleton(),
+            arDriveAuth: context.read<ArDriveAuth>(),
           ),
         ),
         BlocProvider(
@@ -343,7 +345,7 @@ class AppState extends State<App> {
       ];
 
   List<SingleChildWidget> get repositoryProviders => [
-        RepositoryProvider<ArweaveService>(create: (_) => _arweave),
+        RepositoryProvider<ArweaveService>(create: (_) => arweave),
         // repository provider for UploadFileChecker
         RepositoryProvider<UploadFileSizeChecker>(
           create: (_) => UploadFileSizeChecker(
@@ -351,7 +353,7 @@ class AppState extends State<App> {
             fileSizeLimit: fileSizeLimit,
           ),
         ),
-        RepositoryProvider<ArweaveService>(create: (_) => _arweave),
+        RepositoryProvider<ArweaveService>(create: (_) => arweave),
         RepositoryProvider<ConfigService>(
           create: (_) => configService,
         ),
@@ -405,7 +407,7 @@ class AppState extends State<App> {
               const FlutterSecureStorage(),
             ),
             crypto: ArDriveCrypto(),
-            arweave: _arweave,
+            arweave: arweave,
             userRepository: context.read<UserRepository>(),
           ),
         ),
@@ -416,18 +418,6 @@ class AppState extends State<App> {
         ),
         RepositoryProvider(
           create: (_) => LicenseService(),
-        ),
-        RepositoryProvider(
-          create: (_) => SyncRepository(
-            arweave: _arweave,
-            configService: configService,
-            driveDao: _.read<DriveDao>(),
-            licenseService: _.read<LicenseService>(),
-            batchProcessor: BatchProcessor(),
-            snapshotValidationService: SnapshotValidationService(
-              configService: configService,
-            ),
-          ),
         ),
         RepositoryProvider(
           create: (_) => FolderRepository(
@@ -441,16 +431,41 @@ class AppState extends State<App> {
           ),
         ),
         RepositoryProvider(
+          create: (context) => ARNSRepository(
+            sdk: ArioSDKFactory().create(),
+            auth: context.read<ArDriveAuth>(),
+            fileRepository: context.read<FileRepository>(),
+            arnsDao: ARNSDao(context.read<Database>()),
+            driveDao: context.read<DriveDao>(),
+            turboUploadService: context.read<TurboUploadService>(),
+            arweave: context.read<ArweaveService>(),
+          ),
+        ),
+        RepositoryProvider(
+          create: (_) => SyncRepository(
+            arweave: arweave,
+            configService: configService,
+            driveDao: _.read<DriveDao>(),
+            licenseService: _.read<LicenseService>(),
+            batchProcessor: BatchProcessor(),
+            snapshotValidationService: SnapshotValidationService(
+              configService: configService,
+            ),
+            arnsRepository: _.read<ARNSRepository>(),
+          ),
+        ),
+
+        RepositoryProvider(
           create: (_) => ArDriveDownloader(
             ardriveIo: ArDriveIO(),
-            arweave: _arweave,
+            arweave: arweave,
             ioFileAdapter: IOFileAdapter(),
           ),
         ),
         // ArDriveUploader
         RepositoryProvider(
           create: (_) => ArDriveUploader(
-            arweave: _arweave.client,
+            arweave: arweave.client,
             turboUploadUri:
                 Uri.parse(configService.config.defaultTurboUploadUrl!),
             metadataGenerator: ARFSUploadMetadataGenerator(
@@ -461,6 +476,7 @@ class AppState extends State<App> {
             pstService: _.read<PstService>(),
           ),
         ),
+
         RepositoryProvider(
           create: (context) => ThumbnailRepository(
             arDriveDownloader: ArDriveDownloader(

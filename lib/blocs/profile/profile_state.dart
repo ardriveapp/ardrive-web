@@ -23,65 +23,33 @@ class ProfilePromptLogIn extends ProfileAvailable {}
 class ProfileLoggingIn extends ProfileAvailable {}
 
 class ProfileLoggedIn extends ProfileAvailable {
-  final String? username;
-  final String password;
-
-  final Wallet wallet;
-
-  final String walletAddress;
-
-  /// The user's wallet balance in winston.
-  final BigInt walletBalance;
-
-  final SecretKey cipherKey;
+  final User user;
   final bool useTurbo;
   final arconnect = ArConnectService();
 
   ProfileLoggedIn({
-    required this.username,
-    required this.password,
-    required this.wallet,
-    required this.walletAddress,
-    required this.walletBalance,
-    required this.cipherKey,
+    required this.user,
     required this.useTurbo,
   });
 
   ProfileLoggedIn copyWith({
-    String? username,
-    String? password,
-    Wallet? wallet,
-    String? walletAddress,
-    BigInt? walletBalance,
-    SecretKey? cipherKey,
+    User? user,
     bool? useTurbo,
   }) =>
       ProfileLoggedIn(
-        username: username ?? this.username,
-        password: password ?? this.password,
-        wallet: wallet ?? this.wallet,
-        walletAddress: walletAddress ?? this.walletAddress,
-        walletBalance: walletBalance ?? this.walletBalance,
-        cipherKey: cipherKey ?? this.cipherKey,
+        user: user ?? this.user,
         useTurbo: useTurbo ?? this.useTurbo,
       );
 
   bool hasMinimumBalanceForUpload({required BigInt minimumWalletBalance}) =>
-      walletBalance > minimumWalletBalance;
+      user.walletBalance > minimumWalletBalance;
 
   bool canUpload({required BigInt minimumWalletBalance}) =>
       hasMinimumBalanceForUpload(minimumWalletBalance: minimumWalletBalance) ||
       useTurbo;
 
   @override
-  List<Object?> get props => [
-        username,
-        password,
-        wallet,
-        walletAddress,
-        walletBalance,
-        cipherKey,
-      ];
+  List<Object?> get props => [user];
 }
 
 class ProfilePromptAdd extends ProfileUnavailable {}

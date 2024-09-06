@@ -87,7 +87,7 @@ class ArDriveTabBar extends StatelessWidget {
     this.unselectedLabelColor,
   });
 
-  final borderRadius = 8.0;
+  final borderRadius = 5.0;
 
   BorderRadius calculateBorderRadius(int tabIndex, noOfTabs) {
     if (tabIndex == 0) {
@@ -107,12 +107,18 @@ class ArDriveTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
     return Container(
       height: 40,
       decoration: BoxDecoration(
         color: unselectedTabColor ??
             ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(
+          color: colorTokens.containerL1,
+          width: 1,
+        ),
       ),
       child: TabBar(
         controller: controller,

@@ -29,7 +29,7 @@ class _HoverWidgetState extends State<HoverWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
+    return ArDriveTooltip(
       message: widget.tooltip ?? '',
       child: HoverDetector(
         cursor: SystemMouseCursors.click,

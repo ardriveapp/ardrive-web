@@ -79,6 +79,9 @@ filesInFolder ($order = ''):
 filesInFolderWithName:
     SELECT * FROM file_entries
     WHERE driveId = :driveId AND parentFolderId = :parentFolderId AND name = :name;
+manifestInFolder:
+    SELECT * FROM file_entries
+    WHERE parentFolderId = :parentFolderId AND dataContentType = "application/x.arweave-manifest+json";
 
 filesInFolderWithLicenseAndRevisionTransactions ($order = '') AS FileWithLicenseAndLatestRevisionTransactions:
     SELECT file_entries.*, license.**, metadataTx.**, dataTx.** FROM file_entries
@@ -160,9 +163,14 @@ pendingTransactionsForDrive:
         WHERE driveId = :driveId
     );
 
+getFilesWithAssignedNames:
+SELECT * FROM file_entries
+WHERE assignedNames IS NOT NULL;
+
+
 deleteDriveById: DELETE FROM drives WHERE id = :driveId;
 deleteAllDriveRevisionsByDriveId:
-    DELETE FROM drive_revisions
+  DELETE FROM drive_revisions
     WHERE driveId = :driveId;
 deleteFoldersByDriveId:
     DELETE FROM folder_entries

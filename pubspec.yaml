@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 2.51.0
+version: 2.52.0
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -18,7 +18,7 @@ script_runner:
     linux: /bin/sh
   line_length: 80
   scripts:
-    - setup: flutter clean && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs
+    - setup: flutter clean && flutter pub get && cd packages/ario_sdk && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs && cd ../../ && flutter pub run build_runner build --delete-conflicting-outputs
     - test: scripts/run_tests.sh
     - check-db: lefthook/database_checker.sh
     - check-flutter: lefthook/version_checker.sh
@@ -56,6 +56,8 @@ dependencies:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
       ref: v3.9.0
+  ario_sdk:
+    path: ./packages/ario_sdk
   cryptography: ^2.0.5
   flutter_bloc: ^8.1.1
   intersperse: ^2.0.0
@@ -139,6 +141,7 @@ dependencies:
   webthree: ^2.5.7+2
   carousel_slider: ^4.2.1
   dots_indicator: ^3.0.0
+  markdown_editor_plus: ^0.2.15
 
 dependency_overrides:
   stripe_js:

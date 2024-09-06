@@ -3,12 +3,14 @@ import 'package:ardrive/authentication/components/biometric_toggle.dart';
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/components/truncated_address_new.dart';
+import 'package:ardrive/gar/presentation/widgets/gar_modal.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider_wallet.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -227,7 +229,20 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                   ],
                 ),
               )
-            ]
+            ],
+            if (isArioSDKSupportedOnPlatform())
+              Padding(
+                padding: const EdgeInsets.only(top: 16.0),
+                child: ArDriveButtonNew(
+                  variant: ButtonVariant.outline,
+                  text: 'Advanced Settings',
+                  maxHeight: 32,
+                  typography: typography,
+                  onPressed: () {
+                    showGatewaySwitcherModal(context);
+                  },
+                ),
+              )
           ],
         ),
       ),

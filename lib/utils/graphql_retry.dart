@@ -1,6 +1,7 @@
 import 'package:ardrive/utils/exceptions.dart';
 import 'package:ardrive/utils/internet_checker.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:artemis/client.dart';
 import 'package:artemis/schema/graphql_query.dart';
 import 'package:artemis/schema/graphql_response.dart';
@@ -9,11 +10,16 @@ import 'package:retry/retry.dart';
 
 /// Retry every GraphQL query for `ArtemisClient`
 class GraphQLRetry {
-  GraphQLRetry(this._client, {required InternetChecker internetChecker})
-      : _internetChecker = internetChecker;
+  GraphQLRetry(this._client,
+      {required InternetChecker internetChecker, ArioSDK? arioSDK})
+      : _internetChecker = internetChecker,
+        _arioSDK = arioSDK;
 
-  final ArtemisClient _client;
+  ArtemisClient _client;
   final InternetChecker _internetChecker;
+  final ArioSDK? _arioSDK;
+
+  int currentGatewayIndex = 0;
 
   Future<GraphQLResponse<T>> execute<T, U extends JsonSerializable>(
     GraphQLQuery<T, U> query, {
@@ -24,7 +30,19 @@ class GraphQLRetry {
       final queryResponse = await retry(
         () async => await _client.execute(query),
         maxAttempts: maxAttempts,
-        onRetry: (exception) {
+        onRetry: (exception) async {
+          if (exception.toString().contains('429')) {
+            final gateways = await _arioSDK?.getGateways();
+
+            if (gateways != null && gateways.isNotEmpty) {
+              _client = ArtemisClient(
+                'https://${gateways[currentGatewayIndex].settings.fqdn}/graphql',
+              );
+
+              ++currentGatewayIndex;
+            }
+          }
+
           onRetry?.call(exception);
           logger.w('Retrying Query: ${query.operationName}');
         },

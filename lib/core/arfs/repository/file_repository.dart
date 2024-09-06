@@ -1,5 +1,5 @@
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
-import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
+import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 
 abstract class FileRepository {
@@ -9,6 +9,11 @@ abstract class FileRepository {
     String driveId,
     String folderId,
   );
+
+  Future<FileEntry> getFileEntryById(String driveId, String fileId);
+  Future<void> updateFile(FileEntry fileEntry);
+  Future<void> updateFileRevision(FileEntity fileEntity, String revision);
+  Future<FileRevision> getLatestFileRevision(String driveId, String fileId);
 
   factory FileRepository(
           DriveDao driveDao, FolderRepository folderRepository) =>
@@ -29,6 +34,7 @@ class _FileRepository implements FileRepository {
     final file = await _driveDao
         .latestFileRevisionByFileId(driveId: driveId, fileId: fileId)
         .getSingleOrNull();
+
     if (file == null) {
       return '';
     }
@@ -48,5 +54,34 @@ class _FileRepository implements FileRepository {
         .filesInFolderWithLicenseAndRevisionTransactions(
             driveId: driveId, parentFolderId: folderId)
         .get();
+  }
+
+  @override
+  Future<FileEntry> getFileEntryById(String driveId, String fileId) {
+    return _driveDao.fileById(driveId: driveId, fileId: fileId).getSingle();
+  }
+
+  @override
+  Future<void> updateFile(FileEntry fileEntry) async {
+    await _driveDao.writeFileEntity(fileEntry.asEntity());
+  }
+
+  @override
+  Future<void> updateFileRevision(FileEntity fileEntity, String revision) {
+    return _driveDao.insertFileRevision(
+      fileEntity.toRevisionCompanion(
+        performedAction: revision,
+      ),
+    );
+  }
+
+  @override
+  Future<FileRevision> getLatestFileRevision(String driveId, String fileId) {
+    return _driveDao
+        .latestFileRevisionByFileId(
+          driveId: driveId,
+          fileId: fileId,
+        )
+        .getSingle();
   }
 }

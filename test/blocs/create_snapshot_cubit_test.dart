@@ -150,13 +150,16 @@ void main() {
         // mocks the state of the profile cubit
         when(() => profileCubit.state).thenReturn(
           ProfileLoggedIn(
-            username: 'username',
-            password: 'password',
-            wallet: testWallet,
-            walletAddress: await testWallet.getAddress(),
-            walletBalance: BigInt.from(100),
-            cipherKey: SecretKey(
-              [1, 2, 3, 4, 5],
+            user: User(
+              password: 'password',
+              wallet: testWallet,
+              walletAddress: await testWallet.getAddress(),
+              walletBalance: BigInt.from(100),
+              cipherKey: SecretKey(
+                [1, 2, 3, 4, 5],
+              ),
+              profileType: ProfileType.json,
+              ioTokens: 'ioTokens',
             ),
             useTurbo: false,
           ),

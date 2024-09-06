@@ -62,7 +62,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     }
 
     final minimumWalletBalance = BigInt.from(10000000);
-    if (profile.walletBalance <= minimumWalletBalance &&
+    if (profile.user.walletBalance <= minimumWalletBalance &&
         !_turboUploadService.useTurboUpload) {
       emit(DriveCreateZeroBalance(privacy: state.privacy));
       return;
@@ -72,14 +72,14 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
 
     try {
       final String drivePrivacy = form.control('privacy').value;
-      final walletAddress = await profile.wallet.getAddress();
+      final walletAddress = await profile.user.wallet.getAddress();
       final createRes = await _driveDao.createDrive(
         name: driveName,
         ownerAddress: walletAddress,
         privacy: drivePrivacy,
-        wallet: profile.wallet,
-        password: profile.password,
-        profileKey: profile.cipherKey,
+        wallet: profile.user.wallet,
+        password: profile.user.password,
+        profileKey: profile.user.cipherKey,
       );
 
       final drive = DriveEntity(
@@ -94,7 +94,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
 
       final driveDataItem = await _arweave.prepareEntityDataItem(
         drive,
-        profile.wallet,
+        profile.user.wallet,
         key: createRes.driveKey,
       );
 
@@ -106,11 +106,11 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
 
       final rootFolderDataItem = await _arweave.prepareEntityDataItem(
         rootFolderEntity,
-        profile.wallet,
+        profile.user.wallet,
         key: createRes.driveKey,
       );
 
-      final signer = ArweaveSigner(profile.wallet);
+      final signer = ArweaveSigner(profile.user.wallet);
 
       await rootFolderDataItem.sign(signer);
       await driveDataItem.sign(signer);
@@ -120,18 +120,18 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
           await DataBundle.fromDataItems(
             items: [driveDataItem, rootFolderDataItem],
           ),
-          profile.wallet,
+          profile.user.wallet,
         );
         await _turboUploadService.postDataItem(
           dataItem: createTx as DataItem,
-          wallet: profile.wallet,
+          wallet: profile.user.wallet,
         );
       } else {
         createTx = await _arweave.prepareDataBundleTx(
           await DataBundle.fromDataItems(
             items: [driveDataItem, rootFolderDataItem],
           ),
-          profile.wallet,
+          profile.user.wallet,
         );
         await _arweave.postTx(createTx as Transaction);
       }
