@@ -51,6 +51,7 @@ void main() async {
       late MockManifestDataBuilder mockBuilder;
       late ARFSRevisionStatusUtils mockVersionRevisionStatusUtils;
       late MockArnsRepository mockArnsRepository;
+      late MockFileRepository mockFileRepository;
       setUp(() {
         mockDriveDao = MockDriveDao();
         mockMetadata = MockARFSFileUploadMetadata();
@@ -60,7 +61,7 @@ void main() async {
         mockBuilder = MockManifestDataBuilder();
         mockVersionRevisionStatusUtils = MockARFSVersionRevisionStatusUtils();
         mockArnsRepository = MockArnsRepository();
-
+        mockFileRepository = MockFileRepository();
         registerFallbackValue(FileEntity());
         registerFallbackValue(const FileRevisionsCompanion());
         registerFallbackValue(
@@ -81,6 +82,7 @@ void main() async {
           mockBuilder,
           mockVersionRevisionStatusUtils,
           mockArnsRepository,
+          mockFileRepository,
         );
 
         // Setup mock data and behavior
@@ -100,23 +102,17 @@ void main() async {
 
       group('saveManifestOnDatabase', () {
         test('Successfully saves a new manifest', () async {
-          // Ensure transaction method is correctly mocked to return a Future
-          when(() => mockDriveDao.runTransaction(any()))
-              .thenAnswer((invocation) async {
-            final Function transaction = invocation.positionalArguments[0];
-            await transaction();
-          });
-
-          when(() => mockDriveDao.writeFileEntity(any()))
-              .thenAnswer((_) async {});
-          when(() => mockDriveDao.insertFileRevision(any()))
-              .thenAnswer((_) async {});
+          when(() => mockFileRepository.updateFile<FileEntity>(any()))
+              .thenAnswer((_) async => []);
+          when(() => mockFileRepository.updateFileRevision(
+              any(), RevisionAction.create)).thenAnswer((_) async => []);
 
           await repository.saveManifestOnDatabase(manifest: mockMetadata);
 
-          verify(() => mockDriveDao.writeFileEntity(any())).called(1);
-          verify(() => mockDriveDao.insertFileRevision(any())).called(1);
-          verify(() => mockDriveDao.runTransaction(any())).called(1);
+          verify(() => mockFileRepository.updateFile<FileEntity>(any()))
+              .called(1);
+          verify(() => mockFileRepository.updateFileRevision(
+              any(), RevisionAction.create)).called(1);
         });
 
         test('Exception when saving manifest on database', () async {
@@ -225,6 +221,10 @@ void main() async {
         test('Successfully uploads and saves manifest USING TURBO', () async {
           // TURBO
           when(() => mockUploadParams.uploadType).thenReturn(UploadType.turbo);
+          when(() => mockFileRepository.updateFile<FileEntity>(any()))
+              .thenAnswer((_) async => []);
+          when(() => mockFileRepository.updateFileRevision(
+              any(), RevisionAction.create)).thenAnswer((_) async => []);
 
           await repository.uploadManifest(params: mockUploadParams);
           // Verify interactions
@@ -237,21 +237,24 @@ void main() async {
                 type: UploadType.turbo,
               )).called(1);
 
-          verify(() => mockDriveDao.runTransaction(any())).called(1);
-          verify(() => mockDriveDao.writeFileEntity(any())).called(1);
-          verify(() => mockDriveDao.insertFileRevision(any())).called(1);
+          verify(() => mockFileRepository.updateFile<FileEntity>(any()))
+              .called(1);
+          verify(() => mockFileRepository.updateFileRevision(
+              any(), RevisionAction.create)).called(1);
         });
 
-        test('Successfully uploads and saves manifest USING AR', () async {
-          registerFallbackValue(argsAR);
-
-          when(() => mockUploadParams.uploadType).thenReturn(UploadType.d2n);
-
-          when(() => mockUploadController.onDone(any()))
-              .thenAnswer((invocation) {
-            final onDone = invocation.positionalArguments.first as Function;
-            onDone([uploadTaskAR]);
-          });
+        test(
+            'Successfully uploads and saves manifest USING TURBO and existing manifest',
+            () async {
+          // TURBO
+          when(() => mockUploadParams.uploadType).thenReturn(UploadType.turbo);
+          when(() => mockUploadParams.existingManifestFileId)
+              .thenReturn('existingManifestFileId');
+          when(() => mockFileRepository.updateFile<FileEntity>(any()))
+              .thenAnswer((_) async => []);
+          when(() => mockFileRepository.updateFileRevision(
+                  any(), RevisionAction.uploadNewVersion))
+              .thenAnswer((_) async => []);
 
           await repository.uploadManifest(params: mockUploadParams);
           // Verify interactions
@@ -260,13 +263,14 @@ void main() async {
                 args: any(named: 'args'),
                 wallet: any(named: 'wallet'),
 
-                /// Uploads using AR
-                type: UploadType.d2n,
+                /// TURBO
+                type: UploadType.turbo,
               )).called(1);
 
-          verify(() => mockDriveDao.runTransaction(any())).called(1);
-          verify(() => mockDriveDao.writeFileEntity(any())).called(1);
-          verify(() => mockDriveDao.insertFileRevision(any())).called(1);
+          verify(() => mockFileRepository.updateFile<FileEntity>(any()))
+              .called(1);
+          verify(() => mockFileRepository.updateFileRevision(
+              any(), RevisionAction.uploadNewVersion)).called(1);
         });
 
         test(
@@ -281,6 +285,11 @@ void main() async {
             onDone([uploadTaskTurbo]);
           });
 
+          when(() => mockFileRepository.updateFile<FileEntity>(any()))
+              .thenAnswer((_) async => []);
+          when(() => mockFileRepository.updateFileRevision(
+              any(), RevisionAction.create)).thenAnswer((_) async => []);
+
           when(() => mockArnsRepository.setUndernamesToFile(
                 undername: any(named: 'undername'),
                 fileId: any(named: 'fileId'),
@@ -313,9 +322,6 @@ void main() async {
                 type: UploadType.turbo,
               )).called(1);
 
-          verify(() => mockDriveDao.runTransaction(any())).called(1);
-          verify(() => mockDriveDao.writeFileEntity(any())).called(1);
-          verify(() => mockDriveDao.insertFileRevision(any())).called(1);
           verify(() => mockArnsRepository.setUndernamesToFile(
                 undername: any(named: 'undername'),
                 fileId: any(named: 'fileId'),
@@ -323,6 +329,11 @@ void main() async {
                 driveId: any(named: 'driveId'),
                 processId: any(named: 'processId'),
               )).called(1);
+
+          verify(() => mockFileRepository.updateFile<FileEntity>(any()))
+              .called(1);
+          verify(() => mockFileRepository.updateFileRevision(
+              any(), RevisionAction.create)).called(1);
         });
 
         test(
@@ -336,6 +347,11 @@ void main() async {
             final onDone = invocation.positionalArguments.first as Function;
             onDone([uploadTaskTurbo]);
           });
+
+          when(() => mockFileRepository.updateFile<FileEntity>(any()))
+              .thenAnswer((_) async => []);
+          when(() => mockFileRepository.updateFileRevision(
+              any(), RevisionAction.create)).thenAnswer((_) async => []);
 
           when(() => mockArnsRepository.setUndernamesToFile(
                 undername: any(named: 'undername'),
@@ -369,9 +385,6 @@ void main() async {
                 type: UploadType.d2n,
               )).called(1);
 
-          verify(() => mockDriveDao.runTransaction(any())).called(1);
-          verify(() => mockDriveDao.writeFileEntity(any())).called(1);
-          verify(() => mockDriveDao.insertFileRevision(any())).called(1);
           verify(() => mockArnsRepository.setUndernamesToFile(
                 undername: any(named: 'undername'),
                 fileId: any(named: 'fileId'),
