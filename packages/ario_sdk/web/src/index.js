@@ -1,10 +1,20 @@
 import { ANT, ArNSEventEmitter, ArweaveSigner, IO, mIOToken } from '@ar.io/sdk';
 
+
+window.ario = {
+  getGateways,
+  getIOTokens,
+  setARNS,
+  setAnt,
+  getUndernames,
+  getARNSRecordsForWallet,
+};
+
 async function getGateways() {
   const io = IO.init();
   let cursor = null;
   let allGateways = [];
-  const limit = 100; // Adjust the limit as needed
+  const limit = 100;
 
   while (true) {
     const response = await io.getGateways({
@@ -13,8 +23,6 @@ async function getGateways() {
       sortOrder: 'desc',
       sortBy: 'operatorStake',
     });
-
-    console.log(response);
 
     // Add the retrieved gateways to the array
     allGateways = allGateways.concat(response.items);
@@ -47,15 +55,6 @@ async function getIOTokens(address) {
   }
 }
 
-window.ario = {
-  getGateways,
-  getIOTokens,
-  setARNS,
-  setAnt,
-  getUndernames,
-  getARNSRecord,
-  getARNSRecordsForWallet,
-};
 
 
 async function setAnt(JWKString, processId, txId, undername) {
@@ -85,19 +84,9 @@ async function setARNS(JWKString, txId, domain, undername) {
 
   const processId = record.processId;
 
-  console.log('TransationId : ' + txId);
-
   const setRecordResult = await setAnt(JWKString, processId, txId, undername);
 
   return JSON.stringify(setRecordResult);
-}
-
-async function getARNSRecord(JWKString, domain) {
-  const io = IO.init();
-
-  const record = await io.getArNSRecord({ name: domain });
-
-  return JSON.stringify(record);
 }
 
 async function getUndernames(JWKString, processId) {
@@ -126,8 +115,8 @@ async function getProcesses(address) {
   return new Promise((resolve, reject) => {
     // Initialize the emitter
     const arnsEmitter = new ArNSEventEmitter({
-      timeoutMs: 60000, // You can adjust the timeout as needed
-      concurrency: 10, // Adjust concurrency based on your needs
+      timeoutMs: 60000,
+      concurrency: 10,
     });
 
     // Set up event listeners
@@ -152,8 +141,7 @@ async function getProcesses(address) {
     // Fetch processes owned by the wallet
     arnsEmitter.fetchProcessesOwnedByWallet({
       address: address,
-      pageSize: 1000, // Adjust pageSize as needed
+      pageSize: 1000,
     });
   });
 }
-

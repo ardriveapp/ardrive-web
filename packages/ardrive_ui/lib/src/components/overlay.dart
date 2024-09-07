@@ -147,17 +147,7 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    widget.items[index],
-                                    // if (widget.hasDivider &&
-                                    //     index != widget.items.length - 1)
-                                    //   Divider(
-                                    //     height: 0,
-                                    //     thickness: widget.dividerThickness ?? 1,
-                                    //     color: ArDriveTheme.of(context)
-                                    //         .themeData
-                                    //         .colors
-                                    //         .themeBorderDefault,
-                                    //   ),
+                                    widget.items[index]
                                   ],
                                 ),
                               ],
