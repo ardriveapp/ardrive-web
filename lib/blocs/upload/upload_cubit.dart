@@ -118,7 +118,7 @@ class UploadCubit extends Cubit<UploadState> {
           isDragNDrop: isDragNDrop,
           isNextButtonEnabled: canUpload,
           isArConnect: (state as UploadReadyToPrepare).isArConnect,
-          showArnsCheckbox: hasUndernames,
+          showArnsCheckbox: hasUndernames && files.length == 1,
           showArnsNameSelection: false,
         ),
       );
