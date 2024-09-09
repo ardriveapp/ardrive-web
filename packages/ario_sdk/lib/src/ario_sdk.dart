@@ -1,6 +1,7 @@
 library ario;
 
-import 'package:ario_sdk/src/models/gateway.dart';
+import 'package:ario_sdk/ario_sdk.dart';
+import 'package:ario_sdk/src/models/response_object.dart';
 
 abstract class ArioSDK {
   /// Get the list of available gateways
@@ -8,4 +9,16 @@ abstract class ArioSDK {
 
   /// Get the amount of IO tokens for the given address
   Future<String> getIOTokens(String address);
+
+  Future<List<ARNSProcessData>> getAntRecordsForWallet(String address);
+
+  Future<List<ARNSUndername>> getUndernames(String jwtString, ANTRecord record,
+      {bool update = false});
+
+  Future<dynamic> setUndername({
+    required String jwtString,
+    required String txId,
+    required String domain,
+    String undername = '@',
+  });
 }

@@ -1,6 +1,6 @@
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
-import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
+import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 
 abstract class MultiDownloadItem {}
 

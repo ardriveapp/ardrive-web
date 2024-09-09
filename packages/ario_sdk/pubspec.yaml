@@ -14,11 +14,12 @@ dependencies:
   mocktail: ^1.0.4
   ardrive_utils:
     path: ../ardrive_utils
+  equatable: ^2.0.5
+  json_annotation:
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
   json_serializable:
-  json_annotation:
   build_runner:

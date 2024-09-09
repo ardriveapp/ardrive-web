@@ -661,7 +661,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
               paymentFormBloc.add(const PaymentFormUpdatePromoCode(null));
             });
           },
-          child: Tooltip(
+          child: ArDriveTooltip(
             message: 'Remove promo code', // TODO: localize
             child: MouseRegion(
               cursor: SystemMouseCursors.click,

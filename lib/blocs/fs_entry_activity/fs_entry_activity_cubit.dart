@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/pages/pages.dart';
+import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

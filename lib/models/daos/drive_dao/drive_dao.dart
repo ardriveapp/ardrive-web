@@ -659,12 +659,21 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       thumbnail: entity.thumbnail != null
           ? Value(jsonEncode(entity.thumbnail!.toJson()))
           : const Value(null),
+      assignedNames: Value(_encodeAssignedNames(entity.assignedNames)),
     );
 
     return into(fileEntries).insert(
       companion,
       onConflict: DoUpdate((_) => companion.copyWith(dateCreated: null)),
     );
+  }
+
+  String? _encodeAssignedNames(List<String>? assignedNames) {
+    if (assignedNames == null || assignedNames.isEmpty) {
+      return null;
+    }
+    final namesMap = {'assignedNames': assignedNames};
+    return jsonEncode(namesMap);
   }
 
   Future<void> writeToTransaction(Insertable<NetworkTransaction> transaction) =>
