@@ -142,10 +142,12 @@ class UploadCubit extends Cubit<UploadState> {
   void initialScreenNext({required LicenseCategory licenseCategory}) {
     if (state is UploadReady) {
       final readyState = state as UploadReady;
-      emit(UploadConfiguringLicense(
-        readyState: readyState,
-        licenseCategory: licenseCategory,
-      ));
+      emit(
+        UploadConfiguringLicense(
+          readyState: readyState,
+          licenseCategory: licenseCategory,
+        ),
+      );
     }
   }
 
@@ -177,8 +179,12 @@ class UploadCubit extends Cubit<UploadState> {
               'Invalid license category: ${configuringLicense.licenseCategory}');
       }
 
+      final readyState = configuringLicense.readyState.copyWith(
+        showArnsNameSelection: showArnsNameSelectionCheckBoxValue,
+      );
+
       emit(UploadReviewWithLicense(
-        readyState: configuringLicense.readyState,
+        readyState: readyState,
         licenseCategory: configuringLicense.licenseCategory,
         licenseState: licenseState,
       ));
@@ -578,6 +584,28 @@ class UploadCubit extends Cubit<UploadState> {
     startUpload(
       uploadPlanForAr: readyState.paymentInfo.uploadPlanForAR!,
       uploadPlanForTurbo: readyState.paymentInfo.uploadPlanForTurbo,
+    );
+  }
+
+  void selectUndernameWithLicense({
+    ANTRecord? antRecord,
+    ARNSUndername? undername,
+  }) {
+    _selectedAntRecord = antRecord;
+    _selectedUndername = undername;
+
+    final reviewWithLicense = state as UploadReviewWithLicense;
+
+    emit(reviewWithLicense.readyState.copyWith(
+      showArnsNameSelection: false,
+    ));
+
+    startUpload(
+      uploadPlanForAr:
+          reviewWithLicense.readyState.paymentInfo.uploadPlanForAR!,
+      uploadPlanForTurbo:
+          reviewWithLicense.readyState.paymentInfo.uploadPlanForTurbo,
+      licenseStateConfigured: reviewWithLicense.licenseState,
     );
   }
 

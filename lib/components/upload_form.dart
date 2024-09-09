@@ -689,6 +689,19 @@ class _UploadFormState extends State<UploadForm> {
                   return const Text('Unsupported license category');
               }
             } else if (state is UploadReviewWithLicense) {
+              if (state.readyState.showArnsNameSelection) {
+                return AssignArNSNameModal(
+                  driveDetailCubit: widget.driveDetailCubit,
+                  justSelectName: true,
+                  onSelectionConfirmed: (name) {
+                    context.read<UploadCubit>().selectUndernameWithLicense(
+                          antRecord: name.selectedName,
+                          undername: name.selectedUndername,
+                        );
+                  },
+                );
+              }
+
               final readyState = state.readyState;
               return StatsScreen(
                 readyState: readyState,
