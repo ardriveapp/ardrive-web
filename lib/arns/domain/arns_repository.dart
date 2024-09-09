@@ -7,6 +7,7 @@ import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ario_sdk/ario_sdk.dart' as sdk;
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:drift/drift.dart';
@@ -61,6 +62,7 @@ class _ARNSRepository implements ARNSRepository {
   final DriveDao _driveDao;
   final TurboUploadService _turboUploadService;
   final ArweaveService _arweave;
+
   _ARNSRepository({
     required ArioSDK sdk,
     required ArDriveAuth auth,
@@ -75,7 +77,14 @@ class _ARNSRepository implements ARNSRepository {
         _driveDao = driveDao,
         _turboUploadService = turboUploadService,
         _arweave = arweave,
-        _arnsDao = arnsDao;
+        _arnsDao = arnsDao,
+        super() {
+    auth.onAuthStateChanged().listen((user) {
+      if (user == null) {
+        _cachedUndernames.clear();
+      }
+    });
+  }
 
   final Map<String, Map<String, ARNSUndername>> _cachedUndernames = {};
 
@@ -182,49 +191,59 @@ class _ARNSRepository implements ARNSRepository {
 
     _getARNSUndernamesCompleter = Completer();
 
-    final processes = await _sdk.getAntRecordsForWallet(address);
+    try {
+      final processes = await _sdk.getAntRecordsForWallet(address);
 
-    final records = <sdk.ANTRecord>[];
+      final records = <sdk.ANTRecord>[];
 
-    for (var process in processes) {
-      final record = ANTRecord(
-        domain: process.names.keys.first,
-        processId: process.names.values.first.processId,
-      );
-
-      records.add(record);
-
-      // saves the undernames to the cache
-      final undernames = process.state.records.keys.map((e) {
-        final record = process.state.records[e];
-
-        return ARNSUndername(
-          record: ARNSRecord(
-            transactionId: record!.transactionId,
-            ttlSeconds: record.ttlSeconds,
-          ),
-          name: e,
+      for (var process in processes) {
+        final record = ANTRecord(
           domain: process.names.keys.first,
+          processId: process.names.values.first.processId,
         );
-      }).toList();
 
-      final undernamesMap = <String, ARNSUndername>{};
+        records.add(record);
 
-      for (var undername in undernames) {
-        undernamesMap[undername.name] = undername;
+        // saves the undernames to the cache
+        final undernames = process.state.records.keys.map((e) {
+          final record = process.state.records[e];
+
+          return ARNSUndername(
+            record: ARNSRecord(
+              transactionId: record!.transactionId,
+              ttlSeconds: record.ttlSeconds,
+            ),
+            name: e,
+            domain: process.names.keys.first,
+          );
+        }).toList();
+
+        final undernamesMap = <String, ARNSUndername>{};
+
+        for (var undername in undernames) {
+          undernamesMap[undername.name] = undername;
+        }
+
+        _cachedUndernames[record.domain] = undernamesMap;
       }
 
-      _cachedUndernames[record.domain] = undernamesMap;
+      await _arnsDao.saveAntRecords(records.map(toAntRecordFromSDK).toList());
+
+      lastUpdated = DateTime.now();
+
+      _getARNSUndernamesCompleter!.complete(records);
+
+      _getARNSUndernamesCompleter = null;
+      return records;
+    } catch (e) {
+      logger.e('Error getting ANT records for wallet: $e');
+
+      _getARNSUndernamesCompleter!.complete([]);
+
+      _getARNSUndernamesCompleter = null;
+
+      return [];
     }
-
-    await _arnsDao.saveAntRecords(records.map(toAntRecordFromSDK).toList());
-
-    lastUpdated = DateTime.now();
-
-    _getARNSUndernamesCompleter!.complete(records);
-
-    _getARNSUndernamesCompleter = null;
-    return records;
   }
 
   @override
