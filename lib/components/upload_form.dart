@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:ardrive/arns/domain/arns_repository.dart';
+import 'package:ardrive/arns/presentation/assign_name_modal.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
@@ -17,6 +19,7 @@ import 'package:ardrive/components/license/learn_about_licensing.dart';
 import 'package:ardrive/components/license/udl_params_form.dart';
 import 'package:ardrive/components/license/view_license_definition.dart';
 import 'package:ardrive/components/license_details_popover.dart';
+import 'package:ardrive/components/progress_dialog.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
@@ -42,6 +45,7 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -60,6 +64,7 @@ Future<void> promptToUpload(
   required bool isFolderUpload,
   List<IOFile>? files,
 }) async {
+  final driveDetailCubit = context.read<DriveDetailCubit>();
   final selectedFiles = <UploadFile>[];
   final io = ArDriveIO();
   IOFolder? ioFolder;
@@ -171,6 +176,7 @@ Future<void> promptToUpload(
                 auth: context.read<ArDriveAuth>(),
                 licenseService: context.read<LicenseService>(),
                 configService: context.read<ConfigService>(),
+                arnsRepository: context.read<ARNSRepository>(),
               )..startUploadPreparation(),
             ),
             BlocProvider(
@@ -181,7 +187,9 @@ Future<void> promptToUpload(
               ),
             ),
           ],
-          child: const UploadForm(),
+          child: UploadForm(
+            driveDetailCubit: driveDetailCubit,
+          ),
         ),
       ),
       barrierDismissible: false,
@@ -190,7 +198,9 @@ Future<void> promptToUpload(
 }
 
 class UploadForm extends StatefulWidget {
-  const UploadForm({super.key});
+  const UploadForm({super.key, required this.driveDetailCubit});
+
+  final DriveDetailCubit driveDetailCubit;
 
   @override
   State<UploadForm> createState() => _UploadFormState();
@@ -242,6 +252,13 @@ class _UploadFormState extends State<UploadForm> {
           buildWhen: (previous, current) =>
               (current is! UploadComplete && current is! UploadReadyToPrepare),
           builder: (context, state) {
+            if (state is AssigningUndername) {
+              return const ProgressDialog(
+                title: 'Assigning ArNS Name...',
+                useNewArDriveUI: true,
+              );
+            }
+
             if (state is UploadFolderNameConflict) {
               return ArDriveStandardModal(
                 title: appLocalizationsOf(context).duplicateFolders(
@@ -468,6 +485,18 @@ class _UploadFormState extends State<UploadForm> {
                 ),
               );
             } else if (state is UploadReady) {
+              if (state.showArnsNameSelection) {
+                return AssignArNSNameModal(
+                  driveDetailCubit: widget.driveDetailCubit,
+                  justSelectName: true,
+                  onSelectionConfirmed: (name) {
+                    context.read<UploadCubit>().selectUndername(
+                        name.selectedName, name.selectedUndername);
+                    context.read<UploadCubit>().hideArnsNameSelection();
+                  },
+                );
+              }
+
               final typography = ArDriveTypographyNew.of(context);
               return ReactiveForm(
                 formGroup: context.watch<UploadCubit>().licenseCategoryForm,
@@ -560,6 +589,26 @@ class _UploadFormState extends State<UploadForm> {
                             ],
                           ),
                         ),
+                      if (state.showArnsCheckbox)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: Row(
+                            children: [
+                              ArDriveCheckBox(
+                                title: 'Assign an ARNS name',
+                                checked: false,
+                                titleStyle: typography.paragraphLarge(
+                                  fontWeight: ArFontWeight.semiBold,
+                                ),
+                                onChange: (value) {
+                                  context
+                                      .read<UploadCubit>()
+                                      .changeShowArnsNameSelection(value);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
                       SizedBox(
                         child: ReactiveForm(
                           formGroup:
@@ -641,6 +690,19 @@ class _UploadFormState extends State<UploadForm> {
                   return const Text('Unsupported license category');
               }
             } else if (state is UploadReviewWithLicense) {
+              if (state.readyState.showArnsNameSelection) {
+                return AssignArNSNameModal(
+                  driveDetailCubit: widget.driveDetailCubit,
+                  justSelectName: true,
+                  onSelectionConfirmed: (name) {
+                    context.read<UploadCubit>().selectUndernameWithLicense(
+                          antRecord: name.selectedName,
+                          undername: name.selectedUndername,
+                        );
+                  },
+                );
+              }
+
               final readyState = state.readyState;
               return StatsScreen(
                 readyState: readyState,
@@ -659,6 +721,33 @@ class _UploadFormState extends State<UploadForm> {
                   ),
                 ],
                 children: [
+                  if (state.readyState.params.arnsUnderName != null) ...[
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'ArNS Name: ',
+                          style: ArDriveTypography.body.smallRegular(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgSubtle,
+                          ),
+                        ),
+                        Text(
+                          getLiteralARNSRecordName(
+                            state.readyState.params.arnsUnderName!,
+                          ),
+                          style: ArDriveTypography.body.buttonLargeRegular(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgDefault,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   LicenseReviewInfo(licenseState: state.licenseState),
                 ],
               );
@@ -1038,6 +1127,12 @@ class _UploadFormState extends State<UploadForm> {
                               'We are preparing your upload. Preparation step 2/2';
                         case UploadStatus.uploadingThumbnail:
                           status = 'Uploading thumbnail...';
+                          break;
+                        case UploadStatus.assigningUndername:
+                          if (task is FileUploadTask) {
+                            status =
+                                'Assigning ArNS Name: ${task.metadata.assignedName}...';
+                          }
                           break;
                       }
 

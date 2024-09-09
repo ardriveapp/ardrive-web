@@ -58,6 +58,10 @@ class AppPlatform {
       getPlatform() == SystemPlatform.Android ||
       getPlatform() == SystemPlatform.iOS;
 
+  static bool isWeb() {
+    return _mockPlatform == SystemPlatform.Web || kIsWeb;
+  }
+
   static bool isMobileWeb() {
     return kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.iOS ||

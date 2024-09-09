@@ -4,12 +4,18 @@ import 'package:flutter/material.dart';
 class SearchTextField extends StatelessWidget {
   const SearchTextField({
     super.key,
-    required this.controller,
+    this.controller,
     required this.onFieldSubmitted,
+    this.onChanged,
+    this.hintText,
+    this.labelText,
   });
 
-  final TextEditingController controller;
+  final TextEditingController? controller;
   final Function(String text) onFieldSubmitted;
+  final Function(String text)? onChanged;
+  final String? hintText;
+  final String? labelText;
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +24,9 @@ class SearchTextField extends StatelessWidget {
 
     return ArDriveTextFieldNew(
       controller: controller,
-      hintText: 'Search',
+      hintText: hintText,
+      label: labelText,
+      onChanged: onChanged,
       prefixIcon: Padding(
         padding: const EdgeInsets.only(right: 8.0, left: 16),
         child: Icon(
@@ -41,7 +49,8 @@ class SearchTextField extends StatelessWidget {
               color: colorTokens.textMid,
             ),
             onTap: () {
-              controller.clear();
+              controller?.clear();
+              onChanged?.call('');
             },
           ),
         ),

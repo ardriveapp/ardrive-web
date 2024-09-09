@@ -6,6 +6,7 @@ import 'package:ardrive/blocs/drive_detail/utils/breadcrumb_builder.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/repository/drive_repository.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
@@ -130,6 +131,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         ),
         _profileCubit.stream.startWith(ProfileCheckingAvailability()),
         (drive, folderContents, _) async {
+          await _syncCubit.waitCurrentSync();
+
           if (drive == null) {
             emit(DriveDetailLoadNotFound());
             return;
@@ -205,7 +208,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 selectedItem: _selectedItem,
                 currentDrive: drive,
                 hasWritePermissions: profile is ProfileLoggedIn &&
-                    drive.ownerAddress == profile.walletAddress,
+                    drive.ownerAddress == profile.user.walletAddress,
                 folderInView: folderContents,
                 contentOrderBy: contentOrderBy,
                 contentOrderingMode: contentOrderingMode,
@@ -227,7 +230,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 selectedItem: _selectedItem,
                 currentDrive: drive,
                 hasWritePermissions: profile is ProfileLoggedIn &&
-                    drive.ownerAddress == profile.walletAddress,
+                    drive.ownerAddress == profile.user.walletAddress,
                 folderInView: folderContents,
                 contentOrderBy: contentOrderBy,
                 contentOrderingMode: contentOrderingMode,

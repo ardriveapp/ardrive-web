@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/pages/pages.dart';
+import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -117,7 +117,7 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
 
         final driveKey = targetDrive.isPrivate
             ? await _driveDao.getDriveKey(
-                targetFolder.driveId, profile.cipherKey)
+                targetFolder.driveId, profile.user.cipherKey)
             : null;
 
         final folder = FolderEntry(
@@ -137,19 +137,19 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
         if (_turboUploadService.useTurboUpload) {
           final folderDataItem = await _arweave.prepareEntityDataItem(
             folderEntity,
-            profile.wallet,
+            profile.user.wallet,
             key: driveKey,
           );
 
           await _turboUploadService.postDataItem(
             dataItem: folderDataItem,
-            wallet: profile.wallet,
+            wallet: profile.user.wallet,
           );
           folderEntity.txId = folderDataItem.id;
         } else {
           final folderTx = await _arweave.prepareEntityTx(
             folderEntity,
-            profile.wallet,
+            profile.user.wallet,
             driveKey,
           );
 

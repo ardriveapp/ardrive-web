@@ -157,7 +157,8 @@ class HideBloc extends Bloc<HideEvent, HideState> {
         : (currentEntry as FolderEntry).driveId;
 
     final profile = _profileCubit.state as ProfileLoggedIn;
-    final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
+    final driveKey =
+        await _driveDao.getDriveKey(driveId, profile.user.cipherKey);
     final SecretKey? entityKey;
 
     if (driveKey != null) {
@@ -188,7 +189,7 @@ class HideBloc extends Bloc<HideEvent, HideState> {
 
     final dataItem = await _arweave.prepareEntityDataItem(
       newEntryEntity,
-      profile.wallet,
+      profile.user.wallet,
       key: entityKey,
     );
 
@@ -258,16 +259,16 @@ class HideBloc extends Bloc<HideEvent, HideState> {
         if (_useTurboUpload) {
           final hideTx = await _arweave.prepareBundledDataItem(
             dataBundle,
-            profile.wallet,
+            profile.user.wallet,
           );
           await _turboUploadService.postDataItem(
             dataItem: hideTx,
-            wallet: profile.wallet,
+            wallet: profile.user.wallet,
           );
         } else {
           final hideTx = await _arweave.prepareDataBundleTx(
             dataBundle,
-            profile.wallet,
+            profile.user.wallet,
           );
           await _arweave.postTx(hideTx);
         }

@@ -56,7 +56,8 @@ class FileShareCubit extends Cubit<FileShareState> {
         SecretKey? driveKey;
 
         if (profile is ProfileLoggedIn) {
-          driveKey = await _driveDao.getDriveKey(drive.id, profile.cipherKey);
+          driveKey =
+              await _driveDao.getDriveKey(drive.id, profile.user.cipherKey);
         } else {
           driveKey = await _driveDao.getDriveKeyFromMemory(driveId);
         }

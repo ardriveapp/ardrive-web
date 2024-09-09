@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:ardrive/arns/utils/parse_assigned_names_from_string.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:drift/drift.dart';
 
@@ -28,6 +29,7 @@ extension FileRevisionsCompanionExtensions on FileRevisionsCompanion {
         // TODO: path is not used in the app, so it's not necessary to set it
         path: '',
         thumbnail: Value(thumbnail.value),
+        assignedNames: Value(assignedNames.value),
       );
 
   /// Returns a list of [NetworkTransactionsCompanion] representing the metadata and data transactions
@@ -47,7 +49,18 @@ extension FileEntityExtensions on FileEntity {
   FileRevisionsCompanion toRevisionCompanion({
     required String performedAction,
   }) {
-    final thumbnailData = jsonEncode(thumbnail?.toJson());
+    String? thumbnailData;
+    String? assignedNamesData;
+    if (thumbnail != null) {
+      thumbnailData = jsonEncode(thumbnail?.toJson());
+    }
+
+    if (assignedNames != null) {
+      assignedNamesData = jsonEncode({
+        'assignedNames': assignedNames,
+      });
+    }
+
     return FileRevisionsCompanion.insert(
       fileId: id!,
       driveId: driveId!,
@@ -67,32 +80,47 @@ extension FileEntityExtensions on FileEntity {
       pinnedDataOwnerAddress: Value(pinnedDataOwnerAddress),
       isHidden: Value(isHidden ?? false),
       thumbnail: Value(thumbnailData),
+      assignedNames: Value(assignedNamesData),
     );
   }
 
   FileRevision toRevision({
     required String performedAction,
-  }) =>
-      FileRevision(
-        fileId: id!,
-        driveId: driveId!,
-        name: name!,
-        parentFolderId: parentFolderId!,
-        size: size!,
-        lastModifiedDate: lastModifiedDate ?? DateTime.now(),
-        metadataTxId: txId,
-        dataTxId: dataTxId!,
-        licenseTxId: licenseTxId,
-        dateCreated: createdAt,
-        dataContentType: dataContentType,
-        action: performedAction,
-        bundledIn: bundledIn,
-        customGQLTags: customGqlTagsAsString,
-        customJsonMetadata: customJsonMetadataAsString,
-        pinnedDataOwnerAddress: pinnedDataOwnerAddress,
-        isHidden: isHidden ?? false,
-        thumbnail: jsonEncode(thumbnail?.toJson()),
-      );
+  }) {
+    String? thumbnailData;
+    String? assignedNamesData;
+    if (thumbnail != null) {
+      thumbnailData = jsonEncode(thumbnail?.toJson());
+    }
+
+    if (assignedNames != null) {
+      assignedNamesData = jsonEncode({
+        'assignedNames': assignedNames,
+      });
+    }
+
+    return FileRevision(
+      fileId: id!,
+      driveId: driveId!,
+      name: name!,
+      parentFolderId: parentFolderId!,
+      size: size!,
+      lastModifiedDate: lastModifiedDate ?? DateTime.now(),
+      metadataTxId: txId,
+      dataTxId: dataTxId!,
+      licenseTxId: licenseTxId,
+      dateCreated: createdAt,
+      dataContentType: dataContentType,
+      action: performedAction,
+      bundledIn: bundledIn,
+      customGQLTags: customGqlTagsAsString,
+      customJsonMetadata: customJsonMetadataAsString,
+      pinnedDataOwnerAddress: pinnedDataOwnerAddress,
+      isHidden: isHidden ?? false,
+      thumbnail: thumbnailData,
+      assignedNames: assignedNamesData,
+    );
+  }
 
   /// Returns the action performed on the file that lead to the new revision.
   String? getPerformedRevisionAction(
@@ -111,9 +139,18 @@ extension FileEntityExtensions on FileEntity {
       return RevisionAction.hide;
     } else if (isHidden == false && previousRevision.isHidden.value == true) {
       return RevisionAction.unhide;
-    } else if (jsonEncode(thumbnail?.toJson()) !=
-        previousRevision.thumbnail.value) {
-      return RevisionAction.rename;
+    } else if (thumbnail != null &&
+        jsonEncode(thumbnail?.toJson()) != previousRevision.thumbnail.value) {
+      return RevisionAction.createThumbnail;
+    } else if (assignedNames != null) {
+      final previousAssignedNames =
+          parseAssignedNamesFromString(previousRevision.assignedNames.value);
+      if (previousAssignedNames == null) {
+        return RevisionAction.assignName;
+      }
+      if (assignedNames!.length > previousAssignedNames.length) {
+        return RevisionAction.assignName;
+      }
     }
 
     return null;

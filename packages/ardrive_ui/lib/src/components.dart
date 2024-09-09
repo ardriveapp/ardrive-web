@@ -21,3 +21,4 @@ export 'components/tab_view.dart';
 export 'components/text_field.dart';
 export 'components/text_field_new.dart';
 export 'components/toggle_switch.dart';
+export 'components/tooltip.dart';

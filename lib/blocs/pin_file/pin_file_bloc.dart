@@ -281,7 +281,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
   ) async {
     final stateAsPinFileFieldsValid = state as PinFileFieldsValid;
     final profileState = _profileCubit.state as ProfileLoggedIn;
-    final wallet = profileState.wallet;
+    final wallet = profileState.user.wallet;
     final signer = ArweaveSigner(wallet);
 
     emit(PinFileCreating(
@@ -305,7 +305,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
     await _driveDao.transaction(() async {
       final driveKey = await _driveDao.getDriveKey(
         _driveId,
-        profileState.cipherKey,
+        profileState.user.cipherKey,
       );
       final fileKey = driveKey != null
           ? await _crypto.deriveFileKey(driveKey, newFileEntity.id!)
@@ -336,7 +336,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
 
         await _turboUploadService.postDataItem(
           dataItem: fileDataItem,
-          wallet: profileState.wallet,
+          wallet: profileState.user.wallet,
         );
         newFileEntity.txId = fileDataItem.id;
       } else {

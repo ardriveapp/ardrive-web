@@ -1,4 +1,5 @@
 import 'package:ardrive/services/config/config.dart';
+import 'package:ardrive/services/config/selected_gateway.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -27,6 +28,10 @@ void main() {
         (_) async => AppConfig(
           stripePublishableKey: '',
           allowedDataItemSizeForTurbo: 100,
+          defaultArweaveGatewayForDataRequest: const SelectedGateway(
+            label: 'Arweave.net',
+            url: 'https://arweave.net',
+          ),
         ),
       );
 
@@ -69,6 +74,10 @@ void main() {
       final config = AppConfig(
         stripePublishableKey: '',
         allowedDataItemSizeForTurbo: 100,
+        defaultArweaveGatewayForDataRequest: const SelectedGateway(
+          label: 'Arweave.net',
+          url: 'https://arweave.net',
+        ),
       );
 
       configService.updateAppConfig(config);
@@ -88,6 +97,10 @@ void main() {
           .thenAnswer((_) async => AppConfig(
                 stripePublishableKey: '',
                 allowedDataItemSizeForTurbo: 100,
+                defaultArweaveGatewayForDataRequest: const SelectedGateway(
+                  label: 'Arweave.net',
+                  url: 'https://arweave.net',
+                ),
               ));
 
       await configService.resetDevToolsPrefs();
@@ -109,6 +122,10 @@ void main() {
           .thenAnswer((_) async => AppConfig(
                 stripePublishableKey: '',
                 allowedDataItemSizeForTurbo: 100,
+                defaultArweaveGatewayForDataRequest: const SelectedGateway(
+                  label: 'Arweave.net',
+                  url: 'https://arweave.net',
+                ),
               ));
 
       await configService.loadConfig();
@@ -128,6 +145,10 @@ void main() {
           .thenAnswer((_) async => AppConfig(
                 allowedDataItemSizeForTurbo: 100,
                 stripePublishableKey: '',
+                defaultArweaveGatewayForDataRequest: const SelectedGateway(
+                  label: 'Arweave.net',
+                  url: 'https://arweave.net',
+                ),
               ));
 
       await configService.loadConfig(); // Assuming this sets _flavor

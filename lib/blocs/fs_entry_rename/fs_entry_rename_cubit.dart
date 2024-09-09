@@ -73,7 +73,8 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
       }
 
       final profile = _profileCubit.state as ProfileLoggedIn;
-      final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
+      final driveKey =
+          await _driveDao.getDriveKey(driveId, profile.user.cipherKey);
 
       if (await _profileCubit.logoutIfWalletMismatch()) {
         emit(_isRenamingFolder
@@ -94,18 +95,18 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
           if (_turboUploadService.useTurboUpload) {
             final folderDataItem = await _arweave.prepareEntityDataItem(
               folderEntity,
-              profile.wallet,
+              profile.user.wallet,
               key: driveKey,
             );
 
             await _turboUploadService.postDataItem(
               dataItem: folderDataItem,
-              wallet: profile.wallet,
+              wallet: profile.user.wallet,
             );
             folderEntity.txId = folderDataItem.id;
           } else {
             final folderTx = await _arweave.prepareEntityTx(
-                folderEntity, profile.wallet, driveKey);
+                folderEntity, profile.user.wallet, driveKey);
 
             await _arweave.postTx(folderTx);
             folderEntity.txId = folderTx.id;
@@ -171,18 +172,18 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
           if (_turboUploadService.useTurboUpload) {
             final fileDataItem = await _arweave.prepareEntityDataItem(
               fileEntity,
-              profile.wallet,
+              profile.user.wallet,
               key: fileKey,
             );
 
             await _turboUploadService.postDataItem(
               dataItem: fileDataItem,
-              wallet: profile.wallet,
+              wallet: profile.user.wallet,
             );
             fileEntity.txId = fileDataItem.id;
           } else {
             final fileTx = await _arweave.prepareEntityTx(
-                fileEntity, profile.wallet, fileKey);
+                fileEntity, profile.user.wallet, fileKey);
 
             await _arweave.postTx(fileTx);
             fileEntity.txId = fileTx.id;

@@ -75,3 +75,7 @@ app.*.map.json
 
 # FVM Version Cache
 .fvm/
+
+# Ignore node_modules and package-lock.json in ario_sdk/web
+packages/ario_sdk/web/node_modules/
+packages/ario_sdk/web/package-lock.json

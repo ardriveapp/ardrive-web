@@ -155,7 +155,7 @@ class _LoginPageState extends State<LoginPage> {
             logger.d('Login Success, unlocking default profile');
 
             context.read<ProfileCubit>().unlockDefaultProfile(
-                  loginState.user.password,
+                  loginState.user,
                   profileType,
                 );
           }

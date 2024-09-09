@@ -3,6 +3,7 @@ import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 
 abstract class UserRepository {
@@ -15,6 +16,7 @@ abstract class UserRepository {
   );
   Future<void> deleteUser();
   Future<String?> getOwnerOfDefaultProfile();
+  Future<BigInt> getBalance(Wallet wallet);
 
   factory UserRepository(ProfileDao profileDao, ArweaveService arweave) =>
       _UserRepository(
@@ -46,6 +48,8 @@ class _UserRepository implements UserRepository {
 
     final profileDetails = await _profileDao.loadDefaultProfile(password);
 
+    final ioTokens = await _getIOTokens(profileDetails: profileDetails);
+
     final user = User(
       profileType: ProfileType.values[profileDetails.details.profileType],
       wallet: profileDetails.wallet,
@@ -55,6 +59,7 @@ class _UserRepository implements UserRepository {
       walletBalance: await _arweave.getWalletBalance(
         await profileDetails.wallet.getAddress(),
       ),
+      ioTokens: ioTokens,
     );
 
     logger.d('Loaded user');
@@ -100,6 +105,37 @@ class _UserRepository implements UserRepository {
     }
 
     return profile.walletPublicKey;
+  }
+
+  Future<String?> _getIOTokens({
+    required ProfileLoadDetails profileDetails,
+  }) async {
+    try {
+      String? ioTokens;
+
+      if (isArioSDKSupportedOnPlatform()) {
+        ioTokens = await ArioSDKFactory()
+            .create()
+            .getIOTokens(await profileDetails.wallet.getAddress());
+      }
+
+      return ioTokens;
+    } catch (e, stacktrace) {
+      logger.e('Failed to get IO tokens', e, stacktrace);
+      return null;
+    }
+  }
+
+  @override
+  Future<BigInt> getBalance(Wallet wallet) async {
+    final walletAddress = await wallet.getAddress();
+
+    final walletBalance = await Future.wait([
+      _arweave.getWalletBalance(walletAddress),
+      _arweave.getPendingTxFees(walletAddress),
+    ]).then((res) => res[0] - res[1]);
+
+    return walletBalance;
   }
 }
 

@@ -12,6 +12,7 @@ import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
+import 'package:ardrive/services/config/selected_gateway.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
@@ -28,6 +29,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pst/pst.dart';
 
 import '../core/upload/uploader_test.dart';
+import '../manifest/domain/manifest_repository_test.dart';
 import '../test_utils/utils.dart';
 import 'drives_cubit_test.dart';
 
@@ -70,6 +72,7 @@ void main() {
   late MockArDriveUploadPreparationManager mockArDriveUploadPreparationManager;
   late MockLicenseService mockLicense;
   late MockConfigService mockConfigService;
+  late MockArnsRepository mockArnsRepository;
 
   const tDriveId = 'drive_id';
   const tRootFolderId = 'root-folder-id';
@@ -102,6 +105,10 @@ void main() {
       allowedDataItemSizeForTurbo: 1,
       stripePublishableKey: 'stripePublishableKey',
       defaultTurboUploadUrl: 'defaultTurboUploadUrl',
+      defaultArweaveGatewayForDataRequest: const SelectedGateway(
+        label: 'Arweave.net',
+        url: 'https://arweave.net',
+      ),
     ));
 
     registerFallbackValue(SecretKey([]));
@@ -185,6 +192,7 @@ void main() {
     mockTurboUploadCostCalculator = MockTurboUploadCostCalculator();
     mockArDriveUploadPreparationManager = MockArDriveUploadPreparationManager();
     mockLicense = MockLicenseService();
+    mockArnsRepository = MockArnsRepository();
     late MockUploadPlan uploadPlan;
 
     // Setup mock drive.
@@ -267,6 +275,7 @@ void main() {
       pst: mockPst,
       licenseService: mockLicense,
       configService: mockConfigService,
+      arnsRepository: mockArnsRepository,
     );
   }
 
@@ -292,12 +301,14 @@ void main() {
     setUp(() {
       when(() => mockProfileCubit!.state).thenReturn(
         ProfileLoggedIn(
-          username: 'Test',
-          password: '123',
-          wallet: tWallet,
-          walletAddress: tWalletAddress!,
-          walletBalance: BigInt.one,
-          cipherKey: SecretKey(tKeyBytes),
+          user: User(
+            password: '123',
+            wallet: tWallet,
+            walletAddress: tWalletAddress!,
+            walletBalance: BigInt.one,
+            cipherKey: SecretKey(tKeyBytes),
+            profileType: ProfileType.json,
+          ),
           useTurbo: false,
         ),
       );
@@ -336,6 +347,9 @@ void main() {
           return getUploadCubitInstanceWith(tAllConflictingFiles);
         },
         act: (cubit) async {
+          when(() => mockArnsRepository.getAntRecordsForWallet(any(),
+                  update: any(named: 'update')))
+              .thenAnswer((invocation) => Future.value([]));
           await cubit.startUploadPreparation();
           await cubit.checkConflictingFiles();
         },
@@ -397,12 +411,14 @@ void main() {
         when(() => mockProfileCubit!.state).thenReturn(
           ProfileLoggedIn(
             useTurbo: false,
-            username: 'Test',
-            password: '123',
-            wallet: tWallet,
-            walletAddress: tWalletAddress!,
-            walletBalance: BigInt.one,
-            cipherKey: SecretKey(tKeyBytes),
+            user: User(
+              password: '123',
+              wallet: tWallet,
+              walletAddress: tWalletAddress!,
+              walletBalance: BigInt.one,
+              cipherKey: SecretKey(tKeyBytes),
+              profileType: ProfileType.json,
+            ),
           ),
         );
         when(() => mockProfileCubit!.checkIfWalletMismatch())
@@ -500,12 +516,14 @@ void main() {
     setUp(() {
       when(() => mockProfileCubit!.state).thenReturn(
         ProfileLoggedIn(
-          username: 'Test',
-          password: '123',
-          wallet: tWallet,
-          walletAddress: tWalletAddress!,
-          walletBalance: BigInt.one,
-          cipherKey: SecretKey(tKeyBytes),
+          user: User(
+            password: '123',
+            wallet: tWallet,
+            walletAddress: tWalletAddress!,
+            walletBalance: BigInt.one,
+            cipherKey: SecretKey(tKeyBytes),
+            profileType: ProfileType.json,
+          ),
           useTurbo: false,
         ),
       );

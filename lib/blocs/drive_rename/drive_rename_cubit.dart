@@ -39,7 +39,8 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
     try {
       final profile = _profileCubit.state as ProfileLoggedIn;
 
-      final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
+      final driveKey =
+          await _driveDao.getDriveKey(driveId, profile.user.cipherKey);
 
       if (await _profileCubit.logoutIfWalletMismatch()) {
         emit(DriveRenameWalletMismatch());
@@ -63,25 +64,25 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
         if (_turboUploadService.useTurboUpload) {
           final driveDataItem = await _arweave.prepareEntityDataItem(
             driveEntity,
-            profile.wallet,
+            profile.user.wallet,
             key: driveKey,
           );
           await _turboUploadService.postDataItem(
             dataItem: driveDataItem,
-            wallet: profile.wallet,
+            wallet: profile.user.wallet,
           );
           driveEntity.txId = driveDataItem.id;
         } else {
           final driveTx = await _arweave.prepareEntityTx(
             driveEntity,
-            profile.wallet,
+            profile.user.wallet,
             driveKey,
           );
           await _arweave.postTx(driveTx);
           driveEntity.txId = driveTx.id;
         }
 
-        driveEntity.ownerAddress = profile.walletAddress;
+        driveEntity.ownerAddress = profile.user.walletAddress;
         await _driveDao.writeToDrive(drive);
         await _driveDao.insertDriveRevision(driveEntity.toRevisionCompanion(
           performedAction: RevisionAction.rename,

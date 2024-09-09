@@ -566,6 +566,9 @@ enum UploadStatus {
 
   /// The upload has been canceled
   canceled,
+
+  /// Assiging ArNS Name
+  assigningUndername,
 }
 
 class UploadProgress {

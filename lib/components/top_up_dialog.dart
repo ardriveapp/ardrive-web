@@ -35,7 +35,8 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
 
   @override
   initState() {
-    wallet = (context.read<ProfileCubit>().state as ProfileLoggedIn).wallet;
+    wallet =
+        (context.read<ProfileCubit>().state as ProfileLoggedIn).user.wallet;
     super.initState();
   }
 

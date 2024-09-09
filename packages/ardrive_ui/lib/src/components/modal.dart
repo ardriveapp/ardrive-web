@@ -784,7 +784,9 @@ class ArDriveStandardModalNew extends StatelessWidget {
             maxHeight: 40,
             maxWidth: 100,
             typography: typography,
-            variant: ButtonVariant.secondary,
+            variant: actions.length > 1
+                ? ButtonVariant.secondary
+                : ButtonVariant.primary,
             text: actions.first.title,
             onPressed: actions.first.action,
           ),

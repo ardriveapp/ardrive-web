@@ -1,7 +1,8 @@
+import 'package:ardrive/arns/utils/parse_assigned_names_from_string.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
-import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
+import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 
 part '../utils/arfs_factory.dart';
 
@@ -75,6 +76,7 @@ abstract class ARFSFileEntity extends ARFSEntity {
     this.dataTxId,
     this.licenseTxId,
     this.pinnedDataOwnerAddress,
+    this.assignedNames,
   });
 
   final String id;
@@ -85,6 +87,7 @@ abstract class ARFSFileEntity extends ARFSEntity {
   final String? dataTxId;
   final String? licenseTxId;
   final String? pinnedDataOwnerAddress;
+  final List<String>? assignedNames;
 }
 
 abstract class ARFSPrivateFileEntity extends ARFSFileEntity
@@ -104,6 +107,7 @@ abstract class ARFSPrivateFileEntity extends ARFSFileEntity
     required super.size,
     required super.id,
     super.pinnedDataOwnerAddress,
+    super.assignedNames,
   });
 }
 
@@ -125,6 +129,7 @@ class _ARFSFileEntity extends ARFSFileEntity {
     super.dataTxId,
     super.licenseTxId,
     required super.pinnedDataOwnerAddress,
+    super.assignedNames,
   });
 }
 

@@ -1,3 +1,5 @@
+import 'package:ardrive/arns/domain/arns_repository.dart';
+import 'package:ardrive/arns/presentation/assign_name_modal.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
@@ -40,40 +42,49 @@ import 'components.dart';
 Future<void> promptToCreateManifest(
   BuildContext context, {
   required Drive drive,
+  String? folderId,
   required bool hasPendingFiles,
 }) {
   final pst = context.read<PstService>();
   final configService = context.read<ConfigService>();
   return showArDriveDialog(
     context,
-    content: BlocProvider(
-      create: (context) => CreateManifestCubit(
-        drive: drive,
-        profileCubit: context.read<ProfileCubit>(),
-        hasPendingFiles: hasPendingFiles,
-        folderRepository: context.read<FolderRepository>(),
-        auth: context.read<ArDriveAuth>(),
-        manifestRepository: ManifestRepositoryImpl(
-          context.read<DriveDao>(),
-          ArDriveUploader(
-            turboUploadUri:
-                Uri.parse(configService.config.defaultTurboUploadUrl!),
-            metadataGenerator: ARFSUploadMetadataGenerator(
-              tagsGenerator: ARFSTagsGenetator(
-                appInfoServices: AppInfoServices(),
-              ),
-            ),
-            arweave: context.read<ArweaveService>().client,
-            pstService: pst,
-          ),
-          context.read<FolderRepository>(),
-          ManifestDataBuilder(
-            fileRepository: context.read<FileRepository>(),
+    content: MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: context.read<DriveDetailCubit>()),
+        BlocProvider(
+          create: (context) => CreateManifestCubit(
+            drive: drive,
+            profileCubit: context.read<ProfileCubit>(),
+            hasPendingFiles: hasPendingFiles,
             folderRepository: context.read<FolderRepository>(),
+            auth: context.read<ArDriveAuth>(),
+            manifestRepository: ManifestRepositoryImpl(
+              context.read<DriveDao>(),
+              ArDriveUploader(
+                turboUploadUri:
+                    Uri.parse(configService.config.defaultTurboUploadUrl!),
+                metadataGenerator: ARFSUploadMetadataGenerator(
+                  tagsGenerator: ARFSTagsGenetator(
+                    appInfoServices: AppInfoServices(),
+                  ),
+                ),
+                arweave: context.read<ArweaveService>().client,
+                pstService: pst,
+              ),
+              context.read<FolderRepository>(),
+              ManifestDataBuilder(
+                fileRepository: context.read<FileRepository>(),
+                folderRepository: context.read<FolderRepository>(),
+              ),
+              ARFSRevisionStatusUtils(context.read<FileRepository>()),
+              context.read<ARNSRepository>(),
+              context.read<FileRepository>(),
+            ),
+            arnsRepository: context.read<ARNSRepository>(),
           ),
-          ARFSRevisionStatusUtils(context.read<FileRepository>()),
         ),
-      ),
+      ],
       child: const CreateManifestForm(),
     ),
   );
@@ -120,10 +131,8 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
 
     return BlocConsumer<CreateManifestCubit, CreateManifestState>(
         listener: (context, state) {
-      if (state is CreateManifestSuccess ||
-          state is CreateManifestPrivacyMismatch) {
+      if (state is CreateManifestPrivacyMismatch) {
         Navigator.pop(context);
-        context.read<FeedbackSurveyCubit>().openRemindMe();
       }
     }, builder: (context, state) {
       final textStyle = typography.paragraphNormal(
@@ -151,6 +160,9 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
               ),
             ],
           );
+      if (state is CreateManifestSuccess) {
+        return _createManifestSuccess(context, state);
+      }
 
       if (state is CreateManifestWalletMismatch) {
         Navigator.pop(context);
@@ -188,7 +200,14 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
       if (state is CreateManifestUploadInProgress) {
         return ProgressDialog(
           useNewArDriveUI: true,
-          title: appLocalizationsOf(context).uploadingManifestEmphasized,
+          title: 'Creating Manifest...',
+          progressDescription: Text(
+            _getProgressDescription(state.progress),
+            style: typography.paragraphLarge(
+              color: colorTokens.textHigh,
+              fontWeight: ArFontWeight.bold,
+            ),
+          ),
         );
       } else if (state is CreateManifestUploadReview) {
         return _createManifestUploadReview(
@@ -196,14 +215,95 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           context: context,
           textStyle: textStyle,
         );
-      }
-
-      if (state is CreateManifestFolderLoadSuccess) {
+      } else if (state is CreateManifestFolderLoadSuccess) {
         return _selectFolder(state, context);
+      } else if (state is CreateManifestPreparingManifestWithARNS) {
+        if (state.showAssignNameModal) {
+          return _assignArNSNameModal(
+            context: context,
+            textStyle: textStyle,
+          );
+        }
+
+        return _createManifestPreparingManifestWithARNS(
+          context: context,
+          textStyle: textStyle,
+        );
       }
 
       return const SizedBox();
     });
+  }
+
+  Widget _createManifestSuccess(
+      BuildContext context, CreateManifestSuccess state) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    return ArDriveStandardModalNew(
+      width: kMediumDialogWidth,
+      content: SizedBox(
+        width: 400,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            ArDriveIcons.checkCirle(
+              size: 50,
+              color:
+                  ArDriveTheme.of(context).themeData.colors.themeSuccessDefault,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Manifest Created Successfully',
+              style: typography.heading3(
+                fontWeight: ArFontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            if (!state.nameAssignedByArNS) ...[
+              Text(
+                'Your manifest has been created.',
+                style: typography.paragraphNormal(
+                  color: colorTokens.textMid,
+                ),
+              ),
+            ],
+            if (state.nameAssignedByArNS) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Your manifest has been assigned an ArNS name',
+                style: typography.paragraphNormal(
+                  color: colorTokens.textMid,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        ModalAction(
+          action: () {
+            context.read<DriveDetailCubit>().refreshDriveDataTable();
+            context.read<FeedbackSurveyCubit>().openRemindMe();
+            Navigator.pop(context);
+          },
+          title: 'Close',
+        ),
+      ],
+    );
+  }
+
+  String _getProgressDescription(CreateManifestUploadProgress progress) {
+    switch (progress) {
+      case CreateManifestUploadProgress.preparingManifest:
+        return 'Preparing Manifest...';
+      case CreateManifestUploadProgress.uploadingManifest:
+        return 'Uploading Manifest...';
+      case CreateManifestUploadProgress.assigningArNS:
+        return 'Assigning ArNS Name...';
+      case CreateManifestUploadProgress.completed:
+        return 'Completed';
+    }
   }
 
   bool _isFolderEmpty(FolderID folderId, FolderNode rootFolderNode) {
@@ -214,6 +314,51 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
     }
 
     return folderNode.isEmpty();
+  }
+
+  Widget _assignArNSNameModal({
+    required BuildContext context,
+    required TextStyle textStyle,
+  }) {
+    return AssignArNSNameModal(
+      driveDetailCubit: context.read<DriveDetailCubit>(),
+      justSelectName: true,
+      updateARNSRecords: false,
+      customLoadingText: 'Fetching ArNS names...',
+      customNameSelectionTitle: 'Assign ArNS Name to New Manifest',
+      onSelectionConfirmed: (selection) {
+        context.read<CreateManifestCubit>().selectArns(
+              selection.selectedName,
+              selection.selectedUndername,
+            );
+      },
+    );
+  }
+
+  Widget _createManifestPreparingManifestWithARNS({
+    required BuildContext context,
+    required TextStyle textStyle,
+  }) {
+    return ArDriveStandardModalNew(
+      width: kMediumDialogWidth,
+      title: 'Assign ArNS Name?',
+      description:
+          'You have ArNS names associated with your address. Do you want to assign one to this new manifest? You can always do this later.',
+      actions: [
+        ModalAction(
+          action: () {
+            context.read<CreateManifestCubit>().selectArns(null, null);
+          },
+          title: 'No',
+        ),
+        ModalAction(
+          action: () async {
+            context.read<CreateManifestCubit>().openAssignNameModal();
+          },
+          title: 'Yes',
+        ),
+      ],
+    );
   }
 
   Widget _createManifestNameConflict({
@@ -309,7 +454,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
         ),
       ],
       content: SizedBox(
-        height: 250,
+        height: 180,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
@@ -371,7 +516,9 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                 appLocalizationsOf(context).filesPendingManifestExplanation,
                 style: textStyle,
               ),
-              const Divider(),
+              const Divider(
+                height: 48,
+              ),
             ],
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 256),
@@ -379,146 +526,64 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                 child: ListView(
                   shrinkWrap: true,
                   children: [
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        state.manifestName,
-                        style: typography.paragraphLarge(
-                          color: colorTokens.textHigh,
-                          fontWeight: ArFontWeight.bold,
+                    Text(
+                      state.manifestName,
+                      style: typography.paragraphLarge(
+                        color: colorTokens.textHigh,
+                        fontWeight: ArFontWeight.bold,
+                      ),
+                    ),
+                    if (state.assignedName != null) ...[
+                      RichText(
+                        text: TextSpan(
+                          style: typography.paragraphNormal(
+                            color: colorTokens.textMid,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: 'ArNS Name: ',
+                              style: typography.paragraphNormal(
+                                color: colorTokens.textMid,
+                                fontWeight: ArFontWeight.semiBold,
+                              ),
+                            ),
+                            TextSpan(
+                              text: state.assignedName,
+                              style: typography.paragraphNormal(
+                                color: colorTokens.textMid,
+                                fontWeight: ArFontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      subtitle: Text(
-                        filesize(state.manifestSize),
-                        style: textStyle,
-                      ),
+                    ],
+                    Text(
+                      filesize(state.manifestSize),
+                      style: textStyle,
                     ),
                   ],
                 ),
               ),
             ),
-            const Divider(),
-            const SizedBox(height: 16),
+            const Divider(height: 48),
             if (state.freeUpload) ...[
-              Text(
-                appLocalizationsOf(context).freeTurboTransaction,
-                style: typography.paragraphNormal(
-                  color: colorTokens.textMid,
-                  fontWeight: ArFontWeight.bold,
+              Padding(
+                padding: const EdgeInsets.only(bottom: 24),
+                child: Text(
+                  appLocalizationsOf(context).freeTurboTransaction,
+                  style: typography.paragraphNormal(
+                    color: colorTokens.textMid,
+                    fontWeight: ArFontWeight.bold,
+                  ),
                 ),
               ),
-              const SizedBox(height: 24),
             ],
             if (!state.freeUpload) ...[
-              MultiBlocProvider(
-                providers: [
-                  RepositoryProvider(
-                    create: (context) => ArDriveUploadPreparationManager(
-                      uploadPreparePaymentOptions: UploadPaymentEvaluator(
-                        appConfig: context.read<ConfigService>().config,
-                        auth: context.read<ArDriveAuth>(),
-                        turboBalanceRetriever: TurboBalanceRetriever(
-                          paymentService: context.read<PaymentService>(),
-                        ),
-                        turboUploadCostCalculator: TurboUploadCostCalculator(
-                          priceEstimator: TurboPriceEstimator(
-                            wallet:
-                                context.read<ArDriveAuth>().currentUser.wallet,
-                            costCalculator: TurboCostCalculator(
-                              paymentService: context.read<PaymentService>(),
-                            ),
-                            paymentService: context.read<PaymentService>(),
-                          ),
-                          turboCostCalculator: TurboCostCalculator(
-                            paymentService: context.read<PaymentService>(),
-                          ),
-                        ),
-                        uploadCostEstimateCalculatorForAR:
-                            UploadCostEstimateCalculatorForAR(
-                          arweaveService: context.read<ArweaveService>(),
-                          pstService: context.read<PstService>(),
-                          arCostToUsd: ConvertArToUSD(
-                            arweave: context.read<ArweaveService>(),
-                          ),
-                        ),
-                      ),
-                      uploadPreparer: UploadPreparer(
-                        uploadPlanUtils: UploadPlanUtils(
-                          crypto: ArDriveCrypto(),
-                          arweave: context.read<ArweaveService>(),
-                          turboUploadService:
-                              context.read<TurboUploadService>(),
-                          driveDao: context.read<DriveDao>(),
-                        ),
-                      ),
-                    ),
-                  ),
-                  BlocProvider(
-                    create: (context) => UploadPaymentMethodBloc(
-                      context.read<ProfileCubit>(),
-                      context.read<ArDriveUploadPreparationManager>(),
-                      context.read<ArDriveAuth>(),
-                    )..add(
-                        PrepareUploadPaymentMethod(
-                          params: UploadParams(
-                            conflictingFiles: {},
-                            files: [
-                              UploadFile(
-                                ioFile: state.manifestFile,
-                                parentFolderId: state.parentFolder.id,
-                              ),
-                            ],
-                            foldersByPath:
-                                UploadPlanUtils.generateFoldersForFiles([
-                              UploadFile(
-                                ioFile: state.manifestFile,
-                                parentFolderId: state.parentFolder.id,
-                              ),
-                            ]),
-                            targetDrive: state.drive,
-                            targetFolder: state.parentFolder,
-                            user: context.read<ArDriveAuth>().currentUser,
-                            // Theres no thumbnail generation for manifests
-                            containsSupportedImageTypeForThumbnailGeneration:
-                                false,
-                          ),
-                        ),
-                      ),
-                  ),
-                ],
-                child: UploadPaymentMethodView(
-                  onUploadMethodChanged: (method, methodInfo, canUpload) {
-                    readCubitContext.selectUploadMethod(
-                      method,
-                      methodInfo,
-                      canUpload,
-                    );
-                  },
-                  onError: () {},
-                  loadingIndicator: Center(
-                    child: Column(
-                      children: [
-                        Text(
-                          'Loading payment methods...',
-                          style: typography.paragraphLarge(
-                            color: colorTokens.textHigh,
-                            fontWeight: ArFontWeight.bold,
-                          ),
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(
-                              vertical: 8.0, horizontal: 32),
-                          child: SizedBox(
-                            child: LinearProgressIndicator(),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  useNewArDriveUI: true,
-                ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 24),
+                child: _paymentOptions(state, context),
               ),
-              const SizedBox(height: 24),
             ],
             Text(
               appLocalizationsOf(context).filesWillBePermanentlyPublicWarning,
@@ -538,6 +603,118 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           title: appLocalizationsOf(context).confirmEmphasized,
         ),
       ],
+    );
+  }
+
+  Widget _paymentOptions(
+      CreateManifestUploadReview state, BuildContext context) {
+    final readCubitContext = context.read<CreateManifestCubit>();
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return MultiBlocProvider(
+      providers: [
+        RepositoryProvider(
+          create: (context) => ArDriveUploadPreparationManager(
+            uploadPreparePaymentOptions: UploadPaymentEvaluator(
+              appConfig: context.read<ConfigService>().config,
+              auth: context.read<ArDriveAuth>(),
+              turboBalanceRetriever: TurboBalanceRetriever(
+                paymentService: context.read<PaymentService>(),
+              ),
+              turboUploadCostCalculator: TurboUploadCostCalculator(
+                priceEstimator: TurboPriceEstimator(
+                  wallet: context.read<ArDriveAuth>().currentUser.wallet,
+                  costCalculator: TurboCostCalculator(
+                    paymentService: context.read<PaymentService>(),
+                  ),
+                  paymentService: context.read<PaymentService>(),
+                ),
+                turboCostCalculator: TurboCostCalculator(
+                  paymentService: context.read<PaymentService>(),
+                ),
+              ),
+              uploadCostEstimateCalculatorForAR:
+                  UploadCostEstimateCalculatorForAR(
+                arweaveService: context.read<ArweaveService>(),
+                pstService: context.read<PstService>(),
+                arCostToUsd: ConvertArToUSD(
+                  arweave: context.read<ArweaveService>(),
+                ),
+              ),
+            ),
+            uploadPreparer: UploadPreparer(
+              uploadPlanUtils: UploadPlanUtils(
+                crypto: ArDriveCrypto(),
+                arweave: context.read<ArweaveService>(),
+                turboUploadService: context.read<TurboUploadService>(),
+                driveDao: context.read<DriveDao>(),
+              ),
+            ),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => UploadPaymentMethodBloc(
+            context.read<ProfileCubit>(),
+            context.read<ArDriveUploadPreparationManager>(),
+            context.read<ArDriveAuth>(),
+          )..add(
+              PrepareUploadPaymentMethod(
+                params: UploadParams(
+                  conflictingFiles: {},
+                  files: [
+                    UploadFile(
+                      ioFile: state.manifestFile,
+                      parentFolderId: state.parentFolder.id,
+                    ),
+                  ],
+                  foldersByPath: UploadPlanUtils.generateFoldersForFiles([
+                    UploadFile(
+                      ioFile: state.manifestFile,
+                      parentFolderId: state.parentFolder.id,
+                    ),
+                  ]),
+                  targetDrive: state.drive,
+                  targetFolder: state.parentFolder,
+                  user: context.read<ArDriveAuth>().currentUser,
+                  // Theres no thumbnail generation for manifests
+                  containsSupportedImageTypeForThumbnailGeneration: false,
+
+                ),
+              ),
+            ),
+        ),
+      ],
+      child: UploadPaymentMethodView(
+        onUploadMethodChanged: (method, methodInfo, canUpload) {
+          readCubitContext.selectUploadMethod(
+            method,
+            methodInfo,
+            canUpload,
+          );
+        },
+        onError: () {},
+        loadingIndicator: Center(
+          child: Column(
+            children: [
+              Text(
+                'Loading payment methods...',
+                style: typography.paragraphLarge(
+                  color: colorTokens.textHigh,
+                  fontWeight: ArFontWeight.bold,
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 32),
+                child: SizedBox(
+                  child: LinearProgressIndicator(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        useNewArDriveUI: true,
+      ),
     );
   }
 
