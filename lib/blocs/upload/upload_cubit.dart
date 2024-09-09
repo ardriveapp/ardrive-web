@@ -596,17 +596,16 @@ class UploadCubit extends Cubit<UploadState> {
 
     final reviewWithLicense = state as UploadReviewWithLicense;
 
-    emit(reviewWithLicense.readyState.copyWith(
-      showArnsNameSelection: false,
-    ));
-
-    startUpload(
-      uploadPlanForAr:
-          reviewWithLicense.readyState.paymentInfo.uploadPlanForAR!,
-      uploadPlanForTurbo:
-          reviewWithLicense.readyState.paymentInfo.uploadPlanForTurbo,
-      licenseStateConfigured: reviewWithLicense.licenseState,
+    final params = reviewWithLicense.readyState.params.copyWith(
+      arnsUnderName: getSelectedUndername(),
     );
+
+    final readyState = reviewWithLicense.readyState.copyWith(
+      params: params,
+      showArnsNameSelection: false,
+    );
+
+    emit(reviewWithLicense.copyWith(readyState: readyState));
   }
 
   bool hasEmittedError = false;
