@@ -810,10 +810,8 @@ class ArDriveStandardModalNew extends StatelessWidget {
             padding: const EdgeInsets.only(left: 16),
             child: ArDriveButtonNew(
               typography: typography,
-              variant: ButtonVariant.secondary,
+              variant: ButtonVariant.primary,
               maxHeight: 40,
-              backgroundColor:
-                  ArDriveTheme.of(context).themeData.colors.themeFgDefault,
               fontStyle: ArDriveTypography.body
                   .buttonNormalRegular(
                     color: actions.length > 2

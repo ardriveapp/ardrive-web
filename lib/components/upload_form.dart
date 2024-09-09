@@ -354,7 +354,8 @@ class _UploadFormState extends State<UploadForm> {
                 ],
               );
             } else if (state is UploadFileConflict) {
-              return ArDriveStandardModal(
+              final typography = ArDriveTypographyNew.of(context);
+              return ArDriveStandardModalNew(
                 title: appLocalizationsOf(context)
                     .duplicateFiles(state.conflictingFileNames.length),
                 content: SizedBox(
@@ -368,12 +369,14 @@ class _UploadFormState extends State<UploadForm> {
                             .filesWithTheSameNameAlreadyExists(
                           state.conflictingFileNames.length,
                         ),
-                        style: ArDriveTypography.body.buttonNormalRegular(),
+                        style: typography.paragraphNormal(
+                            fontWeight: ArFontWeight.semiBold),
                       ),
                       const SizedBox(height: 16),
                       Text(
                         appLocalizationsOf(context).conflictingFiles,
-                        style: ArDriveTypography.body.buttonNormalRegular(),
+                        style: typography.paragraphNormal(
+                            fontWeight: ArFontWeight.semiBold),
                       ),
                       const SizedBox(height: 8),
                       ConstrainedBox(
@@ -381,7 +384,8 @@ class _UploadFormState extends State<UploadForm> {
                         child: SingleChildScrollView(
                           child: Text(
                             state.conflictingFileNames.join(', \n'),
-                            style: ArDriveTypography.body.buttonNormalRegular(),
+                            style: typography.paragraphNormal(
+                                fontWeight: ArFontWeight.semiBold),
                           ),
                         ),
                       ),

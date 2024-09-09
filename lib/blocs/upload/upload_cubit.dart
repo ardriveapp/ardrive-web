@@ -934,6 +934,7 @@ class UploadCubit extends Cubit<UploadState> {
                 status: UploadStatus.assigningUndername,
               );
 
+              /// Emits
               emit(
                 UploadInProgressUsingNewUploader(
                   progress: UploadProgress(

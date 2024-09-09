@@ -27,7 +27,7 @@ Future<void> showCongestionDependentModalDialog(
       bool shouldShowDialog = false;
       await showArDriveDialog(
         context,
-        content: ArDriveStandardModal(
+        content: ArDriveStandardModalNew(
           title: appLocalizationsOf(context).warningEmphasized,
           content: SizedBox(
             width: kMediumDialogWidth,
