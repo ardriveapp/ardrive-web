@@ -196,11 +196,24 @@ class UploadReviewWithLicense extends UploadState {
         readyState,
         licenseCategory,
         licenseState,
+        readyState.params.arnsUnderName,
       ];
 
   @override
   toString() =>
       'UploadReviewWithLicense { paymentInfo: ${readyState.paymentInfo} }';
+
+  UploadReviewWithLicense copyWith({
+    UploadReady? readyState,
+    LicenseCategory? licenseCategory,
+    LicenseState? licenseState,
+  }) {
+    return UploadReviewWithLicense(
+      readyState: readyState ?? this.readyState,
+      licenseCategory: licenseCategory ?? this.licenseCategory,
+      licenseState: licenseState ?? this.licenseState,
+    );
+  }
 }
 
 class UploadInProgress extends UploadState {

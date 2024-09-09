@@ -639,4 +639,20 @@ class UploadParams {
     required this.containsSupportedImageTypeForThumbnailGeneration,
     this.arnsUnderName,
   });
+
+  UploadParams copyWith({
+    ARNSUndername? arnsUnderName,
+  }) {
+    return UploadParams(
+      user: user,
+      files: files,
+      targetFolder: targetFolder,
+      targetDrive: targetDrive,
+      conflictingFiles: conflictingFiles,
+      foldersByPath: foldersByPath,
+      containsSupportedImageTypeForThumbnailGeneration:
+          containsSupportedImageTypeForThumbnailGeneration,
+      arnsUnderName: arnsUnderName,
+    );
+  }
 }
