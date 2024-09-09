@@ -326,12 +326,27 @@ class _UploadFormState extends State<UploadForm> {
                       const SizedBox(height: 8),
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxHeight: 320),
-                        child: SingleChildScrollView(
-                          child: Text(
-                            state.conflictingFileNamesForFailedFiles
-                                .join(', \n'),
-                            style: ArDriveTypography.body.buttonNormalRegular(),
-                          ),
+                        child: ListView.builder(
+                          itemCount:
+                              state.conflictingFileNamesForFailedFiles.length,
+                          shrinkWrap: true,
+                          itemBuilder: (context, index) {
+                            final file =
+                                state.conflictingFileNamesForFailedFiles[index];
+                            final typography = ArDriveTypographyNew.of(context);
+                            final colorTokens =
+                                ArDriveTheme.of(context).themeData.colorTokens;
+
+                            return ListTile(
+                              title: Text(file,
+                                  style: typography.paragraphNormal(
+                                    color: colorTokens.textMid,
+                                  )),
+                              leading: getIconForContentType(
+                                getFileExtensionFromFileName(fileName: file),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ],
@@ -357,6 +372,8 @@ class _UploadFormState extends State<UploadForm> {
               );
             } else if (state is UploadFileConflict) {
               final typography = ArDriveTypographyNew.of(context);
+              final colorTokens =
+                  ArDriveTheme.of(context).themeData.colorTokens;
               return ArDriveStandardModalNew(
                 title: appLocalizationsOf(context)
                     .duplicateFiles(state.conflictingFileNames.length),
@@ -383,12 +400,25 @@ class _UploadFormState extends State<UploadForm> {
                       const SizedBox(height: 8),
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxHeight: 320),
-                        child: SingleChildScrollView(
-                          child: Text(
-                            state.conflictingFileNames.join(', \n'),
-                            style: typography.paragraphNormal(
-                                fontWeight: ArFontWeight.semiBold),
-                          ),
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: state.conflictingFileNames.length,
+                          itemBuilder: (context, index) {
+                            final file = state.conflictingFileNames[index];
+                            final typography = ArDriveTypographyNew.of(context);
+
+                            return ListTile(
+                              title: Text(
+                                file,
+                                style: typography.paragraphNormal(
+                                  color: colorTokens.textMid,
+                                ),
+                              ),
+                              leading: getIconForContentType(
+                                getFileExtensionFromFileName(fileName: file),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ],
@@ -498,7 +528,6 @@ class _UploadFormState extends State<UploadForm> {
                   onSelectionConfirmed: (name) {
                     context.read<UploadCubit>().selectUndername(
                         name.selectedName, name.selectedUndername);
-                    context.read<UploadCubit>().hideArnsNameSelection();
                   },
                 );
               }
@@ -760,6 +789,49 @@ class _UploadFormState extends State<UploadForm> {
                     ),
                   ],
                   LicenseReviewInfo(licenseState: state.licenseState),
+                ],
+              );
+            } else if (state is UploadReviewWithArnsName) {
+              final typography = ArDriveTypographyNew.of(context);
+              final colorTokens =
+                  ArDriveTheme.of(context).themeData.colorTokens;
+              return StatsScreen(
+                readyState: state.readyState,
+                modalActions: [
+                  ModalAction(
+                    action: () => {
+                      context.read<UploadCubit>().reviewBack(),
+                    },
+                    title: appLocalizationsOf(context).backEmphasized,
+                  ),
+                  ModalAction(
+                    action: () {
+                      context.read<UploadCubit>().reviewUpload();
+                    },
+                    title: appLocalizationsOf(context).uploadEmphasized,
+                  ),
+                ],
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'ArNS Name: ',
+                        style: typography.paragraphLarge(
+                          fontWeight: ArFontWeight.semiBold,
+                          color: colorTokens.textMid,
+                        ),
+                      ),
+                      Text(
+                        getLiteralARNSRecordName(
+                          state.readyState.params.arnsUnderName!,
+                        ),
+                        style: typography.paragraphLarge(
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               );
             } else if (state is UploadSigningInProgress) {

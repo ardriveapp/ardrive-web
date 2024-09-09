@@ -80,12 +80,12 @@ class UploadCubit extends Cubit<UploadState> {
     showArnsNameSelectionCheckBoxValue = showArnsNameSelection;
   }
 
-  void showArnsNameSelection() {
-    emit((state as UploadReady).copyWith(showArnsNameSelection: true));
+  void showArnsNameSelection(UploadReady readyState) {
+    emit(readyState.copyWith(showArnsNameSelection: true));
   }
 
-  void hideArnsNameSelection() {
-    emit((state as UploadReady).copyWith(showArnsNameSelection: false));
+  void hideArnsNameSelection(UploadReady readyState) {
+    emit(readyState.copyWith(showArnsNameSelection: false));
   }
 
   void setUploadMethod(
@@ -128,7 +128,7 @@ class UploadCubit extends Cubit<UploadState> {
   void initialScreenUpload() {
     if (state is UploadReady) {
       if (showArnsNameSelectionCheckBoxValue) {
-        showArnsNameSelection();
+        showArnsNameSelection(state as UploadReady);
       } else {
         final readyState = state as UploadReady;
         startUpload(
@@ -214,6 +214,8 @@ class UploadCubit extends Cubit<UploadState> {
             reviewWithLicense.readyState.paymentInfo.uploadPlanForTurbo,
         licenseStateConfigured: reviewWithLicense.licenseState,
       );
+    } else if (state is UploadReviewWithArnsName) {
+      startUploadWithArnsName();
     }
   }
 
@@ -575,15 +577,23 @@ class UploadCubit extends Cubit<UploadState> {
 
     logger.d('Selected undername: $_selectedUndername');
 
-    final readyState = state as UploadReady;
+    final readyState = (state as UploadReady).copyWith(
+      params: (state as UploadReady).params.copyWith(
+            arnsUnderName: getSelectedUndername(),
+          ),
+    );
 
-    emit(readyState.copyWith(
-      showArnsNameSelection: false,
-    ));
+    emit(UploadReviewWithArnsName(readyState: readyState));
+  }
+
+  void startUploadWithArnsName() {
+    final reviewWithArnsName = state as UploadReviewWithArnsName;
 
     startUpload(
-      uploadPlanForAr: readyState.paymentInfo.uploadPlanForAR!,
-      uploadPlanForTurbo: readyState.paymentInfo.uploadPlanForTurbo,
+      uploadPlanForAr:
+          reviewWithArnsName.readyState.paymentInfo.uploadPlanForAR!,
+      uploadPlanForTurbo:
+          reviewWithArnsName.readyState.paymentInfo.uploadPlanForTurbo,
     );
   }
 
