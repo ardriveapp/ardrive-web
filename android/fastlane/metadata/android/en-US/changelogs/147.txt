@@ -1,0 +1,6 @@
+- Integrated ar.io SDK for gateway switching and IO token balance display.
+- Enabled ArNS names and under_names for public files using the ar.io SDK.
+- Added option to assign an ArNS name to single file uploads.
+- Added option to assign an ArNS name during manifest creation.
+- Improved details panel styling, especially for Light Theme.
+- Updated tooltips for better clarity.
