@@ -129,9 +129,7 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                       hintText: 'Choose ArNS name',
                       selectedName: state.selectedName,
                       onSelected: (name) {
-                        context
-                            .read<AssignNameBloc>()
-                            .add(SelectName(name, true));
+                        context.read<AssignNameBloc>().add(SelectName(name));
                         context
                             .read<AssignNameBloc>()
                             .add(const LoadUndernames());
@@ -181,9 +179,7 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                         names: state.names,
                         hintText: 'Choose ArNS name',
                         onSelected: (name) {
-                          context
-                              .read<AssignNameBloc>()
-                              .add(SelectName(name, true));
+                          context.read<AssignNameBloc>().add(SelectName(name));
                           context
                               .read<AssignNameBloc>()
                               .add(const LoadUndernames());
