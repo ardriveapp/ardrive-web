@@ -15,8 +15,8 @@
       "name": "Flutter Debug - Web",
       "request": "launch",
       "type": "dart",
-      "args": ["--debug", "--dart-define", "environment=development"],
-      "program": "lib/main.dart"
+      "args": ["--debug", "--dart-define", "environment=development", "--web-port", "8080"],
+      "program": "lib/main.dart",
     },
     {
       "name": "Flutter Profile",
