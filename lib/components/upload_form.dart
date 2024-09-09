@@ -636,7 +636,7 @@ class _UploadFormState extends State<UploadForm> {
                             children: [
                               ArDriveCheckBox(
                                 title: 'Assign an ARNS name',
-                                checked: false,
+                                checked: state.params.arnsUnderName != null,
                                 titleStyle: typography.paragraphLarge(
                                   fontWeight: ArFontWeight.semiBold,
                                 ),

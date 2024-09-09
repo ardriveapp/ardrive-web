@@ -202,6 +202,13 @@ class UploadCubit extends Cubit<UploadState> {
         licenseCategory: licenseCategory,
       );
       emit(prevState);
+    } else if (state is UploadReviewWithArnsName) {
+      final reviewWithArnsName = state as UploadReviewWithArnsName;
+      final readyState = reviewWithArnsName.readyState.copyWith(
+        showArnsNameSelection: false,
+      );
+
+      emit(readyState);
     }
   }
 
