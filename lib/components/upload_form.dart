@@ -704,9 +704,6 @@ class _UploadFormState extends State<UploadForm> {
               }
 
               final readyState = state.readyState;
-              final colorTokens =
-                  ArDriveTheme.of(context).themeData.colorTokens;
-              final typography = ArDriveTypographyNew.of(context);
               return StatsScreen(
                 readyState: readyState,
                 modalActions: [
