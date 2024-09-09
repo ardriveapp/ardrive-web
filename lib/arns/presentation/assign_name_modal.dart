@@ -376,7 +376,6 @@ class _NameSelectorDropdown<T> extends StatefulWidget {
 
 class __NameSelectorDropdownState<T> extends State<_NameSelectorDropdown<T>> {
   bool isVisible = false;
-
   T? selectedName;
 
   @override
@@ -394,6 +393,8 @@ class __NameSelectorDropdownState<T> extends State<_NameSelectorDropdown<T>> {
 
     if (48 * widget.names.length.toDouble() > 240) {
       maxHeight = 240;
+    } else if (widget.names.isEmpty) {
+      maxHeight = 48;
     } else {
       maxHeight = 48 * widget.names.length.toDouble();
     }
@@ -470,6 +471,10 @@ class __NameSelectorDropdownState<T> extends State<_NameSelectorDropdown<T>> {
       name = item.name;
     } else {
       throw Exception('Unknown type');
+    }
+
+    if (name == '@') {
+      return 'No undername';
     }
 
     return name;
