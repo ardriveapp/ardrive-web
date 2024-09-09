@@ -61,6 +61,7 @@ class _ARNSRepository implements ARNSRepository {
   final DriveDao _driveDao;
   final TurboUploadService _turboUploadService;
   final ArweaveService _arweave;
+
   _ARNSRepository({
     required ArioSDK sdk,
     required ArDriveAuth auth,
@@ -75,7 +76,14 @@ class _ARNSRepository implements ARNSRepository {
         _driveDao = driveDao,
         _turboUploadService = turboUploadService,
         _arweave = arweave,
-        _arnsDao = arnsDao;
+        _arnsDao = arnsDao,
+        super() {
+    auth.onAuthStateChanged().listen((user) {
+      if (user == null) {
+        _cachedUndernames.clear();
+      }
+    });
+  }
 
   final Map<String, Map<String, ARNSUndername>> _cachedUndernames = {};
 
