@@ -1020,7 +1020,7 @@ class _UploadFormState extends State<UploadForm> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Flexible(
+                                    Expanded(
                                       flex: 3,
                                       child: Column(
                                         crossAxisAlignment:
@@ -1070,7 +1070,7 @@ class _UploadFormState extends State<UploadForm> {
                                         ],
                                       ),
                                     ),
-                                    Flexible(
+                                    Expanded(
                                       flex: 1,
                                       child: Row(
                                         crossAxisAlignment:
@@ -1081,11 +1081,8 @@ class _UploadFormState extends State<UploadForm> {
                                         children: [
                                           if (task.isProgressAvailable &&
                                               statusAvailableForShowingProgress) ...[
-                                            Flexible(
-                                              flex: 2,
-                                              child: CircularProgressWidget(
-                                                progress: task.progress,
-                                              ),
+                                            CircularProgressWidget(
+                                              progress: task.progress,
                                             ),
                                           ],
                                           if (!task.isProgressAvailable ||
@@ -1127,34 +1124,26 @@ class _UploadFormState extends State<UploadForm> {
           ),
           // TODO: localize
           Text(
-            'Total uploaded: ${filesize(state.progress.totalUploaded)} of ${filesize(state.progress.totalSize)}',
-            style: ArDriveTypography.body
-                .buttonNormalBold(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDefault)
-                .copyWith(fontWeight: FontWeight.bold),
-          ),
+              'Total uploaded: ${filesize(state.progress.totalUploaded)} of ${filesize(state.progress.totalSize)}',
+              style: typography.paragraphNormal(
+                fontWeight: ArFontWeight.semiBold,
+                color: colorTokens.textMid,
+              )),
           // TODO: localize
           Text(
-            'Files uploaded: ${state.progress.numberOfUploadedItems} of ${state.progress.numberOfItems}',
-            style: ArDriveTypography.body
-                .buttonNormalBold(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDefault)
-                .copyWith(fontWeight: FontWeight.bold),
-          ),
+              'Files uploaded: ${state.progress.numberOfUploadedItems} of ${state.progress.numberOfItems}',
+              style: typography.paragraphNormal(
+                fontWeight: ArFontWeight.semiBold,
+                color: colorTokens.textMid,
+              )),
           // TODO: localize
           if (state.progress.hasUploadInProgress)
             Text(
-              'Upload speed: ${filesize(state.progress.calculateUploadSpeed().toInt())}/s',
-              style: ArDriveTypography.body.buttonNormalBold(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgDefault),
-            ),
+                'Upload speed: ${filesize(state.progress.calculateUploadSpeed().toInt())}/s',
+                style: typography.paragraphNormal(
+                  fontWeight: ArFontWeight.semiBold,
+                  color: colorTokens.textMid,
+                )),
         ],
       ),
     );
@@ -1427,17 +1416,11 @@ class _StatsScreenState extends State<StatsScreen> {
         ),
         if (widget.readyState.paymentInfo.isFreeThanksToTurbo) ...[
           const SizedBox(height: 8),
-          Text.rich(
-            TextSpan(
-              children: [
-                if (widget.readyState.paymentInfo.isFreeThanksToTurbo) ...[
-                  TextSpan(
-                    text: appLocalizationsOf(context).freeTurboTransaction,
-                    style: ArDriveTypography.body.buttonNormalRegular(),
-                  ),
-                ]
-              ],
-              style: ArDriveTypography.body.buttonNormalRegular(),
+          Text(
+            appLocalizationsOf(context).freeTurboTransaction,
+            style: typography.paragraphNormal(
+              color: colorTokens.textMid,
+              fontWeight: ArFontWeight.bold,
             ),
           ),
           const SizedBox(height: 20),
@@ -1514,7 +1497,7 @@ class UploadReadyModalBase extends StatefulWidget {
     required this.actions,
     required this.children,
     this.hasCloseButton = true,
-    this.width = 408,
+    this.width = 440,
   });
 
   @override

@@ -900,7 +900,7 @@ class UploadCubit extends Cubit<UploadState> {
       (tasks) async {
         if (tasks.length == 1) {
           final task = tasks.first;
-          if (task is FileUploadTask) {
+          if (task is FileUploadTask && task.status != UploadStatus.canceled) {
             final metadata = task.metadata;
             if (_selectedAntRecord != null || _selectedUndername != null) {
               final updatedTask = task.copyWith(

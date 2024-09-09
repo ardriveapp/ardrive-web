@@ -794,7 +794,7 @@ class ArDriveStandardModalNew extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(left: 16),
             child: ArDriveButtonNew(
-              maxWidth: 100,
+              maxWidth: 110,
               variant: actions.length > 2
                   ? ButtonVariant.secondary
                   : ButtonVariant.primary,
