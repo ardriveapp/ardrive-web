@@ -45,6 +45,7 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -720,6 +721,33 @@ class _UploadFormState extends State<UploadForm> {
                   ),
                 ],
                 children: [
+                  if (state.readyState.params.arnsUnderName != null) ...[
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'ArNS Name: ',
+                          style: ArDriveTypography.body.smallRegular(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgSubtle,
+                          ),
+                        ),
+                        Text(
+                          getLiteralARNSRecordName(
+                            state.readyState.params.arnsUnderName!,
+                          ),
+                          style: ArDriveTypography.body.buttonLargeRegular(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgDefault,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   LicenseReviewInfo(licenseState: state.licenseState),
                 ],
               );
