@@ -350,6 +350,8 @@ class _UploadFormState extends State<UploadForm> {
                         .prepareUploadPlanAndCostEstimates(
                             uploadAction: UploadActions.skipSuccessfulUploads),
                     title: 'Replace failed uploads',
+                    customWidth: 160,
+                    customHeight: 60,
                   ),
                 ],
               );
