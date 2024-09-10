@@ -513,12 +513,16 @@ class _ProfileCardState extends State<ProfileCard> {
                     ),
                   if (state.errorFetchingIOTokens) ...[
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Error fetching IO Tokens',
+                          'Error fetching tIO balance',
                           style: typography.paragraphNormal(
                             fontWeight: ArFontWeight.semiBold,
-                            color: colorTokens.textRed,
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeErrorDefault,
                           ),
                         ),
                         ArDriveIconButton(

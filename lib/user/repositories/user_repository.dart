@@ -117,6 +117,9 @@ class _UserRepository implements UserRepository {
 
     if (isArioSDKSupportedOnPlatform()) {
       ioTokens = await _arioSDK.getIOTokens(await wallet.getAddress());
+      if (ioTokens == 'null') {
+        throw Exception('Error fetching IOTokens');
+      }
     }
 
     return ioTokens;

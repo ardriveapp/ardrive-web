@@ -388,6 +388,12 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
   @override
   Future<void> refreshBalance() async {
+    _currentUser = _currentUser!.copyWith(
+      errorFetchingIOTokens: false,
+    );
+
+    _userStreamController.add(_currentUser);
+
     _updateBalance();
   }
 }
