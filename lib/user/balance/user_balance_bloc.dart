@@ -26,7 +26,7 @@ class UserBalanceBloc extends Bloc<UserBalanceEvent, UserBalanceState> {
     final user = _auth.currentUser;
     _emitUserBalanceState(user, emit);
 
-    _userSubscription = _auth.onAuthStateChanged().listen((user) {
+    _userSubscription = _auth.onUserStateChanged().listen((user) {
       if (isClosed) return;
       _emitUserBalanceState(user, emit);
       if (user?.ioTokens != null) {
@@ -50,7 +50,7 @@ class UserBalanceBloc extends Bloc<UserBalanceEvent, UserBalanceState> {
 
     _auth.refreshBalance();
 
-    _userSubscription = _auth.onAuthStateChanged().listen((user) {
+    _userSubscription = _auth.onUserStateChanged().listen((user) {
       if (isClosed) return;
       _emitUserBalanceState(user, emit);
       if (user?.ioTokens != null) {

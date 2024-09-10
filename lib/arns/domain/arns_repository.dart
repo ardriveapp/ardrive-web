@@ -79,7 +79,7 @@ class _ARNSRepository implements ARNSRepository {
         _arweave = arweave,
         _arnsDao = arnsDao,
         super() {
-    auth.onAuthStateChanged().listen((user) {
+    auth.onUserStateChanged().listen((user) {
       if (user == null) {
         _cachedUndernames.clear();
       }

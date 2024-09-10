@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
@@ -34,6 +35,7 @@ class SyncCubit extends Cubit<SyncState> {
   final TabVisibilitySingleton _tabVisibility;
   final ConfigService _configService;
   final SyncRepository _syncRepository;
+  final ARNSRepository _arnsRepository;
 
   StreamSubscription? _restartOnFocusStreamSubscription;
   StreamSubscription? _restartArConnectOnFocusStreamSubscription;
@@ -53,12 +55,14 @@ class SyncCubit extends Cubit<SyncState> {
     required ConfigService configService,
     required ActivityTracker activityTracker,
     required SyncRepository syncRepository,
+    required ARNSRepository arnsRepository,
   })  : _profileCubit = profileCubit,
         _activityCubit = activityCubit,
         _promptToSnapshotBloc = promptToSnapshotBloc,
         _configService = configService,
         _tabVisibility = tabVisibility,
         _syncRepository = syncRepository,
+        _arnsRepository = arnsRepository,
         super(SyncIdle()) {
     // Sync the user's drives on start and periodically.
     createSyncStream();
@@ -268,6 +272,13 @@ class SyncCubit extends Cubit<SyncState> {
     unawaited(_updateContext());
 
     emit(SyncIdle());
+
+    emit(SyncingARNS());
+
+    await _arnsRepository.waitForARNSRecordsToUpdate();
+    await _arnsRepository.saveAllFilesWithAssignedNames();
+
+    emit(ArNSSynced());
   }
 
   Future<void> _updateContext() async {

@@ -10,6 +10,10 @@ class SyncIdle extends SyncState {}
 
 class SyncInProgress extends SyncState {}
 
+class SyncingARNS extends SyncIdle {}
+
+class ArNSSynced extends SyncIdle {}
+
 class SyncFailure extends SyncState {
   final Object? error;
   final StackTrace? stackTrace;

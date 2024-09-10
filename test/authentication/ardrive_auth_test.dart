@@ -758,7 +758,7 @@ void main() {
           errorFetchingIOTokens: false,
         );
 
-        arDriveAuth.onAuthStateChanged().listen((user) {
+        arDriveAuth.onUserStateChanged().listen((user) {
           expect(user, isNotNull);
           expect(user!.password, loggedUser.password);
           expect(user.wallet, loggedUser.wallet);
@@ -790,7 +790,7 @@ void main() {
         when(() => mockDatabaseHelpers.deleteAllTables())
             .thenAnswer((invocation) async {});
 
-        arDriveAuth.onAuthStateChanged().listen((user) {
+        arDriveAuth.onUserStateChanged().listen((user) {
           expect(user, isNull);
         });
 
@@ -856,7 +856,7 @@ void main() {
         verify(() => mockUserRepository.getBalance(wallet)).called(1);
 
         // Verify that listeners are notified
-        arDriveAuth.onAuthStateChanged().listen((user) {
+        arDriveAuth.onUserStateChanged().listen((user) {
           expect(user, equals(updatedUser));
         });
       });

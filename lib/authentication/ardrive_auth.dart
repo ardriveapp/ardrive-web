@@ -30,7 +30,7 @@ abstract class ArDriveAuth {
   Future<User> unlockUser({required String password});
   Future<void> logout();
   User get currentUser;
-  Stream<User?> onAuthStateChanged();
+  Stream<User?> onUserStateChanged();
   Future<bool> isBiometricsEnabled();
   Future<String?> getWalletAddress();
   String getJWTAsString();
@@ -104,7 +104,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
   }
 
   @override
-  Stream<User?> onAuthStateChanged() => _userStreamController.stream;
+  Stream<User?> onUserStateChanged() => _userStreamController.stream;
 
   Future<MetadataCache> get _metadataCache async {
     _maybeMetadataCache ??= await MetadataCache.fromCacheStore(
