@@ -87,6 +87,7 @@ void main() {
           walletBalance: BigInt.zero,
           cipherKey: SecretKey([1, 2, 3]),
           profileType: ProfileType.json,
+          errorFetchingIOTokens: false,
         );
 
         expect(result, isNotNull);
@@ -153,6 +154,7 @@ void main() {
           walletBalance: BigInt.zero,
           cipherKey: SecretKey([1, 2, 3]),
           profileType: ProfileType.json,
+          errorFetchingIOTokens: false,
         );
 
         when(() => mockProfileDao.addProfile(

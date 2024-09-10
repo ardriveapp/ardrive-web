@@ -13,6 +13,7 @@ abstract class User with EquatableMixin {
   late final SecretKey cipherKey;
   late final ProfileType profileType;
   abstract final String? ioTokens;
+  abstract final bool errorFetchingIOTokens;
 
   factory User({
     required String password,
@@ -22,6 +23,7 @@ abstract class User with EquatableMixin {
     required SecretKey cipherKey,
     required ProfileType profileType,
     String? ioTokens,
+    required bool errorFetchingIOTokens,
   }) =>
       _User(
         password: password,
@@ -31,6 +33,7 @@ abstract class User with EquatableMixin {
         cipherKey: cipherKey,
         profileType: profileType,
         ioTokens: ioTokens,
+        errorFetchingIOTokens: errorFetchingIOTokens,
       );
 
   User copyWith({
@@ -41,6 +44,7 @@ abstract class User with EquatableMixin {
     SecretKey? cipherKey,
     ProfileType? profileType,
     String? ioTokens,
+    bool? errorFetchingIOTokens,
   });
 }
 
@@ -59,6 +63,8 @@ class _User implements User {
   late final ProfileType profileType;
   @override
   final String? ioTokens;
+  @override
+  final bool errorFetchingIOTokens;
 
   _User({
     required this.password,
@@ -68,6 +74,7 @@ class _User implements User {
     required this.cipherKey,
     required this.profileType,
     this.ioTokens,
+    required this.errorFetchingIOTokens,
   });
 
   @override
@@ -96,6 +103,7 @@ class _User implements User {
     SecretKey? cipherKey,
     ProfileType? profileType,
     String? ioTokens,
+    bool? errorFetchingIOTokens,
   }) {
     return _User(
       password: password ?? this.password,
@@ -105,6 +113,8 @@ class _User implements User {
       cipherKey: cipherKey ?? this.cipherKey,
       profileType: profileType ?? this.profileType,
       ioTokens: ioTokens ?? this.ioTokens,
+      errorFetchingIOTokens:
+          errorFetchingIOTokens ?? this.errorFetchingIOTokens,
     );
   }
 }

@@ -63,6 +63,7 @@ class _UserRepository implements UserRepository {
       walletBalance: await _arweave.getWalletBalance(
         await profileDetails.wallet.getAddress(),
       ),
+      errorFetchingIOTokens: false,
     );
 
     logger.d('Loaded user');
@@ -112,18 +113,16 @@ class _UserRepository implements UserRepository {
 
   @override
   Future<String?> getIOTokens(Wallet wallet) async {
-    try {
-      String? ioTokens;
+    await Future.delayed(Duration(seconds: 2))
+        .then((value) => throw Exception('Error fetching IOTokens'));
 
-      if (isArioSDKSupportedOnPlatform()) {
-        ioTokens = await _arioSDK.getIOTokens(await wallet.getAddress());
-      }
+    String? ioTokens;
 
-      return ioTokens;
-    } catch (e, stacktrace) {
-      logger.e('Failed to get IO tokens', e, stacktrace);
-      return null;
+    if (isArioSDKSupportedOnPlatform()) {
+      ioTokens = await _arioSDK.getIOTokens(await wallet.getAddress());
     }
+
+    return ioTokens;
   }
 
   @override

@@ -186,6 +186,7 @@ void main() {
       walletBalance: BigInt.one,
       cipherKey: SecretKey([]),
       profileType: ProfileType.json,
+      errorFetchingIOTokens: false,
     );
     blocTest(
       'should emit the event to show onboarding when user is not an existing one',
@@ -355,6 +356,7 @@ void main() {
               walletBalance: BigInt.one,
               cipherKey: SecretKey([]),
               profileType: ProfileType.json,
+              errorFetchingIOTokens: false,
             ));
       },
       act: (bloc) async {
@@ -422,6 +424,7 @@ void main() {
       walletBalance: BigInt.one,
       cipherKey: SecretKey([]),
       profileType: ProfileType.json,
+      errorFetchingIOTokens: false,
     );
 
     blocTest(
@@ -486,6 +489,7 @@ void main() {
       walletBalance: BigInt.one,
       cipherKey: SecretKey([]),
       profileType: ProfileType.json,
+      errorFetchingIOTokens: false,
     );
 
     blocTest(
@@ -809,6 +813,7 @@ void main() {
             walletBalance: BigInt.one,
             cipherKey: SecretKey([]),
             profileType: ProfileType.json,
+            errorFetchingIOTokens: false,
           ),
         );
       },
@@ -833,6 +838,7 @@ void main() {
       walletBalance: BigInt.one,
       cipherKey: SecretKey([]),
       profileType: ProfileType.json,
+      errorFetchingIOTokens: false,
     );
 
     blocTest(

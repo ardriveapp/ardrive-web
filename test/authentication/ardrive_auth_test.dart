@@ -133,6 +133,7 @@ void main() {
           walletBalance: BigInt.one,
           cipherKey: SecretKey([]),
           profileType: ProfileType.json,
+          errorFetchingIOTokens: false,
         );
         test(
             'should return the user when has private drives and login with sucess. ',
@@ -389,6 +390,7 @@ void main() {
           walletBalance: BigInt.one,
           cipherKey: SecretKey([]),
           profileType: ProfileType.json,
+          errorFetchingIOTokens: false,
         );
 
         test(
@@ -506,6 +508,7 @@ void main() {
         walletBalance: BigInt.one,
         cipherKey: SecretKey([]),
         profileType: ProfileType.json,
+        errorFetchingIOTokens: false,
       );
 
       test('should return the user when password is correct', () async {
@@ -549,6 +552,7 @@ void main() {
         walletBalance: BigInt.one,
         cipherKey: SecretKey([]),
         profileType: ProfileType.json,
+        errorFetchingIOTokens: false,
       );
 
       test(
@@ -619,6 +623,7 @@ void main() {
           walletBalance: BigInt.one,
           cipherKey: SecretKey([]),
           profileType: ProfileType.json,
+          errorFetchingIOTokens: false,
         );
         when(
           () => mockArweaveService.getFirstPrivateDriveTxId(
@@ -695,6 +700,7 @@ void main() {
           walletBalance: BigInt.one,
           cipherKey: SecretKey([]),
           profileType: ProfileType.json,
+          errorFetchingIOTokens: false,
         );
         when(() => mockBiometricAuthentication.isEnabled())
             .thenAnswer((_) async => false);
@@ -748,7 +754,8 @@ void main() {
           walletAddress: 'walletAddress',
           walletBalance: BigInt.one,
           cipherKey: SecretKey([]),
-          profileType: ProfileType.json,
+              profileType: ProfileType.json,
+          errorFetchingIOTokens: false,
         );
 
         arDriveAuth.onAuthStateChanged().listen((user) {
@@ -828,6 +835,7 @@ void main() {
           walletBalance: initialBalance,
           cipherKey: SecretKey([]),
           profileType: ProfileType.json,
+          errorFetchingIOTokens: false,
         );
         // Updated user with new balance
         final updatedUser = initialUser.copyWith(walletBalance: updatedBalance);

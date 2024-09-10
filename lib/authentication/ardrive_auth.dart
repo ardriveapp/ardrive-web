@@ -318,10 +318,23 @@ class ArDriveAuthImpl implements ArDriveAuth {
   }
 
   void _updateBalance() {
-    _userRepository.getIOTokens(currentUser.wallet).then(
-        (value) => _currentUser = _currentUser!.copyWith(ioTokens: value));
-    _userRepository.getBalance(currentUser.wallet).then(
-        (value) => _currentUser = _currentUser!.copyWith(walletBalance: value));
+    _userRepository.getIOTokens(currentUser.wallet).then((value) {
+      _currentUser = _currentUser!.copyWith(
+        ioTokens: value,
+        errorFetchingIOTokens: false,
+      );
+      _userStreamController.add(_currentUser);
+    }).catchError((e) {
+      _currentUser = _currentUser!.copyWith(
+        errorFetchingIOTokens: true,
+      );
+      _userStreamController.add(_currentUser);
+      return Future.value(null);
+    });
+    _userRepository.getBalance(currentUser.wallet).then((value) {
+      _currentUser = _currentUser!.copyWith(walletBalance: value);
+      _userStreamController.add(_currentUser);
+    });
   }
 
   Future<void> _saveUser(
@@ -375,11 +388,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
   @override
   Future<void> refreshBalance() async {
-    final balance = await _userRepository.getBalance(currentUser.wallet);
-
-    currentUser = currentUser.copyWith(walletBalance: balance);
-
-    _userStreamController.add(_currentUser);
+    _updateBalance();
   }
 }
 
