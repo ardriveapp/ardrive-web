@@ -113,9 +113,6 @@ class _UserRepository implements UserRepository {
 
   @override
   Future<String?> getIOTokens(Wallet wallet) async {
-    await Future.delayed(Duration(seconds: 2))
-        .then((value) => throw Exception('Error fetching IOTokens'));
-
     String? ioTokens;
 
     if (isArioSDKSupportedOnPlatform()) {
