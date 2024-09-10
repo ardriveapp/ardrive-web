@@ -390,13 +390,17 @@ class __NameSelectorDropdownState<T> extends State<_NameSelectorDropdown<T>> {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     double maxHeight;
-
+    double maxWidth = 500;
     if (48 * widget.names.length.toDouble() > 240) {
       maxHeight = 240;
     } else if (widget.names.isEmpty) {
       maxHeight = 48;
     } else {
       maxHeight = 48 * widget.names.length.toDouble();
+    }
+
+    if (maxWidth >= MediaQuery.of(context).size.width) {
+      maxWidth = MediaQuery.of(context).size.width - 32;
     }
 
     return ArDriveDropdown(
@@ -409,7 +413,7 @@ class __NameSelectorDropdownState<T> extends State<_NameSelectorDropdown<T>> {
       ),
       showScrollbars: true,
       maxHeight: maxHeight,
-      items: _buildList(widget.names),
+      items: _buildList(widget.names, maxWidth),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -439,7 +443,7 @@ class __NameSelectorDropdownState<T> extends State<_NameSelectorDropdown<T>> {
                   ),
                 ],
               ),
-              width: 500,
+              width: maxWidth,
               height: 56,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -480,7 +484,7 @@ class __NameSelectorDropdownState<T> extends State<_NameSelectorDropdown<T>> {
     return name;
   }
 
-  List<ArDriveDropdownItem> _buildList(List<T> items) {
+  List<ArDriveDropdownItem> _buildList(List<T> items, double maxWidth) {
     List<ArDriveDropdownItem> list = [];
 
     for (var item in items) {
@@ -494,13 +498,15 @@ class __NameSelectorDropdownState<T> extends State<_NameSelectorDropdown<T>> {
           },
           content: Container(
             alignment: Alignment.centerLeft,
-            width: 500,
+            width: maxWidth,
             height: 48,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
                 _getName(item),
                 style: ArDriveTypographyNew.of(context).paragraphLarge(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),
