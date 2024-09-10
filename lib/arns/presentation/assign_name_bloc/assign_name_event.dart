@@ -7,13 +7,18 @@ sealed class AssignNameEvent extends Equatable {
   List<Object> get props => [];
 }
 
-final class LoadNames extends AssignNameEvent {}
+final class LoadNames extends AssignNameEvent {
+  final bool updateARNSRecords;
+
+  const LoadNames({
+    this.updateARNSRecords = true,
+  });
+}
 
 final class SelectName extends AssignNameEvent {
   final ANTRecord name;
-  final bool loadUndernames;
 
-  const SelectName(this.name, this.loadUndernames);
+  const SelectName(this.name);
 
   @override
   List<Object> get props => [name];
@@ -28,21 +33,15 @@ final class LoadUndernames extends AssignNameEvent {
 
 final class SelectUndername extends AssignNameEvent {
   final ARNSUndername undername;
-  final String txId;
 
   const SelectUndername({
     required this.undername,
-    required this.txId,
   });
 
   @override
   List<Object> get props => [undername];
 }
 
+final class ConfirmSelectionAndUpload extends AssignNameEvent {}
+
 final class ConfirmSelection extends AssignNameEvent {}
-
-final class ReviewSelection extends AssignNameEvent {
-  final String txId;
-
-  const ReviewSelection(this.txId);
-}

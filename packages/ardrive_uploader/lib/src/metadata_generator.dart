@@ -82,20 +82,23 @@ class ARFSUploadMetadataGenerator
           licenseAdditionalTags: arguments.licenseAdditionalTags?.entries
               .map((e) => Tag(e.key, e.value))
               .toList(),
+          assignedName: arguments.assignedName,
         ),
       );
 
       return ARFSFileUploadMetadata(
-          isPrivate: arguments.isPrivate,
-          size: await file.length,
-          lastModifiedDate: file.lastModifiedDate,
-          dataContentType: file.contentType,
-          driveId: arguments.driveId!,
-          parentFolderId: arguments.parentFolderId!,
-          name: file.name,
-          id: id,
-          licenseDefinitionTxId: arguments.licenseDefinitionTxId,
-          licenseAdditionalTags: arguments.licenseAdditionalTags)
+        isPrivate: arguments.isPrivate,
+        size: await file.length,
+        lastModifiedDate: file.lastModifiedDate,
+        dataContentType: file.contentType,
+        driveId: arguments.driveId!,
+        parentFolderId: arguments.parentFolderId!,
+        name: file.name,
+        id: id,
+        licenseDefinitionTxId: arguments.licenseDefinitionTxId,
+        licenseAdditionalTags: arguments.licenseAdditionalTags,
+        assignedName: arguments.assignedName,
+      )
         ..setDataTags(tags['data-item']!)
         ..setEntityMetadataTags(tags['entity']!);
     } else if (entity is IOFolder) {
@@ -170,6 +173,7 @@ class ARFSUploadMetadataArgs {
   final UploadType type;
   final String? licenseDefinitionTxId;
   final Map<String, String>? licenseAdditionalTags;
+  final String? assignedName;
 
   factory ARFSUploadMetadataArgs.file({
     required String driveId,
@@ -178,6 +182,7 @@ class ARFSUploadMetadataArgs {
     required UploadType type,
     String? entityId,
     Map<String, String>? customBundleTags,
+    String? assignedName,
   }) {
     return ARFSUploadMetadataArgs(
       driveId: driveId,
@@ -185,6 +190,7 @@ class ARFSUploadMetadataArgs {
       isPrivate: isPrivate,
       entityId: entityId,
       type: type,
+      assignedName: assignedName,
     );
   }
 
@@ -224,6 +230,7 @@ class ARFSUploadMetadataArgs {
     this.entityId,
     this.licenseDefinitionTxId,
     this.licenseAdditionalTags,
+    this.assignedName,
   });
 }
 
@@ -287,6 +294,10 @@ class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
         tags.add(Tag(EntityTag.fileId, arguments.entityId!));
         tags.add(Tag(EntityTag.entityType, EntityTypeTag.file));
         tags.add(Tag(EntityTag.parentFolderId, arguments.parentFolderId!));
+
+        if (arguments.assignedName != null) {
+          tags.add(Tag(EntityTag.arnsName, arguments.assignedName!));
+        }
 
         break;
       case EntityType.folder:
@@ -388,6 +399,7 @@ class ARFSTagsArgs extends Equatable {
   final EntityType entity;
   final String? licenseDefinitionTxId;
   final List<Tag>? licenseAdditionalTags;
+  final String? assignedName;
 
   ARFSTagsArgs({
     this.driveId,
@@ -398,6 +410,7 @@ class ARFSTagsArgs extends Equatable {
     required this.contentType,
     this.licenseDefinitionTxId,
     this.licenseAdditionalTags,
+    this.assignedName,
   });
 
   @override
@@ -408,6 +421,8 @@ class ARFSTagsArgs extends Equatable {
         isPrivate,
         contentType,
         entity,
-        customBundleTags,
+        licenseDefinitionTxId,
+        licenseAdditionalTags,
+        assignedName,
       ];
 }

@@ -71,28 +71,24 @@ final class UndernamesLoaded extends AssignNameState {
 
 final class ConfirmingSelection extends AssignNameState {}
 
-final class SelectionConfirmed extends AssignNameState {
+final class NameAssignedWithSuccess extends AssignNameState {
   final String address;
   final String arAddress;
 
-  const SelectionConfirmed({required this.address, required this.arAddress});
+  const NameAssignedWithSuccess(
+      {required this.address, required this.arAddress});
+}
+
+final class SelectionConfirmed extends AssignNameState {
+  final ANTRecord selectedName;
+  final ARNSUndername? selectedUndername;
+
+  const SelectionConfirmed({
+    required this.selectedName,
+    this.selectedUndername,
+  });
 }
 
 final class LoadingUndernames extends AssignNameState {}
-
-final class ReviewingSelection extends AssignNameState {
-  final String domain;
-  final ARNSUndername undername;
-  final String txId;
-
-  const ReviewingSelection({
-    required this.domain,
-    required this.undername,
-    required this.txId,
-  });
-
-  @override
-  List<Object?> get props => [domain, undername, txId];
-}
 
 class SelectionFailed extends AssignNameState {}

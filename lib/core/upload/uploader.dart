@@ -18,6 +18,7 @@ import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/size_utils.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:tuple/tuple.dart';
 
@@ -626,6 +627,7 @@ class UploadParams {
   final Map<String, String> conflictingFiles;
   final Map<String, WebFolder> foldersByPath;
   final bool containsSupportedImageTypeForThumbnailGeneration;
+  final ARNSUndername? arnsUnderName;
 
   UploadParams({
     required this.user,
@@ -635,5 +637,22 @@ class UploadParams {
     required this.conflictingFiles,
     required this.foldersByPath,
     required this.containsSupportedImageTypeForThumbnailGeneration,
+    this.arnsUnderName,
   });
+
+  UploadParams copyWith({
+    ARNSUndername? arnsUnderName,
+  }) {
+    return UploadParams(
+      user: user,
+      files: files,
+      targetFolder: targetFolder,
+      targetDrive: targetDrive,
+      conflictingFiles: conflictingFiles,
+      foldersByPath: foldersByPath,
+      containsSupportedImageTypeForThumbnailGeneration:
+          containsSupportedImageTypeForThumbnailGeneration,
+      arnsUnderName: arnsUnderName,
+    );
+  }
 }
