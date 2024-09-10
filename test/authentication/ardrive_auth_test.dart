@@ -754,7 +754,7 @@ void main() {
           walletAddress: 'walletAddress',
           walletBalance: BigInt.one,
           cipherKey: SecretKey([]),
-              profileType: ProfileType.json,
+          profileType: ProfileType.json,
           errorFetchingIOTokens: false,
         );
 
@@ -844,12 +844,15 @@ void main() {
 
         when(() => mockUserRepository.getBalance(wallet))
             .thenAnswer((_) async => updatedBalance);
+        when(() => mockUserRepository.getIOTokens(wallet))
+            .thenAnswer((_) async => '0.4');
 
         // Act
         await arDriveAuth.refreshBalance();
 
         // Assert
         expect(arDriveAuth.currentUser.walletBalance, equals(updatedBalance));
+        expect(arDriveAuth.currentUser.errorFetchingIOTokens, false);
         verify(() => mockUserRepository.getBalance(wallet)).called(1);
 
         // Verify that listeners are notified
