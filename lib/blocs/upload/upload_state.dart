@@ -179,6 +179,12 @@ class UploadConfiguringLicense extends UploadState {
       'UploadConfiguringLicense { paymentInfo: ${readyState.paymentInfo} }';
 }
 
+class UploadReviewWithArnsName extends UploadState {
+  final UploadReady readyState;
+
+  UploadReviewWithArnsName({required this.readyState});
+}
+
 /// [UploadReviewWithLicense] means that the upload + license is being reviewed by the user and awaiting confirmation to begin upload.
 class UploadReviewWithLicense extends UploadState {
   final UploadReady readyState;
