@@ -49,7 +49,7 @@ class ProfileLoggedIn extends ProfileAvailable {
       useTurbo;
 
   @override
-  List<Object?> get props => [user];
+  List<Object?> get props => [user, useTurbo];
 }
 
 class ProfilePromptAdd extends ProfileUnavailable {}
