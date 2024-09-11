@@ -238,7 +238,7 @@ class _ARNSRepository implements ARNSRepository {
     } catch (e) {
       logger.e('Error getting ANT records for wallet: $e');
 
-      _getARNSUndernamesCompleter!.complete([]);
+      _getARNSUndernamesCompleter!.completeError(e);
 
       _getARNSUndernamesCompleter = null;
 
