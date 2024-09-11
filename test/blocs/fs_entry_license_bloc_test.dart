@@ -271,6 +271,7 @@ void main() {
             walletBalance: BigInt.one,
             profileType: ProfileType.json,
             ioTokens: 'ioTokens',
+            errorFetchingIOTokens: false,
           ),
           useTurbo: false,
         ),

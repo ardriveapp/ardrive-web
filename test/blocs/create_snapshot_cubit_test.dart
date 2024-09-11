@@ -160,6 +160,7 @@ void main() {
               ),
               profileType: ProfileType.json,
               ioTokens: 'ioTokens',
+              errorFetchingIOTokens: false,
             ),
             useTurbo: false,
           ),
@@ -214,6 +215,7 @@ void main() {
               walletBalance: BigInt.one,
               cipherKey: cipher,
               profileType: ProfileType.json,
+              errorFetchingIOTokens: false,
             ));
 
         when(() => appConfig.allowedDataItemSizeForTurbo)

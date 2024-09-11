@@ -371,6 +371,7 @@ class _UploadController implements UploadController {
 
     final cancelableTask = tasks.values
         .where((e) =>
+            e.status != UploadStatus.assigningUndername &&
             e.status != UploadStatus.complete &&
             e.status != UploadStatus.failed)
         .toList();

@@ -59,6 +59,7 @@ void main() {
           walletBalance: BigInt.one,
           cipherKey: SecretKey(List.generate(32, (index) => index)),
           profileType: ProfileType.json,
+          errorFetchingIOTokens: false,
         ),
         useTurbo: false,
       ));
@@ -240,6 +241,7 @@ void main() {
             walletBalance: BigInt.one,
             cipherKey: SecretKey(List.generate(32, (index) => index)),
             profileType: ProfileType.json,
+            errorFetchingIOTokens: false,
           ),
           useTurbo: false,
         ));
