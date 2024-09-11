@@ -11,6 +11,7 @@ final fakeUserJson = User(
   walletBalance: BigInt.zero,
   cipherKey: SecretKey([1, 2, 3]),
   profileType: ProfileType.json,
+  errorFetchingIOTokens: false,
 );
 
 final fakeUserArConnect = User(
@@ -20,4 +21,6 @@ final fakeUserArConnect = User(
   walletBalance: BigInt.zero,
   cipherKey: SecretKey([1, 2, 3]),
   profileType: ProfileType.arConnect,
+  errorFetchingIOTokens: false,
+
 );

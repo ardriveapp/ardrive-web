@@ -15,6 +15,7 @@ import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/components/turbo_balance_widget.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
+import 'package:ardrive/user/balance/user_balance_bloc.dart';
 import 'package:ardrive/user/download_wallet/download_wallet_modal.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
@@ -477,36 +478,70 @@ class _ProfileCardState extends State<ProfileCard> {
 
     final ioTokens = state.user.ioTokens;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'tIO Tokens',
-            style: typography.paragraphNormal(
-              fontWeight: ArFontWeight.semiBold,
-              color: colorTokens.textHigh,
-            ),
-          ),
-          if (ioTokens != null)
-            Text(
-              ioTokens,
-              style: typography.paragraphNormal(
-                color: colorTokens.textLow,
-                fontWeight: ArFontWeight.semiBold,
+    return BlocProvider(
+      create: (context) => UserBalanceBloc(auth: context.read<ArDriveAuth>())
+        ..add(GetUserBalance()),
+      child: BlocBuilder<UserBalanceBloc, UserBalanceState>(
+        builder: (context, state) {
+          if (state is UserBalanceLoaded) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'tIO Tokens',
+                    style: typography.paragraphNormal(
+                      fontWeight: ArFontWeight.semiBold,
+                      color: colorTokens.textHigh,
+                    ),
+                  ),
+                  if (state is UserBalanceLoadingIOTokens &&
+                      !state.errorFetchingIOTokens)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 8),
+                      child: LinearProgressIndicator(),
+                    ),
+                  if (ioTokens != null)
+                    Text(
+                      ioTokens,
+                      style: typography.paragraphNormal(
+                        color: colorTokens.textLow,
+                        fontWeight: ArFontWeight.semiBold,
+                      ),
+                    ),
+                  if (state.errorFetchingIOTokens) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Error fetching tIO balance',
+                          style: typography.paragraphNormal(
+                            fontWeight: ArFontWeight.semiBold,
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeErrorDefault,
+                          ),
+                        ),
+                        ArDriveIconButton(
+                          icon: ArDriveIcons.refresh(),
+                          onPressed: () {
+                            context
+                                .read<UserBalanceBloc>()
+                                .add(RefreshUserBalance());
+                          },
+                        )
+                      ],
+                    ),
+                  ]
+                ],
               ),
-            ),
-          if (ioTokens == null)
-            Text(
-              'An error occurred while fetching IO tokens',
-              style: typography.paragraphNormal(
-                color: colorTokens.textLow,
-                fontWeight: ArFontWeight.semiBold,
-              ),
-            ),
-        ],
+            );
+          }
+          return const SizedBox.shrink();
+        },
       ),
     );
   }

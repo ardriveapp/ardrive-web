@@ -17,23 +17,29 @@ abstract class UserRepository {
   Future<void> deleteUser();
   Future<String?> getOwnerOfDefaultProfile();
   Future<BigInt> getBalance(Wallet wallet);
+  Future<String?> getIOTokens(Wallet wallet);
 
-  factory UserRepository(ProfileDao profileDao, ArweaveService arweave) =>
+  factory UserRepository(
+          ProfileDao profileDao, ArweaveService arweave, ArioSDK arioSDK) =>
       _UserRepository(
         profileDao: profileDao,
         arweave: arweave,
+        arioSDK: arioSDK,
       );
 }
 
 class _UserRepository implements UserRepository {
   final ProfileDao _profileDao;
   final ArweaveService _arweave;
+  final ArioSDK _arioSDK;
 
   _UserRepository({
     required ProfileDao profileDao,
     required ArweaveService arweave,
+    required ArioSDK arioSDK,
   })  : _profileDao = profileDao,
-        _arweave = arweave;
+        _arweave = arweave,
+        _arioSDK = arioSDK;
 
   // TODO: Check ProfileDAO to implement only one source for user data
 
@@ -48,8 +54,6 @@ class _UserRepository implements UserRepository {
 
     final profileDetails = await _profileDao.loadDefaultProfile(password);
 
-    final ioTokens = await _getIOTokens(profileDetails: profileDetails);
-
     final user = User(
       profileType: ProfileType.values[profileDetails.details.profileType],
       wallet: profileDetails.wallet,
@@ -59,7 +63,7 @@ class _UserRepository implements UserRepository {
       walletBalance: await _arweave.getWalletBalance(
         await profileDetails.wallet.getAddress(),
       ),
-      ioTokens: ioTokens,
+      errorFetchingIOTokens: false,
     );
 
     logger.d('Loaded user');
@@ -107,23 +111,18 @@ class _UserRepository implements UserRepository {
     return profile.walletPublicKey;
   }
 
-  Future<String?> _getIOTokens({
-    required ProfileLoadDetails profileDetails,
-  }) async {
-    try {
-      String? ioTokens;
+  @override
+  Future<String?> getIOTokens(Wallet wallet) async {
+    String? ioTokens;
 
-      if (isArioSDKSupportedOnPlatform()) {
-        ioTokens = await ArioSDKFactory()
-            .create()
-            .getIOTokens(await profileDetails.wallet.getAddress());
+    if (isArioSDKSupportedOnPlatform()) {
+      ioTokens = await _arioSDK.getIOTokens(await wallet.getAddress());
+      if (ioTokens == 'null') {
+        throw Exception('Error fetching IOTokens');
       }
-
-      return ioTokens;
-    } catch (e, stacktrace) {
-      logger.e('Failed to get IO tokens', e, stacktrace);
-      return null;
     }
+
+    return ioTokens;
   }
 
   @override
