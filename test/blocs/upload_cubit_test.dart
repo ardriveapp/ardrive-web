@@ -308,6 +308,7 @@ void main() {
             walletBalance: BigInt.one,
             cipherKey: SecretKey(tKeyBytes),
             profileType: ProfileType.json,
+            errorFetchingIOTokens: false,
           ),
           useTurbo: false,
         ),
@@ -335,6 +336,7 @@ void main() {
           walletBalance: BigInt.one,
           cipherKey: SecretKey([]),
           profileType: ProfileType.json,
+          errorFetchingIOTokens: false,
         ),
       );
 
@@ -418,6 +420,7 @@ void main() {
               walletBalance: BigInt.one,
               cipherKey: SecretKey(tKeyBytes),
               profileType: ProfileType.json,
+              errorFetchingIOTokens: false,
             ),
           ),
         );
@@ -523,6 +526,7 @@ void main() {
             walletBalance: BigInt.one,
             cipherKey: SecretKey(tKeyBytes),
             profileType: ProfileType.json,
+            errorFetchingIOTokens: false,
           ),
           useTurbo: false,
         ),

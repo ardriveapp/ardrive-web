@@ -1016,7 +1016,9 @@ User getFakeUser() => User(
     walletAddress: 'walletAddress',
     walletBalance: BigInt.one,
     cipherKey: SecretKey([]),
-    profileType: ProfileType.arConnect);
+    profileType: ProfileType.arConnect,
+      errorFetchingIOTokens: false,
+    );
 
 FolderEntry getFakeFolder() => FolderEntry(
       id: 'id',

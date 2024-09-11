@@ -1,0 +1,1 @@
+- Asynchronous background fetching of AR and tIO balances with improved loading and error handling.

@@ -72,6 +72,7 @@ void main() {
               cipherKey: SecretKey(keyBytes),
               profileType: ProfileType.json,
               ioTokens: 'ioTokens',
+              errorFetchingIOTokens: false,
             ),
             useTurbo: turboUploadService.useTurboUpload,
           ),
