@@ -6,7 +6,6 @@ class ArDriveDock extends StatefulWidget {
   const ArDriveDock({required this.child, super.key});
 
   final Widget child;
-
   @override
   State<ArDriveDock> createState() => ArDriveDockState();
 
@@ -24,18 +23,23 @@ class ArDriveDockState extends State<ArDriveDock> {
     super.initState();
   }
 
-  void showOverlay(BuildContext context, Widget content, {double? height}) {
-    _overlayEntry = _createOverlayEntry(content, height: height);
+  void showOverlay(
+      BuildContext context, Widget content, Widget collapsedContent,
+      {double? height}) {
+    _overlayEntry =
+        _createOverlayEntry(content, collapsedContent, height: height);
     Overlay.of(context).insert(_overlayEntry!);
   }
 
-  OverlayEntry _createOverlayEntry(Widget content, {double? height}) {
+  OverlayEntry _createOverlayEntry(Widget content, Widget collapsedConntent,
+      {double? height}) {
     return OverlayEntry(
       builder: (context) => Positioned(
         bottom: 0,
         right: 20,
         child: _DockContent(
           content: content,
+          collapsedContent: collapsedConntent,
           height: height,
         ),
       ),
@@ -67,10 +71,12 @@ class ArDriveDockState extends State<ArDriveDock> {
 class _DockContent extends StatefulWidget {
   const _DockContent({
     required this.content,
+    required this.collapsedContent,
     this.height,
   });
 
   final Widget content;
+  final Widget collapsedContent;
   final double? height;
 
   @override
@@ -91,29 +97,29 @@ class __DockContentState extends State<_DockContent> {
         contentPadding: EdgeInsets.zero,
         boxShadow: BoxShadowCard.shadow80,
         content: Material(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              Flexible(
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    children: [
-                      ArDriveIconButton(
-                        icon: ArDriveIcons.carretUp(),
-                        onPressed: () {
-                          setState(() {
-                            isCollapsed = false;
-                          });
-                        },
-                      ),
-                    ],
+          color: Colors.transparent,
+          child: SizedBox(
+            height: 58,
+            width: 400,
+            child: Row(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: ArDriveIconButton(
+                    icon: ArDriveIcons.carretUp(),
+                    onPressed: () {
+                      setState(() {
+                        isCollapsed = false;
+                      });
+                    },
                   ),
                 ),
-              ),
-              Flexible(child: widget.content),
-            ],
+                Expanded(child: widget.collapsedContent),
+              ],
+            ),
           ),
         ),
       );
@@ -127,6 +133,7 @@ class __DockContentState extends State<_DockContent> {
       contentPadding: EdgeInsets.zero,
       boxShadow: BoxShadowCard.shadow80,
       content: Material(
+        color: Colors.transparent,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.start,
@@ -137,28 +144,26 @@ class __DockContentState extends State<_DockContent> {
                 color: colorTokens.containerRed,
               ),
             ),
-            Flexible(
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: Column(
-                  mainAxisSize: MainAxisSize.max,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        ArDriveIconButton(
-                          icon: ArDriveIcons.carretDown(),
-                          onPressed: () {
-                            setState(() {
-                              isCollapsed = true;
-                            });
-                          },
-                          tooltip: 'Collapse',
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                mainAxisSize: MainAxisSize.max,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      ArDriveIconButton(
+                        icon: ArDriveIcons.carretDown(),
+                        onPressed: () {
+                          setState(() {
+                            isCollapsed = true;
+                          });
+                        },
+                        tooltip: 'Collapse',
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
             Expanded(

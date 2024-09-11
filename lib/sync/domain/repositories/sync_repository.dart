@@ -261,8 +261,8 @@ class _SyncRepository implements SyncRepository {
           .where((file) => metadataTxsFromSnapshots.contains(file.metadataTxId))
           .map((file) => file.dataTxId)
           .toList();
-      await _arnsRepository.waitForARNSRecordsToUpdate();
-      await _arnsRepository.saveAllFilesWithAssignedNames();
+      // await _arnsRepository.waitForARNSRecordsToUpdate();
+      // await _arnsRepository.saveAllFilesWithAssignedNames();
 
       await Future.wait(
         [

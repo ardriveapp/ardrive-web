@@ -37,7 +37,7 @@ class DrivesCubit extends Cubit<DrivesState> {
         _driveDao = driveDao,
         _auth = auth,
         super(DrivesLoadInProgress()) {
-    _auth.onAuthStateChanged().listen((user) {
+    _auth.onUserStateChanged().listen((user) {
       if (user == null) {
         cleanDrives();
         return;
