@@ -251,6 +251,28 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                 return const Center(child: CircularProgressIndicator());
               } else if (state is AssignNameEmptyState) {
                 return const _AssignNameEmptyState();
+              } else if (state is SelectionFailed) {
+                final colorTokens =
+                    ArDriveTheme.of(context).themeData.colorTokens;
+                return Center(
+                  child: Text(
+                    'Error assigning ArNS name. Please try again later',
+                    style: typography.paragraphLarge(
+                      color: colorTokens.textMid,
+                    ),
+                  ),
+                );
+              } else if (state is LoadingNamesFailed) {
+                final colorTokens =
+                    ArDriveTheme.of(context).themeData.colorTokens;
+                return Center(
+                  child: Text(
+                    'Error fetching ArNS names. Please try again later',
+                    style: typography.paragraphLarge(
+                      color: colorTokens.textMid,
+                    ),
+                  ),
+                );
               }
 
               return const SizedBox();
@@ -277,6 +299,42 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
   List<ModalAction> _getActions(AssignNameState state) {
     if (state is AssignNameEmptyState) {
       return [];
+    }
+
+    if (state is LoadingNamesFailed) {
+      return [
+        ModalAction(
+          action: () {
+            Navigator.of(context).pop();
+        },
+          title: 'Cancel',
+        ),
+        ModalAction(
+          action: () {
+            context
+                .read<AssignNameBloc>()
+                .add(const LoadNames(updateARNSRecords: true));
+          },
+          title: 'Try again',
+        ),
+      ];
+    }
+
+    if (state is SelectionFailed) {
+      return [
+        ModalAction(
+          action: () {
+            Navigator.of(context).pop();
+          },
+          title: 'Cancel',
+        ),
+        ModalAction(
+          action: () {
+            context.read<AssignNameBloc>().add(ConfirmSelectionAndUpload());
+          },
+          title: 'Try again',
+        ),
+      ];
     }
 
     late final bool isButtonEnabled;

@@ -106,6 +106,29 @@ void main() {
         verify(() => mockArnsRepository.getAntRecordsForWallet(walletAddress,
             update: true)).called(1);
       });
+
+      test('emits [LoadingNames, LoadingNamesFailed] when LoadNames is added',
+          () async {
+        // Arrange
+        const walletAddress = 'test_wallet_address';
+
+        when(() => mockAuth.getWalletAddress())
+            .thenAnswer((_) async => walletAddress);
+        when(() => mockArnsRepository.getAntRecordsForWallet(walletAddress,
+            update: true)).thenThrow(StateError('Test error'));
+
+        // Act
+        assignNameBloc.add(const LoadNames());
+
+        // Assert
+        await expectLater(
+          assignNameBloc.stream,
+          emitsInOrder([
+            isA<LoadingNames>(),
+            isA<LoadingNamesFailed>(),
+          ]),
+        );
+      });
     });
 
     group('SelectName', () {
@@ -351,5 +374,75 @@ void main() {
         },
       );
     });
+
+    blocTest<AssignNameBloc, AssignNameState>(
+      'emits [ConfirmingSelection, SelectionFailed] when ConfirmSelection is added',
+      build: () {
+        when(() => mockFileDataTableItem.dataTxId)
+            .thenReturn('test_data_tx_id');
+        when(() => mockFileDataTableItem.fileId).thenReturn('test_file_id');
+        when(() => mockFileDataTableItem.driveId).thenReturn('test_drive_id');
+        final antRecords = [
+          ANTRecord(domain: 'test1.ar', processId: 'process1'),
+          ANTRecord(domain: 'test2.ar', processId: 'process2'),
+        ];
+
+        const walletAddress = 'test_wallet_address';
+
+        when(() => mockAuth.getWalletAddress())
+            .thenAnswer((_) async => walletAddress);
+        when(() => mockArnsRepository.getAntRecordsForWallet(walletAddress,
+            update: true)).thenAnswer((_) async => antRecords);
+
+        /// FAILED CALL
+        when(() => mockArnsRepository.setUndernamesToFile(
+              undername: any(named: 'undername'),
+              fileId: any(named: 'fileId'),
+              driveId: any(named: 'driveId'),
+              processId: any(named: 'processId'),
+            )).thenThrow(StateError('Test error'));
+        when(() => mockArnsRepository.getARNSUndernames(any())).thenAnswer(
+          (_) async => [
+            ARNSUndername(
+              name: 'undername',
+              domain: 'domain',
+              record: ARNSRecord(transactionId: 'test_tx_id', ttlSeconds: 3600),
+            )
+          ],
+        );
+        return assignNameBloc;
+      },
+      act: (bloc) {
+        bloc.add(const LoadNames());
+        bloc.add(
+            SelectName(ANTRecord(domain: 'domain', processId: 'process_id')));
+        bloc.add(const LoadUndernames());
+        bloc.add(SelectUndername(
+          undername: ARNSUndername(
+            name: 'undername',
+            domain: 'domain',
+            record: ARNSRecord(transactionId: 'test_tx_id', ttlSeconds: 3600),
+          ),
+        ));
+        bloc.add(ConfirmSelectionAndUpload());
+      },
+      expect: () => [
+        isA<LoadingNames>(),
+        isA<NamesLoaded>(),
+        isA<LoadingUndernames>(),
+        isA<UndernamesLoaded>(),
+        isA<UndernamesLoaded>(),
+        isA<ConfirmingSelection>(),
+        isA<SelectionFailed>(),
+      ],
+      verify: (_) {
+        verify(() => mockArnsRepository.setUndernamesToFile(
+              undername: any(named: 'undername'),
+              fileId: any(named: 'fileId'),
+              driveId: any(named: 'driveId'),
+              processId: any(named: 'processId'),
+            )).called(1);
+      },
+    );
   });
 }
