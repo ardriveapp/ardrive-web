@@ -42,15 +42,17 @@ class DriveExplorerItemTile extends TableRowWidget {
               padding: const EdgeInsets.only(right: 8),
               child: Row(
                 children: [
-                  Text(
-                    name,
-                    style: typography.paragraphNormal(
-                      color: isHidden ? Colors.grey : null,
-                      fontWeight: ArFontWeight.semiBold,
+                  Flexible(
+                    child: Text(
+                      name,
+                      style: typography.paragraphNormal(
+                        color: isHidden ? Colors.grey : null,
+                        fontWeight: ArFontWeight.semiBold,
+                      ),
+                      overflow: TextOverflow.fade,
+                      maxLines: 1,
+                      softWrap: false,
                     ),
-                    overflow: TextOverflow.fade,
-                    maxLines: 1,
-                    softWrap: false,
                   ),
                   if (dataTableItem is FileDataTableItem &&
                       dataTableItem.assignedNames != null &&
