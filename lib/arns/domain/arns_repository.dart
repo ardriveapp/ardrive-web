@@ -174,6 +174,8 @@ class _ARNSRepository implements ARNSRepository {
     String address, {
     bool update = false,
   }) async {
+    throw Exception('Not implemented');
+
     if (!update &&
         lastUpdated != null &&
         lastUpdated!
@@ -238,7 +240,7 @@ class _ARNSRepository implements ARNSRepository {
     } catch (e) {
       logger.e('Error getting ANT records for wallet: $e');
 
-      _getARNSUndernamesCompleter!.complete([]);
+      _getARNSUndernamesCompleter!.completeError(e);
 
       _getARNSUndernamesCompleter = null;
 
