@@ -10,16 +10,16 @@ window.ario = {
   getARNSRecordsForWallet,
 };
 
-async function getGateways() {
-  const io = IO.init({
-    process: new AOProcess({
-      processId: IO_TESTNET_PROCESS_ID,
-      ao: connect({
-        CU_URL: 'https://cu.ar-io.dev'
-      })
-    }),
-  });
+const io = IO.init({
+  process: new AOProcess({
+    processId: IO_TESTNET_PROCESS_ID,
+    ao: connect({
+      CU_URL: 'https://cu.ar-io.dev'
+    })
+  }),
+});
 
+async function getGateways() {
   let cursor = null;
   let allGateways = [];
   const limit = 100;
@@ -92,14 +92,6 @@ async function setAnt(JWKString, processId, txId, undername) {
 }
 
 async function setARNS(JWKString, txId, domain, undername) {
-  const io = IO.init({
-    process: new AOProcess({
-      processId: IO_TESTNET_PROCESS_ID,
-      ao: connect({
-        CU_URL: 'https://cu.ar-io.dev'
-      })
-    }),
-  });
   const record = await io.getArNSRecord({ name: domain });
 
   console.log(record);
@@ -142,14 +134,7 @@ async function getProcesses(address) {
     const arnsEmitter = new ArNSEventEmitter({
       timeoutMs: 60000,
       concurrency: 10,
-      contract: IO.init({
-        process: new AOProcess({
-          processId: IO_TESTNET_PROCESS_ID,
-          ao: connect({
-            CU_URL: 'https://cu.ar-io.dev',
-          }),
-        }),
-      }),
+      contract: io,
     });
 
     arnsEmitter.on('progress', (current, total) => {
