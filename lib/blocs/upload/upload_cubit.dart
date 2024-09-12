@@ -105,24 +105,60 @@ class UploadCubit extends Cubit<UploadState> {
         isNextButtonEnabled: canUpload,
       ));
     } else if (state is UploadReadyToPrepare) {
-      final hasUndernames = (await _arnsRepository
-              .getAntRecordsForWallet(_auth.currentUser.walletAddress))
-          .isNotEmpty;
+      bool showArnsCheckbox = false;
 
-      emit(
-        UploadReady(
-          params: (state as UploadReadyToPrepare).params,
-          paymentInfo: paymentInfo,
-          numberOfFiles: files.length,
-          uploadIsPublic: !_targetDrive.isPrivate,
-          isDragNDrop: isDragNDrop,
-          isNextButtonEnabled: canUpload,
-          isArConnect: (state as UploadReadyToPrepare).isArConnect,
-          showArnsCheckbox:
-              hasUndernames && files.length == 1 && _targetDrive.isPublic,
-          showArnsNameSelection: false,
-        ),
-      );
+      if (_targetDrive.isPublic && files.length == 1) {
+        emit(
+          UploadReady(
+            params: (state as UploadReadyToPrepare).params,
+            paymentInfo: paymentInfo,
+            numberOfFiles: files.length,
+            uploadIsPublic: !_targetDrive.isPrivate,
+            isDragNDrop: isDragNDrop,
+            isNextButtonEnabled: canUpload,
+            isArConnect: (state as UploadReadyToPrepare).isArConnect,
+            showArnsCheckbox: showArnsCheckbox,
+            showArnsNameSelection: false,
+            loadingArNSNames: true,
+          ),
+        );
+
+        try {
+          final hasUndernames = (await _arnsRepository
+                  .getAntRecordsForWallet(_auth.currentUser.walletAddress))
+              .isNotEmpty;
+
+          showArnsCheckbox = hasUndernames;
+
+          if (state is! UploadReady) {
+            logger.d('State is not UploadReady');
+            return;
+          }
+
+          final readyState = state as UploadReady;
+
+          emit(readyState.copyWith(
+              loadingArNSNames: false, showArnsCheckbox: showArnsCheckbox));
+        } catch (e) {
+          final readyState = state as UploadReady;
+          emit(readyState.copyWith(
+              loadingArNSNamesError: true, loadingArNSNames: false));
+        }
+      } else {
+        emit(
+          UploadReady(
+            params: (state as UploadReadyToPrepare).params,
+            paymentInfo: paymentInfo,
+            numberOfFiles: files.length,
+            uploadIsPublic: !_targetDrive.isPrivate,
+            isDragNDrop: isDragNDrop,
+            isNextButtonEnabled: canUpload,
+            isArConnect: (state as UploadReadyToPrepare).isArConnect,
+            showArnsCheckbox: showArnsCheckbox,
+            showArnsNameSelection: false,
+          ),
+        );
+      }
     }
   }
 
