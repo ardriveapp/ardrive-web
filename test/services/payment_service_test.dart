@@ -72,7 +72,7 @@ void main() async {
 
       when(
         () => httpClient.get(
-          url: '$fakeUrl/v1/balance',
+          url: '$fakeUrl/v1/account/balance/arweave?address=$walletAddress',
           headers: any(named: 'headers'),
         ),
       ).thenAnswer(
@@ -249,7 +249,7 @@ void main() async {
           () async {
         when(
           () => httpClient.get(
-            url: '$fakeUrl/v1/balance',
+            url: '$fakeUrl/v1/account/balance/arweave?address=$walletAddress',
             headers: any(named: 'headers'),
           ),
         ).thenThrow(ArDriveHTTPException(
@@ -266,7 +266,7 @@ void main() async {
       test('should throw an exception if the status code is not 404', () async {
         when(
           () => httpClient.get(
-            url: '$fakeUrl/v1/balance',
+            url: '$fakeUrl/v1/account/balance/arweave?address=$walletAddress',
             headers: any(named: 'headers'),
           ),
         ).thenThrow(ArDriveHTTPException(

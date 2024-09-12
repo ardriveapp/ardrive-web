@@ -61,20 +61,10 @@ class PaymentService {
   Future<BigInt> getBalance({
     required Wallet wallet,
   }) async {
-    final nonce = const Uuid().v4();
-    final publicKey = await wallet.getOwner();
-    final signature = await signNonceAndData(
-      nonce: nonce,
-      wallet: wallet,
-    );
     try {
       final result = await httpClient.get(
-        url: '$turboPaymentUri/v1/balance',
-        headers: {
-          'x-nonce': nonce,
-          'x-signature': signature,
-          'x-public-key': publicKey,
-        },
+        url:
+            '$turboPaymentUri/v1/account/balance/arweave?address=${await wallet.getAddress()}',
       );
 
       final price = BigInt.parse((json.decode(result.data)['winc']));
