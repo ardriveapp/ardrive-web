@@ -5,7 +5,7 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
-"@ar.io/sdk@npm:^2.1.0":
+"@ar.io/sdk@npm:2.1.0":
   version: 2.1.0
   resolution: "@ar.io/sdk@npm:2.1.0"
   dependencies:
@@ -1844,9 +1844,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "ario_sdk@workspace:."
   dependencies:
-    "@ar.io/sdk": "npm:^2.1.0"
+    "@ar.io/sdk": "npm:2.1.0"
     "@parcel/core": "npm:^2.10.3"
     parcel: "npm:^2.10.3"
+    process: "npm:^0.11.10"
     terser: "npm:^5.31.6"
   languageName: unknown
   linkType: soft
@@ -3738,6 +3739,13 @@ __metadata:
   version: 4.2.0
   resolution: "proc-log@npm:4.2.0"
   checksum: 10c0/17db4757c2a5c44c1e545170e6c70a26f7de58feb985091fb1763f5081cab3d01b181fb2dd240c9f4a4255a1d9227d163d5771b7e69c9e49a561692db865efb9
+  languageName: node
+  linkType: hard
+
+"process@npm:^0.11.10":
+  version: 0.11.10
+  resolution: "process@npm:0.11.10"
+  checksum: 10c0/40c3ce4b7e6d4b8c3355479df77aeed46f81b279818ccdc500124e6a5ab882c0cc81ff7ea16384873a95a74c4570b01b120f287abbdd4c877931460eca6084b3
   languageName: node
   linkType: hard
 

@@ -9,9 +9,10 @@
   "devDependencies": {
     "@parcel/core": "^2.10.3",
     "parcel": "^2.10.3",
+    "process": "^0.11.10",
     "terser": "^5.31.6"
   },
   "dependencies": {
-    "@ar.io/sdk": "^2.1.0"
+    "@ar.io/sdk": "2.1.0"
   }
 }

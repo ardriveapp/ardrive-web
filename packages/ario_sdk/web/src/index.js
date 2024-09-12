@@ -1,5 +1,5 @@
-import { ANT, ArNSEventEmitter, ArweaveSigner, IO, mIOToken } from '@ar.io/sdk';
-
+import { ANT, AOProcess, ArNSEventEmitter, ArweaveSigner, IO, IO_TESTNET_PROCESS_ID, mIOToken } from '@ar.io/sdk';
+import { connect } from '@permaweb/aoconnect';
 
 window.ario = {
   getGateways,
@@ -11,7 +11,15 @@ window.ario = {
 };
 
 async function getGateways() {
-  const io = IO.init();
+  const io = IO.init({
+    process: new AOProcess({
+      processId: IO_TESTNET_PROCESS_ID,
+      ao: connect({
+        CU_URL: 'https://cu.ar-io.dev'
+      })
+    }),
+  });
+
   let cursor = null;
   let allGateways = [];
   const limit = 100;
@@ -41,7 +49,14 @@ async function getGateways() {
 
 async function getIOTokens(address) {
   try{
-    const io = IO.init();
+    const io = IO.init({
+      process: new AOProcess({
+        processId: IO_TESTNET_PROCESS_ID,
+        ao: connect({
+          CU_URL: 'https://cu.ar-io.dev'
+        })
+      }),
+    });
     // the balance will be returned in mIO as a value
     const balance = await io
       .getBalance({
@@ -77,7 +92,14 @@ async function setAnt(JWKString, processId, txId, undername) {
 }
 
 async function setARNS(JWKString, txId, domain, undername) {
-  const io = IO.init();
+  const io = IO.init({
+    process: new AOProcess({
+      processId: IO_TESTNET_PROCESS_ID,
+      ao: connect({
+        CU_URL: 'https://cu.ar-io.dev'
+      })
+    }),
+  });
   const record = await io.getArNSRecord({ name: domain });
 
   console.log(record);
@@ -117,9 +139,16 @@ async function getProcesses(address) {
     const arnsEmitter = new ArNSEventEmitter({
       timeoutMs: 60000,
       concurrency: 10,
+      contract: IO.init({
+        process: new AOProcess({
+          processId: IO_TESTNET_PROCESS_ID,
+          ao: connect({
+            CU_URL: 'https://cu.ar-io.dev',
+          }),
+        }),
+      }),
     });
 
-    // Set up event listeners
     arnsEmitter.on('progress', (current, total) => {
       console.log(`Progress: ${current}/${total}`);
     });
@@ -130,18 +159,17 @@ async function getProcesses(address) {
 
     arnsEmitter.on('error', (error) => {
       console.error('Error:', error);
-      reject(error); // Reject the promise if there's an error
+      reject(error);
     });
 
     arnsEmitter.on('end', (result) => {
       console.log('Completed fetching processes:', result);
-      resolve(JSON.stringify(result)); // Resolve the promise with the JSON stringified result
+      resolve(JSON.stringify(result));
     });
 
-    // Fetch processes owned by the wallet
     arnsEmitter.fetchProcessesOwnedByWallet({
       address: address,
-      pageSize: 1000,
+      pageSize: 100
     });
   });
 }
