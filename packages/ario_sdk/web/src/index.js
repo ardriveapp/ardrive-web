@@ -49,14 +49,6 @@ async function getGateways() {
 
 async function getIOTokens(address) {
   try{
-    const io = IO.init({
-      process: new AOProcess({
-        processId: IO_TESTNET_PROCESS_ID,
-        ao: connect({
-          CU_URL: 'https://cu.ar-io.dev'
-        })
-      }),
-    });
     // the balance will be returned in mIO as a value
     const balance = await io
       .getBalance({
