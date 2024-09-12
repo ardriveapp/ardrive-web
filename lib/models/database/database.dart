@@ -21,7 +21,6 @@ part 'database.g.dart';
     '../tables/licenses.drift',
     '../tables/network_transactions.drift',
     '../tables/profiles.drift',
-    '../tables/snapshot_entries.drift',
     '../tables/arns_records.drift',
     '../tables/ant_records.drift',
   },
