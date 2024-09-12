@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:ardrive/arns/data/arns_dao.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/core/arfs/repository/file_repository.dart';
+import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
@@ -96,12 +97,24 @@ class _ARNSRepository implements ARNSRepository {
     required String processId,
     bool uploadNewRevision = true,
   }) async {
-    await _sdk.setUndername(
-      jwtString: _auth.getJWTAsString(),
-      domain: undername.domain,
-      txId: undername.record.transactionId,
-      undername: undername.name,
-    );
+    if (_auth.currentUser.profileType == ProfileType.arConnect) {
+      logger.d('Setting undername with ArConnect');
+
+      final id = await _sdk.setUndernameWithArConnect(
+        txId: undername.record.transactionId,
+        domain: undername.domain,
+        undername: undername.name,
+      );
+
+      logger.d('Undername set with ArConnect: $id');
+    } else {
+      await _sdk.setUndername(
+        jwtString: _auth.getJWTAsString(),
+        domain: undername.domain,
+        txId: undername.record.transactionId,
+        undername: undername.name,
+      );
+    }
 
     _cachedUndernames[undername.domain]![undername.name] = undername;
 

@@ -13,6 +13,8 @@
     "terser": "^5.31.6"
   },
   "dependencies": {
-    "@ar.io/sdk": "2.1.0"
+    "@ar.io/sdk": "2.1.0",
+    "@permaweb/aoconnect": "^0.0.59",
+    "arweave": "^1.15.1"
   }
 }

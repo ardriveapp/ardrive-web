@@ -1,5 +1,6 @@
-import { ANT, AOProcess, ArNSEventEmitter, ArweaveSigner, IO, IO_TESTNET_PROCESS_ID, mIOToken } from '@ar.io/sdk';
+import { ANT, AOProcess, ArconnectSigner, ArNSEventEmitter, ArweaveSigner, IO, IO_TESTNET_PROCESS_ID, mIOToken } from '@ar.io/sdk';
 import { connect } from '@permaweb/aoconnect';
+import Arweave from 'arweave';
 
 window.ario = {
   getGateways,
@@ -63,10 +64,13 @@ async function getIOTokens(address) {
 }
 
 
+async function setAnt(JWKString, processId, txId, undername, useArConnect) {
+  console.log('Setting ANT record', JWKString, processId, txId, undername, useArConnect);
 
-async function setAnt(JWKString, processId, txId, undername) {
+  const signer = useArConnect ? new ArconnectSigner(window.arweaveWallet, Arweave.init({})) : new ArweaveSigner(JSON.parse(JWKString));
+
   const ant = ANT.init({
-    signer: new ArweaveSigner(JSON.parse(JWKString)),
+    signer: signer,
     processId: processId
   });
 
@@ -83,14 +87,14 @@ async function setAnt(JWKString, processId, txId, undername) {
   return id;
 }
 
-async function setARNS(JWKString, txId, domain, undername) {
+async function setARNS(JWKString, txId, domain, undername, useArConnect) {
   const record = await io.getArNSRecord({ name: domain });
 
   console.log(record);
 
   const processId = record.processId;
 
-  const setRecordResult = await setAnt(JWKString, processId, txId, undername);
+  const setRecordResult = await setAnt(JWKString, processId, txId, undername, useArConnect);
 
   return JSON.stringify(setRecordResult);
 }
