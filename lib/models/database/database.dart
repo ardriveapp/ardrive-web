@@ -21,7 +21,6 @@ part 'database.g.dart';
     '../tables/licenses.drift',
     '../tables/network_transactions.drift',
     '../tables/profiles.drift',
-    '../tables/snapshot_entries.drift',
     '../tables/arns_records.drift',
     '../tables/ant_records.drift',
   },
@@ -31,7 +30,7 @@ class Database extends _$Database {
   Database([QueryExecutor? e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 21;
+  int get schemaVersion => 22;
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) {
@@ -130,6 +129,18 @@ class Database extends _$Database {
 
               await m.createTable(arnsRecords);
               await m.createTable(antRecords);
+            }
+
+            if (from < 22) {
+              logger.d('Migrating schema from v21 to v22');
+
+              logger.d('Dropping snapshot_entries table');
+
+              await customStatement('''
+                  DROP TABLE IF EXISTS snapshot_entries;
+              ''');
+
+              logger.d('snapshot_entries table dropped');
             }
           } catch (e, stacktrace) {
             logger.e(
