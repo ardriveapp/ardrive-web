@@ -174,8 +174,6 @@ class _ARNSRepository implements ARNSRepository {
     String address, {
     bool update = false,
   }) async {
-    throw Exception('Not implemented');
-
     if (!update &&
         lastUpdated != null &&
         lastUpdated!
