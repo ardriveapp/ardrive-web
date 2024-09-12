@@ -75,7 +75,7 @@ async function getIOTokens(address) {
 async function setAnt(JWKString, processId, txId, undername) {
   const ant = ANT.init({
     signer: new ArweaveSigner(JSON.parse(JWKString)),
-    processId: processId,
+    processId: processId
   });
 
   const { id } = await ant.setRecord(
@@ -124,6 +124,7 @@ async function getUndernames(JWKString, processId) {
 
 async function getARNSRecordsForWallet(address) {
   try {
+    console.log('Fetching processes for wallet:', address);
     const jsonResult = await getProcesses(address);
     console.log('JSON Result:', jsonResult);
     return jsonResult;
@@ -136,6 +137,8 @@ async function getARNSRecordsForWallet(address) {
 async function getProcesses(address) {
   return new Promise((resolve, reject) => {
     // Initialize the emitter
+    console.log('Initializing emitter');
+
     const arnsEmitter = new ArNSEventEmitter({
       timeoutMs: 60000,
       concurrency: 10,
