@@ -629,7 +629,44 @@ class _UploadFormState extends State<UploadForm> {
                             ],
                           ),
                         ),
-                      if (state.showArnsCheckbox)
+                      if (state.loadingArNSNamesError)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Row(
+                            children: [
+                              Text(
+                                'Error loading ARNS names',
+                                style: typography.paragraphLarge(
+                                  fontWeight: ArFontWeight.semiBold,
+                                  color: colorTokens.textRed,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (state.loadingArNSNames)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Row(
+                            children: [
+                              Text(
+                                'Loading ArNS names...',
+                                style: typography.paragraphLarge(
+                                  fontWeight: ArFontWeight.semiBold,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const SizedBox(
+                                height: 16,
+                                width: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
+                      if (state.showArnsCheckbox && !state.loadingArNSNames)
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           child: Row(
