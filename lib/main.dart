@@ -83,25 +83,6 @@ void main() async {
     await _startApp();
   }, (error, stackTrace) async {
     logger.e('Error caught.', error, stackTrace);
-
-    if (error.toString().contains('snapshot_entries')) {
-      logger.d('Handling snapshot_entries exception');
-      WidgetsFlutterBinding.ensureInitialized();
-
-      final database = Database();
-      logger.d('Dropping snapshot_entries table');
-
-      await database.customStatement('''
-          DROP TABLE IF EXISTS snapshot_entries;
-        ''');
-
-      logger.d('Re-initializing services');
-
-      await _initializeServices();
-
-      logger.d('Restarting app');
-      _startApp();
-    }
   });
 }
 
