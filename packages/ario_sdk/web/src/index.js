@@ -1,5 +1,6 @@
-import { ANT, ArNSEventEmitter, ArweaveSigner, IO, mIOToken } from '@ar.io/sdk';
-
+import { ANT, AOProcess, ArconnectSigner, ArNSEventEmitter, ArweaveSigner, IO, IO_TESTNET_PROCESS_ID, mIOToken } from '@ar.io/sdk';
+import { connect } from '@permaweb/aoconnect';
+import Arweave from 'arweave';
 
 window.ario = {
   getGateways,
@@ -10,8 +11,16 @@ window.ario = {
   getARNSRecordsForWallet,
 };
 
+const io = IO.init({
+  process: new AOProcess({
+    processId: IO_TESTNET_PROCESS_ID,
+    ao: connect({
+      CU_URL: 'https://cu.ar-io.dev'
+    })
+  }),
+});
+
 async function getGateways() {
-  const io = IO.init();
   let cursor = null;
   let allGateways = [];
   const limit = 100;
@@ -41,7 +50,6 @@ async function getGateways() {
 
 async function getIOTokens(address) {
   try{
-    const io = IO.init();
     // the balance will be returned in mIO as a value
     const balance = await io
       .getBalance({
@@ -56,11 +64,14 @@ async function getIOTokens(address) {
 }
 
 
+async function setAnt(JWKString, processId, txId, undername, useArConnect) {
+  console.log('Setting ANT record', JWKString, processId, txId, undername, useArConnect);
 
-async function setAnt(JWKString, processId, txId, undername) {
+  const signer = useArConnect ? new ArconnectSigner(window.arweaveWallet, Arweave.init({})) : new ArweaveSigner(JSON.parse(JWKString));
+
   const ant = ANT.init({
-    signer: new ArweaveSigner(JSON.parse(JWKString)),
-    processId: processId,
+    signer: signer,
+    processId: processId
   });
 
   const { id } = await ant.setRecord(
@@ -76,15 +87,14 @@ async function setAnt(JWKString, processId, txId, undername) {
   return id;
 }
 
-async function setARNS(JWKString, txId, domain, undername) {
-  const io = IO.init();
+async function setARNS(JWKString, txId, domain, undername, useArConnect) {
   const record = await io.getArNSRecord({ name: domain });
 
   console.log(record);
 
   const processId = record.processId;
 
-  const setRecordResult = await setAnt(JWKString, processId, txId, undername);
+  const setRecordResult = await setAnt(JWKString, processId, txId, undername, useArConnect);
 
   return JSON.stringify(setRecordResult);
 }
@@ -102,6 +112,7 @@ async function getUndernames(JWKString, processId) {
 
 async function getARNSRecordsForWallet(address) {
   try {
+    console.log('Fetching processes for wallet:', address);
     const jsonResult = await getProcesses(address);
     console.log('JSON Result:', jsonResult);
     return jsonResult;
@@ -114,12 +125,14 @@ async function getARNSRecordsForWallet(address) {
 async function getProcesses(address) {
   return new Promise((resolve, reject) => {
     // Initialize the emitter
+    console.log('Initializing emitter');
+
     const arnsEmitter = new ArNSEventEmitter({
       timeoutMs: 60000,
       concurrency: 10,
+      contract: io,
     });
 
-    // Set up event listeners
     arnsEmitter.on('progress', (current, total) => {
       console.log(`Progress: ${current}/${total}`);
     });
@@ -130,18 +143,17 @@ async function getProcesses(address) {
 
     arnsEmitter.on('error', (error) => {
       console.error('Error:', error);
-      reject(error); // Reject the promise if there's an error
+      reject(error);
     });
 
     arnsEmitter.on('end', (result) => {
       console.log('Completed fetching processes:', result);
-      resolve(JSON.stringify(result)); // Resolve the promise with the JSON stringified result
+      resolve(JSON.stringify(result));
     });
 
-    // Fetch processes owned by the wallet
     arnsEmitter.fetchProcessesOwnedByWallet({
       address: address,
-      pageSize: 1000,
+      pageSize: 100
     });
   });
 }
