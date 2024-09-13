@@ -33,7 +33,6 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
 
       final names = await _arnsRepository.getAntRecordsForWallet(
         walletAddress!,
-        update: true,
       );
 
       logger.d(
