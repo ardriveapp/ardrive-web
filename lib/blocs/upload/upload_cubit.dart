@@ -317,10 +317,7 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> startUploadPreparation({
     bool isRetryingToPayWithTurbo = false,
   }) async {
-    _arnsRepository.getAntRecordsForWallet(
-      _auth.currentUser.walletAddress,
-      update: true,
-    );
+    _arnsRepository.getAntRecordsForWallet(_auth.currentUser.walletAddress);
 
     files.removeWhere((file) => filesNamesToExclude.contains(file.ioFile.name));
     _targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();

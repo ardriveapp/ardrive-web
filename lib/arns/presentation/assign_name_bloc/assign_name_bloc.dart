@@ -27,13 +27,9 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
       emit(LoadingNames());
 
       final walletAddress = await _auth.getWalletAddress();
-      if (!event.updateARNSRecords) {
-        await _arnsRepository.waitForARNSRecordsToUpdate();
-      }
 
       final names = await _arnsRepository.getAntRecordsForWallet(
         walletAddress!,
-        update: event.updateARNSRecords,
       );
 
       if (names.isEmpty) {

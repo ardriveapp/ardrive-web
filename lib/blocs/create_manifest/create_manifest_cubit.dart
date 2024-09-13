@@ -60,12 +60,6 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       // Private manifests need more consideration and are currently unavailable
       emit(CreateManifestPrivacyMismatch());
     }
-
-    // updates the ARNS records
-    _arnsRepository.getAntRecordsForWallet(
-      _auth.currentUser.walletAddress,
-      update: true,
-    );
   }
 
   void selectUploadMethod(
@@ -98,10 +92,8 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   ) async {
     final revisionConfirmationState = state as CreateManifestRevisionConfirm;
 
-    final arns = await _arnsRepository.getAntRecordsForWallet(
-      _auth.currentUser.walletAddress,
-      update: false,
-    );
+    final arns = await _arnsRepository
+        .getAntRecordsForWallet(_auth.currentUser.walletAddress);
 
     if (arns.isNotEmpty) {
       emit(
@@ -181,8 +173,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
   Future<void> checkNameConflicts(String name) async {
     final arns = await _arnsRepository.getAntRecordsForWallet(
-      _auth.currentUser.walletAddress,
-      update: false,
+      _auth.currentUser.walletAddress
     );
 
     final parentFolder =
