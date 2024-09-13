@@ -201,6 +201,8 @@ class _ARNSRepository implements ARNSRepository {
     if (_getARNSUndernamesCompleter != null) {
       return _getARNSUndernamesCompleter!.future;
     }
+    logger.d('Loading names');
+    final date = DateTime.now();
 
     _getARNSUndernamesCompleter = Completer();
 
@@ -243,6 +245,9 @@ class _ARNSRepository implements ARNSRepository {
       await _arnsDao.saveAntRecords(records.map(toAntRecordFromSDK).toList());
 
       lastUpdated = DateTime.now();
+
+      logger.d(
+          'Names loaded in ${DateTime.now().difference(date).inMilliseconds}ms');
 
       _getARNSUndernamesCompleter!.complete(records);
 
