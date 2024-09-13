@@ -1,0 +1,2 @@
+ - Improves ArNS name load time
+ - Adds a close button on the name assignment flow
