@@ -83,6 +83,7 @@ void main() async {
     await _startApp();
   }, (error, stackTrace) async {
     logger.e('Error caught.', error, stackTrace);
+    logger.d('Error: ${error.toString()}');
   });
 }
 

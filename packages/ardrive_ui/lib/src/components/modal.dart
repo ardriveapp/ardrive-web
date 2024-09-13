@@ -684,6 +684,7 @@ class ArDriveStandardModalNew extends StatelessWidget {
     this.actions,
     this.width,
     this.hasCloseButton = false,
+    this.close,
   });
 
   final String? title;
@@ -692,6 +693,7 @@ class ArDriveStandardModalNew extends StatelessWidget {
   final Widget? content;
   final double? width;
   final bool hasCloseButton;
+  final Function()? close;
 
   @override
   Widget build(BuildContext context) {
@@ -732,7 +734,13 @@ class ArDriveStandardModalNew extends StatelessWidget {
                   if (hasCloseButton)
                     ArDriveClickArea(
                       child: GestureDetector(
-                        onTap: () => Navigator.pop(context),
+                        onTap: () {
+                          if (close != null) {
+                            close?.call();
+                          } else {
+                            Navigator.pop(context);
+                          }
+                        },
                         child: const Align(
                           alignment: Alignment.centerRight,
                           child: ArDriveIcon(

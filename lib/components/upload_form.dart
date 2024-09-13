@@ -521,6 +521,8 @@ class _UploadFormState extends State<UploadForm> {
                 ),
               );
             } else if (state is UploadReady) {
+              logger.d('UploadReady state: ${state.showArnsNameSelection}');
+
               if (state.showArnsNameSelection) {
                 return AssignArNSNameModal(
                   driveDetailCubit: widget.driveDetailCubit,
@@ -528,6 +530,11 @@ class _UploadFormState extends State<UploadForm> {
                   onSelectionConfirmed: (name) {
                     context.read<UploadCubit>().selectUndername(
                         name.selectedName, name.selectedUndername);
+                  },
+                  canClose: false,
+                  onEmptySelection: (emptySelection) {
+                    logger.d('Cancelling ARNS name selection');
+                    context.read<UploadCubit>().cancelArnsNameSelection();
                   },
                 );
               }
@@ -776,6 +783,10 @@ class _UploadFormState extends State<UploadForm> {
                           antRecord: name.selectedName,
                           undername: name.selectedUndername,
                         );
+                  },
+                  canClose: false,
+                  onEmptySelection: (emptySelection) {
+                    context.read<UploadCubit>().cancelArnsNameSelection();
                   },
                 );
               }

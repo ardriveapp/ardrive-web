@@ -15,6 +15,8 @@ final class LoadNames extends AssignNameEvent {
   });
 }
 
+final class CloseAssignName extends AssignNameEvent {}
+
 final class SelectName extends AssignNameEvent {
   final ANTRecord name;
 
