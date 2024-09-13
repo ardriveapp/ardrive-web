@@ -228,6 +228,32 @@ class UploadCubit extends Cubit<UploadState> {
     }
   }
 
+  void cancelArnsNameSelection() {
+    if (state is UploadReady) {
+      logger.d('Cancelling ARNS name selection');
+
+      final readyState = state as UploadReady;
+
+      showArnsNameSelectionCheckBoxValue = false;
+
+      emit(readyState.copyWith(
+        showArnsNameSelection: false,
+        loadingArNSNames: false,
+        loadingArNSNamesError: false,
+        showArnsCheckbox: true,
+      ));
+    } else if (state is UploadReviewWithLicense) {
+      final reviewWithLicense = state as UploadReviewWithLicense;
+      final readyState = reviewWithLicense.readyState.copyWith(
+        showArnsNameSelection: false,
+        loadingArNSNames: false,
+        loadingArNSNamesError: false,
+        showArnsCheckbox: true,
+      );
+      emit(readyState);
+    }
+  }
+
   void reviewBack() {
     if (state is UploadReviewWithLicense) {
       final reviewWithLicense = state as UploadReviewWithLicense;

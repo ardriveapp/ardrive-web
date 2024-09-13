@@ -155,6 +155,7 @@ class UploadReady extends UploadState {
         loadingArNSNamesError,
         loadingArNSNames,
         showArnsCheckbox,
+        
       ];
 
   @override
