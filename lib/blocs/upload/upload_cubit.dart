@@ -228,6 +228,32 @@ class UploadCubit extends Cubit<UploadState> {
     }
   }
 
+  void cancelArnsNameSelection() {
+    if (state is UploadReady) {
+      logger.d('Cancelling ARNS name selection');
+
+      final readyState = state as UploadReady;
+
+      showArnsNameSelectionCheckBoxValue = false;
+
+      emit(readyState.copyWith(
+        showArnsNameSelection: false,
+        loadingArNSNames: false,
+        loadingArNSNamesError: false,
+        showArnsCheckbox: true,
+      ));
+    } else if (state is UploadReviewWithLicense) {
+      final reviewWithLicense = state as UploadReviewWithLicense;
+      final readyState = reviewWithLicense.readyState.copyWith(
+        showArnsNameSelection: false,
+        loadingArNSNames: false,
+        loadingArNSNamesError: false,
+        showArnsCheckbox: true,
+      );
+      emit(readyState);
+    }
+  }
+
   void reviewBack() {
     if (state is UploadReviewWithLicense) {
       final reviewWithLicense = state as UploadReviewWithLicense;
@@ -317,10 +343,7 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> startUploadPreparation({
     bool isRetryingToPayWithTurbo = false,
   }) async {
-    _arnsRepository.getAntRecordsForWallet(
-      _auth.currentUser.walletAddress,
-      update: true,
-    );
+    _arnsRepository.getAntRecordsForWallet(_auth.currentUser.walletAddress);
 
     files.removeWhere((file) => filesNamesToExclude.contains(file.ioFile.name));
     _targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();

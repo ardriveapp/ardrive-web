@@ -57,8 +57,8 @@ void main() {
 
         when(() => mockAuth.getWalletAddress())
             .thenAnswer((_) async => walletAddress);
-        when(() => mockArnsRepository.getAntRecordsForWallet(walletAddress,
-            update: true)).thenAnswer((_) async => antRecords);
+        when(() => mockArnsRepository.getAntRecordsForWallet(walletAddress))
+            .thenAnswer((_) async => antRecords);
 
         // Act
         assignNameBloc.add(const LoadNames());
@@ -74,8 +74,9 @@ void main() {
         );
 
         verify(() => mockAuth.getWalletAddress()).called(1);
-        verify(() => mockArnsRepository.getAntRecordsForWallet(walletAddress,
-            update: true)).called(1);
+        verify(() => mockArnsRepository.getAntRecordsForWallet(
+              walletAddress,
+            )).called(1);
       });
 
       test(
@@ -87,8 +88,8 @@ void main() {
 
         when(() => mockAuth.getWalletAddress())
             .thenAnswer((_) async => walletAddress);
-        when(() => mockArnsRepository.getAntRecordsForWallet(walletAddress,
-            update: true)).thenAnswer((_) async => antRecords);
+        when(() => mockArnsRepository.getAntRecordsForWallet(walletAddress))
+            .thenAnswer((_) async => antRecords);
 
         // Act
         assignNameBloc.add(const LoadNames());
@@ -103,8 +104,9 @@ void main() {
         );
 
         verify(() => mockAuth.getWalletAddress()).called(1);
-        verify(() => mockArnsRepository.getAntRecordsForWallet(walletAddress,
-            update: true)).called(1);
+        verify(() => mockArnsRepository.getAntRecordsForWallet(
+              walletAddress,
+            )).called(1);
       });
     });
 
@@ -294,8 +296,8 @@ void main() {
 
           when(() => mockAuth.getWalletAddress())
               .thenAnswer((_) async => walletAddress);
-          when(() => mockArnsRepository.getAntRecordsForWallet(walletAddress,
-              update: true)).thenAnswer((_) async => antRecords);
+          when(() => mockArnsRepository.getAntRecordsForWallet(walletAddress))
+              .thenAnswer((_) async => antRecords);
           when(() => mockArnsRepository.setUndernamesToFile(
                 undername: any(named: 'undername'),
                 fileId: any(named: 'fileId'),

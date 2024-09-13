@@ -3,10 +3,12 @@
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/arns/presentation/assign_name_bloc/assign_name_bloc.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -50,11 +52,15 @@ class AssignArNSNameModal extends StatelessWidget {
     this.updateARNSRecords = true,
     this.customLoadingText,
     this.customNameSelectionTitle,
+    this.onEmptySelection,
+    this.canClose = true,
   });
 
   final FileDataTableItem? file;
   final DriveDetailCubit driveDetailCubit;
   final Function(SelectionConfirmed)? onSelectionConfirmed;
+  final Function(EmptySelection)? onEmptySelection;
+  final bool canClose;
   final bool justSelectName;
   final bool updateARNSRecords;
   final String? customLoadingText;
@@ -77,6 +83,8 @@ class AssignArNSNameModal extends StatelessWidget {
         onSelectionConfirmed: onSelectionConfirmed,
         customLoadingText: customLoadingText,
         customNameSelectionTitle: customNameSelectionTitle,
+        onEmptySelection: onEmptySelection,
+        canClose: canClose,
       ),
     );
   }
@@ -91,14 +99,18 @@ class _AssignArNSNameModal extends StatefulWidget {
     this.onSelectionConfirmed,
     this.customLoadingText,
     this.customNameSelectionTitle,
+    this.onEmptySelection,
+    this.canClose = true,
   });
 
   final DriveDetailCubit driveDetailCubit;
   final bool justSelectName;
   final FileDataTableItem? file;
   final Function(SelectionConfirmed)? onSelectionConfirmed;
+  final Function(EmptySelection)? onEmptySelection;
   final String? customLoadingText;
   final String? customNameSelectionTitle;
+  final bool canClose;
 
   @override
   State<_AssignArNSNameModal> createState() => _AssignArNSNameModalState();
@@ -129,6 +141,10 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
         if (current is SelectionConfirmed) {
           widget.onSelectionConfirmed?.call(current);
         }
+
+        if (current is EmptySelection) {
+          widget.onEmptySelection?.call(current);
+        }
       },
       buildWhen: (previous, current) {
         if (current is LoadingUndernames) {
@@ -139,10 +155,14 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
       },
       builder: (context, state) {
         return ArDriveStandardModalNew(
-          hasCloseButton: state is NamesLoaded ||
-              state is UndernamesLoaded ||
-              state is AssignNameEmptyState,
+          hasCloseButton: state is! ConfirmingSelection,
           title: _getTitle(state),
+          close: widget.canClose
+              ? null
+              : () {
+                  logger.d('Closing assign name modal');
+                  context.read<AssignNameBloc>().add(CloseAssignName());
+                },
           width: (state is! NamesLoaded &&
                   state is! UndernamesLoaded &&
                   state is! LoadingNames)

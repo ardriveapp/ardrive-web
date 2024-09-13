@@ -153,7 +153,7 @@ async function getProcesses(address) {
 
     arnsEmitter.fetchProcessesOwnedByWallet({
       address: address,
-      pageSize: 100
+      pageSize: 10000
     });
   });
 }
