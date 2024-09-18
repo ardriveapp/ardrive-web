@@ -81,8 +81,9 @@ void main() async {
     await _initializeServices();
 
     await _startApp();
-  }, (error, stackTrace) {
+  }, (error, stackTrace) async {
     logger.e('Error caught.', error, stackTrace);
+    logger.d('Error: ${error.toString()}');
   });
 }
 

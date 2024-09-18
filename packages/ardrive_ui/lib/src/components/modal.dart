@@ -466,6 +466,7 @@ class ArDriveStandardModal extends StatelessWidget {
           ArDriveButton(
             maxHeight: buttonActionHeight,
             style: ArDriveButtonStyle.secondary,
+            maxWidth: actions[0].customWidth,
             backgroundColor:
                 ArDriveTheme.of(context).themeData.colors.themeFgDefault,
             fontStyle: ArDriveTypography.body
@@ -487,6 +488,7 @@ class ArDriveStandardModal extends StatelessWidget {
                   ? ArDriveButtonStyle.secondary
                   : ArDriveButtonStyle.primary,
               maxHeight: buttonActionHeight,
+              maxWidth: actions[0].customWidth,
               backgroundColor:
                   ArDriveTheme.of(context).themeData.colors.themeFgDefault,
               fontStyle: ArDriveTypography.body
@@ -547,11 +549,15 @@ class ModalAction {
     required this.action,
     required this.title,
     this.isEnable = true,
+    this.customWidth,
+    this.customHeight,
   });
 
   final String title;
   final dynamic Function() action;
   final bool isEnable;
+  final double? customWidth;
+  final double? customHeight;
 }
 
 Future<void> showAnimatedDialog(
@@ -678,6 +684,7 @@ class ArDriveStandardModalNew extends StatelessWidget {
     this.actions,
     this.width,
     this.hasCloseButton = false,
+    this.close,
   });
 
   final String? title;
@@ -686,6 +693,7 @@ class ArDriveStandardModalNew extends StatelessWidget {
   final Widget? content;
   final double? width;
   final bool hasCloseButton;
+  final Function()? close;
 
   @override
   Widget build(BuildContext context) {
@@ -726,7 +734,13 @@ class ArDriveStandardModalNew extends StatelessWidget {
                   if (hasCloseButton)
                     ArDriveClickArea(
                       child: GestureDetector(
-                        onTap: () => Navigator.pop(context),
+                        onTap: () {
+                          if (close != null) {
+                            close?.call();
+                          } else {
+                            Navigator.pop(context);
+                          }
+                        },
                         child: const Align(
                           alignment: Alignment.centerRight,
                           child: ArDriveIcon(
@@ -781,8 +795,8 @@ class ArDriveStandardModalNew extends StatelessWidget {
       children: [
         if (actions.isNotEmpty)
           ArDriveButtonNew(
-            maxHeight: 40,
-            maxWidth: 100,
+            maxHeight: actions[0].customHeight ?? 40,
+            maxWidth: actions[0].customWidth ?? 100,
             typography: typography,
             variant: actions.length > 1
                 ? ButtonVariant.secondary
@@ -794,11 +808,11 @@ class ArDriveStandardModalNew extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(left: 16),
             child: ArDriveButtonNew(
-              maxWidth: 100,
+              maxHeight: actions[1].customHeight ?? 40,
+              maxWidth: actions[1].customWidth ?? 110,
               variant: actions.length > 2
                   ? ButtonVariant.secondary
                   : ButtonVariant.primary,
-              maxHeight: 40,
               isDisabled: !actions[1].isEnable,
               text: actions[1].title,
               onPressed: actions[1].action,
@@ -810,10 +824,8 @@ class ArDriveStandardModalNew extends StatelessWidget {
             padding: const EdgeInsets.only(left: 16),
             child: ArDriveButtonNew(
               typography: typography,
-              variant: ButtonVariant.secondary,
+              variant: ButtonVariant.primary,
               maxHeight: 40,
-              backgroundColor:
-                  ArDriveTheme.of(context).themeData.colors.themeFgDefault,
               fontStyle: ArDriveTypography.body
                   .buttonNormalRegular(
                     color: actions.length > 2

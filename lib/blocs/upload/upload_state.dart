@@ -95,6 +95,8 @@ class UploadReady extends UploadState {
   final UploadParams params;
   final bool showArnsCheckbox;
   final bool showArnsNameSelection;
+  final bool loadingArNSNames;
+  final bool loadingArNSNamesError;
 
   final bool isArConnect;
 
@@ -108,6 +110,8 @@ class UploadReady extends UploadState {
     required this.isArConnect,
     required this.showArnsCheckbox,
     required this.showArnsNameSelection,
+    this.loadingArNSNames = false,
+    this.loadingArNSNamesError = false,
   });
 
   // copyWith
@@ -123,8 +127,11 @@ class UploadReady extends UploadState {
     bool? showSettings,
     bool? showArnsCheckbox,
     bool? showArnsNameSelection,
+    bool? loadingArNSNames,
+    bool? loadingArNSNamesError,
   }) {
     return UploadReady(
+      loadingArNSNames: loadingArNSNames ?? this.loadingArNSNames,
       isArConnect: isArConnect ?? this.isArConnect,
       uploadIsPublic: uploadIsPublic ?? this.uploadIsPublic,
       isDragNDrop: isDragNDrop ?? this.isDragNDrop,
@@ -135,6 +142,8 @@ class UploadReady extends UploadState {
       showArnsCheckbox: showArnsCheckbox ?? this.showArnsCheckbox,
       showArnsNameSelection:
           showArnsNameSelection ?? this.showArnsNameSelection,
+      loadingArNSNamesError:
+          loadingArNSNamesError ?? this.loadingArNSNamesError,
     );
   }
 
@@ -143,6 +152,10 @@ class UploadReady extends UploadState {
         paymentInfo,
         isNextButtonEnabled,
         showArnsNameSelection,
+        loadingArNSNamesError,
+        loadingArNSNames,
+        showArnsCheckbox,
+        
       ];
 
   @override
@@ -177,6 +190,12 @@ class UploadConfiguringLicense extends UploadState {
   @override
   toString() =>
       'UploadConfiguringLicense { paymentInfo: ${readyState.paymentInfo} }';
+}
+
+class UploadReviewWithArnsName extends UploadState {
+  final UploadReady readyState;
+
+  UploadReviewWithArnsName({required this.readyState});
 }
 
 /// [UploadReviewWithLicense] means that the upload + license is being reviewed by the user and awaiting confirmation to begin upload.

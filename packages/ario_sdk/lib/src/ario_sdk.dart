@@ -21,4 +21,10 @@ abstract class ArioSDK {
     required String domain,
     String undername = '@',
   });
+
+  Future<dynamic> setUndernameWithArConnect({
+    required String txId,
+    required String domain,
+    String undername = '@',
+  });
 }

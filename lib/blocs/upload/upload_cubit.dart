@@ -80,12 +80,12 @@ class UploadCubit extends Cubit<UploadState> {
     showArnsNameSelectionCheckBoxValue = showArnsNameSelection;
   }
 
-  void showArnsNameSelection() {
-    emit((state as UploadReady).copyWith(showArnsNameSelection: true));
+  void showArnsNameSelection(UploadReady readyState) {
+    emit(readyState.copyWith(showArnsNameSelection: true));
   }
 
-  void hideArnsNameSelection() {
-    emit((state as UploadReady).copyWith(showArnsNameSelection: false));
+  void hideArnsNameSelection(UploadReady readyState) {
+    emit(readyState.copyWith(showArnsNameSelection: false));
   }
 
   void setUploadMethod(
@@ -105,30 +105,67 @@ class UploadCubit extends Cubit<UploadState> {
         isNextButtonEnabled: canUpload,
       ));
     } else if (state is UploadReadyToPrepare) {
-      final hasUndernames = (await _arnsRepository
-              .getAntRecordsForWallet(_auth.currentUser.walletAddress))
-          .isNotEmpty;
+      bool showArnsCheckbox = false;
 
-      emit(
-        UploadReady(
-          params: (state as UploadReadyToPrepare).params,
-          paymentInfo: paymentInfo,
-          numberOfFiles: files.length,
-          uploadIsPublic: !_targetDrive.isPrivate,
-          isDragNDrop: isDragNDrop,
-          isNextButtonEnabled: canUpload,
-          isArConnect: (state as UploadReadyToPrepare).isArConnect,
-          showArnsCheckbox: hasUndernames && files.length == 1,
-          showArnsNameSelection: false,
-        ),
-      );
+      if (_targetDrive.isPublic && files.length == 1) {
+        emit(
+          UploadReady(
+            params: (state as UploadReadyToPrepare).params,
+            paymentInfo: paymentInfo,
+            numberOfFiles: files.length,
+            uploadIsPublic: !_targetDrive.isPrivate,
+            isDragNDrop: isDragNDrop,
+            isNextButtonEnabled: canUpload,
+            isArConnect: (state as UploadReadyToPrepare).isArConnect,
+            showArnsCheckbox: showArnsCheckbox,
+            showArnsNameSelection: false,
+            loadingArNSNames: true,
+          ),
+        );
+
+        try {
+          final hasUndernames = (await _arnsRepository
+                  .getAntRecordsForWallet(_auth.currentUser.walletAddress))
+              .isNotEmpty;
+
+          showArnsCheckbox = hasUndernames;
+
+          if (state is! UploadReady) {
+            logger.d('State is not UploadReady');
+            return;
+          }
+
+          final readyState = state as UploadReady;
+
+          emit(readyState.copyWith(
+              loadingArNSNames: false, showArnsCheckbox: showArnsCheckbox));
+        } catch (e) {
+          final readyState = state as UploadReady;
+          emit(readyState.copyWith(
+              loadingArNSNamesError: true, loadingArNSNames: false));
+        }
+      } else {
+        emit(
+          UploadReady(
+            params: (state as UploadReadyToPrepare).params,
+            paymentInfo: paymentInfo,
+            numberOfFiles: files.length,
+            uploadIsPublic: !_targetDrive.isPrivate,
+            isDragNDrop: isDragNDrop,
+            isNextButtonEnabled: canUpload,
+            isArConnect: (state as UploadReadyToPrepare).isArConnect,
+            showArnsCheckbox: showArnsCheckbox,
+            showArnsNameSelection: false,
+          ),
+        );
+      }
     }
   }
 
   void initialScreenUpload() {
     if (state is UploadReady) {
       if (showArnsNameSelectionCheckBoxValue) {
-        showArnsNameSelection();
+        showArnsNameSelection(state as UploadReady);
       } else {
         final readyState = state as UploadReady;
         startUpload(
@@ -191,6 +228,32 @@ class UploadCubit extends Cubit<UploadState> {
     }
   }
 
+  void cancelArnsNameSelection() {
+    if (state is UploadReady) {
+      logger.d('Cancelling ARNS name selection');
+
+      final readyState = state as UploadReady;
+
+      showArnsNameSelectionCheckBoxValue = false;
+
+      emit(readyState.copyWith(
+        showArnsNameSelection: false,
+        loadingArNSNames: false,
+        loadingArNSNamesError: false,
+        showArnsCheckbox: true,
+      ));
+    } else if (state is UploadReviewWithLicense) {
+      final reviewWithLicense = state as UploadReviewWithLicense;
+      final readyState = reviewWithLicense.readyState.copyWith(
+        showArnsNameSelection: false,
+        loadingArNSNames: false,
+        loadingArNSNamesError: false,
+        showArnsCheckbox: true,
+      );
+      emit(readyState);
+    }
+  }
+
   void reviewBack() {
     if (state is UploadReviewWithLicense) {
       final reviewWithLicense = state as UploadReviewWithLicense;
@@ -201,6 +264,13 @@ class UploadCubit extends Cubit<UploadState> {
         licenseCategory: licenseCategory,
       );
       emit(prevState);
+    } else if (state is UploadReviewWithArnsName) {
+      final reviewWithArnsName = state as UploadReviewWithArnsName;
+      final readyState = reviewWithArnsName.readyState.copyWith(
+        showArnsNameSelection: false,
+      );
+
+      emit(readyState);
     }
   }
 
@@ -214,6 +284,8 @@ class UploadCubit extends Cubit<UploadState> {
             reviewWithLicense.readyState.paymentInfo.uploadPlanForTurbo,
         licenseStateConfigured: reviewWithLicense.licenseState,
       );
+    } else if (state is UploadReviewWithArnsName) {
+      startUploadWithArnsName();
     }
   }
 
@@ -271,10 +343,7 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> startUploadPreparation({
     bool isRetryingToPayWithTurbo = false,
   }) async {
-    _arnsRepository.getAntRecordsForWallet(
-      _auth.currentUser.walletAddress,
-      update: true,
-    );
+    _arnsRepository.getAntRecordsForWallet(_auth.currentUser.walletAddress);
 
     files.removeWhere((file) => filesNamesToExclude.contains(file.ioFile.name));
     _targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();
@@ -575,15 +644,23 @@ class UploadCubit extends Cubit<UploadState> {
 
     logger.d('Selected undername: $_selectedUndername');
 
-    final readyState = state as UploadReady;
+    final readyState = (state as UploadReady).copyWith(
+      params: (state as UploadReady).params.copyWith(
+            arnsUnderName: getSelectedUndername(),
+          ),
+    );
 
-    emit(readyState.copyWith(
-      showArnsNameSelection: false,
-    ));
+    emit(UploadReviewWithArnsName(readyState: readyState));
+  }
+
+  void startUploadWithArnsName() {
+    final reviewWithArnsName = state as UploadReviewWithArnsName;
 
     startUpload(
-      uploadPlanForAr: readyState.paymentInfo.uploadPlanForAR!,
-      uploadPlanForTurbo: readyState.paymentInfo.uploadPlanForTurbo,
+      uploadPlanForAr:
+          reviewWithArnsName.readyState.paymentInfo.uploadPlanForAR!,
+      uploadPlanForTurbo:
+          reviewWithArnsName.readyState.paymentInfo.uploadPlanForTurbo,
     );
   }
 
@@ -927,13 +1004,14 @@ class UploadCubit extends Cubit<UploadState> {
       (tasks) async {
         if (tasks.length == 1) {
           final task = tasks.first;
-          if (task is FileUploadTask) {
+          if (task is FileUploadTask && task.status != UploadStatus.canceled) {
             final metadata = task.metadata;
             if (_selectedAntRecord != null || _selectedUndername != null) {
               final updatedTask = task.copyWith(
                 status: UploadStatus.assigningUndername,
               );
 
+              /// Emits
               emit(
                 UploadInProgressUsingNewUploader(
                   progress: UploadProgress(

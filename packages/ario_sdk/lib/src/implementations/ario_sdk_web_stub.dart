@@ -36,4 +36,11 @@ class ArioSDKWeb implements ArioSDK {
     // TODO: implement setUndername
     throw UnimplementedError();
   }
+
+  @override
+  Future setUndernameWithArConnect(
+      {required String txId, required String domain, String undername = '@'}) {
+    // TODO: implement setUndernameWithArConnect
+    throw UnimplementedError();
+  }
 }

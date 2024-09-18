@@ -53,7 +53,11 @@ class ArioSDKWeb implements ArioSDK {
       domain: domain,
     );
 
-    return _setARNSImpl(jwtString, arnsUndername);
+    return _setARNSImpl(
+      jwtString,
+      arnsUndername,
+      false,
+    );
   }
 
   @override
@@ -79,17 +83,34 @@ class ArioSDKWeb implements ArioSDK {
 
     return _cachedUndernames[record.domain]!.toList();
   }
+
+  @override
+  Future setUndernameWithArConnect(
+      {required String txId,
+      required String domain,
+      String undername = '@'}) async {
+    final arnsUndername = ARNSUndername(
+      record: ARNSRecord(transactionId: txId, ttlSeconds: 3600),
+      name: undername,
+      domain: domain,
+    );
+
+    return _setARNSImpl('', arnsUndername, true);
+  }
 }
 
 @JS('setARNS')
-external Object _setARNS(String jwtString, txId, domain, String undername);
+external Object _setARNS(
+    String jwtString, txId, domain, String undername, bool useArConnect);
 
-Future<dynamic> _setARNSImpl(String jwtString, ARNSUndername undername) async {
+Future<dynamic> _setARNSImpl(
+    String jwtString, ARNSUndername undername, bool useArConnect) async {
   final promise = _setARNS(
     jwtString,
     undername.record.transactionId,
     undername.domain,
     undername.name,
+    useArConnect,
   );
 
   final stringified = await promiseToFuture(promise);
