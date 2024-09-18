@@ -393,8 +393,9 @@ void main() {
 
         when(() => mockAuth.getWalletAddress())
             .thenAnswer((_) async => walletAddress);
-        when(() => mockArnsRepository.getAntRecordsForWallet(walletAddress,
-            update: true)).thenAnswer((_) async => antRecords);
+        when(() => mockArnsRepository.getAntRecordsForWallet(
+              walletAddress,
+            )).thenAnswer((_) async => antRecords);
 
         /// FAILED CALL
         when(() => mockArnsRepository.setUndernamesToFile(
