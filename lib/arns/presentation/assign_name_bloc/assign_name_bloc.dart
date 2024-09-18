@@ -24,16 +24,22 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
         _arnsRepository = arnsRepository,
         super(AssignNameInitial()) {
     on<LoadNames>((event, emit) async {
-      emit(LoadingNames());
+      try {
+        emit(LoadingNames());
 
-      final walletAddress = await _auth.getWalletAddress();
+        final walletAddress = await _auth.getWalletAddress();
 
-      final names = await _arnsRepository.getAntRecordsForWallet(walletAddress!);
+        final names =
+            await _arnsRepository.getAntRecordsForWallet(walletAddress!);
 
-      if (names.isEmpty) {
-        emit(AssignNameEmptyState());
-      } else {
-        emit(NamesLoaded(names: names));
+        if (names.isEmpty) {
+          emit(AssignNameEmptyState());
+        } else {
+          emit(NamesLoaded(names: names));
+        }
+      } catch (e) {
+        logger.e('Failed to load ArNS names', e);
+        emit(LoadingNamesFailed());
       }
     });
 
@@ -94,40 +100,36 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
     on<ConfirmSelectionAndUpload>((event, emit) async {
       try {
         emit(ConfirmingSelection());
-        try {
-          if (fileDataTableItem == null) {
-            throw StateError('File data table item is null');
-          }
-
-          ARNSUndername undername;
-
-          if (_selectedUndername == null) {
-            undername = ARNSUndername(
-              name: '@',
-              record: ARNSRecord(
-                  transactionId: fileDataTableItem.dataTxId, ttlSeconds: 3600),
-              domain: _selectedANTRecord!.domain,
-            );
-          } else {
-            undername = ARNSUndername(
-              name: _selectedUndername!.name,
-              record: ARNSRecord(
-                transactionId: fileDataTableItem.dataTxId,
-                ttlSeconds: 3600,
-              ),
-              domain: _selectedANTRecord!.domain,
-            );
-          }
-
-          await _arnsRepository.setUndernamesToFile(
-            undername: undername,
-            fileId: fileDataTableItem.fileId,
-            driveId: fileDataTableItem.driveId,
-            processId: _selectedANTRecord!.processId,
-          );
-        } catch (e) {
-          logger.e('Failed to set ARNS', e);
+        if (fileDataTableItem == null) {
+          throw StateError('File data table item is null');
         }
+
+        ARNSUndername undername;
+
+        if (_selectedUndername == null) {
+          undername = ARNSUndername(
+            name: '@',
+            record: ARNSRecord(
+                transactionId: fileDataTableItem.dataTxId, ttlSeconds: 3600),
+            domain: _selectedANTRecord!.domain,
+          );
+        } else {
+          undername = ARNSUndername(
+            name: _selectedUndername!.name,
+            record: ARNSRecord(
+              transactionId: fileDataTableItem.dataTxId,
+              ttlSeconds: 3600,
+            ),
+            domain: _selectedANTRecord!.domain,
+          );
+        }
+
+        await _arnsRepository.setUndernamesToFile(
+          undername: undername,
+          fileId: fileDataTableItem.fileId,
+          driveId: fileDataTableItem.driveId,
+          processId: _selectedANTRecord!.processId,
+        );
 
         final (address, arAddress) = getAddressesFromArns(
           domain: _selectedANTRecord!.domain,
