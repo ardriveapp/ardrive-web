@@ -1568,7 +1568,7 @@ class _StatsScreenState extends State<StatsScreen> {
               ),
               TextSpan(
                 text: filesize(
-                  widget.readyState.paymentInfo.totalSize,
+                  widget.readyState.totalSize,
                 ),
                 style: typography.paragraphNormal(
                   fontWeight: ArFontWeight.bold,
