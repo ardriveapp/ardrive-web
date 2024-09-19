@@ -93,4 +93,6 @@ final class LoadingUndernames extends AssignNameState {}
 
 class SelectionFailed extends AssignNameState {}
 
+final class LoadingNamesFailed extends AssignNameState {}
+
 final class EmptySelection extends AssignNameState {}
