@@ -1,0 +1,2 @@
+ - Improves handling of errors on the assign name flow
+ - Displays the file(s) size(s) instead of data items or bundle sizes at the upload page
