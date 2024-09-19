@@ -22,8 +22,7 @@ import 'package:ardrive/components/license_details_popover.dart';
 import 'package:ardrive/components/progress_dialog.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
-import 'package:ardrive/core/crypto/crypto.dart';
-import 'package:ardrive/core/upload/cost_calculator.dart';
+import 'package:ardrive/core/upload/domain/repository/upload_repository.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
@@ -32,15 +31,11 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/theme/theme.dart';
-import 'package:ardrive/turbo/services/payment_service.dart';
-import 'package:ardrive/turbo/services/upload_service.dart';
-import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
-import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
@@ -51,7 +46,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
-import 'package:pst/pst.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 import '../blocs/upload/upload_handles/bundle_upload_handle.dart';
@@ -119,76 +113,37 @@ Future<void> promptToUpload(
     }
     showArDriveDialog(
       context,
-      content: RepositoryProvider(
-        create: (context) => ArDriveUploadPreparationManager(
-          uploadPreparePaymentOptions: UploadPaymentEvaluator(
-            appConfig: context.read<ConfigService>().config,
-            auth: context.read<ArDriveAuth>(),
-            turboBalanceRetriever: TurboBalanceRetriever(
-              paymentService: context.read<PaymentService>(),
-            ),
-            turboUploadCostCalculator: TurboUploadCostCalculator(
-              priceEstimator: TurboPriceEstimator(
-                wallet: context.read<ArDriveAuth>().currentUser.wallet,
-                costCalculator: TurboCostCalculator(
-                  paymentService: context.read<PaymentService>(),
-                ),
-                paymentService: context.read<PaymentService>(),
-              ),
-              turboCostCalculator: TurboCostCalculator(
-                paymentService: context.read<PaymentService>(),
-              ),
-            ),
-            uploadCostEstimateCalculatorForAR:
-                UploadCostEstimateCalculatorForAR(
-              arweaveService: context.read<ArweaveService>(),
-              pstService: context.read<PstService>(),
-              arCostToUsd: ConvertArToUSD(
-                arweave: context.read<ArweaveService>(),
-              ),
-            ),
-          ),
-          uploadPreparer: UploadPreparer(
-            uploadPlanUtils: UploadPlanUtils(
-              crypto: ArDriveCrypto(),
-              arweave: context.read<ArweaveService>(),
-              turboUploadService: context.read<TurboUploadService>(),
+      content: MultiBlocProvider(
+        providers: [
+          BlocProvider<UploadCubit>(
+            create: (context) => UploadCubit(
+              activityTracker: context.read<ActivityTracker>(),
+              arDriveUploadManager:
+                  context.read<ArDriveUploadPreparationManager>(),
+              uploadFileSizeChecker: context.read<UploadFileSizeChecker>(),
+              driveId: driveId,
+              parentFolderId: parentFolderId,
+              files: selectedFiles,
+              profileCubit: context.read<ProfileCubit>(),
               driveDao: context.read<DriveDao>(),
+              uploadFolders: isFolderUpload,
+              auth: context.read<ArDriveAuth>(),
+              licenseService: context.read<LicenseService>(),
+              configService: context.read<ConfigService>(),
+              arnsRepository: context.read<ARNSRepository>(),
+              uploadRepository: context.read<UploadRepository>(),
+            )..startUploadPreparation(),
+          ),
+          BlocProvider(
+            create: (context) => UploadPaymentMethodBloc(
+              context.read<ProfileCubit>(),
+              context.read<ArDriveUploadPreparationManager>(),
+              context.read<ArDriveAuth>(),
             ),
           ),
-        ),
-        child: MultiBlocProvider(
-          providers: [
-            BlocProvider<UploadCubit>(
-              create: (context) => UploadCubit(
-                activityTracker: context.read<ActivityTracker>(),
-                arDriveUploadManager:
-                    context.read<ArDriveUploadPreparationManager>(),
-                uploadFileSizeChecker: context.read<UploadFileSizeChecker>(),
-                driveId: driveId,
-                parentFolderId: parentFolderId,
-                files: selectedFiles,
-                profileCubit: context.read<ProfileCubit>(),
-                pst: context.read<PstService>(),
-                driveDao: context.read<DriveDao>(),
-                uploadFolders: isFolderUpload,
-                auth: context.read<ArDriveAuth>(),
-                licenseService: context.read<LicenseService>(),
-                configService: context.read<ConfigService>(),
-                arnsRepository: context.read<ARNSRepository>(),
-              )..startUploadPreparation(),
-            ),
-            BlocProvider(
-              create: (context) => UploadPaymentMethodBloc(
-                context.read<ProfileCubit>(),
-                context.read<ArDriveUploadPreparationManager>(),
-                context.read<ArDriveAuth>(),
-              ),
-            ),
-          ],
-          child: UploadForm(
-            driveDetailCubit: driveDetailCubit,
-          ),
+        ],
+        child: UploadForm(
+          driveDetailCubit: driveDetailCubit,
         ),
       ),
       barrierDismissible: false,

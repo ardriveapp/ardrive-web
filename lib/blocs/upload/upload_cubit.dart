@@ -7,9 +7,8 @@ import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/core/upload/domain/repository/upload_repository.dart';
 import 'package:ardrive/core/upload/uploader.dart';
-import 'package:ardrive/entities/file_entity.dart';
-import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/models/forms/cc.dart';
 import 'package:ardrive/models/forms/udl.dart';
 import 'package:ardrive/models/models.dart';
@@ -24,13 +23,10 @@ import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.da
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
-import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:ario_sdk/ario_sdk.dart';
-import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pst/pst.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 import 'enums/conflicting_files_actions.dart';
@@ -48,7 +44,6 @@ class UploadCubit extends Cubit<UploadState> {
     required List<UploadFile> files,
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
-    required PstService pst,
     required UploadFileSizeChecker uploadFileSizeChecker,
     required ArDriveAuth auth,
     required ArDriveUploadPreparationManager arDriveUploadManager,
@@ -56,34 +51,33 @@ class UploadCubit extends Cubit<UploadState> {
     required LicenseService licenseService,
     required ConfigService configService,
     required ARNSRepository arnsRepository,
+    required UploadRepository uploadRepository,
     bool uploadFolders = false,
     bool isDragNDrop = false,
   })  : _files = files,
-        _uploadFolders = uploadFolders,
+        _isUploadFolders = uploadFolders,
         _isDragNDrop = isDragNDrop,
         _parentFolderId = parentFolderId,
         _driveId = driveId,
         _profileCubit = profileCubit,
         _uploadFileSizeChecker = uploadFileSizeChecker,
         _driveDao = driveDao,
-        _pst = pst,
         _auth = auth,
         _activityTracker = activityTracker,
         _licenseService = licenseService,
-        _configService = configService,
         _arnsRepository = arnsRepository,
+        _uploadRepository = uploadRepository,
         _uploadThumbnail = configService.config.uploadThumbnails,
         super(UploadPreparationInProgress());
 
   // Dependencies
+  final UploadRepository _uploadRepository;
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
-  final PstService _pst;
   final UploadFileSizeChecker _uploadFileSizeChecker;
   final ArDriveAuth _auth;
   final ActivityTracker _activityTracker;
   final LicenseService _licenseService;
-  final ConfigService _configService;
   final ARNSRepository _arnsRepository;
 
   final String _driveId;
@@ -97,7 +91,7 @@ class UploadCubit extends Cubit<UploadState> {
   /// Target folder
   late Drive _targetDrive;
   late FolderEntry _targetFolder;
-  late final bool _uploadFolders;
+  late final bool _isUploadFolders;
 
   /// License forms
   final _licenseCategoryForm = FormGroup({
@@ -398,7 +392,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   /// Conflict resolution
   Future<void> checkConflicts() async {
-    if (_uploadFolders) {
+    if (_isUploadFolders) {
       return await checkConflictingFolders();
     }
 
@@ -411,7 +405,7 @@ class UploadCubit extends Cubit<UploadState> {
   /// If there isn't one, prepare to upload the file.
   Future<void> checkConflictingFolders() async {
     emit(UploadPreparationInProgress());
-    if (_uploadFolders) {
+    if (_isUploadFolders) {
       final folderPrepareResult =
           await generateFoldersAndAssignParentsForFiles(_files);
       _files = folderPrepareResult.files;
@@ -778,7 +772,7 @@ class UploadCubit extends Cubit<UploadState> {
 
     final type =
         _uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo;
-    final UploadContains contains = _uploadFolders
+    final UploadContains contains = _isUploadFolders
         ? UploadContains.folder
         : _files.length == 1
             ? UploadContains.singleFile
@@ -807,14 +801,14 @@ class UploadCubit extends Cubit<UploadState> {
       _containsLargeTurboUpload = false;
     }
 
-    if (_uploadFolders) {
-      await _uploadFolderUsingArDriveUploader(
+    if (_isUploadFolders) {
+      await _uploadFolders(
         licenseStateConfigured: licenseStateConfigured,
       );
       return;
     }
 
-    await _uploadUsingArDriveUploader(
+    await _uploadFiles(
       licenseStateConfigured: licenseStateConfigured,
     );
 
@@ -865,87 +859,21 @@ class UploadCubit extends Cubit<UploadState> {
     }
   }
 
-  Future<void> _uploadFolderUsingArDriveUploader({
+  Future<void> _uploadFolders({
     LicenseState? licenseStateConfigured,
   }) async {
-    final ardriveUploader = ArDriveUploader(
-      turboUploadUri: Uri.parse(_configService.config.defaultTurboUploadUrl!),
-      metadataGenerator: ARFSUploadMetadataGenerator(
-        tagsGenerator: ARFSTagsGenetator(
-          appInfoServices: AppInfoServices(),
-        ),
-      ),
-      arweave: Arweave(
-        gatewayUrl: Uri.parse(_configService.config.defaultArweaveGatewayUrl!),
-      ),
-      pstService: _pst,
-    );
-
-    final private = _targetDrive.isPrivate;
-    final driveKey = private
-        ? await _driveDao.getDriveKey(
-            _targetDrive.id, _auth.currentUser.cipherKey)
-        : null;
-
-    List<(ARFSUploadMetadataArgs, IOEntity)> entities = [];
-
-    for (var folder in _foldersByPath.values) {
-      final folderMetadata = ARFSUploadMetadataArgs(
-        isPrivate: _targetDrive.isPrivate,
-        driveId: _targetDrive.id,
-        parentFolderId: folder.parentFolderId,
-        privacy: _targetDrive.isPrivate ? 'private' : 'public',
-        entityId: folder.id,
-        type: _uploadMethod == UploadMethod.ar
-            ? UploadType.d2n
-            : UploadType.turbo,
-      );
-
-      entities.add((
-        folderMetadata,
-        UploadFolder(
-          lastModifiedDate: DateTime.now(),
-          name: folder.name,
-        ),
-      ));
-    }
-
-    for (var file in _files) {
-      final fileId = _conflictingFiles.containsKey(file.getIdentifier())
-          ? _conflictingFiles[file.getIdentifier()]
-          : null;
-      // TODO: We are verifying the conflicting files twice, we should do it only once.
-      logger.d(
-          'Reusing id? ${_conflictingFiles.containsKey(file.getIdentifier())}');
-
-      final licenseStateResolved =
-          licenseStateConfigured ?? await _licenseStateForFileId(fileId);
-
-      final fileMetadata = ARFSUploadMetadataArgs(
-        isPrivate: _targetDrive.isPrivate,
-        driveId: _targetDrive.id,
-        parentFolderId: file.parentFolderId,
-        privacy: _targetDrive.isPrivate ? 'private' : 'public',
-        entityId: fileId,
-        type: _uploadMethod == UploadMethod.ar
-            ? UploadType.d2n
-            : UploadType.turbo,
-        licenseDefinitionTxId: licenseStateResolved?.meta.licenseDefinitionTxId,
-        licenseAdditionalTags: licenseStateResolved?.params?.toAdditionalTags(),
-      );
-
-      entities.add((fileMetadata, file.ioFile));
-    }
-
     _activityTracker.setUploading(true);
 
-    final uploadController = await ardriveUploader.uploadEntities(
-      entities: entities,
-      wallet: _auth.currentUser.wallet,
+    final uploadController = await _uploadRepository.uploadFolders(
+      files: _files,
+      targetDrive: _targetDrive,
+      conflictingFiles: _conflictingFiles,
+      targetFolder: _targetFolder,
+      uploadMethod: _uploadMethod!,
+      conflictingFolders: _conflictingFolders,
+      foldersByPath: _foldersByPath,
+      licenseStateConfigured: licenseStateConfigured,
       uploadThumbnail: _uploadThumbnail,
-      type:
-          _uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo,
-      driveKey: driveKey,
     );
 
     uploadController.onError((tasks) {
@@ -974,10 +902,6 @@ class UploadCubit extends Cubit<UploadState> {
       },
     );
 
-    uploadController.onCompleteTask((task) {
-      _saveEntityOnDB(task);
-    });
-
     uploadController.onDone(
       (tasks) async {
         emit(UploadComplete());
@@ -987,70 +911,23 @@ class UploadCubit extends Cubit<UploadState> {
     );
   }
 
-  Future<void> _uploadUsingArDriveUploader({
+  Future<void> _uploadFiles({
     LicenseState? licenseStateConfigured,
   }) async {
-    final ardriveUploader = ArDriveUploader(
-      turboUploadUri: Uri.parse(_configService.config.defaultTurboUploadUrl!),
-      metadataGenerator: ARFSUploadMetadataGenerator(
-        tagsGenerator: ARFSTagsGenetator(
-          appInfoServices: AppInfoServices(),
-        ),
-      ),
-      arweave: Arweave(
-        gatewayUrl: Uri.parse(_configService.config.defaultArweaveGatewayUrl!),
-      ),
-      pstService: _pst,
-    );
-
-    final private = _targetDrive.isPrivate;
-    final driveKey = private
-        ? await _driveDao.getDriveKey(
-            _targetDrive.id, _auth.currentUser.cipherKey)
-        : null;
-
-    List<(ARFSUploadMetadataArgs, IOFile)> uploadFiles = [];
-
-    for (var file in _files) {
-      final conflictingId = _conflictingFiles[file.getIdentifier()];
-      final revisionAction = conflictingId != null
-          ? RevisionAction.uploadNewVersion
-          : RevisionAction.create;
-
-      final licenseStateResolved =
-          licenseStateConfigured ?? await _licenseStateForFileId(conflictingId);
-
-      final args = ARFSUploadMetadataArgs(
-        isPrivate: _targetDrive.isPrivate,
-        driveId: _targetDrive.id,
-        parentFolderId: _targetFolder.id,
-        privacy: _targetDrive.isPrivate ? 'private' : 'public',
-        entityId: revisionAction == RevisionAction.uploadNewVersion
-            ? _conflictingFiles[file.getIdentifier()]
-            : null,
-        type: _uploadMethod == UploadMethod.ar
-            ? UploadType.d2n
-            : UploadType.turbo,
-        licenseDefinitionTxId: licenseStateResolved?.meta.licenseDefinitionTxId,
-        licenseAdditionalTags: licenseStateResolved?.params?.toAdditionalTags(),
-        assignedName: _getSelectedUndername() != null
-            ? getLiteralARNSRecordName(_getSelectedUndername()!)
-            : null,
-      );
-
-      uploadFiles.add((args, file.ioFile));
-    }
-
     _activityTracker.setUploading(true);
 
     /// Creates the uploader and starts the upload.
-    final uploadController = await ardriveUploader.uploadFiles(
-      files: uploadFiles,
-      wallet: _auth.currentUser.wallet,
-      driveKey: driveKey,
+    final uploadController = await _uploadRepository.uploadFiles(
+      files: _files,
+      targetDrive: _targetDrive,
+      conflictingFiles: _conflictingFiles,
+      licenseStateConfigured: licenseStateConfigured,
+      targetFolder: _targetFolder,
+      uploadMethod: _uploadMethod!,
       uploadThumbnail: _uploadThumbnail,
-      type:
-          _uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo,
+      assignedName: _getSelectedUndername() != null
+          ? getLiteralARNSRecordName(_getSelectedUndername()!)
+          : null,
     );
 
     uploadController.onError((tasks) {
@@ -1070,7 +947,6 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onProgressChange(
       (progress) async {
-        // TODO: Save as the file is finished the upload
         emit(
           UploadInProgressUsingNewUploader(
             progress: progress,
@@ -1083,6 +959,7 @@ class UploadCubit extends Cubit<UploadState> {
       },
     );
 
+    // TODO: implement on the upload repository
     uploadController.onDone(
       (tasks) async {
         if (tasks.length == 1) {
@@ -1146,10 +1023,6 @@ class UploadCubit extends Cubit<UploadState> {
         PlausibleEventTracker.trackUploadSuccess();
       },
     );
-
-    uploadController.onCompleteTask((task) {
-      unawaited(_saveEntityOnDB(task));
-    });
   }
 
   Future<void> _verifyIfUploadContainsLargeFilesUsingTurbo() async {
@@ -1180,125 +1053,6 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     return null;
-  }
-
-  Future _saveEntityOnDB(UploadTask task) async {
-    // Single file only
-    // TODO: abstract to the database interface.
-    // TODO: improve API for finishing a file upload.
-    final metadatas = task.content;
-
-    if (metadatas != null) {
-      for (var metadata in metadatas) {
-        if (metadata is ARFSFileUploadMetadata) {
-          final fileMetadata = metadata;
-
-          final revisionAction = _conflictingFiles.values.contains(metadata.id)
-              ? RevisionAction.uploadNewVersion
-              : RevisionAction.create;
-
-          Thumbnail? thumbnail;
-
-          if (fileMetadata.thumbnailInfo != null) {
-            thumbnail = Thumbnail(variants: [
-              Variant.fromJson(fileMetadata.thumbnailInfo!.first.toJson())
-            ]);
-          }
-
-          final entity = FileEntity(
-            dataContentType: fileMetadata.dataContentType,
-            dataTxId: fileMetadata.dataTxId,
-            licenseTxId: fileMetadata.licenseTxId,
-            driveId: fileMetadata.driveId,
-            id: fileMetadata.id,
-            lastModifiedDate: fileMetadata.lastModifiedDate,
-            name: fileMetadata.name,
-            parentFolderId: fileMetadata.parentFolderId,
-            size: fileMetadata.size,
-            thumbnail: thumbnail,
-            assignedNames: fileMetadata.assignedName != null
-                ? [fileMetadata.assignedName!]
-                : [],
-            // TODO: pinnedDataOwnerAddress
-          );
-
-          LicensesCompanion? licensesCompanion;
-          if (fileMetadata.licenseTxId != null) {
-            final licenseType = _licenseService
-                .licenseTypeByTxId(fileMetadata.licenseDefinitionTxId!)!;
-
-            final licenseState = LicenseState(
-              meta: _licenseService.licenseMetaByType(licenseType),
-              params: _licenseService.paramsFromAdditionalTags(
-                licenseType: licenseType,
-                additionalTags: fileMetadata.licenseAdditionalTags,
-              ),
-            );
-            licensesCompanion = _licenseService.toCompanion(
-              licenseState: licenseState,
-              dataTxId: fileMetadata.dataTxId!,
-              fileId: fileMetadata.id,
-              driveId: _driveId,
-              licenseTxId: fileMetadata.licenseTxId!,
-              licenseTxType: fileMetadata.licenseTxId == fileMetadata.dataTxId
-                  ? LicenseTxType.composed
-                  : LicenseTxType.assertion,
-            );
-          }
-
-          if (fileMetadata.metadataTxId == null) {
-            logger.e('Metadata tx id is null!');
-            throw Exception('Metadata tx id is null');
-          }
-
-          entity.txId = fileMetadata.metadataTxId!;
-
-          _driveDao.transaction(() async {
-            await _driveDao.writeFileEntity(entity);
-            await _driveDao.insertFileRevision(
-              entity.toRevisionCompanion(
-                performedAction: revisionAction,
-              ),
-            );
-            if (licensesCompanion != null) {
-              await _driveDao.insertLicense(licensesCompanion);
-            }
-          });
-        } else if (metadata is ARFSFolderUploadMetatadata) {
-          final revisionAction = _conflictingFolders.contains(metadata.name)
-              ? RevisionAction.uploadNewVersion
-              : RevisionAction.create;
-
-          final entity = FolderEntity(
-            driveId: metadata.driveId,
-            id: metadata.id,
-            name: metadata.name,
-            parentFolderId: metadata.parentFolderId,
-          );
-
-          if (metadata.metadataTxId == null) {
-            logger.e('Metadata tx id is null!');
-            throw Exception('Metadata tx id is null');
-          }
-
-          entity.txId = metadata.metadataTxId!;
-
-          await _driveDao.transaction(() async {
-            await _driveDao.createFolder(
-              driveId: _targetDrive.id,
-              parentFolderId: metadata.parentFolderId,
-              folderName: metadata.name,
-              folderId: metadata.id,
-            );
-            await _driveDao.insertFolderRevision(
-              entity.toRevisionCompanion(
-                performedAction: revisionAction,
-              ),
-            );
-          });
-        }
-      }
-    }
   }
 
   void _removeFilesWithFileNameConflicts() {
