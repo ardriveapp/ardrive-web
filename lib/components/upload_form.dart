@@ -128,7 +128,6 @@ Future<void> promptToUpload(
               driveDao: context.read<DriveDao>(),
               uploadFolders: isFolderUpload,
               auth: context.read<ArDriveAuth>(),
-              licenseService: context.read<LicenseService>(),
               configService: context.read<ConfigService>(),
               arnsRepository: context.read<ARNSRepository>(),
               uploadRepository: context.read<UploadRepository>(),

@@ -73,7 +73,6 @@ void main() {
   late MockTurboBalanceRetriever mockTurboBalanceRetriever;
   late MockTurboUploadCostCalculator mockTurboUploadCostCalculator;
   late MockArDriveUploadPreparationManager mockArDriveUploadPreparationManager;
-  late MockLicenseService mockLicense;
   late MockConfigService mockConfigService;
   late MockArnsRepository mockArnsRepository;
   late MockUploadRepository mockUploadRepository;
@@ -195,7 +194,6 @@ void main() {
     mockTurboBalanceRetriever = MockTurboBalanceRetriever();
     mockTurboUploadCostCalculator = MockTurboUploadCostCalculator();
     mockArDriveUploadPreparationManager = MockArDriveUploadPreparationManager();
-    mockLicense = MockLicenseService();
     mockArnsRepository = MockArnsRepository();
     late MockUploadPlan uploadPlan;
     mockUploadRepository = MockUploadRepository();
@@ -277,7 +275,6 @@ void main() {
       profileCubit: mockProfileCubit!,
       driveDao: mockDriveDao,
       auth: mockArDriveAuth,
-      licenseService: mockLicense,
       configService: mockConfigService,
       arnsRepository: mockArnsRepository,
       uploadRepository: mockUploadRepository,

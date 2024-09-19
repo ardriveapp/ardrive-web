@@ -48,7 +48,6 @@ class UploadCubit extends Cubit<UploadState> {
     required ArDriveAuth auth,
     required ArDriveUploadPreparationManager arDriveUploadManager,
     required ActivityTracker activityTracker,
-    required LicenseService licenseService,
     required ConfigService configService,
     required ARNSRepository arnsRepository,
     required UploadRepository uploadRepository,
@@ -64,7 +63,6 @@ class UploadCubit extends Cubit<UploadState> {
         _driveDao = driveDao,
         _auth = auth,
         _activityTracker = activityTracker,
-        _licenseService = licenseService,
         _arnsRepository = arnsRepository,
         _uploadRepository = uploadRepository,
         _uploadThumbnail = configService.config.uploadThumbnails,
@@ -77,7 +75,6 @@ class UploadCubit extends Cubit<UploadState> {
   final UploadFileSizeChecker _uploadFileSizeChecker;
   final ArDriveAuth _auth;
   final ActivityTracker _activityTracker;
-  final LicenseService _licenseService;
   final ARNSRepository _arnsRepository;
 
   final String _driveId;
@@ -1087,22 +1084,6 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     emit(UploadFailure(error: UploadErrors.unknown));
-  }
-
-  Future<LicenseState?> _licenseStateForFileId(String? fileId) async {
-    if (fileId != null) {
-      final latestRevision = await _driveDao
-          .latestFileRevisionByFileIdWithLicense(
-            driveId: _driveId,
-            fileId: fileId,
-          )
-          .getSingleOrNull();
-      if (latestRevision?.license != null) {
-        final licenseCompanion = latestRevision!.license!.toCompanion(true);
-        return _licenseService.fromCompanion(licenseCompanion);
-      }
-    }
-    return null;
   }
 }
 
