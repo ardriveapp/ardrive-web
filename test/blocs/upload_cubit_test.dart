@@ -8,6 +8,7 @@ import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
+import 'package:ardrive/core/upload/domain/repository/upload_repository.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
@@ -51,6 +52,8 @@ class MockTurboBalanceRetriever extends Mock implements TurboBalanceRetriever {}
 class MockTurboUploadCostCalculator extends Mock
     implements TurboUploadCostCalculator {}
 
+class MockUploadRepository extends Mock implements UploadRepository {}
+
 class MockArDriveUploadPreparationManager extends Mock
     implements ArDriveUploadPreparationManager {}
 
@@ -73,6 +76,7 @@ void main() {
   late MockLicenseService mockLicense;
   late MockConfigService mockConfigService;
   late MockArnsRepository mockArnsRepository;
+  late MockUploadRepository mockUploadRepository;
 
   const tDriveId = 'drive_id';
   const tRootFolderId = 'root-folder-id';
@@ -194,6 +198,7 @@ void main() {
     mockLicense = MockLicenseService();
     mockArnsRepository = MockArnsRepository();
     late MockUploadPlan uploadPlan;
+    mockUploadRepository = MockUploadRepository();
 
     // Setup mock drive.
     await addTestFilesToDb(
@@ -272,10 +277,10 @@ void main() {
       profileCubit: mockProfileCubit!,
       driveDao: mockDriveDao,
       auth: mockArDriveAuth,
-      pst: mockPst,
       licenseService: mockLicense,
       configService: mockConfigService,
       arnsRepository: mockArnsRepository,
+      uploadRepository: mockUploadRepository,
     );
   }
 
