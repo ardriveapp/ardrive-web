@@ -155,7 +155,6 @@ class UploadReady extends UploadState {
         loadingArNSNamesError,
         loadingArNSNames,
         showArnsCheckbox,
-        
       ];
 
   @override
@@ -236,20 +235,6 @@ class UploadReviewWithLicense extends UploadState {
 }
 
 class UploadInProgress extends UploadState {
-  final UploadPlan uploadPlan;
-  final int _equatableBust = DateTime.now().millisecondsSinceEpoch;
-  final double progress;
-
-  UploadInProgress({
-    required this.uploadPlan,
-    required this.progress,
-  });
-
-  @override
-  List<Object?> get props => [uploadPlan, _equatableBust];
-}
-
-class UploadInProgressUsingNewUploader extends UploadState {
   final UploadProgress progress;
   final UploadController controller;
   final double totalProgress;
@@ -257,7 +242,7 @@ class UploadInProgressUsingNewUploader extends UploadState {
   final Key? equatableBust;
   final UploadMethod uploadMethod;
 
-  UploadInProgressUsingNewUploader({
+  UploadInProgress({
     required this.progress,
     required this.totalProgress,
     required this.controller,
