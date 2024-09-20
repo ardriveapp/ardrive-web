@@ -3,6 +3,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/models/web_folder.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
+import 'package:ardrive/components/file_picker_modal.dart';
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
@@ -16,6 +17,9 @@ import 'package:ardrive/services/license/license_state.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 abstract class UploadRepository {
   Future<UploadController> uploadFiles({
@@ -41,17 +45,32 @@ abstract class UploadRepository {
     required bool uploadThumbnail,
   });
 
+  /// Picks files from the file system.
+  ///
+  /// This method is used to pick files from the file system.
+  Future<List<UploadFile>> pickFiles({
+    required BuildContext context,
+    required String parentFolderId,
+  });
+
+  Future<List<UploadFile>> pickFilesFromFolder({
+    required BuildContext context,
+    required String parentFolderId,
+  });
+
   factory UploadRepository({
     required ArDriveUploader ardriveUploader,
     required DriveDao driveDao,
     required ArDriveAuth auth,
     required LicenseService licenseService,
+    required ArDriveIO ardriveIO,
   }) {
     return _UploadRepositoryImpl(
       ardriveUploader: ardriveUploader,
       driveDao: driveDao,
       auth: auth,
       licenseService: licenseService,
+      ardriveIO: ardriveIO,
     );
   }
 }
@@ -61,16 +80,19 @@ class _UploadRepositoryImpl implements UploadRepository {
   final DriveDao _driveDao;
   final ArDriveAuth _auth;
   final LicenseService _licenseService;
+  final ArDriveIO _ardriveIO;
 
   _UploadRepositoryImpl({
     required ArDriveUploader ardriveUploader,
     required DriveDao driveDao,
     required ArDriveAuth auth,
     required LicenseService licenseService,
+    required ArDriveIO ardriveIO,
   })  : _ardriveUploader = ardriveUploader,
         _driveDao = driveDao,
         _auth = auth,
-        _licenseService = licenseService;
+        _licenseService = licenseService,
+        _ardriveIO = ardriveIO;
 
   @override
   Future<UploadController> uploadFiles({
@@ -348,5 +370,46 @@ class _UploadRepositoryImpl implements UploadRepository {
         }
       }
     }
+  }
+
+  @override
+  Future<List<UploadFile>> pickFiles({
+    required BuildContext context,
+    required String parentFolderId,
+  }) async {
+    // Display multiple options on Mobile
+    // Open file picker on Web
+    final ioFiles = kIsWeb
+        ? await _ardriveIO.pickFiles(fileSource: FileSource.fileSystem)
+        // ignore: use_build_context_synchronously
+        : await showMultipleFilesFilePickerModal(context);
+
+    final uploadFiles = ioFiles
+        .map((file) => UploadFile(ioFile: file, parentFolderId: parentFolderId))
+        .toList();
+
+    return uploadFiles;
+  }
+
+  @override
+  Future<List<UploadFile>> pickFilesFromFolder(
+      {required BuildContext context, required String parentFolderId}) async {
+    final ioFolder = await _ardriveIO.pickFolder();
+    final ioFiles = await ioFolder.listFiles();
+
+    final isMobilePlatform = AppPlatform.isMobile;
+    final shouldUseRelativePath = isMobilePlatform && ioFolder.path.isNotEmpty;
+    final relativeTo = shouldUseRelativePath ? getDirname(ioFolder.path) : null;
+
+    final uploadFiles = ioFiles
+        .map(
+          (file) => UploadFile(
+            ioFile: file,
+            parentFolderId: parentFolderId,
+            relativeTo: relativeTo,
+          ),
+        )
+        .toList();
+    return uploadFiles;
   }
 }

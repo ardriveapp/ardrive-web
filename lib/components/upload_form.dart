@@ -9,13 +9,11 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
-import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/payment_method/bloc/upload_payment_method_bloc.dart';
 import 'package:ardrive/blocs/upload/payment_method/view/upload_payment_method_view.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/blocs/upload/upload_handles/file_v2_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
-import 'package:ardrive/components/file_picker_modal.dart';
 import 'package:ardrive/components/license/cc_type_form.dart';
 import 'package:ardrive/components/license/learn_about_licensing.dart';
 import 'package:ardrive/components/license/udl_params_form.dart';
@@ -41,7 +39,6 @@ import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
-import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -61,68 +58,35 @@ Future<void> promptToUpload(
   List<IOFile>? files,
 }) async {
   final driveDetailCubit = context.read<DriveDetailCubit>();
-  final selectedFiles = <UploadFile>[];
-  final io = ArDriveIO();
-  IOFolder? ioFolder;
-  if (files == null) {
-    if (isFolderUpload) {
-      ioFolder = await io.pickFolder();
-      final ioFiles = await ioFolder.listFiles();
-
-      final isMobilePlatform = AppPlatform.isMobile;
-      final shouldUseRelativePath =
-          isMobilePlatform && ioFolder.path.isNotEmpty;
-      final relativeTo =
-          shouldUseRelativePath ? getDirname(ioFolder.path) : null;
-
-      final uploadFiles = ioFiles
-          .map(
-            (file) => UploadFile(
-              ioFile: file,
-              parentFolderId: parentFolderId,
-              relativeTo: relativeTo,
-            ),
-          )
-          .toList();
-      selectedFiles.addAll(uploadFiles);
-    } else {
-      // Display multiple options on Mobile
-      // Open file picker on Web
-      final ioFiles = kIsWeb
-          ? await io.pickFiles(fileSource: FileSource.fileSystem)
-          : await showMultipleFilesFilePickerModal(context);
-      final uploadFiles = ioFiles
-          .map((file) =>
-              UploadFile(ioFile: file, parentFolderId: parentFolderId))
-          .toList();
-      selectedFiles.addAll(uploadFiles);
-      ioFolder = null;
-    }
-  } else {
-    selectedFiles.addAll(files.map((file) {
-      return UploadFile(
-        ioFile: file,
-        parentFolderId: parentFolderId,
-      );
-    }));
-  }
 
   final uploadCubit = BlocProvider<UploadCubit>(
-    create: (context) => UploadCubit(
-      activityTracker: context.read<ActivityTracker>(),
-      arDriveUploadManager: context.read<ArDriveUploadPreparationManager>(),
-      uploadFileSizeChecker: context.read<UploadFileSizeChecker>(),
-      driveId: driveId,
-      parentFolderId: parentFolderId,
-      files: selectedFiles,
-      profileCubit: context.read<ProfileCubit>(),
-      driveDao: context.read<DriveDao>(),
-      uploadFolders: isFolderUpload,
-      auth: context.read<ArDriveAuth>(),
-      configService: context.read<ConfigService>(),
-      arnsRepository: context.read<ARNSRepository>(),
-      uploadRepository: context.read<UploadRepository>(),
-    )..startUploadPreparation(),
+    create: (context) {
+      final cubit = UploadCubit(
+        activityTracker: context.read<ActivityTracker>(),
+        arDriveUploadManager: context.read<ArDriveUploadPreparationManager>(),
+        uploadFileSizeChecker: context.read<UploadFileSizeChecker>(),
+        driveId: driveId,
+        parentFolderId: parentFolderId,
+        profileCubit: context.read<ProfileCubit>(),
+        driveDao: context.read<DriveDao>(),
+        uploadFolders: isFolderUpload,
+        auth: context.read<ArDriveAuth>(),
+        configService: context.read<ConfigService>(),
+        arnsRepository: context.read<ARNSRepository>(),
+        uploadRepository: context.read<UploadRepository>(),
+      );
+
+      if (files != null) {
+        cubit.selectFiles(files, parentFolderId);
+      } else if (isFolderUpload) {
+        cubit.pickFilesFromFolder(
+            context: context, parentFolderId: parentFolderId);
+      } else {
+        cubit.pickFiles(context: context, parentFolderId: parentFolderId);
+      }
+
+      return cubit;
+    },
   );
 
   final uploadPaymentMethodBloc = BlocProvider(
@@ -189,6 +153,10 @@ class _UploadFormState extends State<UploadForm> {
         },
         child: BlocConsumer<UploadCubit, UploadState>(
           listener: (context, state) async {
+            if (state is EmptyUpload) {
+              Navigator.pop(context);
+            }
+
             if (state is UploadComplete || state is UploadWalletMismatch) {
               if (!_isShowingCancelDialog) {
                 Navigator.pop(context);
@@ -213,6 +181,10 @@ class _UploadFormState extends State<UploadForm> {
           builder: (context, state) {
             if (state is UploadFolderNameConflict) {
               return _UploadFolderNameConflictWidget(state: state);
+            } else if (state is UploadLoadingFiles) {
+              return const _UploadLoadingFilesWidget();
+            } else if (state is UploadLoadingFilesSuccess) {
+              return const _UploadLoadingFilesSuccessWidget();
             } else if (state is UploadConflictWithFailedFiles) {
               return _UploadConflictWithFailedFilesWidget(state: state);
             } else if (state is UploadFileConflict) {
@@ -1115,8 +1087,11 @@ class _PreparingUploadWidget extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
+            if (state is UploadPreparationInitialized &&
+                (state as UploadPreparationInitialized).showLoadingFiles) ...[
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+            ],
             if (state is UploadPreparationInProgress &&
                 (state as UploadPreparationInProgress).isArConnect)
               Text(
@@ -2063,6 +2038,39 @@ class _UploadInProgressWidget extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _UploadLoadingFilesWidget extends StatelessWidget {
+  const _UploadLoadingFilesWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: Future.delayed(const Duration(seconds: 1)),
+      builder: (context, shapshot) {
+        if (shapshot.connectionState == ConnectionState.done) {
+          return const ArDriveStandardModalNew(
+            title: 'Loading...',
+            description:
+                'Getting everything ready... We are fetching your selected files, checking for conflicts, and ensuring all is set for your upload. Please hold on...',
+          );
+        }
+        return const SizedBox();
+      },
+    );
+  }
+}
+
+class _UploadLoadingFilesSuccessWidget extends StatelessWidget {
+  const _UploadLoadingFilesSuccessWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ArDriveStandardModalNew(
+      title: 'All set!',
+      description: 'We are ready to start preparing your upload.',
     );
   }
 }

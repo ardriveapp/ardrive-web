@@ -11,6 +11,7 @@ import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -80,6 +81,7 @@ ArDriveUploadPreparationManager createArDriveUploadPreparationManager(
 
 UploadRepository createUploadRepository(BuildContext context) {
   return UploadRepository(
+    ardriveIO: ArDriveIO(),
     ardriveUploader: ArDriveUploader(
       turboUploadUri: Uri.parse(
           context.read<ConfigService>().config.defaultTurboUploadUrl!),

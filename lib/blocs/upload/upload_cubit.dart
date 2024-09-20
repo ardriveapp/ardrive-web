@@ -25,7 +25,7 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
@@ -41,7 +41,6 @@ class UploadCubit extends Cubit<UploadState> {
   UploadCubit({
     required String driveId,
     required String parentFolderId,
-    required List<UploadFile> files,
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
     required UploadFileSizeChecker uploadFileSizeChecker,
@@ -53,8 +52,7 @@ class UploadCubit extends Cubit<UploadState> {
     required UploadRepository uploadRepository,
     bool uploadFolders = false,
     bool isDragNDrop = false,
-  })  : _files = files,
-        _isUploadFolders = uploadFolders,
+  })  : _isUploadFolders = uploadFolders,
         _isDragNDrop = isDragNDrop,
         _parentFolderId = parentFolderId,
         _driveId = driveId,
@@ -66,7 +64,7 @@ class UploadCubit extends Cubit<UploadState> {
         _arnsRepository = arnsRepository,
         _uploadRepository = uploadRepository,
         _uploadThumbnail = configService.config.uploadThumbnails,
-        super(UploadPreparationInProgress());
+        super(UploadLoadingFiles());
 
   // Dependencies
   final UploadRepository _uploadRepository;
@@ -541,6 +539,10 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   Future<void> verifyFilesAboveWarningLimit() async {
+    emit(UploadPreparationInProgress());
+
+    await Future.delayed(const Duration(milliseconds: 100));
+
     if (!_targetDrive.isPrivate) {
       if (await _uploadFileSizeChecker.hasFileAboveWarningSizeLimit(
           files: _files)) {
@@ -571,9 +573,71 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   /// Upload Preparation
+  Future<void> pickFiles({
+    required BuildContext context,
+    required String parentFolderId,
+  }) async {
+    try {
+      final files = await _uploadRepository.pickFiles(
+          context: context, parentFolderId: parentFolderId);
+      if (files.isEmpty) {
+        emit(EmptyUpload());
+        return;
+      }
+      _files.addAll(files);
+      emit(UploadLoadingFilesSuccess());
+
+      startUploadPreparation();
+    } catch (e) {
+      if (e is ActionCanceledException) {
+        emit(EmptyUpload());
+      } else {
+        _emitError(e);
+      }
+    }
+  }
+
+  Future<void> pickFilesFromFolder({
+    required BuildContext context,
+    required String parentFolderId,
+  }) async {
+    try {
+      final files = await _uploadRepository.pickFilesFromFolder(
+          context: context, parentFolderId: parentFolderId);
+      if (files.isEmpty) {
+        emit(EmptyUpload());
+        return;
+      }
+
+      _files.addAll(files);
+
+      logger.d('Upload preparation started. Number of files: ${_files.length}');
+      emit(UploadLoadingFilesSuccess());
+      startUploadPreparation();
+    } catch (e) {
+      if (e is ActionCanceledException) {
+        emit(EmptyUpload());
+      } else {
+        _emitError(e);
+      }
+    }
+  }
+
+  void selectFiles(List<IOFile> files, String parentFolderId) {
+    _files.addAll(files.map((file) {
+      return UploadFile(
+        ioFile: file,
+        parentFolderId: parentFolderId,
+      );
+    }));
+
+    startUploadPreparation();
+  }
+
   Future<void> startUploadPreparation({
     bool isRetryingToPayWithTurbo = false,
   }) async {
+    await Future.delayed(const Duration(seconds: 5));
     _arnsRepository.getAntRecordsForWallet(_auth.currentUser.walletAddress);
 
     _files
@@ -591,7 +655,11 @@ class UploadCubit extends Cubit<UploadState> {
       await Future.delayed(const Duration(seconds: 2));
     }
 
-    emit(UploadPreparationInitialized());
+    logger.d('Upload preparation started. Number of files: ${_files.length}');
+
+    /// When the number of files is less than 100, we show a loading indicator
+    /// More than that, we don't show it, because it would be too slow
+    emit(UploadPreparationInitialized(showLoadingFiles: _files.length < 100));
   }
 
   /// Generate Folders and assign parentFolderIds

@@ -14,7 +14,15 @@ class UploadPreparationInProgress extends UploadState {
   List<Object> get props => [isArConnect];
 }
 
-class UploadPreparationInitialized extends UploadState {}
+class UploadLoadingFiles extends UploadState {}
+
+class UploadLoadingFilesSuccess extends UploadState {}
+
+class UploadPreparationInitialized extends UploadState {
+  final bool showLoadingFiles;
+
+  UploadPreparationInitialized({this.showLoadingFiles = false});
+}
 
 class UploadSigningInProgress extends UploadState {
   final UploadPlan uploadPlan;
@@ -282,6 +290,8 @@ class UploadShowingWarning extends UploadState {
 class UploadCanceled extends UploadState {}
 
 class CancelD2NUploadWarning extends UploadState {}
+
+class EmptyUpload extends UploadState {}
 
 enum UploadErrors {
   turboTimeout,

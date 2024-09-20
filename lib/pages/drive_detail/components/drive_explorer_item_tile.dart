@@ -11,6 +11,7 @@ import 'package:ardrive/components/pin_indicator.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/drive_explorer/thumbnail/thumbnail_bloc.dart';
+import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
@@ -28,8 +29,8 @@ class DriveExplorerItemTile extends TableRowWidget {
   DriveExplorerItemTile({
     required String name,
     required String size,
-    required String lastUpdated,
-    required String dateCreated,
+    required DateTime lastUpdated,
+    required DateTime dateCreated,
     required String license,
     required Function() onPressed,
     required bool isHidden,
@@ -68,12 +69,18 @@ class DriveExplorerItemTile extends TableRowWidget {
             Text(size,
                 style: _driveExplorerItemTileTextStyle(
                     isHidden, typography, colorTokens)),
-            Text(lastUpdated,
-                style: _driveExplorerItemTileTextStyle(
-                    isHidden, typography, colorTokens)),
-            Text(dateCreated,
-                style: _driveExplorerItemTileTextStyle(
-                    isHidden, typography, colorTokens)),
+            ArDriveTooltip(
+              message: yMMdHmDateTimeFormatter.format(lastUpdated),
+              child: Text(yMMdDateFormatter.format(lastUpdated),
+                  style: _driveExplorerItemTileTextStyle(
+                      isHidden, typography, colorTokens)),
+            ),
+            ArDriveTooltip(
+              message: yMMdHmDateTimeFormatter.format(dateCreated),
+              child: Text(yMMdDateFormatter.format(dateCreated),
+                  style: _driveExplorerItemTileTextStyle(
+                      isHidden, typography, colorTokens)),
+            ),
             Text(license, style: ArDriveTypography.body.captionRegular()),
           ],
         );

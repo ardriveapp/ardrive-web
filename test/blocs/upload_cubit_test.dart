@@ -271,7 +271,6 @@ void main() {
       uploadFileSizeChecker: mockUploadFileSizeChecker,
       driveId: tDriveId,
       parentFolderId: tRootFolderId,
-      files: files,
       profileCubit: mockProfileCubit!,
       driveDao: mockDriveDao,
       auth: mockArDriveAuth,
