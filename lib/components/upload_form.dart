@@ -211,13 +211,6 @@ class _UploadFormState extends State<UploadForm> {
           buildWhen: (previous, current) =>
               (current is! UploadComplete && current is! UploadReadyToPrepare),
           builder: (context, state) {
-            if (state is AssigningUndername) {
-              return const ProgressDialog(
-                title: 'Assigning ArNS Name...',
-                useNewArDriveUI: true,
-              );
-            }
-
             if (state is UploadFolderNameConflict) {
               return _UploadFolderNameConflictWidget(state: state);
             } else if (state is UploadConflictWithFailedFiles) {
@@ -231,11 +224,30 @@ class _UploadFormState extends State<UploadForm> {
               return _PreparingUploadWidget(state: state);
             } else if (state is UploadReady) {
               return _UploadReadyWidget(
-                state: state,
-                driveDetailCubit: widget.driveDetailCubit,
-              );
+                  state: state, driveDetailCubit: widget.driveDetailCubit);
             } else if (state is UploadConfiguringLicense) {
               return _UploadConfiguringLicenseWidget(state: state);
+            } else if (state is UploadReviewWithArnsName) {
+              return _UploadReviewWithArnsNameWidget(state: state);
+            } else if (state is UploadSigningInProgress) {
+              return _UploadSigningInProgressWidget(state: state);
+            } else if (state is UploadInProgress) {
+              return _UploadInProgressWidget(
+                state: state,
+                onChangeCancelWarning: (value) {
+                  _isShowingCancelDialog = value;
+                },
+              );
+            } else if (state is UploadCanceled) {
+              return const _UploadCanceledWidget();
+            } else if (state is UploadFailure) {
+              return _UploadFailureWidget(state: state);
+            } else if (state is UploadShowingWarning) {
+              // TODO: Fix use of startUpload
+              return _UploadShowingWarningWidget(state: state);
+            } else if (state is AssigningUndername) {
+              return const ProgressDialog(
+                  title: 'Assigning ArNS Name...', useNewArDriveUI: true);
             } else if (state is UploadReviewWithLicense) {
               if (state.readyState.showArnsNameSelection) {
                 return AssignArNSNameModal(
@@ -255,24 +267,6 @@ class _UploadFormState extends State<UploadForm> {
               }
 
               return _UploadReviewWithLicenseWidget(state: state);
-            } else if (state is UploadReviewWithArnsName) {
-              return _UploadReviewWithArnsNameWidget(state: state);
-            } else if (state is UploadSigningInProgress) {
-              return _UploadSigningInProgressWidget(state: state);
-            } else if (state is UploadInProgress) {
-              return _UploadInProgressWidget(
-                state: state,
-                onChangeCancelWarning: (value) {
-                  _isShowingCancelDialog = value;
-                },
-              );
-            } else if (state is UploadCanceled) {
-              return const _UploadCanceledWidget();
-            } else if (state is UploadFailure) {
-              return _UploadFailureWidget(state: state);
-            } else if (state is UploadShowingWarning) {
-              // TODO: Fix use of startUpload
-              return _UploadShowingWarningWidget(state: state);
             }
             return const SizedBox();
           },
