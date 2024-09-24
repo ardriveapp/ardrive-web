@@ -1004,6 +1004,7 @@ class _SyncRepository implements SyncRepository {
 
       final revisionPerformedAction =
           entity.getPerformedRevisionAction(latestRevisions[entity.id]);
+
       if (revisionPerformedAction == null) {
         continue;
       }
@@ -1018,7 +1019,11 @@ class _SyncRepository implements SyncRepository {
         }
 
         newRevisions.add(revision);
-        if (revision.dateCreated.value.isBefore(entity.createdAt)) {
+        if (latestRevisions.containsKey(entity.id)) {
+          if (revision.dateCreated.value.isBefore(entity.createdAt)) {
+            latestRevisions[entity.id!] = revision;
+          }
+        } else {
           latestRevisions[entity.id!] = revision;
         }
       } catch (e, stacktrace) {
