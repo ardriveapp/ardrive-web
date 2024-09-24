@@ -821,12 +821,12 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   Future<void> cancelUpload() async {
-    if (state is UploadInProgressUsingNewUploader) {
+    if (state is UploadInProgress) {
       try {
-        final state = this.state as UploadInProgressUsingNewUploader;
+        final state = this.state as UploadInProgress;
 
         emit(
-          UploadInProgressUsingNewUploader(
+          UploadInProgress(
             controller: state.controller,
             equatableBust: state.equatableBust,
             progress: state.progress,
@@ -839,7 +839,7 @@ class UploadCubit extends Cubit<UploadState> {
         await state.controller.cancel();
 
         emit(
-          UploadInProgressUsingNewUploader(
+          UploadInProgress(
             controller: state.controller,
             equatableBust: state.equatableBust,
             progress: state.progress,
@@ -888,7 +888,7 @@ class UploadCubit extends Cubit<UploadState> {
     uploadController.onProgressChange(
       (progress) {
         emit(
-          UploadInProgressUsingNewUploader(
+          UploadInProgress(
             totalProgress: progress.progressInPercentage,
             equatableBust: UniqueKey(),
             progress: progress,
@@ -945,7 +945,7 @@ class UploadCubit extends Cubit<UploadState> {
     uploadController.onProgressChange(
       (progress) async {
         emit(
-          UploadInProgressUsingNewUploader(
+          UploadInProgress(
             progress: progress,
             totalProgress: progress.progressInPercentage,
             controller: uploadController,
@@ -970,7 +970,7 @@ class UploadCubit extends Cubit<UploadState> {
 
               /// Emits
               emit(
-                UploadInProgressUsingNewUploader(
+                UploadInProgress(
                   progress: UploadProgress(
                     progressInPercentage: 1,
                     numberOfItems: 1,
