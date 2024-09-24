@@ -992,10 +992,6 @@ class _SyncRepository implements SyncRepository {
 
     final newRevisions = <FileRevisionsCompanion>[];
     for (final entity in newEntities) {
-      if (entity.assignedNames != null) {
-        logger.d('Entity has assigned names: ${entity.assignedNames}');
-      }
-
       if (!latestRevisions.containsKey(entity.id) &&
           entity.parentFolderId != null) {
         final revisions = await _driveDao
@@ -1022,7 +1018,9 @@ class _SyncRepository implements SyncRepository {
         }
 
         newRevisions.add(revision);
-        latestRevisions[entity.id!] = revision;
+        if (revision.dateCreated.value.isBefore(entity.createdAt)) {
+          latestRevisions[entity.id!] = revision;
+        }
       } catch (e, stacktrace) {
         logger.e('Error adding revision for entity', e, stacktrace);
       }
