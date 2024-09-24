@@ -265,13 +265,12 @@ void main() {
       usdUploadCost: 100);
 
   UploadCubit getUploadCubitInstanceWith(List<UploadFile> files) {
-    return UploadCubit(
+    final cubit = UploadCubit(
       activityTracker: MockActivityTracker(),
       arDriveUploadManager: mockArDriveUploadPreparationManager,
       uploadFileSizeChecker: mockUploadFileSizeChecker,
       driveId: tDriveId,
       parentFolderId: tRootFolderId,
-      files: files,
       profileCubit: mockProfileCubit!,
       driveDao: mockDriveDao,
       auth: mockArDriveAuth,
@@ -279,6 +278,9 @@ void main() {
       arnsRepository: mockArnsRepository,
       uploadRepository: mockUploadRepository,
     );
+
+    cubit.selectFiles(files.map((e) => e.ioFile).toList(), tRootFolderId);
+    return cubit;
   }
 
   void setDumbUploadPlan() => when(() => mockUploadPlanUtils.filesToUploadPlan(
@@ -470,6 +472,7 @@ void main() {
           },
           expect: () => <dynamic>[
                 const TypeMatcher<UploadPreparationInitialized>(),
+                const TypeMatcher<UploadPreparationInProgress>(),
                 const TypeMatcher<UploadShowingWarning>()
               ]);
       blocTest<UploadCubit, UploadState>(
@@ -489,6 +492,7 @@ void main() {
           },
           expect: () => <dynamic>[
                 const TypeMatcher<UploadPreparationInitialized>(),
+                const TypeMatcher<UploadPreparationInProgress>(),
                 const TypeMatcher<UploadShowingWarning>(),
                 const TypeMatcher<UploadPreparationInProgress>(),
                 const TypeMatcher<UploadPreparationInProgress>(),
