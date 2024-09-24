@@ -602,7 +602,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          yMMdDateFormatter.format(widget.item.lastUpdated),
+          yMMdHmDateTimeFormatter.format(widget.item.lastUpdated),
           style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
@@ -610,7 +610,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          yMMdDateFormatter.format(widget.item.dateCreated),
+          yMMdHmDateTimeFormatter.format(widget.item.dateCreated),
           style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
@@ -672,7 +672,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          yMMdDateFormatter.format(widget.item.lastUpdated),
+          yMMdHmDateTimeFormatter.format(widget.item.lastUpdated),
           style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
@@ -680,7 +680,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          yMMdDateFormatter.format(widget.item.dateCreated),
+          yMMdHmDateTimeFormatter.format(widget.item.dateCreated),
           style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
@@ -724,7 +724,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          yMMdDateFormatter.format(item.lastUpdated),
+          yMMdHmDateTimeFormatter.format(item.lastUpdated),
           style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
@@ -732,7 +732,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          yMMdDateFormatter.format(item.dateCreated),
+          yMMdHmDateTimeFormatter.format(item.dateCreated),
           style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
@@ -901,7 +901,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 default:
                   title = appLocalizationsOf(context).folderWasModified;
               }
-              subtitle = yMMdDateFormatter.format(revision.dateCreated);
+              subtitle = yMMdHmDateTimeFormatter.format(revision.dateCreated);
 
               return DetailsPanelItem(
                 itemSubtitle: subtitle,
@@ -944,7 +944,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   title = appLocalizationsOf(context).driveWasModified;
               }
 
-              subtitle = yMMdDateFormatter.format(revision.dateCreated);
+              subtitle = yMMdHmDateTimeFormatter.format(revision.dateCreated);
 
               return DetailsPanelItem(
                 itemSubtitle: subtitle,
@@ -1023,7 +1023,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       default:
         title = appLocalizationsOf(context).fileWasModified;
     }
-    subtitle = yMMdDateFormatter.format(file.unixTime);
+    subtitle = yMMdHmDateTimeFormatter.format(file.unixTime);
 
     return DetailsPanelItem(
       leading: leading ?? const SizedBox(),
