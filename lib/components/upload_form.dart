@@ -162,7 +162,6 @@ Future<void> promptToUpload(
             BlocProvider<UploadCubit>(
               create: (context) => UploadCubit(
                 activityTracker: context.read<ActivityTracker>(),
-                folder: ioFolder,
                 arDriveUploadManager:
                     context.read<ArDriveUploadPreparationManager>(),
                 uploadFileSizeChecker: context.read<UploadFileSizeChecker>(),
