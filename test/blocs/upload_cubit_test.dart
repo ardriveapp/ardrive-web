@@ -73,7 +73,6 @@ void main() {
   late MockLicenseService mockLicense;
   late MockConfigService mockConfigService;
   late MockArnsRepository mockArnsRepository;
-
   const tDriveId = 'drive_id';
   const tRootFolderId = 'root-folder-id';
   const tRootFolderFileCount = 5;

@@ -8,7 +8,6 @@ import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/upload/uploader.dart';
-import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/models/forms/cc.dart';
@@ -56,7 +55,6 @@ class UploadCubit extends Cubit<UploadState> {
   final LicenseService _licenseService;
   final ConfigService _configService;
   final ARNSRepository _arnsRepository;
-  final ThumbnailRepository _thumbnailRepository;
 
   late bool uploadFolders;
   late Drive _targetDrive;
@@ -339,7 +337,6 @@ class UploadCubit extends Cubit<UploadState> {
     required LicenseService licenseService,
     required ConfigService configService,
     required ARNSRepository arnsRepository,
-    required ThumbnailRepository thumbnailRepository,
     this.folder,
     this.uploadFolders = false,
     this.isDragNDrop = false,
@@ -352,7 +349,6 @@ class UploadCubit extends Cubit<UploadState> {
         _licenseService = licenseService,
         _configService = configService,
         _arnsRepository = arnsRepository,
-        _thumbnailRepository = thumbnailRepository,
         _uploadThumbnail = configService.config.uploadThumbnails,
         super(UploadPreparationInProgress());
 

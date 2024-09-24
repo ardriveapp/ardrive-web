@@ -25,7 +25,6 @@ import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
-import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
@@ -178,7 +177,6 @@ Future<void> promptToUpload(
                 licenseService: context.read<LicenseService>(),
                 configService: context.read<ConfigService>(),
                 arnsRepository: context.read<ARNSRepository>(),
-                thumbnailRepository: context.read<ThumbnailRepository>(),
               )..startUploadPreparation(),
             ),
             BlocProvider(
