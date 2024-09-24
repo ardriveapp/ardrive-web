@@ -17,6 +17,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../test_utils/utils.dart';
+import '../../../../utils/io_utils_test.dart';
 
 class MockArDriveUploader extends Mock implements ArDriveUploader {}
 
@@ -51,6 +52,7 @@ void main() {
         driveDao: mockDriveDao,
         auth: mockArDriveAuth,
         licenseService: mockLicenseService,
+        ardriveIO: MockArDriveIO(),
       );
 
       registerFallbackValue(getTestWallet());
