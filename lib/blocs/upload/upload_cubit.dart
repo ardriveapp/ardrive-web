@@ -1189,6 +1189,7 @@ class UploadCubit extends Cubit<UploadState> {
                 performedAction: revisionAction,
               ),
             );
+
             if (licensesCompanion != null) {
               await _driveDao.insertLicense(licensesCompanion);
             }
