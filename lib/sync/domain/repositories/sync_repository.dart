@@ -997,6 +997,7 @@ class _SyncRepository implements SyncRepository {
         final revisions = await _driveDao
             .latestFileRevisionByFileId(driveId: driveId, fileId: entity.id!)
             .getSingleOrNull();
+        // Gets the latest revision for the file, if it exists on the database.
         if (revisions != null) {
           latestRevisions[entity.id!] = revisions.toCompanion(true);
         }
@@ -1008,9 +1009,11 @@ class _SyncRepository implements SyncRepository {
       if (revisionPerformedAction == null) {
         continue;
       }
+
       // If Parent-Folder-Id is missing for a file, put it in the root folder
       try {
         entity.parentFolderId = entity.parentFolderId ?? rootPath;
+
         final revision = entity.toRevisionCompanion(
             performedAction: revisionPerformedAction);
 
@@ -1018,13 +1021,17 @@ class _SyncRepository implements SyncRepository {
           continue;
         }
 
-        newRevisions.add(revision);
         if (latestRevisions.containsKey(entity.id)) {
-          if (revision.dateCreated.value.isBefore(entity.createdAt)) {
+          final latestRevision = latestRevisions[entity.id];
+
+          if (revision.dateCreated.value
+              .isAfter(latestRevision!.dateCreated.value)) {
             latestRevisions[entity.id!] = revision;
+            newRevisions.add(revision);
           }
         } else {
           latestRevisions[entity.id!] = revision;
+          newRevisions.add(revision);
         }
       } catch (e, stacktrace) {
         logger.e('Error adding revision for entity', e, stacktrace);
