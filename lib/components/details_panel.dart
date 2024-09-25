@@ -15,7 +15,6 @@ import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/drive_explorer/thumbnail_creation/page/thumbnail_creation_modal.dart';
-import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
@@ -26,6 +25,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
+import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
@@ -602,7 +602,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          yMMdDateFormatter.format(widget.item.lastUpdated),
+          formatDate(widget.item.lastUpdated),
           style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
@@ -610,7 +610,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          yMMdDateFormatter.format(widget.item.dateCreated),
+          formatDate(widget.item.dateCreated),
           style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
@@ -672,7 +672,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          yMMdDateFormatter.format(widget.item.lastUpdated),
+          formatDate(widget.item.lastUpdated),
           style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
@@ -680,7 +680,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          yMMdDateFormatter.format(widget.item.dateCreated),
+          formatDate(widget.item.dateCreated),
           style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
@@ -724,7 +724,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          yMMdDateFormatter.format(item.lastUpdated),
+          formatDate(item.lastUpdated),
           style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
@@ -732,7 +732,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          yMMdDateFormatter.format(item.dateCreated),
+          formatDate(item.dateCreated),
           style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
@@ -901,7 +901,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 default:
                   title = appLocalizationsOf(context).folderWasModified;
               }
-              subtitle = yMMdDateFormatter.format(revision.dateCreated);
+              subtitle = formatDate(revision.dateCreated);
 
               return DetailsPanelItem(
                 itemSubtitle: subtitle,
@@ -944,7 +944,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   title = appLocalizationsOf(context).driveWasModified;
               }
 
-              subtitle = yMMdDateFormatter.format(revision.dateCreated);
+              subtitle = formatDate(revision.dateCreated);
 
               return DetailsPanelItem(
                 itemSubtitle: subtitle,
@@ -1023,7 +1023,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       default:
         title = appLocalizationsOf(context).fileWasModified;
     }
-    subtitle = yMMdDateFormatter.format(file.unixTime);
+    subtitle = formatDate(file.unixTime);
 
     return DetailsPanelItem(
       leading: leading ?? const SizedBox(),
