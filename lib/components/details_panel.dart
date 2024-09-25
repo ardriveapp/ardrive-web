@@ -602,7 +602,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          formatDate(widget.item.lastUpdated),
+          formatDateToUtcString(widget.item.lastUpdated),
           style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
@@ -610,7 +610,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          formatDate(widget.item.dateCreated),
+          formatDateToUtcString(widget.item.dateCreated),
           style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
@@ -672,7 +672,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          formatDate(widget.item.lastUpdated),
+          formatDateToUtcString(widget.item.lastUpdated),
           style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
@@ -680,7 +680,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          formatDate(widget.item.dateCreated),
+          formatDateToUtcString(widget.item.dateCreated),
           style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
@@ -724,7 +724,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          formatDate(item.lastUpdated),
+          formatDateToUtcString(item.lastUpdated),
           style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
@@ -732,7 +732,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          formatDate(item.dateCreated),
+          formatDateToUtcString(item.dateCreated),
           style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
@@ -901,7 +901,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 default:
                   title = appLocalizationsOf(context).folderWasModified;
               }
-              subtitle = formatDate(revision.dateCreated);
+              subtitle = formatDateToUtcString(revision.dateCreated);
 
               return DetailsPanelItem(
                 itemSubtitle: subtitle,
@@ -944,7 +944,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   title = appLocalizationsOf(context).driveWasModified;
               }
 
-              subtitle = formatDate(revision.dateCreated);
+              subtitle = formatDateToUtcString(revision.dateCreated);
 
               return DetailsPanelItem(
                 itemSubtitle: subtitle,
@@ -1023,7 +1023,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       default:
         title = appLocalizationsOf(context).fileWasModified;
     }
-    subtitle = formatDate(file.unixTime);
+    subtitle = formatDateToUtcString(file.unixTime);
 
     return DetailsPanelItem(
       leading: leading ?? const SizedBox(),
