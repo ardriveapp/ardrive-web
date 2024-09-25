@@ -237,6 +237,8 @@ class _UploadFormState extends State<UploadForm> {
                 context.read<ActivityTracker>().setUploading(false);
                 context.read<SyncCubit>().startSync();
               }
+
+              widget.driveDetailCubit.refreshDriveDataTable();
             } else if (state is UploadPreparationInitialized) {
               context.read<UploadCubit>().verifyFilesAboveWarningLimit();
             }
