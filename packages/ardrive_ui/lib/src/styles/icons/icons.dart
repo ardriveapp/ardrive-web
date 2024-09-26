@@ -484,4 +484,52 @@ class ArDriveIcons {
         size: size,
         color: color,
       );
+
+  static ArDriveIcon turboCoin({double? size, Color? color}) => ArDriveIcon(
+        icon: ArDriveIconsData.turbo_coin,
+        size: size,
+        color: color,
+      );
+
+  static ArDriveIcon arweaveCoin({double? size, Color? color}) => ArDriveIcon(
+        icon: ArDriveIconsData.arweave_coin,
+        size: size,
+        color: color,
+      );
+
+  static ArDriveIcon chevronDown({double? size, Color? color}) => ArDriveIcon(
+        icon: ArDriveIconsData.chevron_down,
+        size: size,
+        color: color,
+      );
+
+  static ArDriveIcon chevronUp({double? size, Color? color}) => ArDriveIcon(
+        icon: ArDriveIconsData.chevron_up,
+        size: size,
+        color: color,
+      );
+
+  static ArDriveIcon arrowDownload({double? size, Color? color}) => ArDriveIcon(
+        icon: ArDriveIconsData.arrow_download,
+        size: size,
+        color: color,
+      );
+
+  static ArDriveIcon box({double? size, Color? color}) => ArDriveIcon(
+        icon: ArDriveIconsData.box,
+        size: size,
+        color: color,
+      );
+
+  static ArDriveIcon checked({double? size, Color? color}) => ArDriveIcon(
+        icon: ArDriveIconsData.checked,
+        size: size,
+        color: color,
+      );
+
+  static ArDriveIcon license1({double? size, Color? color}) => ArDriveIcon(
+        icon: ArDriveIconsData.license_1,
+        size: size,
+        color: color,
+      );
 }

@@ -5,12 +5,13 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/utils.dart';
 import 'package:flutter/material.dart';
 
-class PaymentMethodSelector extends StatelessWidget {
+class PaymentMethodSelector extends StatefulWidget {
   final UploadPaymentMethodInfo uploadMethodInfo;
   final void Function() onTurboTopupSucess;
   final void Function() onArSelect;
   final void Function() onTurboSelect;
   final bool useNewArDriveUI;
+  final bool useDropdown;
 
   const PaymentMethodSelector({
     super.key,
@@ -19,19 +20,166 @@ class PaymentMethodSelector extends StatelessWidget {
     required this.onArSelect,
     required this.onTurboSelect,
     this.useNewArDriveUI = false,
+    this.useDropdown = false,
   });
+
+  @override
+  State<PaymentMethodSelector> createState() => _PaymentMethodSelectorState();
+}
+
+class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
+  late UploadMethod _selectedMethod;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedMethod = widget.uploadMethodInfo.uploadMethod;
+  }
 
   @override
   Widget build(context) {
     return Column(
       children: [
-        if (!uploadMethodInfo.isFreeThanksToTurbo) ...[
-          _buildContent(context),
-          const SizedBox(height: 16),
-          _getInsufficientBalanceMessage(context: context),
-        ],
+        if (widget.useDropdown) _buildDropdown(context),
+        if (!widget.useDropdown) _buildContent(context),
+        _getInsufficientBalanceMessage(context: context),
       ],
     );
+  }
+
+  Widget _buildDropdown(BuildContext context) {
+    return ArDriveDropdown(
+      height: 45,
+      maxHeight: 90,
+      hasBorder: false,
+      hasDivider: false,
+      anchor: const Aligned(
+        follower: Alignment.centerRight,
+        target: Alignment.bottomRight,
+        offset: Offset(0, 10),
+      ),
+      items: [
+        _buildDropdownItem(context, UploadMethod.ar),
+        _buildDropdownItem(context, UploadMethod.turbo),
+      ],
+      child: ArDriveClickArea(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Row(
+              children: [
+                _buildCoinIcon(),
+                const SizedBox(width: 16),
+                _buildSelectedItem(context),
+              ],
+            ),
+            ArDriveIcons.chevronDown(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  ArDriveIcon _buildCoinIcon() {
+    if (_selectedMethod == UploadMethod.ar) {
+      return ArDriveIcons.arweaveCoin();
+    } else {
+      return ArDriveIcons.turboCoin(
+        size: 28,
+      );
+    }
+  }
+
+  ArDriveDropdownItem _buildDropdownItem(
+      BuildContext context, UploadMethod method) {
+    final typography = ArDriveTypographyNew.of(context);
+
+    String text;
+
+    if (method == UploadMethod.ar) {
+      text = 'Wallet Balance';
+    } else {
+      text = 'Turbo Balance';
+    }
+
+    return ArDriveDropdownItem(
+      content: SizedBox(
+        width: 164,
+        height: 45,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                text,
+                style: typography.paragraphLarge(
+                  fontWeight: ArFontWeight.semiBold,
+                ),
+              ),
+              if (_selectedMethod == method)
+                ArDriveIcons.checkmark(
+                  size: 16,
+                )
+            ],
+          ),
+        ),
+      ),
+      onClick: () {
+        setState(() {
+          _selectedMethod = method;
+          if (method == UploadMethod.ar) {
+            widget.onArSelect();
+          } else {
+            widget.onTurboSelect();
+          }
+        });
+      },
+    );
+  }
+
+  Widget _buildSelectedItem(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    if (_selectedMethod == UploadMethod.ar) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Cost: ${winstonToAr(widget.uploadMethodInfo.costEstimateAr.totalCost)} AR',
+            style: typography.paragraphLarge(
+              fontWeight: ArFontWeight.semiBold,
+            ),
+          ),
+          Text(
+            'Payment Method: Wallet Balance: ${widget.uploadMethodInfo.arBalance} AR',
+            style: typography.paragraphSmall(
+              color: colorTokens.textLow,
+            ),
+          ),
+        ],
+      );
+    } else {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Cost: ${winstonToAr(widget.uploadMethodInfo.costEstimateTurbo!.totalCost)} Credits',
+            style: typography.paragraphLarge(
+              fontWeight: ArFontWeight.semiBold,
+            ),
+          ),
+          Text(
+            'Payment Method: Turbo Credits: ${widget.uploadMethodInfo.turboCredits} Credits',
+            style: typography.paragraphSmall(
+              color: colorTokens.textLow,
+            ),
+          ),
+        ],
+      );
+    }
   }
 
   Widget _buildContent(BuildContext context) {
@@ -53,13 +201,13 @@ class PaymentMethodSelector extends StatelessWidget {
             switch (index) {
               case 0:
                 if (value) {
-                  onArSelect();
+                  widget.onArSelect();
                 }
                 break;
 
               case 1:
                 if (value) {
-                  onTurboSelect();
+                  widget.onTurboSelect();
                 }
                 break;
             }
@@ -67,34 +215,35 @@ class PaymentMethodSelector extends StatelessWidget {
           options: [
             // FIXME: rename to RadioButtonOption
             RadioButtonOptions(
-              value: uploadMethodInfo.uploadMethod == UploadMethod.ar,
+              value: widget.uploadMethodInfo.uploadMethod == UploadMethod.ar,
               // TODO: Localization
               text:
-                  'Cost: ${winstonToAr(uploadMethodInfo.costEstimateAr.totalCost)} AR',
-              textStyle: useNewArDriveUI
+                  'Cost: ${winstonToAr(widget.uploadMethodInfo.costEstimateAr.totalCost)} AR',
+              textStyle: widget.useNewArDriveUI
                   ? typography.paragraphLarge(
                       fontWeight: ArFontWeight.bold,
                     )
                   : ArDriveTypography.body.buttonLargeBold(),
             ),
-            if (uploadMethodInfo.costEstimateTurbo != null &&
-                uploadMethodInfo.isTurboUploadPossible)
+            if (widget.uploadMethodInfo.costEstimateTurbo != null &&
+                widget.uploadMethodInfo.isTurboUploadPossible)
               RadioButtonOptions(
-                value: uploadMethodInfo.uploadMethod == UploadMethod.turbo,
+                value:
+                    widget.uploadMethodInfo.uploadMethod == UploadMethod.turbo,
                 // TODO: Localization
-                text: uploadMethodInfo.hasNoTurboBalance
+                text: widget.uploadMethodInfo.hasNoTurboBalance
                     ? ''
-                    : 'Cost: ${winstonToAr(uploadMethodInfo.costEstimateTurbo!.totalCost)} Credits',
-                textStyle: useNewArDriveUI
+                    : 'Cost: ${winstonToAr(widget.uploadMethodInfo.costEstimateTurbo!.totalCost)} Credits',
+                textStyle: widget.useNewArDriveUI
                     ? typography.paragraphLarge(
                         color: colorTokens.textHigh,
                         fontWeight: ArFontWeight.bold)
                     : ArDriveTypography.body.buttonLargeBold(),
-                content: uploadMethodInfo.hasNoTurboBalance
+                content: widget.uploadMethodInfo.hasNoTurboBalance
                     ? GestureDetector(
                         onTap: () {
                           showTurboTopupModal(context, onSuccess: () {
-                            onTurboTopupSucess();
+                            widget.onTurboTopupSucess();
                           });
                         },
                         child: ArDriveClickArea(
@@ -104,7 +253,7 @@ class PaymentMethodSelector extends StatelessWidget {
                                 // TODO: use text with multiple styles
                                 TextSpan(
                                   text: 'Use Turbo Credits', // TODO: localize
-                                  style: useNewArDriveUI
+                                  style: widget.useNewArDriveUI
                                       ? typography.paragraphLarge(
                                           color: colorTokens.textMid,
                                           fontWeight: ArFontWeight.bold,
@@ -119,7 +268,7 @@ class PaymentMethodSelector extends StatelessWidget {
                                 TextSpan(
                                   text:
                                       ' for faster uploads.', // TODO: localize
-                                  style: useNewArDriveUI
+                                  style: widget.useNewArDriveUI
                                       ? typography.paragraphLarge(
                                           color: colorTokens.textMid,
                                           fontWeight: ArFontWeight.bold,
@@ -149,9 +298,9 @@ class PaymentMethodSelector extends StatelessWidget {
                 child: Text(
                   index == 0
                       // TODO: localize
-                      ? 'Wallet Balance: ${uploadMethodInfo.arBalance} AR'
-                      : 'Turbo Balance: ${uploadMethodInfo.turboCredits} Credits',
-                  style: useNewArDriveUI
+                      ? 'Wallet Balance: ${widget.uploadMethodInfo.arBalance} AR'
+                      : 'Turbo Balance: ${widget.uploadMethodInfo.turboCredits} Credits',
+                  style: widget.useNewArDriveUI
                       ? typography.paragraphNormal(
                           color: colorTokens.textLow,
                           fontWeight: ArFontWeight.semiBold,
@@ -174,13 +323,13 @@ class PaymentMethodSelector extends StatelessWidget {
   Widget _getInsufficientBalanceMessage({
     required BuildContext context,
   }) {
-    if (uploadMethodInfo.uploadMethod == UploadMethod.turbo &&
-        !uploadMethodInfo.sufficentCreditsBalance &&
-        uploadMethodInfo.sufficientArBalance) {
+    if (widget.uploadMethodInfo.uploadMethod == UploadMethod.turbo &&
+        !widget.uploadMethodInfo.sufficentCreditsBalance &&
+        widget.uploadMethodInfo.sufficientArBalance) {
       return GestureDetector(
         onTap: () {
           showTurboTopupModal(context, onSuccess: () {
-            onTurboTopupSucess();
+            widget.onTurboTopupSucess();
           });
         },
         child: ArDriveClickArea(
@@ -217,20 +366,20 @@ class PaymentMethodSelector extends StatelessWidget {
           ),
         ),
       );
-    } else if (uploadMethodInfo.uploadMethod == UploadMethod.ar &&
-        !uploadMethodInfo.sufficientArBalance) {
+    } else if (widget.uploadMethodInfo.uploadMethod == UploadMethod.ar &&
+        !widget.uploadMethodInfo.sufficientArBalance) {
       return Text(
         'Insufficient AR balance for purchase.',
         style: ArDriveTypography.body.captionBold(
           color: ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
         ),
       );
-    } else if (!uploadMethodInfo.sufficentCreditsBalance &&
-        !uploadMethodInfo.sufficientArBalance) {
+    } else if (!widget.uploadMethodInfo.sufficentCreditsBalance &&
+        !widget.uploadMethodInfo.sufficientArBalance) {
       return GestureDetector(
         onTap: () {
           showTurboTopupModal(context, onSuccess: () {
-            onTurboTopupSucess();
+            widget.onTurboTopupSucess();
           });
         },
         child: ArDriveClickArea(

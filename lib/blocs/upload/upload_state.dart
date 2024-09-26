@@ -105,6 +105,7 @@ class UploadReady extends UploadState {
   final bool showArnsNameSelection;
   final bool loadingArNSNames;
   final bool loadingArNSNamesError;
+  final bool arnsCheckboxChecked;
 
   final bool isArConnect;
 
@@ -120,6 +121,7 @@ class UploadReady extends UploadState {
     required this.showArnsNameSelection,
     this.loadingArNSNames = false,
     this.loadingArNSNamesError = false,
+    required this.arnsCheckboxChecked,
   });
 
   // copyWith
@@ -137,6 +139,7 @@ class UploadReady extends UploadState {
     bool? showArnsNameSelection,
     bool? loadingArNSNames,
     bool? loadingArNSNamesError,
+    bool? arnsCheckboxChecked,
   }) {
     return UploadReady(
       loadingArNSNames: loadingArNSNames ?? this.loadingArNSNames,
@@ -152,6 +155,7 @@ class UploadReady extends UploadState {
           showArnsNameSelection ?? this.showArnsNameSelection,
       loadingArNSNamesError:
           loadingArNSNamesError ?? this.loadingArNSNamesError,
+      arnsCheckboxChecked: arnsCheckboxChecked ?? this.arnsCheckboxChecked,
     );
   }
 
@@ -163,6 +167,7 @@ class UploadReady extends UploadState {
         loadingArNSNamesError,
         loadingArNSNames,
         showArnsCheckbox,
+        arnsCheckboxChecked,
       ];
 
   @override
