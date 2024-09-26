@@ -642,7 +642,6 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> startUploadPreparation({
     bool isRetryingToPayWithTurbo = false,
   }) async {
-    await Future.delayed(const Duration(seconds: 5));
     _arnsRepository.getAntRecordsForWallet(_auth.currentUser.walletAddress);
 
     _files
