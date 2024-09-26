@@ -27,6 +27,7 @@ import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/dev_tools/shortcut_handler.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
+import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
@@ -45,7 +46,6 @@ import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
 import 'package:ardrive/utils/filesize.dart';
-import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/mobile_screen_orientation.dart';
 import 'package:ardrive/utils/mobile_status_bar.dart';
@@ -967,7 +967,7 @@ class ArDriveItemListTile extends StatelessWidget {
                       ],
                       Flexible(
                         child: Text(
-                          'Last updated: ${formatDateToUtcString(item.lastUpdated)}',
+                          'Last updated: ${yMMdDateFormatter.format(item.lastUpdated)}',
                           style: ArDriveTypography.body.xSmallRegular(
                             color: ArDriveTheme.of(context)
                                 .themeData
@@ -1382,7 +1382,7 @@ class ArDriveGridItem extends StatelessWidget {
                               // last updated
                               Flexible(
                                 child: Text(
-                                  '${appLocalizationsOf(context).lastUpdated}: ${formatDateToUtcString(item.lastUpdated)}',
+                                  '${appLocalizationsOf(context).lastUpdated}: ${yMMdDateFormatter.format(item.lastUpdated)}',
                                   style: ArDriveTypography.body
                                       .xSmallRegular()
                                       .copyWith(
