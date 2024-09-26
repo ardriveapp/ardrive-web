@@ -106,6 +106,7 @@ class UploadReady extends UploadState {
   final bool loadingArNSNames;
   final bool loadingArNSNamesError;
   final bool arnsCheckboxChecked;
+  final int totalSize;
 
   final bool isArConnect;
 
@@ -122,6 +123,7 @@ class UploadReady extends UploadState {
     this.loadingArNSNames = false,
     this.loadingArNSNamesError = false,
     required this.arnsCheckboxChecked,
+    required this.totalSize,
   });
 
   // copyWith
@@ -140,6 +142,7 @@ class UploadReady extends UploadState {
     bool? loadingArNSNames,
     bool? loadingArNSNamesError,
     bool? arnsCheckboxChecked,
+    int? totalSize,
   }) {
     return UploadReady(
       loadingArNSNames: loadingArNSNames ?? this.loadingArNSNames,
@@ -156,6 +159,7 @@ class UploadReady extends UploadState {
       loadingArNSNamesError:
           loadingArNSNamesError ?? this.loadingArNSNamesError,
       arnsCheckboxChecked: arnsCheckboxChecked ?? this.arnsCheckboxChecked,
+      totalSize: totalSize ?? this.totalSize,
     );
   }
 
