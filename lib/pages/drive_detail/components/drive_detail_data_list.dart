@@ -200,8 +200,8 @@ Widget _buildDataListContent(
           name: row.name,
           typography: typography,
           size: row.size == null ? '-' : filesize(row.size),
-          lastUpdated: yMMdDateFormatter.format(row.lastUpdated),
-          dateCreated: yMMdDateFormatter.format(row.dateCreated),
+          lastUpdated: row.lastUpdated,
+          dateCreated: row.dateCreated,
           dataTableItem: row,
           license: row.licenseType == null
               ? ''
