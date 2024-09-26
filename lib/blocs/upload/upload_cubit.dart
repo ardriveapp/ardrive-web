@@ -307,7 +307,7 @@ class UploadCubit extends Cubit<UploadState> {
   Future<int> _getTotalSize() async {
     int size = 0;
 
-    for (final file in files) {
+    for (final file in _files) {
       size += await file.ioFile.length;
     }
 
@@ -654,7 +654,8 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> startUploadPreparation({
     bool isRetryingToPayWithTurbo = false,
   }) async {
-    _arnsRepository.getAntRecordsForWallet(_auth.currentUser.walletAddress);
+    final walletAddress = await _auth.getWalletAddress();
+    _arnsRepository.getAntRecordsForWallet(walletAddress!);
 
     _files
         .removeWhere((file) => filesNamesToExclude.contains(file.ioFile.name));
