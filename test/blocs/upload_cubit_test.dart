@@ -352,13 +352,13 @@ void main() {
         'should found the conflicting files correctly and set isAllFilesConflicting to true'
         ' when all files are conflicting',
         build: () {
-          return getUploadCubitInstanceWith(tAllConflictingFiles);
-        },
-        act: (cubit) async {
           when(() => mockArDriveAuth.getWalletAddress())
               .thenAnswer((invocation) => Future.value(tWalletAddress));
           when(() => mockArnsRepository.getAntRecordsForWallet(tWalletAddress!))
               .thenAnswer((invocation) => Future.value([]));
+          return getUploadCubitInstanceWith(tAllConflictingFiles);
+        },
+        act: (cubit) async {
           await cubit.startUploadPreparation();
           await cubit.checkConflictingFiles();
         },

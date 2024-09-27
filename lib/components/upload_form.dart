@@ -1301,7 +1301,7 @@ class _UploadReadyWidget extends StatelessWidget {
                   ],
                 ),
               ),
-              Divider(),
+              const Divider(),
               if (state.paymentInfo.isFreeThanksToTurbo) ...[
                 const SizedBox(height: 8),
                 Text(
@@ -1317,6 +1317,7 @@ class _UploadReadyWidget extends StatelessWidget {
                 RepositoryProvider.value(
                   value: context.read<ArDriveUploadPreparationManager>(),
                   child: UploadPaymentMethodView(
+                    useDropdown: true,
                     onError: () {
                       context.read<UploadCubit>().emitErrorFromPreparation();
                     },

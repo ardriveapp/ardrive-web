@@ -492,7 +492,7 @@ class ArDriveIcons {
       );
 
   static ArDriveIcon arweaveCoin({double? size, Color? color}) => ArDriveIcon(
-        icon: ArDriveIconsData.arweave_coin,
+        icon: ArDriveIconsData.arweave,
         size: size,
         color: color,
       );
