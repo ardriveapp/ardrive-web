@@ -27,6 +27,7 @@ class ArDriveScrollBar extends StatelessWidget {
               trackColor: MaterialStateProperty.all<Color>(
                 isVisible ? grey.shade400 : Colors.transparent,
               ), // set the color of the track
+              thickness: MaterialStateProperty.all<double>(2.0),
             ),
           ),
       child: isVisible
@@ -34,6 +35,7 @@ class ArDriveScrollBar extends StatelessWidget {
               interactive: true,
               thumbVisibility: alwaysVisible,
               controller: controller,
+              thickness: 2.0,
               child: child,
             )
           : child,

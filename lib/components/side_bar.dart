@@ -273,6 +273,7 @@ class _AppSideBarState extends State<AppSideBar> {
 
   Widget _buildAccordion(DrivesLoadSuccess state, bool isMobile) {
     final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return ArDriveAccordion(
       contentPadding: isMobile ? const EdgeInsets.all(4) : null,
@@ -285,7 +286,8 @@ class _AppSideBarState extends State<AppSideBar> {
             Text(
               appLocalizationsOf(context).publicDrives,
               style: typography.paragraphNormal(
-                fontWeight: ArFontWeight.bold,
+                fontWeight: ArFontWeight.semiBold,
+                color: colorTokens.textHigh,
               ),
             ),
             state.userDrives
@@ -313,7 +315,8 @@ class _AppSideBarState extends State<AppSideBar> {
             Text(
               appLocalizationsOf(context).privateDrives,
               style: typography.paragraphNormal(
-                fontWeight: ArFontWeight.bold,
+                fontWeight: ArFontWeight.semiBold,
+                color: colorTokens.textHigh,
               ),
             ),
             state.userDrives
@@ -336,7 +339,7 @@ class _AppSideBarState extends State<AppSideBar> {
             Text(
               appLocalizationsOf(context).sharedDrives,
               style: typography.paragraphNormal(
-                fontWeight: ArFontWeight.bold,
+                fontWeight: ArFontWeight.semiBold,
               ),
             ),
             state.sharedDrives
@@ -538,7 +541,7 @@ class DriveListTile extends StatelessWidget {
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.only(
-          left: 32.0,
+          left: 10.0,
           right: 8.0,
         ),
         child: Row(
@@ -552,7 +555,7 @@ class DriveListTile extends StatelessWidget {
                   drive.name,
                   style: isSelected
                       ? typography.paragraphNormal(
-                          fontWeight: ArFontWeight.semiBold,
+                          fontWeight: ArFontWeight.bold,
                         )
                       : typography.paragraphNormal(
                           fontWeight: ArFontWeight.semiBold,
