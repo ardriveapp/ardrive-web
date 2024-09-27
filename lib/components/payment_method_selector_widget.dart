@@ -87,6 +87,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
     } else {
       return ArDriveIcons.turboCoin(
         size: 28,
+        color: ArDriveTheme.of(context).themeData.colorTokens.containerRed,
       );
     }
   }
