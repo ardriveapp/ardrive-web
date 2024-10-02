@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
@@ -30,7 +31,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pst/pst.dart';
 
 import '../core/upload/uploader_test.dart';
-import '../manifest/domain/manifest_repository_test.dart';
 import '../test_utils/utils.dart';
 import 'drives_cubit_test.dart';
 
@@ -56,6 +56,8 @@ class MockUploadRepository extends Mock implements UploadRepository {}
 
 class MockArDriveUploadPreparationManager extends Mock
     implements ArDriveUploadPreparationManager {}
+
+class MockArnsRepository extends Mock implements ARNSRepository {}
 
 // TODO(thiagocarvalhodev): Test the case of remove files before download when pass ConflictingFileActions.SKIP.
 // TODO: Test startUpload
@@ -350,12 +352,13 @@ void main() {
         'should found the conflicting files correctly and set isAllFilesConflicting to true'
         ' when all files are conflicting',
         build: () {
+          when(() => mockArDriveAuth.getWalletAddress())
+              .thenAnswer((invocation) => Future.value(tWalletAddress));
+          when(() => mockArnsRepository.getAntRecordsForWallet(tWalletAddress!))
+              .thenAnswer((invocation) => Future.value([]));
           return getUploadCubitInstanceWith(tAllConflictingFiles);
         },
         act: (cubit) async {
-          when(() => mockArnsRepository.getAntRecordsForWallet(any(),
-                  update: any(named: 'update')))
-              .thenAnswer((invocation) => Future.value([]));
           await cubit.startUploadPreparation();
           await cubit.checkConflictingFiles();
         },

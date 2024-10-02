@@ -61,7 +61,13 @@ class ArDriveModalNew extends StatelessWidget {
             SizedBox(
               height: 6,
               child: Container(
-                color: colorTokens.containerRed,
+                decoration: BoxDecoration(
+                  color: colorTokens.containerRed,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(modalBorderRadius),
+                    topRight: Radius.circular(modalBorderRadius),
+                  ),
+                ),
               ),
             ),
             Padding(

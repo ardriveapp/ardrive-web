@@ -159,8 +159,6 @@ class UploadCubit extends Cubit<UploadState> {
     _selectedAntRecord = antRecord;
     _selectedUndername = undername;
 
-    logger.d('Selected undername: $_selectedUndername');
-
     final readyState = (state as UploadReady).copyWith(
       params: (state as UploadReady).params.copyWith(
             arnsUnderName: _getSelectedUndername(),
@@ -172,6 +170,11 @@ class UploadCubit extends Cubit<UploadState> {
 
   void changeShowArnsNameSelection(bool showArnsNameSelection) {
     _showArnsNameSelectionCheckBoxValue = showArnsNameSelection;
+
+    if (state is UploadReady) {
+      final readyState = state as UploadReady;
+      emit(readyState.copyWith(arnsCheckboxChecked: showArnsNameSelection));
+    }
   }
 
   void showArnsNameSelection(UploadReady readyState) {
@@ -241,6 +244,7 @@ class UploadCubit extends Cubit<UploadState> {
             showArnsCheckbox: showArnsCheckbox,
             showArnsNameSelection: false,
             loadingArNSNames: true,
+            arnsCheckboxChecked: _showArnsNameSelectionCheckBoxValue,
             totalSize: await _getTotalSize(),
           ),
         );
@@ -278,6 +282,7 @@ class UploadCubit extends Cubit<UploadState> {
             isArConnect: (state as UploadReadyToPrepare).isArConnect,
             showArnsCheckbox: showArnsCheckbox,
             showArnsNameSelection: false,
+            arnsCheckboxChecked: _showArnsNameSelectionCheckBoxValue,
             totalSize: await _getTotalSize(),
           ),
         );
@@ -649,8 +654,8 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> startUploadPreparation({
     bool isRetryingToPayWithTurbo = false,
   }) async {
-    await Future.delayed(const Duration(seconds: 5));
-    _arnsRepository.getAntRecordsForWallet(_auth.currentUser.walletAddress);
+    final walletAddress = await _auth.getWalletAddress();
+    _arnsRepository.getAntRecordsForWallet(walletAddress!);
 
     _files
         .removeWhere((file) => filesNamesToExclude.contains(file.ioFile.name));
