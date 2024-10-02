@@ -302,7 +302,7 @@ class UploadCubit extends Cubit<UploadState> {
   Future<int> _getTotalSize() async {
     int size = 0;
 
-    for (final file in files) {
+    for (final file in _files) {
       size += await file.ioFile.length;
     }
 
