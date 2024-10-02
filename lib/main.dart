@@ -38,7 +38,6 @@ import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/mobile_screen_orientation.dart';
 import 'package:ardrive/utils/mobile_status_bar.dart';
-import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -78,21 +77,25 @@ void main() async {
   await runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
 
-    await _initializeServices();
+    await initializeServices();
 
-    await _startApp();
+    await startApp();
   }, (error, stackTrace) async {
     logger.e('Error caught.', error, stackTrace);
     logger.d('Error: ${error.toString()}');
   });
 }
 
-Future<void> _startApp() async {
+Future<void> startApp() async {
+  logger.d('Starting app');
+
   final flavor = await configService.loadAppFlavor();
 
   flavor == Flavor.staging || flavor == Flavor.production
       ? _runWithSentryLogging()
       : _runWithoutLogging();
+
+  logger.d('App started');
 }
 
 Future<void> _runWithoutLogging() async {
@@ -105,25 +108,37 @@ Future<void> _runWithSentryLogging() async {
   runApp(const App());
 }
 
-Future<void> _initializeServices() async {
+Future<void> initializeServices() async {
+  logger.d('Initializing services');
+
   final localStore = await LocalKeyValueStore.getInstance();
 
+  logger.d('Loading app info');
+
   await AppInfoServices().loadAppInfo();
+
+  logger.d('Configuring services');
 
   configService = ConfigService(
     appFlavors: AppFlavors(EnvFetcher()),
     configFetcher: ConfigFetcher(localStore: localStore),
   );
 
+  logger.d('Configuring mobile status bar');
   MobileStatusBar.show();
   MobileScreenOrientation.lockInPortraitUp();
   ArDriveMobileDownloader.initialize();
 
+  logger.d('Configuring system UI overlay style');
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
   );
 
+  logger.d('Loading config');
+
   await configService.loadConfig();
+
+  logger.d('Configuring arweave');
 
   final config = configService.config;
 
@@ -155,6 +170,8 @@ Future<void> _initializeServices() async {
   if (kIsWeb) {
     refreshHTMLPageAtInterval(const Duration(hours: 12));
   }
+
+  logger.d('Services initialized');
 }
 
 class App extends StatefulWidget {
@@ -172,9 +189,9 @@ class AppState extends State<App> {
   void initState() {
     super.initState();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      preCacheLoginAssets(context);
-    });
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   preCacheLoginAssets(context);
+    // });
   }
 
   @override

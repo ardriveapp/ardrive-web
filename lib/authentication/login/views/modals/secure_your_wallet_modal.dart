@@ -103,6 +103,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                       fontWeight: ArFontWeight.semiBold)),
               const SizedBox(height: 8),
               ArDriveTextFieldNew(
+                key: const ValueKey('password'),
                 controller: _passwordController,
                 hintText: 'Enter your password',
                 showObfuscationToggle: true,
@@ -136,6 +137,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                       fontWeight: ArFontWeight.semiBold)),
               const SizedBox(height: 8),
               ArDriveTextFieldNew(
+                  key: const ValueKey('confirmPassword'),
                   controller: _confirmPasswordController,
                   hintText: 'Re-enter your password',
                   showObfuscationToggle: true,
