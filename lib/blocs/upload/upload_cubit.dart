@@ -241,6 +241,7 @@ class UploadCubit extends Cubit<UploadState> {
             showArnsCheckbox: showArnsCheckbox,
             showArnsNameSelection: false,
             loadingArNSNames: true,
+            totalSize: await _getTotalSize(),
           ),
         );
 
@@ -277,6 +278,7 @@ class UploadCubit extends Cubit<UploadState> {
             isArConnect: (state as UploadReadyToPrepare).isArConnect,
             showArnsCheckbox: showArnsCheckbox,
             showArnsNameSelection: false,
+            totalSize: await _getTotalSize(),
           ),
         );
       }
@@ -295,6 +297,16 @@ class UploadCubit extends Cubit<UploadState> {
         );
       }
     }
+  }
+
+  Future<int> _getTotalSize() async {
+    int size = 0;
+
+    for (final file in files) {
+      size += await file.ioFile.length;
+    }
+
+    return size;
   }
 
   void initialScreenNext({required LicenseCategory licenseCategory}) {
