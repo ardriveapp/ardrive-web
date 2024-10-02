@@ -284,7 +284,7 @@ class _AppSideBarState extends State<AppSideBar> {
           ArDriveAccordionItem(
             isExpanded: true,
             Text(
-              appLocalizationsOf(context).publicDrives,
+              appLocalizationsOf(context).publicDrives.toUpperCase(),
               style: typography.paragraphNormal(
                 fontWeight: ArFontWeight.semiBold,
                 color: colorTokens.textHigh,
@@ -313,7 +313,7 @@ class _AppSideBarState extends State<AppSideBar> {
           ArDriveAccordionItem(
             isExpanded: true,
             Text(
-              appLocalizationsOf(context).privateDrives,
+              appLocalizationsOf(context).privateDrives.toUpperCase(),
               style: typography.paragraphNormal(
                 fontWeight: ArFontWeight.semiBold,
                 color: colorTokens.textHigh,
@@ -337,7 +337,7 @@ class _AppSideBarState extends State<AppSideBar> {
           ArDriveAccordionItem(
             isExpanded: true,
             Text(
-              appLocalizationsOf(context).sharedDrives,
+              appLocalizationsOf(context).sharedDrives.toUpperCase(),
               style: typography.paragraphNormal(
                 fontWeight: ArFontWeight.semiBold,
               ),
@@ -555,7 +555,7 @@ class DriveListTile extends StatelessWidget {
                   drive.name,
                   style: isSelected
                       ? typography.paragraphNormal(
-                          fontWeight: ArFontWeight.bold,
+                          fontWeight: ArFontWeight.semiBold,
                         )
                       : typography.paragraphNormal(
                           fontWeight: ArFontWeight.semiBold,
