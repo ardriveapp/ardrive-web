@@ -55,7 +55,7 @@ jobs:
           flutter drive \
             --driver=test_driver/integration_test.dart \
             --target=integration_test/app_test.dart \
-            -d web-server --dart-define=integration-test=true
+            -d web-server --browser-name=safari --dart-define=integration-test=true
 
   build-web:
     needs: pre-build
