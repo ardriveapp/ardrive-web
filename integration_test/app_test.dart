@@ -1,4 +1,5 @@
 import 'package:ardrive/main.dart';
+import 'package:ardrive/pages/no_drives/no_drives_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -6,133 +7,156 @@ import 'package:integration_test/integration_test.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  // group('end-to-end test', () {
-  testWidgets('build and run', (tester) async {
-    await initializeServices();
+  group('OnBoarding Flow', () {
+    testWidgets(
+        'should complete the onboarding flow successfully creating a new wallet',
+        (tester) async {
+      /// Initialize services
+      await initializeServices();
 
-    await tester.pumpWidget(const App());
+      /// Pump the widget
+      await tester.pumpWidget(const App(
+        runningFromFlutterTest: true,
+      ));
 
-    for (int i = 0; i < 3; i++) {
-      await tester.pump(Duration(seconds: 1));
-    }
+      /// Wait for the app to load
+      await _pumpAndUpdate(tester, 3);
 
-    final signUpButton = find.text('Sign Up');
+      /// Find the sign up button and tap it
+      final signUpButton = find.text('Sign Up');
+      expect(signUpButton, findsOneWidget);
+      await tester.tap(signUpButton);
 
-    await tester.tap(signUpButton);
+      /// Wait for the next page to load
+      await _pumpAndUpdate(tester, 1);
 
-    for (int i = 0; i < 1; i++) {
-      await tester.pump(Duration(seconds: 1));
-    }
+      /// Find the create a wallet button and tap it
+      final createAWalletButton = find.text('Create a Wallet');
+      expect(createAWalletButton, findsOneWidget);
 
-    final createAWalletButton = find.text('Create a Wallet');
+      /// Tap the create a wallet button
+      await tester.tap(createAWalletButton);
 
-    await tester.tap(createAWalletButton);
+      /// Wait for the wallet creation page to load
+      await _pumpAndUpdate(tester, 25, breakCondition: () {
+        try {
+          final passwordField = find.byKey(const Key('password'));
+          expect(passwordField, findsOneWidget);
+          return true;
+        } catch (e) {
+          return false;
+        }
+      });
 
-    for (int i = 0; i < 20; i++) {
-      await tester.pump(Duration(seconds: 1));
-    }
+      /// Find the password and confirm password fields and enter the password
+      final ardriveTextFieldPassword = find.byKey(const Key('password'));
+      final ardriveTextFieldConfirmPassword =
+          find.byKey(const Key('confirmPassword'));
 
-    final ardriveTextFieldPassword = find.byKey(const Key('password'));
-    final ardriveTextFieldConfirmPassword =
-        find.byKey(const Key('confirmPassword'));
+      /// Check if the password and confirm password fields are found
+      expect(ardriveTextFieldPassword, findsOneWidget);
+      expect(ardriveTextFieldConfirmPassword, findsOneWidget);
 
-    await tester.enterText(ardriveTextFieldPassword, '12345678');
-    await tester.enterText(ardriveTextFieldConfirmPassword, '12345678');
+      /// Enter the password and confirm password
+      await tester.enterText(ardriveTextFieldPassword, '12345678');
+      await tester.enterText(ardriveTextFieldConfirmPassword, '12345678');
 
-    final continueButton = find.text('Continue');
+      await _pumpAndUpdate(tester, 0);
 
-    for (int i = 0; i < 3; i++) {
-      await tester.pump(const Duration(seconds: 1));
-    }
+      /// Find the continue button and tap it
+      final continueButton = find.text('Continue');
+      expect(continueButton, findsOneWidget);
 
-    await tester.tap(continueButton);
+      /// Tap the continue button
+      await tester.tap(continueButton);
 
-    for (int i = 0; i < 5; i++) {
-      await tester.pump(const Duration(seconds: 1));
-    }
+      /// Wait for the next page to load
+      await _pumpAndUpdate(tester, 3);
 
-    final nextButton = find.text('Next');
+      /// On Boarding Pages
+      /// Page 1
+      /// Find the next button and tap it
+      await tester.tap(continueButton);
 
-    await tester.tap(nextButton);
+      await _pumpAndUpdate(tester, 3);
+      final nextButton = find.text('Next');
 
-    for (int i = 0; i < 5; i++) {
-      await tester.pump(Duration(seconds: 1));
-    }
+      await tester.tap(nextButton);
 
-    final nextButton2 = find.text('Next');
+      await _pumpAndUpdate(tester, 3);
 
-    await tester.tap(nextButton2);
+      /// Page 2
 
-    for (int i = 0; i < 5; i++) {
-      await tester.pump(Duration(seconds: 1));
-    }
+      final nextButton2 = find.text('Next');
 
-    final getYourWallet = find.text('Get your wallet');
+      await tester.tap(nextButton2);
 
-    await tester.tap(getYourWallet);
+      await _pumpAndUpdate(tester, 3);
 
-    for (int i = 0; i < 5; i++) {
-      await tester.pump(Duration(seconds: 1));
-    }
+      /// Page 3 - last one
+      final getYourWallet = find.text('Get your wallet');
 
-    final copyWalletButton = find.text('Copy Seed Phrase');
+      expect(getYourWallet, findsOneWidget);
 
-    await tester.tap(copyWalletButton);
+      /// Tap the get your wallet button
+      await tester.tap(getYourWallet);
 
-    for (int i = 0; i < 3; i++) {
-      await tester.pump(Duration(seconds: 1));
-    }
+      await _pumpAndUpdate(tester, 3);
 
-    final downloadKeyFile = find.text('Download Keyfile');
+      /// Wallet Created Page
+      ///
+      /// Find the copy seed phrase button and tap it
+      final copyWalletButton = find.text('Copy Seed Phrase');
+      expect(copyWalletButton, findsOneWidget);
+      await tester.tap(copyWalletButton);
 
-    await tester.tap(downloadKeyFile);
+      await _pumpAndUpdate(tester, 1);
 
-    for (int i = 0; i < 3; i++) {
-      await tester.pump(const Duration(seconds: 1));
-    }
+      /// Download Keyfile Page
+      ///
+      /// Find the download keyfile button and tap it
+      final downloadKeyFile = find.text('Download Keyfile');
+      expect(downloadKeyFile, findsOneWidget);
+      await tester.tap(downloadKeyFile);
 
-    final checkbox = find.byType(Checkbox);
+      await _pumpAndUpdate(tester, 1);
 
-    await tester.tap(checkbox);
+      /// Find the checkbox and tap it
+      final checkbox = find.byType(Checkbox);
+      expect(checkbox, findsOneWidget);
 
-    for (int i = 0; i < 2; i++) {
-      await tester.pump(Duration(seconds: 1));
-    }
+      await tester.tap(checkbox);
 
-    final goToApp = find.text('Go to App');
+      await _pumpAndUpdate(tester, 1);
 
-    await tester.tap(goToApp);
+      /// The Go to App button should be enabled
+      final goToApp = find.text('Go to App');
+      expect(goToApp, findsOneWidget);
 
-    for (int i = 0; i < 10; i++) {
-      await tester.pump(Duration(seconds: 1));
-    }
+      /// Tap the go to app button
+      await tester.tap(goToApp);
+      await _pumpAndUpdate(tester, 2);
 
-    // sleep(const Duration(seconds: 10));
+      final driveExplorerEmptyState = find.byType(NoDrivesPage);
+      expect(driveExplorerEmptyState, findsOneWidget);
 
-    // return TestAsyncUtils.guard(() async {
-    //   logger.d('Initializing services');
-
-    // await initializeServices();
-
-    //   logger.d('App loaded');
-
-    // await tester.pumpWidget(const App());
-    // });
-
-    // // Verify the counter starts at 0.
-    // expect(find.text('0'), findsOneWidget);
-
-    // // Finds the floating action button to tap on.
-    // final fab = find.byKey(const ValueKey('increment'));
-
-    // // Emulate a tap on the floating action button.
-    // await tester.tap(fab);
-
-    // // Trigger a frame.
-    // await tester.pumpAndSettle();
-
-    // // Verify the counter increments by 1.
-    // expect(find.text('1'), findsOneWidget);
+      /// finish the test
+      await tester.pumpAndSettle();
+    });
   });
-  // });
+}
+
+Future<void> _pumpAndUpdate(WidgetTester tester, int seconds,
+    {bool Function()? breakCondition}) async {
+  for (int i = 0; i < seconds; i++) {
+    for (int j = 0; j < 10; j++) {
+      if (breakCondition != null) {
+        if (breakCondition()) {
+          return;
+        }
+      }
+
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+  }
 }

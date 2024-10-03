@@ -17,6 +17,40 @@ jobs:
   pre-build:
     uses: ./.github/workflows/test.yml
 
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout code
+      - uses: actions/checkout@v3
+
+      # Install Flutter
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.7.10' # Specify your Flutter version
+
+      # Set up Chromedriver and Chrome
+      - uses: nanasess/setup-chromedriver@v2
+
+      # Start Xvfb and Chromedriver
+      - name: Start Xvfb and Chromedriver
+        run: |
+          export DISPLAY=:99
+          sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 &
+          chromedriver --port=4444 &
+          sleep 5 # Wait for Chromedriver to start
+
+      # Get Flutter dependencies
+      - name: Get Flutter dependencies
+        run: flutter pub get
+
+      # Run Flutter integration tests
+      - name: Run Flutter Integration Tests
+        run: |
+          flutter drive \
+            --driver=test_driver/integration_test.dart \
+            --target=integration_test/app_test.dart \
+            -d chrome --dart-define=integration-test=true
+
   build-web:
     needs: pre-build
     runs-on: ubuntu-latest

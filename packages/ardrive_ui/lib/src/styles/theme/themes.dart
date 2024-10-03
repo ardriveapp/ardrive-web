@@ -19,11 +19,13 @@ class ArDriveApp extends StatefulWidget {
     required this.builder,
     this.themeData,
     this.onThemeChanged,
+    this.updateThemeOnBrightnessChange = true,
   });
 
   final Widget Function(BuildContext context) builder;
   final ArDriveThemeData? themeData;
   final Function(ArDriveThemes)? onThemeChanged;
+  final bool updateThemeOnBrightnessChange;
 
   @override
   State<ArDriveApp> createState() => _ArDriveAppState();
@@ -44,33 +46,35 @@ class _ArDriveAppState extends State<ArDriveApp> {
   void initState() {
     super.initState();
 
-    // ignore: deprecated_member_use
-    var window = WidgetsBinding.instance.window;
-    // WidgetsBinding.instance.handlePlatformBrightnessChanged();
+    if (widget.updateThemeOnBrightnessChange) {
+      // ignore: deprecated_member_use
+      var window = WidgetsBinding.instance.window;
+      WidgetsBinding.instance.handlePlatformBrightnessChanged();
 
-    // window.onPlatformBrightnessChanged = () {
-    //   // This callback is called every time the brightness changes.
-    //   var brightness = window.platformBrightness;
+      window.onPlatformBrightnessChanged = () {
+        // This callback is called every time the brightness changes.
+        var brightness = window.platformBrightness;
 
-    //   setState(() {
-    //     _theme = brightness == Brightness.dark
-    //         ? ArDriveThemes.dark
-    //         : ArDriveThemes.light;
-    //   });
+        setState(() {
+          _theme = brightness == Brightness.dark
+              ? ArDriveThemes.dark
+              : ArDriveThemes.light;
+        });
 
-    //   widget.onThemeChanged?.call(_theme);
-    // };
+        widget.onThemeChanged?.call(_theme);
+      };
+    }
 
-    // switch (widget.themeData?.name) {
-    //   case 'ArDriveThemes.dark':
-    //     _theme = ArDriveThemes.dark;
-    //     break;
-    //   case 'ArDriveThemes.light':
-    //     _theme = ArDriveThemes.light;
-    //     break;
-    //   default:
-    //     _theme = ArDriveThemes.dark;
-    // }
+    switch (widget.themeData?.name) {
+      case 'ArDriveThemes.dark':
+        _theme = ArDriveThemes.dark;
+        break;
+      case 'ArDriveThemes.light':
+        _theme = ArDriveThemes.light;
+        break;
+      default:
+        _theme = ArDriveThemes.dark;
+    }
 
     _theme = ArDriveThemes.dark;
   }
