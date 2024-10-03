@@ -52,10 +52,10 @@ jobs:
       # Run Flutter integration tests
       - name: Run Flutter Integration Tests
         run: |
-          flutter drive
+          flutter drive \
             --driver=test_driver/integration_test.dart \
             --target=integration_test/app_test.dart \
-            web-server --release --browser-name=safari
+            -d web-server --dart-define=integration-test=true
 
   build-web:
     needs: pre-build
