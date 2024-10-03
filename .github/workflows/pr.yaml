@@ -38,7 +38,7 @@ jobs:
       - name: 🚀 Start Safari Driver
         run: |
           sudo safaridriver --enable
-          safaridriver --port 4444 &
+          safaridriver --port 4444
 
       - name: Install script_runner
         run: flutter pub global activate script_runner

@@ -34,6 +34,7 @@ import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
+import 'package:ardrive/utils/integration_tests_utils.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/mobile_screen_orientation.dart';
@@ -48,6 +49,7 @@ import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
+import 'package:drift/web.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -73,7 +75,7 @@ late ConfigService configService;
 late ArweaveService arweave;
 late TurboUploadService _turboUpload;
 late PaymentService _turboPayment;
-
+late Database _database;
 void main() async {
   await runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
@@ -110,6 +112,15 @@ Future<void> _runWithSentryLogging() async {
 }
 
 Future<void> initializeServices() async {
+  if (isIntegrationTest()) {
+    // final sqlite3 = await WasmSqlite3.loadFromUrl(Uri.parse('/sqlite3.wasm'));
+    _database = Database(WebDatabase(''));
+  } else {
+    _database = Database();
+  }
+
+  logger.d('Initializing services');
+
   logger.d('Initializing services');
 
   final localStore = await LocalKeyValueStore.getInstance();
@@ -410,7 +421,7 @@ class AppState extends State<App> {
             ),
           ),
         ),
-        RepositoryProvider<Database>(create: (_) => Database()),
+        RepositoryProvider<Database>(create: (_) => _database),
         RepositoryProvider<ProfileDao>(
             create: (context) => context.read<Database>().profileDao),
         RepositoryProvider<DriveDao>(

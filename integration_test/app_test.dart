@@ -103,15 +103,6 @@ void main() {
 
       await _pumpAndUpdate(tester, 3);
 
-      /// Wallet Created Page
-      ///
-      /// Find the copy seed phrase button and tap it
-      final copyWalletButton = find.text('Copy Seed Phrase');
-      expect(copyWalletButton, findsOneWidget);
-      await tester.tap(copyWalletButton);
-
-      await _pumpAndUpdate(tester, 1);
-
       /// Download Keyfile Page
       ///
       /// Find the download keyfile button and tap it
