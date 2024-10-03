@@ -18,7 +18,7 @@ jobs:
     uses: ./.github/workflows/test.yml
 
   integration-tests:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
 
       # Checkout
@@ -35,20 +35,10 @@ jobs:
           channel: ${{ env.FLUTTER_CHANNEL }}
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
-
-      # Install dependencies (if necessary)
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y libglu1-mesa xvfb
-
-      # Set up Chromedriver and Chrome
-      - uses: nanasess/setup-chromedriver@v2
-
-      # Start Xvfb and set DISPLAY environment variable
-      - name: Start Xvfb
+      - name: 🚀 Start Safari Driver
         run: |
-          export DISPLAY=:99
-          Xvfb :99 -screen 0 1920x1080x24 &
-          echo "DISPLAY=:99" >> $GITHUB_ENV
+          sudo safaridriver --enable
+          safaridriver --port 4444 &
 
       - name: Install script_runner
         run: flutter pub global activate script_runner
@@ -62,10 +52,10 @@ jobs:
       # Run Flutter integration tests
       - name: Run Flutter Integration Tests
         run: |
-          flutter drive \
+          flutter drive
             --driver=test_driver/integration_test.dart \
             --target=integration_test/app_test.dart \
-            -d chrome --dart-define=integration-test=true
+            web-server --release --browser-name=safari
 
   build-web:
     needs: pre-build
