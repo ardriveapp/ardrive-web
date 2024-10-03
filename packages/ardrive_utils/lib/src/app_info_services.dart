@@ -1,6 +1,3 @@
-import 'package:ardrive_utils/src/app_platform.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-
 class AppInfo {
   final String version;
   final String arfsVersion;
@@ -35,15 +32,15 @@ class AppInfoServices {
   AppInfo? _appInfo;
 
   Future<void> loadAppInfo() async {
-    final packageInfo = await PackageInfo.fromPlatform();
-    final appPlatform = AppPlatform.getPlatform().name;
+    // final packageInfo = await PackageInfo.fromPlatform();
+    // final appPlatform = AppPlatform.getPlatform().name;
 
-    _appInfo = AppInfo(
-      version: packageInfo.version,
-      appName: appName,
-      platform: appPlatform,
-      arfsVersion: arfsVersion,
-    );
+    // _appInfo = AppInfo(
+    //   version: packageInfo.version,
+    //   appName: appName,
+    //   platform: appPlatform,
+    //   arfsVersion: arfsVersion,
+    // );
   }
 }
 
