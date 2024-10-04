@@ -20,7 +20,7 @@ void main() {
       ));
 
       /// Wait for the app to load
-      await _pumpAndUpdate(tester, 3);
+      await _pumpAndUpdate(tester, 1);
 
       /// Find the sign up button and tap it
       final signUpButton = find.text('Sign Up');
@@ -38,7 +38,7 @@ void main() {
       await tester.tap(createAWalletButton);
 
       /// Wait for the wallet creation page to load
-      await _pumpAndUpdate(tester, 25, breakCondition: () {
+      await _pumpAndUpdate(tester, 100, breakCondition: () {
         try {
           final passwordField = find.byKey(const Key('password'));
           expect(passwordField, findsOneWidget);
@@ -57,15 +57,22 @@ void main() {
       expect(ardriveTextFieldPassword, findsOneWidget);
       expect(ardriveTextFieldConfirmPassword, findsOneWidget);
 
+      await _pumpAndUpdate(tester, 1);
+
       /// Enter the password and confirm password
       await tester.enterText(ardriveTextFieldPassword, '12345678');
+
+      await _pumpAndUpdate(tester, 1);
+
       await tester.enterText(ardriveTextFieldConfirmPassword, '12345678');
 
-      await _pumpAndUpdate(tester, 0);
+      await _pumpAndUpdate(tester, 1);
 
       /// Find the continue button and tap it
       final continueButton = find.text('Continue');
       expect(continueButton, findsOneWidget);
+
+      await _pumpAndUpdate(tester, 1);
 
       /// Tap the continue button
       await tester.tap(continueButton);
@@ -76,14 +83,11 @@ void main() {
       /// On Boarding Pages
       /// Page 1
       /// Find the next button and tap it
-      await tester.tap(continueButton);
-
-      await _pumpAndUpdate(tester, 3);
       final nextButton = find.text('Next');
 
       await tester.tap(nextButton);
 
-      await _pumpAndUpdate(tester, 3);
+      await _pumpAndUpdate(tester, 1);
 
       /// Page 2
 
@@ -91,7 +95,7 @@ void main() {
 
       await tester.tap(nextButton2);
 
-      await _pumpAndUpdate(tester, 3);
+      await _pumpAndUpdate(tester, 1);
 
       /// Page 3 - last one
       final getYourWallet = find.text('Get your wallet');
@@ -101,7 +105,7 @@ void main() {
       /// Tap the get your wallet button
       await tester.tap(getYourWallet);
 
-      await _pumpAndUpdate(tester, 3);
+      await _pumpAndUpdate(tester, 1);
 
       /// Download Keyfile Page
       ///
@@ -126,7 +130,7 @@ void main() {
 
       /// Tap the go to app button
       await tester.tap(goToApp);
-      await _pumpAndUpdate(tester, 2);
+      await _pumpAndUpdate(tester, 1);
 
       final driveExplorerEmptyState = find.byType(NoDrivesPage);
       expect(driveExplorerEmptyState, findsOneWidget);
