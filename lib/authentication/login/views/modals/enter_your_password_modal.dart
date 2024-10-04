@@ -236,7 +236,7 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                 child: ArDriveButtonNew(
                   variant: ButtonVariant.outline,
                   text: 'Advanced Settings',
-                  maxHeight: 32,
+                  maxHeight: 40,
                   typography: typography,
                   onPressed: () {
                     showGatewaySwitcherModal(context);
