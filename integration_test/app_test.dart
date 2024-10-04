@@ -12,6 +12,8 @@ void main() {
         'should complete the onboarding flow successfully creating a new wallet',
         (tester) async {
       /// Initialize services
+      ///
+      /// Always call this before running tests
       await initializeServices();
 
       /// Pump the widget
@@ -20,7 +22,7 @@ void main() {
       ));
 
       /// Wait for the app to load
-      await _pumpAndUpdate(tester, 1);
+      await _waitAndUpdate(tester, 1);
 
       /// Find the sign up button and tap it
       final signUpButton = find.text('Sign Up');
@@ -28,7 +30,7 @@ void main() {
       await tester.tap(signUpButton);
 
       /// Wait for the next page to load
-      await _pumpAndUpdate(tester, 1);
+      await _waitAndUpdate(tester, 1);
 
       /// Find the create a wallet button and tap it
       final createAWalletButton = find.text('Create a Wallet');
@@ -38,7 +40,7 @@ void main() {
       await tester.tap(createAWalletButton);
 
       /// Wait for the wallet creation page to load
-      await _pumpAndUpdate(tester, 100, breakCondition: () {
+      await _waitAndUpdate(tester, 100, breakCondition: () {
         try {
           final passwordField = find.byKey(const Key('password'));
           expect(passwordField, findsOneWidget);
@@ -57,28 +59,28 @@ void main() {
       expect(ardriveTextFieldPassword, findsOneWidget);
       expect(ardriveTextFieldConfirmPassword, findsOneWidget);
 
-      await _pumpAndUpdate(tester, 1);
+      await _waitAndUpdate(tester, 1);
 
       /// Enter the password and confirm password
       await tester.enterText(ardriveTextFieldPassword, '12345678');
 
-      await _pumpAndUpdate(tester, 1);
+      await _waitAndUpdate(tester, 1);
 
       await tester.enterText(ardriveTextFieldConfirmPassword, '12345678');
 
-      await _pumpAndUpdate(tester, 1);
+      await _waitAndUpdate(tester, 1);
 
       /// Find the continue button and tap it
       final continueButton = find.text('Continue');
       expect(continueButton, findsOneWidget);
 
-      await _pumpAndUpdate(tester, 1);
+      await _waitAndUpdate(tester, 1);
 
       /// Tap the continue button
       await tester.tap(continueButton);
 
       /// Wait for the next page to load
-      await _pumpAndUpdate(tester, 3);
+      await _waitAndUpdate(tester, 3);
 
       /// On Boarding Pages
       /// Page 1
@@ -87,7 +89,7 @@ void main() {
 
       await tester.tap(nextButton);
 
-      await _pumpAndUpdate(tester, 1);
+      await _waitAndUpdate(tester, 1);
 
       /// Page 2
 
@@ -95,7 +97,7 @@ void main() {
 
       await tester.tap(nextButton2);
 
-      await _pumpAndUpdate(tester, 1);
+      await _waitAndUpdate(tester, 1);
 
       /// Page 3 - last one
       final getYourWallet = find.text('Get your wallet');
@@ -105,7 +107,7 @@ void main() {
       /// Tap the get your wallet button
       await tester.tap(getYourWallet);
 
-      await _pumpAndUpdate(tester, 1);
+      await _waitAndUpdate(tester, 1);
 
       /// Download Keyfile Page
       ///
@@ -114,7 +116,7 @@ void main() {
       expect(downloadKeyFile, findsOneWidget);
       await tester.tap(downloadKeyFile);
 
-      await _pumpAndUpdate(tester, 1);
+      await _waitAndUpdate(tester, 1);
 
       /// Find the checkbox and tap it
       final checkbox = find.byType(Checkbox);
@@ -122,7 +124,7 @@ void main() {
 
       await tester.tap(checkbox);
 
-      await _pumpAndUpdate(tester, 1);
+      await _waitAndUpdate(tester, 1);
 
       /// The Go to App button should be enabled
       final goToApp = find.text('Go to App');
@@ -130,7 +132,7 @@ void main() {
 
       /// Tap the go to app button
       await tester.tap(goToApp);
-      await _pumpAndUpdate(tester, 1);
+      await _waitAndUpdate(tester, 1);
 
       final driveExplorerEmptyState = find.byType(NoDrivesPage);
       expect(driveExplorerEmptyState, findsOneWidget);
@@ -141,7 +143,7 @@ void main() {
   });
 }
 
-Future<void> _pumpAndUpdate(WidgetTester tester, int seconds,
+Future<void> _waitAndUpdate(WidgetTester tester, int seconds,
     {bool Function()? breakCondition}) async {
   for (int i = 0; i < seconds; i++) {
     for (int j = 0; j < 10; j++) {
