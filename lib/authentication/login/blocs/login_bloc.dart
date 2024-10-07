@@ -437,6 +437,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       emit(LoginCreatePasswordComplete());
     } catch (e) {
       usingSeedphrase = false;
+      logger.e('Failed to create password', e);
       emit(previousState);
       emit(LoginFailure(e));
     }

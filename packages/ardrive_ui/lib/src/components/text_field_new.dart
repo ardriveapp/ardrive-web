@@ -320,7 +320,6 @@ class ArDriveTextFieldStateNew extends State<ArDriveTextFieldNew> {
             onFieldSubmitted: widget.onFieldSubmitted,
             maxLength: widget.maxLength,
             focusNode: widget.focusNode,
-            key: widget.key,
             textInputAction: widget.textInputAction,
             obscureText: obscureText,
             // style: widget.textStyle ??

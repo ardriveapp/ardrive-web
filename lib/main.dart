@@ -34,6 +34,7 @@ import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
+import 'package:ardrive/utils/integration_tests_utils.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/mobile_screen_orientation.dart';
@@ -48,6 +49,7 @@ import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
+import 'package:drift/web.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -73,26 +75,30 @@ late ConfigService configService;
 late ArweaveService arweave;
 late TurboUploadService _turboUpload;
 late PaymentService _turboPayment;
-
+late Database _database;
 void main() async {
   await runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
 
-    await _initializeServices();
+    await initializeServices();
 
-    await _startApp();
+    await startApp();
   }, (error, stackTrace) async {
     logger.e('Error caught.', error, stackTrace);
     logger.d('Error: ${error.toString()}');
   });
 }
 
-Future<void> _startApp() async {
+Future<void> startApp() async {
+  logger.d('Starting app');
+
   final flavor = await configService.loadAppFlavor();
 
   flavor == Flavor.staging || flavor == Flavor.production
       ? _runWithSentryLogging()
       : _runWithoutLogging();
+
+  logger.d('App started');
 }
 
 Future<void> _runWithoutLogging() async {
@@ -105,25 +111,46 @@ Future<void> _runWithSentryLogging() async {
   runApp(const App());
 }
 
-Future<void> _initializeServices() async {
+Future<void> initializeServices() async {
+  if (isIntegrationTest()) {
+    // final sqlite3 = await WasmSqlite3.loadFromUrl(Uri.parse('/sqlite3.wasm'));
+    _database = Database(WebDatabase(''));
+  } else {
+    _database = Database();
+  }
+
+  logger.d('Initializing services');
+
+  logger.d('Initializing services');
+
   final localStore = await LocalKeyValueStore.getInstance();
 
+  logger.d('Loading app info');
+
   await AppInfoServices().loadAppInfo();
+
+  logger.d('Configuring services');
 
   configService = ConfigService(
     appFlavors: AppFlavors(EnvFetcher()),
     configFetcher: ConfigFetcher(localStore: localStore),
   );
 
+  logger.d('Configuring mobile status bar');
   MobileStatusBar.show();
   MobileScreenOrientation.lockInPortraitUp();
   ArDriveMobileDownloader.initialize();
 
+  logger.d('Configuring system UI overlay style');
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
   );
 
+  logger.d('Loading config');
+
   await configService.loadConfig();
+
+  logger.d('Configuring arweave');
 
   final config = configService.config;
 
@@ -155,10 +182,14 @@ Future<void> _initializeServices() async {
   if (kIsWeb) {
     refreshHTMLPageAtInterval(const Duration(hours: 12));
   }
+
+  logger.d('Services initialized');
 }
 
 class App extends StatefulWidget {
-  const App({super.key});
+  const App({super.key, this.runningFromFlutterTest = false});
+
+  final bool runningFromFlutterTest;
 
   @override
   AppState createState() => AppState();
@@ -172,9 +203,11 @@ class AppState extends State<App> {
   void initState() {
     super.initState();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      preCacheLoginAssets(context);
-    });
+    if (!widget.runningFromFlutterTest) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        preCacheLoginAssets(context);
+      });
+    }
   }
 
   @override
@@ -199,6 +232,8 @@ class AppState extends State<App> {
                     onThemeChanged: (theme) {
                       context.read<ThemeSwitcherBloc>().add(ChangeTheme());
                     },
+                    updateThemeOnBrightnessChange:
+                        !widget.runningFromFlutterTest,
                     key: arDriveAppKey,
                     builder: _appBuilder,
                   ),
@@ -386,7 +421,7 @@ class AppState extends State<App> {
             ),
           ),
         ),
-        RepositoryProvider<Database>(create: (_) => Database()),
+        RepositoryProvider<Database>(create: (_) => _database),
         RepositoryProvider<ProfileDao>(
             create: (context) => context.read<Database>().profileDao),
         RepositoryProvider<DriveDao>(

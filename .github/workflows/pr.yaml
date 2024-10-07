@@ -17,6 +17,46 @@ jobs:
   pre-build:
     uses: ./.github/workflows/test.yml
 
+  integration-tests:
+    runs-on: macos-latest
+    steps:
+
+      # Checkout
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+
+      # Set Flutter version from fvm
+      - uses: kuhnroyal/flutter-fvm-config-action@v1
+
+      # Install Flutter
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: 🚀 Start Safari Driver
+        run: |
+          sudo safaridriver --enable
+          safaridriver --port 4444
+
+      - name: Install script_runner
+        run: flutter pub global activate script_runner
+
+      - name: Build app
+        run: |
+          scr setup
+          flutter config --enable-web
+          flutter build web --dart-define=environment=development --release --pwa-strategy=none --no-web-resources-cdn  --dart2js-optimization=O1
+
+      # Run Flutter integration tests
+      - name: Run Flutter Integration Tests
+        run: |
+          flutter drive \
+            --driver=test_driver/integration_test.dart \
+            --target=integration_test/app_test.dart \
+            -d web-server --browser-name=safari --dart-define=integration-test=true
+
   build-web:
     needs: pre-build
     runs-on: ubuntu-latest
