@@ -1249,21 +1249,22 @@ class _CopyButtonState extends State<CopyButton> {
   OverlayEntry _createOverlayEntry(BuildContext parentContext) {
     final RenderBox button = context.findRenderObject() as RenderBox;
     final Offset buttonPosition = button.localToGlobal(Offset.zero);
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return OverlayEntry(
       builder: (context) => Positioned(
         left: buttonPosition.dx - widget.positionX,
         top: buttonPosition.dy - widget.positionY,
         child: Material(
-          color: widget.copyMessageColor ??
-              ArDriveTheme.of(context).themeData.backgroundColor,
+          color: widget.copyMessageColor ?? colorTokens.containerL1,
           borderRadius: BorderRadius.circular(20),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             child: Center(
               child: Text(
                 'Copied!',
-                style: ArDriveTypography.body.smallRegular(),
+                style: typography.paragraphNormal(),
               ),
             ),
           ),
