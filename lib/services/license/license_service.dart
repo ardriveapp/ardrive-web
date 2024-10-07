@@ -116,10 +116,7 @@ class LicenseService {
     required LicenseTxType licenseTxType,
   }) {
     return LicensesCompanion.insert(
-      fileId: fileId,
-      driveId: driveId,
       licenseTxId: licenseTxId,
-      dataTxId: dataTxId,
       licenseTxType: licenseTxType.name,
       licenseType: licenseState.meta.licenseType.name,
       customGQLTags: licenseState.params != null

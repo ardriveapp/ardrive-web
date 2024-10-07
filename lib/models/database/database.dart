@@ -118,6 +118,13 @@ class Database extends _$Database {
                 await m.addColumn(fileEntries, fileEntries.thumbnail);
                 await m.addColumn(fileRevisions, fileRevisions.thumbnail);
               }
+              if (from < 21) {
+                // Recreate licenses
+                logger.d('Migrating schema from v20 to v21');
+
+                await m.deleteTable('licenses');
+                await m.createTable(licenses);
+              }
             }
 
             if (from < 21) {
