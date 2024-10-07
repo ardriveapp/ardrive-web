@@ -355,6 +355,7 @@ class _StatsScreenState extends State<StatsScreen> {
                               ),
                               trailing: getIconForContentType(
                                 file.entity.dataContentType ?? '',
+                                size: 20,
                               ),
                             );
                           } else {
@@ -384,6 +385,7 @@ class _StatsScreenState extends State<StatsScreen> {
                                     leading: getIconForContentType(
                                       file.dataContentType ?? '',
                                       color: colorTokens.textMid,
+                                      size: 20,
                                     ),
                                   );
                                 }).toList());
@@ -1586,12 +1588,12 @@ class _UploadFailureWidget extends StatelessWidget {
                           leading: file is ARFSFileUploadMetadata
                               ? getIconForContentType(
                                   file.dataContentType,
-                                  size: 24,
+                                  size: 20,
                                 )
                               : file is ARFSFolderUploadMetatadata
                                   ? getIconForContentType(
                                       'folder',
-                                      size: 24,
+                                      size: 20,
                                     )
                                   : null,
                           contentPadding: EdgeInsets.zero,
@@ -1900,12 +1902,12 @@ class _UploadInProgressWidget extends StatelessWidget {
                                 leading: file is ARFSFileUploadMetadata
                                     ? getIconForContentType(
                                         file.dataContentType,
-                                        size: 24,
+                                        size: 20,
                                       )
                                     : file is ARFSFolderUploadMetatadata
                                         ? getIconForContentType(
                                             'folder',
-                                            size: 24,
+                                            size: 20,
                                           )
                                         : null,
                                 contentPadding: EdgeInsets.zero,
