@@ -1202,7 +1202,7 @@ class _UploadReadyWidget extends StatelessWidget {
                   child: Row(
                     children: [
                       Text(
-                        'Error loading ARNS names',
+                        'Error loading ArNS names',
                         style: typography.paragraphNormal(
                           fontWeight: ArFontWeight.semiBold,
                           color: colorTokens.textRed,
@@ -1239,7 +1239,7 @@ class _UploadReadyWidget extends StatelessWidget {
                   child: Row(
                     children: [
                       ArDriveCheckBox(
-                        title: 'Assign an ARNS name',
+                        title: 'Assign an ArNS name',
                         checked: state.arnsCheckboxChecked,
                         useNewIcons: true,
                         titleStyle: typography.paragraphNormal(
