@@ -674,9 +674,13 @@ class UploadCubit extends Cubit<UploadState> {
 
     logger.d('Upload preparation started. Number of files: ${_files.length}');
 
+    await Future.delayed(const Duration(milliseconds: 100));
+
     /// When the number of files is less than 100, we show a loading indicator
     /// More than that, we don't show it, because it would be too slow
     emit(UploadPreparationInitialized(showLoadingFiles: _files.length < 100));
+
+    verifyFilesAboveWarningLimit();
   }
 
   /// Generate Folders and assign parentFolderIds

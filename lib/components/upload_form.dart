@@ -165,8 +165,6 @@ class _UploadFormState extends State<UploadForm> {
               }
 
               widget.driveDetailCubit.refreshDriveDataTable();
-            } else if (state is UploadPreparationInitialized) {
-              context.read<UploadCubit>().verifyFilesAboveWarningLimit();
             }
             if (state is UploadWalletMismatch) {
               Navigator.pop(context);
