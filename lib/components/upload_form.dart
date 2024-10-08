@@ -1321,8 +1321,7 @@ class _UploadReadyWidget extends StatelessWidget {
                     },
                     onTurboTopupSucess: () {
                       context.read<UploadCubit>().startUploadPreparation(
-                            isRetryingToPayWithTurbo: true,
-                          );
+                          isRetryingToPayWithTurbo: true);
                     },
                     onUploadMethodChanged: (method, info, canUpload) {
                       context

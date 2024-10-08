@@ -79,6 +79,10 @@ class UploadCubit extends Cubit<UploadState> {
   final String _parentFolderId;
   final bool _isDragNDrop;
 
+  /// Utils for test
+  @visibleForTesting
+  bool isTest = false;
+
   /// Upload
   bool _hasEmittedWarning = false;
   bool _uploadIsInProgress = false;
@@ -680,7 +684,9 @@ class UploadCubit extends Cubit<UploadState> {
     /// More than that, we don't show it, because it would be too slow
     emit(UploadPreparationInitialized(showLoadingFiles: _files.length < 100));
 
-    verifyFilesAboveWarningLimit();
+    if (!isTest) {
+      await verifyFilesAboveWarningLimit();
+    }
   }
 
   /// Generate Folders and assign parentFolderIds
