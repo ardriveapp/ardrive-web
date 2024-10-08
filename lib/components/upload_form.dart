@@ -357,7 +357,7 @@ class _UploadingManifestsWidget extends StatelessWidget {
       actions: [
         ModalAction(
           action: () {
-            context.read<UploadCubit>().cancelUpload();
+            context.read<UploadCubit>().cancelManifestsUpload();
           },
           title: 'Cancel',
         ),
