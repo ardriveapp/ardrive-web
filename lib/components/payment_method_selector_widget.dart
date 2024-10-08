@@ -115,7 +115,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
             children: [
               Text(
                 text,
-                style: typography.paragraphLarge(
+                style: typography.paragraphNormal(
                   fontWeight: ArFontWeight.semiBold,
                 ),
               ),
@@ -150,7 +150,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
         children: [
           Text(
             'Cost: ${winstonToAr(widget.uploadMethodInfo.costEstimateAr.totalCost)} AR',
-            style: typography.paragraphLarge(
+            style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
             ),
           ),
@@ -168,7 +168,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
         children: [
           Text(
             'Cost: ${winstonToAr(widget.uploadMethodInfo.costEstimateTurbo!.totalCost)} Credits',
-            style: typography.paragraphLarge(
+            style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
             ),
           ),
