@@ -1174,7 +1174,7 @@ class _UploadReadyWidget extends StatelessWidget {
                             .read<ConfigService>()
                             .config
                             .uploadThumbnails,
-                        titleStyle: typography.paragraphLarge(
+                        titleStyle: typography.paragraphNormal(
                           fontWeight: ArFontWeight.semiBold,
                         ),
                         onChange: (value) {
