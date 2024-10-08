@@ -64,7 +64,7 @@ class UploadCubit extends Cubit<UploadState> {
         _arnsRepository = arnsRepository,
         _uploadRepository = uploadRepository,
         _uploadThumbnail = configService.config.uploadThumbnails,
-        super(UploadLoadingFiles());
+        super(uploadFolders ? UploadLoadingFolders() : UploadLoadingFiles());
 
   // Dependencies
   final UploadRepository _uploadRepository;
