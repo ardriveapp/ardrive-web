@@ -3,12 +3,15 @@ import 'dart:async';
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/upload/domain/repository/upload_repository.dart';
 import 'package:ardrive/core/upload/uploader.dart';
+import 'package:ardrive/main.dart';
+import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/models/forms/cc.dart';
 import 'package:ardrive/models/forms/udl.dart';
 import 'package:ardrive/models/models.dart';
@@ -50,6 +53,8 @@ class UploadCubit extends Cubit<UploadState> {
     required ConfigService configService,
     required ARNSRepository arnsRepository,
     required UploadRepository uploadRepository,
+    required ManifestRepository manifestRepository,
+    required CreateManifestCubit createManifestCubit,
     bool uploadFolders = false,
     bool isDragNDrop = false,
   })  : _isUploadFolders = uploadFolders,
@@ -64,6 +69,8 @@ class UploadCubit extends Cubit<UploadState> {
         _arnsRepository = arnsRepository,
         _uploadRepository = uploadRepository,
         _uploadThumbnail = configService.config.uploadThumbnails,
+        _manifestRepository = manifestRepository,
+        _createManifestCubit = createManifestCubit,
         super(UploadLoadingFiles());
 
   // Dependencies
@@ -74,6 +81,8 @@ class UploadCubit extends Cubit<UploadState> {
   final ArDriveAuth _auth;
   final ActivityTracker _activityTracker;
   final ARNSRepository _arnsRepository;
+  final ManifestRepository _manifestRepository;
+  final CreateManifestCubit _createManifestCubit;
 
   final String _driveId;
   final String _parentFolderId;
@@ -87,6 +96,147 @@ class UploadCubit extends Cubit<UploadState> {
   late Drive _targetDrive;
   late FolderEntry _targetFolder;
   late final bool _isUploadFolders;
+
+  /// Manifest
+  List<FileEntry> _manifestFiles = [];
+  final List<FileEntry> _selectedManifestFiles = [];
+
+  UploadMethod? _manifestUploadMethod;
+  UploadPaymentMethodInfo? _manifestUploadPaymentMethodInfo;
+  bool? _manifestUploadCanUpload;
+
+  bool _isManifestsUploadCancelled = false;
+
+  void selectManifestFile(FileEntry file) {
+    _selectedManifestFiles.add(file);
+
+    emit((state as UploadReady)
+        .copyWith(selectedManifests: _selectedManifestFiles));
+  }
+
+  void unselectManifestFile(FileEntry file) {
+    _selectedManifestFiles.remove(file);
+
+    emit((state as UploadReady)
+        .copyWith(selectedManifests: _selectedManifestFiles));
+  }
+
+  void setManifestUploadMethod(
+      UploadMethod method, UploadPaymentMethodInfo info, bool canUpload) {
+    _manifestUploadMethod = method;
+    _manifestUploadPaymentMethodInfo = info;
+    _manifestUploadCanUpload = canUpload;
+  }
+
+  Future<void> prepareManifestUpload() async {
+    final manifestModels = _selectedManifestFiles
+        .map(
+          (f) => UploadManifestModel(
+            name: f.name,
+            isCompleted: false,
+            freeThanksToTurbo: true,
+            isUploading: false,
+            existingManifestFileId: f.id,
+          ),
+        )
+        .toList();
+    for (int i = 0; i < manifestModels.length; i++) {
+      if (_isManifestsUploadCancelled) {
+        break;
+      }
+
+      manifestModels[i] = manifestModels[i].copyWith(isUploading: true);
+
+      await _createManifestCubit.prepareManifestTx(
+        manifestName: manifestModels[i].name,
+        folderId: _targetFolder.id,
+        existingManifestFileId: manifestModels[i].existingManifestFileId,
+      );
+
+      final manifestFile =
+          (_createManifestCubit.state as CreateManifestUploadReview)
+              .manifestFile;
+
+      manifestModels[i] = manifestModels[i].copyWith(file: manifestFile);
+
+      final manifestSize = await manifestFile.length;
+
+      if (manifestSize <= configService.config.allowedDataItemSizeForTurbo) {
+        manifestModels[i] = manifestModels[i].copyWith(freeThanksToTurbo: true);
+      }
+    }
+
+    if (_isManifestsUploadCancelled) {
+      return;
+    }
+
+    if (manifestModels.any((element) => element.freeThanksToTurbo)) {
+      emit(UploadManifestSelectPaymentMethod(
+        files: manifestModels
+            .map((e) =>
+                UploadFile(ioFile: e.file!, parentFolderId: _targetFolder.id))
+            .toList(),
+        drive: _targetDrive,
+        parentFolder: _targetFolder,
+        manifestModels: manifestModels,
+      ));
+
+      return;
+    }
+
+    await uploadManifests(manifestModels);
+  }
+
+  Future<void> uploadManifests(List<UploadManifestModel> manifestModels) async {
+    int completedCount = 0;
+
+    for (int i = 0; i < manifestModels.length; i++) {
+      if (_isManifestsUploadCancelled) {
+        break;
+      }
+
+      manifestModels[i] = manifestModels[i].copyWith(isUploading: true);
+
+      emit(UploadingManifests(
+        manifestFiles: manifestModels,
+        completedCount: completedCount,
+      ));
+
+      await _createManifestCubit.prepareManifestTx(
+        manifestName: manifestModels[i].name,
+        folderId: _targetFolder.id,
+        existingManifestFileId: manifestModels[i].existingManifestFileId,
+      );
+
+      emit(UploadingManifests(
+        manifestFiles: manifestModels,
+        completedCount: completedCount,
+      ));
+
+      await _createManifestCubit.uploadManifest(
+        method: _manifestUploadMethod,
+      );
+
+      manifestModels[i] =
+          manifestModels[i].copyWith(isCompleted: true, isUploading: false);
+
+      emit(UploadingManifests(
+        manifestFiles: manifestModels,
+        completedCount: ++completedCount,
+      ));
+    }
+
+    emit(UploadComplete(
+      manifestFiles: _selectedManifestFiles,
+    ));
+  }
+
+  void cancelManifestsUpload() {
+    _isManifestsUploadCancelled = true;
+    emit(UploadComplete(
+      manifestFiles: _selectedManifestFiles,
+    ));
+  }
 
   /// License forms
   final _licenseCategoryForm = FormGroup({
@@ -246,6 +396,9 @@ class UploadCubit extends Cubit<UploadState> {
             loadingArNSNames: true,
             arnsCheckboxChecked: _showArnsNameSelectionCheckBoxValue,
             totalSize: await _getTotalSize(),
+            selectedManifests: _selectedManifestFiles,
+            showSettings: true,
+            manifestFiles: _manifestFiles,
           ),
         );
 
@@ -284,6 +437,9 @@ class UploadCubit extends Cubit<UploadState> {
             showArnsNameSelection: false,
             arnsCheckboxChecked: _showArnsNameSelectionCheckBoxValue,
             totalSize: await _getTotalSize(),
+            selectedManifests: _selectedManifestFiles,
+            showSettings: true,
+            manifestFiles: _manifestFiles,
           ),
         );
       }
@@ -774,6 +930,9 @@ class UploadCubit extends Cubit<UploadState> {
         ),
       );
 
+      _manifestFiles = await _manifestRepository.getManifestFilesInFolder(
+          folderId: _targetFolder.id);
+
       // if there are no files that can be used to generate a thumbnail, we disable the option
       if (!containsSupportedImageTypeForThumbnailGeneration) {
         _uploadThumbnail = false;
@@ -986,7 +1145,9 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onDone(
       (tasks) async {
-        emit(UploadComplete());
+        emit(UploadComplete(
+          manifestFiles: _selectedManifestFiles,
+        ));
 
         unawaited(_profileCubit.refreshBalance());
       },
@@ -1100,7 +1261,13 @@ class UploadCubit extends Cubit<UploadState> {
           'Upload finished with success. Number of tasks: ${tasks.length}',
         );
 
-        emit(UploadComplete());
+        if (_selectedManifestFiles.isNotEmpty) {
+          await prepareManifestUpload();
+        }
+
+        // emit(UploadComplete(
+        //   manifestFiles: _selectedManifestFiles,
+        // ));
 
         PlausibleEventTracker.trackUploadSuccess();
       },

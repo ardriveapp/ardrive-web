@@ -434,7 +434,7 @@ class ArDriveIcons {
       );
 
   static ArDriveIcon manifest({double? size, Color? color}) => ArDriveIcon(
-        icon: ArDriveIconsData.manifest_icon_flattened,
+        icon: ArDriveIconsData.vector_2,
         size: size ?? 26,
         color: color,
       );
@@ -529,6 +529,12 @@ class ArDriveIcons {
 
   static ArDriveIcon license1({double? size, Color? color}) => ArDriveIcon(
         icon: ArDriveIconsData.license_1,
+        size: size,
+        color: color,
+      );
+  static ArDriveIcon advancedChevron({double? size, Color? color}) =>
+      ArDriveIcon(
+        icon: ArDriveIconsData.advanced_chevron,
         size: size,
         color: color,
       );
