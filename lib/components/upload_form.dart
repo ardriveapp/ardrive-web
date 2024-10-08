@@ -368,25 +368,6 @@ class _StatsScreenState extends State<StatsScreen> {
                                 ),
                               ],
                             );
-                            return ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(
-                                file.entity.name!,
-                                style: typography.paragraphNormal(
-                                  fontWeight: ArFontWeight.bold,
-                                ),
-                              ),
-                              leading: Text(
-                                filesize(file.size),
-                                style: typography.paragraphNormal(
-                                  fontWeight: ArFontWeight.semiBold,
-                                ),
-                              ),
-                              trailing: getIconForContentType(
-                                file.entity.dataContentType ?? '',
-                                size: 16,
-                              ),
-                            );
                           } else {
                             final bundle = file as BundleUploadHandle;
 
