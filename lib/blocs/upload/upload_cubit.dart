@@ -1283,10 +1283,6 @@ class UploadCubit extends Cubit<UploadState> {
           await prepareManifestUpload();
         }
 
-        // emit(UploadComplete(
-        //   manifestFiles: _selectedManifestFiles,
-        // ));
-
         PlausibleEventTracker.trackUploadSuccess();
       },
     );
