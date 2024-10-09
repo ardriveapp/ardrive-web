@@ -275,10 +275,7 @@ class ManifestRepositoryImpl implements ManifestRepository {
         .folderById(driveId: driveId, folderId: folderId)
         .getSingle();
 
-    final files =
-        await _driveDao.manifestInFolder(parentFolderId: folderId).get();
-
-    return _getManifestFilesInFolder(folder, files);
+    return _getManifestFilesInFolder(folder, []);
   }
 
   Future<List<FileEntry>> _getManifestFilesInFolder(

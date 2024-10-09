@@ -2064,23 +2064,25 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Expanded(
-                    child: ListView(
-                      shrinkWrap: true,
-                      children: [
-                        ...state.readyState.selectedManifests.map(
-                          (e) => Row(
-                            children: [
-                              ArDriveIcons.manifest(size: 16),
-                              const SizedBox(width: 8),
-                              Text(
-                                e.name,
-                                style: typography.paragraphNormal(),
-                              ),
-                            ],
+                  Flexible(
+                    child: Expanded(
+                      child: ListView(
+                        shrinkWrap: true,
+                        children: [
+                          ...state.readyState.selectedManifests.map(
+                            (e) => Row(
+                              children: [
+                                ArDriveIcons.manifest(size: 16),
+                                const SizedBox(width: 8),
+                                Text(
+                                  e.name,
+                                  style: typography.paragraphNormal(),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   )
                 ],
