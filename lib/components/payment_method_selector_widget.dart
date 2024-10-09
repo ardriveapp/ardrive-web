@@ -83,10 +83,12 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
 
   ArDriveIcon _buildCoinIcon() {
     if (_selectedMethod == UploadMethod.ar) {
-      return ArDriveIcons.arweaveCoin();
+      return ArDriveIcons.arweaveCoin(
+        size: 16,
+      );
     } else {
       return ArDriveIcons.turboCoin(
-        size: 28,
+        size: 16,
         color: ArDriveTheme.of(context).themeData.colorTokens.containerRed,
       );
     }
