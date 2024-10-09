@@ -282,6 +282,7 @@ void main() {
     );
 
     cubit.selectFiles(files.map((e) => e.ioFile).toList(), tRootFolderId);
+    cubit.isTest = true;
     return cubit;
   }
 
@@ -352,6 +353,9 @@ void main() {
         'should found the conflicting files correctly and set isAllFilesConflicting to true'
         ' when all files are conflicting',
         build: () {
+          when(() => mockUploadFileSizeChecker.hasFileAboveWarningSizeLimit(
+                  files: any(named: 'files')))
+              .thenAnswer((invocation) => Future.value(false));
           when(() => mockArDriveAuth.getWalletAddress())
               .thenAnswer((invocation) => Future.value(tWalletAddress));
           when(() => mockArnsRepository.getAntRecordsForWallet(tWalletAddress!))

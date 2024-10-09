@@ -64,7 +64,7 @@ class UploadCubit extends Cubit<UploadState> {
         _arnsRepository = arnsRepository,
         _uploadRepository = uploadRepository,
         _uploadThumbnail = configService.config.uploadThumbnails,
-        super(UploadLoadingFiles());
+        super(uploadFolders ? UploadLoadingFolders() : UploadLoadingFiles());
 
   // Dependencies
   final UploadRepository _uploadRepository;
@@ -78,6 +78,10 @@ class UploadCubit extends Cubit<UploadState> {
   final String _driveId;
   final String _parentFolderId;
   final bool _isDragNDrop;
+
+  /// Utils for test
+  @visibleForTesting
+  bool isTest = false;
 
   /// Upload
   bool _hasEmittedWarning = false;
@@ -674,9 +678,15 @@ class UploadCubit extends Cubit<UploadState> {
 
     logger.d('Upload preparation started. Number of files: ${_files.length}');
 
+    await Future.delayed(const Duration(milliseconds: 100));
+
     /// When the number of files is less than 100, we show a loading indicator
     /// More than that, we don't show it, because it would be too slow
     emit(UploadPreparationInitialized(showLoadingFiles: _files.length < 100));
+
+    if (!isTest) {
+      await verifyFilesAboveWarningLimit();
+    }
   }
 
   /// Generate Folders and assign parentFolderIds

@@ -306,3 +306,5 @@ enum UploadErrors {
   turboTimeout,
   unknown,
 }
+
+class UploadLoadingFolders extends UploadState {}

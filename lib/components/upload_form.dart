@@ -60,34 +60,32 @@ Future<void> promptToUpload(
 }) async {
   final driveDetailCubit = context.read<DriveDetailCubit>();
 
+  final cubit = UploadCubit(
+    activityTracker: context.read<ActivityTracker>(),
+    arDriveUploadManager: context.read<ArDriveUploadPreparationManager>(),
+    uploadFileSizeChecker: context.read<UploadFileSizeChecker>(),
+    driveId: driveId,
+    parentFolderId: parentFolderId,
+    profileCubit: context.read<ProfileCubit>(),
+    driveDao: context.read<DriveDao>(),
+    uploadFolders: isFolderUpload,
+    auth: context.read<ArDriveAuth>(),
+    configService: context.read<ConfigService>(),
+    arnsRepository: context.read<ARNSRepository>(),
+    uploadRepository: context.read<UploadRepository>(),
+  );
+
+  if (files != null) {
+    cubit.selectFiles(files, parentFolderId);
+  } else if (isFolderUpload) {
+    await cubit.pickFilesFromFolder(
+        context: context, parentFolderId: parentFolderId);
+  } else {
+    cubit.pickFiles(context: context, parentFolderId: parentFolderId);
+  }
+
   final uploadCubit = BlocProvider<UploadCubit>(
-    create: (context) {
-      final cubit = UploadCubit(
-        activityTracker: context.read<ActivityTracker>(),
-        arDriveUploadManager: context.read<ArDriveUploadPreparationManager>(),
-        uploadFileSizeChecker: context.read<UploadFileSizeChecker>(),
-        driveId: driveId,
-        parentFolderId: parentFolderId,
-        profileCubit: context.read<ProfileCubit>(),
-        driveDao: context.read<DriveDao>(),
-        uploadFolders: isFolderUpload,
-        auth: context.read<ArDriveAuth>(),
-        configService: context.read<ConfigService>(),
-        arnsRepository: context.read<ARNSRepository>(),
-        uploadRepository: context.read<UploadRepository>(),
-      );
-
-      if (files != null) {
-        cubit.selectFiles(files, parentFolderId);
-      } else if (isFolderUpload) {
-        cubit.pickFilesFromFolder(
-            context: context, parentFolderId: parentFolderId);
-      } else {
-        cubit.pickFiles(context: context, parentFolderId: parentFolderId);
-      }
-
-      return cubit;
-    },
+    create: (context) => cubit,
   );
 
   final uploadPaymentMethodBloc = BlocProvider(
@@ -167,8 +165,6 @@ class _UploadFormState extends State<UploadForm> {
               }
 
               widget.driveDetailCubit.refreshDriveDataTable();
-            } else if (state is UploadPreparationInitialized) {
-              context.read<UploadCubit>().verifyFilesAboveWarningLimit();
             }
             if (state is UploadWalletMismatch) {
               Navigator.pop(context);
@@ -1345,8 +1341,7 @@ class _UploadReadyWidget extends StatelessWidget {
                     },
                     onTurboTopupSucess: () {
                       context.read<UploadCubit>().startUploadPreparation(
-                            isRetryingToPayWithTurbo: true,
-                          );
+                          isRetryingToPayWithTurbo: true);
                     },
                     onUploadMethodChanged: (method, info, canUpload) {
                       context
