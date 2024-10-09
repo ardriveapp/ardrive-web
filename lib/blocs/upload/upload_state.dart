@@ -388,4 +388,6 @@ class UploadManifestModel extends Equatable {
         freeThanksToTurbo
       ];
 }
+
 //
+class UploadLoadingFolders extends UploadState {}
