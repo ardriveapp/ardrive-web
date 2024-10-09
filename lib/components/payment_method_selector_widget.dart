@@ -83,10 +83,12 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
 
   ArDriveIcon _buildCoinIcon() {
     if (_selectedMethod == UploadMethod.ar) {
-      return ArDriveIcons.arweaveCoin();
+      return ArDriveIcons.arweaveCoin(
+        size: 16,
+      );
     } else {
       return ArDriveIcons.turboCoin(
-        size: 28,
+        size: 16,
         color: ArDriveTheme.of(context).themeData.colorTokens.containerRed,
       );
     }
@@ -115,7 +117,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
             children: [
               Text(
                 text,
-                style: typography.paragraphLarge(
+                style: typography.paragraphNormal(
                   fontWeight: ArFontWeight.semiBold,
                 ),
               ),
@@ -150,7 +152,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
         children: [
           Text(
             'Cost: ${winstonToAr(widget.uploadMethodInfo.costEstimateAr.totalCost)} AR',
-            style: typography.paragraphLarge(
+            style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
             ),
           ),
@@ -168,7 +170,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
         children: [
           Text(
             'Cost: ${winstonToAr(widget.uploadMethodInfo.costEstimateTurbo!.totalCost)} Credits',
-            style: typography.paragraphLarge(
+            style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
             ),
           ),
