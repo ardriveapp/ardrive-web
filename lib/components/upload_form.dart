@@ -711,7 +711,8 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
                                         ),
                                       ),
                                       const SizedBox(width: 8),
-                                      if (!widget.readyState.showSettings &&
+                                      if (state is UploadReady &&
+                                          !state.showSettings &&
                                           widget.readyState.canShowSettings)
                                         GestureDetector(
                                           onTap: () {
@@ -1016,10 +1017,10 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
                     ),
                     if (file.isHidden) ...[
                       const SizedBox(width: 8),
-                      ArDriveIcons.eyeClosed(
-                        size: 16,
-                        color: hiddenColor,
-                      )
+                      Text('(hidden)',
+                          style: typography.paragraphNormal(
+                            color: hiddenColor,
+                          ))
                     ]
                   ],
                 ),
@@ -1065,6 +1066,7 @@ class LicenseReviewInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Column(
@@ -1075,8 +1077,9 @@ class LicenseReviewInfo extends StatelessWidget {
         Text(
           // TODO: Localize
           'License',
-          style: typography.paragraphLarge(
+          style: typography.paragraphNormal(
             fontWeight: ArFontWeight.semiBold,
+            color: colorTokens.textLow,
           ),
         ),
         Row(
@@ -1093,11 +1096,8 @@ class LicenseReviewInfo extends StatelessWidget {
                     )
                   : Text(
                       licenseState.meta.nameWithShortName,
-                      style: ArDriveTypography.body.buttonLargeRegular(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDefault,
+                      style: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
                       ),
                     ),
             ),
@@ -2005,6 +2005,8 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final readyState = state.readyState;
     final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
     return StatsScreen(
       readyState: readyState,
       modalActions: [
@@ -2031,30 +2033,33 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
       ],
       children: [
         if (state.readyState.params.arnsUnderName != null) ...[
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'ArNS Name: ',
-                style: typography.paragraphLarge(
-                  fontWeight: ArFontWeight.semiBold,
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ArNS Name: ',
+                  style: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.semiBold,
+                    color: colorTokens.textLow,
+                  ),
                 ),
-              ),
-              Text(
-                getLiteralARNSRecordName(
-                  state.readyState.params.arnsUnderName!,
+                Text(
+                  getLiteralARNSRecordName(
+                    state.readyState.params.arnsUnderName!,
+                  ),
+                  style: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
                 ),
-                style: ArDriveTypography.body.buttonLargeRegular(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
         if (state.readyState.selectedManifests.isNotEmpty) ...[
           Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
+            padding: const EdgeInsets.only(bottom: 16.0),
             child: ConstrainedBox(
               constraints: const BoxConstraints(
                 maxHeight: 125,
@@ -2068,8 +2073,9 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     'Updated manifest(s):',
-                    style: typography.paragraphLarge(
+                    style: typography.paragraphNormal(
                       fontWeight: ArFontWeight.semiBold,
+                      color: colorTokens.textLow,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -2085,7 +2091,9 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 Text(
                                   e.name,
-                                  style: typography.paragraphNormal(),
+                                  style: typography.paragraphNormal(
+                                    fontWeight: ArFontWeight.semiBold,
+                                  ),
                                 ),
                               ],
                             ),
@@ -2093,7 +2101,8 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
                         ],
                       ),
                     ),
-                  )
+                  ),
+                  const SizedBox(height: 8),
                 ],
               ),
             ),
@@ -2113,6 +2122,8 @@ class _UploadReviewWithArnsNameWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
     return StatsScreen(
       readyState: state.readyState,
       modalActions: [
@@ -2141,59 +2152,66 @@ class _UploadReviewWithArnsNameWidget extends StatelessWidget {
         if (state.readyState.params.arnsUnderName != null) ...[
           Text(
             'ArNS Name: ',
-            style: typography.paragraphLarge(
+            style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
+              color: colorTokens.textLow,
             ),
           ),
           Text(
             getLiteralARNSRecordName(
               state.readyState.params.arnsUnderName!,
             ),
-            style: typography.paragraphLarge(
+            style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
             ),
           ),
         ],
         if (state.readyState.selectedManifests.isNotEmpty) ...[
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 125,
-              minWidth: kLargeDialogWidth,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                const SizedBox(height: 8),
-                Text(
-                  'Updated manifest(s):',
-                  style: typography.paragraphLarge(
-                    fontWeight: ArFontWeight.semiBold,
+          Padding(
+            padding: const EdgeInsets.only(top: 16.0, bottom: 16.0),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                // maxHeight: 125,
+                minWidth: kLargeDialogWidth,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 8),
+                  Text(
+                    'Updated manifest(s):',
+                    style: typography.paragraphNormal(
+                      fontWeight: ArFontWeight.semiBold,
+                      color: colorTokens.textLow,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Expanded(
-                  child: ListView(
-                    shrinkWrap: true,
-                    children: [
-                      ...state.readyState.selectedManifests.map(
-                        (e) => Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ArDriveIcons.manifest(size: 16),
-                            const SizedBox(width: 8),
-                            Text(
-                              e.name,
-                              style: typography.paragraphNormal(),
-                            ),
-                          ],
+                  const SizedBox(height: 4),
+                  Flexible(
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: [
+                        ...state.readyState.selectedManifests.map(
+                          (e) => Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ArDriveIcons.manifest(size: 16),
+                              const SizedBox(width: 8),
+                              Text(
+                                e.name,
+                                style: typography.paragraphNormal(
+                                  fontWeight: ArFontWeight.semiBold,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                )
-              ],
+                      ],
+                    ),
+                  )
+                ],
+              ),
             ),
           ),
         ],
