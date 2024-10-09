@@ -147,7 +147,7 @@ class ArDriveCheckBoxState extends State<ArDriveCheckBox> {
           state == CheckBoxState.indeterminate
               ? ArDriveIcon(
                   icon: ArDriveIconsData.minus_rectangle,
-                  size: 22,
+                  size: 25,
                   color:
                       ArDriveTheme.of(context).themeData.colors.themeFgDefault,
                 )
