@@ -107,6 +107,10 @@ class UploadReady extends UploadState {
   final bool loadingArNSNamesError;
   final bool arnsCheckboxChecked;
   final int totalSize;
+  final List<FileEntry> selectedManifests;
+  final List<FileEntry> manifestFiles;
+  final bool showSettings;
+  final bool canShowSettings;
 
   final bool isArConnect;
 
@@ -124,6 +128,10 @@ class UploadReady extends UploadState {
     this.loadingArNSNamesError = false,
     required this.arnsCheckboxChecked,
     required this.totalSize,
+    required this.selectedManifests,
+    required this.showSettings,
+    required this.canShowSettings,
+    required this.manifestFiles,
   });
 
   // copyWith
@@ -143,6 +151,9 @@ class UploadReady extends UploadState {
     bool? loadingArNSNamesError,
     bool? arnsCheckboxChecked,
     int? totalSize,
+    List<FileEntry>? selectedManifests,
+    List<FileEntry>? manifestFiles,
+    bool? canShowSettings,
   }) {
     return UploadReady(
       loadingArNSNames: loadingArNSNames ?? this.loadingArNSNames,
@@ -160,19 +171,15 @@ class UploadReady extends UploadState {
           loadingArNSNamesError ?? this.loadingArNSNamesError,
       arnsCheckboxChecked: arnsCheckboxChecked ?? this.arnsCheckboxChecked,
       totalSize: totalSize ?? this.totalSize,
+      selectedManifests: selectedManifests ?? this.selectedManifests,
+      showSettings: showSettings ?? this.showSettings,
+      manifestFiles: manifestFiles ?? this.manifestFiles,
+      canShowSettings: canShowSettings ?? this.canShowSettings,
     );
   }
 
   @override
-  List<Object?> get props => [
-        paymentInfo,
-        isNextButtonEnabled,
-        showArnsNameSelection,
-        loadingArNSNamesError,
-        loadingArNSNames,
-        showArnsCheckbox,
-        arnsCheckboxChecked,
-      ];
+  List<Object?> get props => [UniqueKey()];
 
   @override
   toString() => 'UploadReady { paymentInfo: $paymentInfo }';
@@ -208,10 +215,10 @@ class UploadConfiguringLicense extends UploadState {
       'UploadConfiguringLicense { paymentInfo: ${readyState.paymentInfo} }';
 }
 
-class UploadReviewWithArnsName extends UploadState {
+class UploadReview extends UploadState {
   final UploadReady readyState;
 
-  UploadReviewWithArnsName({required this.readyState});
+  UploadReview({required this.readyState});
 }
 
 /// [UploadReviewWithLicense] means that the upload + license is being reviewed by the user and awaiting confirmation to begin upload.
@@ -281,7 +288,23 @@ class UploadFailure extends UploadState {
 }
 
 class UploadComplete extends UploadState {
-  UploadComplete();
+  final List<FileEntry> manifestFiles;
+  final ARNSRecord? arnsRecord;
+
+  UploadComplete({required this.manifestFiles, this.arnsRecord});
+}
+
+class UploadingManifests extends UploadState {
+  final List<UploadManifestModel> manifestFiles;
+  final int completedCount;
+
+  UploadingManifests({
+    required this.manifestFiles,
+    required this.completedCount,
+  });
+
+  @override
+  List<Object?> get props => [manifestFiles, completedCount];
 }
 
 class UploadWalletMismatch extends UploadState {}
@@ -307,4 +330,64 @@ enum UploadErrors {
   unknown,
 }
 
+class UploadManifestSelectPaymentMethod extends UploadState {
+  final List<UploadFile> files;
+  final List<UploadManifestModel> manifestModels;
+  final Drive drive;
+  final FolderEntry parentFolder;
+
+  UploadManifestSelectPaymentMethod({
+    required this.files,
+    required this.drive,
+    required this.parentFolder,
+    required this.manifestModels,
+  });
+}
+
+class UploadManifestModel extends Equatable {
+  final String name;
+  final bool isCompleted;
+  final bool freeThanksToTurbo;
+  final bool isUploading;
+  final String? existingManifestFileId;
+  final IOFile? file;
+
+  const UploadManifestModel({
+    required this.name,
+    this.isCompleted = false,
+    required this.freeThanksToTurbo,
+    this.isUploading = false,
+    this.existingManifestFileId,
+    this.file,
+  });
+
+  UploadManifestModel copyWith({
+    bool? isCompleted,
+    bool? isUploading,
+    String? existingManifestFileId,
+    bool? freeThanksToTurbo,
+    IOFile? file,
+  }) {
+    return UploadManifestModel(
+      name: name,
+      isCompleted: isCompleted ?? this.isCompleted,
+      isUploading: isUploading ?? this.isUploading,
+      existingManifestFileId:
+          existingManifestFileId ?? this.existingManifestFileId,
+      freeThanksToTurbo: freeThanksToTurbo ?? this.freeThanksToTurbo,
+      file: file ?? this.file,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+        name,
+        isCompleted,
+        isUploading,
+        existingManifestFileId,
+        freeThanksToTurbo
+      ];
+}
+
+//
 class UploadLoadingFolders extends UploadState {}
