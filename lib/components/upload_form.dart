@@ -994,6 +994,10 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
         shrinkWrap: true,
         itemCount: state.manifestFiles.length,
         itemBuilder: (context, index) {
+          final file = state.manifestFiles[index];
+          final hiddenColor =
+              ArDriveTheme.of(context).themeData.colors.themeFgDisabled;
+
           return Row(
             mainAxisSize: MainAxisSize.max,
             children: [
@@ -1001,12 +1005,22 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
                 flex: 2,
                 child: Row(
                   children: [
-                    ArDriveIcons.manifest(size: 16),
+                    ArDriveIcons.manifest(
+                        size: 16, color: file.isHidden ? hiddenColor : null),
                     const SizedBox(width: 8),
                     Text(
-                      state.manifestFiles[index].name,
-                      style: typography.paragraphNormal(),
+                      file.name,
+                      style: typography.paragraphNormal(
+                        color: file.isHidden ? hiddenColor : null,
+                      ),
                     ),
+                    if (file.isHidden) ...[
+                      const SizedBox(width: 8),
+                      ArDriveIcons.eyeClosed(
+                        size: 16,
+                        color: hiddenColor,
+                      )
+                    ]
                   ],
                 ),
               ),
