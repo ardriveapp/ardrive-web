@@ -14,6 +14,7 @@ class UploadPaymentMethodView extends StatelessWidget {
     this.onTurboTopupSucess,
     this.loadingIndicator,
     this.useNewArDriveUI = false,
+    this.useDropdown = false,
   });
 
   final Function(UploadMethod, UploadPaymentMethodInfo, bool)
@@ -22,6 +23,7 @@ class UploadPaymentMethodView extends StatelessWidget {
   final Function()? onTurboTopupSucess;
   final Widget? loadingIndicator;
   final bool useNewArDriveUI;
+  final bool useDropdown;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +46,7 @@ class UploadPaymentMethodView extends StatelessWidget {
           return PaymentMethodSelector(
             useNewArDriveUI: useNewArDriveUI,
             uploadMethodInfo: state.paymentMethodInfo,
+            useDropdown: useDropdown,
             onArSelect: () {
               context.read<UploadPaymentMethodBloc>().add(
                     const ChangeUploadPaymentMethod(

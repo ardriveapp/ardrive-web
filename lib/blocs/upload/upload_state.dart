@@ -14,7 +14,15 @@ class UploadPreparationInProgress extends UploadState {
   List<Object> get props => [isArConnect];
 }
 
-class UploadPreparationInitialized extends UploadState {}
+class UploadLoadingFiles extends UploadState {}
+
+class UploadLoadingFilesSuccess extends UploadState {}
+
+class UploadPreparationInitialized extends UploadState {
+  final bool showLoadingFiles;
+
+  UploadPreparationInitialized({this.showLoadingFiles = false});
+}
 
 class UploadSigningInProgress extends UploadState {
   final UploadPlan uploadPlan;
@@ -97,6 +105,7 @@ class UploadReady extends UploadState {
   final bool showArnsNameSelection;
   final bool loadingArNSNames;
   final bool loadingArNSNamesError;
+  final bool arnsCheckboxChecked;
   final int totalSize;
 
   final bool isArConnect;
@@ -113,6 +122,7 @@ class UploadReady extends UploadState {
     required this.showArnsNameSelection,
     this.loadingArNSNames = false,
     this.loadingArNSNamesError = false,
+    required this.arnsCheckboxChecked,
     required this.totalSize,
   });
 
@@ -131,6 +141,7 @@ class UploadReady extends UploadState {
     bool? showArnsNameSelection,
     bool? loadingArNSNames,
     bool? loadingArNSNamesError,
+    bool? arnsCheckboxChecked,
     int? totalSize,
   }) {
     return UploadReady(
@@ -147,6 +158,7 @@ class UploadReady extends UploadState {
           showArnsNameSelection ?? this.showArnsNameSelection,
       loadingArNSNamesError:
           loadingArNSNamesError ?? this.loadingArNSNamesError,
+      arnsCheckboxChecked: arnsCheckboxChecked ?? this.arnsCheckboxChecked,
       totalSize: totalSize ?? this.totalSize,
     );
   }
@@ -159,6 +171,7 @@ class UploadReady extends UploadState {
         loadingArNSNamesError,
         loadingArNSNames,
         showArnsCheckbox,
+        arnsCheckboxChecked,
       ];
 
   @override
@@ -239,20 +252,6 @@ class UploadReviewWithLicense extends UploadState {
 }
 
 class UploadInProgress extends UploadState {
-  final UploadPlan uploadPlan;
-  final int _equatableBust = DateTime.now().millisecondsSinceEpoch;
-  final double progress;
-
-  UploadInProgress({
-    required this.uploadPlan,
-    required this.progress,
-  });
-
-  @override
-  List<Object?> get props => [uploadPlan, _equatableBust];
-}
-
-class UploadInProgressUsingNewUploader extends UploadState {
   final UploadProgress progress;
   final UploadController controller;
   final double totalProgress;
@@ -260,7 +259,7 @@ class UploadInProgressUsingNewUploader extends UploadState {
   final Key? equatableBust;
   final UploadMethod uploadMethod;
 
-  UploadInProgressUsingNewUploader({
+  UploadInProgress({
     required this.progress,
     required this.totalProgress,
     required this.controller,
@@ -301,7 +300,11 @@ class UploadCanceled extends UploadState {}
 
 class CancelD2NUploadWarning extends UploadState {}
 
+class EmptyUpload extends UploadState {}
+
 enum UploadErrors {
   turboTimeout,
   unknown,
 }
+
+class UploadLoadingFolders extends UploadState {}

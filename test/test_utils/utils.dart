@@ -2,9 +2,12 @@ import 'dart:convert';
 import 'dart:io' if (dart.library.html) 'dart:html';
 import 'dart:math';
 
+import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/user/user.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 
@@ -247,3 +250,14 @@ Future<DataItem> getTestDataItem(String path) async {
   await dataItem.sign(ArweaveSigner(getTestWallet()));
   return dataItem;
 }
+
+User getTestUser() => User(
+      password: 'password',
+      wallet: getTestWallet(),
+      walletAddress: 'test-wallet-address',
+      walletBalance: BigInt.from(1000),
+      cipherKey: SecretKey([1, 2, 3, 4, 5]),
+      profileType: ProfileType.arConnect,
+      ioTokens: '100',
+      errorFetchingIOTokens: false,
+    );

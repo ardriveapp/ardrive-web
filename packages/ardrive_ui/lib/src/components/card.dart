@@ -46,7 +46,7 @@ class ArDriveCard extends StatelessWidget {
         ),
       ),
       child: ClipRRect(
-        clipBehavior: Clip.hardEdge,
+        clipBehavior: Clip.antiAlias,
         borderRadius: BorderRadius.circular(
           borderRadius ?? cardDefaultBorderRadius,
         ),

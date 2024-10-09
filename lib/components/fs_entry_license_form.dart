@@ -1,6 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/license/cc_type_form.dart';
-import 'package:ardrive/components/license/learn_about_licensing.dart';
 import 'package:ardrive/components/license/udl_params_form.dart';
 import 'package:ardrive/components/license_summary.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
@@ -252,7 +251,6 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                       ),
                     ),
                   ),
-                  const LearnAboutLicensing(),
                   const Divider(height: 32),
                   Text(
                     // TODO: Localize
