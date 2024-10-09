@@ -102,16 +102,18 @@ class UploadCubit extends Cubit<UploadState> {
   final List<FileEntry> _selectedManifestFiles = [];
 
   UploadMethod? _manifestUploadMethod;
-  UploadPaymentMethodInfo? _manifestUploadPaymentMethodInfo;
-  bool? _manifestUploadCanUpload;
 
   bool _isManifestsUploadCancelled = false;
 
   void selectManifestFile(FileEntry file) {
+    final readyState = state as UploadReady;
+
+    final newReadyState = readyState.copyWith(
+        selectedManifests: List.of(_selectedManifestFiles)..add(file));
+
     _selectedManifestFiles.add(file);
 
-    emit((state as UploadReady)
-        .copyWith(selectedManifests: _selectedManifestFiles));
+    emit(newReadyState);
   }
 
   void unselectManifestFile(FileEntry file) {
@@ -124,8 +126,6 @@ class UploadCubit extends Cubit<UploadState> {
   void setManifestUploadMethod(
       UploadMethod method, UploadPaymentMethodInfo info, bool canUpload) {
     _manifestUploadMethod = method;
-    _manifestUploadPaymentMethodInfo = info;
-    _manifestUploadCanUpload = canUpload;
   }
 
   Future<void> prepareManifestUpload() async {
@@ -315,7 +315,7 @@ class UploadCubit extends Cubit<UploadState> {
           ),
     );
 
-    emit(UploadReviewWithArnsName(readyState: readyState));
+    emit(UploadReview(readyState: readyState));
   }
 
   void changeShowArnsNameSelection(bool showArnsNameSelection) {
@@ -367,6 +367,8 @@ class UploadCubit extends Cubit<UploadState> {
     UploadPaymentMethodInfo paymentInfo,
     bool canUpload,
   ) async {
+    bool showSettings = _manifestFiles.isNotEmpty;
+
     logger.d('Upload method set to $method');
     _uploadMethod = method;
 
@@ -397,7 +399,8 @@ class UploadCubit extends Cubit<UploadState> {
             arnsCheckboxChecked: _showArnsNameSelectionCheckBoxValue,
             totalSize: await _getTotalSize(),
             selectedManifests: _selectedManifestFiles,
-            showSettings: true,
+            showSettings: showSettings,
+            canShowSettings: showSettings,
             manifestFiles: _manifestFiles,
           ),
         );
@@ -438,8 +441,9 @@ class UploadCubit extends Cubit<UploadState> {
             arnsCheckboxChecked: _showArnsNameSelectionCheckBoxValue,
             totalSize: await _getTotalSize(),
             selectedManifests: _selectedManifestFiles,
-            showSettings: true,
+            showSettings: showSettings,
             manifestFiles: _manifestFiles,
+            canShowSettings: showSettings,
           ),
         );
       }
@@ -450,6 +454,8 @@ class UploadCubit extends Cubit<UploadState> {
     if (state is UploadReady) {
       if (_showArnsNameSelectionCheckBoxValue) {
         showArnsNameSelection(state as UploadReady);
+      } else if (_selectedManifestFiles.isNotEmpty) {
+        emit(UploadReview(readyState: state as UploadReady));
       } else {
         final readyState = state as UploadReady;
         startUpload(
@@ -533,8 +539,8 @@ class UploadCubit extends Cubit<UploadState> {
         licenseCategory: licenseCategory,
       );
       emit(prevState);
-    } else if (state is UploadReviewWithArnsName) {
-      final reviewWithArnsName = state as UploadReviewWithArnsName;
+    } else if (state is UploadReview) {
+      final reviewWithArnsName = state as UploadReview;
       final readyState = reviewWithArnsName.readyState.copyWith(
         showArnsNameSelection: false,
       );
@@ -553,7 +559,7 @@ class UploadCubit extends Cubit<UploadState> {
             reviewWithLicense.readyState.paymentInfo.uploadPlanForTurbo,
         licenseStateConfigured: reviewWithLicense.licenseState,
       );
-    } else if (state is UploadReviewWithArnsName) {
+    } else if (state is UploadReview) {
       startUploadWithArnsName();
     }
   }
@@ -931,7 +937,9 @@ class UploadCubit extends Cubit<UploadState> {
       );
 
       _manifestFiles = await _manifestRepository.getManifestFilesInFolder(
-          folderId: _targetFolder.id);
+        folderId: _targetFolder.id,
+        driveId: _targetDrive.id,
+      );
 
       // if there are no files that can be used to generate a thumbnail, we disable the option
       if (!containsSupportedImageTypeForThumbnailGeneration) {
@@ -965,7 +973,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   /// Upload
   void startUploadWithArnsName() {
-    final reviewWithArnsName = state as UploadReviewWithArnsName;
+    final reviewWithArnsName = state as UploadReview;
 
     startUpload(
       uploadPlanForAr:

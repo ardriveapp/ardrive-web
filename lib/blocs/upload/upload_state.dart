@@ -110,6 +110,7 @@ class UploadReady extends UploadState {
   final List<FileEntry> selectedManifests;
   final List<FileEntry> manifestFiles;
   final bool showSettings;
+  final bool canShowSettings;
 
   final bool isArConnect;
 
@@ -129,6 +130,7 @@ class UploadReady extends UploadState {
     required this.totalSize,
     required this.selectedManifests,
     required this.showSettings,
+    required this.canShowSettings,
     required this.manifestFiles,
   });
 
@@ -151,6 +153,7 @@ class UploadReady extends UploadState {
     int? totalSize,
     List<FileEntry>? selectedManifests,
     List<FileEntry>? manifestFiles,
+    bool? canShowSettings,
   }) {
     return UploadReady(
       loadingArNSNames: loadingArNSNames ?? this.loadingArNSNames,
@@ -171,21 +174,12 @@ class UploadReady extends UploadState {
       selectedManifests: selectedManifests ?? this.selectedManifests,
       showSettings: showSettings ?? this.showSettings,
       manifestFiles: manifestFiles ?? this.manifestFiles,
+      canShowSettings: canShowSettings ?? this.canShowSettings,
     );
   }
 
   @override
-  List<Object?> get props => [
-        paymentInfo,
-        isNextButtonEnabled,
-        showArnsNameSelection,
-        loadingArNSNamesError,
-        loadingArNSNames,
-        showArnsCheckbox,
-        arnsCheckboxChecked,
-        showSettings,
-        isArConnect,
-      ];
+  List<Object?> get props => [UniqueKey()];
 
   @override
   toString() => 'UploadReady { paymentInfo: $paymentInfo }';
@@ -221,10 +215,10 @@ class UploadConfiguringLicense extends UploadState {
       'UploadConfiguringLicense { paymentInfo: ${readyState.paymentInfo} }';
 }
 
-class UploadReviewWithArnsName extends UploadState {
+class UploadReview extends UploadState {
   final UploadReady readyState;
 
-  UploadReviewWithArnsName({required this.readyState});
+  UploadReview({required this.readyState});
 }
 
 /// [UploadReviewWithLicense] means that the upload + license is being reviewed by the user and awaiting confirmation to begin upload.

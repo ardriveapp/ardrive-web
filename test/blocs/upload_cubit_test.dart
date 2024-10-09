@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
@@ -12,6 +13,7 @@ import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/domain/repository/upload_repository.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/profile_types.dart';
+import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/config/selected_gateway.dart';
@@ -59,6 +61,10 @@ class MockArDriveUploadPreparationManager extends Mock
 
 class MockArnsRepository extends Mock implements ARNSRepository {}
 
+class MockManifestRepository extends Mock implements ManifestRepository {}
+
+class MockCreateManifestCubit extends Mock implements CreateManifestCubit {}
+
 // TODO(thiagocarvalhodev): Test the case of remove files before download when pass ConflictingFileActions.SKIP.
 // TODO: Test startUpload
 void main() {
@@ -78,6 +84,8 @@ void main() {
   late MockConfigService mockConfigService;
   late MockArnsRepository mockArnsRepository;
   late MockUploadRepository mockUploadRepository;
+  late MockManifestRepository mockManifestRepository;
+  late MockCreateManifestCubit mockCreateManifestCubit;
 
   const tDriveId = 'drive_id';
   const tRootFolderId = 'root-folder-id';
@@ -104,6 +112,8 @@ void main() {
   final tKeyBytes = Uint8List(32);
   fillBytesWithSecureRandom(tKeyBytes);
   mockConfigService = MockConfigService();
+  mockManifestRepository = MockManifestRepository();
+  mockCreateManifestCubit = MockCreateManifestCubit();
 
   setUpAll(() async {
     when(() => mockConfigService.config).thenReturn(AppConfig(
@@ -115,6 +125,9 @@ void main() {
         url: 'https://arweave.net',
       ),
     ));
+    when(() => mockManifestRepository.getManifestFilesInFolder(
+            driveId: any(named: 'driveId'), folderId: any(named: 'folderId')))
+        .thenAnswer((invocation) => Future.value([]));
 
     registerFallbackValue(SecretKey([]));
     registerFallbackValue(Wallet());
@@ -279,6 +292,8 @@ void main() {
       configService: mockConfigService,
       arnsRepository: mockArnsRepository,
       uploadRepository: mockUploadRepository,
+      manifestRepository: mockManifestRepository,
+      createManifestCubit: mockCreateManifestCubit,
     );
 
     cubit.selectFiles(files.map((e) => e.ioFile).toList(), tRootFolderId);
