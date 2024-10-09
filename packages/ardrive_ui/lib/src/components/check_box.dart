@@ -14,6 +14,7 @@ class ArDriveCheckBox extends StatefulWidget {
     this.onChange,
     this.titleWidget,
     this.useNewIcons = true,
+    this.iconSize = 18.5,
   });
 
   /// Initial state of the checkbox.
@@ -31,6 +32,8 @@ class ArDriveCheckBox extends StatefulWidget {
   final Function(bool value)? onChange;
 
   final bool useNewIcons;
+
+  final double iconSize;
 
   @override
   State<ArDriveCheckBox> createState() => ArDriveCheckBoxState();
@@ -107,8 +110,8 @@ class ArDriveCheckBoxState extends State<ArDriveCheckBox> {
                               .themeFgDefault,
                         )
                       : AnimatedContainer(
-                          height: 18.5,
-                          width: 18.5,
+                          height: widget.iconSize,
+                          width: widget.iconSize,
                           margin: const EdgeInsets.fromLTRB(3.25, 3.5, 5, 4),
                           decoration: BoxDecoration(
                             borderRadius:
@@ -147,13 +150,13 @@ class ArDriveCheckBoxState extends State<ArDriveCheckBox> {
           state == CheckBoxState.indeterminate
               ? ArDriveIcon(
                   icon: ArDriveIconsData.minus_rectangle,
-                  size: 22,
+                  size: widget.iconSize,
                   color:
                       ArDriveTheme.of(context).themeData.colors.themeFgDefault,
                 )
               : checked
-                  ? ArDriveIcons.checked()
-                  : ArDriveIcons.box(),
+                  ? ArDriveIcons.checked(size: widget.iconSize)
+                  : ArDriveIcons.box(size: widget.iconSize),
           if (_buildTitle() != null) ...[
             const SizedBox(width: 8.0),
             _buildTitle()!,

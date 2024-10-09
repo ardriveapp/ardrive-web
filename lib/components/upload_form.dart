@@ -457,24 +457,34 @@ class _StatsScreenState extends State<StatsScreen> {
                         itemBuilder: (BuildContext context, int index) {
                           final file = files![index];
                           if (file is FileV2UploadHandle) {
-                            return ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(
-                                file.entity.name!,
-                                style: typography.paragraphNormal(
-                                  fontWeight: ArFontWeight.bold,
+                            return Row(
+                              children: [
+                                getIconForContentType(
+                                  file.entity.dataContentType ?? '',
+                                  size: 16,
                                 ),
-                              ),
-                              leading: Text(
-                                filesize(file.size),
-                                style: typography.paragraphNormal(
-                                  fontWeight: ArFontWeight.semiBold,
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Transform.translate(
+                                    offset: const Offset(0, -2),
+                                    child: Text(
+                                      file.entity.name!,
+                                      style: typography.paragraphNormal(
+                                        fontWeight: ArFontWeight.semiBold,
+                                        color: colorTokens.textMid,
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              trailing: getIconForContentType(
-                                file.entity.dataContentType ?? '',
-                                size: 20,
-                              ),
+                                const SizedBox(width: 16),
+                                Text(
+                                  filesize(file.size),
+                                  style: typography.paragraphNormal(
+                                    fontWeight: ArFontWeight.semiBold,
+                                    color: colorTokens.textLow,
+                                  ),
+                                ),
+                              ],
                             );
                           } else {
                             final bundle = file as BundleUploadHandle;
@@ -484,27 +494,34 @@ class _StatsScreenState extends State<StatsScreen> {
                                 shrinkWrap: true,
                                 children: bundle.fileEntities.map((e) {
                                   final file = e;
-                                  return ListTile(
-                                    contentPadding: EdgeInsets.zero,
-                                    title: Text(
-                                      file.name!,
-                                      style: typography.paragraphNormal(
-                                        fontWeight: ArFontWeight.bold,
-                                        color: colorTokens.textMid,
+                                  return Row(
+                                    children: [
+                                      getIconForContentType(
+                                        file.dataContentType ?? '',
+                                        size: 16,
                                       ),
-                                    ),
-                                    trailing: Text(
-                                      filesize(file.size),
-                                      style: typography.paragraphNormal(
-                                        fontWeight: ArFontWeight.semiBold,
-                                        color: colorTokens.textMid,
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Transform.translate(
+                                          offset: const Offset(0, -2),
+                                          child: Text(
+                                            file.name!,
+                                            style: typography.paragraphNormal(
+                                              color: colorTokens.textMid,
+                                              fontWeight: ArFontWeight.semiBold,
+                                            ),
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                    leading: getIconForContentType(
-                                      file.dataContentType ?? '',
-                                      color: colorTokens.textMid,
-                                      size: 20,
-                                    ),
+                                      const SizedBox(width: 16),
+                                      Text(
+                                        filesize(file.size),
+                                        style: typography.paragraphNormal(
+                                          fontWeight: ArFontWeight.semiBold,
+                                          color: colorTokens.textLow,
+                                        ),
+                                      ),
+                                    ],
                                   );
                                 }).toList());
                           }
@@ -524,11 +541,9 @@ class _StatsScreenState extends State<StatsScreen> {
                 ),
               ),
               TextSpan(
-                text: filesize(
-                  widget.readyState.paymentInfo.totalSize,
-                ),
+                text: filesize(widget.readyState.totalSize),
                 style: typography.paragraphNormal(
-                  fontWeight: ArFontWeight.bold,
+                  fontWeight: ArFontWeight.semiBold,
                   color: colorTokens.textHigh,
                 ),
               ),
@@ -1746,7 +1761,9 @@ class _UploadReadyWidget extends StatelessWidget {
                             .read<ConfigService>()
                             .config
                             .uploadThumbnails,
-                        titleStyle: typography.paragraphLarge(),
+                        titleStyle: typography.paragraphNormal(
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
                         onChange: (value) {
                           context
                               .read<UploadCubit>()
@@ -1772,8 +1789,8 @@ class _UploadReadyWidget extends StatelessWidget {
                   child: Row(
                     children: [
                       Text(
-                        'Error loading ARNS names',
-                        style: typography.paragraphLarge(
+                        'Error loading ArNS names',
+                        style: typography.paragraphNormal(
                           fontWeight: ArFontWeight.semiBold,
                           color: colorTokens.textRed,
                         ),
@@ -1809,10 +1826,12 @@ class _UploadReadyWidget extends StatelessWidget {
                   child: Row(
                     children: [
                       ArDriveCheckBox(
-                        title: 'Assign an ARNS name',
+                        title: 'Assign an ArNS name',
                         checked: state.arnsCheckboxChecked,
                         useNewIcons: true,
-                        titleStyle: typography.paragraphLarge(),
+                        titleStyle: typography.paragraphNormal(
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
                         onChange: (value) {
                           context
                               .read<UploadCubit>()
@@ -1828,11 +1847,11 @@ class _UploadReadyWidget extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        ArDriveIcons.license1(),
+                        ArDriveIcons.license1(size: 16),
                         const SizedBox(width: 8),
                         Text(
                           'License',
-                          style: typography.paragraphLarge(
+                          style: typography.paragraphNormal(
                             fontWeight: ArFontWeight.semiBold,
                           ),
                         ),
@@ -1845,13 +1864,14 @@ class _UploadReadyWidget extends StatelessWidget {
                             },
                             child: ArDriveIcons.question(
                               color: colorTokens.textLow,
+                              size: 16,
                             ),
                           ),
                         ),
                       ],
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(left: 32.0),
+                      padding: const EdgeInsets.only(left: 24.0),
                       child: ReactiveForm(
                         formGroup:
                             context.watch<UploadCubit>().licenseCategoryForm,
@@ -1876,7 +1896,7 @@ class _UploadReadyWidget extends StatelessWidget {
                                 value: value,
                                 child: Text(
                                   licenseCategoryNames[value] ?? 'None',
-                                  style: typography.paragraphNormal(
+                                  style: typography.paragraphSmall(
                                     fontWeight: ArFontWeight.semiBold,
                                     color: colorTokens.textMid,
                                   ),
@@ -2274,12 +2294,12 @@ class _UploadFailureWidget extends StatelessWidget {
                           leading: file is ARFSFileUploadMetadata
                               ? getIconForContentType(
                                   file.dataContentType,
-                                  size: 20,
+                                  size: 16,
                                 )
                               : file is ARFSFolderUploadMetatadata
                                   ? getIconForContentType(
                                       'folder',
-                                      size: 20,
+                                      size: 16,
                                     )
                                   : null,
                           contentPadding: EdgeInsets.zero,
@@ -2588,12 +2608,12 @@ class _UploadInProgressWidget extends StatelessWidget {
                                 leading: file is ARFSFileUploadMetadata
                                     ? getIconForContentType(
                                         file.dataContentType,
-                                        size: 20,
+                                        size: 16,
                                       )
                                     : file is ARFSFolderUploadMetatadata
                                         ? getIconForContentType(
                                             'folder',
-                                            size: 20,
+                                            size: 16,
                                           )
                                         : null,
                                 contentPadding: EdgeInsets.zero,
@@ -2612,7 +2632,7 @@ class _UploadInProgressWidget extends StatelessWidget {
                                           Text(
                                             file.name,
                                             style: typography.paragraphNormal(
-                                              fontWeight: ArFontWeight.bold,
+                                              fontWeight: ArFontWeight.semiBold,
                                               color: colorTokens.textMid,
                                             ),
                                           ),
