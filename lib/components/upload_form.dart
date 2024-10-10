@@ -600,7 +600,7 @@ class ConfiguringLicenseScreen extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
 
     if (state.arnsCheckboxChecked) {
-      title = 'Assign Name';
+      title = 'Next';
       customWidth = 160;
     } else {
       title = appLocalizationsOf(context).nextEmphasized;
@@ -2160,18 +2160,21 @@ class _UploadReviewWithArnsNameWidget extends StatelessWidget {
               color: colorTokens.textLow,
             ),
           ),
-          Text(
-            getLiteralARNSRecordName(
-              state.readyState.params.arnsUnderName!,
-            ),
-            style: typography.paragraphNormal(
-              fontWeight: ArFontWeight.semiBold,
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: Text(
+              getLiteralARNSRecordName(
+                state.readyState.params.arnsUnderName!,
+              ),
+              style: typography.paragraphNormal(
+                fontWeight: ArFontWeight.semiBold,
+              ),
             ),
           ),
         ],
         if (state.readyState.selectedManifests.isNotEmpty) ...[
           Padding(
-            padding: const EdgeInsets.only(top: 16.0, bottom: 16.0),
+            padding: const EdgeInsets.only(bottom: 16.0),
             child: ConstrainedBox(
               constraints: const BoxConstraints(
                 // maxHeight: 125,
