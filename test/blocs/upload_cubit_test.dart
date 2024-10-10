@@ -740,7 +740,6 @@ void main() {
           expect: () => <dynamic>[
             UploadPreparationInitialized(),
             const TypeMatcher<UploadPreparationInProgress>(),
-            const TypeMatcher<UploadPreparationInProgress>(),
             const TypeMatcher<UploadReadyToPrepare>(),
           ],
         );
