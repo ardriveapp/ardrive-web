@@ -138,7 +138,8 @@ class UploadCubit extends Cubit<UploadState> {
           (f) => UploadManifestModel(
             name: f.name,
             isCompleted: false,
-            freeThanksToTurbo: true,
+            freeThanksToTurbo:
+                f.size <= configService.config.allowedDataItemSizeForTurbo,
             isUploading: false,
             existingManifestFileId: f.id,
           ),
@@ -174,7 +175,7 @@ class UploadCubit extends Cubit<UploadState> {
       return;
     }
 
-    if (manifestModels.any((element) => element.freeThanksToTurbo)) {
+    if (manifestModels.any((element) => !element.freeThanksToTurbo)) {
       emit(UploadManifestSelectPaymentMethod(
         files: manifestModels
             .map((e) =>
@@ -717,6 +718,9 @@ class UploadCubit extends Cubit<UploadState> {
         ),
       );
     } else {
+      if (!isTest) {
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
       await prepareUploadPlanAndCostEstimates();
     }
   }
@@ -736,8 +740,6 @@ class UploadCubit extends Cubit<UploadState> {
 
         return;
       }
-
-      await prepareUploadPlanAndCostEstimates();
     }
 
     checkFilesAboveLimit();
@@ -796,7 +798,6 @@ class UploadCubit extends Cubit<UploadState> {
 
       logger.d('Upload preparation started. Number of files: ${_files.length}');
       emit(UploadLoadingFilesSuccess());
-      startUploadPreparation();
     } catch (e) {
       if (e is ActionCanceledException) {
         emit(EmptyUpload());
@@ -820,6 +821,8 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> startUploadPreparation({
     bool isRetryingToPayWithTurbo = false,
   }) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+
     final walletAddress = await _auth.getWalletAddress();
     _arnsRepository.getAntRecordsForWallet(walletAddress!);
 
@@ -1133,6 +1136,9 @@ class UploadCubit extends Cubit<UploadState> {
       foldersByPath: _foldersByPath,
       licenseStateConfigured: licenseStateConfigured,
       uploadThumbnail: _uploadThumbnail,
+      assignedName: _files.length == 1 && _getSelectedUndername() != null
+          ? getLiteralARNSRecordName(_getSelectedUndername()!)
+          : null,
     );
 
     uploadController.onError((tasks) {
@@ -1163,6 +1169,19 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onDone(
       (tasks) async {
+        /// If there is only one file in the upload, we assign the undername if any assigned
+        if (tasks.whereType<FileUploadTask>().length == 1) {
+          final task = tasks.whereType<FileUploadTask>().first;
+          await _postUploadFile(
+            task: task,
+            uploadController: uploadController,
+          );
+        }
+
+        if (_selectedManifestFiles.isNotEmpty) {
+          await prepareManifestUpload();
+        }
+
         emit(UploadComplete(
           manifestFiles: _selectedManifestFiles,
         ));
@@ -1223,53 +1242,13 @@ class UploadCubit extends Cubit<UploadState> {
     // TODO: implement on the upload repository
     uploadController.onDone(
       (tasks) async {
+        /// If there is only one file in the upload, we assign the undername if any assigned
         if (tasks.length == 1) {
-          final task = tasks.first;
-          if (task is FileUploadTask && task.status != UploadStatus.canceled) {
-            final metadata = task.metadata;
-            if (_selectedAntRecord != null || _selectedUndername != null) {
-              final updatedTask = task.copyWith(
-                status: UploadStatus.assigningUndername,
-              );
-
-              /// Emits
-              emit(
-                UploadInProgress(
-                  progress: UploadProgress(
-                    progressInPercentage: 1,
-                    numberOfItems: 1,
-                    numberOfUploadedItems: 1,
-                    tasks: {task.id: updatedTask},
-                    totalSize: task.uploadItem!.size,
-                    totalUploaded: task.uploadItem!.size,
-                    hasUploadInProgress: false,
-                  ),
-                  totalProgress: 1,
-                  controller: uploadController,
-                  equatableBust: UniqueKey(),
-                  uploadMethod: _uploadMethod!,
-                ),
-              );
-
-              final undername = _getSelectedUndername()!;
-
-              final newUndername = ARNSUndername(
-                name: undername.name,
-                domain: undername.domain,
-                record: ARNSRecord(
-                  transactionId: metadata.dataTxId!,
-                  ttlSeconds: 3600,
-                ),
-              );
-
-              await _arnsRepository.setUndernamesToFile(
-                undername: newUndername,
-                driveId: _targetDrive.id,
-                fileId: metadata.id,
-                processId: _selectedAntRecord!.processId,
-                uploadNewRevision: false,
-              );
-            }
+          if (tasks.first is FileUploadTask) {
+            await _postUploadFile(
+              task: tasks.first as FileUploadTask,
+              uploadController: uploadController,
+            );
           }
         }
 
@@ -1283,9 +1262,65 @@ class UploadCubit extends Cubit<UploadState> {
           await prepareManifestUpload();
         }
 
+        UploadComplete(
+          manifestFiles: _selectedManifestFiles,
+        );
+
         PlausibleEventTracker.trackUploadSuccess();
       },
     );
+  }
+
+  Future<void> _postUploadFile({
+    required FileUploadTask task,
+    required UploadController uploadController,
+  }) async {
+    if (task.status != UploadStatus.canceled) {
+      final metadata = task.metadata;
+      if (_selectedAntRecord != null || _selectedUndername != null) {
+        final updatedTask = task.copyWith(
+          status: UploadStatus.assigningUndername,
+        );
+
+        /// Emits
+        emit(
+          UploadInProgress(
+            progress: UploadProgress(
+              progressInPercentage: 1,
+              numberOfItems: 1,
+              numberOfUploadedItems: 1,
+              tasks: {task.id: updatedTask},
+              totalSize: task.uploadItem!.size,
+              totalUploaded: task.uploadItem!.size,
+              hasUploadInProgress: false,
+            ),
+            totalProgress: 1,
+            controller: uploadController,
+            equatableBust: UniqueKey(),
+            uploadMethod: _uploadMethod!,
+          ),
+        );
+
+        final undername = _getSelectedUndername()!;
+
+        final newUndername = ARNSUndername(
+          name: undername.name,
+          domain: undername.domain,
+          record: ARNSRecord(
+            transactionId: metadata.dataTxId!,
+            ttlSeconds: 3600,
+          ),
+        );
+
+        await _arnsRepository.setUndernamesToFile(
+          undername: newUndername,
+          driveId: _targetDrive.id,
+          fileId: metadata.id,
+          processId: _selectedAntRecord!.processId,
+          uploadNewRevision: false,
+        );
+      }
+    }
   }
 
   Future<void> _verifyIfUploadContainsLargeFilesUsingTurbo() async {
