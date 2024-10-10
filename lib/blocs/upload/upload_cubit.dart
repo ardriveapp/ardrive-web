@@ -174,7 +174,7 @@ class UploadCubit extends Cubit<UploadState> {
       return;
     }
 
-    if (manifestModels.any((element) => element.freeThanksToTurbo)) {
+    if (manifestModels.any((element) => !element.freeThanksToTurbo)) {
       emit(UploadManifestSelectPaymentMethod(
         files: manifestModels
             .map((e) =>
