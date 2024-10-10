@@ -138,7 +138,8 @@ class UploadCubit extends Cubit<UploadState> {
           (f) => UploadManifestModel(
             name: f.name,
             isCompleted: false,
-            freeThanksToTurbo: true,
+            freeThanksToTurbo:
+                f.size <= configService.config.allowedDataItemSizeForTurbo,
             isUploading: false,
             existingManifestFileId: f.id,
           ),
