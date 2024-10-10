@@ -1358,7 +1358,9 @@ class _SelectPaymentMethodManifestUploadState
           ),
           actions: [
             ModalAction(
-              action: () => Navigator.of(context).pop(false),
+              action: () {
+                context.read<UploadCubit>().cancelManifestsUpload();
+              },
               title: appLocalizationsOf(context).cancelEmphasized,
             ),
             ModalAction(

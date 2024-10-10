@@ -138,7 +138,8 @@ class UploadCubit extends Cubit<UploadState> {
           (f) => UploadManifestModel(
             name: f.name,
             isCompleted: false,
-            freeThanksToTurbo: true,
+            freeThanksToTurbo:
+                f.size <= configService.config.allowedDataItemSizeForTurbo,
             isUploading: false,
             existingManifestFileId: f.id,
           ),
@@ -174,7 +175,7 @@ class UploadCubit extends Cubit<UploadState> {
       return;
     }
 
-    if (manifestModels.any((element) => element.freeThanksToTurbo)) {
+    if (manifestModels.any((element) => !element.freeThanksToTurbo)) {
       emit(UploadManifestSelectPaymentMethod(
         files: manifestModels
             .map((e) =>
