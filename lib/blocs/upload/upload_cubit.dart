@@ -718,7 +718,9 @@ class UploadCubit extends Cubit<UploadState> {
         ),
       );
     } else {
-      await Future.delayed(const Duration(milliseconds: 100));
+      if (!isTest) {
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
       await prepareUploadPlanAndCostEstimates();
     }
   }

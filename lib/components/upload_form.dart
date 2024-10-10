@@ -287,7 +287,7 @@ class _UploadFormState extends State<UploadForm> {
 
               return _UploadReviewWithLicenseWidget(state: state);
             }
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           },
         ),
       );
