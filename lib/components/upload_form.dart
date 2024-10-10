@@ -123,6 +123,7 @@ Future<void> promptToUpload(
   } else if (isFolderUpload) {
     await cubit.pickFilesFromFolder(
         context: context, parentFolderId: parentFolderId);
+    cubit.startUploadPreparation();
   } else {
     cubit.pickFiles(context: context, parentFolderId: parentFolderId);
   }
@@ -194,7 +195,7 @@ class _UploadFormState extends State<UploadForm> {
           }
         },
         child: BlocConsumer<UploadCubit, UploadState>(
-          listener: (context, state) async {
+          listener: (context, state) {
             if (state is EmptyUpload) {
               Navigator.pop(context);
             }
@@ -286,7 +287,7 @@ class _UploadFormState extends State<UploadForm> {
 
               return _UploadReviewWithLicenseWidget(state: state);
             }
-            return const SizedBox();
+            return Center(child: CircularProgressIndicator());
           },
         ),
       );
