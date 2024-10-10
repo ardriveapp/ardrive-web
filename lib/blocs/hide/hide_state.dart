@@ -71,6 +71,8 @@ class FailureHideState extends HideState {
 enum HideAction {
   hideFile,
   hideFolder,
+  hideDrive,
   unhideFile,
   unhideFolder,
+  unhideDrive,
 }

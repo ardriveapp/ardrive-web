@@ -758,6 +758,22 @@ class EntityActionsMenu extends StatelessWidget {
         ),
         ArDriveDropdownItem(
           onClick: () {
+            promptToToggleHideState(
+              context,
+              item: item,
+            );
+          },
+          content: ArDriveDropdownItemTile(
+            name: item.isHidden
+                ? appLocalizationsOf(context).unhide
+                : appLocalizationsOf(context).hide,
+            icon: item.isHidden
+                ? ArDriveIcons.eyeOpen(size: defaultIconSize)
+                : ArDriveIcons.eyeClosed(size: defaultIconSize),
+          ),
+        ),
+        ArDriveDropdownItem(
+          onClick: () {
             promptToShareDrive(
               context: context,
               drive: drive!,

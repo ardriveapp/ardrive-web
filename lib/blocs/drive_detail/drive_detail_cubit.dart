@@ -26,7 +26,7 @@ import 'package:rxdart/rxdart.dart';
 part 'drive_detail_state.dart';
 
 class DriveDetailCubit extends Cubit<DriveDetailState> {
-  final String driveId;
+  String _driveId;
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
   final ConfigService _configService;
@@ -52,7 +52,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   bool _showHiddenFiles = false;
 
   DriveDetailCubit({
-    required this.driveId,
+    required String driveId,
     String? initialFolderId,
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
@@ -70,6 +70,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         _breadcrumbBuilder = breadcrumbBuilder,
         _syncCubit = syncCubit,
         _driveRepository = driveRepository,
+        _driveId = driveId,
         super(DriveDetailLoadInProgress()) {
     if (driveId.isEmpty) {
       return;
@@ -95,15 +96,34 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     }
   }
 
+  void showEmptyDriveDetail() async {
+    await _syncCubit.waitCurrentSync();
+
+    emit(DriveDetailLoadEmpty());
+  }
+
+  Future<void> changeDrive(String driveId) async {
+    final drive = await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+
+    if (drive == null) {
+      return;
+    }
+
+    _driveId = driveId;
+
+    openFolder(folderId: drive.rootFolderId);
+  }
+
   void toggleHiddenFiles() {
     _showHiddenFiles = !_showHiddenFiles;
 
     refreshDriveDataTable();
   }
 
-  void openFolder({
+  Future<void> openFolder({
     String? folderId,
     String? otherDriveId,
+    String? selectedItemId,
     DriveOrder contentOrderBy = DriveOrder.name,
     OrderingMode contentOrderingMode = OrderingMode.asc,
   }) async {
@@ -111,10 +131,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     await _syncCubit.waitCurrentSync();
 
     try {
-      _selectedItem = null;
       _allImagesOfCurrentFolder = null;
 
-      String driveId = otherDriveId ?? this.driveId;
+      String driveId = otherDriveId ?? _driveId;
 
       emit(DriveDetailLoadInProgress());
 
@@ -195,6 +214,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             isOwner: isDriveOwner(_auth, drive.ownerAddress),
           );
 
+          if (selectedItemId != null) {
+            _selectedItem = currentFolderContents.firstWhere(
+              (element) => element.id == selectedItemId,
+            );
+          }
+
           final List<BreadCrumbRowInfo> pathSegments =
               await _breadcrumbBuilder.buildForFolder(
             folderId: folderContents.folder.id,
@@ -219,6 +244,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 pathSegments: pathSegments,
                 driveIsEmpty: folderContents.files.isEmpty &&
                     folderContents.subfolders.isEmpty,
+                showSelectedItemDetails: _selectedItem != null,
               ),
             );
           } else {
@@ -242,6 +268,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 currentFolderContents: currentFolderContents,
                 columnVisibility: columnsVisibility,
                 isShowingHiddenFiles: _showHiddenFiles,
+                showSelectedItemDetails: _selectedItem != null,
               ),
             );
           }
@@ -318,6 +345,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     }
 
     _selectedItem = item;
+
+    debugPrint('selectedItem: ${_selectedItem?.id}');
 
     int? selectedPage;
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
@@ -24,6 +26,7 @@ import '../models/models.dart';
 Future<void> showSearchModalBottomSheet({
   required BuildContext context,
   required DriveDetailCubit driveDetailCubit,
+  required DrivesCubit drivesCubit,
   required TextEditingController controller,
   String? query,
 }) {
@@ -51,6 +54,7 @@ Future<void> showSearchModalBottomSheet({
             initialQuery: query,
             driveDetailCubit: context.read<DriveDetailCubit>(),
             controller: controller,
+            drivesCubit: drivesCubit,
           ),
         ),
       ),
@@ -61,6 +65,7 @@ Future<void> showSearchModalBottomSheet({
 Future<void> showSearchModalDesktop({
   required BuildContext context,
   required DriveDetailCubit driveDetailCubit,
+  required DrivesCubit drivesCubit,
   required TextEditingController controller,
   String? query,
 }) {
@@ -74,6 +79,7 @@ Future<void> showSearchModalDesktop({
       initialQuery: query,
       driveDetailCubit: context.read<DriveDetailCubit>(),
       controller: controller,
+      drivesCubit: drivesCubit,
     ),
     barrierColor: colorTokens.containerL1.withOpacity(0.8),
   );
@@ -83,11 +89,13 @@ class FileSearchModal extends StatelessWidget {
   const FileSearchModal({
     super.key,
     required this.driveDetailCubit,
+    required this.drivesCubit,
     this.initialQuery,
     required this.controller,
   });
 
   final DriveDetailCubit driveDetailCubit;
+  final DrivesCubit drivesCubit;
   final String? initialQuery;
   final TextEditingController controller;
 
@@ -108,6 +116,7 @@ class FileSearchModal extends StatelessWidget {
         driveDetailCubit: driveDetailCubit,
         initialQuery: initialQuery,
         controller: controller,
+        drivesCubit: drivesCubit,
       ),
     );
   }
@@ -116,12 +125,14 @@ class FileSearchModal extends StatelessWidget {
 class _FileSearchModal extends StatefulWidget {
   const _FileSearchModal({
     required this.driveDetailCubit,
+    required this.drivesCubit,
     this.initialQuery,
     required this.controller,
   });
 
   final String? initialQuery;
   final DriveDetailCubit driveDetailCubit;
+  final DrivesCubit drivesCubit;
   final TextEditingController controller;
 
   @override
@@ -443,21 +454,26 @@ class _FileSearchModalState extends State<_FileSearchModal> {
       result,
     );
 
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    widget.drivesCubit.selectDrive(file.driveId);
+
+    await Future.delayed(const Duration(milliseconds: 100));
 
     widget.driveDetailCubit.openFolder(
       otherDriveId: file.driveId,
       folderId: file.parentFolderId,
+      selectedItemId: file.id,
     );
 
-    await Future.delayed(const Duration(milliseconds: 300));
+    late StreamSubscription<DriveDetailState> listener;
 
-    widget.driveDetailCubit.selectDataItem(
-      file,
-      openSelectedPage: true,
-    );
-
-    // ignore: use_build_context_synchronously
-    Navigator.of(context).pop();
+    listener = widget.driveDetailCubit.stream.listen((state) {
+      if (state is DriveDetailLoadSuccess) {
+        listener.cancel();
+        // ignore: use_build_context_synchronously
+        Navigator.of(context).pop();
+      }
+    });
   }
 }

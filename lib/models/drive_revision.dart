@@ -36,7 +36,7 @@ extension DriveEntityExtensions on DriveEntity {
   /// This requires a `performedAction` to be specified.
   DriveRevisionsCompanion toRevisionCompanion(
           {required String performedAction}) =>
-      DriveRevisionsCompanion.insert(
+        DriveRevisionsCompanion.insert(
         driveId: id!,
         ownerAddress: ownerAddress,
         rootFolderId: rootFolderId!,
@@ -48,6 +48,7 @@ extension DriveEntityExtensions on DriveEntity {
         bundledIn: Value(bundledIn),
         customGQLTags: Value(customGqlTagsAsString),
         customJsonMetadata: Value(customJsonMetadataAsString),
+        isHidden: Value(isHidden ?? false),
       );
 
   /// Returns the action performed on the Drive that lead to the new revision.

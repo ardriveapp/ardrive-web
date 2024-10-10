@@ -273,6 +273,9 @@ class _ArDriveDataTableState<T extends IndexedItem>
           _sortRows(_sortedColumn!);
         }
       }
+
+      debugPrint(
+          'selectedItem on didUpdateWidget: ${_selectedItem.toString()}');
     }
   }
 
@@ -824,6 +827,12 @@ class _ArDriveDataTableState<T extends IndexedItem>
     int index,
   ) {
     final multiselect = getMultiSelectBox();
+
+    final isSelected = _selectedItem == row;
+
+    debugPrint('isSelected: $isSelected');
+    debugPrint('row: ${row.toString()}');
+    debugPrint('selectedItem: ${_selectedItem.toString()}');
 
     return GestureDetector(
       onTap: () {
