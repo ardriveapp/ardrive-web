@@ -604,6 +604,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: Text(
           formatDateToUtcString(widget.item.lastUpdated),
           style: typography.paragraphNormal(),
+          textAlign: TextAlign.right,
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
       ),
@@ -612,6 +613,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: Text(
           formatDateToUtcString(widget.item.dateCreated),
           style: typography.paragraphNormal(),
+          textAlign: TextAlign.right,
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
       ),
@@ -674,6 +676,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: Text(
           formatDateToUtcString(widget.item.lastUpdated),
           style: typography.paragraphNormal(),
+          textAlign: TextAlign.right,
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
       ),
@@ -682,6 +685,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: Text(
           formatDateToUtcString(widget.item.dateCreated),
           style: typography.paragraphNormal(),
+          textAlign: TextAlign.right,
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
       ),
@@ -725,6 +729,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       DetailsPanelItem(
         leading: Text(
           formatDateToUtcString(item.lastUpdated),
+          textAlign: TextAlign.right,
           style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
@@ -733,6 +738,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       DetailsPanelItem(
         leading: Text(
           formatDateToUtcString(item.dateCreated),
+          textAlign: TextAlign.right,
           style: typography.paragraphNormal(),
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
