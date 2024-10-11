@@ -771,8 +771,6 @@ class UploadCubit extends Cubit<UploadState> {
       }
       _files.addAll(files);
       emit(UploadLoadingFilesSuccess());
-
-      startUploadPreparation();
     } catch (e) {
       if (e is ActionCanceledException) {
         emit(EmptyUpload());
