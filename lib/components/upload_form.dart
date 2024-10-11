@@ -130,7 +130,9 @@ Future<void> promptToUpload(
     if (AppPlatform.isMobile) {
       /// on mobile we need to wait for the files to be picked before starting the preparation
       await cubit.pickFiles(context: context, parentFolderId: parentFolderId);
-      cubit.startUploadPreparation();
+      Future.delayed(const Duration(milliseconds: 300)).then((value) {
+        cubit.startUploadPreparation();
+      });
     } else {
       cubit
           .pickFiles(context: context, parentFolderId: parentFolderId)
