@@ -3,7 +3,7 @@ on:
 
 jobs:
   test-and-lint:
-    runs-on: ubuntu-24.04.1
+    runs-on: ubuntu-22.04.5
     steps:
       # Checkout
       - uses: actions/checkout@v3
