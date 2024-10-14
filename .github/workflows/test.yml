@@ -29,6 +29,8 @@ jobs:
       - name: Build app
         run: |
           scr setup
+      - name: Install sqlite3
+        run: sudo apt-get install sqlite3
 
       - name: Lint
         run: flutter analyze
