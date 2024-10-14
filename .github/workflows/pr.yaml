@@ -38,6 +38,9 @@ jobs:
       - name: Install script_runner
         run: flutter pub global activate script_runner
 
+      - name: Install sqlite3
+        run: sudo apt-get install sqlite3
+
       - name: Build app
         run: |
           scr setup
