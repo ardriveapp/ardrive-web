@@ -813,7 +813,7 @@ class UploadCubit extends Cubit<UploadState> {
       );
     }));
 
-    startUploadPreparation();
+    emit(UploadLoadingFilesSuccess());
   }
 
   Future<void> startUploadPreparation({
