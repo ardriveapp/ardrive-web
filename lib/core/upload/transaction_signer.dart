@@ -65,7 +65,11 @@ class ArweaveTransactionSigner implements TransactionSigner {
       ..addApplicationTags(version: version)
       ..addUTags();
 
-    await pstService.addCommunityTipToTx(dataTx);
+    try {
+      await pstService.addCommunityTipToTx(dataTx);
+    } catch (e) {
+      logger.e('Error adding community tip to transaction. Proceeding.', e);
+    }
 
     // Don't include the file's Content-Type tag if it is meant to be private.
     if (!isPrivate) {
