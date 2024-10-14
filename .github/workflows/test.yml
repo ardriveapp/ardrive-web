@@ -3,7 +3,7 @@ on:
 
 jobs:
   test-and-lint:
-    runs-on: macos-latest
+    runs-on: ubuntu-24.04.1
     steps:
       # Checkout
       - uses: actions/checkout@v3
