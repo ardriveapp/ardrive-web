@@ -92,7 +92,7 @@ dependencies:
   stash: ^5.1.0
   path: ^1.8.1
   flutter_svg: ^2.0.10+1
-  sqlite3_flutter_libs: 0.5.9
+  sqlite3_flutter_libs: ^0.5.9
   app_settings: ^4.1.8
   firebase_crashlytics: ^3.0.4
   firebase_core: ^2.1.1
