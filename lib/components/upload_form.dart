@@ -119,7 +119,9 @@ Future<void> promptToUpload(
   );
 
   if (files != null) {
+    _showUploadForm(context, cubit: cubit, driveDetailCubit: driveDetailCubit);
     cubit.selectFiles(files, parentFolderId);
+    return;
   } else if (isFolderUpload) {
     cubit.pickFilesFromFolder(context: context, parentFolderId: parentFolderId);
   } else {
@@ -128,41 +130,50 @@ Future<void> promptToUpload(
 
   cubit.stream.listen((state) async {
     if (state is UploadLoadingFilesSuccess) {
-      final uploadCubit = BlocProvider<UploadCubit>(
-        create: (context) => cubit,
-      );
-
-      final uploadPaymentMethodBloc = BlocProvider(
-        create: (context) => UploadPaymentMethodBloc(
-          context.read<ProfileCubit>(),
-          context.read<ArDriveUploadPreparationManager>(),
-          context.read<ArDriveAuth>(),
-        ),
-      );
-
-      await showCongestionDependentModalDialog(
-        context,
-        () {
-          if (!context.mounted) {
-            return;
-          }
-          showArDriveDialog(
-            context,
-            content: MultiBlocProvider(
-              providers: [
-                uploadCubit,
-                uploadPaymentMethodBloc,
-              ],
-              child: UploadForm(
-                driveDetailCubit: driveDetailCubit,
-              ),
-            ),
-            barrierDismissible: false,
-          );
-        },
-      );
+      _showUploadForm(context,
+          cubit: cubit, driveDetailCubit: driveDetailCubit);
     }
   });
+}
+
+Future<void> _showUploadForm(
+  BuildContext context, {
+  required UploadCubit cubit,
+  required DriveDetailCubit driveDetailCubit,
+}) async {
+  final uploadCubit = BlocProvider<UploadCubit>(
+    create: (context) => cubit,
+  );
+
+  final uploadPaymentMethodBloc = BlocProvider(
+    create: (context) => UploadPaymentMethodBloc(
+      context.read<ProfileCubit>(),
+      context.read<ArDriveUploadPreparationManager>(),
+      context.read<ArDriveAuth>(),
+    ),
+  );
+
+  await showCongestionDependentModalDialog(
+    context,
+    () {
+      if (!context.mounted) {
+        return;
+      }
+      showArDriveDialog(
+        context,
+        content: MultiBlocProvider(
+          providers: [
+            uploadCubit,
+            uploadPaymentMethodBloc,
+          ],
+          child: UploadForm(
+            driveDetailCubit: driveDetailCubit,
+          ),
+        ),
+        barrierDismissible: false,
+      );
+    },
+  );
 }
 
 class UploadForm extends StatefulWidget {
