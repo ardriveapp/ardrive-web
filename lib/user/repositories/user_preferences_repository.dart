@@ -138,7 +138,4 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
         return ArDriveThemes.light;
     }
   }
-
-  @override
-  UserPreferences get currentUserPreferences => _currentUserPreferences!;
 }
