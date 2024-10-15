@@ -13,9 +13,8 @@
 ///
 ///
 ///
-// ignore_for_file: constant_identifier_names
-
 library;
+// ignore_for_file: constant_identifier_names
 
 import 'package:flutter/widgets.dart';
 
@@ -181,6 +180,24 @@ class ArDriveIconsData {
       IconData(0xe84d, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData add_arns_name =
       IconData(0xe84e, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData license_1 =
+      IconData(0xe84f, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData pic =
+      IconData(0xe850, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData box =
+      IconData(0xe851, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData checked =
+      IconData(0xe853, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData advanced_chevron =
+      IconData(0xe854, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData chevron_up =
+      IconData(0xe855, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData chevron_down =
+      IconData(0xe856, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData arweave =
+      IconData(0xe858, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData turbo_coin =
+      IconData(0xe859, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData arrow_download =
       IconData(0xe880, fontFamily: _kFontFam, fontPackage: _kFontPkg);
 }
