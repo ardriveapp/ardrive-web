@@ -4,6 +4,7 @@ import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 class PaymentMethodSelector extends StatefulWidget {
   final UploadPaymentMethodInfo uploadMethodInfo;
@@ -67,12 +68,16 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Row(
-              children: [
-                _buildCoinIcon(),
-                const SizedBox(width: 16),
-                _buildSelectedItem(context),
-              ],
+            Flexible(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildCoinIcon(),
+                  const SizedBox(width: 16),
+                  Flexible(child: _buildSelectedItem(context)),
+                ],
+              ),
             ),
             ArDriveIcons.chevronDown(),
           ],

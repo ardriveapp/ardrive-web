@@ -166,6 +166,8 @@ class ArDriveIconsData {
       IconData(0xe845, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData moon =
       IconData(0xe846, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData vector_2 =
+      IconData(0xe847, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData private_drive =
       IconData(0xe848, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData public_drive =

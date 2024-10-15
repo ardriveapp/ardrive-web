@@ -3,12 +3,15 @@ import 'dart:async';
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/upload/domain/repository/upload_repository.dart';
 import 'package:ardrive/core/upload/uploader.dart';
+import 'package:ardrive/main.dart';
+import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/models/forms/cc.dart';
 import 'package:ardrive/models/forms/udl.dart';
 import 'package:ardrive/models/models.dart';
@@ -50,6 +53,8 @@ class UploadCubit extends Cubit<UploadState> {
     required ConfigService configService,
     required ARNSRepository arnsRepository,
     required UploadRepository uploadRepository,
+    required ManifestRepository manifestRepository,
+    required CreateManifestCubit createManifestCubit,
     bool uploadFolders = false,
     bool isDragNDrop = false,
   })  : _isUploadFolders = uploadFolders,
@@ -64,6 +69,8 @@ class UploadCubit extends Cubit<UploadState> {
         _arnsRepository = arnsRepository,
         _uploadRepository = uploadRepository,
         _uploadThumbnail = configService.config.uploadThumbnails,
+        _manifestRepository = manifestRepository,
+        _createManifestCubit = createManifestCubit,
         super(uploadFolders ? UploadLoadingFolders() : UploadLoadingFiles());
 
   // Dependencies
@@ -74,6 +81,8 @@ class UploadCubit extends Cubit<UploadState> {
   final ArDriveAuth _auth;
   final ActivityTracker _activityTracker;
   final ARNSRepository _arnsRepository;
+  final ManifestRepository _manifestRepository;
+  final CreateManifestCubit _createManifestCubit;
 
   final String _driveId;
   final String _parentFolderId;
@@ -91,6 +100,148 @@ class UploadCubit extends Cubit<UploadState> {
   late Drive _targetDrive;
   late FolderEntry _targetFolder;
   late final bool _isUploadFolders;
+
+  /// Manifest
+  List<FileEntry> _manifestFiles = [];
+  final List<FileEntry> _selectedManifestFiles = [];
+
+  UploadMethod? _manifestUploadMethod;
+
+  bool _isManifestsUploadCancelled = false;
+
+  void selectManifestFile(FileEntry file) {
+    final readyState = state as UploadReady;
+
+    final newReadyState = readyState.copyWith(
+        selectedManifests: List.of(_selectedManifestFiles)..add(file));
+
+    _selectedManifestFiles.add(file);
+
+    emit(newReadyState);
+  }
+
+  void unselectManifestFile(FileEntry file) {
+    _selectedManifestFiles.remove(file);
+
+    emit((state as UploadReady)
+        .copyWith(selectedManifests: _selectedManifestFiles));
+  }
+
+  void setManifestUploadMethod(
+      UploadMethod method, UploadPaymentMethodInfo info, bool canUpload) {
+    _manifestUploadMethod = method;
+  }
+
+  Future<void> prepareManifestUpload() async {
+    final manifestModels = _selectedManifestFiles
+        .map(
+          (f) => UploadManifestModel(
+            name: f.name,
+            isCompleted: false,
+            freeThanksToTurbo:
+                f.size <= configService.config.allowedDataItemSizeForTurbo,
+            isUploading: false,
+            existingManifestFileId: f.id,
+          ),
+        )
+        .toList();
+    for (int i = 0; i < manifestModels.length; i++) {
+      if (_isManifestsUploadCancelled) {
+        break;
+      }
+
+      manifestModels[i] = manifestModels[i].copyWith(isUploading: true);
+
+      await _createManifestCubit.prepareManifestTx(
+        manifestName: manifestModels[i].name,
+        folderId: _targetFolder.id,
+        existingManifestFileId: manifestModels[i].existingManifestFileId,
+      );
+
+      final manifestFile =
+          (_createManifestCubit.state as CreateManifestUploadReview)
+              .manifestFile;
+
+      manifestModels[i] = manifestModels[i].copyWith(file: manifestFile);
+
+      final manifestSize = await manifestFile.length;
+
+      if (manifestSize <= configService.config.allowedDataItemSizeForTurbo) {
+        manifestModels[i] = manifestModels[i].copyWith(freeThanksToTurbo: true);
+      }
+    }
+
+    if (_isManifestsUploadCancelled) {
+      return;
+    }
+
+    if (manifestModels.any((element) => !element.freeThanksToTurbo)) {
+      emit(UploadManifestSelectPaymentMethod(
+        files: manifestModels
+            .map((e) =>
+                UploadFile(ioFile: e.file!, parentFolderId: _targetFolder.id))
+            .toList(),
+        drive: _targetDrive,
+        parentFolder: _targetFolder,
+        manifestModels: manifestModels,
+      ));
+
+      return;
+    }
+
+    await uploadManifests(manifestModels);
+  }
+
+  Future<void> uploadManifests(List<UploadManifestModel> manifestModels) async {
+    int completedCount = 0;
+
+    for (int i = 0; i < manifestModels.length; i++) {
+      if (_isManifestsUploadCancelled) {
+        break;
+      }
+
+      manifestModels[i] = manifestModels[i].copyWith(isUploading: true);
+
+      emit(UploadingManifests(
+        manifestFiles: manifestModels,
+        completedCount: completedCount,
+      ));
+
+      await _createManifestCubit.prepareManifestTx(
+        manifestName: manifestModels[i].name,
+        folderId: _targetFolder.id,
+        existingManifestFileId: manifestModels[i].existingManifestFileId,
+      );
+
+      emit(UploadingManifests(
+        manifestFiles: manifestModels,
+        completedCount: completedCount,
+      ));
+
+      await _createManifestCubit.uploadManifest(
+        method: _manifestUploadMethod,
+      );
+
+      manifestModels[i] =
+          manifestModels[i].copyWith(isCompleted: true, isUploading: false);
+
+      emit(UploadingManifests(
+        manifestFiles: manifestModels,
+        completedCount: ++completedCount,
+      ));
+    }
+
+    emit(UploadComplete(
+      manifestFiles: _selectedManifestFiles,
+    ));
+  }
+
+  void cancelManifestsUpload() {
+    _isManifestsUploadCancelled = true;
+    emit(UploadComplete(
+      manifestFiles: _selectedManifestFiles,
+    ));
+  }
 
   /// License forms
   final _licenseCategoryForm = FormGroup({
@@ -169,7 +320,7 @@ class UploadCubit extends Cubit<UploadState> {
           ),
     );
 
-    emit(UploadReviewWithArnsName(readyState: readyState));
+    emit(UploadReview(readyState: readyState));
   }
 
   void changeShowArnsNameSelection(bool showArnsNameSelection) {
@@ -221,6 +372,8 @@ class UploadCubit extends Cubit<UploadState> {
     UploadPaymentMethodInfo paymentInfo,
     bool canUpload,
   ) async {
+    bool showSettings = _manifestFiles.isNotEmpty;
+
     logger.d('Upload method set to $method');
     _uploadMethod = method;
 
@@ -250,6 +403,10 @@ class UploadCubit extends Cubit<UploadState> {
             loadingArNSNames: true,
             arnsCheckboxChecked: _showArnsNameSelectionCheckBoxValue,
             totalSize: await _getTotalSize(),
+            selectedManifests: _selectedManifestFiles,
+            showSettings: showSettings,
+            canShowSettings: showSettings,
+            manifestFiles: _manifestFiles,
           ),
         );
 
@@ -288,6 +445,10 @@ class UploadCubit extends Cubit<UploadState> {
             showArnsNameSelection: false,
             arnsCheckboxChecked: _showArnsNameSelectionCheckBoxValue,
             totalSize: await _getTotalSize(),
+            selectedManifests: _selectedManifestFiles,
+            showSettings: showSettings,
+            manifestFiles: _manifestFiles,
+            canShowSettings: showSettings,
           ),
         );
       }
@@ -298,6 +459,8 @@ class UploadCubit extends Cubit<UploadState> {
     if (state is UploadReady) {
       if (_showArnsNameSelectionCheckBoxValue) {
         showArnsNameSelection(state as UploadReady);
+      } else if (_selectedManifestFiles.isNotEmpty) {
+        emit(UploadReview(readyState: state as UploadReady));
       } else {
         final readyState = state as UploadReady;
         startUpload(
@@ -381,8 +544,8 @@ class UploadCubit extends Cubit<UploadState> {
         licenseCategory: licenseCategory,
       );
       emit(prevState);
-    } else if (state is UploadReviewWithArnsName) {
-      final reviewWithArnsName = state as UploadReviewWithArnsName;
+    } else if (state is UploadReview) {
+      final reviewWithArnsName = state as UploadReview;
       final readyState = reviewWithArnsName.readyState.copyWith(
         showArnsNameSelection: false,
       );
@@ -401,7 +564,7 @@ class UploadCubit extends Cubit<UploadState> {
             reviewWithLicense.readyState.paymentInfo.uploadPlanForTurbo,
         licenseStateConfigured: reviewWithLicense.licenseState,
       );
-    } else if (state is UploadReviewWithArnsName) {
+    } else if (state is UploadReview) {
       startUploadWithArnsName();
     }
   }
@@ -562,6 +725,8 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> verifyFilesAboveWarningLimit() async {
     emit(UploadPreparationInProgress());
 
+    /// This delay is necessary. Once we start the upload checks, we will perform high computational tasks.
+    /// This delay ensures the previous state (UploadPreparationInProgress) is updated before starting the upload checks.
     await Future.delayed(const Duration(milliseconds: 100));
 
     if (!_targetDrive.isPrivate) {
@@ -574,8 +739,6 @@ class UploadCubit extends Cubit<UploadState> {
 
         return;
       }
-
-      await prepareUploadPlanAndCostEstimates();
     }
 
     checkFilesAboveLimit();
@@ -607,8 +770,6 @@ class UploadCubit extends Cubit<UploadState> {
       }
       _files.addAll(files);
       emit(UploadLoadingFilesSuccess());
-
-      startUploadPreparation();
     } catch (e) {
       if (e is ActionCanceledException) {
         emit(EmptyUpload());
@@ -634,7 +795,6 @@ class UploadCubit extends Cubit<UploadState> {
 
       logger.d('Upload preparation started. Number of files: ${_files.length}');
       emit(UploadLoadingFilesSuccess());
-      startUploadPreparation();
     } catch (e) {
       if (e is ActionCanceledException) {
         emit(EmptyUpload());
@@ -652,7 +812,7 @@ class UploadCubit extends Cubit<UploadState> {
       );
     }));
 
-    startUploadPreparation();
+    emit(UploadLoadingFilesSuccess());
   }
 
   Future<void> startUploadPreparation({
@@ -677,8 +837,6 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     logger.d('Upload preparation started. Number of files: ${_files.length}');
-
-    await Future.delayed(const Duration(milliseconds: 100));
 
     /// When the number of files is less than 100, we show a loading indicator
     /// More than that, we don't show it, because it would be too slow
@@ -784,6 +942,11 @@ class UploadCubit extends Cubit<UploadState> {
         ),
       );
 
+      _manifestFiles = await _manifestRepository.getManifestFilesInFolder(
+        folderId: _targetFolder.id,
+        driveId: _targetDrive.id,
+      );
+
       // if there are no files that can be used to generate a thumbnail, we disable the option
       if (!containsSupportedImageTypeForThumbnailGeneration) {
         _uploadThumbnail = false;
@@ -816,7 +979,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   /// Upload
   void startUploadWithArnsName() {
-    final reviewWithArnsName = state as UploadReviewWithArnsName;
+    final reviewWithArnsName = state as UploadReview;
 
     startUpload(
       uploadPlanForAr:
@@ -966,6 +1129,9 @@ class UploadCubit extends Cubit<UploadState> {
       foldersByPath: _foldersByPath,
       licenseStateConfigured: licenseStateConfigured,
       uploadThumbnail: _uploadThumbnail,
+      assignedName: _files.length == 1 && _getSelectedUndername() != null
+          ? getLiteralARNSRecordName(_getSelectedUndername()!)
+          : null,
     );
 
     uploadController.onError((tasks) {
@@ -996,7 +1162,22 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onDone(
       (tasks) async {
-        emit(UploadComplete());
+        /// If there is only one file in the upload, we assign the undername if any assigned
+        if (tasks.whereType<FileUploadTask>().length == 1) {
+          final task = tasks.whereType<FileUploadTask>().first;
+          await _postUploadFile(
+            task: task,
+            uploadController: uploadController,
+          );
+        }
+
+        if (_selectedManifestFiles.isNotEmpty) {
+          await prepareManifestUpload();
+        }
+
+        emit(UploadComplete(
+          manifestFiles: _selectedManifestFiles,
+        ));
 
         unawaited(_profileCubit.refreshBalance());
       },
@@ -1054,53 +1235,13 @@ class UploadCubit extends Cubit<UploadState> {
     // TODO: implement on the upload repository
     uploadController.onDone(
       (tasks) async {
+        /// If there is only one file in the upload, we assign the undername if any assigned
         if (tasks.length == 1) {
-          final task = tasks.first;
-          if (task is FileUploadTask && task.status != UploadStatus.canceled) {
-            final metadata = task.metadata;
-            if (_selectedAntRecord != null || _selectedUndername != null) {
-              final updatedTask = task.copyWith(
-                status: UploadStatus.assigningUndername,
-              );
-
-              /// Emits
-              emit(
-                UploadInProgress(
-                  progress: UploadProgress(
-                    progressInPercentage: 1,
-                    numberOfItems: 1,
-                    numberOfUploadedItems: 1,
-                    tasks: {task.id: updatedTask},
-                    totalSize: task.uploadItem!.size,
-                    totalUploaded: task.uploadItem!.size,
-                    hasUploadInProgress: false,
-                  ),
-                  totalProgress: 1,
-                  controller: uploadController,
-                  equatableBust: UniqueKey(),
-                  uploadMethod: _uploadMethod!,
-                ),
-              );
-
-              final undername = _getSelectedUndername()!;
-
-              final newUndername = ARNSUndername(
-                name: undername.name,
-                domain: undername.domain,
-                record: ARNSRecord(
-                  transactionId: metadata.dataTxId!,
-                  ttlSeconds: 3600,
-                ),
-              );
-
-              await _arnsRepository.setUndernamesToFile(
-                undername: newUndername,
-                driveId: _targetDrive.id,
-                fileId: metadata.id,
-                processId: _selectedAntRecord!.processId,
-                uploadNewRevision: false,
-              );
-            }
+          if (tasks.first is FileUploadTask) {
+            await _postUploadFile(
+              task: tasks.first as FileUploadTask,
+              uploadController: uploadController,
+            );
           }
         }
 
@@ -1110,11 +1251,67 @@ class UploadCubit extends Cubit<UploadState> {
           'Upload finished with success. Number of tasks: ${tasks.length}',
         );
 
-        emit(UploadComplete());
+        if (_selectedManifestFiles.isNotEmpty) {
+          await prepareManifestUpload();
+        }
+
+        emit(UploadComplete(manifestFiles: _selectedManifestFiles));
 
         PlausibleEventTracker.trackUploadSuccess();
       },
     );
+  }
+
+  Future<void> _postUploadFile({
+    required FileUploadTask task,
+    required UploadController uploadController,
+  }) async {
+    if (task.status != UploadStatus.canceled) {
+      final metadata = task.metadata;
+      if (_selectedAntRecord != null || _selectedUndername != null) {
+        final updatedTask = task.copyWith(
+          status: UploadStatus.assigningUndername,
+        );
+
+        /// Emits
+        emit(
+          UploadInProgress(
+            progress: UploadProgress(
+              progressInPercentage: 1,
+              numberOfItems: 1,
+              numberOfUploadedItems: 1,
+              tasks: {task.id: updatedTask},
+              totalSize: task.uploadItem!.size,
+              totalUploaded: task.uploadItem!.size,
+              hasUploadInProgress: false,
+            ),
+            totalProgress: 1,
+            controller: uploadController,
+            equatableBust: UniqueKey(),
+            uploadMethod: _uploadMethod!,
+          ),
+        );
+
+        final undername = _getSelectedUndername()!;
+
+        final newUndername = ARNSUndername(
+          name: undername.name,
+          domain: undername.domain,
+          record: ARNSRecord(
+            transactionId: metadata.dataTxId!,
+            ttlSeconds: 3600,
+          ),
+        );
+
+        await _arnsRepository.setUndernamesToFile(
+          undername: newUndername,
+          driveId: _targetDrive.id,
+          fileId: metadata.id,
+          processId: _selectedAntRecord!.processId,
+          uploadNewRevision: false,
+        );
+      }
+    }
   }
 
   Future<void> _verifyIfUploadContainsLargeFilesUsingTurbo() async {
