@@ -718,9 +718,6 @@ class UploadCubit extends Cubit<UploadState> {
         ),
       );
     } else {
-      if (!isTest) {
-        await Future.delayed(const Duration(milliseconds: 100));
-      }
       await prepareUploadPlanAndCostEstimates();
     }
   }
@@ -728,6 +725,8 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> verifyFilesAboveWarningLimit() async {
     emit(UploadPreparationInProgress());
 
+    /// This delay is necessary. Once we start the upload checks, we will perform high computational tasks.
+    /// This delay ensures the previous state (UploadPreparationInProgress) is updated before starting the upload checks.
     await Future.delayed(const Duration(milliseconds: 100));
 
     if (!_targetDrive.isPrivate) {
@@ -819,8 +818,6 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> startUploadPreparation({
     bool isRetryingToPayWithTurbo = false,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 100));
-
     final walletAddress = await _auth.getWalletAddress();
     _arnsRepository.getAntRecordsForWallet(walletAddress!);
 
@@ -840,8 +837,6 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     logger.d('Upload preparation started. Number of files: ${_files.length}');
-
-    await Future.delayed(const Duration(milliseconds: 100));
 
     /// When the number of files is less than 100, we show a loading indicator
     /// More than that, we don't show it, because it would be too slow
