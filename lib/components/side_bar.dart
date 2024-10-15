@@ -635,7 +635,7 @@ Future<void> shareLogs({
 }
 
 class _Accordion extends StatelessWidget {
-  const _Accordion({super.key, required this.state, required this.isMobile});
+  const _Accordion({required this.state, required this.isMobile});
 
   final DrivesLoadSuccess state;
   final bool isMobile;
