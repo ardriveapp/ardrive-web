@@ -43,6 +43,8 @@ abstract class UploadRepository {
     required UploadMethod uploadMethod,
     required Map<String, WebFolder> foldersByPath,
     required bool uploadThumbnail,
+    // IMPORTANT: This must only apply when uploading a single file inside a folder
+    String? assignedName,
   });
 
   /// Picks files from the file system.
@@ -166,9 +168,10 @@ class _UploadRepositoryImpl implements UploadRepository {
     required UploadMethod uploadMethod,
     required Map<String, WebFolder> foldersByPath,
     required bool uploadThumbnail,
+    String? assignedName,
   }) async {
     final private = targetDrive.isPrivate;
-    final driveKey = private
+  final driveKey = private
         ? await _driveDao.getDriveKey(
             targetDrive.id, _auth.currentUser.cipherKey)
         : null;
@@ -216,6 +219,7 @@ class _UploadRepositoryImpl implements UploadRepository {
             uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo,
         licenseDefinitionTxId: licenseStateResolved?.meta.licenseDefinitionTxId,
         licenseAdditionalTags: licenseStateResolved?.params?.toAdditionalTags(),
+        assignedName: assignedName,
       );
 
       entities.add((fileMetadata, file.ioFile));
