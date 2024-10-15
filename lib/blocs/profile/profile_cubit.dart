@@ -36,13 +36,6 @@ class ProfileCubit extends Cubit<ProfileState> {
         _arDriveAuth = arDriveAuth,
         super(ProfileCheckingAvailability()) {
     promptToAuthenticate();
-
-    _arDriveAuth.onAuthStateChanged().listen((user) {
-      if (user != null) {
-        emit(ProfileLoggedIn(
-            user: user, useTurbo: _turboUploadService.useTurboUpload));
-      }
-    });
   }
 
   Future<bool> isCurrentProfileArConnect() async {
