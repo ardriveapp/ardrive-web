@@ -1,0 +1,1 @@
+- Fixes an issue that mistakenly redirects the user to the Drive Explorer instead of Tutorials Page when creating a wallet from ArDrive

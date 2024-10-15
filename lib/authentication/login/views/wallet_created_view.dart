@@ -385,11 +385,10 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
                 color: colorTokens.textMid, fontWeight: ArFontWeight.book)));
 
     return isBlurred
-        ? ClipRect(
-            child: ImageFiltered(
+        ? ImageFiltered(
             imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
             child: text,
-          ))
+          )
         : text;
   }
 
