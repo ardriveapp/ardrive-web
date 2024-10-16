@@ -66,27 +66,44 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Expanded(
-                          child: ArDriveTextFieldNew(
-                            initialValue: state.driveShareLink.toString(),
-                            isEnabled: false,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        CopyButton(
-                          positionX: 4,
-                          positionY: 40,
-                          copyMessageColor: ArDriveTheme.of(context)
-                              .themeData
-                              .tableTheme
-                              .selectedItemColor,
-                          showCopyText: true,
-                          text: state.driveShareLink.toString(),
-                          child: Text(
-                            appLocalizationsOf(context).copyLink,
-                            style: typography.paragraphLarge().copyWith(
-                                  decoration: TextDecoration.underline,
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+                            decoration: BoxDecoration(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colorTokens
+                                  .inputDisabled,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colorTokens
+                                    .strokeMid,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    state.driveShareLink.toString(),
+                                    style: typography.paragraphNormal(
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colorTokens
+                                          .textXLow,
+                                      fontWeight: ArFontWeight.semiBold,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
+                                const SizedBox(width: 8),
+                                CopyButton(
+                                  text: state.driveShareLink.toString(),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
