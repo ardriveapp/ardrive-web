@@ -115,6 +115,7 @@ void main() {
     const checkbox = ArDriveCheckBox(
       title: 'Title',
       key: Key('checkbox'),
+      useNewIcons: false,
     );
 
     await tester.pumpWidget(
@@ -154,6 +155,7 @@ void main() {
       title: 'Title',
       key: Key('checkbox'),
       isDisabled: true,
+      useNewIcons: false,
     );
 
     await tester.pumpWidget(

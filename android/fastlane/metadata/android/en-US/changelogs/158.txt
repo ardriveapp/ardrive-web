@@ -1,0 +1,5 @@
+- New feature: auto-update for manifests after file uploads.
+- Refresh the upload UI with updated icons, dropdowns, and selectors.
+- Add loading feedback during large file fetches to prevent app unresponsiveness.
+- Improved sidebar styling.
+- Fixes an issue where the blurred seed phrase content was not displaying after resizing the page.

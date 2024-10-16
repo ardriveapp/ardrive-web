@@ -273,6 +273,7 @@ class _AppSideBarState extends State<AppSideBar> {
 
   Widget _buildAccordion(DrivesLoadSuccess state, bool isMobile) {
     final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return ArDriveAccordion(
       contentPadding: isMobile ? const EdgeInsets.all(4) : null,
@@ -283,9 +284,10 @@ class _AppSideBarState extends State<AppSideBar> {
           ArDriveAccordionItem(
             isExpanded: true,
             Text(
-              appLocalizationsOf(context).publicDrives,
+              appLocalizationsOf(context).publicDrives.toUpperCase(),
               style: typography.paragraphNormal(
-                fontWeight: ArFontWeight.bold,
+                fontWeight: ArFontWeight.semiBold,
+                color: colorTokens.textHigh,
               ),
             ),
             state.userDrives
@@ -311,9 +313,10 @@ class _AppSideBarState extends State<AppSideBar> {
           ArDriveAccordionItem(
             isExpanded: true,
             Text(
-              appLocalizationsOf(context).privateDrives,
+              appLocalizationsOf(context).privateDrives.toUpperCase(),
               style: typography.paragraphNormal(
-                fontWeight: ArFontWeight.bold,
+                fontWeight: ArFontWeight.semiBold,
+                color: colorTokens.textHigh,
               ),
             ),
             state.userDrives
@@ -334,9 +337,9 @@ class _AppSideBarState extends State<AppSideBar> {
           ArDriveAccordionItem(
             isExpanded: true,
             Text(
-              appLocalizationsOf(context).sharedDrives,
+              appLocalizationsOf(context).sharedDrives.toUpperCase(),
               style: typography.paragraphNormal(
-                fontWeight: ArFontWeight.bold,
+                fontWeight: ArFontWeight.semiBold,
               ),
             ),
             state.sharedDrives
@@ -538,7 +541,7 @@ class DriveListTile extends StatelessWidget {
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.only(
-          left: 32.0,
+          left: 10.0,
           right: 8.0,
         ),
         child: Row(

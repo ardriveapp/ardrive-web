@@ -206,7 +206,7 @@ Widget _buildDataListContent(
           license: row.licenseType == null
               ? ''
               : context
-                  .read<LicenseService>()
+                .read<LicenseService>()
                   .licenseMetaByType(row.licenseType!)
                   .shortName,
           isHidden: row.isHidden,
