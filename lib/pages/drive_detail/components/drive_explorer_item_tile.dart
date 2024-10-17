@@ -38,6 +38,7 @@ class DriveExplorerItemTile extends TableRowWidget {
     required ArdriveTypographyNew typography,
     required ArDriveDataTableItem dataTableItem,
     required ArDriveColorTokens colorTokens,
+    required BuildContext context,
   }) : super(
           [
             Padding(
@@ -63,7 +64,31 @@ class DriveExplorerItemTile extends TableRowWidget {
                     Transform(
                         transform: Matrix4.translationValues(0, 2, 0),
                         child: AntIcon(fileDataTableItem: dataTableItem)),
-                  ]
+                  ],
+                  if (dataTableItem is FileDataTableItem &&
+                      dataTableItem.isManifest &&
+                      (dataTableItem.assignedNames == null ||
+                          dataTableItem.assignedNames!.isEmpty)) ...[
+                    const SizedBox(width: 8),
+                    Transform(
+                      transform: Matrix4.translationValues(0, 2, 0),
+                      child: ArDriveTooltip(
+                        message: 'Open manifest',
+                        child: ArDriveClickArea(
+                          child: GestureDetector(
+                            child: ArDriveIcons.newWindow(
+                              size: 18,
+                            ),
+                            onTap: () {
+                              context
+                                  .read<DriveDetailCubit>()
+                                  .launchPreview(dataTableItem.dataTxId);
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
