@@ -35,6 +35,7 @@ import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
+import 'package:ardrive/utils/dependency_injection_utils.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/mobile_screen_orientation.dart';
@@ -505,6 +506,12 @@ class AppState extends State<App> {
             ),
             turboUploadService: context.read<TurboUploadService>(),
           ),
+        ),
+        RepositoryProvider(
+          create: (context) => createArDriveUploadPreparationManager(context),
+        ),
+        RepositoryProvider(
+          create: (context) => createUploadRepository(context),
         )
       ];
 }

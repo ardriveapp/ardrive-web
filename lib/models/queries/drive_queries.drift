@@ -94,7 +94,7 @@ filesInFolderWithName:
     WHERE driveId = :driveId AND parentFolderId = :parentFolderId AND name = :name;
 manifestInFolder:
     SELECT * FROM file_entries
-    WHERE parentFolderId = :parentFolderId AND dataContentType = "application/x.arweave-manifest+json";
+    WHERE parentFolderId = :parentFolderId AND dataContentType = 'application/x.arweave-manifest+json';
 
 filesInFolderWithLicenseAndRevisionTransactions ($order = '') AS FileWithLicenseAndLatestRevisionTransactions:
     SELECT file_entries.*, license.**, metadataTx.**, dataTx.** FROM file_entries

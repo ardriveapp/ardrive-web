@@ -172,9 +172,8 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   }
 
   Future<void> checkNameConflicts(String name) async {
-    final arns = await _arnsRepository.getAntRecordsForWallet(
-      _auth.currentUser.walletAddress
-    );
+    final arns = await _arnsRepository
+        .getAntRecordsForWallet(_auth.currentUser.walletAddress);
 
     final parentFolder =
         (state as CreateManifestCheckingForConflicts).parentFolder;
@@ -273,7 +272,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     }
   }
 
-  Future<void> uploadManifest() async {
+  Future<void> uploadManifest({UploadMethod? method}) async {
     if (await _profileCubit.logoutIfWalletMismatch()) {
       emit(CreateManifestWalletMismatch());
       return;
@@ -283,7 +282,8 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       try {
         final createManifestUploadReview = state as CreateManifestUploadReview;
         final uploadType =
-            createManifestUploadReview.uploadMethod == UploadMethod.ar
+            (method ?? createManifestUploadReview.uploadMethod) ==
+                    UploadMethod.ar
                 ? UploadType.d2n
                 : UploadType.turbo;
 
