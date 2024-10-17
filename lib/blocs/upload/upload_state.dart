@@ -107,10 +107,11 @@ class UploadReady extends UploadState {
   final bool loadingArNSNamesError;
   final bool arnsCheckboxChecked;
   final int totalSize;
-  final List<FileEntry> selectedManifests;
+  final List<UploadManifestModel> selectedManifests;
   final List<FileEntry> manifestFiles;
   final bool showSettings;
   final bool canShowSettings;
+  final List<ANTRecord> arnsRecords;
 
   final bool isArConnect;
 
@@ -132,6 +133,7 @@ class UploadReady extends UploadState {
     required this.showSettings,
     required this.canShowSettings,
     required this.manifestFiles,
+    required this.arnsRecords,
   });
 
   // copyWith
@@ -151,9 +153,10 @@ class UploadReady extends UploadState {
     bool? loadingArNSNamesError,
     bool? arnsCheckboxChecked,
     int? totalSize,
-    List<FileEntry>? selectedManifests,
+    List<UploadManifestModel>? selectedManifests,
     List<FileEntry>? manifestFiles,
     bool? canShowSettings,
+    List<ANTRecord>? arnsRecords,
   }) {
     return UploadReady(
       loadingArNSNames: loadingArNSNames ?? this.loadingArNSNames,
@@ -175,6 +178,7 @@ class UploadReady extends UploadState {
       showSettings: showSettings ?? this.showSettings,
       manifestFiles: manifestFiles ?? this.manifestFiles,
       canShowSettings: canShowSettings ?? this.canShowSettings,
+      arnsRecords: arnsRecords ?? this.arnsRecords,
     );
   }
 
@@ -304,7 +308,7 @@ class UploadingManifests extends UploadState {
   });
 
   @override
-  List<Object?> get props => [manifestFiles, completedCount];
+  List<Object?> get props => [UniqueKey()];
 }
 
 class UploadWalletMismatch extends UploadState {}
@@ -347,11 +351,13 @@ class UploadManifestSelectPaymentMethod extends UploadState {
 class UploadManifestModel extends Equatable {
   final String name;
   final bool isCompleted;
+  final bool isAssigningUndername;
   final bool freeThanksToTurbo;
   final bool isUploading;
   final String? existingManifestFileId;
   final IOFile? file;
-
+  final ARNSUndername? undername;
+  final ANTRecord? antRecord;
   const UploadManifestModel({
     required this.name,
     this.isCompleted = false,
@@ -359,6 +365,9 @@ class UploadManifestModel extends Equatable {
     this.isUploading = false,
     this.existingManifestFileId,
     this.file,
+    this.undername,
+    this.antRecord,
+    this.isAssigningUndername = false,
   });
 
   UploadManifestModel copyWith({
@@ -367,6 +376,9 @@ class UploadManifestModel extends Equatable {
     String? existingManifestFileId,
     bool? freeThanksToTurbo,
     IOFile? file,
+    ARNSUndername? undername,
+    ANTRecord? antRecord,
+    bool? isAssigningUndername,
   }) {
     return UploadManifestModel(
       name: name,
@@ -376,6 +388,9 @@ class UploadManifestModel extends Equatable {
           existingManifestFileId ?? this.existingManifestFileId,
       freeThanksToTurbo: freeThanksToTurbo ?? this.freeThanksToTurbo,
       file: file ?? this.file,
+      undername: undername ?? this.undername,
+      antRecord: antRecord ?? this.antRecord,
+      isAssigningUndername: isAssigningUndername ?? this.isAssigningUndername,
     );
   }
 
@@ -385,7 +400,11 @@ class UploadManifestModel extends Equatable {
         isCompleted,
         isUploading,
         existingManifestFileId,
-        freeThanksToTurbo
+        freeThanksToTurbo,
+        isAssigningUndername,
+        antRecord,
+        undername,
+        file,
       ];
 }
 

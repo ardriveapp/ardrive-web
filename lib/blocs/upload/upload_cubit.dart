@@ -105,6 +105,9 @@ class UploadCubit extends Cubit<UploadState> {
   List<FileEntry> _manifestFiles = [];
   final List<FileEntry> _selectedManifestFiles = [];
 
+  Map<String, ARNSUndername> _arnsUndernamesLinkedToManifest = {};
+  Map<String, ANTRecord> _arnsAntRecordsLinkedToManifest = {};
+
   UploadMethod? _manifestUploadMethod;
 
   bool _isManifestsUploadCancelled = false;
@@ -112,19 +115,68 @@ class UploadCubit extends Cubit<UploadState> {
   void selectManifestFile(FileEntry file) {
     final readyState = state as UploadReady;
 
+    final manifestModel = UploadManifestModel(
+      name: file.name,
+      isCompleted: false,
+      freeThanksToTurbo:
+          file.size <= configService.config.allowedDataItemSizeForTurbo,
+      isUploading: false,
+      existingManifestFileId: file.id,
+      undername: _arnsUndernamesLinkedToManifest[file.id],
+      antRecord: _arnsAntRecordsLinkedToManifest[file.id],
+    );
+
     final newReadyState = readyState.copyWith(
-        selectedManifests: List.of(_selectedManifestFiles)..add(file));
+        selectedManifests: List.of(
+      _selectedManifestFiles
+          .map(
+            (f) => UploadManifestModel(
+              name: f.name,
+              isCompleted: false,
+              freeThanksToTurbo:
+                  f.size <= configService.config.allowedDataItemSizeForTurbo,
+              isUploading: false,
+              existingManifestFileId: f.id,
+              undername: _arnsUndernamesLinkedToManifest[f.id],
+              antRecord: _arnsAntRecordsLinkedToManifest[f.id],
+            ),
+          )
+          .toList(),
+    )..add(manifestModel));
 
     _selectedManifestFiles.add(file);
 
     emit(newReadyState);
   }
 
+  void linkManifestToUndername(
+      FileEntry file, ANTRecord antRecord, ARNSUndername undername) {
+    _arnsUndernamesLinkedToManifest[file.id] = undername;
+    _arnsAntRecordsLinkedToManifest[file.id] = antRecord;
+  }
+
+  void unlinkManifestToUndername(FileEntry file) {
+    _arnsUndernamesLinkedToManifest.remove(file.id);
+  }
+
   void unselectManifestFile(FileEntry file) {
     _selectedManifestFiles.remove(file);
 
-    emit((state as UploadReady)
-        .copyWith(selectedManifests: _selectedManifestFiles));
+    emit((state as UploadReady).copyWith(
+        selectedManifests: _selectedManifestFiles
+            .map(
+              (f) => UploadManifestModel(
+                name: f.name,
+                isCompleted: false,
+                freeThanksToTurbo:
+                    f.size <= configService.config.allowedDataItemSizeForTurbo,
+                isUploading: false,
+                existingManifestFileId: f.id,
+                undername: _arnsUndernamesLinkedToManifest[f.id],
+                antRecord: _arnsAntRecordsLinkedToManifest[f.id],
+              ),
+            )
+            .toList()));
   }
 
   void setManifestUploadMethod(
@@ -142,6 +194,8 @@ class UploadCubit extends Cubit<UploadState> {
                 f.size <= configService.config.allowedDataItemSizeForTurbo,
             isUploading: false,
             existingManifestFileId: f.id,
+            undername: _arnsUndernamesLinkedToManifest[f.id],
+            antRecord: _arnsAntRecordsLinkedToManifest[f.id],
           ),
         )
         .toList();
@@ -222,12 +276,28 @@ class UploadCubit extends Cubit<UploadState> {
         method: _manifestUploadMethod,
       );
 
-      manifestModels[i] =
-          manifestModels[i].copyWith(isCompleted: true, isUploading: false);
+      if (manifestModels[i].undername != null) {
+        manifestModels[i] = manifestModels[i].copyWith(
+            isCompleted: false, isUploading: false, isAssigningUndername: true);
+        emit(UploadingManifests(
+          manifestFiles: manifestModels,
+          completedCount: ++completedCount,
+        ));
+
+        await _arnsRepository.setUndernamesToFile(
+          undername: manifestModels[i].undername!,
+          driveId: _driveId,
+          fileId: manifestModels[i].existingManifestFileId!,
+          processId: manifestModels[i].antRecord!.processId,
+        );
+      }
+
+      manifestModels[i] = manifestModels[i].copyWith(
+          isCompleted: true, isUploading: false, isAssigningUndername: false);
 
       emit(UploadingManifests(
         manifestFiles: manifestModels,
-        completedCount: ++completedCount,
+        completedCount: completedCount,
       ));
     }
 
@@ -272,6 +342,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   /// ArNS
   ANTRecord? _selectedAntRecord;
+  List<ANTRecord> _ants = [];
   ARNSUndername? _selectedUndername;
 
   /// Thumbnail upload
@@ -403,10 +474,24 @@ class UploadCubit extends Cubit<UploadState> {
             loadingArNSNames: true,
             arnsCheckboxChecked: _showArnsNameSelectionCheckBoxValue,
             totalSize: await _getTotalSize(),
-            selectedManifests: _selectedManifestFiles,
+            selectedManifests: _selectedManifestFiles
+                .map(
+                  (f) => UploadManifestModel(
+                    name: f.name,
+                    isCompleted: false,
+                    freeThanksToTurbo: f.size <=
+                        configService.config.allowedDataItemSizeForTurbo,
+                    isUploading: false,
+                    existingManifestFileId: f.id,
+                    undername: _arnsUndernamesLinkedToManifest[f.id],
+                    antRecord: _arnsAntRecordsLinkedToManifest[f.id],
+                  ),
+                )
+                .toList(),
             showSettings: showSettings,
             canShowSettings: showSettings,
             manifestFiles: _manifestFiles,
+            arnsRecords: _ants,
           ),
         );
 
@@ -445,9 +530,23 @@ class UploadCubit extends Cubit<UploadState> {
             showArnsNameSelection: false,
             arnsCheckboxChecked: _showArnsNameSelectionCheckBoxValue,
             totalSize: await _getTotalSize(),
-            selectedManifests: _selectedManifestFiles,
+            selectedManifests: _selectedManifestFiles
+                .map(
+                  (f) => UploadManifestModel(
+                    name: f.name,
+                    isCompleted: false,
+                    freeThanksToTurbo: f.size <=
+                        configService.config.allowedDataItemSizeForTurbo,
+                    isUploading: false,
+                    existingManifestFileId: f.id,
+                    undername: _arnsUndernamesLinkedToManifest[f.id],
+                    antRecord: _arnsAntRecordsLinkedToManifest[f.id],
+                  ),
+                )
+                .toList(),
             showSettings: showSettings,
             manifestFiles: _manifestFiles,
+            arnsRecords: _ants,
             canShowSettings: showSettings,
           ),
         );
@@ -815,11 +914,22 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadLoadingFilesSuccess());
   }
 
+  Future<List<ARNSUndername>> getARNSUndernames(
+    ANTRecord antRecord,
+  ) async {
+    return _arnsRepository.getARNSUndernames(antRecord);
+  }
+
   Future<void> startUploadPreparation({
     bool isRetryingToPayWithTurbo = false,
   }) async {
     final walletAddress = await _auth.getWalletAddress();
-    _arnsRepository.getAntRecordsForWallet(walletAddress!);
+    _arnsRepository.getAntRecordsForWallet(walletAddress!).then((value) {
+      _ants = value;
+      if (state is UploadReady) {
+        emit((state as UploadReady).copyWith(arnsRecords: value));
+      }
+    });
 
     _files
         .removeWhere((file) => filesNamesToExclude.contains(file.ioFile.name));
