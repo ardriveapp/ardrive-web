@@ -46,83 +46,93 @@ class DriveShareDialogState extends State<DriveShareDialog> {
   @override
   Widget build(BuildContext context) =>
       BlocBuilder<DriveShareCubit, DriveShareState>(
-        builder: (context, state) => ArDriveStandardModal(
-          width: kLargeDialogWidth,
-          title: appLocalizationsOf(context).shareDriveWithOthers,
-          description: state is DriveShareLoadSuccess ? state.drive.name : null,
-          content: SizedBox(
+        builder: (context, state) {
+          final typography = ArDriveTypographyNew.of(context);
+
+          return ArDriveStandardModalNew(
             width: kLargeDialogWidth,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (state is DriveShareLoadInProgress)
-                  const Center(child: CircularProgressIndicator())
-                else if (state is DriveShareLoadSuccess) ...{
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: ArDriveTextField(
-                          initialValue: state.driveShareLink.toString(),
-                          isEnabled: false,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      CopyButton(
-                        positionX: 4,
-                        positionY: 40,
-                        copyMessageColor: ArDriveTheme.of(context)
-                            .themeData
-                            .tableTheme
-                            .selectedItemColor,
-                        showCopyText: true,
-                        text: state.driveShareLink.toString(),
-                        child: Text(
-                          appLocalizationsOf(context).copyLink,
-                          style: ArDriveTypography.body
-                              .buttonLargeRegular(
+            title: appLocalizationsOf(context).shareDriveWithOthers,
+            description:
+                state is DriveShareLoadSuccess ? state.drive.name : null,
+            content: SizedBox(
+              width: kLargeDialogWidth,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (state is DriveShareLoadInProgress)
+                    const Center(child: CircularProgressIndicator())
+                  else if (state is DriveShareLoadSuccess) ...{
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+                            decoration: BoxDecoration(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colorTokens
+                                  .inputDisabled,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
                                 color: ArDriveTheme.of(context)
                                     .themeData
-                                    .colors
-                                    .themeFgDefault,
-                              )
-                              .copyWith(
-                                decoration: TextDecoration.underline,
+                                    .colorTokens
+                                    .strokeMid,
                               ),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    state.driveShareLink.toString(),
+                                    style: typography.paragraphNormal(
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colorTokens
+                                          .textXLow,
+                                      fontWeight: ArFontWeight.semiBold,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                CopyButton(
+                                  text: state.driveShareLink.toString(),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    state.drive.isPublic
-                        ? appLocalizationsOf(context)
-                            .anyoneCanAccessThisDrivePublic
-                        : appLocalizationsOf(context)
-                            .anyoneCanAccessThisDrivePrivate,
-                    style: ArDriveTypography.body.buttonLargeRegular(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgDefault,
+                      ],
                     ),
-                  ),
-                } else if (state is DriveShareLoadFail)
-                  Text(state.message)
-              ],
+                    const SizedBox(height: 16),
+                    Text(
+                      state.drive.isPublic
+                          ? appLocalizationsOf(context)
+                              .anyoneCanAccessThisDrivePublic
+                          : appLocalizationsOf(context)
+                              .anyoneCanAccessThisDrivePrivate,
+                      style: typography.paragraphLarge(),
+                    ),
+                  } else if (state is DriveShareLoadFail)
+                    Text(state.message)
+                ],
+              ),
             ),
-          ),
-          actions: [
-            if (state is DriveShareLoadSuccess)
-              ModalAction(
-                action: () {
-                  Navigator.pop(context);
-                  context.read<FeedbackSurveyCubit>().openRemindMe();
-                },
-                title: appLocalizationsOf(context).doneEmphasized,
-              )
-          ],
-        ),
+            actions: [
+              if (state is DriveShareLoadSuccess)
+                ModalAction(
+                  action: () {
+                    Navigator.pop(context);
+                    context.read<FeedbackSurveyCubit>().openRemindMe();
+                  },
+                  title: appLocalizationsOf(context).doneEmphasized,
+                )
+            ],
+          );
+        },
       );
 }
