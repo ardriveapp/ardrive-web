@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class Shortcut {
-  final LogicalKeyboardKey modifier;
+  final LogicalKeyboardKey? modifier;
   final LogicalKeyboardKey key;
   final VoidCallback action;
 
-  Shortcut({required this.modifier, required this.key, required this.action});
+  Shortcut({this.modifier, required this.key, required this.action});
 
   @override
   bool operator ==(Object other) {
@@ -42,10 +42,16 @@ class ShortcutHandlerState extends State<ShortcutHandler> {
       autofocus: true,
       onKeyEvent: (KeyEvent event) {
         for (var shortcut in widget.shortcuts) {
-          if (HardwareKeyboard.instance
-                  .isLogicalKeyPressed(shortcut.modifier) &&
-              HardwareKeyboard.instance.isLogicalKeyPressed(shortcut.key)) {
-            shortcut.action();
+          if (shortcut.modifier == null) {
+            if (HardwareKeyboard.instance.isLogicalKeyPressed(shortcut.key)) {
+              shortcut.action();
+            }
+          } else {
+            if (HardwareKeyboard.instance
+                    .isLogicalKeyPressed(shortcut.modifier!) &&
+                HardwareKeyboard.instance.isLogicalKeyPressed(shortcut.key)) {
+              shortcut.action();
+            }
           }
         }
       },

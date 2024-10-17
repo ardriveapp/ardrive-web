@@ -82,14 +82,15 @@ class AppShellState extends State<AppShell> {
                           driveId: drivesState.selectedDriveId,
                         ));
                       }
+                      if (syncState is SyncInProgress) {}
                     }
                   },
-                  builder: (context, syncState) => syncState is SyncInProgress
-                      ? Stack(
+                  builder: (context, syncState) {
+                    return Stack(children: [
+                      scaffold,
+                      if (syncState is SyncInProgress)
+                        Stack(
                           children: [
-                            AbsorbPointer(
-                              child: scaffold,
-                            ),
                             SizedBox.expand(
                               child: Container(
                                 color: Colors.black.withOpacity(0.5),
@@ -181,8 +182,9 @@ class AppShellState extends State<AppShell> {
                                 ),
                               ),
                           ],
-                        )
-                      : scaffold,
+                        ),
+                    ]);
+                  },
                 ),
               );
           return ScreenTypeLayout.builder(

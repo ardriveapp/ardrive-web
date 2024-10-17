@@ -144,4 +144,6 @@ class DriveDetailLoadSuccess extends DriveDetailState {
 /// the user's profile.
 class DriveDetailLoadNotFound extends DriveDetailState {}
 
+class DriveDetailLoadEmpty extends DriveDetailState {}
+
 class DriveInitialLoading extends DriveDetailState {}

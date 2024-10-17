@@ -22,6 +22,7 @@ import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/repositories/sync_repository.dart';
 import 'package:ardrive/theme/theme_switcher_bloc.dart';
 import 'package:ardrive/theme/theme_switcher_state.dart';
+import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -167,7 +168,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 shell = const LoginPage(gettingStarted: true);
               } else if (state is ProfileLoggedIn ||
                   anonymouslyShowDriveDetail) {
-                shell = BlocConsumer<DrivesCubit, DrivesState>(
+                driveId = driveId ?? rootPath;
+
+                shell = BlocListener<DrivesCubit, DrivesState>(
                   listener: (context, state) {
                     if (state is DrivesLoadSuccess) {
                       final selectedDriveChanged =
@@ -180,110 +183,91 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                       notifyListeners();
                     }
                   },
-                  builder: (context, state) {
-                    Widget? shellPage;
-                    if (state is DrivesLoadSuccess) {
-                      shellPage = !state.hasNoDrives
-                          ? DriveDetailPage(
-                              context: navigatorKey.currentContext!,
-                              anonymouslyShowDriveDetail:
-                                  anonymouslyShowDriveDetail,
-                            )
-                          : NoDrivesPage(
-                              anonymouslyShowDriveDetail:
-                                  anonymouslyShowDriveDetail,
-                            );
-
-                      driveId = state.selectedDriveId;
-                    }
-
-                    shellPage ??= const SizedBox();
-                    driveId = driveId ?? rootPath;
-
-                    return BlocProvider(
-                      key: ValueKey(driveId),
-                      create: (context) => DriveDetailCubit(
-                        driveRepository: DriveRepository(
-                          driveDao: context.read<DriveDao>(),
-                          auth: context.read<ArDriveAuth>(),
-                        ),
-                        activityTracker: context.read<ActivityTracker>(),
-                        driveId: driveId!,
-                        initialFolderId: driveFolderId,
-                        profileCubit: context.read<ProfileCubit>(),
+                  child: BlocProvider(
+                    // key: ValueKey(driveId),
+                    create: (context) => DriveDetailCubit(
+                      driveRepository: DriveRepository(
                         driveDao: context.read<DriveDao>(),
-                        configService: context.read<ConfigService>(),
                         auth: context.read<ArDriveAuth>(),
-                        breadcrumbBuilder: BreadcrumbBuilder(
-                          context.read<FolderRepository>(),
-                        ),
-                        syncCubit: context.read<SyncCubit>(),
                       ),
-                      child: MultiBlocListener(
-                        listeners: [
-                          BlocListener<DriveDetailCubit, DriveDetailState>(
-                            listener: (context, driveDetailCubitState) {
-                              if (driveDetailCubitState
-                                  is DriveDetailLoadSuccess) {
-                                driveId = driveDetailCubitState.currentDrive.id;
-                                driveFolderId = driveDetailCubitState
-                                    .folderInView.folder.id;
+                      activityTracker: context.read<ActivityTracker>(),
+                      driveId: driveId!,
+                      initialFolderId: driveFolderId,
+                      profileCubit: context.read<ProfileCubit>(),
+                      driveDao: context.read<DriveDao>(),
+                      configService: context.read<ConfigService>(),
+                      auth: context.read<ArDriveAuth>(),
+                      breadcrumbBuilder: BreadcrumbBuilder(
+                        context.read<FolderRepository>(),
+                      ),
+                      syncCubit: context.read<SyncCubit>(),
+                    ),
+                    child: MultiBlocListener(
+                      listeners: [
+                        BlocListener<DriveDetailCubit, DriveDetailState>(
+                          listener: (context, driveDetailCubitState) {
+                            if (driveDetailCubitState
+                                is DriveDetailLoadSuccess) {
+                              driveId = driveDetailCubitState.currentDrive.id;
+                              driveFolderId =
+                                  driveDetailCubitState.folderInView.folder.id;
 
-                                //Can be null at the root folder of the drive
-                                notifyListeners();
-                              } else if (driveDetailCubitState
-                                  is DriveDetailLoadNotFound) {
-                                // Do not prompt the user to attach an unfound drive if they are logging out.
-                                final profileCubit =
-                                    context.read<ProfileCubit>();
+                              //Can be null at the root folder of the drive
+                              notifyListeners();
+                            } else if (driveDetailCubitState
+                                is DriveDetailLoadNotFound) {
+                              // Do not prompt the user to attach an unfound drive if they are logging out.
+                              final profileCubit = context.read<ProfileCubit>();
 
-                                if (profileCubit.state is ProfileLoggingOut) {
-                                  logger.d(
-                                      'Drive not found, but user is logging out. Not prompting to attach drive.');
+                              if (profileCubit.state is ProfileLoggingOut) {
+                                logger.d(
+                                    'Drive not found, but user is logging out. Not prompting to attach drive.');
 
-                                  clearState();
+                                clearState();
 
-                                  return;
-                                }
-
-                                attachDrive(
-                                  context: context,
-                                  driveId: driveId,
-                                  driveName: driveName,
-                                  driveKey: sharedDriveKey,
-                                );
+                                return;
                               }
-                            },
-                          ),
-                          BlocListener<FeedbackSurveyCubit,
-                              FeedbackSurveyState>(
-                            listener: (context, state) {
-                              if (state is FeedbackSurveyRemindMe &&
-                                  state.isOpen) {
-                                openFeedbackSurveyModal(context);
-                              } else if (state is FeedbackSurveyRemindMe &&
-                                  !state.isOpen) {
-                                Navigator.pop(context);
-                              } else if (state is FeedbackSurveyDontRemindMe &&
-                                  !state.isOpen) {
-                                Navigator.pop(context);
-                              }
-                            },
-                          ),
-                          BlocListener<ProfileCubit, ProfileState>(
-                            listener: ((context, state) {
-                              if (state is ProfileLoggingOut) {
-                                context.read<FeedbackSurveyCubit>().reset();
-                              }
-                            }),
-                          ),
-                        ],
-                        child: AppShell(
-                          page: shellPage,
+
+                              attachDrive(
+                                context: context,
+                                driveId: driveId,
+                                driveName: driveName,
+                                driveKey: sharedDriveKey,
+                              );
+                            }
+                          },
+                        ),
+                        BlocListener<FeedbackSurveyCubit, FeedbackSurveyState>(
+                          listener: (context, state) {
+                            if (state is FeedbackSurveyRemindMe &&
+                                state.isOpen) {
+                              openFeedbackSurveyModal(context);
+                            } else if (state is FeedbackSurveyRemindMe &&
+                                !state.isOpen) {
+                              Navigator.pop(context);
+                            } else if (state is FeedbackSurveyDontRemindMe &&
+                                !state.isOpen) {
+                              Navigator.pop(context);
+                            }
+                          },
+                        ),
+                        BlocListener<ProfileCubit, ProfileState>(
+                          listener: ((context, state) {
+                            if (state is ProfileLoggingOut) {
+                              context.read<FeedbackSurveyCubit>().reset();
+                            }
+                          }),
+                        ),
+                      ],
+                      child: AppShell(
+                        page: DriveDetailPage(
+                          context: navigatorKey.currentContext!,
+                          anonymouslyShowDriveDetail:
+                              anonymouslyShowDriveDetail,
                         ),
                       ),
-                    );
-                  },
+                    ),
+                  ),
                 );
               }
 
@@ -331,6 +315,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                         driveDao: context.read<DriveDao>(),
                         promptToSnapshotBloc:
                             context.read<PromptToSnapshotBloc>(),
+                        userPreferencesRepository:
+                            context.read<UserPreferencesRepository>(),
                       ),
                     ),
                   ],

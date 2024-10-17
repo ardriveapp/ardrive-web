@@ -1,4 +1,6 @@
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
+import 'package:ardrive/blocs/drives/drives_cubit.dart';
+import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/topbar/help_button.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
@@ -39,6 +41,7 @@ class AppTopBar extends StatelessWidget {
                       context: context,
                       driveDetailCubit: context.read<DriveDetailCubit>(),
                       controller: controller,
+                      drivesCubit: context.read<DrivesCubit>(),
                     );
                   },
                 ),
@@ -46,6 +49,8 @@ class AppTopBar extends StatelessWidget {
             ),
             const SizedBox(width: 24),
             const Spacer(),
+            const GlobalHideToggleButton(),
+            const SizedBox(width: 8),
             const SyncButton(),
             const SizedBox(width: 8),
             const HelpButtonTopBar(),
@@ -54,6 +59,42 @@ class AppTopBar extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class GlobalHideToggleButton extends StatelessWidget {
+  const GlobalHideToggleButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<GlobalHideBloc, GlobalHideState>(
+      builder: (context, hideState) {
+        if (!hideState.userHasHiddenDrive) {
+          return const SizedBox.shrink();
+        }
+
+        final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+        return ArDriveIconButton(
+          tooltip: hideState is ShowingHiddenItems
+              ? 'Hide hidden items'
+              : 'Show hidden items',
+          icon: hideState is ShowingHiddenItems
+              ? ArDriveIcons.eyeOpen(
+                  color: colorTokens.textMid,
+                )
+              : ArDriveIcons.eyeClosed(
+                  color: colorTokens.textMid,
+                ),
+          onPressed: () {
+            context.read<GlobalHideBloc>().add(hideState is ShowingHiddenItems
+                ? HideItems(userHasHiddenItems: hideState.userHasHiddenDrive)
+                : ShowItems(
+                    userHasHiddenItems: hideState.userHasHiddenDrive,
+                  ));
+          },
+        );
+      },
     );
   }
 }

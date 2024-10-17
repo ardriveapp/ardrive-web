@@ -6,8 +6,11 @@ import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/user/repositories/user_preferences_repository.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:collection/collection.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -22,6 +25,7 @@ class DrivesCubit extends Cubit<DrivesState> {
   final PromptToSnapshotBloc _promptToSnapshotBloc;
   final DriveDao _driveDao;
   final ArDriveAuth _auth;
+  final UserPreferencesRepository _userPreferencesRepository;
 
   late StreamSubscription _drivesSubscription;
   String? initialSelectedDriveId;
@@ -32,10 +36,12 @@ class DrivesCubit extends Cubit<DrivesState> {
     required PromptToSnapshotBloc promptToSnapshotBloc,
     required DriveDao driveDao,
     required ActivityTracker activityTracker,
+    required UserPreferencesRepository userPreferencesRepository,
   })  : _profileCubit = profileCubit,
         _promptToSnapshotBloc = promptToSnapshotBloc,
         _driveDao = driveDao,
         _auth = auth,
+        _userPreferencesRepository = userPreferencesRepository,
         super(DrivesLoadInProgress()) {
     _auth.onAuthStateChanged().listen((user) {
       if (user == null) {
@@ -69,8 +75,25 @@ class DrivesCubit extends Cubit<DrivesState> {
       if (state is DrivesLoadSuccess && state.selectedDriveId != null) {
         selectedDriveId = state.selectedDriveId;
       } else {
-        selectedDriveId = initialSelectedDriveId ??
-            (drives.isNotEmpty ? drives.first.id : null);
+        final userPreferences = await _userPreferencesRepository.load();
+
+        final userHasHiddenDrive = drives.any((d) => d.isHidden);
+        logger.d('User has hidden drive: $userHasHiddenDrive');
+
+        await _userPreferencesRepository
+            .saveUserHasHiddenItem(userHasHiddenDrive);
+
+        if (userPreferences.lastSelectedDriveId != null) {
+          final lastSelectedDriveId = userPreferences.lastSelectedDriveId;
+
+          if (drives.firstWhereOrNull((d) => d.id == lastSelectedDriveId) !=
+              null) {
+            selectedDriveId = lastSelectedDriveId;
+          }
+        } else {
+          selectedDriveId = initialSelectedDriveId ??
+              (drives.isNotEmpty ? drives.first.id : null);
+        }
       }
 
       final walletAddress = profileState is ProfileLoggedIn
@@ -118,6 +141,8 @@ class DrivesCubit extends Cubit<DrivesState> {
       );
       _promptToSnapshotBloc.add(const SelectedDrive(driveId: null));
     }
+
+    _userPreferencesRepository.saveLastSelectedDriveId(driveId);
     emit(state);
   }
 
