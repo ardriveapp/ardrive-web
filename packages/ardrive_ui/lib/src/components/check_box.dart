@@ -13,6 +13,8 @@ class ArDriveCheckBox extends StatefulWidget {
     this.titleStyle,
     this.onChange,
     this.titleWidget,
+    this.useNewIcons = true,
+    this.iconSize = 18.5,
   });
 
   /// Initial state of the checkbox.
@@ -28,6 +30,10 @@ class ArDriveCheckBox extends StatefulWidget {
   final Widget? titleWidget;
   final TextStyle? titleStyle;
   final Function(bool value)? onChange;
+
+  final bool useNewIcons;
+
+  final double iconSize;
 
   @override
   State<ArDriveCheckBox> createState() => ArDriveCheckBoxState();
@@ -87,47 +93,75 @@ class ArDriveCheckBoxState extends State<ArDriveCheckBox> {
         }
         widget.onChange?.call(checked);
       },
-      child: ArDriveClickArea(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            state == CheckBoxState.indeterminate
-                ? ArDriveIcon(
-                    icon: ArDriveIconsData.minus_rectangle,
-                    size: 22,
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDefault,
-                  )
-                : AnimatedContainer(
-                    height: 18.5,
-                    width: 18.5,
-                    margin: const EdgeInsets.fromLTRB(3.25, 3.5, 5, 4),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(checkboxBorderRadius),
-                      border: Border.all(
-                        color: _boxColor(),
-                        width: 2,
-                      ),
-                      color: _backgroundColor(),
-                    ),
-                    duration: const Duration(milliseconds: 300),
-                    child: checked
-                        ? ArDriveIcon(
-                            icon: ArDriveIconsData.checkmark,
-                            size: 12,
-                            color: _checkColor(),
-                          )
-                        : null,
-                  ),
-            if (_buildTitle() != null) ...[
-              const SizedBox(width: 8.0),
-              _buildTitle()!,
-            ]
-          ],
-        ),
+      child: widget.useNewIcons
+          ? _buildNewIcons()
+          : ArDriveClickArea(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  state == CheckBoxState.indeterminate
+                      ? ArDriveIcon(
+                          icon: ArDriveIconsData.minus_rectangle,
+                          size: 22,
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgDefault,
+                        )
+                      : AnimatedContainer(
+                          height: widget.iconSize,
+                          width: widget.iconSize,
+                          margin: const EdgeInsets.fromLTRB(3.25, 3.5, 5, 4),
+                          decoration: BoxDecoration(
+                            borderRadius:
+                                BorderRadius.circular(checkboxBorderRadius),
+                            border: Border.all(
+                              color: _boxColor(),
+                              width: 2,
+                            ),
+                            color: _backgroundColor(),
+                          ),
+                          duration: const Duration(milliseconds: 300),
+                          child: checked
+                              ? ArDriveIcon(
+                                  icon: ArDriveIconsData.checkmark,
+                                  size: 12,
+                                  color: _checkColor(),
+                                )
+                              : null,
+                        ),
+                  if (_buildTitle() != null) ...[
+                    const SizedBox(width: 8.0),
+                    _buildTitle()!,
+                  ]
+                ],
+              ),
+            ),
+    );
+  }
+
+  Widget _buildNewIcons() {
+    return ArDriveClickArea(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          state == CheckBoxState.indeterminate
+              ? ArDriveIcon(
+                  icon: ArDriveIconsData.minus_rectangle,
+                  size: widget.iconSize,
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                )
+              : checked
+                  ? ArDriveIcons.checked(size: widget.iconSize)
+                  : ArDriveIcons.box(size: widget.iconSize),
+          if (_buildTitle() != null) ...[
+            const SizedBox(width: 8.0),
+            _buildTitle()!,
+          ]
+        ],
       ),
     );
   }

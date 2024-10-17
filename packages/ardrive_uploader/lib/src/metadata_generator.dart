@@ -164,7 +164,7 @@ class ARFSUploadMetadataGenerator
   }
 }
 
-class ARFSUploadMetadataArgs {
+class ARFSUploadMetadataArgs extends Equatable {
   final String? driveId;
   final String? parentFolderId;
   final String? privacy;
@@ -232,6 +232,18 @@ class ARFSUploadMetadataArgs {
     this.licenseAdditionalTags,
     this.assignedName,
   });
+
+  @override
+  List<Object?> get props => [
+        driveId,
+        parentFolderId,
+        isPrivate,
+        type,
+        entityId,
+        licenseDefinitionTxId,
+        licenseAdditionalTags,
+        assignedName,
+      ];
 }
 
 class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {

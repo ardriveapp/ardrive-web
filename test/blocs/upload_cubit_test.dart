@@ -1,15 +1,19 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
+import 'package:ardrive/core/upload/domain/repository/upload_repository.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/profile_types.dart';
+import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/config/selected_gateway.dart';
@@ -29,7 +33,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pst/pst.dart';
 
 import '../core/upload/uploader_test.dart';
-import '../manifest/domain/manifest_repository_test.dart';
 import '../test_utils/utils.dart';
 import 'drives_cubit_test.dart';
 
@@ -51,8 +54,16 @@ class MockTurboBalanceRetriever extends Mock implements TurboBalanceRetriever {}
 class MockTurboUploadCostCalculator extends Mock
     implements TurboUploadCostCalculator {}
 
+class MockUploadRepository extends Mock implements UploadRepository {}
+
 class MockArDriveUploadPreparationManager extends Mock
     implements ArDriveUploadPreparationManager {}
+
+class MockArnsRepository extends Mock implements ARNSRepository {}
+
+class MockManifestRepository extends Mock implements ManifestRepository {}
+
+class MockCreateManifestCubit extends Mock implements CreateManifestCubit {}
 
 // TODO(thiagocarvalhodev): Test the case of remove files before download when pass ConflictingFileActions.SKIP.
 // TODO: Test startUpload
@@ -70,9 +81,12 @@ void main() {
   late MockTurboBalanceRetriever mockTurboBalanceRetriever;
   late MockTurboUploadCostCalculator mockTurboUploadCostCalculator;
   late MockArDriveUploadPreparationManager mockArDriveUploadPreparationManager;
-  late MockLicenseService mockLicense;
   late MockConfigService mockConfigService;
   late MockArnsRepository mockArnsRepository;
+  late MockUploadRepository mockUploadRepository;
+  late MockManifestRepository mockManifestRepository;
+  late MockCreateManifestCubit mockCreateManifestCubit;
+
   const tDriveId = 'drive_id';
   const tRootFolderId = 'root-folder-id';
   const tRootFolderFileCount = 5;
@@ -98,6 +112,8 @@ void main() {
   final tKeyBytes = Uint8List(32);
   fillBytesWithSecureRandom(tKeyBytes);
   mockConfigService = MockConfigService();
+  mockManifestRepository = MockManifestRepository();
+  mockCreateManifestCubit = MockCreateManifestCubit();
 
   setUpAll(() async {
     when(() => mockConfigService.config).thenReturn(AppConfig(
@@ -109,6 +125,9 @@ void main() {
         url: 'https://arweave.net',
       ),
     ));
+    when(() => mockManifestRepository.getManifestFilesInFolder(
+            driveId: any(named: 'driveId'), folderId: any(named: 'folderId')))
+        .thenAnswer((invocation) => Future.value([]));
 
     registerFallbackValue(SecretKey([]));
     registerFallbackValue(Wallet());
@@ -190,9 +209,9 @@ void main() {
     mockTurboBalanceRetriever = MockTurboBalanceRetriever();
     mockTurboUploadCostCalculator = MockTurboUploadCostCalculator();
     mockArDriveUploadPreparationManager = MockArDriveUploadPreparationManager();
-    mockLicense = MockLicenseService();
     mockArnsRepository = MockArnsRepository();
     late MockUploadPlan uploadPlan;
+    mockUploadRepository = MockUploadRepository();
 
     // Setup mock drive.
     await addTestFilesToDb(
@@ -261,21 +280,25 @@ void main() {
       usdUploadCost: 100);
 
   UploadCubit getUploadCubitInstanceWith(List<UploadFile> files) {
-    return UploadCubit(
+    final cubit = UploadCubit(
       activityTracker: MockActivityTracker(),
       arDriveUploadManager: mockArDriveUploadPreparationManager,
       uploadFileSizeChecker: mockUploadFileSizeChecker,
       driveId: tDriveId,
       parentFolderId: tRootFolderId,
-      files: files,
       profileCubit: mockProfileCubit!,
       driveDao: mockDriveDao,
       auth: mockArDriveAuth,
-      pst: mockPst,
-      licenseService: mockLicense,
       configService: mockConfigService,
       arnsRepository: mockArnsRepository,
+      uploadRepository: mockUploadRepository,
+      manifestRepository: mockManifestRepository,
+      createManifestCubit: mockCreateManifestCubit,
     );
+
+    cubit.selectFiles(files.map((e) => e.ioFile).toList(), tRootFolderId);
+    cubit.isTest = true;
+    return cubit;
   }
 
   void setDumbUploadPlan() => when(() => mockUploadPlanUtils.filesToUploadPlan(
@@ -345,12 +368,16 @@ void main() {
         'should found the conflicting files correctly and set isAllFilesConflicting to true'
         ' when all files are conflicting',
         build: () {
+          when(() => mockUploadFileSizeChecker.hasFileAboveWarningSizeLimit(
+                  files: any(named: 'files')))
+              .thenAnswer((invocation) => Future.value(false));
+          when(() => mockArDriveAuth.getWalletAddress())
+              .thenAnswer((invocation) => Future.value(tWalletAddress));
+          when(() => mockArnsRepository.getAntRecordsForWallet(tWalletAddress!))
+              .thenAnswer((invocation) => Future.value([]));
           return getUploadCubitInstanceWith(tAllConflictingFiles);
         },
         act: (cubit) async {
-          when(() => mockArnsRepository.getAntRecordsForWallet(any(),
-                  update: any(named: 'update')))
-              .thenAnswer((invocation) => Future.value([]));
           await cubit.startUploadPreparation();
           await cubit.checkConflictingFiles();
         },
@@ -467,6 +494,7 @@ void main() {
           },
           expect: () => <dynamic>[
                 const TypeMatcher<UploadPreparationInitialized>(),
+                const TypeMatcher<UploadPreparationInProgress>(),
                 const TypeMatcher<UploadShowingWarning>()
               ]);
       blocTest<UploadCubit, UploadState>(
@@ -486,6 +514,7 @@ void main() {
           },
           expect: () => <dynamic>[
                 const TypeMatcher<UploadPreparationInitialized>(),
+                const TypeMatcher<UploadPreparationInProgress>(),
                 const TypeMatcher<UploadShowingWarning>(),
                 const TypeMatcher<UploadPreparationInProgress>(),
                 const TypeMatcher<UploadPreparationInProgress>(),
