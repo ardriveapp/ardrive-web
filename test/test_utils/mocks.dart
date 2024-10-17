@@ -238,6 +238,7 @@ FileDataTableItem createMockFileDataTableItem(
     index: index,
     pinnedDataOwnerAddress: pinnedDataOwnerAddress,
     isOwner: isOwner,
+    isManifest: false,
   );
 }
 

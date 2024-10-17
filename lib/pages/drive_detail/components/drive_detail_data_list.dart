@@ -203,10 +203,11 @@ Widget _buildDataListContent(
           lastUpdated: row.lastUpdated,
           dateCreated: row.dateCreated,
           dataTableItem: row,
+          context: context,
           license: row.licenseType == null
               ? ''
               : context
-                .read<LicenseService>()
+                  .read<LicenseService>()
                   .licenseMetaByType(row.licenseType!)
                   .shortName,
           isHidden: row.isHidden,

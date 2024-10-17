@@ -7,6 +7,7 @@ import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/models/license.dart';
 import 'package:ardrive/services/license/license_state.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 
 abstract class ArDriveDataTableItem extends IndexedItem {
   final String name;
@@ -89,6 +90,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
   final String? pinnedDataOwnerAddress;
   final Thumbnail? thumbnail;
   final List<String>? assignedNames;
+  final bool isManifest;
 
   FileDataTableItem(
       {required super.driveId,
@@ -108,6 +110,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
       required this.metadataTx,
       required this.dataTx,
       required this.pinnedDataOwnerAddress,
+      required this.isManifest,
       this.assignedNames,
       this.thumbnail,
       super.licenseType,
@@ -149,6 +152,7 @@ class DriveDataTableItemMapper {
       index: index,
       pinnedDataOwnerAddress: file.pinnedDataOwnerAddress,
       isHidden: file.isHidden,
+      isManifest: FileTypeHelper.isManifest(file.dataContentType ?? ''),
       assignedNames: parseAssignedNamesFromString(file.assignedNames),
       thumbnail: file.thumbnail != null && file.thumbnail != 'null'
           ? Thumbnail.fromJson(jsonDecode(file.thumbnail!))
@@ -179,6 +183,7 @@ class DriveDataTableItemMapper {
       index: 0,
       pinnedDataOwnerAddress: fileEntry.pinnedDataOwnerAddress,
       isHidden: fileEntry.isHidden,
+      isManifest: FileTypeHelper.isManifest(fileEntry.dataContentType ?? ''),
       assignedNames: parseAssignedNamesFromString(fileEntry.assignedNames),
       thumbnail: fileEntry.thumbnail != null && fileEntry.thumbnail != 'null'
           ? Thumbnail.fromJson(jsonDecode(fileEntry.thumbnail!))
@@ -247,6 +252,7 @@ class DriveDataTableItemMapper {
       index: 0,
       pinnedDataOwnerAddress: revision.pinnedDataOwnerAddress,
       isHidden: revision.isHidden,
+      isManifest: FileTypeHelper.isManifest(revision.dataContentType ?? ''),
       assignedNames: parseAssignedNamesFromString(revision.assignedNames),
       thumbnail: revision.thumbnail != null && revision.thumbnail != 'null'
           ? Thumbnail.fromJson(jsonDecode(revision.thumbnail!))
