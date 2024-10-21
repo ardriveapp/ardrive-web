@@ -88,23 +88,5 @@ void main() {
               currentTheme: ArDriveThemes.dark,
               lastSelectedDriveId: 'drive_id'));
     });
-
-    // test('should clean last selected drive id if user is not authenticated',
-    //     () async {
-    //   final repository = UserPreferencesRepository(
-    //     store: mockStore,
-    //     themeDetector: mockThemeDetector,
-    //     auth: mockAuth,
-    //   );
-
-    //   when(() => mockStore.getString('lastSelectedDriveId'))
-    //       .thenReturn('drive_id');
-    //   when(() => mockAuth.onAuthStateChanged())
-    //       .thenAnswer((_) => Stream.value(null));
-
-    //   await repository.load();
-
-    //   verify(() => mockStore.remove('lastSelectedDriveId')).called(1);
-    // });
   });
 }

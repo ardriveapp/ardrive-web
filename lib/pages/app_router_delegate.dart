@@ -184,7 +184,6 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     }
                   },
                   child: BlocProvider(
-                    // key: ValueKey(driveId),
                     create: (context) => DriveDetailCubit(
                       driveRepository: DriveRepository(
                         driveDao: context.read<DriveDao>(),
