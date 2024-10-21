@@ -82,7 +82,6 @@ class AppShellState extends State<AppShell> {
                           driveId: drivesState.selectedDriveId,
                         ));
                       }
-                      if (syncState is SyncInProgress) {}
                     }
                   },
                   builder: (context, syncState) {

@@ -272,8 +272,6 @@ class _AppSideBarState extends State<AppSideBar> {
     );
   }
 
-  // Widget _buildAccordion(DrivesLoadSuccess state, bool isMobile) {}
-
   Widget _buildSideBarBottom() {
     return _isExpanded
         ? Padding(
@@ -725,12 +723,9 @@ class _Accordion extends StatelessWidget {
                     fontWeight: ArFontWeight.semiBold,
                   ),
                 ),
-                state.sharedDrives
-                    .where((element) {
-                      final isHidden = hideState is HiddingItems;
 
-                      return (isHidden ? !element.isHidden : true);
-                    })
+                /// Shared drives are always visible
+                state.sharedDrives
                     .map(
                       (d) => DriveListTile(
                         hasAlert: state.drivesWithAlerts.contains(d.id),
@@ -739,7 +734,7 @@ class _Accordion extends StatelessWidget {
                           context.read<DrivesCubit>().selectDrive(d.id);
                         },
                         isSelected: state.selectedDriveId == d.id,
-                        isHidden: d.isHidden,
+                        isHidden: false,
                       ),
                     )
                     .toList(),

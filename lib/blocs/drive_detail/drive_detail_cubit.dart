@@ -346,8 +346,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     _selectedItem = item;
 
-    debugPrint('selectedItem: ${_selectedItem?.id}');
-
     int? selectedPage;
 
     if (openSelectedPage) {
