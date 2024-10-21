@@ -1,12 +1,8 @@
 import 'network_transactions.drift';
 
 CREATE TABLE licenses (
-    fileId TEXT NOT NULL,
-    driveId TEXT NOT NULL,
-    dataTxId TEXT NOT NULL,
-
-    licenseTxType TEXT NOT NULL,
     licenseTxId TEXT NOT NULL,
+    licenseTxType TEXT NOT NULL,
 
     bundledIn TEXT,
 
@@ -16,6 +12,6 @@ CREATE TABLE licenses (
 
     customGQLTags TEXT,
 
-    PRIMARY KEY (fileId, driveId, dataTxId, licenseTxId),
+    PRIMARY KEY (licenseTxId),
     FOREIGN KEY (licenseTxId) REFERENCES network_transactions(id)
 );
