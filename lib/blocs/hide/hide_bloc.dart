@@ -157,11 +157,12 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     Drive? newDriveEntry;
     FileEntry? newFileEntry;
     FolderEntry? newFolderEntry;
+    final timestamp = DateTime.now();
 
     if (currentEntry is Drive) {
       newDriveEntry = currentEntry.copyWith(
         isHidden: isHidden,
-        lastUpdated: DateTime.now(),
+        lastUpdated: timestamp,
       );
 
       newEntryEntity = newDriveEntry.asEntity();
@@ -214,12 +215,12 @@ class HideBloc extends Bloc<HideEvent, HideState> {
       if (entryIsFile) {
         newFileEntry = currentEntry.copyWith(
           isHidden: isHidden,
-          lastUpdated: DateTime.now(),
+          lastUpdated: timestamp,
         );
       } else if (entryIsFolder) {
         newFolderEntry = currentEntry.copyWith(
           isHidden: isHidden,
-          lastUpdated: DateTime.now(),
+          lastUpdated: timestamp,
         );
       }
 
@@ -274,20 +275,23 @@ class HideBloc extends Bloc<HideEvent, HideState> {
                 isHidden ? RevisionAction.hide : RevisionAction.unhide,
           ));
         }
-
       });
     }
 
-    final hideAction = entryIsFile
-        ? (isHidden ? HideAction.hideFile : HideAction.unhideFile)
-        : entryIsDrive
-            ? (isHidden ? HideAction.hideDrive : HideAction.unhideDrive)
-            : (isHidden ? HideAction.hideFolder : HideAction.unhideFolder);
+    HideAction action;
+
+    if (entryIsFile) {
+      action = isHidden ? HideAction.hideFile : HideAction.unhideFile;
+    } else if (entryIsDrive) {
+      action = isHidden ? HideAction.hideDrive : HideAction.unhideDrive;
+    } else {
+      action = isHidden ? HideAction.hideFolder : HideAction.unhideFolder;
+    }
 
     emit(
       ConfirmingHideState(
         uploadMethod: UploadMethod.turbo,
-        hideAction: hideAction,
+        hideAction: action,
         dataItems: dataItems,
         saveEntitiesToDb: saveEntitiesToDb,
       ),

@@ -75,23 +75,31 @@ class GlobalHideToggleButton extends StatelessWidget {
         }
 
         final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+        final tooltip = hideState is ShowingHiddenItems
+            ? 'Hide hidden items'
+            : 'Show hidden items';
+
+        final icon = hideState is ShowingHiddenItems
+            ? ArDriveIcons.eyeOpen(
+                color: colorTokens.textMid,
+              )
+            : ArDriveIcons.eyeClosed(
+                color: colorTokens.textMid,
+              );
+
         return ArDriveIconButton(
-          tooltip: hideState is ShowingHiddenItems
-              ? 'Hide hidden items'
-              : 'Show hidden items',
-          icon: hideState is ShowingHiddenItems
-              ? ArDriveIcons.eyeOpen(
-                  color: colorTokens.textMid,
-                )
-              : ArDriveIcons.eyeClosed(
-                  color: colorTokens.textMid,
-                ),
+          tooltip: tooltip,
+          icon: icon,
           onPressed: () {
-            context.read<GlobalHideBloc>().add(hideState is ShowingHiddenItems
-                ? HideItems(userHasHiddenItems: hideState.userHasHiddenDrive)
-                : ShowItems(
-                    userHasHiddenItems: hideState.userHasHiddenDrive,
-                  ));
+            context.read<GlobalHideBloc>().add(
+                  hideState is ShowingHiddenItems
+                      ? HideItems(
+                          userHasHiddenItems: hideState.userHasHiddenDrive)
+                      : ShowItems(
+                          userHasHiddenItems: hideState.userHasHiddenDrive,
+                        ),
+                );
           },
         );
       },

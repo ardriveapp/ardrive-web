@@ -49,8 +49,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   bool _refreshSelectedItem = false;
 
-  bool _showHiddenFiles = false;
-
   DriveDetailCubit({
     required String driveId,
     String? initialFolderId,
@@ -112,12 +110,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     _driveId = driveId;
 
     openFolder(folderId: drive.rootFolderId);
-  }
-
-  void toggleHiddenFiles() {
-    _showHiddenFiles = !_showHiddenFiles;
-
-    refreshDriveDataTable();
   }
 
   Future<void> openFolder({
@@ -240,7 +232,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 rowsPerPage: availableRowsPerPage.first,
                 availableRowsPerPage: availableRowsPerPage,
                 currentFolderContents: currentFolderContents,
-                isShowingHiddenFiles: _showHiddenFiles,
                 pathSegments: pathSegments,
                 driveIsEmpty: folderContents.files.isEmpty &&
                     folderContents.subfolders.isEmpty,
@@ -267,7 +258,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 multiselect: false,
                 currentFolderContents: currentFolderContents,
                 columnVisibility: columnsVisibility,
-                isShowingHiddenFiles: _showHiddenFiles,
                 showSelectedItemDetails: _selectedItem != null,
               ),
             );
@@ -474,37 +464,44 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       final state = this.state as DriveDetailLoadSuccess;
       emit(state.copyWith(
         forceRebuildKey: UniqueKey(),
-        isShowingHiddenFiles: _showHiddenFiles,
       ));
     }
   }
 
-  bool canNavigateThroughImages() {
-    final numberOfImages = getAllImagesOfCurrentFolder().length;
+  bool canNavigateThroughImages(bool showHiddenImages) {
+    final numberOfImages = getAllImagesOfCurrentFolder(showHiddenImages).length;
     return numberOfImages > 1;
   }
 
-  Future<void> selectNextImage() => _selectImageRelativeToCurrent(1);
-  Future<void> selectPreviousImage() => _selectImageRelativeToCurrent(-1);
+  Future<void> selectNextImage(bool showHiddenImages) =>
+      _selectImageRelativeToCurrent(1, showHiddenImages);
+  Future<void> selectPreviousImage(bool showHiddenImages) =>
+      _selectImageRelativeToCurrent(-1, showHiddenImages);
 
-  Future<void> _selectImageRelativeToCurrent(int offset) async {
-    final currentIndex = getIndexForImage(_selectedItem as FileDataTableItem);
+  Future<void> _selectImageRelativeToCurrent(
+      int offset, bool showHiddenImages) async {
+    final currentIndex = getIndexForImage(
+      _selectedItem as FileDataTableItem,
+      showHiddenImages,
+    );
     final nextIndex = currentIndex + offset;
-    final nextImage = getImageForIndex(nextIndex);
+    final nextImage = getImageForIndex(nextIndex, showHiddenImages);
 
     await selectDataItem(nextImage);
   }
 
-  FileDataTableItem getImageForIndex(int index) {
-    final allImagesOfCurrentFolder = getAllImagesOfCurrentFolder();
+  FileDataTableItem getImageForIndex(int index, bool showHiddenImages) {
+    final allImagesOfCurrentFolder =
+        getAllImagesOfCurrentFolder(showHiddenImages);
     final cyclicIndex = index % allImagesOfCurrentFolder.length;
     final image = allImagesOfCurrentFolder[cyclicIndex];
 
     return image;
   }
 
-  int getIndexForImage(FileDataTableItem image) {
-    final allImagesOfCurrentFolder = getAllImagesOfCurrentFolder();
+  int getIndexForImage(FileDataTableItem image, bool showHiddenImages) {
+    final allImagesOfCurrentFolder =
+        getAllImagesOfCurrentFolder(showHiddenImages);
     final index = allImagesOfCurrentFolder.indexWhere(
       (element) => element.id == image.id,
     );
@@ -512,14 +509,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     return index;
   }
 
-  List<FileDataTableItem> getAllImagesOfCurrentFolder() {
+  List<FileDataTableItem> getAllImagesOfCurrentFolder(bool showHiddenImages) {
     if (_allImagesOfCurrentFolder != null) {
       return _allImagesOfCurrentFolder!;
     }
 
     final state = this.state as DriveDetailLoadSuccess;
-
-    final isShowingHiddenFiles = state.isShowingHiddenFiles;
 
     final List<FileDataTableItem> allImagesForFolder =
         state.currentFolderContents.whereType<FileDataTableItem>().where(
@@ -529,7 +524,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         );
 
         return supportedImageType &&
-            (isShowingHiddenFiles ? true : !element.isHidden);
+            (showHiddenImages ? true : !element.isHidden);
       },
     ).toList();
 

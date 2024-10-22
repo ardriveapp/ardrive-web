@@ -327,11 +327,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     required bool canDownloadMultipleFiles,
     required GlobalHideState hideState,
   }) {
-    final driveDetailCubit = context.read<DriveDetailCubit>();
-    ArDriveTypographyNew.of(context);
-
-    final isShowingHiddenFiles = hideState is HiddingItems;
-
     return Column(
       children: [
         const AppTopBar(),
@@ -597,26 +592,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                             ),
                                           ),
                                         ),
-                                        ArDriveDropdownItem(
-                                          onClick: () {
-                                            driveDetailCubit
-                                                .toggleHiddenFiles();
-                                          },
-                                          content: _buildItem(
-                                            isShowingHiddenFiles
-                                                ? appLocalizationsOf(context)
-                                                    .concealHiddenItems
-                                                : appLocalizationsOf(context)
-                                                    .revealHiddenItems,
-                                            isShowingHiddenFiles
-                                                ? ArDriveIcons.eyeClosed(
-                                                    size: defaultIconSize,
-                                                  )
-                                                : ArDriveIcons.eyeOpen(
-                                                    size: defaultIconSize,
-                                                  ),
-                                          ),
-                                        ),
                                         if (!driveDetailState
                                                 .hasWritePermissions &&
                                             !isDriveOwner &&
@@ -725,16 +700,22 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                   onNextImageNavigation: () {
                                     context
                                         .read<DriveDetailCubit>()
-                                        .selectNextImage();
+                                        .selectNextImage(
+                                          hideState is ShowingHiddenItems,
+                                        );
                                   },
                                   onPreviousImageNavigation: () {
                                     context
                                         .read<DriveDetailCubit>()
-                                        .selectPreviousImage();
+                                        .selectPreviousImage(
+                                          hideState is ShowingHiddenItems,
+                                        );
                                   },
                                   canNavigateThroughImages: context
                                       .read<DriveDetailCubit>()
-                                      .canNavigateThroughImages(),
+                                      .canNavigateThroughImages(
+                                        hideState is ShowingHiddenItems,
+                                      ),
                                 )
                               : const SizedBox(),
                         ),
@@ -794,13 +775,18 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
             drivePrivacy: driveDetailLoadSuccessState.currentDrive.privacy,
             item: driveDetailLoadSuccessState.selectedItem!,
             onNextImageNavigation: () {
-              context.read<DriveDetailCubit>().selectNextImage();
+              context
+                  .read<DriveDetailCubit>()
+                  .selectNextImage(hideState is ShowingHiddenItems);
             },
             onPreviousImageNavigation: () {
-              context.read<DriveDetailCubit>().selectPreviousImage();
+              context
+                  .read<DriveDetailCubit>()
+                  .selectPreviousImage(hideState is ShowingHiddenItems);
             },
-            canNavigateThroughImages:
-                context.read<DriveDetailCubit>().canNavigateThroughImages(),
+            canNavigateThroughImages: context
+                .read<DriveDetailCubit>()
+                .canNavigateThroughImages(hideState is ShowingHiddenItems),
           ),
         ),
       );
@@ -1139,7 +1125,6 @@ class MobileFolderNavigation extends StatelessWidget {
           ),
           BlocBuilder<DriveDetailCubit, DriveDetailState>(
             builder: (context, state) {
-              final driveDetailCubit = context.read<DriveDetailCubit>();
               if (state is DriveDetailLoadSuccess) {
                 final isOwner = isDriveOwner(context.read<ArDriveAuth>(),
                     state.currentDrive.ownerAddress);
@@ -1264,23 +1249,6 @@ class MobileFolderNavigation extends StatelessWidget {
                         ArDriveIcons.info(
                           size: defaultIconSize,
                         ),
-                      ),
-                    ),
-                    ArDriveDropdownItem(
-                      onClick: () {
-                        driveDetailCubit.toggleHiddenFiles();
-                      },
-                      content: _buildItem(
-                        isShowingHiddenFiles
-                            ? appLocalizationsOf(context).concealHiddenItems
-                            : appLocalizationsOf(context).revealHiddenItems,
-                        isShowingHiddenFiles
-                            ? ArDriveIcons.eyeClosed(
-                                size: defaultIconSize,
-                              )
-                            : ArDriveIcons.eyeOpen(
-                                size: defaultIconSize,
-                              ),
                       ),
                     ),
                     if (!state.hasWritePermissions &&
