@@ -19,6 +19,15 @@ void main() {
   setUp(() {
     mockUserPreferencesRepository = MockUserPreferencesRepository();
     mockDriveDao = MockDriveDao();
+    when(() => mockUserPreferencesRepository.clear()).thenAnswer((_) async {});
+    when(() => mockUserPreferencesRepository.load()).thenAnswer((_) async {
+      return const UserPreferences(
+        showHiddenFiles: false,
+        userHasHiddenDrive: false,
+        currentTheme: ArDriveThemes.light,
+        lastSelectedDriveId: '',
+      );
+    });
 
     when(() => mockUserPreferencesRepository.watch()).thenAnswer(
       (_) => const Stream.empty(),
