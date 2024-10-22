@@ -27,12 +27,12 @@ class GlobalHideBloc extends Bloc<GlobalHideEvent, GlobalHideState> {
     on<GlobalHideEvent>((event, emit) async {
       if (event is ShowItems) {
         emit(ShowingHiddenItems(userHasHiddenDrive: event.userHasHiddenItems));
-        _userPreferencesRepository.saveShowHiddenFiles(true);
+        await _userPreferencesRepository.saveShowHiddenFiles(true);
       } else if (event is HideItems) {
         emit(HiddingItems(userHasHiddenDrive: event.userHasHiddenItems));
-        _userPreferencesRepository.saveShowHiddenFiles(false);
+        await _userPreferencesRepository.saveShowHiddenFiles(false);
       } else if (event is RefreshOptions) {
-        final hasHiddenItems = await _driveDao.hasHiddenItems().getSingle();
+        final hasHiddenItems = await _driveDao.userHasHiddenItems();
         emit(state.copyWith(userHasHiddenDrive: hasHiddenItems));
       }
     });

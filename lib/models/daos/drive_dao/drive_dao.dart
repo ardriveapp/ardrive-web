@@ -736,6 +736,10 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<int> numberOfFolders() {
     return (select(folderEntries).table.count()).getSingle();
   }
+
+  Future<bool> userHasHiddenItems() {
+    return hasHiddenItems().getSingle();
+  }
 }
 
 class FolderNotFoundInDriveException implements Exception {

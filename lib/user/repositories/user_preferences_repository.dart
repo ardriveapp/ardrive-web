@@ -80,39 +80,41 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
 
   @override
   Future<void> saveTheme(ArDriveThemes theme) async {
-    (await _getStore()).putString(
-      'currentTheme',
-      theme.name,
+    await _updatePreference(
+      key: 'currentTheme',
+      value: theme.name,
+      updateFunction: (value) =>
+          _currentUserPreferences!.copyWith(currentTheme: theme),
     );
   }
 
   @override
   Future<void> saveLastSelectedDriveId(String driveId) async {
-    (await _getStore()).putString(
-      'lastSelectedDriveId',
-      driveId,
+    await _updatePreference(
+      key: 'lastSelectedDriveId',
+      value: driveId,
+      updateFunction: (value) =>
+          _currentUserPreferences!.copyWith(lastSelectedDriveId: value),
     );
   }
 
   @override
   Future<void> saveShowHiddenFiles(bool showHiddenFiles) async {
-    (await _getStore()).putBool(
-      'showHiddenFiles',
-      showHiddenFiles,
+    await _updatePreference(
+      key: 'showHiddenFiles',
+      value: showHiddenFiles,
+      updateFunction: (value) =>
+          _currentUserPreferences!.copyWith(showHiddenFiles: value),
     );
   }
 
   @override
   Future<void> saveUserHasHiddenItem(bool userHasHiddenDrive) async {
-    _currentUserPreferences = _currentUserPreferences!.copyWith(
-      userHasHiddenDrive: userHasHiddenDrive,
-    );
-
-    _userPreferencesController.sink.add(_currentUserPreferences!);
-
-    (await _getStore()).putBool(
-      'userHasHiddenDrive',
-      userHasHiddenDrive,
+    await _updatePreference(
+      key: 'userHasHiddenDrive',
+      value: userHasHiddenDrive,
+      updateFunction: (value) =>
+          _currentUserPreferences!.copyWith(userHasHiddenDrive: value),
     );
   }
 
@@ -125,6 +127,12 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
   @override
   Future<void> clearLastSelectedDriveId() async {
     (await _getStore()).remove('lastSelectedDriveId');
+
+    _currentUserPreferences = _currentUserPreferences!.copyWith(
+      lastSelectedDriveId: null,
+    );
+
+    _userPreferencesController.sink.add(_currentUserPreferences!);
   }
 
   // parse theme from string to ArDriveThemes
@@ -136,6 +144,24 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
         return ArDriveThemes.dark;
       default:
         return ArDriveThemes.light;
+    }
+  }
+
+  Future<void> _updatePreference<T>({
+    required String key,
+    required T value,
+    required UserPreferences Function(T) updateFunction,
+  }) async {
+    _currentUserPreferences = updateFunction(value);
+    _userPreferencesController.sink.add(_currentUserPreferences!);
+
+    final store = await _getStore();
+    if (value is String) {
+      await store.putString(key, value as String);
+    } else if (value is bool) {
+      await store.putBool(key, value as bool);
+    } else {
+      throw ArgumentError('Unsupported type for preference value');
     }
   }
 }

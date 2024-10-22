@@ -3,6 +3,7 @@ import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/user_preferences.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:async/async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -37,17 +38,25 @@ void main() {
       when(() => mockStore.getString('currentTheme')).thenReturn(null);
       when(() => mockThemeDetector.getOSDefaultTheme())
           .thenReturn(ArDriveThemes.light);
+      when(() => mockStore.getBool('showHiddenFiles')).thenReturn(false);
+      when(() => mockStore.getBool('userHasHiddenDrive')).thenReturn(false);
 
       final result = await repository.load();
 
       expect(
           result,
           const UserPreferences(
-              currentTheme: ArDriveThemes.light, lastSelectedDriveId: null));
+            currentTheme: ArDriveThemes.light,
+            lastSelectedDriveId: null,
+            showHiddenFiles: false,
+            userHasHiddenDrive: false,
+          ));
     });
 
     test('should return saved theme from storage', () async {
       when(() => mockStore.getString('currentTheme')).thenReturn('dark');
+      when(() => mockStore.getBool('showHiddenFiles')).thenReturn(false);
+      when(() => mockStore.getBool('userHasHiddenDrive')).thenReturn(false);
       when(() => mockAuth.onAuthStateChanged())
           .thenAnswer((_) => Stream.value(getFakeUser()));
 
@@ -56,7 +65,11 @@ void main() {
       expect(
           result,
           const UserPreferences(
-              currentTheme: ArDriveThemes.dark, lastSelectedDriveId: null));
+            currentTheme: ArDriveThemes.dark,
+            lastSelectedDriveId: null,
+            showHiddenFiles: false,
+            userHasHiddenDrive: false,
+          ));
     });
 
     test('should save theme to storage', () async {
@@ -75,18 +88,150 @@ void main() {
           .thenAnswer((_) async => true);
 
       await repository.saveLastSelectedDriveId('drive_id');
+
+      verify(() => mockStore.putString('lastSelectedDriveId', 'drive_id'))
+          .called(1);
     });
 
     test('should return last selected drive id from storage', () async {
       when(() => mockStore.getString('lastSelectedDriveId'))
           .thenReturn('drive_id');
+      when(() => mockStore.getString('currentTheme')).thenReturn('dark');
+      when(() => mockStore.getBool('showHiddenFiles')).thenReturn(false);
+      when(() => mockStore.getBool('userHasHiddenDrive')).thenReturn(false);
+
       final result = await repository.load();
 
       expect(
           result,
           const UserPreferences(
-              currentTheme: ArDriveThemes.dark,
-              lastSelectedDriveId: 'drive_id'));
+            currentTheme: ArDriveThemes.dark,
+            lastSelectedDriveId: 'drive_id',
+            showHiddenFiles: false,
+            userHasHiddenDrive: false,
+          ));
     });
+
+    test('should save show hidden files preference to storage', () async {
+      when(() => mockStore.putBool('showHiddenFiles', true))
+          .thenAnswer((_) async => true);
+
+      await repository.saveShowHiddenFiles(true);
+
+      verify(() => mockStore.putBool('showHiddenFiles', true)).called(1);
+    });
+
+    test('should save user has hidden item preference to storage', () async {
+      when(() => mockStore.putBool('userHasHiddenDrive', true))
+          .thenAnswer((_) async => true);
+
+      await repository.saveUserHasHiddenItem(true);
+
+      verify(() => mockStore.putBool('userHasHiddenDrive', true)).called(1);
+    });
+
+    test('should clear last selected drive id from storage', () async {
+      when(() => mockStore.remove('lastSelectedDriveId'))
+          .thenAnswer((_) async => true);
+
+      await repository.clearLastSelectedDriveId();
+
+      verify(() => mockStore.remove('lastSelectedDriveId')).called(1);
+    });
+
+    test(
+      'should watch for changes in user preferences',
+      () async {
+        const initialPreferences = UserPreferences(
+          currentTheme: ArDriveThemes.light,
+          lastSelectedDriveId: null,
+          showHiddenFiles: false,
+          userHasHiddenDrive: false,
+        );
+
+        when(() => mockStore.getString('currentTheme')).thenReturn('light');
+        when(() => mockStore.getString('lastSelectedDriveId')).thenReturn(null);
+        when(() => mockStore.getBool('showHiddenFiles')).thenReturn(false);
+        when(() => mockStore.getBool('userHasHiddenDrive')).thenReturn(false);
+
+        final stream = repository.watch();
+        // Use a StreamQueue to easily work with the stream in tests
+        final queue = StreamQueue(stream);
+
+        await repository.load(); // Ensure initial preferences are loaded
+
+        expect(
+          await queue.next,
+          equals(initialPreferences),
+        );
+
+        when(() => mockStore.putString('currentTheme', ArDriveThemes.dark.name))
+            .thenAnswer((_) async => true);
+        when(() => mockStore.putString('lastSelectedDriveId', 'new_drive_id'))
+            .thenAnswer((_) async => true);
+        when(() => mockStore.putBool('showHiddenFiles', true))
+            .thenAnswer((_) async => true);
+        when(() => mockStore.putBool('userHasHiddenDrive', true))
+            .thenAnswer((_) async => true);
+
+        // Simulate changes in preferences
+        when(() => mockStore.getString('currentTheme')).thenReturn('dark');
+        when(() => mockStore.getString('lastSelectedDriveId'))
+            .thenReturn('new_drive_id');
+        when(() => mockStore.getBool('showHiddenFiles')).thenReturn(true);
+        when(() => mockStore.getBool('userHasHiddenDrive')).thenReturn(true);
+
+        // Trigger preference changes
+        await repository.saveTheme(ArDriveThemes.dark);
+        var next = await queue.next;
+        var expected = initialPreferences.copyWith(
+          currentTheme: ArDriveThemes.dark,
+        );
+
+        expect(
+          next,
+          equals(expected),
+        );
+        await repository.saveLastSelectedDriveId('new_drive_id');
+        next = await queue.next;
+        expected = expected.copyWith(lastSelectedDriveId: 'new_drive_id');
+
+        expect(
+          next,
+          equals(expected),
+        );
+        await repository.saveShowHiddenFiles(true);
+        next = await queue.next;
+        expected = expected.copyWith(showHiddenFiles: true);
+
+        expect(
+          next,
+          equals(expected),
+        );
+        await repository.saveUserHasHiddenItem(true);
+        next = await queue.next;
+        expected = expected.copyWith(userHasHiddenDrive: true);
+
+        expect(
+          next,
+          equals(expected),
+        );
+
+        await repository.load();
+
+        expect(
+          await queue.next,
+          const UserPreferences(
+            currentTheme: ArDriveThemes.dark,
+            lastSelectedDriveId: 'new_drive_id',
+            showHiddenFiles: true,
+            userHasHiddenDrive: true,
+          ),
+        );
+
+        // Clean up
+        await queue.cancel();
+      },
+    );
   });
 }

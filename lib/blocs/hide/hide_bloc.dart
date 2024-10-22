@@ -274,6 +274,7 @@ class HideBloc extends Bloc<HideEvent, HideState> {
                 isHidden ? RevisionAction.hide : RevisionAction.unhide,
           ));
         }
+
       });
     }
 
