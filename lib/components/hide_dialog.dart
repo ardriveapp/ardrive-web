@@ -88,7 +88,7 @@ class HideDialog extends StatelessWidget {
         }
       },
       builder: (context, state) {
-        return ArDriveStandardModal(
+        return ArDriveStandardModalNew(
           title: _buildTitle(context, state),
           content: _buildContent(context, state),
           actions: _buildActions(context, state),
