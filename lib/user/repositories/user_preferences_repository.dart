@@ -12,7 +12,7 @@ abstract class UserPreferencesRepository {
   Future<void> saveTheme(ArDriveThemes theme);
   Future<void> saveLastSelectedDriveId(String driveId);
   Future<void> saveShowHiddenFiles(bool showHiddenFiles);
-  Future<void> clearLastSelectedDriveId();
+  Future<void> clear();
   Future<void> saveUserHasHiddenItem(bool userHasHiddenDrive);
 
   factory UserPreferencesRepository({
@@ -43,7 +43,7 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
         super() {
     _auth.onAuthStateChanged().listen((user) {
       if (user == null) {
-        clearLastSelectedDriveId();
+        clear();
       }
     });
   }
@@ -125,11 +125,15 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
   }
 
   @override
-  Future<void> clearLastSelectedDriveId() async {
+  Future<void> clear() async {
     (await _getStore()).remove('lastSelectedDriveId');
+    (await _getStore()).remove('showHiddenFiles');
+    (await _getStore()).remove('userHasHiddenDrive');
 
     _currentUserPreferences = _currentUserPreferences!.copyWith(
       lastSelectedDriveId: null,
+      showHiddenFiles: false,
+      userHasHiddenDrive: false,
     );
 
     _userPreferencesController.sink.add(_currentUserPreferences!);

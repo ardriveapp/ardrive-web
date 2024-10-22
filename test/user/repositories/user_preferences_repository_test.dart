@@ -134,7 +134,7 @@ void main() {
       when(() => mockStore.remove('lastSelectedDriveId'))
           .thenAnswer((_) async => true);
 
-      await repository.clearLastSelectedDriveId();
+      await repository.clear();
 
       verify(() => mockStore.remove('lastSelectedDriveId')).called(1);
     });
