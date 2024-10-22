@@ -153,7 +153,6 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
     required UserPreferences Function(T) updateFunction,
   }) async {
     _currentUserPreferences = updateFunction(value);
-    _userPreferencesController.sink.add(_currentUserPreferences!);
 
     final store = await _getStore();
     if (value is String) {

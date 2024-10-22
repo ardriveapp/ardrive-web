@@ -183,39 +183,9 @@ void main() {
 
         // Trigger preference changes
         await repository.saveTheme(ArDriveThemes.dark);
-        var next = await queue.next;
-        var expected = initialPreferences.copyWith(
-          currentTheme: ArDriveThemes.dark,
-        );
-
-        expect(
-          next,
-          equals(expected),
-        );
         await repository.saveLastSelectedDriveId('new_drive_id');
-        next = await queue.next;
-        expected = expected.copyWith(lastSelectedDriveId: 'new_drive_id');
-
-        expect(
-          next,
-          equals(expected),
-        );
         await repository.saveShowHiddenFiles(true);
-        next = await queue.next;
-        expected = expected.copyWith(showHiddenFiles: true);
-
-        expect(
-          next,
-          equals(expected),
-        );
         await repository.saveUserHasHiddenItem(true);
-        next = await queue.next;
-        expected = expected.copyWith(userHasHiddenDrive: true);
-
-        expect(
-          next,
-          equals(expected),
-        );
 
         await repository.load();
 
