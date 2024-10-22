@@ -152,131 +152,32 @@ class HideBloc extends Bloc<HideEvent, HideState> {
       'Entity to hide must be either a File, Folder or Drive',
     );
 
-    late EntityWithCustomMetadata newEntryEntity;
-    late DataItem dataItem;
-    Drive? newDriveEntry;
-    FileEntry? newFileEntry;
-    FolderEntry? newFolderEntry;
-    final timestamp = DateTime.now();
+    HideEntitySettings hideEntitySettings;
 
     if (currentEntry is Drive) {
-      newDriveEntry = currentEntry.copyWith(
-        isHidden: isHidden,
-        lastUpdated: timestamp,
+      hideEntitySettings = await _getDriveHideEntitySettings(
+        isHidden,
+        currentEntry,
       );
-
-      newEntryEntity = newDriveEntry.asEntity();
-      final profile = _profileCubit.state as ProfileLoggedIn;
-
-      newEntryEntity.ownerAddress = profile.user.walletAddress;
-
-      final driveKey =
-          await _driveDao.getDriveKey(currentEntry.id, profile.user.cipherKey);
-      final SecretKey? entityKey;
-
-      if (driveKey != null) {
-        entityKey = driveKey;
-      } else {
-        entityKey = null;
-      }
-
-      dataItem = await _arweave.prepareEntityDataItem(
-        newEntryEntity,
-        profile.user.wallet,
-        key: entityKey,
+    } else if (currentEntry is FileEntry) {
+      hideEntitySettings = await _getFileHideEntitySettings(
+        isHidden,
+        currentEntry,
       );
     } else {
-      final entity = entryIsFile
-          ? (currentEntry).asEntity()
-          : (currentEntry as FolderEntry).asEntity();
-
-      final driveId = entryIsFile
-          ? currentEntry.driveId
-          : (currentEntry as FolderEntry).driveId;
-
-      final profile = _profileCubit.state as ProfileLoggedIn;
-      final driveKey =
-          await _driveDao.getDriveKey(driveId, profile.user.cipherKey);
-      final SecretKey? entityKey;
-
-      if (driveKey != null) {
-        if (entryIsFile) {
-          entityKey = await _crypto.deriveFileKey(
-            driveKey,
-            (entity as FileEntity).id!,
-          );
-        } else {
-          entityKey = driveKey;
-        }
-      } else {
-        entityKey = null;
-      }
-
-      if (entryIsFile) {
-        newFileEntry = currentEntry.copyWith(
-          isHidden: isHidden,
-          lastUpdated: timestamp,
-        );
-      } else if (entryIsFolder) {
-        newFolderEntry = currentEntry.copyWith(
-          isHidden: isHidden,
-          lastUpdated: timestamp,
-        );
-      }
-
-      newEntryEntity = entryIsFile
-          ? (newFileEntry as FileEntry).asEntity()
-          : (newFolderEntry as FolderEntry).asEntity();
-
-      dataItem = await _arweave.prepareEntityDataItem(
-        newEntryEntity,
-        profile.user.wallet,
-        key: entityKey,
+      hideEntitySettings = await _getFolderHideEntitySettings(
+        isHidden,
+        currentEntry as FolderEntry,
       );
     }
 
-    final dataItems = [dataItem];
+    final dataItems = [hideEntitySettings.dataItem];
 
-    final paymentInfo = await _uploadPreparationManager
-        .getUploadPaymentInfoForEntityUpload(dataItem: dataItem);
+    final paymentInfo =
+        await _uploadPreparationManager.getUploadPaymentInfoForEntityUpload(
+            dataItem: hideEntitySettings.dataItem);
 
     _useTurboUpload = paymentInfo.isFreeUploadPossibleUsingTurbo;
-
-    Future<void> saveEntitiesToDb() async {
-      await _driveDao.transaction(() async {
-        if (entryIsFile) {
-          await _driveDao.writeToFile(newFileEntry!);
-        } else if (entryIsDrive) {
-          await _driveDao.writeToDrive(newDriveEntry!);
-        } else {
-          await _driveDao.writeToFolder(newFolderEntry!);
-        }
-
-        newEntryEntity.txId = dataItem.id;
-
-        if (entryIsFile) {
-          await _driveDao.insertFileRevision(
-              (newEntryEntity as FileEntity).toRevisionCompanion(
-            performedAction:
-                isHidden ? RevisionAction.hide : RevisionAction.unhide,
-          ));
-        } else if (entryIsDrive) {
-          final driveCompanion =
-              (newEntryEntity as DriveEntity).toRevisionCompanion(
-            performedAction:
-                isHidden ? RevisionAction.hide : RevisionAction.unhide,
-          );
-
-          await _driveDao.updateDrive(driveCompanion.toEntryCompanion());
-        } else {
-          await _driveDao.insertFolderRevision(
-              (newEntryEntity as FolderEntity).toRevisionCompanion(
-            performedAction:
-                isHidden ? RevisionAction.hide : RevisionAction.unhide,
-          ));
-        }
-      });
-    }
 
     HideAction action;
 
@@ -293,8 +194,131 @@ class HideBloc extends Bloc<HideEvent, HideState> {
         uploadMethod: UploadMethod.turbo,
         hideAction: action,
         dataItems: dataItems,
-        saveEntitiesToDb: saveEntitiesToDb,
+        hideEntitySettings: hideEntitySettings,
       ),
+    );
+  }
+
+  Future<HideEntitySettings<FolderEntry>> _getFolderHideEntitySettings(
+    bool isHidden,
+    FolderEntry currentEntry,
+  ) async {
+    final timestamp = DateTime.now();
+
+    final newFolderEntry = currentEntry.copyWith(
+      isHidden: isHidden,
+      lastUpdated: timestamp,
+    );
+
+    final profile = _profileCubit.state as ProfileLoggedIn;
+
+    final driveKey = await _driveDao.getDriveKey(
+        currentEntry.driveId, profile.user.cipherKey);
+    SecretKey? entityKey;
+
+    if (driveKey != null) {
+      entityKey = driveKey;
+    }
+
+    final dataItem = await _arweave.prepareEntityDataItem(
+      newFolderEntry.asEntity(),
+      profile.user.wallet,
+      key: entityKey,
+    );
+
+    final newEntryEntity = newFolderEntry.asEntity();
+
+    newEntryEntity.txId = dataItem.id;
+
+    return HideEntitySettings<FolderEntry>(
+      isHidden: isHidden,
+      entry: newFolderEntry,
+      entity: newEntryEntity,
+      dataItem: dataItem,
+    );
+  }
+
+  Future<HideEntitySettings<FileEntry>> _getFileHideEntitySettings(
+    bool isHidden,
+    FileEntry currentEntry,
+  ) async {
+    final timestamp = DateTime.now();
+
+    final newFileEntry = currentEntry.copyWith(
+      isHidden: isHidden,
+      lastUpdated: timestamp,
+    );
+
+    final profile = _profileCubit.state as ProfileLoggedIn;
+
+    final driveKey = await _driveDao.getDriveKey(
+        currentEntry.driveId, profile.user.cipherKey);
+    SecretKey? entityKey;
+
+    if (driveKey != null) {
+      entityKey = await _crypto.deriveFileKey(
+        driveKey,
+        currentEntry.id,
+      );
+    }
+
+    final dataItem = await _arweave.prepareEntityDataItem(
+      newFileEntry.asEntity(),
+      profile.user.wallet,
+      key: entityKey,
+    );
+
+    final newEntryEntity = newFileEntry.asEntity();
+
+    newEntryEntity.txId = dataItem.id;
+
+    return HideEntitySettings<FileEntry>(
+      isHidden: isHidden,
+      entry: newFileEntry,
+      entity: newEntryEntity,
+      dataItem: dataItem,
+    );
+  }
+
+  Future<HideEntitySettings<Drive>> _getDriveHideEntitySettings(
+    bool isHidden,
+    Drive currentEntry,
+  ) async {
+    final timestamp = DateTime.now();
+
+    final newDriveEntry = currentEntry.copyWith(
+      isHidden: isHidden,
+      lastUpdated: timestamp,
+    );
+
+    final newEntryEntity = newDriveEntry.asEntity();
+    final profile = _profileCubit.state as ProfileLoggedIn;
+
+    newEntryEntity.ownerAddress = profile.user.walletAddress;
+
+    final driveKey =
+        await _driveDao.getDriveKey(currentEntry.id, profile.user.cipherKey);
+    final SecretKey? entityKey;
+
+    if (driveKey != null) {
+      entityKey = driveKey;
+    } else {
+      entityKey = null;
+    }
+
+    final dataItem = await _arweave.prepareEntityDataItem(
+      newEntryEntity,
+      profile.user.wallet,
+      key: entityKey,
+    );
+
+    newEntryEntity.txId = dataItem.id;
+
+    return HideEntitySettings<Drive>(
+      isHidden: isHidden,
+      entry: newDriveEntry,
+      entity: newEntryEntity,
+      dataItem: dataItem,
     );
   }
 
@@ -331,7 +355,7 @@ class HideBloc extends Bloc<HideEvent, HideState> {
           await _arweave.postTx(hideTx);
         }
 
-        await state.saveEntitiesToDb();
+        await _saveNewRevision(state.hideEntitySettings);
 
         emit(SuccessHideState(hideAction: state.hideAction));
       });
@@ -339,6 +363,39 @@ class HideBloc extends Bloc<HideEvent, HideState> {
       logger.e('Error while hiding', e);
       emit(FailureHideState(hideAction: state.hideAction));
     }
+  }
+
+  Future<void> _saveNewRevision<T>(
+    HideEntitySettings<T> settings,
+  ) async {
+    await _driveDao.transaction(() async {
+      if (T is FileEntry) {
+        await _driveDao.writeToFile(settings.entry as FileEntry);
+
+        await _driveDao.insertFileRevision(
+            (settings.entity as FileEntity).toRevisionCompanion(
+          performedAction:
+              settings.isHidden ? RevisionAction.hide : RevisionAction.unhide,
+        ));
+      } else if (T is FolderEntry) {
+        await _driveDao.writeToFolder(settings.entry as FolderEntry);
+
+        await _driveDao.insertFolderRevision(
+            (settings.entity as FolderEntity).toRevisionCompanion(
+          performedAction:
+              settings.isHidden ? RevisionAction.hide : RevisionAction.unhide,
+        ));
+      } else if (T is Drive) {
+        await _driveDao.writeToDrive(settings.entry as Drive);
+
+        final driveCompanion =
+            (settings.entity as DriveEntity).toRevisionCompanion(
+          performedAction:
+              settings.isHidden ? RevisionAction.hide : RevisionAction.unhide,
+        );
+        await _driveDao.updateDrive(driveCompanion.toEntryCompanion());
+      }
+    });
   }
 
   Future<void> _onHideDriveEvent(
@@ -389,3 +446,18 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     super.onError(error, stackTrace);
   }
 }
+
+class HideEntitySettings<T> {
+  final bool isHidden;
+  final T entry;
+  final EntityWithCustomMetadata entity;
+  final DataItem dataItem;
+
+  HideEntitySettings({
+    required this.isHidden,
+    required this.entry,
+    required this.entity,
+    required this.dataItem,
+  });
+}
+//
