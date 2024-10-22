@@ -24,6 +24,8 @@ class GlobalHideBloc extends Bloc<GlobalHideEvent, GlobalHideState> {
       }
     });
 
+    _userPreferencesRepository.load();
+
     on<GlobalHideEvent>((event, emit) async {
       if (event is ShowItems) {
         emit(ShowingHiddenItems(userHasHiddenDrive: event.userHasHiddenItems));

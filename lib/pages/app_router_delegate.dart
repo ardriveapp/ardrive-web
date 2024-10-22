@@ -168,7 +168,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 shell = const LoginPage(gettingStarted: true);
               } else if (state is ProfileLoggedIn ||
                   anonymouslyShowDriveDetail) {
-                driveId = driveId ?? rootPath;
+                  driveId = driveId ?? rootPath;
 
                 shell = BlocListener<DrivesCubit, DrivesState>(
                   listener: (context, state) {
