@@ -369,9 +369,6 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     HideEntitySettings settings,
   ) async {
     await _driveDao.transaction(() async {
-      logger.d('Entry is ${settings.entry.runtimeType}');
-      logger.d('Entry is File: ${settings.entry is FileEntry}');
-
       if (settings.entry is FileEntry) {
         await _driveDao.writeToFile(settings.entry as FileEntry);
 
