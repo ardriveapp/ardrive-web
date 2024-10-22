@@ -36,7 +36,7 @@ extension DriveEntityExtensions on DriveEntity {
   /// This requires a `performedAction` to be specified.
   DriveRevisionsCompanion toRevisionCompanion(
           {required String performedAction}) =>
-        DriveRevisionsCompanion.insert(
+      DriveRevisionsCompanion.insert(
         driveId: id!,
         ownerAddress: ownerAddress,
         rootFolderId: rootFolderId!,
@@ -58,6 +58,9 @@ extension DriveEntityExtensions on DriveEntity {
       return RevisionAction.create;
     } else if (name != previousRevision.name.value) {
       return RevisionAction.rename;
+    } else if (isHidden != null &&
+        previousRevision.isHidden.value != isHidden) {
+      return isHidden! ? RevisionAction.hide : RevisionAction.unhide;
     }
 
     return null;

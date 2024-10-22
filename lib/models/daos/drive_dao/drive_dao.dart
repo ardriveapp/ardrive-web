@@ -308,6 +308,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
               privacy: entity.privacy!,
               dateCreated: Value(entity.createdAt),
               lastUpdated: Value(entity.createdAt),
+              isHidden: Value(entity.isHidden ?? false),
             );
 
             if (entity.privacy == DrivePrivacyTag.private) {

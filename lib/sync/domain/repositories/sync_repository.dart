@@ -872,6 +872,7 @@ class _SyncRepository implements SyncRepository {
               id: Value(drive.id),
               lastBlockHeight: Value(currentBlockHeight),
               syncCursor: const Value(null),
+              isHidden: Value(drive.isHidden),
             ));
           }
 
@@ -966,9 +967,11 @@ class _SyncRepository implements SyncRepository {
 
       final revisionPerformedAction =
           entity.getPerformedRevisionAction(latestRevision);
+
       if (revisionPerformedAction == null) {
         continue;
       }
+
       final revision =
           entity.toRevisionCompanion(performedAction: revisionPerformedAction);
 
