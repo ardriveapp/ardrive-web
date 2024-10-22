@@ -272,7 +272,7 @@ class _SyncRepository implements SyncRepository {
           .then((value) => _arnsRepository.saveAllFilesWithAssignedNames());
       final hasHiddenItems = await _driveDao.hasHiddenItems().getSingle();
       await _userPreferencesRepository.saveUserHasHiddenItem(hasHiddenItems);
-
+      await _userPreferencesRepository.load();
       await Future.wait(
         [
           _updateTransactionStatuses(
