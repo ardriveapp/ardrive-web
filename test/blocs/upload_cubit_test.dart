@@ -151,7 +151,8 @@ void main() {
         ownerAddress: '',
         dateCreated: tDefaultDate,
         lastUpdated: tDefaultDate,
-        privacy: ''));
+        privacy: '',
+        isHidden: false));
 
     registerFallbackValue(UploadParams(
       user: getFakeUser(),

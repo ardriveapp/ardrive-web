@@ -30,7 +30,7 @@ class Database extends _$Database {
   Database([QueryExecutor? e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 22;
+  int get schemaVersion => 23;
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) {
@@ -141,6 +141,12 @@ class Database extends _$Database {
               ''');
 
               logger.d('snapshot_entries table dropped');
+            }
+            if (from < 23) {
+              logger.d('Migrating schema from v22 to v23');
+
+              await m.addColumn(drives, drives.isHidden);
+              await m.addColumn(driveRevisions, driveRevisions.isHidden);
             }
           } catch (e, stacktrace) {
             logger.e(

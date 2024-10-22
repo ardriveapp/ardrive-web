@@ -533,7 +533,7 @@ class _DriveExplorerItemTileTrailingState
           },
           content: _buildItem(
             appLocalizationsOf(context).preview,
-            ArDriveIcons.eyeOpen(
+            ArDriveIcons.newWindow(
               size: defaultIconSize,
             ),
           ),
@@ -754,6 +754,22 @@ class EntityActionsMenu extends StatelessWidget {
             icon: ArDriveIcons.edit(
               size: defaultIconSize,
             ),
+          ),
+        ),
+        ArDriveDropdownItem(
+          onClick: () {
+            promptToToggleHideState(
+              context,
+              item: item,
+            );
+          },
+          content: ArDriveDropdownItemTile(
+            name: item.isHidden
+                ? appLocalizationsOf(context).unhide
+                : appLocalizationsOf(context).hide,
+            icon: item.isHidden
+                ? ArDriveIcons.eyeOpen(size: defaultIconSize)
+                : ArDriveIcons.eyeClosed(size: defaultIconSize),
           ),
         ),
         ArDriveDropdownItem(

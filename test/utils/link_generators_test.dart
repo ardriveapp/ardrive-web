@@ -21,6 +21,7 @@ void main() {
           privacy: DrivePrivacyTag.public,
           dateCreated: DateTime.now(),
           lastUpdated: DateTime.now(),
+          isHidden: false,
         );
         testPrivateDrive = Drive(
           id: 'privateDriveId',
@@ -30,6 +31,7 @@ void main() {
           privacy: DrivePrivacyTag.private,
           dateCreated: DateTime.now(),
           lastUpdated: DateTime.now(),
+          isHidden: false,
         );
         testPrivateDriveKeyBase64 =
             'X123YZAB-CD4e5fgHIjKlmN6O7pqrStuVwxYzaBcd8E';

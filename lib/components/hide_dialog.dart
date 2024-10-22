@@ -1,10 +1,10 @@
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
+import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/blocs/hide/hide_bloc.dart';
 import 'package:ardrive/blocs/hide/hide_event.dart';
 import 'package:ardrive/blocs/hide/hide_state.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -42,6 +42,16 @@ Future<void> promptToToggleHideState(
         folderId: item.id,
       ));
     }
+  } else if (item is DriveDataItem) {
+    if (isHidden) {
+      hideBloc.add(UnhideDriveEvent(
+        driveId: item.driveId,
+      ));
+    } else {
+      hideBloc.add(HideDriveEvent(
+        driveId: item.driveId,
+      ));
+    }
   } else {
     throw UnimplementedError('Unknown item type: ${item.runtimeType}');
   }
@@ -67,15 +77,18 @@ class HideDialog extends StatelessWidget {
       listener: (context, state) {
         if (state is SuccessHideState) {
           Navigator.of(context).pop();
-          logger.d('Successfully hid/unhid entity');
           _driveDetailCubit.refreshDriveDataTable();
+          context.read<GlobalHideBloc>().add(RefreshOptions(
+                userHasHiddenItems:
+                    context.read<GlobalHideBloc>().state.userHasHiddenDrive,
+              ));
         } else if (state is ConfirmingHideState) {
           _driveDetailCubit.refreshDriveDataTable();
           context.read<HideBloc>().add(const ConfirmUploadEvent());
         }
       },
       builder: (context, state) {
-        return ArDriveStandardModal(
+        return ArDriveStandardModalNew(
           title: _buildTitle(context, state),
           content: _buildContent(context, state),
           actions: _buildActions(context, state),
@@ -96,6 +109,10 @@ class HideDialog extends StatelessWidget {
           return appLocalizationsOf(context).failedToUnhideFile;
         case HideAction.unhideFolder:
           return appLocalizationsOf(context).failedToUnhideFolder;
+        case HideAction.hideDrive:
+          return 'Failed to hide drive';
+        case HideAction.unhideDrive:
+          return 'Failed to unhide drive';
       }
     }
 
@@ -108,6 +125,10 @@ class HideDialog extends StatelessWidget {
         return appLocalizationsOf(context).unhidingFile;
       case HideAction.unhideFolder:
         return appLocalizationsOf(context).unhidingFolder;
+      case HideAction.hideDrive:
+        return 'Hiding drive';
+      case HideAction.unhideDrive:
+        return 'Unhiding drive';
     }
   }
 
@@ -124,6 +145,10 @@ class HideDialog extends StatelessWidget {
           return Text(appLocalizationsOf(context).failedToUnhideFile);
         case HideAction.unhideFolder:
           return Text(appLocalizationsOf(context).failedToUnhideFolder);
+        case HideAction.hideDrive:
+          return const Text('Failed to hide drive');
+        case HideAction.unhideDrive:
+          return const Text('Failed to unhide drive');
       }
     }
 

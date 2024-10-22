@@ -27,20 +27,24 @@ class FsEntryMoveGoBackToParent extends FsEntryMoveEvent {
 
 class FsEntryMoveSubmit extends FsEntryMoveEvent {
   final FolderEntry folderInView;
+  final bool showHiddenItems;
   const FsEntryMoveSubmit({
     required this.folderInView,
+    required this.showHiddenItems,
   }) : super();
   @override
-  List<Object> get props => [folderInView];
+  List<Object> get props => [folderInView, showHiddenItems];
 }
 
 class FsEntryMoveSkipConflicts extends FsEntryMoveEvent {
   final FolderEntry folderInView;
   final List<ArDriveDataTableItem> conflictingItems;
+  final bool showHiddenItems;
   const FsEntryMoveSkipConflicts({
     required this.folderInView,
     required this.conflictingItems,
+    required this.showHiddenItems,
   }) : super();
   @override
-  List<Object> get props => [folderInView, conflictingItems];
+  List<Object> get props => [folderInView, conflictingItems, showHiddenItems];
 }

@@ -20,6 +20,28 @@ class HideFileEvent extends HideEvent {
   List<Object> get props => [driveId, fileId];
 }
 
+class HideDriveEvent extends HideEvent {
+  final DriveID driveId;
+
+  const HideDriveEvent({
+    required this.driveId,
+  });
+
+  @override
+  List<Object> get props => [driveId];
+}
+
+class UnhideDriveEvent extends HideEvent {
+  final DriveID driveId;
+
+  const UnhideDriveEvent({
+    required this.driveId,
+  });
+
+  @override
+  List<Object> get props => [driveId];
+}
+
 class HideFolderEvent extends HideEvent {
   final DriveID driveId;
   final FolderID folderId;

@@ -28,6 +28,7 @@ import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/sync/utils/batch_processor.dart';
 import 'package:ardrive/sync/utils/network_transaction_utils.dart';
+import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/snapshots/drive_history_composite.dart';
 import 'package:ardrive/utils/snapshots/gql_drive_history.dart';
@@ -94,6 +95,7 @@ abstract class SyncRepository {
     required BatchProcessor batchProcessor,
     required SnapshotValidationService snapshotValidationService,
     required ARNSRepository arnsRepository,
+    required UserPreferencesRepository userPreferencesRepository,
   }) {
     return _SyncRepository(
       arweave: arweave,
@@ -103,6 +105,7 @@ abstract class SyncRepository {
       batchProcessor: batchProcessor,
       snapshotValidationService: snapshotValidationService,
       arnsRepository: arnsRepository,
+      userPreferencesRepository: userPreferencesRepository,
     );
   }
 }
@@ -115,6 +118,7 @@ class _SyncRepository implements SyncRepository {
   final BatchProcessor _batchProcessor;
   final SnapshotValidationService _snapshotValidationService;
   final ARNSRepository _arnsRepository;
+  final UserPreferencesRepository _userPreferencesRepository;
 
   final Map<String, GhostFolder> _ghostFolders = {};
   final Set<String> _folderIds = <String>{};
@@ -129,12 +133,14 @@ class _SyncRepository implements SyncRepository {
     required BatchProcessor batchProcessor,
     required SnapshotValidationService snapshotValidationService,
     required ARNSRepository arnsRepository,
+    required UserPreferencesRepository userPreferencesRepository,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _configService = configService,
         _licenseService = licenseService,
         _snapshotValidationService = snapshotValidationService,
         _batchProcessor = batchProcessor,
+        _userPreferencesRepository = userPreferencesRepository,
         _arnsRepository = arnsRepository;
 
   @override
@@ -264,7 +270,9 @@ class _SyncRepository implements SyncRepository {
       _arnsRepository
           .waitForARNSRecordsToUpdate()
           .then((value) => _arnsRepository.saveAllFilesWithAssignedNames());
-
+      final hasHiddenItems = await _driveDao.hasHiddenItems().getSingle();
+      await _userPreferencesRepository.saveUserHasHiddenItem(hasHiddenItems);
+      await _userPreferencesRepository.load();
       await Future.wait(
         [
           _updateTransactionStatuses(
@@ -864,6 +872,7 @@ class _SyncRepository implements SyncRepository {
               id: Value(drive.id),
               lastBlockHeight: Value(currentBlockHeight),
               syncCursor: const Value(null),
+              isHidden: Value(drive.isHidden),
             ));
           }
 
@@ -958,9 +967,11 @@ class _SyncRepository implements SyncRepository {
 
       final revisionPerformedAction =
           entity.getPerformedRevisionAction(latestRevision);
+
       if (revisionPerformedAction == null) {
         continue;
       }
+
       final revision =
           entity.toRevisionCompanion(performedAction: revisionPerformedAction);
 

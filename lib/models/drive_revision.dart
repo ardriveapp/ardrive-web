@@ -48,6 +48,7 @@ extension DriveEntityExtensions on DriveEntity {
         bundledIn: Value(bundledIn),
         customGQLTags: Value(customGqlTagsAsString),
         customJsonMetadata: Value(customJsonMetadataAsString),
+        isHidden: Value(isHidden ?? false),
       );
 
   /// Returns the action performed on the Drive that lead to the new revision.
@@ -57,6 +58,9 @@ extension DriveEntityExtensions on DriveEntity {
       return RevisionAction.create;
     } else if (name != previousRevision.name.value) {
       return RevisionAction.rename;
+    } else if (isHidden != null &&
+        previousRevision.isHidden.value != isHidden) {
+      return isHidden! ? RevisionAction.hide : RevisionAction.unhide;
     }
 
     return null;

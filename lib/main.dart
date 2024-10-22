@@ -5,6 +5,7 @@ import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
+import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/blocs/hide/hide_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
@@ -263,6 +264,13 @@ class AppState extends State<App> {
         ChangeNotifierProvider<ActivityTracker>(
             create: (_) => ActivityTracker()),
         BlocProvider(
+          create: (context) => GlobalHideBloc(
+            userPreferencesRepository:
+                context.read<UserPreferencesRepository>(),
+            driveDao: context.read<DriveDao>(),
+          ),
+        ),
+        BlocProvider(
           create: (context) => ThemeSwitcherBloc(
             userPreferencesRepository:
                 context.read<UserPreferencesRepository>(),
@@ -417,6 +425,7 @@ class AppState extends State<App> {
         RepositoryProvider(
           create: (_) => UserPreferencesRepository(
             themeDetector: ThemeDetector(),
+            auth: _.read<ArDriveAuth>(),
           ),
         ),
         RepositoryProvider(
@@ -455,6 +464,7 @@ class AppState extends State<App> {
               configService: configService,
             ),
             arnsRepository: _.read<ARNSRepository>(),
+            userPreferencesRepository: _.read<UserPreferencesRepository>(),
           ),
         ),
 

@@ -41,8 +41,6 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   final Map<int, bool> columnVisibility;
   final Key? forceRebuildKey;
 
-  final bool isShowingHiddenFiles;
-
   DriveDetailLoadSuccess({
     required this.currentDrive,
     required this.hasWritePermissions,
@@ -61,7 +59,6 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     required this.currentFolderContents,
     required this.columnVisibility,
     this.forceRebuildKey,
-    required this.isShowingHiddenFiles,
     required this.pathSegments,
     this.selectedPage,
   });
@@ -83,7 +80,6 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     ArDriveDataTableItem? selectedItem,
     List<ArDriveDataTableItem>? currentFolderContents,
     Key? forceRebuildKey,
-    bool? isShowingHiddenFiles,
     List<BreadCrumbRowInfo>? pathSegments,
     int? selectedPage,
   }) =>
@@ -109,7 +105,6 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         driveIsEmpty: driveIsEmpty ?? this.driveIsEmpty,
         currentFolderContents:
             currentFolderContents ?? this.currentFolderContents,
-        isShowingHiddenFiles: isShowingHiddenFiles ?? this.isShowingHiddenFiles,
         pathSegments: pathSegments ?? this.pathSegments,
       );
 
@@ -119,7 +114,6 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         hasWritePermissions,
         folderInView,
         currentFolderContents,
-        isShowingHiddenFiles,
         contentOrderBy,
         contentOrderingMode,
         showSelectedItemDetails,
@@ -143,5 +137,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
 /// [DriveDetailLoadNotFound] means that the specified drive could not be found attached to
 /// the user's profile.
 class DriveDetailLoadNotFound extends DriveDetailState {}
+
+class DriveDetailLoadEmpty extends DriveDetailState {}
 
 class DriveInitialLoading extends DriveDetailState {}
