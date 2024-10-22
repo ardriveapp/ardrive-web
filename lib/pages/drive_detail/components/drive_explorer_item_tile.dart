@@ -533,7 +533,7 @@ class _DriveExplorerItemTileTrailingState
           },
           content: _buildItem(
             appLocalizationsOf(context).preview,
-            ArDriveIcons.eyeOpen(
+            ArDriveIcons.newWindow(
               size: defaultIconSize,
             ),
           ),
