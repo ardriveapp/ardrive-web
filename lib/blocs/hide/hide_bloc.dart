@@ -365,11 +365,14 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     }
   }
 
-  Future<void> _saveNewRevision<T>(
-    HideEntitySettings<T> settings,
+  Future<void> _saveNewRevision(
+    HideEntitySettings settings,
   ) async {
     await _driveDao.transaction(() async {
-      if (T is FileEntry) {
+      logger.d('Entry is ${settings.entry.runtimeType}');
+      logger.d('Entry is File: ${settings.entry is FileEntry}');
+
+      if (settings.entry is FileEntry) {
         await _driveDao.writeToFile(settings.entry as FileEntry);
 
         await _driveDao.insertFileRevision(
@@ -377,7 +380,7 @@ class HideBloc extends Bloc<HideEvent, HideState> {
           performedAction:
               settings.isHidden ? RevisionAction.hide : RevisionAction.unhide,
         ));
-      } else if (T is FolderEntry) {
+      } else if (settings.entry is FolderEntry) {
         await _driveDao.writeToFolder(settings.entry as FolderEntry);
 
         await _driveDao.insertFolderRevision(
@@ -385,7 +388,7 @@ class HideBloc extends Bloc<HideEvent, HideState> {
           performedAction:
               settings.isHidden ? RevisionAction.hide : RevisionAction.unhide,
         ));
-      } else if (T is Drive) {
+      } else if (settings.entry is Drive) {
         await _driveDao.writeToDrive(settings.entry as Drive);
 
         final driveCompanion =
@@ -460,4 +463,3 @@ class HideEntitySettings<T> {
     required this.dataItem,
   });
 }
-//
