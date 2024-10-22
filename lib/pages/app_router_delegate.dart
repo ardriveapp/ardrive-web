@@ -135,16 +135,6 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 gettingStarted = false;
                 notifyListeners();
               }
-
-              // Cleans up any shared drives from previous sessions
-              // TODO: Find a better place to do this
-              final lastLoggedInUser =
-                  state is ProfileLoggedIn ? state.user.walletAddress : null;
-              if (lastLoggedInUser != null) {
-                context
-                    .read<DriveDao>()
-                    .deleteSharedPrivateDrives(lastLoggedInUser);
-              }
             },
             builder: (context, state) {
               Widget? shell;
@@ -168,7 +158,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 shell = const LoginPage(gettingStarted: true);
               } else if (state is ProfileLoggedIn ||
                   anonymouslyShowDriveDetail) {
-                  driveId = driveId ?? rootPath;
+                driveId = driveId ?? rootPath;
 
                 shell = BlocListener<DrivesCubit, DrivesState>(
                   listener: (context, state) {
@@ -232,7 +222,13 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                                 driveId: driveId,
                                 driveName: driveName,
                                 driveKey: sharedDriveKey,
-                              );
+                              ).then((_) {
+                                sharedDriveKey = null;
+                                sharedRawDriveKey = null;
+                                driveId = null;
+                                driveName = null;
+                                notifyListeners();
+                              });
                             }
                           },
                         ),
