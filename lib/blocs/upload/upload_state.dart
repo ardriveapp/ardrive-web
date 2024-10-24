@@ -107,10 +107,11 @@ class UploadReady extends UploadState {
   final bool loadingArNSNamesError;
   final bool arnsCheckboxChecked;
   final int totalSize;
-  final List<FileEntry> selectedManifests;
-  final List<FileEntry> manifestFiles;
+  final List<UploadManifestModel> selectedManifests;
+  final List<UploadManifestModel> manifestFiles;
   final bool showSettings;
   final bool canShowSettings;
+  final List<ANTRecord> arnsRecords;
 
   final bool isArConnect;
 
@@ -132,6 +133,7 @@ class UploadReady extends UploadState {
     required this.showSettings,
     required this.canShowSettings,
     required this.manifestFiles,
+    required this.arnsRecords,
   });
 
   // copyWith
@@ -151,9 +153,10 @@ class UploadReady extends UploadState {
     bool? loadingArNSNamesError,
     bool? arnsCheckboxChecked,
     int? totalSize,
-    List<FileEntry>? selectedManifests,
-    List<FileEntry>? manifestFiles,
+    List<UploadManifestModel>? selectedManifests,
+    List<UploadManifestModel>? manifestFiles,
     bool? canShowSettings,
+    List<ANTRecord>? arnsRecords,
   }) {
     return UploadReady(
       loadingArNSNames: loadingArNSNames ?? this.loadingArNSNames,
@@ -175,6 +178,7 @@ class UploadReady extends UploadState {
       showSettings: showSettings ?? this.showSettings,
       manifestFiles: manifestFiles ?? this.manifestFiles,
       canShowSettings: canShowSettings ?? this.canShowSettings,
+      arnsRecords: arnsRecords ?? this.arnsRecords,
     );
   }
 
@@ -288,10 +292,9 @@ class UploadFailure extends UploadState {
 }
 
 class UploadComplete extends UploadState {
-  final List<FileEntry> manifestFiles;
   final ARNSRecord? arnsRecord;
 
-  UploadComplete({required this.manifestFiles, this.arnsRecord});
+  UploadComplete({this.arnsRecord});
 }
 
 class UploadingManifests extends UploadState {
@@ -304,7 +307,7 @@ class UploadingManifests extends UploadState {
   });
 
   @override
-  List<Object?> get props => [manifestFiles, completedCount];
+  List<Object?> get props => [UniqueKey()];
 }
 
 class UploadWalletMismatch extends UploadState {}
@@ -345,20 +348,26 @@ class UploadManifestSelectPaymentMethod extends UploadState {
 }
 
 class UploadManifestModel extends Equatable {
-  final String name;
+  final FileEntry entry;
   final bool isCompleted;
+  final bool isAssigningUndername;
   final bool freeThanksToTurbo;
   final bool isUploading;
-  final String? existingManifestFileId;
+  final String existingManifestFileId;
   final IOFile? file;
+  final ARNSUndername? undername;
+  final ANTRecord? antRecord;
 
   const UploadManifestModel({
-    required this.name,
+    required this.entry,
     this.isCompleted = false,
     required this.freeThanksToTurbo,
     this.isUploading = false,
-    this.existingManifestFileId,
+    required this.existingManifestFileId,
     this.file,
+    this.undername,
+    this.antRecord,
+    this.isAssigningUndername = false,
   });
 
   UploadManifestModel copyWith({
@@ -367,25 +376,36 @@ class UploadManifestModel extends Equatable {
     String? existingManifestFileId,
     bool? freeThanksToTurbo,
     IOFile? file,
+    ARNSUndername? undername,
+    ANTRecord? antRecord,
+    bool? isAssigningUndername,
+    FileEntry? entry,
   }) {
     return UploadManifestModel(
-      name: name,
+      entry: entry ?? this.entry,
       isCompleted: isCompleted ?? this.isCompleted,
       isUploading: isUploading ?? this.isUploading,
       existingManifestFileId:
           existingManifestFileId ?? this.existingManifestFileId,
       freeThanksToTurbo: freeThanksToTurbo ?? this.freeThanksToTurbo,
       file: file ?? this.file,
+      undername: undername ?? this.undername,
+      antRecord: antRecord ?? this.antRecord,
+      isAssigningUndername: isAssigningUndername ?? this.isAssigningUndername,
     );
   }
 
   @override
   List<Object?> get props => [
-        name,
+        entry,
         isCompleted,
         isUploading,
         existingManifestFileId,
-        freeThanksToTurbo
+        freeThanksToTurbo,
+        isAssigningUndername,
+        antRecord,
+        undername,
+        file,
       ];
 }
 
