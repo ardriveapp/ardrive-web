@@ -338,7 +338,7 @@ class _UploadingManifestsWidget extends StatelessWidget {
                           ArDriveIcons.manifest(size: 16),
                           const SizedBox(width: 8),
                           Text(
-                            '${state.manifestFiles[index].name}...',
+                            '${state.manifestFiles[index].entry.name}...',
                             style: typography.paragraphNormal(
                               fontWeight: ArFontWeight.semiBold,
                             ),
@@ -1046,7 +1046,7 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
 
 class _ManifestOptionTile extends StatefulWidget {
   final UploadReady state;
-  final FileEntry file;
+  final UploadManifestModel file;
 
   const _ManifestOptionTile({
     required this.state,
@@ -1077,9 +1077,9 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
       height: _isExpanded ? 130 : 50,
       child: GestureDetector(
         onTap: () {
-          setState(() {
-            _isExpanded = !_isExpanded;
-          });
+          // setState(() {
+          //   _isExpanded = !_isExpanded;
+          // });
         },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1097,17 +1097,19 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
                           children: [
                             ArDriveIcons.manifest(
                                 size: 16,
-                                color:
-                                    widget.file.isHidden ? hiddenColor : null),
+                                color: widget.file.entry.isHidden
+                                    ? hiddenColor
+                                    : null),
                             const SizedBox(width: 8),
                             Text(
-                              widget.file.name,
+                              widget.file.entry.name,
                               style: typography.paragraphNormal(
-                                color:
-                                    widget.file.isHidden ? hiddenColor : null,
+                                color: widget.file.entry.isHidden
+                                    ? hiddenColor
+                                    : null,
                               ),
                             ),
-                            if (widget.file.isHidden) ...[
+                            if (widget.file.entry.isHidden) ...[
                               const SizedBox(width: 8),
                               Text('(hidden)',
                                   style: typography.paragraphNormal(
@@ -1149,7 +1151,7 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
                   maxHeight: 30,
                   onPressed: () {
                     setState(() {
-                      _isExpanded = !_isExpanded;
+                      _isExpanded = true;
                     });
                   },
                 )
@@ -1160,7 +1162,7 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
               const SizedBox(height: 8),
               Expanded(
                 flex: 1,
-                child: AntSelector(fileEntry: widget.file),
+                child: AntSelector(file: widget.file),
               ),
             ],
           ],
@@ -2208,7 +2210,7 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
                                     ArDriveIcons.manifest(size: 16),
                                     const SizedBox(width: 8),
                                     Text(
-                                      e.name,
+                                      e.entry.name,
                                       style: typography.paragraphNormal(
                                         fontWeight: ArFontWeight.semiBold,
                                       ),
@@ -2331,7 +2333,7 @@ class _UploadReviewWithArnsNameWidget extends StatelessWidget {
                               ArDriveIcons.manifest(size: 16),
                               const SizedBox(width: 8),
                               Text(
-                                e.name,
+                                e.entry.name,
                                 style: typography.paragraphNormal(
                                   fontWeight: ArFontWeight.semiBold,
                                 ),
@@ -3016,9 +3018,9 @@ List<ArDriveButtonNew> getModalActions(
 }
 
 class AntSelector extends StatefulWidget {
-  const AntSelector({super.key, required this.fileEntry});
+  const AntSelector({super.key, required this.file});
 
-  final FileEntry fileEntry;
+  final UploadManifestModel file;
 
   @override
   State<AntSelector> createState() => _AntSelectorState();
@@ -3030,6 +3032,7 @@ class _AntSelectorState extends State<AntSelector> {
 
   List<ARNSUndername> _arnsUndernames = [];
   bool _loadingUndernames = false;
+  bool _loadingIsAlreadyLinked = false;
 
   loadARNSUndernames(
     ANTRecord ant,
@@ -3043,6 +3046,18 @@ class _AntSelectorState extends State<AntSelector> {
     setState(() {
       _loadingUndernames = false;
     });
+  }
+
+  loadIsAlreadyLinked() async {
+
+    setState(() {
+      _loadingIsAlreadyLinked = true;
+    });
+
+    _isAlreadyLinked = await context.read<UploadCubit>().isArNSNameAlreadyLinked(
+          record: widget.file.antRecord!,
+          undername: _selectedUndername,
+        );
   }
 
   @override
@@ -3157,6 +3172,8 @@ class _AntSelectorState extends State<AntSelector> {
   ArDriveDropdownItem _buildDropdownItem(BuildContext context, ANTRecord ant) {
     final typography = ArDriveTypographyNew.of(context);
 
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
     return ArDriveDropdownItem(
       content: SizedBox(
         width: 235,
@@ -3171,6 +3188,7 @@ class _AntSelectorState extends State<AntSelector> {
                   ant.domain,
                   style: typography.paragraphSmall(
                     fontWeight: ArFontWeight.semiBold,
+                    color: isAlreadyLinked ? colorTokens.textLow : null,
                   ),
                 ),
               ),
@@ -3183,11 +3201,21 @@ class _AntSelectorState extends State<AntSelector> {
         ),
       ),
       onClick: () {
+        if (isAlreadyLinked) {
+          return;
+        }
+
         setState(() {
           _selectedAnt = ant;
 
           _arnsUndernames = [];
           loadARNSUndernames(ant);
+
+          context.read<UploadCubit>().linkManifestToUndername(
+                widget.file,
+                _selectedAnt!,
+                null,
+              );
         });
       },
     );
@@ -3196,6 +3224,12 @@ class _AntSelectorState extends State<AntSelector> {
   ArDriveDropdownItem _buildDropdownItemUndername(
       BuildContext context, ARNSUndername undername) {
     final typography = ArDriveTypographyNew.of(context);
+
+    final isAlreadyLinked = context.read<UploadCubit>().isArNSNameAlreadyLinked(
+          record: _selectedAnt!,
+          undername: undername,
+        );
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return ArDriveDropdownItem(
       content: SizedBox(
@@ -3211,6 +3245,7 @@ class _AntSelectorState extends State<AntSelector> {
                   undername.name,
                   style: typography.paragraphSmall(
                     fontWeight: ArFontWeight.semiBold,
+                    color: isAlreadyLinked ? colorTokens.textLow : null,
                   ),
                 ),
               ),
@@ -3223,11 +3258,15 @@ class _AntSelectorState extends State<AntSelector> {
         ),
       ),
       onClick: () {
+        if (isAlreadyLinked) {
+          return;
+        }
+
         setState(() {
           _selectedUndername = undername;
 
           context.read<UploadCubit>().linkManifestToUndername(
-              widget.fileEntry, _selectedAnt!, _selectedUndername!);
+              widget.file, _selectedAnt!, _selectedUndername!);
         });
       },
     );

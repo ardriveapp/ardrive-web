@@ -108,7 +108,7 @@ class UploadReady extends UploadState {
   final bool arnsCheckboxChecked;
   final int totalSize;
   final List<UploadManifestModel> selectedManifests;
-  final List<FileEntry> manifestFiles;
+  final List<UploadManifestModel> manifestFiles;
   final bool showSettings;
   final bool canShowSettings;
   final List<ANTRecord> arnsRecords;
@@ -154,7 +154,7 @@ class UploadReady extends UploadState {
     bool? arnsCheckboxChecked,
     int? totalSize,
     List<UploadManifestModel>? selectedManifests,
-    List<FileEntry>? manifestFiles,
+    List<UploadManifestModel>? manifestFiles,
     bool? canShowSettings,
     List<ANTRecord>? arnsRecords,
   }) {
@@ -292,10 +292,9 @@ class UploadFailure extends UploadState {
 }
 
 class UploadComplete extends UploadState {
-  final List<FileEntry> manifestFiles;
   final ARNSRecord? arnsRecord;
 
-  UploadComplete({required this.manifestFiles, this.arnsRecord});
+  UploadComplete({this.arnsRecord});
 }
 
 class UploadingManifests extends UploadState {
@@ -349,21 +348,22 @@ class UploadManifestSelectPaymentMethod extends UploadState {
 }
 
 class UploadManifestModel extends Equatable {
-  final String name;
+  final FileEntry entry;
   final bool isCompleted;
   final bool isAssigningUndername;
   final bool freeThanksToTurbo;
   final bool isUploading;
-  final String? existingManifestFileId;
+  final String existingManifestFileId;
   final IOFile? file;
   final ARNSUndername? undername;
   final ANTRecord? antRecord;
+
   const UploadManifestModel({
-    required this.name,
+    required this.entry,
     this.isCompleted = false,
     required this.freeThanksToTurbo,
     this.isUploading = false,
-    this.existingManifestFileId,
+    required this.existingManifestFileId,
     this.file,
     this.undername,
     this.antRecord,
@@ -379,9 +379,10 @@ class UploadManifestModel extends Equatable {
     ARNSUndername? undername,
     ANTRecord? antRecord,
     bool? isAssigningUndername,
+    FileEntry? entry,
   }) {
     return UploadManifestModel(
-      name: name,
+      entry: entry ?? this.entry,
       isCompleted: isCompleted ?? this.isCompleted,
       isUploading: isUploading ?? this.isUploading,
       existingManifestFileId:
@@ -396,7 +397,7 @@ class UploadManifestModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        name,
+        entry,
         isCompleted,
         isUploading,
         existingManifestFileId,
