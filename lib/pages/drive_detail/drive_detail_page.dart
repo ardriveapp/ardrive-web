@@ -842,7 +842,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     List<ArDriveDataTableItem> items,
     GlobalHideState globalHideState,
   ) {
-    final isShowingHiddenFiles = globalHideState is HiddingItems;
+    final isShowingHiddenFiles = globalHideState is ShowingHiddenItems;
 
     final List<ArDriveDataTableItem> filteredItems;
 
