@@ -393,7 +393,8 @@ class HideBloc extends Bloc<HideEvent, HideState> {
           performedAction:
               settings.isHidden ? RevisionAction.hide : RevisionAction.unhide,
         );
-        await _driveDao.updateDrive(driveCompanion.toEntryCompanion());
+
+        await _driveDao.insertDriveRevision(driveCompanion);
       }
     });
   }
