@@ -8,7 +8,6 @@ import 'package:ardrive/arns/presentation/assign_name_modal.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
-import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/payment_method/bloc/upload_payment_method_bloc.dart';
@@ -218,7 +217,6 @@ class _UploadFormState extends State<UploadForm> {
             if (state is UploadComplete || state is UploadWalletMismatch) {
               if (!_isShowingCancelDialog) {
                 Navigator.pop(context);
-                context.read<FeedbackSurveyCubit>().openRemindMe();
                 context.read<ActivityTracker>().setUploading(false);
                 context.read<SyncCubit>().startSync();
               }

@@ -549,7 +549,7 @@ abstract class PlausibleEventTracker {
         );
       }
     } catch (e, s) {
-      logger.e('Plausible response error: $e $s');
+      logger.w('Plausible response error: $e $s');
     }
   }
 
