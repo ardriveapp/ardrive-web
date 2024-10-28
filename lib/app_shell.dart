@@ -368,6 +368,8 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ),
             const Spacer(),
+            const GlobalHideToggleButton(),
+            const SizedBox(width: 8),
             const SyncButton(),
             const SizedBox(
               width: 24,

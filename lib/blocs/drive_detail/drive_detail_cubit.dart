@@ -142,6 +142,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         ),
         _profileCubit.stream.startWith(ProfileCheckingAvailability()),
         (drive, folderContents, _) async {
+          if (isClosed) {
+            return;
+          }
+
           await _syncCubit.waitCurrentSync();
 
           if (drive == null) {

@@ -21,6 +21,7 @@ extension DriveRevisionCompanionExtensions on DriveRevisionsCompanion {
         privacy: privacy.value,
         customGQLTags: customGQLTags,
         customJsonMetadata: customJsonMetadata,
+        isHidden: isHidden,
       );
 
   /// Returns a [NetworkTransactionsCompanion] representing the metadata transaction
