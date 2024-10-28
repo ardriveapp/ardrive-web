@@ -1,3 +1,4 @@
+import 'package:ardrive/blocs/hide/hide_bloc.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:arweave/arweave.dart';
@@ -28,15 +29,14 @@ class PreparingAndSigningHideState extends HideState {
 
 class ConfirmingHideState extends HideState {
   final UploadMethod uploadMethod;
-
+  final HideEntitySettings hideEntitySettings;
   final List<DataItem> dataItems;
-  final Future<void> Function() saveEntitiesToDb;
 
   const ConfirmingHideState({
     required this.uploadMethod,
     required super.hideAction,
     required this.dataItems,
-    required this.saveEntitiesToDb,
+    required this.hideEntitySettings,
   });
 
   @override
@@ -50,12 +50,13 @@ class ConfirmingHideState extends HideState {
     UploadCostEstimate? costEstimateTurbo,
     UploadCostEstimate? costEstimateAr,
     HideAction? hideAction,
+    HideEntitySettings? hideEntitySettings,
   }) {
     return ConfirmingHideState(
       uploadMethod: uploadMethod ?? this.uploadMethod,
       hideAction: hideAction ?? this.hideAction,
       dataItems: dataItems,
-      saveEntitiesToDb: saveEntitiesToDb,
+      hideEntitySettings: hideEntitySettings ?? this.hideEntitySettings,
     );
   }
 }
@@ -71,6 +72,8 @@ class FailureHideState extends HideState {
 enum HideAction {
   hideFile,
   hideFolder,
+  hideDrive,
   unhideFile,
   unhideFolder,
+  unhideDrive,
 }

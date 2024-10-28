@@ -1011,12 +1011,12 @@ AppConfig getFakeConfigForDisabledTurbo() => AppConfig(
       ),
     );
 User getFakeUser() => User(
-    password: 'password',
-    wallet: getTestWallet(),
-    walletAddress: 'walletAddress',
-    walletBalance: BigInt.one,
-    cipherKey: SecretKey([]),
-    profileType: ProfileType.arConnect,
+      password: 'password',
+      wallet: getTestWallet(),
+      walletAddress: 'walletAddress',
+      walletBalance: BigInt.one,
+      cipherKey: SecretKey([]),
+      profileType: ProfileType.arConnect,
       errorFetchingIOTokens: false,
     );
 
@@ -1039,4 +1039,5 @@ Drive getFakeDrive() => Drive(
       rootFolderId: 'rootFolderId',
       ownerAddress: 'ownerAddress',
       privacy: 'privacy',
+      isHidden: false,
     );

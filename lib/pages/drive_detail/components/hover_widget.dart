@@ -13,7 +13,7 @@ class HoverWidget extends StatefulWidget {
   const HoverWidget({
     super.key,
     required this.child,
-    this.hoverScale = 1.1,
+    this.hoverScale = 1.0,
     this.hoverColor,
     this.tooltip,
     this.padding,

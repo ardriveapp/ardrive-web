@@ -30,7 +30,9 @@ void main() {
       'emits ThemeSwitcherLightTheme when LoadTheme succeeds with light theme',
       build: () {
         when(() => userPreferencesRepository.load()).thenAnswer(
-          (_) async => const UserPreferences(currentTheme: ArDriveThemes.light),
+          (_) async => const UserPreferences(
+              currentTheme: ArDriveThemes.light,
+              lastSelectedDriveId: 'drive_id'),
         );
         return themeSwitcherBloc;
       },
@@ -42,7 +44,9 @@ void main() {
       'emits ThemeSwitcherDarkTheme when LoadTheme succeeds with dark theme',
       build: () {
         when(() => userPreferencesRepository.load()).thenAnswer(
-          (_) async => const UserPreferences(currentTheme: ArDriveThemes.dark),
+          (_) async => const UserPreferences(
+              currentTheme: ArDriveThemes.dark,
+              lastSelectedDriveId: 'drive_id'),
         );
         return themeSwitcherBloc;
       },
@@ -54,7 +58,9 @@ void main() {
       'emits ThemeSwitcherDarkTheme when ChangeTheme from ThemeSwitcherLightTheme',
       build: () {
         when(() => userPreferencesRepository.load()).thenAnswer(
-          (_) async => const UserPreferences(currentTheme: ArDriveThemes.light),
+          (_) async => const UserPreferences(
+              currentTheme: ArDriveThemes.light,
+              lastSelectedDriveId: 'drive_id'),
         );
         when(() => userPreferencesRepository.saveTheme(ArDriveThemes.dark))
             .thenAnswer((_) => Future.value());
@@ -76,7 +82,9 @@ void main() {
       'emits ThemeSwitcherLightTheme when ChangeTheme from ThemeSwitcherDarkTheme',
       build: () {
         when(() => userPreferencesRepository.load()).thenAnswer(
-          (_) async => const UserPreferences(currentTheme: ArDriveThemes.dark),
+          (_) async => const UserPreferences(
+              currentTheme: ArDriveThemes.dark,
+              lastSelectedDriveId: 'drive_id'),
         );
         when(() => userPreferencesRepository.saveTheme(ArDriveThemes.light))
             .thenAnswer((_) => Future.value());

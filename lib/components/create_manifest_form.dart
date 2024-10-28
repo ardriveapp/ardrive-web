@@ -3,7 +3,6 @@ import 'package:ardrive/arns/presentation/assign_name_modal.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
-import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/payment_method/bloc/upload_payment_method_bloc.dart';
 import 'package:ardrive/blocs/upload/payment_method/view/upload_payment_method_view.dart';
@@ -284,7 +283,6 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
         ModalAction(
           action: () {
             context.read<DriveDetailCubit>().refreshDriveDataTable();
-            context.read<FeedbackSurveyCubit>().openRemindMe();
             Navigator.pop(context);
           },
           title: 'Close',
@@ -679,7 +677,6 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                   user: context.read<ArDriveAuth>().currentUser,
                   // Theres no thumbnail generation for manifests
                   containsSupportedImageTypeForThumbnailGeneration: false,
-
                 ),
               ),
             ),

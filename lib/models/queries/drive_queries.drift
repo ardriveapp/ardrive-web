@@ -41,6 +41,19 @@ ghostFolders:
     SELECT * FROM folder_entries
     WHERE isGhost = TRUE;
 
+hasHiddenItems:
+    SELECT EXISTS(
+        SELECT 1 FROM drives
+        WHERE isHidden = TRUE
+        UNION ALL
+        SELECT 1 FROM folder_entries
+        WHERE isHidden = TRUE
+        UNION ALL
+        SELECT 1 FROM file_entries
+        WHERE isHidden = TRUE
+    ) AS hasHidden;
+
+
 foldersInFolderWithName:
     SELECT * FROM folder_entries
     WHERE driveId = :driveId AND parentFolderId = :parentFolderId AND name = :name;

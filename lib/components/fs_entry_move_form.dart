@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
@@ -33,7 +34,6 @@ Future<void> promptToMove(
             driveDao: context.read<DriveDao>(),
             profileCubit: context.read<ProfileCubit>(),
             syncCubit: context.read<SyncCubit>(),
-            driveDetailCubit: parentContext.read<DriveDetailCubit>(),
           )..add(const FsEntryMoveInitial()),
         ),
         BlocProvider.value(
@@ -98,6 +98,9 @@ class FsEntryMoveForm extends StatelessWidget {
                                 FsEntryMoveSkipConflicts(
                                   folderInView: state.folderInView,
                                   conflictingItems: state.conflictingItems,
+                                  showHiddenItems: context
+                                      .read<GlobalHideBloc>()
+                                      .state is ShowingHiddenItems,
                                 ),
                               );
                         },
@@ -107,12 +110,10 @@ class FsEntryMoveForm extends StatelessWidget {
                 );
               }
               if (state is FsEntryMoveLoadSuccess) {
-                final isShowingHiddenFiles =
-                    (driveDetailState as DriveDetailLoadSuccess)
-                        .isShowingHiddenFiles;
+                final globalHideBloc = context.read<GlobalHideBloc>();
 
                 final List<FolderEntry> subFolders;
-                if (isShowingHiddenFiles) {
+                if (globalHideBloc.state is ShowingHiddenItems) {
                   subFolders = state.viewingFolder.subfolders;
                 } else {
                   subFolders = state.viewingFolder.subfolders
@@ -347,6 +348,8 @@ class FsEntryMoveForm extends StatelessWidget {
                                           FsEntryMoveSubmit(
                                             folderInView:
                                                 state.viewingFolder.folder,
+                                            showHiddenItems: globalHideBloc
+                                                .state is ShowingHiddenItems,
                                           ),
                                         );
                                     context
