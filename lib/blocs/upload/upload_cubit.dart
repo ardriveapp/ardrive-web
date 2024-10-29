@@ -1403,7 +1403,7 @@ class UploadCubit extends Cubit<UploadState> {
       return ARNSUndername(
         name: '@',
         domain: _selectedAntRecord!.domain,
-        record: ARNSRecord(
+        record: const ARNSRecord(
           transactionId: 'to_assign',
           ttlSeconds: 3600,
         ),

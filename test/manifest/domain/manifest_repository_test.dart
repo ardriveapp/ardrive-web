@@ -65,7 +65,7 @@ void main() async {
         registerFallbackValue(FileEntity());
         registerFallbackValue(const FileRevisionsCompanion());
         registerFallbackValue(
-          ARNSUndername(
+          const ARNSUndername(
             name: 'undername',
             domain: 'domain',
             record: ARNSRecord(
@@ -284,7 +284,7 @@ void main() async {
           await repository.uploadManifest(
             params: mockUploadParams,
             processId: 'process_id',
-            undername: ARNSUndername(
+            undername: const ARNSUndername(
               name: 'undername',
               domain: 'domain',
               record: ARNSRecord(
@@ -347,7 +347,7 @@ void main() async {
           await repository.uploadManifest(
             params: mockUploadParams,
             processId: 'process_id',
-            undername: ARNSUndername(
+            undername: const ARNSUndername(
               name: 'undername',
               domain: 'domain',
               record: ARNSRecord(

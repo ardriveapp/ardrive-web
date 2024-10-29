@@ -2,8 +2,8 @@ import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ario_sdk/ario_sdk.dart';
-import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 part 'upload_manifest_options_event.dart';
 part 'upload_manifest_options_state.dart';
@@ -95,7 +95,7 @@ class UploadManifestOptionsBloc
       emit(_createReadyState());
     });
 
-  on<LinkManifestToUndername>((event, emit) {
+    on<LinkManifestToUndername>((event, emit) {
       if (reservedNames[event.antRecord.domain] == null) {
         reservedNames[event.antRecord.domain] = [];
       }

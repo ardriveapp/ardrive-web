@@ -5,7 +5,7 @@ void main() {
   group('getLiteralARNSRecordName', () {
     test('returns the correct record name for a given ARNSUndername', () {
       // Arrange
-      final undername = ARNSUndername(
+      const undername = ARNSUndername(
         name: 'test',
         domain: 'example.com',
         record: ARNSRecord(
@@ -24,7 +24,7 @@ void main() {
     test('returns the correct record name for a given ARNSUndername with @',
         () {
       // Arrange
-      final undername = ARNSUndername(
+      const undername = ARNSUndername(
         name: '@', // @ is the default name for the root domain
         domain: 'example.com',
         record: ARNSRecord(
