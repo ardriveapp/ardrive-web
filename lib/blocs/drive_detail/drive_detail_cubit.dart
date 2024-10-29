@@ -149,12 +149,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             return;
           }
 
-          if (driveId != _driveId) {
-            await _folderSubscription?.cancel();
-            _folderSubscription = null;
-            return;
-          }
-
           await _syncCubit.waitCurrentSync();
 
           if (drive == null) {
@@ -294,6 +288,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
       logger.e('An error occured mouting the drive explorer', e);
     });
+
+    await _folderSubscription?.asFuture();
   }
 
   List<ArDriveDataTableItem> parseEntitiesToDatatableItem({
