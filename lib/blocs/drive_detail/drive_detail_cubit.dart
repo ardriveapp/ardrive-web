@@ -38,7 +38,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   final DriveRepository _driveRepository;
 
   StreamSubscription? _folderSubscription;
-  StreamController<void>? _folderSubscriptionController;
   final _defaultAvailableRowsPerPage = [25, 50, 75, 100];
 
   List<ArDriveDataTableItem> _selectedItems = [];
