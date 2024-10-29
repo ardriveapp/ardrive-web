@@ -1,0 +1,8 @@
+- New feature: Added option to assign an ArNS name during manifest auto-updates in the upload flow.
+- New feature: Introduced hide/unhide feature for drives in the sidebar for improved organization.
+- Introduced global toggle to show or hide all hidden drives, folders, and files
+- Enhanced sidebar persistence during navigation and syncing.
+- Improved details panel to retain state when switching views.
+- Implemented memory of the last opened drive for quicker access.
+- Updated share drive modal with new styles, colors, and copy button with icon.
+- Removed feedback survey modal after uploads for a smoother experience.
