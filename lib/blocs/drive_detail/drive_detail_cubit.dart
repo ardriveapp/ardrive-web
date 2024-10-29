@@ -146,6 +146,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             return;
           }
 
+          if (driveId != _driveId) {
+            return;
+          }
+
           await _syncCubit.waitCurrentSync();
 
           if (drive == null) {
