@@ -347,7 +347,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       return ARNSUndername(
         name: '@',
         domain: _selectedAntRecord!.domain,
-        record: ARNSRecord(
+        record: const ARNSRecord(
           transactionId: 'to_assign',
           ttlSeconds: 3600,
         ),

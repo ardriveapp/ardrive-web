@@ -28,7 +28,6 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final ArDriveCrypto _crypto;
-  final DriveDetailCubit _driveDetailCubit;
 
   FsEntryMoveBloc({
     required this.driveId,
@@ -39,14 +38,12 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     required ProfileCubit profileCubit,
     required SyncCubit syncCubit,
     required ArDriveCrypto crypto,
-    required DriveDetailCubit driveDetailCubit,
     Platform platform = const LocalPlatform(),
   })  : _selectedItems = List.from(selectedItems, growable: false),
         _arweave = arweave,
         _turboUploadService = turboUploadService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
-        _driveDetailCubit = driveDetailCubit,
         _crypto = crypto,
         super(const FsEntryMoveLoadInProgress()) {
     if (_selectedItems.isEmpty) {
@@ -82,6 +79,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
                 conflictingItems: conflictingItems,
                 profile: profile,
                 parentFolder: folderInView,
+                showHiddenItems: event.showHiddenItems,
               );
             } catch (err, stacktrace) {
               // TODO: we must handle this error better. Currently, if an error occurs, it will emit the success state anyway.
@@ -106,6 +104,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
             parentFolder: folderInView,
             conflictingItems: event.conflictingItems,
             profile: profile,
+            showHiddenItems: event.showHiddenItems,
           );
           emit(const FsEntryMoveSuccess());
         }
@@ -178,16 +177,14 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     required FolderEntry parentFolder,
     List<ArDriveDataTableItem> conflictingItems = const [],
     required ProfileLoggedIn profile,
+    required bool showHiddenItems,
   }) async {
     final driveKey =
         await _driveDao.getDriveKey(driveId, profile.user.cipherKey);
     final moveTxDataItems = <DataItem>[];
-    final isShowingHiddenItems =
-        (_driveDetailCubit.state as DriveDetailLoadSuccess)
-            .isShowingHiddenFiles;
     final files = _selectedItems.whereType<FileDataTableItem>().toList();
 
-    if (!isShowingHiddenItems) {
+    if (!showHiddenItems) {
       files.removeWhere((element) => element.isHidden);
     }
 
@@ -201,7 +198,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
     final folders = _selectedItems.whereType<FolderDataTableItem>().toList();
 
-    if (!isShowingHiddenItems) {
+    if (!showHiddenItems) {
       folders.removeWhere((element) => element.isHidden);
     }
 

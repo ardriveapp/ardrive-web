@@ -51,6 +51,7 @@ void main() {
     name: '',
     privacy: '',
     lastUpdated: DateTime.now(),
+    isHidden: false,
   );
 
   final SearchResult<String> result1 = SearchResult<String>(

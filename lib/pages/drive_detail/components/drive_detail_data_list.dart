@@ -9,10 +9,10 @@ Widget _buildDataList(
     context,
     state.currentFolderContents,
     state.folderInView.folder,
+    state.selectedItem,
     state.currentDrive,
     isMultiselecting: state.multiselect,
     columnVisibility: state.columnVisibility,
-    isShowingHiddenFiles: state.isShowingHiddenFiles,
     emptyState: emptyState,
     selectedPage: state.selectedPage,
   );
@@ -22,25 +22,13 @@ Widget _buildDataListContent(
   BuildContext context,
   List<ArDriveDataTableItem> items,
   FolderEntry folder,
+  ArDriveDataTableItem? selectedItem,
   Drive drive, {
   required bool isMultiselecting,
   required Map<int, bool> columnVisibility,
-  required bool isShowingHiddenFiles,
   required Widget emptyState,
   int? selectedPage,
 }) {
-  final List<ArDriveDataTableItem> filteredItems;
-
-  if (isShowingHiddenFiles) {
-    filteredItems = items.toList();
-  } else {
-    filteredItems = items.where((item) => item.isHidden == false).toList();
-  }
-
-  if (filteredItems.isEmpty) {
-    return emptyState;
-  }
-
   return LayoutBuilder(builder: (context, constraints) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
@@ -113,123 +101,141 @@ Widget _buildDataListContent(
     final forceRebuildKey = driveDetailCubitState is DriveDetailLoadSuccess
         ? driveDetailCubitState.forceRebuildKey
         : null;
-    return ArDriveDataTable<ArDriveDataTableItem>(
-      key: ValueKey(
-          '${folder.id}-${forceRebuildKey.toString()}${columns.length}'),
-      initialPage: selectedPage,
-      lockMultiSelect: context.watch<SyncCubit>().state is SyncInProgress ||
-          !context.watch<ActivityTracker>().isMultiSelectEnabled,
-      rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
-      maxItemsPerPage: 100,
-      pageItemsDivisorFactor: 25,
-      onSelectedRows: (boxes) {
-        final bloc = context.read<DriveDetailCubit>();
+    return BlocBuilder<GlobalHideBloc, GlobalHideState>(
+      builder: (context, hideState) {
+        List<ArDriveDataTableItem> filteredItems = [];
 
-        if (boxes.isEmpty) {
-          bloc.setMultiSelect(false);
-          return;
+        if (hideState is HiddingItems) {
+          filteredItems = items.where((item) => !item.isHidden).toList();
+        } else {
+          filteredItems = items.toList();
         }
 
-        final multiSelectedItems = boxes
-            .map((e) => e.selectedItems.map((e) => e))
-            .expand((e) => e)
-            .toList();
-
-        bloc.selectItems(multiSelectedItems);
-      },
-      onChangeMultiSelecting: (isMultiselecting) {
-        context.read<DriveDetailCubit>().setMultiSelect(isMultiselecting);
-      },
-      onChangeColumnVisibility: (column) {
-        context.read<DriveDetailCubit>().updateTableColumnVisibility(column);
-      },
-      forceDisableMultiSelect:
-          context.read<DriveDetailCubit>().forceDisableMultiselect,
-      columns: columns,
-      trailing: (file) => isMultiselecting
-          ? const SizedBox.shrink()
-          : DriveExplorerItemTileTrailing(
-              drive: drive,
-              item: file,
-            ),
-      leading: (file) => DriveExplorerItemTileLeading(
-        item: file,
-      ),
-      onRowTap: (item) {
-        final cubit = context.read<DriveDetailCubit>();
-        if (item is FolderDataTableItem) {
-          if (item.id == cubit.selectedItem?.id) {
-            cubit.openFolder(folderId: item.id);
-          } else {
-            cubit.selectDataItem(item);
-          }
-        } else if (item is FileDataTableItem) {
-          if (item.id == cubit.selectedItem?.id) {
-            cubit.toggleSelectedItemDetails();
-            return;
-          }
-
-          cubit.selectDataItem(item);
-        }
-      },
-      sortRows: (list, columnIndex, ascDescSort) {
-        // Separate folders and files
-        List<ArDriveDataTableItem> folders = [];
-        List<ArDriveDataTableItem> files = [];
-
-        final lenght = list.length;
-
-        for (int i = 0; i < lenght; i++) {
-          if (list[i] is FolderDataTableItem) {
-            folders.add(list[i]);
-          } else {
-            files.add(list[i]);
-          }
+        if (filteredItems.isEmpty) {
+          return emptyState;
         }
 
-        // Sort folders and files
-        _sortFoldersAndFiles(folders, files, columnIndex, ascDescSort);
+        return ArDriveDataTable<ArDriveDataTableItem>(
+          key: ValueKey(
+              '${folder.id}-${forceRebuildKey.toString()}${columns.length}-${hideState.toString()}'),
+          initialPage: selectedPage,
+          lockMultiSelect: context.watch<SyncCubit>().state is SyncInProgress ||
+              !context.watch<ActivityTracker>().isMultiSelectEnabled,
+          rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
+          maxItemsPerPage: 100,
+          pageItemsDivisorFactor: 25,
+          onSelectedRows: (boxes) {
+            final bloc = context.read<DriveDetailCubit>();
 
-        return folders + files;
-      },
-      buildRow: (row) {
-        final typography = ArDriveTypographyNew.of(context);
-        final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-        return DriveExplorerItemTile(
-          colorTokens: colorTokens,
-          name: row.name,
-          typography: typography,
-          size: row.size == null ? '-' : filesize(row.size),
-          lastUpdated: row.lastUpdated,
-          dateCreated: row.dateCreated,
-          dataTableItem: row,
-          license: row.licenseType == null
-              ? ''
-              : context
-                .read<LicenseService>()
-                  .licenseMetaByType(row.licenseType!)
-                  .shortName,
-          isHidden: row.isHidden,
-          onPressed: () {
+            if (boxes.isEmpty) {
+              bloc.setMultiSelect(false);
+              return;
+            }
+
+            final multiSelectedItems = boxes
+                .map((e) => e.selectedItems.map((e) => e))
+                .expand((e) => e)
+                .toList();
+
+            bloc.selectItems(multiSelectedItems);
+          },
+          onChangeMultiSelecting: (isMultiselecting) {
+            context.read<DriveDetailCubit>().setMultiSelect(isMultiselecting);
+          },
+          onChangeColumnVisibility: (column) {
+            context
+                .read<DriveDetailCubit>()
+                .updateTableColumnVisibility(column);
+          },
+          forceDisableMultiSelect:
+              context.read<DriveDetailCubit>().forceDisableMultiselect,
+          columns: columns,
+          trailing: (file) => isMultiselecting
+              ? const SizedBox.shrink()
+              : DriveExplorerItemTileTrailing(
+                  drive: drive,
+                  item: file,
+                ),
+          leading: (file) => DriveExplorerItemTileLeading(
+            item: file,
+          ),
+          onRowTap: (item) {
             final cubit = context.read<DriveDetailCubit>();
-            if (row is FolderDataTableItem) {
-              if (row.id == cubit.selectedItem?.id) {
-                cubit.openFolder(folderId: row.id);
+            if (item is FolderDataTableItem) {
+              if (item.id == cubit.selectedItem?.id) {
+                cubit.openFolder(folderId: item.id);
               } else {
-                cubit.selectDataItem(row);
+                cubit.selectDataItem(item);
               }
-            } else if (row is FileDataTableItem) {
-              if (row.id == cubit.selectedItem?.id) {
+            } else if (item is FileDataTableItem) {
+              if (item.id == cubit.selectedItem?.id) {
                 cubit.toggleSelectedItemDetails();
-              } else {
-                cubit.selectDataItem(row);
+                return;
               }
+
+              cubit.selectDataItem(item);
             }
           },
+          sortRows: (list, columnIndex, ascDescSort) {
+            // Separate folders and files
+            List<ArDriveDataTableItem> folders = [];
+            List<ArDriveDataTableItem> files = [];
+
+            final lenght = list.length;
+
+            for (int i = 0; i < lenght; i++) {
+              if (list[i] is FolderDataTableItem) {
+                folders.add(list[i]);
+              } else {
+                files.add(list[i]);
+              }
+            }
+
+            // Sort folders and files
+            _sortFoldersAndFiles(folders, files, columnIndex, ascDescSort);
+
+            return folders + files;
+          },
+          buildRow: (row) {
+            final typography = ArDriveTypographyNew.of(context);
+            final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+            return DriveExplorerItemTile(
+              colorTokens: colorTokens,
+              name: row.name,
+              typography: typography,
+              size: row.size == null ? '-' : filesize(row.size),
+              lastUpdated: row.lastUpdated,
+              dateCreated: row.dateCreated,
+              dataTableItem: row,
+              license: row.licenseType == null
+                  ? ''
+                  : context
+                      .read<LicenseService>()
+                      .licenseMetaByType(row.licenseType!)
+                      .shortName,
+              isHidden: row.isHidden,
+              onPressed: () {
+                final cubit = context.read<DriveDetailCubit>();
+                if (row is FolderDataTableItem) {
+                  if (row.id == cubit.selectedItem?.id) {
+                    cubit.openFolder(folderId: row.id);
+                  } else {
+                    cubit.selectDataItem(row);
+                  }
+                } else if (row is FileDataTableItem) {
+                  if (row.id == cubit.selectedItem?.id) {
+                    cubit.toggleSelectedItemDetails();
+                  } else {
+                    cubit.selectDataItem(row);
+                  }
+                }
+              },
+            );
+          },
+          rows: filteredItems,
+          selectedRow: selectedItem,
         );
       },
-      rows: filteredItems,
-      selectedRow: context.watch<DriveDetailCubit>().selectedItem,
     );
   });
 }
