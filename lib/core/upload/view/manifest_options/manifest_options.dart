@@ -162,7 +162,7 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
                   ),
                   ArDriveTooltip(
                     message: (state.arnsNamesLoaded && state.ants!.isEmpty)
-                        ? 'No ARNS names found for your wallet'
+                        ? 'No ArNS names found for your wallet'
                         : '',
                     child: ArDriveButtonNew(
                       text: !state.arnsNamesLoaded
@@ -313,11 +313,7 @@ class _AntSelectorState extends State<AntSelector> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Row(
-                          children: [
-                            _buildSelectedItem(context),
-                          ],
-                        ),
+                        Flexible(child: _buildSelectedItem(context)),
                         ArDriveIcons.chevronDown(),
                       ],
                     ),
@@ -365,15 +361,20 @@ class _AntSelectorState extends State<AntSelector> {
                     ),
                   ),
                 ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (isNameAlreadyInUse &&
-                      widget.manifestSelection.antRecord?.domain !=
-                          _selectedAnt?.domain)
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 8, left: 8),
+              const Spacer(),
+              Padding(
+                padding: const EdgeInsets.only(
+                  top: 8,
+                  left: 8,
+                  bottom: 4,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (isNameAlreadyInUse &&
+                        widget.manifestSelection.antRecord?.domain !=
+                            _selectedAnt?.domain)
+                      Expanded(
                         child: Text(
                           'Name already in use, please choose another name or select a undername',
                           style: typography.paragraphSmall(
@@ -381,10 +382,7 @@ class _AntSelectorState extends State<AntSelector> {
                           ),
                         ),
                       ),
-                    ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8, left: 8),
-                    child: Align(
+                    Align(
                       alignment: Alignment.centerRight,
                       child: ArDriveButtonNew(
                         text: 'Add',
@@ -405,8 +403,8 @@ class _AntSelectorState extends State<AntSelector> {
                         },
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           );
@@ -419,15 +417,13 @@ class _AntSelectorState extends State<AntSelector> {
   Widget _buildSelectedItem(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
 
-    return Column(
-      children: [
-        Text(
-          _selectedAnt?.domain ?? 'Choose ArNS name',
-          style: typography.paragraphSmall(
-            fontWeight: ArFontWeight.semiBold,
-          ),
-        ),
-      ],
+    return Text(
+      _selectedAnt?.domain ?? 'Choose ArNS name',
+      style: typography.paragraphSmall(
+        fontWeight: ArFontWeight.semiBold,
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 

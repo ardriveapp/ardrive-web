@@ -2031,10 +2031,15 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    double heightForManifestSelections = 125;
+    double heightForManifestSelections =
+        (readyState.selectedManifestSelections.length * 30) + 16;
+
+    if (heightForManifestSelections > 200) {
+      heightForManifestSelections = 175;
+    }
 
     if (readyState.params.arnsUnderName == null) {
-      heightForManifestSelections += 45;
+      heightForManifestSelections += 50;
     }
 
     return StatsScreen(
@@ -2087,9 +2092,10 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
             ),
           ),
         ],
+        LicenseReviewInfo(licenseState: state.licenseState),
         if (state.readyState.selectedManifestSelections.isNotEmpty) ...[
           Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
+            padding: const EdgeInsets.only(bottom: 8.0),
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxHeight: heightForManifestSelections,
@@ -2100,7 +2106,6 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 8),
                   Text(
                     'Updated manifest(s):',
                     style: typography.paragraphNormal(
@@ -2109,21 +2114,40 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Flexible(
-                    child: Expanded(
-                      child: ListView(
-                        shrinkWrap: true,
-                        children: [
-                          ...state.readyState.selectedManifestSelections.map(
-                            (e) => Column(
-                              children: [
+                  Expanded(
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: [
+                        ...state.readyState.selectedManifestSelections.map(
+                          (e) => Column(
+                            children: [
+                              Row(
+                                children: [
+                                  ArDriveIcons.manifest(size: 16),
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      e.manifest.name,
+                                      style: typography.paragraphNormal(
+                                        fontWeight: ArFontWeight.semiBold,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (e.antRecord != null ||
+                                  e.undername != null) ...[
+                                const SizedBox(height: 2),
                                 Row(
                                   children: [
-                                    ArDriveIcons.manifest(size: 16),
+                                    ArDriveIcons.arnsName(size: 16),
                                     const SizedBox(width: 8),
                                     Flexible(
                                       child: Text(
-                                        e.manifest.name,
+                                        getLiteralArNSName(
+                                            e.antRecord!, e.undername),
                                         style: typography.paragraphNormal(
                                           fontWeight: ArFontWeight.semiBold,
                                         ),
@@ -2133,41 +2157,18 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                                if (e.antRecord != null ||
-                                    e.undername != null) ...[
-                                  const SizedBox(height: 2),
-                                  Row(
-                                    children: [
-                                      ArDriveIcons.arnsName(size: 16),
-                                      const SizedBox(width: 8),
-                                      Flexible(
-                                        child: Text(
-                                          getLiteralArNSName(
-                                              e.antRecord!, e.undername),
-                                          style: typography.paragraphNormal(
-                                            fontWeight: ArFontWeight.semiBold,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
                               ],
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 8),
                 ],
               ),
             ),
           ),
         ],
-        LicenseReviewInfo(licenseState: state.licenseState),
       ],
     );
   }
@@ -2183,10 +2184,15 @@ class _UploadReviewWithArnsNameWidget extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    double heightForManifestSelections = 125;
+    double heightForManifestSelections =
+        (state.readyState.selectedManifestSelections.length * 30) + 16;
+
+    if (heightForManifestSelections > 200) {
+      heightForManifestSelections = 200;
+    }
 
     if (state.readyState.params.arnsUnderName == null) {
-      heightForManifestSelections += 45;
+      heightForManifestSelections += 50;
     }
 
     return StatsScreen(
