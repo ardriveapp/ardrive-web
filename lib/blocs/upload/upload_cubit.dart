@@ -147,7 +147,7 @@ class UploadCubit extends Cubit<UploadState> {
       final manifestFileEntry = await _driveDao
           .fileById(
             driveId: _driveId,
-            fileId: manifestModels[i].existingManifestFileId!,
+            fileId: manifestModels[i].existingManifestFileId,
           )
           .getSingle();
 
