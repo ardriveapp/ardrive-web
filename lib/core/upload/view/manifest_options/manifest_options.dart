@@ -438,8 +438,6 @@ class _AntSelectorState extends State<AntSelector> {
   ArDriveDropdownItem _buildDropdownItem(BuildContext context, ANTRecord ant) {
     final typography = ArDriveTypographyNew.of(context);
 
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
     return ArDriveDropdownItem(
       content: SizedBox(
         width: 235,
