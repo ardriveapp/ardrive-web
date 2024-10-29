@@ -14,13 +14,13 @@ class MockFileDataTableItem extends Mock implements FileDataTableItem {}
 
 void main() {
   setUpAll(() {
-    registerFallbackValue(ARNSUndername(
+    registerFallbackValue(const ARNSUndername(
       name: 'test_undername',
       domain: 'test.ar',
       record: ARNSRecord(transactionId: 'test_tx_id', ttlSeconds: 3600),
     ));
     registerFallbackValue(
-        ANTRecord(domain: 'test.ar', processId: 'test_process_id'));
+        const ANTRecord(domain: 'test.ar', processId: 'test_process_id'));
   });
 
   group('AssignNameBloc', () {
@@ -51,8 +51,8 @@ void main() {
         // Arrange
         const walletAddress = 'test_wallet_address';
         final antRecords = [
-          ANTRecord(domain: 'test1.ar', processId: 'process1'),
-          ANTRecord(domain: 'test2.ar', processId: 'process2'),
+          const ANTRecord(domain: 'test1.ar', processId: 'process1'),
+          const ANTRecord(domain: 'test2.ar', processId: 'process2'),
         ];
 
         when(() => mockAuth.getWalletAddress())
@@ -138,8 +138,8 @@ void main() {
           () async {
         // Arrange
         final antRecords = [
-          ANTRecord(domain: 'domain1.ar', processId: 'process1'),
-          ANTRecord(domain: 'domain2.ar', processId: 'process2'),
+          const ANTRecord(domain: 'domain1.ar', processId: 'process1'),
+          const ANTRecord(domain: 'domain2.ar', processId: 'process2'),
         ];
         final selectedName = antRecords[0];
 
@@ -165,12 +165,12 @@ void main() {
           () async {
         // Arrange
         final antRecords = [
-          ANTRecord(domain: 'domain1.ar', processId: 'process1'),
-          ANTRecord(domain: 'domain2.ar', processId: 'process2'),
+          const ANTRecord(domain: 'domain1.ar', processId: 'process1'),
+          const ANTRecord(domain: 'domain2.ar', processId: 'process2'),
         ];
         final selectedName = antRecords[1];
         final undernames = [
-          ARNSUndername(
+          const ARNSUndername(
               name: 'undername1',
               domain: 'domain1.ar',
               record: ARNSRecord(transactionId: 'tx1', ttlSeconds: 3600)),
@@ -205,17 +205,17 @@ void main() {
           () async {
         // Arrange
         final antRecords = [
-          ANTRecord(domain: 'domain1.ar', processId: 'process1'),
-          ANTRecord(domain: 'domain2.ar', processId: 'process2'),
+          const ANTRecord(domain: 'domain1.ar', processId: 'process1'),
+          const ANTRecord(domain: 'domain2.ar', processId: 'process2'),
         ];
         final selectedName = antRecords[0];
         final undernames = [
-          ARNSUndername(
+          const ARNSUndername(
             name: 'undername1',
             domain: 'domain1.ar',
             record: ARNSRecord(transactionId: 'tx1', ttlSeconds: 3600),
           ),
-          ARNSUndername(
+          const ARNSUndername(
             name: 'undername2',
             domain: 'domain1.ar',
             record: ARNSRecord(transactionId: 'tx2', ttlSeconds: 3600),
@@ -258,17 +258,17 @@ void main() {
           () async {
         // Arrange
         final antRecords = [
-          ANTRecord(domain: 'domain1.ar', processId: 'process1'),
-          ANTRecord(domain: 'domain2.ar', processId: 'process2'),
+          const ANTRecord(domain: 'domain1.ar', processId: 'process1'),
+          const ANTRecord(domain: 'domain2.ar', processId: 'process2'),
         ];
         final selectedName = antRecords[0];
         final undernames = [
-          ARNSUndername(
+          const ARNSUndername(
             name: 'undername1',
             domain: 'domain1.ar',
             record: ARNSRecord(transactionId: 'tx1', ttlSeconds: 3600),
           ),
-          ARNSUndername(
+          const ARNSUndername(
             name: 'undername2',
             domain: 'domain1.ar',
             record: ARNSRecord(transactionId: 'tx2', ttlSeconds: 3600),
@@ -311,8 +311,8 @@ void main() {
           when(() => mockFileDataTableItem.fileId).thenReturn('test_file_id');
           when(() => mockFileDataTableItem.driveId).thenReturn('test_drive_id');
           final antRecords = [
-            ANTRecord(domain: 'test1.ar', processId: 'process1'),
-            ANTRecord(domain: 'test2.ar', processId: 'process2'),
+            const ANTRecord(domain: 'test1.ar', processId: 'process1'),
+            const ANTRecord(domain: 'test2.ar', processId: 'process2'),
           ];
 
           const walletAddress = 'test_wallet_address';
@@ -329,7 +329,7 @@ void main() {
               )).thenAnswer((_) async {});
           when(() => mockArnsRepository.getARNSUndernames(any())).thenAnswer(
             (_) async => [
-              ARNSUndername(
+              const ARNSUndername(
                 name: 'undername',
                 domain: 'domain',
                 record:
@@ -342,9 +342,9 @@ void main() {
         act: (bloc) {
           bloc.add(const LoadNames());
           bloc.add(
-              SelectName(ANTRecord(domain: 'domain', processId: 'process_id')));
+              const SelectName(ANTRecord(domain: 'domain', processId: 'process_id')));
           bloc.add(const LoadUndernames());
-          bloc.add(SelectUndername(
+          bloc.add(const SelectUndername(
             undername: ARNSUndername(
               name: 'undername',
               domain: 'domain',
@@ -385,8 +385,8 @@ void main() {
         when(() => mockFileDataTableItem.fileId).thenReturn('test_file_id');
         when(() => mockFileDataTableItem.driveId).thenReturn('test_drive_id');
         final antRecords = [
-          ANTRecord(domain: 'test1.ar', processId: 'process1'),
-          ANTRecord(domain: 'test2.ar', processId: 'process2'),
+          const ANTRecord(domain: 'test1.ar', processId: 'process1'),
+          const ANTRecord(domain: 'test2.ar', processId: 'process2'),
         ];
 
         const walletAddress = 'test_wallet_address';
@@ -406,7 +406,7 @@ void main() {
             )).thenThrow(StateError('Test error'));
         when(() => mockArnsRepository.getARNSUndernames(any())).thenAnswer(
           (_) async => [
-            ARNSUndername(
+            const ARNSUndername(
               name: 'undername',
               domain: 'domain',
               record: ARNSRecord(transactionId: 'test_tx_id', ttlSeconds: 3600),
@@ -418,9 +418,9 @@ void main() {
       act: (bloc) {
         bloc.add(const LoadNames());
         bloc.add(
-            SelectName(ANTRecord(domain: 'domain', processId: 'process_id')));
+            const SelectName(ANTRecord(domain: 'domain', processId: 'process_id')));
         bloc.add(const LoadUndernames());
-        bloc.add(SelectUndername(
+        bloc.add(const SelectUndername(
           undername: ARNSUndername(
             name: 'undername',
             domain: 'domain',

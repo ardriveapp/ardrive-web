@@ -107,12 +107,14 @@ class UploadReady extends UploadState {
   final bool loadingArNSNamesError;
   final bool arnsCheckboxChecked;
   final int totalSize;
-  final List<FileEntry> selectedManifests;
-  final List<FileEntry> manifestFiles;
+  final List<UploadManifestModel> manifestFiles;
+  final List<ManifestSelection> selectedManifestSelections;
   final bool showSettings;
   final bool canShowSettings;
+  final List<ANTRecord> arnsRecords;
 
   final bool isArConnect;
+  final bool showReviewButtonText;
 
   UploadReady({
     required this.paymentInfo,
@@ -128,10 +130,12 @@ class UploadReady extends UploadState {
     this.loadingArNSNamesError = false,
     required this.arnsCheckboxChecked,
     required this.totalSize,
-    required this.selectedManifests,
     required this.showSettings,
     required this.canShowSettings,
     required this.manifestFiles,
+    required this.arnsRecords,
+    required this.showReviewButtonText,
+    required this.selectedManifestSelections,
   });
 
   // copyWith
@@ -151,9 +155,11 @@ class UploadReady extends UploadState {
     bool? loadingArNSNamesError,
     bool? arnsCheckboxChecked,
     int? totalSize,
-    List<FileEntry>? selectedManifests,
-    List<FileEntry>? manifestFiles,
+    List<UploadManifestModel>? manifestFiles,
     bool? canShowSettings,
+    List<ANTRecord>? arnsRecords,
+    bool? showReviewButtonText,
+    List<ManifestSelection>? selectedManifestSelections,
   }) {
     return UploadReady(
       loadingArNSNames: loadingArNSNames ?? this.loadingArNSNames,
@@ -171,10 +177,13 @@ class UploadReady extends UploadState {
           loadingArNSNamesError ?? this.loadingArNSNamesError,
       arnsCheckboxChecked: arnsCheckboxChecked ?? this.arnsCheckboxChecked,
       totalSize: totalSize ?? this.totalSize,
-      selectedManifests: selectedManifests ?? this.selectedManifests,
       showSettings: showSettings ?? this.showSettings,
       manifestFiles: manifestFiles ?? this.manifestFiles,
       canShowSettings: canShowSettings ?? this.canShowSettings,
+      arnsRecords: arnsRecords ?? this.arnsRecords,
+      showReviewButtonText: showReviewButtonText ?? this.showReviewButtonText,
+      selectedManifestSelections:
+          selectedManifestSelections ?? this.selectedManifestSelections,
     );
   }
 
@@ -288,10 +297,9 @@ class UploadFailure extends UploadState {
 }
 
 class UploadComplete extends UploadState {
-  final List<FileEntry> manifestFiles;
   final ARNSRecord? arnsRecord;
 
-  UploadComplete({required this.manifestFiles, this.arnsRecord});
+  UploadComplete({this.arnsRecord});
 }
 
 class UploadingManifests extends UploadState {
@@ -304,7 +312,7 @@ class UploadingManifests extends UploadState {
   });
 
   @override
-  List<Object?> get props => [manifestFiles, completedCount];
+  List<Object?> get props => [UniqueKey()];
 }
 
 class UploadWalletMismatch extends UploadState {}
@@ -345,20 +353,28 @@ class UploadManifestSelectPaymentMethod extends UploadState {
 }
 
 class UploadManifestModel extends Equatable {
-  final String name;
+  final FileEntry entry;
   final bool isCompleted;
+  final bool isAssigningUndername;
   final bool freeThanksToTurbo;
   final bool isUploading;
-  final String? existingManifestFileId;
+  final String existingManifestFileId;
   final IOFile? file;
+  final ARNSUndername? undername;
+  final ANTRecord? antRecord;
+  final bool selectionExpanded;
 
   const UploadManifestModel({
-    required this.name,
+    required this.entry,
     this.isCompleted = false,
     required this.freeThanksToTurbo,
     this.isUploading = false,
-    this.existingManifestFileId,
+    required this.existingManifestFileId,
     this.file,
+    this.undername,
+    this.antRecord,
+    this.isAssigningUndername = false,
+    this.selectionExpanded = false,
   });
 
   UploadManifestModel copyWith({
@@ -367,25 +383,38 @@ class UploadManifestModel extends Equatable {
     String? existingManifestFileId,
     bool? freeThanksToTurbo,
     IOFile? file,
+    ARNSUndername? undername,
+    ANTRecord? antRecord,
+    bool? isAssigningUndername,
+    FileEntry? entry,
+    bool? selectionExpanded,
   }) {
     return UploadManifestModel(
-      name: name,
+      entry: entry ?? this.entry,
       isCompleted: isCompleted ?? this.isCompleted,
       isUploading: isUploading ?? this.isUploading,
       existingManifestFileId:
           existingManifestFileId ?? this.existingManifestFileId,
       freeThanksToTurbo: freeThanksToTurbo ?? this.freeThanksToTurbo,
       file: file ?? this.file,
+      undername: undername ?? this.undername,
+      antRecord: antRecord ?? this.antRecord,
+      isAssigningUndername: isAssigningUndername ?? this.isAssigningUndername,
+      selectionExpanded: selectionExpanded ?? this.selectionExpanded,
     );
   }
 
   @override
   List<Object?> get props => [
-        name,
+        entry,
         isCompleted,
         isUploading,
         existingManifestFileId,
-        freeThanksToTurbo
+        freeThanksToTurbo,
+        isAssigningUndername,
+        antRecord,
+        undername,
+        file,
       ];
 }
 
