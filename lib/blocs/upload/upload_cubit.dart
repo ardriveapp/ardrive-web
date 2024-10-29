@@ -144,9 +144,16 @@ class UploadCubit extends Cubit<UploadState> {
 
       manifestModels[i] = manifestModels[i].copyWith(isUploading: true);
 
+      final manifestFileEntry = await _driveDao
+          .fileById(
+            driveId: _driveId,
+            fileId: manifestModels[i].existingManifestFileId,
+          )
+          .getSingle();
+      
       await _createManifestCubit.prepareManifestTx(
-        manifestName: manifestModels[i].entry.name,
-        folderId: _targetFolder.id,
+        manifestName: manifestFileEntry.name,
+        folderId: manifestFileEntry.parentFolderId,
         existingManifestFileId: manifestModels[i].existingManifestFileId,
       );
 
@@ -199,9 +206,16 @@ class UploadCubit extends Cubit<UploadState> {
         completedCount: completedCount,
       ));
 
+      final manifestFileEntry = await _driveDao
+          .fileById(
+            driveId: _driveId,
+            fileId: manifestModels[i].existingManifestFileId,
+          )
+          .getSingle();
+
       await _createManifestCubit.prepareManifestTx(
-        manifestName: manifestModels[i].entry.name,
-        folderId: _targetFolder.id,
+        manifestName: manifestFileEntry.name,
+        folderId: manifestFileEntry.parentFolderId,
         existingManifestFileId: manifestModels[i].existingManifestFileId,
       );
 
