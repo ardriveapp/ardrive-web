@@ -104,6 +104,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     final drive = await _driveDao.driveById(driveId: driveId).getSingleOrNull();
 
     if (drive == null) {
+      await _syncCubit.waitCurrentSync();
+      emit(DriveDetailLoadNotFound());
       return;
     }
 
@@ -145,6 +147,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         _profileCubit.stream.startWith(ProfileCheckingAvailability()),
         (drive, folderContents, _) async {
           if (isClosed) {
+            return;
+          }
+
+          if (driveId != _driveId) {
             return;
           }
 
