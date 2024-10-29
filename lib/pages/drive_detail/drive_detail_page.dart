@@ -133,6 +133,13 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           listener: (context, state) {
             if (state is DrivesLoadSuccess) {
               if (state.userDrives.isNotEmpty) {
+                final driveDetailState = context.read<DriveDetailCubit>().state;
+
+                if (driveDetailState is DriveDetailLoadSuccess &&
+                    driveDetailState.currentDrive.id == state.selectedDriveId) {
+                  return;
+                }
+
                 context
                     .read<DriveDetailCubit>()
                     .changeDrive(state.selectedDriveId!);
