@@ -107,13 +107,14 @@ class UploadReady extends UploadState {
   final bool loadingArNSNamesError;
   final bool arnsCheckboxChecked;
   final int totalSize;
-  final List<UploadManifestModel> selectedManifests;
   final List<UploadManifestModel> manifestFiles;
+  final List<ManifestSelection> selectedManifestSelections;
   final bool showSettings;
   final bool canShowSettings;
   final List<ANTRecord> arnsRecords;
 
   final bool isArConnect;
+  final bool showReviewButtonText;
 
   UploadReady({
     required this.paymentInfo,
@@ -129,11 +130,12 @@ class UploadReady extends UploadState {
     this.loadingArNSNamesError = false,
     required this.arnsCheckboxChecked,
     required this.totalSize,
-    required this.selectedManifests,
     required this.showSettings,
     required this.canShowSettings,
     required this.manifestFiles,
     required this.arnsRecords,
+    required this.showReviewButtonText,
+    required this.selectedManifestSelections,
   });
 
   // copyWith
@@ -153,10 +155,11 @@ class UploadReady extends UploadState {
     bool? loadingArNSNamesError,
     bool? arnsCheckboxChecked,
     int? totalSize,
-    List<UploadManifestModel>? selectedManifests,
     List<UploadManifestModel>? manifestFiles,
     bool? canShowSettings,
     List<ANTRecord>? arnsRecords,
+    bool? showReviewButtonText,
+    List<ManifestSelection>? selectedManifestSelections,
   }) {
     return UploadReady(
       loadingArNSNames: loadingArNSNames ?? this.loadingArNSNames,
@@ -174,11 +177,13 @@ class UploadReady extends UploadState {
           loadingArNSNamesError ?? this.loadingArNSNamesError,
       arnsCheckboxChecked: arnsCheckboxChecked ?? this.arnsCheckboxChecked,
       totalSize: totalSize ?? this.totalSize,
-      selectedManifests: selectedManifests ?? this.selectedManifests,
       showSettings: showSettings ?? this.showSettings,
       manifestFiles: manifestFiles ?? this.manifestFiles,
       canShowSettings: canShowSettings ?? this.canShowSettings,
       arnsRecords: arnsRecords ?? this.arnsRecords,
+      showReviewButtonText: showReviewButtonText ?? this.showReviewButtonText,
+      selectedManifestSelections:
+          selectedManifestSelections ?? this.selectedManifestSelections,
     );
   }
 
@@ -357,6 +362,7 @@ class UploadManifestModel extends Equatable {
   final IOFile? file;
   final ARNSUndername? undername;
   final ANTRecord? antRecord;
+  final bool selectionExpanded;
 
   const UploadManifestModel({
     required this.entry,
@@ -368,6 +374,7 @@ class UploadManifestModel extends Equatable {
     this.undername,
     this.antRecord,
     this.isAssigningUndername = false,
+    this.selectionExpanded = false,
   });
 
   UploadManifestModel copyWith({
@@ -380,6 +387,7 @@ class UploadManifestModel extends Equatable {
     ANTRecord? antRecord,
     bool? isAssigningUndername,
     FileEntry? entry,
+    bool? selectionExpanded,
   }) {
     return UploadManifestModel(
       entry: entry ?? this.entry,
@@ -392,6 +400,7 @@ class UploadManifestModel extends Equatable {
       undername: undername ?? this.undername,
       antRecord: antRecord ?? this.antRecord,
       isAssigningUndername: isAssigningUndername ?? this.isAssigningUndername,
+      selectionExpanded: selectionExpanded ?? this.selectionExpanded,
     );
   }
 

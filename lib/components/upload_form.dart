@@ -27,6 +27,8 @@ import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/core/arfs/utils/arfs_revision_status_utils.dart';
 import 'package:ardrive/core/upload/domain/repository/upload_repository.dart';
 import 'package:ardrive/core/upload/uploader.dart';
+import 'package:ardrive/core/upload/view/blocs/upload_manifest_options_bloc.dart';
+import 'package:ardrive/core/upload/view/manifest_options/manifest_options.dart';
 import 'package:ardrive/entities/manifest_data.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/main.dart';
@@ -50,6 +52,7 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:ario_sdk/ario_sdk.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -251,8 +254,57 @@ class _UploadFormState extends State<UploadForm> {
                 state is UploadPreparationInitialized) {
               return _PreparingUploadWidget(state: state);
             } else if (state is UploadReady) {
-              return _UploadReadyWidget(
-                  state: state, driveDetailCubit: widget.driveDetailCubit);
+              return BlocProvider(
+                create: (context) {
+                  List<ManifestSelection> manifestSelections = [];
+                  List<String> selectedManifestIds = [];
+
+                  manifestSelections = state.manifestFiles.map((e) {
+                    final selectedManifest = state.selectedManifestSelections
+                        .firstWhereOrNull((selectedManifest) =>
+                            selectedManifest.manifest.id == e.entry.id);
+
+                    ANTRecord? antRecord;
+                    ARNSUndername? undername;
+
+                    if (selectedManifest != null) {
+                      antRecord = selectedManifest.antRecord;
+                      undername = selectedManifest.undername;
+                      selectedManifestIds.add(e.entry.id);
+                    }
+
+                    return ManifestSelection(
+                      manifest: e.entry,
+                      antRecord: antRecord,
+                      undername: undername,
+                    );
+                  }).toList();
+
+                  return UploadManifestOptionsBloc(
+                    manifestFiles: manifestSelections,
+                    arnsRepository: context.read<ARNSRepository>(),
+                    arDriveAuth: context.read<ArDriveAuth>(),
+                    selectedManifestIds: selectedManifestIds,
+                  )..add(LoadAnts());
+                },
+                child: BlocListener<UploadManifestOptionsBloc,
+                    UploadManifestOptionsState>(
+                  listener: (context, state) {
+                    if (state is UploadManifestOptionsReady) {
+                      context.read<UploadCubit>().updateManifestSelection(
+                            state.manifestFiles
+                                .where((e) => state.selectedManifestIds
+                                    .contains(e.manifest.id))
+                                .toList(),
+                          );
+                    }
+                  },
+                  child: _UploadReadyWidget(
+                    state: state,
+                    driveDetailCubit: widget.driveDetailCubit,
+                  ),
+                ),
+              );
             } else if (state is UploadConfiguringLicense) {
               return _UploadConfiguringLicenseWidget(state: state);
             } else if (state is UploadReview) {
@@ -1020,152 +1072,8 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
   Widget manifestOptionsView(
       UploadReady state, BuildContext context, ArdriveTypographyNew typography,
       {bool scrollable = true}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 42.0),
-      child: ListView.separated(
-        separatorBuilder: (context, index) => const SizedBox(height: 4),
-        physics: scrollable
-            ? const ScrollPhysics()
-            : const NeverScrollableScrollPhysics(),
-        shrinkWrap: true,
-        itemCount: state.manifestFiles.length,
-        itemBuilder: (context, index) {
-          final file = state.manifestFiles[index];
-
-          return _ManifestOptionTile(
-            file: file,
-            state: state,
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _ManifestOptionTile extends StatefulWidget {
-  final UploadReady state;
-  final UploadManifestModel file;
-
-  const _ManifestOptionTile({
-    required this.state,
-    required this.file,
-  });
-
-  @override
-  State<_ManifestOptionTile> createState() => __ManifestOptionTileState();
-}
-
-class __ManifestOptionTileState extends State<_ManifestOptionTile> {
-  bool _isExpanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final hiddenColor =
-        ArDriveTheme.of(context).themeData.colors.themeFgDisabled;
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      decoration: BoxDecoration(
-        color: colorTokens.containerL2,
-        borderRadius: BorderRadius.circular(5),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      height: _isExpanded ? 130 : 50,
-      child: GestureDetector(
-        onTap: () {
-          // setState(() {
-          //   _isExpanded = !_isExpanded;
-          // });
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Flexible(
-                        flex: 2,
-                        child: Row(
-                          children: [
-                            ArDriveIcons.manifest(
-                                size: 16,
-                                color: widget.file.entry.isHidden
-                                    ? hiddenColor
-                                    : null),
-                            const SizedBox(width: 8),
-                            Text(
-                              widget.file.entry.name,
-                              style: typography.paragraphNormal(
-                                color: widget.file.entry.isHidden
-                                    ? hiddenColor
-                                    : null,
-                              ),
-                            ),
-                            if (widget.file.entry.isHidden) ...[
-                              const SizedBox(width: 8),
-                              Text('(hidden)',
-                                  style: typography.paragraphNormal(
-                                    color: hiddenColor,
-                                  ))
-                            ]
-                          ],
-                        ),
-                      ),
-                      Flexible(
-                        flex: 1,
-                        child: ArDriveCheckBox(
-                          checked: widget.state.selectedManifests
-                              .contains(widget.file),
-                          onChange: (value) {
-                            if (value) {
-                              context
-                                  .read<UploadCubit>()
-                                  .selectManifestFile(widget.file);
-                            } else {
-                              context
-                                  .read<UploadCubit>()
-                                  .unselectManifestFile(widget.file);
-                            }
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                ArDriveButtonNew(
-                  text: 'Add ArNS',
-                  typography: typography,
-                  isDisabled:
-                      !widget.state.selectedManifests.contains(widget.file),
-                  fontStyle: typography.paragraphSmall(),
-                  variant: ButtonVariant.primary,
-                  maxWidth: 80,
-                  maxHeight: 30,
-                  onPressed: () {
-                    setState(() {
-                      _isExpanded = true;
-                    });
-                  },
-                )
-                // TODO: Add back when we have the right UI for it
-              ],
-            ),
-            if (_isExpanded) ...[
-              const SizedBox(height: 8),
-              Expanded(
-                flex: 1,
-                child: AntSelector(file: widget.file),
-              ),
-            ],
-          ],
-        ),
-      ),
+    return ManifestOptions(
+      scrollable: scrollable,
     );
   }
 }
@@ -2173,7 +2081,7 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
             ),
           ),
         ],
-        if (state.readyState.selectedManifests.isNotEmpty) ...[
+        if (state.readyState.selectedManifestSelections.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.only(bottom: 16.0),
             child: ConstrainedBox(
@@ -2200,28 +2108,44 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
                       child: ListView(
                         shrinkWrap: true,
                         children: [
-                          ...state.readyState.selectedManifests.map(
+                          ...state.readyState.selectedManifestSelections.map(
                             (e) => Column(
                               children: [
                                 Row(
                                   children: [
                                     ArDriveIcons.manifest(size: 16),
                                     const SizedBox(width: 8),
-                                    Text(
-                                      e.entry.name,
-                                      style: typography.paragraphNormal(
-                                        fontWeight: ArFontWeight.semiBold,
+                                    Flexible(
+                                      child: Text(
+                                        e.manifest.name,
+                                        style: typography.paragraphNormal(
+                                          fontWeight: ArFontWeight.semiBold,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                   ],
                                 ),
-                                if (e.undername != null) ...[
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'ArNS Name: ${getLiteralARNSRecordName(e.undername!)}',
-                                    style: typography.paragraphNormal(
-                                      fontWeight: ArFontWeight.semiBold,
-                                    ),
+                                if (e.antRecord != null ||
+                                    e.undername != null) ...[
+                                  const SizedBox(height: 2),
+                                  Row(
+                                    children: [
+                                      ArDriveIcons.arnsName(size: 16),
+                                      const SizedBox(width: 8),
+                                      Flexible(
+                                        child: Text(
+                                          getLiteralArNSName(
+                                              e.antRecord!, e.undername),
+                                          style: typography.paragraphNormal(
+                                            fontWeight: ArFontWeight.semiBold,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ],
@@ -2298,12 +2222,12 @@ class _UploadReviewWithArnsNameWidget extends StatelessWidget {
             ),
           ),
         ],
-        if (state.readyState.selectedManifests.isNotEmpty) ...[
+        if (state.readyState.selectedManifestSelections.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.only(bottom: 16.0),
             child: ConstrainedBox(
               constraints: const BoxConstraints(
-                // maxHeight: 125,
+                maxHeight: 125,
                 minWidth: kLargeDialogWidth,
               ),
               child: Column(
@@ -2321,27 +2245,57 @@ class _UploadReviewWithArnsNameWidget extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Flexible(
-                    child: ListView(
-                      shrinkWrap: true,
-                      children: [
-                        ...state.readyState.selectedManifests.map(
-                          (e) => Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ArDriveIcons.manifest(size: 16),
-                              const SizedBox(width: 8),
-                              Text(
-                                e.entry.name,
-                                style: typography.paragraphNormal(
-                                  fontWeight: ArFontWeight.semiBold,
+                    child: Expanded(
+                      child: ListView(
+                        shrinkWrap: true,
+                        children: [
+                          ...state.readyState.selectedManifestSelections.map(
+                            (e) => Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    ArDriveIcons.manifest(size: 16),
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        e.manifest.name,
+                                        style: typography.paragraphNormal(
+                                          fontWeight: ArFontWeight.semiBold,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
+                                if (e.antRecord != null ||
+                                    e.undername != null) ...[
+                                  const SizedBox(height: 2),
+                                  Row(
+                                    children: [
+                                      ArDriveIcons.arnsName(size: 16),
+                                      const SizedBox(width: 8),
+                                      Flexible(
+                                        child: Text(
+                                          getLiteralArNSName(
+                                              e.antRecord!, e.undername),
+                                          style: typography.paragraphNormal(
+                                            fontWeight: ArFontWeight.semiBold,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -2984,7 +2938,7 @@ List<ArDriveButtonNew> getModalActions(
         variant: ButtonVariant.primary,
       ),
     ];
-  } else if (state.selectedManifests.isNotEmpty) {
+  } else if (state.selectedManifestSelections.isNotEmpty) {
     return [
       ArDriveButtonNew(
         isDisabled: !state.isNextButtonEnabled,
@@ -3015,260 +2969,11 @@ List<ArDriveButtonNew> getModalActions(
   ];
 }
 
-class AntSelector extends StatefulWidget {
-  const AntSelector({super.key, required this.file});
+String getLiteralArNSName(ANTRecord record, ARNSUndername? undername) {
+  if (undername != null) {
+    return getLiteralARNSRecordName(undername);
+  }
 
-  final UploadManifestModel file;
-
-  @override
-  State<AntSelector> createState() => _AntSelectorState();
+  return record.domain;
 }
-
-class _AntSelectorState extends State<AntSelector> {
-  ANTRecord? _selectedAnt;
-  ARNSUndername? _selectedUndername;
-
-  List<ARNSUndername> _arnsUndernames = [];
-  bool _loadingUndernames = false;
-  bool _loadingIsAlreadyLinked = false;
-
-  loadARNSUndernames(
-    ANTRecord ant,
-  ) async {
-    setState(() {
-      _loadingUndernames = true;
-    });
-
-    _arnsUndernames = await context.read<UploadCubit>().getARNSUndernames(ant);
-
-    setState(() {
-      _loadingUndernames = false;
-    });
-  }
-
-  loadIsAlreadyLinked() async {
-
-    setState(() {
-      _loadingIsAlreadyLinked = true;
-    });
-
-    _isAlreadyLinked = await context.read<UploadCubit>().isArNSNameAlreadyLinked(
-          record: widget.file.antRecord!,
-          undername: _selectedUndername,
-        );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    return BlocBuilder<UploadCubit, UploadState>(
-      builder: (context, state) {
-        if (state is UploadReady) {
-          return Column(
-            children: [
-              Container(
-                alignment: Alignment.centerLeft,
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(5),
-                  color: colorTokens.inputDisabled,
-                  border: Border.all(
-                    color: colorTokens.textXLow,
-                    width: 1,
-                  ),
-                ),
-                child: ArDriveDropdown(
-                  height: 45,
-                  items: state.arnsRecords
-                      .map((ant) => _buildDropdownItem(context, ant))
-                      .toList(),
-                  child: ArDriveClickArea(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Row(
-                          children: [
-                            _buildSelectedItem(context),
-                          ],
-                        ),
-                        ArDriveIcons.chevronDown(),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              if (_loadingUndernames) const CircularProgressIndicator(),
-              if (!_loadingUndernames && _arnsUndernames.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Container(
-                    alignment: Alignment.centerLeft,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(5),
-                      color: colorTokens.inputDisabled,
-                      border: Border.all(
-                        color: colorTokens.textXLow,
-                        width: 1,
-                      ),
-                    ),
-                    child: ArDriveDropdown(
-                      height: 45,
-                      items: _arnsUndernames
-                          .map((undername) =>
-                              _buildDropdownItemUndername(context, undername))
-                          .toList(),
-                      child: ArDriveClickArea(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Row(
-                              children: [
-                                _buildSelectedItemUndername(context),
-                              ],
-                            ),
-                            ArDriveIcons.chevronDown(),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          );
-        }
-        return const SizedBox();
-      },
-    );
-  }
-
-  Widget _buildSelectedItem(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-
-    return Text(
-      _selectedAnt?.domain ?? 'Choose ArNS name',
-      style: typography.paragraphSmall(
-        fontWeight: ArFontWeight.semiBold,
-      ),
-    );
-  }
-
-  Widget _buildSelectedItemUndername(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-
-    return Text(
-      _selectedUndername?.name ?? 'under_name (optional)',
-      style: typography.paragraphSmall(
-        fontWeight: ArFontWeight.semiBold,
-      ),
-    );
-  }
-
-  ArDriveDropdownItem _buildDropdownItem(BuildContext context, ANTRecord ant) {
-    final typography = ArDriveTypographyNew.of(context);
-
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-    return ArDriveDropdownItem(
-      content: SizedBox(
-        width: 235,
-        height: 45,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Text(
-                  ant.domain,
-                  style: typography.paragraphSmall(
-                    fontWeight: ArFontWeight.semiBold,
-                    color: isAlreadyLinked ? colorTokens.textLow : null,
-                  ),
-                ),
-              ),
-              if (ant.domain == _selectedAnt?.domain)
-                ArDriveIcons.checkmark(
-                  size: 16,
-                )
-            ],
-          ),
-        ),
-      ),
-      onClick: () {
-        if (isAlreadyLinked) {
-          return;
-        }
-
-        setState(() {
-          _selectedAnt = ant;
-
-          _arnsUndernames = [];
-          loadARNSUndernames(ant);
-
-          context.read<UploadCubit>().linkManifestToUndername(
-                widget.file,
-                _selectedAnt!,
-                null,
-              );
-        });
-      },
-    );
-  }
-
-  ArDriveDropdownItem _buildDropdownItemUndername(
-      BuildContext context, ARNSUndername undername) {
-    final typography = ArDriveTypographyNew.of(context);
-
-    final isAlreadyLinked = context.read<UploadCubit>().isArNSNameAlreadyLinked(
-          record: _selectedAnt!,
-          undername: undername,
-        );
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-    return ArDriveDropdownItem(
-      content: SizedBox(
-        width: 235,
-        height: 45,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Text(
-                  undername.name,
-                  style: typography.paragraphSmall(
-                    fontWeight: ArFontWeight.semiBold,
-                    color: isAlreadyLinked ? colorTokens.textLow : null,
-                  ),
-                ),
-              ),
-              if (undername.name == _selectedUndername?.name)
-                ArDriveIcons.checkmark(
-                  size: 16,
-                )
-            ],
-          ),
-        ),
-      ),
-      onClick: () {
-        if (isAlreadyLinked) {
-          return;
-        }
-
-        setState(() {
-          _selectedUndername = undername;
-
-          context.read<UploadCubit>().linkManifestToUndername(
-              widget.file, _selectedAnt!, _selectedUndername!);
-        });
-      },
-    );
-  }
-}
-
 //
