@@ -2253,7 +2253,6 @@ class _UploadReviewWithArnsNameWidget extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 8),
                   Text(
                     'Updated manifest(s):',
                     style: typography.paragraphNormal(
