@@ -177,7 +177,7 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
                           (state.arnsNamesLoaded && state.ants!.isEmpty),
                       fontStyle: typography.paragraphSmall(),
                       variant: ButtonVariant.primary,
-                      maxWidth: 100,
+                      maxWidth: state.arnsNamesLoaded ? 100 : 120,
                       maxHeight: 30,
                       onPressed: () {
                         context
