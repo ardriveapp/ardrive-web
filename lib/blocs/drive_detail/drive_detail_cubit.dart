@@ -38,6 +38,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   final DriveRepository _driveRepository;
 
   StreamSubscription? _folderSubscription;
+  StreamController<void>? _folderSubscriptionController;
   final _defaultAvailableRowsPerPage = [25, 50, 75, 100];
 
   List<ArDriveDataTableItem> _selectedItems = [];
@@ -107,6 +108,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       return;
     }
 
+    await _folderSubscription?.cancel();
+
     _driveId = driveId;
 
     openFolder(folderId: drive.rootFolderId);
@@ -147,6 +150,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           }
 
           if (driveId != _driveId) {
+            await _folderSubscription?.cancel();
+            _folderSubscription = null;
             return;
           }
 
