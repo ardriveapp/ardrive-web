@@ -514,36 +514,37 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                             ),
                                           ),
                                         ),
-                                        ArDriveDropdownItem(
-                                          onClick: () {
-                                            promptToToggleHideState(
-                                              context,
-                                              item: DriveDataTableItemMapper
-                                                  .fromDrive(
-                                                driveDetailState.currentDrive,
-                                                (_) => null,
-                                                0,
-                                                isDriveOwner,
-                                              ),
-                                            );
-                                          },
-                                          content: ArDriveDropdownItemTile(
-                                            name: driveDetailState
-                                                    .currentDrive.isHidden
-                                                ? appLocalizationsOf(context)
-                                                    .unhide
-                                                : appLocalizationsOf(context)
-                                                    .hide,
-                                            icon: driveDetailState
-                                                    .currentDrive.isHidden
-                                                ? ArDriveIcons.eyeOpen(
-                                                    size: defaultIconSize,
-                                                  )
-                                                : ArDriveIcons.eyeClosed(
-                                                    size: defaultIconSize,
-                                                  ),
+                                        if (isDriveOwner)
+                                          ArDriveDropdownItem(
+                                            onClick: () {
+                                              promptToToggleHideState(
+                                                context,
+                                                item: DriveDataTableItemMapper
+                                                    .fromDrive(
+                                                  driveDetailState.currentDrive,
+                                                  (_) => null,
+                                                  0,
+                                                  isDriveOwner,
+                                                ),
+                                              );
+                                            },
+                                            content: ArDriveDropdownItemTile(
+                                              name: driveDetailState
+                                                      .currentDrive.isHidden
+                                                  ? appLocalizationsOf(context)
+                                                      .unhide
+                                                  : appLocalizationsOf(context)
+                                                      .hide,
+                                              icon: driveDetailState
+                                                      .currentDrive.isHidden
+                                                  ? ArDriveIcons.eyeOpen(
+                                                      size: defaultIconSize,
+                                                    )
+                                                  : ArDriveIcons.eyeClosed(
+                                                      size: defaultIconSize,
+                                                    ),
+                                            ),
                                           ),
-                                        ),
                                         ArDriveDropdownItem(
                                           onClick: () {
                                             promptToShareDrive(
@@ -1199,31 +1200,32 @@ class MobileFolderNavigation extends StatelessWidget {
                         ),
                       ),
                     ),
-                    ArDriveDropdownItem(
-                      onClick: () {
-                        promptToToggleHideState(
-                          context,
-                          item: DriveDataTableItemMapper.fromDrive(
-                            state.currentDrive,
-                            (_) => null,
-                            0,
-                            isOwner,
-                          ),
-                        );
-                      },
-                      content: ArDriveDropdownItemTile(
-                        name: state.currentDrive.isHidden
-                            ? appLocalizationsOf(context).unhide
-                            : appLocalizationsOf(context).hide,
-                        icon: state.currentDrive.isHidden
-                            ? ArDriveIcons.eyeOpen(
-                                size: defaultIconSize,
-                              )
-                            : ArDriveIcons.eyeClosed(
-                                size: defaultIconSize,
-                              ),
+                    if (isOwner)
+                      ArDriveDropdownItem(
+                        onClick: () {
+                          promptToToggleHideState(
+                            context,
+                            item: DriveDataTableItemMapper.fromDrive(
+                              state.currentDrive,
+                              (_) => null,
+                              0,
+                              isOwner,
+                            ),
+                          );
+                        },
+                        content: ArDriveDropdownItemTile(
+                          name: state.currentDrive.isHidden
+                              ? appLocalizationsOf(context).unhide
+                              : appLocalizationsOf(context).hide,
+                          icon: state.currentDrive.isHidden
+                              ? ArDriveIcons.eyeOpen(
+                                  size: defaultIconSize,
+                                )
+                              : ArDriveIcons.eyeClosed(
+                                  size: defaultIconSize,
+                                ),
+                        ),
                       ),
-                    ),
                     ArDriveDropdownItem(
                       onClick: () {
                         promptToExportCSVData(
