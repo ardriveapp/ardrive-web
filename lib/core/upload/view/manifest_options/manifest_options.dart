@@ -173,6 +173,7 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
                       typography: typography,
                       isDisabled: isExpanded ||
                           !widget.isSelected ||
+                          !state.arnsNamesLoaded ||
                           (state.arnsNamesLoaded && state.ants!.isEmpty),
                       fontStyle: typography.paragraphSmall(),
                       variant: ButtonVariant.primary,
