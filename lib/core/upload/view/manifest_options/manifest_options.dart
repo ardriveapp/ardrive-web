@@ -100,7 +100,7 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
         curve: Curves.easeInOut,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         height: isExpanded
-            ? 204
+            ? 168
             : showingName
                 ? 70
                 : 50,
@@ -108,7 +108,7 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
           onTap: () {},
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               Row(
                 mainAxisSize: MainAxisSize.max,
@@ -160,7 +160,6 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
                       ],
                     ),
                   ),
-
                   ArDriveTooltip(
                     message: (state.arnsNamesLoaded && state.ants!.isEmpty)
                         ? 'No ARNS names found for your wallet'
@@ -172,7 +171,8 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
                               ? 'Change ArNS'
                               : 'Add ArNS',
                       typography: typography,
-                      isDisabled: !widget.isSelected ||
+                      isDisabled: isExpanded ||
+                          !widget.isSelected ||
                           (state.arnsNamesLoaded && state.ants!.isEmpty),
                       fontStyle: typography.paragraphSmall(),
                       variant: ButtonVariant.primary,
@@ -365,41 +365,48 @@ class _AntSelectorState extends State<AntSelector> {
                     ),
                   ),
                 ),
-              if (isNameAlreadyInUse &&
-                  widget.manifestSelection.antRecord?.domain !=
-                      _selectedAnt?.domain)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8, left: 8),
-                  child: Text(
-                    'Name already in use, please choose another name or select a undername',
-                    style: typography.paragraphSmall(
-                      fontWeight: ArFontWeight.semiBold,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (isNameAlreadyInUse &&
+                      widget.manifestSelection.antRecord?.domain !=
+                          _selectedAnt?.domain)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 8, left: 8),
+                        child: Text(
+                          'Name already in use, please choose another name or select a undername',
+                          style: typography.paragraphSmall(
+                            fontWeight: ArFontWeight.semiBold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8, left: 8),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: ArDriveButtonNew(
+                        text: 'Add',
+                        typography: typography,
+                        fontStyle: typography.paragraphSmall(),
+                        variant: ButtonVariant.primary,
+                        maxWidth: 80,
+                        maxHeight: 30,
+                        isDisabled: isNameAlreadyInUse || _selectedAnt == null,
+                        onPressed: () {
+                          context
+                              .read<UploadManifestOptionsBloc>()
+                              .add(LinkManifestToUndername(
+                                manifest: widget.manifestSelection.manifest,
+                                antRecord: _selectedAnt!,
+                                undername: _selectedUndername,
+                              ));
+                        },
+                      ),
                     ),
                   ),
-                ),
-              Padding(
-                padding: const EdgeInsets.only(top: 8, left: 8),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: ArDriveButtonNew(
-                    text: 'Add',
-                    typography: typography,
-                    fontStyle: typography.paragraphSmall(),
-                    variant: ButtonVariant.primary,
-                    maxWidth: 80,
-                    maxHeight: 30,
-                    isDisabled: isNameAlreadyInUse || _selectedAnt == null,
-                    onPressed: () {
-                      context
-                          .read<UploadManifestOptionsBloc>()
-                          .add(LinkManifestToUndername(
-                            manifest: widget.manifestSelection.manifest,
-                            antRecord: _selectedAnt!,
-                            undername: _selectedUndername,
-                          ));
-                    },
-                  ),
-                ),
+                ],
               ),
             ],
           );

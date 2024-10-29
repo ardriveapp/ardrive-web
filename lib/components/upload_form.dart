@@ -2031,6 +2031,12 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
+    double heightForManifestSelections = 125;
+
+    if (readyState.params.arnsUnderName == null) {
+      heightForManifestSelections += 45;
+    }
+
     return StatsScreen(
       readyState: readyState,
       modalActions: [
@@ -2085,8 +2091,8 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: 16.0),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxHeight: 125,
+              constraints: BoxConstraints(
+                maxHeight: heightForManifestSelections,
                 minWidth: kLargeDialogWidth,
               ),
               child: Column(
@@ -2177,6 +2183,12 @@ class _UploadReviewWithArnsNameWidget extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
+    double heightForManifestSelections = 125;
+
+    if (state.readyState.params.arnsUnderName == null) {
+      heightForManifestSelections += 45;
+    }
+
     return StatsScreen(
       readyState: state.readyState,
       modalActions: [
@@ -2226,8 +2238,8 @@ class _UploadReviewWithArnsNameWidget extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: 16.0),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxHeight: 125,
+              constraints: BoxConstraints(
+                maxHeight: heightForManifestSelections,
                 minWidth: kLargeDialogWidth,
               ),
               child: Column(
