@@ -101,6 +101,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   }
 
   Future<void> changeDrive(String driveId) async {
+    logger.d('changeDrive on cubit: $driveId');
+
     final drive = await _driveDao.driveById(driveId: driveId).getSingleOrNull();
 
     if (drive == null) {
@@ -138,15 +140,22 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       _folderSubscription =
           Rx.combineLatest3<Drive?, FolderWithContents, ProfileState, void>(
         _driveRepository.watchDrive(driveId: driveId),
-        _driveDao.watchFolderContents(
+        _driveDao
+            .watchFolderContents(
           driveId,
           orderBy: contentOrderBy,
           orderingMode: contentOrderingMode,
           folderId: folderId,
-        ),
+        )
+            .handleError((e) {
+          if (e is DriveNotFoundException) {
+            emit(DriveDetailLoadNotFound());
+          }
+        }),
         _profileCubit.stream.startWith(ProfileCheckingAvailability()),
         (drive, folderContents, _) async {
           if (isClosed) {
+            logger.d('drive detail cubit is closed');
             return;
           }
 
