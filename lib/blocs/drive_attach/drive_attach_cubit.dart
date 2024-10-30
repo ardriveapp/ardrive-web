@@ -141,15 +141,17 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         profileKey: _profileKey,
       );
 
-      emit(DriveAttachSuccess());
-
       /// Wait for the sync to finish before syncing the newly attached drive.
-      await _syncBloc.waitCurrentSync();
+      _syncBloc.waitCurrentSync().then((value) {
+        logger.d('after sync drives attach');
 
-      /// Then, sync and select the newly attached drive.
-      unawaited(_syncBloc
-          .startSync()
-          .then((value) => _drivesBloc.selectDrive(driveId)));
+        /// Then, sync and select the newly attached drive.
+        unawaited(_syncBloc.startSync());
+
+        _drivesBloc.selectDrive(driveId);
+      });
+
+      emit(DriveAttachSuccess());
 
       PlausibleEventTracker.trackAttachDrive(
         drivePrivacy: drivePrivacy,
