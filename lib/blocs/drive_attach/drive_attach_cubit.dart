@@ -24,6 +24,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
   final SyncCubit _syncBloc;
   final DrivesCubit _drivesBloc;
   final SecretKey? _profileKey;
+  final DriveDetailCubit _driveDetailCubit;
 
   final driveNameController = TextEditingController();
   final driveKeyController = TextEditingController();
@@ -40,11 +41,13 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     required DriveDao driveDao,
     required SyncCubit syncBloc,
     required DrivesCubit drivesBloc,
+    required DriveDetailCubit driveDetailCubit,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _syncBloc = syncBloc,
         _drivesBloc = drivesBloc,
         _profileKey = profileKey,
+        _driveDetailCubit = driveDetailCubit,
         super(DriveAttachInitial()) {
     initializeForm(
       driveId: initialDriveId,
@@ -149,6 +152,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         unawaited(_syncBloc.startSync());
 
         _drivesBloc.selectDrive(driveId);
+        _driveDetailCubit.changeDrive(driveId);
       });
 
       emit(DriveAttachSuccess());

@@ -320,7 +320,10 @@ class NewButton extends StatelessWidget {
 
       return [
         ArDriveNewButtonItem(
-          onClick: () => attachDrive(context: context),
+          onClick: () => attachDrive(
+            context: context,
+            driveDetailCubit: context.read<DriveDetailCubit>(),
+          ),
           name: appLocalizations.attachDrive,
           icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
         ),
@@ -440,7 +443,10 @@ class NewButton extends StatelessWidget {
     } else {
       return [
         ArDriveNewButtonItem(
-          onClick: () => attachDrive(context: context),
+          onClick: () => attachDrive(
+            context: context,
+            driveDetailCubit: context.read<DriveDetailCubit>(),
+          ),
           name: appLocalizations.attachDrive,
           icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
         ),
@@ -538,7 +544,10 @@ class NewButton extends StatelessWidget {
     } else {
       return [
         ArDriveNewButtonItem(
-          onClick: () => attachDrive(context: context),
+          onClick: () => attachDrive(
+            context: context,
+            driveDetailCubit: context.read<DriveDetailCubit>(),
+          ),
           name: appLocalizations.attachDrive,
           icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
         ),
