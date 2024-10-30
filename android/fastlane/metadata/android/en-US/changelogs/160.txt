@@ -1,0 +1,1 @@
+- Fixes an issue attaching drives
