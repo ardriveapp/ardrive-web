@@ -222,6 +222,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                                 driveId: driveId,
                                 driveName: driveName,
                                 driveKey: sharedDriveKey,
+                                driveDetailCubit: context.read<DriveDetailCubit>(),
                               ).then((_) {
                                 sharedDriveKey = null;
                                 sharedRawDriveKey = null;

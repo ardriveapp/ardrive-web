@@ -7,6 +7,7 @@ import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:drift/drift.dart';
@@ -125,6 +126,7 @@ class DrivesCubit extends Cubit<DrivesState> {
   }
 
   void selectDrive(String driveId) {
+    logger.d('selectDrive: $driveId');
     final profileIsLoggedIn = _profileCubit.state is ProfileLoggedIn;
     final canCreateNewDrive = profileIsLoggedIn;
     final DrivesState state;
@@ -141,6 +143,8 @@ class DrivesCubit extends Cubit<DrivesState> {
     }
 
     _userPreferencesRepository.saveLastSelectedDriveId(driveId);
+
+    logger.d('selectDrive: $driveId, state: $state');
     emit(state);
   }
 

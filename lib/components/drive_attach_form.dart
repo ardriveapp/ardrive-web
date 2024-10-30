@@ -20,6 +20,7 @@ Future<void> attachDrive({
   DriveID? driveId,
   String? driveName,
   SecretKey? driveKey,
+  required DriveDetailCubit driveDetailCubit,
 }) {
   final profileState = context.read<ProfileCubit>().state;
   final profileKey =
@@ -30,6 +31,7 @@ Future<void> attachDrive({
       context,
       content: BlocProvider<DriveAttachCubit>(
         create: (context) => DriveAttachCubit(
+          driveDetailCubit: driveDetailCubit,
           initialDriveId: driveId,
           initialDriveName: driveName,
           initialDriveKey: driveKey,

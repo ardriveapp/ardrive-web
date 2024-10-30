@@ -132,13 +132,17 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
         child: BlocListener<DrivesCubit, DrivesState>(
           listener: (context, state) {
             if (state is DrivesLoadSuccess) {
+              logger.d('drive detail listener: ${state.selectedDriveId}');
               if (state.userDrives.isNotEmpty) {
+                logger.d('drive detail listener: ${state.selectedDriveId}');
                 final driveDetailState = context.read<DriveDetailCubit>().state;
 
                 if (driveDetailState is DriveDetailLoadSuccess &&
                     driveDetailState.currentDrive.id == state.selectedDriveId) {
                   return;
                 }
+
+                logger.d('changeDrive on listener: ${state.selectedDriveId}');
 
                 context
                     .read<DriveDetailCubit>()
