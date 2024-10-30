@@ -290,11 +290,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         emit(DriveDetailLoadNotFound());
         return;
       }
-
-      logger.e('An error occured mouting the drive explorer', e);
     });
 
-    await _folderSubscription?.asFuture();
+    await _folderSubscription?.asFuture().catchError((e, stacktrace) {
+      emit(DriveDetailLoadNotFound());
+    });
   }
 
   List<ArDriveDataTableItem> parseEntitiesToDatatableItem({
