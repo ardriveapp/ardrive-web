@@ -25,6 +25,7 @@ void main() {
     late SyncCubit syncBloc;
     late DrivesCubit drivesBloc;
     late DriveAttachCubit driveAttachCubit;
+    late MockDriveDetailCubit driveDetailCubit;
 
     const validPrivateDriveId = 'valid-private-drive-id';
     const validPrivateDriveKeyBase64 =
@@ -54,7 +55,9 @@ void main() {
       arweave = MockArweaveService();
       syncBloc = MockSyncBloc();
       drivesBloc = MockDrivesCubit();
-    when(() => arweave.getLatestDriveEntityWithId(validDriveId)).thenAnswer(
+      driveDetailCubit = MockDriveDetailCubit();
+
+      when(() => arweave.getLatestDriveEntityWithId(validDriveId)).thenAnswer(
         (_) => Future.value(
           DriveEntity(
             id: validDriveId,
@@ -102,6 +105,7 @@ void main() {
         syncBloc: syncBloc,
         drivesBloc: drivesBloc,
         profileKey: profileKey,
+        driveDetailCubit: driveDetailCubit,
       );
     });
 
@@ -193,6 +197,7 @@ void main() {
           initialDriveId: validPrivateDriveId,
           initialDriveName: validDriveName,
           initialDriveKey: validPrivateDriveKey,
+          driveDetailCubit: driveDetailCubit,
         ),
         expect: () => [
           DriveAttachPrivate(),
