@@ -116,7 +116,12 @@ class FileDataTableItem extends ArDriveDataTableItem {
       : super(id: fileId);
 
   @override
-  List<Object> get props => [fileId, name, isHidden];
+  List<Object> get props => [fileId];
+
+  @override
+  String toString() {
+    return 'FileDataTableItem(fileId: $fileId, name: $name, isHidden: $isHidden)';
+  }
 }
 
 class DriveDataTableItemMapper {
@@ -186,7 +191,7 @@ class DriveDataTableItemMapper {
     );
   }
 
-  static FolderDataTableItem fromFolderEntry(
+static FolderDataTableItem fromFolderEntry(
     FolderEntry folderEntry,
     int index,
     bool isOwner,
@@ -222,7 +227,7 @@ class DriveDataTableItemMapper {
       dateCreated: drive.dateCreated,
       contentType: 'drive',
       id: drive.id,
-      isHidden: false, // TODO: update me when drives can be hidden
+      isHidden: drive.isHidden,
     );
   }
 

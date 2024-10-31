@@ -366,8 +366,9 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
 
     final text = Text(widget.text,
         textAlign: TextAlign.center,
-        style: typography.paragraphLarge(
-            color: foregroundColor, fontWeight: ArFontWeight.semiBold));
+        style: widget.fontStyle ??
+            typography.paragraphLarge(
+                color: foregroundColor, fontWeight: ArFontWeight.semiBold));
 
     final buttonH = widget.maxHeight ?? buttonDefaultHeight;
 
@@ -386,7 +387,10 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
                     },
               style: style,
               child: widget.hoverIcon == null || isMobile(context)
-                  ? text
+                  ? isMobile(context) && buttonH < 45
+                      ? Transform.translate(
+                          offset: const Offset(0, -2), child: text)
+                      : text
                   : Stack(
                       fit: StackFit.expand,
                       alignment: Alignment.center,

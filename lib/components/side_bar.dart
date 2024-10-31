@@ -2,6 +2,7 @@
 
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
+import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
@@ -104,9 +105,9 @@ class _AppSideBarState extends State<AppSideBar> {
                             (state.userDrives.isNotEmpty ||
                                 state.sharedDrives.isNotEmpty)) {
                           return Flexible(
-                            child: _buildAccordion(
-                              state,
-                              true,
+                            child: _Accordion(
+                              state: state,
+                              isMobile: true,
                             ),
                           );
                         }
@@ -209,9 +210,9 @@ class _AppSideBarState extends State<AppSideBar> {
                                           child: Padding(
                                             padding: const EdgeInsets.only(
                                                 left: 43.0),
-                                            child: _buildAccordion(
-                                              state,
-                                              false,
+                                            child: _Accordion(
+                                              isMobile: false,
+                                              state: state,
                                             ),
                                           ),
                                         );
@@ -268,91 +269,6 @@ class _AppSideBarState extends State<AppSideBar> {
                 ),
               ),
       ),
-    );
-  }
-
-  Widget _buildAccordion(DrivesLoadSuccess state, bool isMobile) {
-    final typography = ArDriveTypographyNew.of(context);
-
-    return ArDriveAccordion(
-      contentPadding: isMobile ? const EdgeInsets.all(4) : null,
-      key: ValueKey(state.userDrives.map((e) => e.name)),
-      backgroundColor: ArDriveTheme.of(context).themeData.backgroundColor,
-      children: [
-        if (state.userDrives.isNotEmpty)
-          ArDriveAccordionItem(
-            isExpanded: true,
-            Text(
-              appLocalizationsOf(context).publicDrives,
-              style: typography.paragraphNormal(
-                fontWeight: ArFontWeight.bold,
-              ),
-            ),
-            state.userDrives
-                .where((element) => element.isPublic)
-                .map(
-                  (d) => DriveListTile(
-                    hasAlert: state.drivesWithAlerts.contains(d.id),
-                    drive: d,
-                    onTap: () {
-                      if (state.selectedDriveId == d.id) {
-                        // opens the root folder
-                        context.read<DriveDetailCubit>().openFolder();
-                        return;
-                      }
-                      context.read<DrivesCubit>().selectDrive(d.id);
-                    },
-                    isSelected: state.selectedDriveId == d.id,
-                  ),
-                )
-                .toList(),
-          ),
-        if (state.userDrives.isNotEmpty)
-          ArDriveAccordionItem(
-            isExpanded: true,
-            Text(
-              appLocalizationsOf(context).privateDrives,
-              style: typography.paragraphNormal(
-                fontWeight: ArFontWeight.bold,
-              ),
-            ),
-            state.userDrives
-                .where((element) => element.isPrivate)
-                .map(
-                  (d) => DriveListTile(
-                    hasAlert: state.drivesWithAlerts.contains(d.id),
-                    drive: d,
-                    onTap: () {
-                      context.read<DrivesCubit>().selectDrive(d.id);
-                    },
-                    isSelected: state.selectedDriveId == d.id,
-                  ),
-                )
-                .toList(),
-          ),
-        if (state.sharedDrives.isNotEmpty)
-          ArDriveAccordionItem(
-            isExpanded: true,
-            Text(
-              appLocalizationsOf(context).sharedDrives,
-              style: typography.paragraphNormal(
-                fontWeight: ArFontWeight.bold,
-              ),
-            ),
-            state.sharedDrives
-                .map(
-                  (d) => DriveListTile(
-                    hasAlert: state.drivesWithAlerts.contains(d.id),
-                    drive: d,
-                    onTap: () {
-                      context.read<DrivesCubit>().selectDrive(d.id);
-                    },
-                    isSelected: state.selectedDriveId == d.id,
-                  ),
-                )
-                .toList(),
-          ),
-      ],
     );
   }
 
@@ -519,6 +435,7 @@ class DriveListTile extends StatelessWidget {
   final Drive drive;
   final bool hasAlert;
   final bool isSelected;
+  final bool isHidden;
   final VoidCallback onTap;
 
   const DriveListTile({
@@ -526,19 +443,21 @@ class DriveListTile extends StatelessWidget {
     required this.drive,
     required this.isSelected,
     required this.onTap,
+    required this.isHidden,
     this.hasAlert = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return GestureDetector(
       key: key,
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.only(
-          left: 32.0,
+          left: 10.0,
           right: 8.0,
         ),
         child: Row(
@@ -548,19 +467,33 @@ class DriveListTile extends StatelessWidget {
             Flexible(
               child: HoverWidget(
                 hoverScale: 1,
-                child: Text(
-                  drive.name,
-                  style: isSelected
-                      ? typography.paragraphNormal(
-                          fontWeight: ArFontWeight.semiBold,
-                        )
-                      : typography.paragraphNormal(
-                          fontWeight: ArFontWeight.semiBold,
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colorTokens
-                              .textLow,
-                        ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        drive.name,
+                        style: isSelected
+                            ? typography.paragraphNormal(
+                                fontWeight: ArFontWeight.semiBold,
+                              )
+                            : typography.paragraphNormal(
+                                fontWeight: ArFontWeight.semiBold,
+                                color: isHidden
+                                    ? colorTokens.textLow
+                                    : ArDriveTheme.of(context)
+                                        .themeData
+                                        .colorTokens
+                                        .textMid,
+                              ),
+                      ),
+                    ),
+                    if (isHidden) ...{
+                      const SizedBox(width: 8),
+                      ArDriveIcons.eyeClosed(
+                          size: 16, color: colorTokens.textLow),
+                    },
+                  ],
                 ),
               ),
             ),
@@ -698,3 +631,118 @@ Future<void> shareLogs({
     ),
   );
 }
+
+class _Accordion extends StatelessWidget {
+  const _Accordion({required this.state, required this.isMobile});
+
+  final DrivesLoadSuccess state;
+  final bool isMobile;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return BlocBuilder<GlobalHideBloc, GlobalHideState>(
+      builder: (context, hideState) {
+        return ArDriveAccordion(
+          contentPadding: isMobile ? const EdgeInsets.all(4) : null,
+          backgroundColor: ArDriveTheme.of(context).themeData.backgroundColor,
+          children: [
+            if (state.userDrives.isNotEmpty)
+              ArDriveAccordionItem(
+                isExpanded: true,
+                Text(
+                  appLocalizationsOf(context).publicDrives.toUpperCase(),
+                  style: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.semiBold,
+                    color: colorTokens.textHigh,
+                  ),
+                ),
+                state.userDrives
+                    .where((element) {
+                      final isHidden = hideState is HiddingItems;
+
+                      return element.isPublic &&
+                          (isHidden ? !element.isHidden : true);
+                    })
+                    .map(
+                      (d) => DriveListTile(
+                        hasAlert: state.drivesWithAlerts.contains(d.id),
+                        drive: d,
+                        onTap: () {
+                          if (state.selectedDriveId == d.id) {
+                            // opens the root folder
+                            context.read<DriveDetailCubit>().openFolder();
+                            return;
+                          }
+                          context.read<DrivesCubit>().selectDrive(d.id);
+                        },
+                        isSelected: state.selectedDriveId == d.id,
+                        isHidden: d.isHidden,
+                      ),
+                    )
+                    .toList(),
+              ),
+            if (state.userDrives.isNotEmpty)
+              ArDriveAccordionItem(
+                isExpanded: true,
+                Text(
+                  appLocalizationsOf(context).privateDrives.toUpperCase(),
+                  style: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.semiBold,
+                    color: colorTokens.textHigh,
+                  ),
+                ),
+                state.userDrives
+                    .where((element) {
+                      final isHidden = hideState is HiddingItems;
+
+                      return element.isPrivate &&
+                          (isHidden ? !element.isHidden : true);
+                    })
+                    .map(
+                      (d) => DriveListTile(
+                        hasAlert: state.drivesWithAlerts.contains(d.id),
+                        drive: d,
+                        onTap: () {
+                          context.read<DrivesCubit>().selectDrive(d.id);
+                        },
+                        isSelected: state.selectedDriveId == d.id,
+                        isHidden: d.isHidden,
+                      ),
+                    )
+                    .toList(),
+              ),
+            if (state.sharedDrives.isNotEmpty)
+              ArDriveAccordionItem(
+                isExpanded: true,
+                Text(
+                  appLocalizationsOf(context).sharedDrives.toUpperCase(),
+                  style: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                ),
+
+                /// Shared drives are always visible
+                state.sharedDrives
+                    .map(
+                      (d) => DriveListTile(
+                        hasAlert: state.drivesWithAlerts.contains(d.id),
+                        drive: d,
+                        onTap: () {
+                          context.read<DrivesCubit>().selectDrive(d.id);
+                        },
+                        isSelected: state.selectedDriveId == d.id,
+                        isHidden: false,
+                      ),
+                    )
+                    .toList(),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+//

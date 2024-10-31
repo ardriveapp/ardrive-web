@@ -477,7 +477,7 @@ class _DriveExplorerItemTileTrailingState
               ),
             ),
           ),
-          hideFileDropdownItem(context, item),
+          if (isOwner) hideFileDropdownItem(context, item),
         ],
         ArDriveDropdownItem(
           onClick: () {
@@ -533,7 +533,7 @@ class _DriveExplorerItemTileTrailingState
           },
           content: _buildItem(
             appLocalizationsOf(context).preview,
-            ArDriveIcons.eyeOpen(
+            ArDriveIcons.newWindow(
               size: defaultIconSize,
             ),
           ),
@@ -756,6 +756,23 @@ class EntityActionsMenu extends StatelessWidget {
             ),
           ),
         ),
+        if (isOwner)
+          ArDriveDropdownItem(
+            onClick: () {
+              promptToToggleHideState(
+                context,
+                item: item,
+              );
+            },
+            content: ArDriveDropdownItemTile(
+              name: item.isHidden
+                  ? appLocalizationsOf(context).unhide
+                  : appLocalizationsOf(context).hide,
+              icon: item.isHidden
+                  ? ArDriveIcons.eyeOpen(size: defaultIconSize)
+                  : ArDriveIcons.eyeClosed(size: defaultIconSize),
+            ),
+          ),
         ArDriveDropdownItem(
           onClick: () {
             promptToShareDrive(

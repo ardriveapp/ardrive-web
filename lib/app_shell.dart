@@ -84,12 +84,12 @@ class AppShellState extends State<AppShell> {
                       }
                     }
                   },
-                  builder: (context, syncState) => syncState is SyncInProgress
-                      ? Stack(
+                  builder: (context, syncState) {
+                    return Stack(children: [
+                      scaffold,
+                      if (syncState is SyncInProgress)
+                        Stack(
                           children: [
-                            AbsorbPointer(
-                              child: scaffold,
-                            ),
                             SizedBox.expand(
                               child: Container(
                                 color: Colors.black.withOpacity(0.5),
@@ -181,8 +181,9 @@ class AppShellState extends State<AppShell> {
                                 ),
                               ),
                           ],
-                        )
-                      : scaffold,
+                        ),
+                    ]);
+                  },
                 ),
               );
           return ScreenTypeLayout.builder(
@@ -367,6 +368,8 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ),
             const Spacer(),
+            const GlobalHideToggleButton(),
+            const SizedBox(width: 8),
             const SyncButton(),
             const SizedBox(
               width: 24,

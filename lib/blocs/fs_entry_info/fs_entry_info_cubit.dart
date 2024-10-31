@@ -39,6 +39,10 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
               .asStream()
               .listen(
             (f) async {
+              if (isClosed) {
+                return;
+              }
+
               final metadataTxId = await _driveDao
                   .latestFolderRevisionByFolderId(
                       driveId: driveId, folderId: selectedItem.id)
@@ -132,6 +136,10 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
               .watchSingle()
               .listen(
             (d) async {
+              if (isClosed) {
+                return;
+              }
+
               final rootFolderRevision = await _driveDao
                   .latestFolderRevisionByFolderId(
                     folderId: d.rootFolderId,

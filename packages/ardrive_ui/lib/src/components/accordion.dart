@@ -49,6 +49,15 @@ class _ArDriveAccordionState extends State<ArDriveAccordion> {
   }
 
   @override
+  void didUpdateWidget(ArDriveAccordion oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    tiles = [...widget.children];
+    controller =
+        List.generate(tiles.length, (index) => ExpansionTileController());
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
