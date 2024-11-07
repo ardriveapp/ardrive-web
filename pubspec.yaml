@@ -19,6 +19,7 @@ script_runner:
   line_length: 80
   scripts:
     - setup: flutter clean && flutter pub get && cd packages/ario_sdk && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs && cd ../../ && flutter pub run build_runner build --delete-conflicting-outputs
+    - setup-fvm: fvm flutter clean && fvm flutter pub get && cd packages/ario_sdk && fvm flutter pub get && fvm flutter pub run build_runner build --delete-conflicting-outputs && cd ../../ && fvm flutter pub run build_runner build --delete-conflicting-outputs
     - test: scripts/run_tests.sh
     - test-integration: scripts/run_integration_tests.sh
     - check-db: lefthook/database_checker.sh
