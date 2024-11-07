@@ -78,6 +78,7 @@ class _ImportWalletModalState extends State<ImportWalletModal> {
                       fontWeight: ArFontWeight.semiBold)),
               const SizedBox(height: 8),
               ArDriveTextFieldNew(
+                key: const Key('import_wallet_modal_seed_phrase_text_field'),
                 autofocus: true,
                 controller: _seedPhraseController,
                 showObfuscationToggle: true,
