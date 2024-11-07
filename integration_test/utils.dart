@@ -99,3 +99,11 @@ Future<void> runPreConditionUserLoggedIn(WidgetTester tester) async {
   await testLoginSuccess(tester);
   await I.wait(5000);
 }
+
+ButtonTestWithKey publicDriveButton(String driveName) {
+  return ButtonTestWithKey('public_drives_$driveName');
+}
+
+ButtonTestWithKey privateDriveButton(String driveName) {
+  return ButtonTestWithKey('private_drives_$driveName');
+}
