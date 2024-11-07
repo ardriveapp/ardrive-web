@@ -680,6 +680,7 @@ class _Accordion extends StatelessWidget {
                         },
                         isSelected: state.selectedDriveId == d.id,
                         isHidden: d.isHidden,
+                        key: Key('user_drives_${d.name}'),
                       ),
                     )
                     .toList(),
@@ -710,6 +711,7 @@ class _Accordion extends StatelessWidget {
                         },
                         isSelected: state.selectedDriveId == d.id,
                         isHidden: d.isHidden,
+                        key: Key('private_drives_${d.name}'),
                       ),
                     )
                     .toList(),
