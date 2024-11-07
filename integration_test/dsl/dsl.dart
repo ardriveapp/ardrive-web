@@ -237,6 +237,18 @@ class See extends Action {
     return multipleTextTest;
   }
 
+  ButtonTestWithKey publicDriveButton(String driveName) {
+    final driveButton = ButtonTestWithKey('public_drives_$driveName');
+    driveButton.expectComponent();
+    return driveButton;
+  }
+
+  ButtonTestWithKey privateDriveButton(String driveName) {
+    final driveButton = ButtonTestWithKey('private_drives_$driveName');
+    driveButton.expectComponent();
+    return driveButton;
+  }
+
   @override
   Future<void> execute(WidgetTester tester, Component component) async {
     component.expectComponent();
