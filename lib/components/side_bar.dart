@@ -453,7 +453,6 @@ class DriveListTile extends StatelessWidget {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return GestureDetector(
-      key: key,
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.only(
