@@ -35,6 +35,8 @@ import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
+import 'package:ardrive/utils/ardrive_io_factory.dart';
+import 'package:ardrive/utils/dependency_injection_utils.dart';
 import 'package:ardrive/utils/integration_tests_utils.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -50,7 +52,6 @@ import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
-import 'package:drift/web.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -69,6 +70,8 @@ import 'models/models.dart';
 import 'pages/pages.dart';
 import 'services/services.dart';
 import 'theme/theme.dart';
+import 'utils/integration_test_database.dart'
+    if (dart.library.html) 'utils/integration_test_database_web.dart';
 
 final overlayKey = GlobalKey<OverlayState>();
 
@@ -112,10 +115,16 @@ Future<void> _runWithSentryLogging() async {
   runApp(const App());
 }
 
-Future<void> initializeServices() async {
+Future<void> initializeServices({bool deleteDatabase = false}) async {
   if (isIntegrationTest()) {
     // final sqlite3 = await WasmSqlite3.loadFromUrl(Uri.parse('/sqlite3.wasm'));
-    _database = Database(WebDatabase(''));
+    _database = getIntegrationTestDatabase();
+
+    if (deleteDatabase) {
+      for (var table in _database.allTables) {
+        await _database.delete(table).go();
+      }
+    }
   } else {
     _database = Database();
   }
@@ -188,7 +197,10 @@ Future<void> initializeServices() async {
 }
 
 class App extends StatefulWidget {
-  const App({super.key, this.runningFromFlutterTest = false});
+  const App({
+    super.key,
+    this.runningFromFlutterTest = false,
+  });
 
   final bool runningFromFlutterTest;
 
@@ -233,8 +245,7 @@ class AppState extends State<App> {
                     onThemeChanged: (theme) {
                       context.read<ThemeSwitcherBloc>().add(ChangeTheme());
                     },
-                    updateThemeOnBrightnessChange:
-                        !widget.runningFromFlutterTest,
+                    updateThemeOnBrightnessChange: false,
                     key: arDriveAppKey,
                     builder: _appBuilder,
                   ),
@@ -389,6 +400,8 @@ class AppState extends State<App> {
       ];
 
   List<SingleChildWidget> get repositoryProviders => [
+        RepositoryProvider<ArDriveIO>(
+            create: (_) => ArDriveIOFactory.createArDriveIO()),
         RepositoryProvider<ArweaveService>(create: (_) => arweave),
         // repository provider for UploadFileChecker
         RepositoryProvider<UploadFileSizeChecker>(
@@ -521,6 +534,7 @@ class AppState extends State<App> {
               ),
             ),
             pstService: _.read<PstService>(),
+            isDryRun: isIntegrationTest(),
           ),
         ),
 

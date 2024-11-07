@@ -7,6 +7,7 @@ import 'package:ardrive/gar/presentation/widgets/gar_modal.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider_wallet.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -144,6 +145,7 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                     fontWeight: ArFontWeight.semiBold)),
             const SizedBox(height: 8),
             ArDriveTextFieldNew(
+              key: const Key('password-input'),
               controller: _passwordController,
               hintText: 'Enter your password',
               showObfuscationToggle: true,
@@ -172,6 +174,8 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                 }
               },
               onChanged: (_) {
+                logger.d('onChanged $_');
+
                 setState(() {
                   _isPasswordFailed = false;
                 });

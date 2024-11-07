@@ -20,6 +20,7 @@ script_runner:
   scripts:
     - setup: flutter clean && flutter pub get && cd packages/ario_sdk && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs && cd ../../ && flutter pub run build_runner build --delete-conflicting-outputs
     - test: scripts/run_tests.sh
+    - test-integration: scripts/run_integration_tests.sh
     - check-db: lefthook/database_checker.sh
     - check-flutter: lefthook/version_checker.sh
     - deploy-to-arweave: cd deploy && yarn install --frozen-lockfile --ignore-engines && yarn deploy

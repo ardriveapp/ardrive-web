@@ -105,6 +105,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
     final readCubitContext = context.read<CreateManifestCubit>();
 
     return ArDriveTextFieldNew(
+      key: const Key('manifestName'),
       hintText: appLocalizationsOf(context).manifestName,
       controller: _manifestNameController,
       validator: (value) {

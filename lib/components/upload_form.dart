@@ -31,7 +31,6 @@ import 'package:ardrive/core/upload/view/blocs/upload_manifest_options_bloc.dart
 import 'package:ardrive/core/upload/view/manifest_options/manifest_options.dart';
 import 'package:ardrive/entities/manifest_data.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
-import 'package:ardrive/main.dart';
 import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
@@ -47,10 +46,10 @@ import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
+import 'package:ardrive/utils/widget_keys.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
-import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
@@ -58,7 +57,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
-import 'package:pst/pst.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -75,16 +73,7 @@ Future<void> promptToUpload(
   final driveDetailCubit = context.read<DriveDetailCubit>();
   final manifestRepository = ManifestRepositoryImpl(
     context.read<DriveDao>(),
-    ArDriveUploader(
-      turboUploadUri: Uri.parse(configService.config.defaultTurboUploadUrl!),
-      metadataGenerator: ARFSUploadMetadataGenerator(
-        tagsGenerator: ARFSTagsGenetator(
-          appInfoServices: AppInfoServices(),
-        ),
-      ),
-      arweave: context.read<ArweaveService>().client,
-      pstService: context.read<PstService>(),
-    ),
+    context.read<ArDriveUploader>(),
     context.read<FolderRepository>(),
     ManifestDataBuilder(
       fileRepository: context.read<FileRepository>(),
@@ -509,6 +498,7 @@ class _StatsScreenState extends State<StatsScreen> {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return UploadReadyModalBase(
+      key: const Key(uploadReadyModalKey),
       readyState: widget.readyState,
       hasCloseButton: widget.hasCloseButton,
       actions: widget.modalActions,

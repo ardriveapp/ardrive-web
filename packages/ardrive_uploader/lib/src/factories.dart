@@ -5,6 +5,7 @@ import 'package:ardrive_uploader/src/data_bundler.dart';
 import 'package:ardrive_uploader/src/streamed_upload.dart';
 import 'package:ardrive_uploader/src/turbo_streamed_upload.dart';
 import 'package:ardrive_uploader/src/turbo_upload_service.dart';
+import 'package:ardrive_uploader/src/utils/dry_run_streamed_upload.dart';
 import 'package:arweave/arweave.dart';
 import 'package:pst/pst.dart';
 
@@ -96,14 +97,20 @@ class _UploadFileStrategyFactory implements UploadFileStrategyFactory {
 
 class StreamedUploadFactory {
   final Uri turboUploadUri;
+  final bool isDryRun;
 
   StreamedUploadFactory({
     required this.turboUploadUri,
+    required this.isDryRun,
   });
 
   StreamedUpload fromUploadType(
     UploadType type,
   ) {
+    if (isDryRun) {
+      return DryRunStreamedUpload();
+    }
+
     if (type == UploadType.d2n) {
       return D2NStreamedUpload();
     } else if (type == UploadType.turbo) {

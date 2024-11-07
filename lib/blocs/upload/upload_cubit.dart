@@ -150,7 +150,7 @@ class UploadCubit extends Cubit<UploadState> {
             fileId: manifestModels[i].existingManifestFileId,
           )
           .getSingle();
-      
+
       await _createManifestCubit.prepareManifestTx(
         manifestName: manifestFileEntry.name,
         folderId: manifestFileEntry.parentFolderId,
@@ -1032,9 +1032,12 @@ class UploadCubit extends Cubit<UploadState> {
       }
 
       if (manifestFileEntries.isNotEmpty) {
-        // load arns names
-        await _arnsRepository
-            .getAntRecordsForWallet(_auth.currentUser.walletAddress);
+        try {
+          await _arnsRepository
+              .getAntRecordsForWallet(_auth.currentUser.walletAddress);
+        } catch (e) {
+          logger.e('Error getting ARNS records', e);
+        }
       }
 
       emit(

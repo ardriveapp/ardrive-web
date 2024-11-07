@@ -1,159 +1,156 @@
+import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/main.dart';
-import 'package:ardrive/pages/no_drives/no_drives_page.dart';
-import 'package:flutter/material.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
-void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+import 'drive_tests.dart' as drive_test;
+import 'folder_tests.dart' as folder_test;
+import 'integration_test_cli_arguments.dart';
+import 'login_tests.dart' as login_test;
+import 'manifest_tests.dart' as manifest_test;
+import 'onboarding_tests.dart' as onboarding_test;
+import 'upload_tests.dart' as upload_test;
+import 'utils.dart';
 
-  group('OnBoarding Flow', () {
+void main() {
+  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
+
+  onboarding_test.main();
+  login_test.main();
+  drive_test.main();
+  folder_test.main();
+  upload_test.main();
+  manifest_test.main();
+}
+
+Future<void> runAllTests(WidgetTester tester) async {
+  // await initApp(tester);
+
+  // await I.waitAppToLoad(tester, 3);
+  // await testSignUpAndOnboarding(tester);
+  // await testCreateDriveFromEmptyPage(tester);
+  // await I.wait(3);
+  // await testCreateFolderFromEmptyPage(tester);
+  // await I.wait(3);
+
+  // await logoutUser();
+
+  // await login_test.testLoginSuccess(tester);
+  // // time to sync
+  // await I.wait(5);
+  // await testPublicFileUpload(tester);
+  // // time to sync
+  // await I.wait(5);
+  // await testPublicMultipleFileUpload(tester, 5, const KiB(5).size);
+  // // time to sync
+  // await I.wait(5);
+  // await tester.pumpAndSettle();
+}
+
+Future<void> initApp(WidgetTester tester, {bool deleteDatabase = false}) async {
+  await initializeServices(deleteDatabase: deleteDatabase);
+
+  await tester.pumpWidget(App(
+    runningFromFlutterTest: true,
+    key: UniqueKey(),
+  ));
+
+  await waitAndUpdate(tester, 2);
+}
+
+void newUserTests() {
+  group('New User Tests', () {
     testWidgets(
         'should complete the onboarding flow successfully creating a new wallet',
         (tester) async {
-      /// Initialize services
-      ///
-      /// Always call this before running tests
-      await initializeServices();
+      // await initApp(tester);
 
-      /// Pump the widget
-      await tester.pumpWidget(const App(
-        runningFromFlutterTest: true,
-      ));
+      // await testSignUpAndOnboarding(tester);
 
-      /// Wait for the app to load
-      await _waitAndUpdate(tester, 1);
+      // await I.wait(3);
 
-      /// Find the sign up button and tap it
-      final signUpButton = find.text('Sign Up');
-      expect(signUpButton, findsOneWidget);
-      await tester.tap(signUpButton);
+      // if (testCaseList.contains('drive')) {
+      //   await testCreateDriveFromEmptyPage(tester);
+      //   createdDrive = true;
+      // }
 
-      /// Wait for the next page to load
-      await _waitAndUpdate(tester, 1);
+      // await I.wait(1);
 
-      /// Find the create a wallet button and tap it
-      final createAWalletButton = find.text('Create a Wallet');
-      expect(createAWalletButton, findsOneWidget);
+      // if (testCaseList.contains('folder')) {
+      //   await testCreateFolderFromEmptyPage(tester);
+      //   createdFolder = true;
+      // }
 
-      /// Tap the create a wallet button
-      await tester.tap(createAWalletButton);
+      // await waitAndUpdate(tester, 3);
 
-      /// Wait for the wallet creation page to load
-      await _waitAndUpdate(tester, 100, breakCondition: () {
-        try {
-          final passwordField = find.byKey(const Key('password'));
-          expect(passwordField, findsOneWidget);
-          return true;
-        } catch (e) {
-          return false;
-        }
-      });
+      // if (testCaseList.contains('upload')) {
+      //   if (!createdDrive && !createdFolder) {
+      //     throw Exception('No drive or folder created');
+      //   }
 
-      /// Find the password and confirm password fields and enter the password
-      final ardriveTextFieldPassword = find.byKey(const Key('password'));
-      final ardriveTextFieldConfirmPassword =
-          find.byKey(const Key('confirmPassword'));
+      //   await testPublicFileUpload(tester);
+      // }
 
-      /// Check if the password and confirm password fields are found
-      expect(ardriveTextFieldPassword, findsOneWidget);
-      expect(ardriveTextFieldConfirmPassword, findsOneWidget);
-
-      await _waitAndUpdate(tester, 1);
-
-      /// Enter the password and confirm password
-      await tester.enterText(ardriveTextFieldPassword, '12345678');
-
-      await _waitAndUpdate(tester, 1);
-
-      await tester.enterText(ardriveTextFieldConfirmPassword, '12345678');
-
-      await _waitAndUpdate(tester, 1);
-
-      /// Find the continue button and tap it
-      final continueButton = find.text('Continue');
-      expect(continueButton, findsOneWidget);
-
-      await _waitAndUpdate(tester, 1);
-
-      /// Tap the continue button
-      await tester.tap(continueButton);
-
-      /// Wait for the next page to load
-      await _waitAndUpdate(tester, 3);
-
-      /// On Boarding Pages
-      /// Page 1
-      /// Find the next button and tap it
-      final nextButton = find.text('Next');
-
-      await tester.tap(nextButton);
-
-      await _waitAndUpdate(tester, 1);
-
-      /// Page 2
-
-      final nextButton2 = find.text('Next');
-
-      await tester.tap(nextButton2);
-
-      await _waitAndUpdate(tester, 1);
-
-      /// Page 3 - last one
-      final getYourWallet = find.text('Get your wallet');
-
-      expect(getYourWallet, findsOneWidget);
-
-      /// Tap the get your wallet button
-      await tester.tap(getYourWallet);
-
-      await _waitAndUpdate(tester, 1);
-
-      /// Download Keyfile Page
-      ///
-      /// Find the download keyfile button and tap it
-      final downloadKeyFile = find.text('Download Keyfile');
-      expect(downloadKeyFile, findsOneWidget);
-      await tester.tap(downloadKeyFile);
-
-      await _waitAndUpdate(tester, 1);
-
-      /// Find the checkbox and tap it
-      final checkbox = find.byType(Checkbox);
-      expect(checkbox, findsOneWidget);
-
-      await tester.tap(checkbox);
-
-      await _waitAndUpdate(tester, 1);
-
-      /// The Go to App button should be enabled
-      final goToApp = find.text('Go to App');
-      expect(goToApp, findsOneWidget);
-
-      /// Tap the go to app button
-      await tester.tap(goToApp);
-      await _waitAndUpdate(tester, 1);
-
-      final driveExplorerEmptyState = find.byType(NoDrivesPage);
-      expect(driveExplorerEmptyState, findsOneWidget);
-
-      /// finish the test
-      await tester.pumpAndSettle();
+      // await tester.pumpAndSettle();
     });
   });
 }
 
-Future<void> _waitAndUpdate(WidgetTester tester, int seconds,
-    {bool Function()? breakCondition}) async {
-  for (int i = 0; i < seconds; i++) {
-    for (int j = 0; j < 10; j++) {
-      if (breakCondition != null) {
-        if (breakCondition()) {
-          return;
-        }
-      }
+Future<void> existingUserTests() async {
+  testWidgets('should complete the login flow successfully', (tester) async {
+    await initApp(tester);
+    await login_test.testLoginSuccess(tester);
 
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-  }
+    // if (testCaseList.contains('public_drive')) {
+    //   await I.wait(5000);
+    //   await testCreatePublicDriveFromDriveDetailPage(tester);
+    // }
+
+    // if (testCaseList.contains('public_folder')) {
+    //   await testCreatePublicFolderFromDriveDetailPage(tester);
+    // }
+
+    // if (testCaseList.contains('upload')) {
+    //   // time to sync
+    //   await waitAndUpdate(tester, 5);
+
+    //   await testPublicFileUpload(tester);
+    // }
+
+    // if (testCaseList.contains('uploadMultipleFiles')) {
+    //   // time to sync
+    //   await I.wait(5);
+
+    //   await testPublicMultipleFileUpload(tester, 5, const KiB(1).size);
+    // }
+
+    // if (testCaseList.contains('upload_excessive_files')) {
+    //   await testPublicMultipleFileUpload(tester, 1000, const KiB(50).size);
+    // }
+
+    // if (testCaseList.contains('manifest_creation')) {
+    //   await I.wait(5);
+
+    //   await testManifestCreation(tester);
+    // }
+
+    await tester.pumpAndSettle();
+  });
+}
+
+final testCaseList = testCases.isNotEmpty
+    ? testCases.split(',').map((s) => s.trim()).toSet()
+    : <String>{};
+
+Future<void> logoutUser() async {
+  final ardriveAuth = arDriveAppKey.currentState!.context.read<ArDriveAuth>();
+  final profileCubit = arDriveAppKey.currentState!.context.read<ProfileCubit>();
+
+  await ardriveAuth.logout();
+  profileCubit.logoutProfile();
 }

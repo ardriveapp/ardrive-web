@@ -619,8 +619,8 @@ class _ActionCard {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return ArDriveCard(
-      width: 283,
-      height: 283,
+      width: 285,
+      height: 285,
       backgroundColor: colorTokens.containerL2,
       contentPadding: const EdgeInsets.all(31),
       content: Column(

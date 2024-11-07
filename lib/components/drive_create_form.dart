@@ -10,6 +10,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/validate_folder_name.dart';
+import 'package:ardrive/utils/widget_keys.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -97,6 +98,7 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       ArDriveTextFieldNew(
+                        key: const Key(driveNameTextFieldKey),
                         controller: _driveNameController,
                         autofocus: true,
                         onFieldSubmitted: (value) {
@@ -139,6 +141,7 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
                           DropdownMenuItem(
                             value: DrivePrivacy.public.name,
                             child: Text(
+                              key: const Key(drivePublicButtonKey),
                               appLocalizationsOf(context).public,
                               style: typography.paragraphLarge(
                                 color: colorTokens.textLow,
@@ -149,6 +152,7 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
                           DropdownMenuItem(
                             value: DrivePrivacy.private.name,
                             child: Text(
+                              key: const Key(drivePrivateButtonKey),
                               appLocalizationsOf(context).private,
                               style: typography.paragraphLarge(
                                 color: colorTokens.textLow,
@@ -198,6 +202,7 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
                   title: appLocalizationsOf(context).cancelEmphasized,
                 ),
                 ModalAction(
+                  key: const Key(createDriveButtonKey),
                   isEnable: _isDriveNameValid,
                   action: () => context.read<DriveCreateCubit>().submit(
                         _driveNameController.text,
