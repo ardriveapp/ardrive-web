@@ -7,15 +7,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
-import 'drive_tests.dart' as drive_test;
-import 'folder_tests.dart' as folder_test;
 import 'integration_test_cli_arguments.dart';
 import 'login_tests.dart' as login_test;
-import 'manifest_tests.dart' as manifest_test;
-import 'onboarding_tests.dart' as onboarding_test;
-import 'upload_tests.dart' as upload_test;
 import 'utils.dart';
-import 'snapshot_test.dart' as snapshot_test;
 import 'logout_test.dart' as logout_test;
 
 void main() {

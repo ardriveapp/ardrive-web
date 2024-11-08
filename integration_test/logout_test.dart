@@ -4,10 +4,8 @@ import 'package:ardrive/utils/widget_keys.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
-import 'app_test.dart';
 import 'dsl/dsl.dart';
 import 'utils.dart';
-import 'login_tests.dart';
 
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
