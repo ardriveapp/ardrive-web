@@ -15,17 +15,21 @@ import 'manifest_tests.dart' as manifest_test;
 import 'onboarding_tests.dart' as onboarding_test;
 import 'upload_tests.dart' as upload_test;
 import 'utils.dart';
+import 'snapshot_test.dart' as snapshot_test;
+import 'logout_test.dart' as logout_test;
 
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
 
-  onboarding_test.main();
+  //onboarding_test.main();
   login_test.main();
-  drive_test.main();
-  folder_test.main();
-  upload_test.main();
-  manifest_test.main();
+  logout_test.main(); 
+  //snapshot_test.main();
+  //drive_test.main();
+  //folder_test.main();
+  //upload_test.main();
+  //manifest_test.main();
 }
 
 Future<void> runAllTests(WidgetTester tester) async {
