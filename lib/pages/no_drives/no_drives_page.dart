@@ -66,7 +66,9 @@ class NoDrivesPage extends StatelessWidget {
               children: [
                 HelpButtonTopBar(),
                 SizedBox(width: 8),
-                ProfileCard(),
+                ProfileCard(
+                  key: Key('profile_card'),
+                ),
               ],
             ),
             const SizedBox(

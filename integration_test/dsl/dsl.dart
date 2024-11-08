@@ -249,6 +249,12 @@ class See extends Action {
     return driveButton;
   }
 
+  ButtonTestWithKey profileCard() {
+    final profileCard = ButtonTestWithKey('profile_card');
+    profileCard.expectComponent();
+    return profileCard;
+  }
+
   @override
   Future<void> execute(WidgetTester tester, Component component) async {
     component.expectComponent();

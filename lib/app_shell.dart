@@ -382,7 +382,9 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
             ],
             const Padding(
               padding: EdgeInsets.only(right: 12.0),
-              child: ProfileCard(),
+              child: ProfileCard(
+                key: Key('profile_card'),
+              ),
             ),
           ],
         ),
