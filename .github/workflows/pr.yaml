@@ -20,7 +20,6 @@ jobs:
   integration-tests:
     runs-on: macos-latest
     steps:
-
       # Checkout
       - uses: actions/checkout@v3
         with:
@@ -38,7 +37,7 @@ jobs:
       - name: 🚀 Start Safari Driver
         run: |
           sudo safaridriver --enable
-          safaridriver --port 4444
+          safaridriver --port 4444 &
 
       - name: Install script_runner
         run: flutter pub global activate script_runner
@@ -51,11 +50,7 @@ jobs:
 
       # Run Flutter integration tests
       - name: Run Flutter Integration Tests
-        run: |
-          flutter drive \
-            --driver=test_driver/integration_test.dart \
-            --target=integration_test/app_test.dart \
-            -d web-server --browser-name=safari --dart-define=integration-test=true
+        run: scr test-integration-safari
 
   build-web:
     needs: pre-build

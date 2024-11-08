@@ -23,6 +23,7 @@ script_runner:
     - test: scripts/run_tests.sh
     - test-integration: scripts/run_integration_tests.sh
     - test-integration-fvm: scripts/run_integration_tests_fvm.sh
+    - test-integration-safari: scripts/run_integration_tests_safari.sh
     - check-db: lefthook/database_checker.sh
     - check-flutter: lefthook/version_checker.sh
     - deploy-to-arweave: cd deploy && yarn install --frozen-lockfile --ignore-engines && yarn deploy
