@@ -23,13 +23,13 @@ void main() {
   binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
 
   //onboarding_test.main();
-  login_test.main();
-  logout_test.main(); 
+  //login_test.main();
+  //logout_test.main(); 
   //snapshot_test.main();
   //drive_test.main();
   //folder_test.main();
   //upload_test.main();
-  //manifest_test.main();
+  manifest_test.main();
 }
 
 Future<void> runAllTests(WidgetTester tester) async {
