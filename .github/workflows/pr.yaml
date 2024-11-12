@@ -40,6 +40,9 @@ jobs:
           channel: ${{ env.FLUTTER_CHANNEL }}
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
+      - name: Install script_runner
+        run: flutter pub global activate script_runner
+
       - name: Gradle cache
         uses: gradle/gradle-build-action@v2
 
