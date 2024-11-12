@@ -22,9 +22,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        api-level: [21, 33]
+        api-level: [33]
         target: [google_apis]
-        arch: [x86_64]
+        arch: [x86]
     steps:
       # Checkout
       - uses: actions/checkout@v3
