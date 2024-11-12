@@ -20,6 +20,11 @@ jobs:
 
   integration-tests-android:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        api-level: [21, 33]
+        target: [google_apis]
+        arch: [x86_64]
     steps:
       # Checkout
       - uses: actions/checkout@v3
