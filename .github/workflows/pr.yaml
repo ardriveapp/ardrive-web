@@ -21,14 +21,19 @@ jobs:
   integration-tests-android:
     runs-on: ubuntu-latest
     steps:
+      # Checkout
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+
+      # Set Flutter version from fvm
+      - uses: kuhnroyal/flutter-fvm-config-action@v1
+
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
           channel: ${{ env.FLUTTER_CHANNEL }}
           flutter-version: ${{ env.FLUTTER_VERSION }}
-
-      - name: checkout
-        uses: actions/checkout@v4
 
       - name: Install script_runner
         run: flutter pub global activate script_runner
