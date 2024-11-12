@@ -35,6 +35,9 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
+      - name: Install script_runner
+        run: flutter pub global activate script_runner
+
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -45,7 +48,7 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 29
-          script: flutter devices
+          script: scr test-integration-android
 
   integration-tests:
     if: false

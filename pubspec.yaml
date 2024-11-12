@@ -22,6 +22,7 @@ script_runner:
     - setup-fvm: fvm flutter clean && fvm flutter pub get && cd packages/ario_sdk && fvm flutter pub get && fvm flutter pub run build_runner build --delete-conflicting-outputs && cd ../../ && fvm flutter pub run build_runner build --delete-conflicting-outputs
     - test: scripts/run_tests.sh
     - test-integration: scripts/run_integration_tests.sh
+    - test-integration-android: scripts/run_integration_tests_android.sh
     - test-integration-fvm: scripts/run_integration_tests_fvm.sh
     - test-integration-safari: scripts/run_integration_tests_safari.sh
     - check-db: lefthook/database_checker.sh
