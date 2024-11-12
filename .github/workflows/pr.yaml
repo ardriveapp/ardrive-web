@@ -20,7 +20,7 @@ jobs:
 
   integration-tests-android:
     runs-on: ubuntu-latest
-strategy:
+    strategy:
       matrix:
         api-level: [33, 34]
         target: [google_apis]
