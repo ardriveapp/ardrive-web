@@ -275,6 +275,12 @@ class See extends Action {
     return profileCard;
   }
 
+  ButtonTestWithKey fileOnDriveExplorer(String fileName) {
+    final file = ButtonTestWithKey('file_$fileName', tester: tester);
+    file.expectComponent();
+    return file;
+  }
+
   ButtonTestWithKey folderOnDriveExplorer(String folderName) {
     final folder = ButtonTestWithKey('folder_$folderName', tester: tester);
     folder.expectComponent();

@@ -2,21 +2,21 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
+import 'drive_navigation_tests.dart' as drive_navigation_test;
 import 'integration_test_cli_arguments.dart';
-import 'login_tests.dart' as login_test;
 import 'utils.dart';
 
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
 
+  drive_navigation_test.main();
   // onboarding_test.main();
-  login_test.main();
+  // login_test.main();
   // logout_test.main();
   // TODO: re-enable commented tests
   // snapshot_test.main();

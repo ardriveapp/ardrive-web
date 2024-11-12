@@ -124,7 +124,7 @@ class File extends IndexedItem {
     required this.createdAt,
     required this.name,
     required this.size,
-  }) : super(0);
+  }) : super(0, '');
 
   String name;
   DateTime createdAt;
