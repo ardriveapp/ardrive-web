@@ -30,8 +30,7 @@ Future<void> testManifestCreation(WidgetTester tester) async {
 /// Pre-condition: Files must exist
 Future<void> testManifestCreationUsingFolder(WidgetTester tester) async {
   await I.see.publicDriveButton('drive test snapshot').tap().wait(5000).go(tester);
-  await I.see.button('test-manifest').tap().wait(100).tap().wait(3000).go(tester);
-  await I.see.button('test-manifest').tap().wait(100).tap().wait(1000).go(tester);
+  I.see.folderOnDriveExplorer('test-manifest').doubleTap().go(tester);
   await I.see.newButton().tap().wait(1000).go(tester);
   await I.see.button('Advanced').tap().wait(1000).go(tester);
   await I.see.button('New Manifest').tap().wait(1000).go(tester);
