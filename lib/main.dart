@@ -117,7 +117,6 @@ Future<void> _runWithSentryLogging() async {
 
 Future<void> initializeServices({bool deleteDatabase = false}) async {
   if (isIntegrationTest()) {
-    // final sqlite3 = await WasmSqlite3.loadFromUrl(Uri.parse('/sqlite3.wasm'));
     _database = getIntegrationTestDatabase();
 
     if (deleteDatabase) {
@@ -517,7 +516,7 @@ class AppState extends State<App> {
 
         RepositoryProvider(
           create: (_) => ArDriveDownloader(
-            ardriveIo: ArDriveIO(),
+            ardriveIo: _.read<ArDriveIO>(),
             arweave: arweave,
             ioFileAdapter: IOFileAdapter(),
           ),
@@ -542,7 +541,7 @@ class AppState extends State<App> {
           create: (context) => ThumbnailRepository(
             arDriveDownloader: ArDriveDownloader(
               arweave: context.read<ArweaveService>(),
-              ardriveIo: ArDriveIO(),
+              ardriveIo: context.read<ArDriveIO>(),
               ioFileAdapter: IOFileAdapter(),
             ),
             driveDao: context.read<DriveDao>(),

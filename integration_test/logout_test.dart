@@ -20,9 +20,11 @@ void main() {
 }
 
 Future<void> testLogoutSuccess(WidgetTester tester) async {
-  I.see.page(driveDetailPageKey).wait(10000);
-  await I.see.profileCard().tap().wait(5000).go(tester);
-  await I.wait(1000);
-  await I.see.button('Log out').tap().wait(1000).go(tester);    
-  I.see.button('Log In');
+  final i = I(see: See(tester: tester));
+
+  i.see.page(driveDetailPageKey).wait(10000);
+  await i.see.profileCard().tap().wait(5000).go();
+  await i.wait(1000);
+  await i.see.button('Log out').tap().wait(1000).go();
+  i.see.button('Log In');
 }

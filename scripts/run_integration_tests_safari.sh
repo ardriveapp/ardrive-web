@@ -10,5 +10,6 @@ flutter drive \
     -d web-server \
     --browser-name safari \
     --no-headless \
+    --verbose > test_output.log 2>&1 \
     --dart-define=integration-test=true \
     --dart-define=WALLET_KEY_FILE="$JSON_VALUE"

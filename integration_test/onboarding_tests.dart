@@ -4,21 +4,23 @@ import 'app_test.dart';
 import 'dsl/dsl.dart';
 
 Future<void> testSignUpAndOnboarding(WidgetTester tester) async {
-  await I.see.button('Sign Up').tap().wait(1000).go(tester);
-  await I.see.button('Create a Wallet').tap().go(tester);
-  await I.waitToSee('password', tester, 50);
-  await I.see.textField('password').enterText('12345678').go(tester);
-  await I.see.textField('confirmPassword').enterText('12345678').go(tester);
-  await I.wait(500);
-  await I.see.button('Continue').tap().wait(3000).go(tester);
-  await I.see.button('Next').tap().wait(1000).go(tester);
-  await I.see.button('Next').tap().wait(1000).go(tester);
-  await I.see.button('Get your wallet').tap().wait(1000).go(tester);
-  await I.see.button('Download Keyfile').tap().wait(1000).go(tester);
-  await I.see.checkbox().tap().wait(1000).go(tester);
-  await I.see.button('Go to App').tap().wait(1000).go(tester);
-  await I.waitToSee('NoDrivesPage', tester, 30);
-  await I.see.page('NoDrivesPage').go(tester);
+  final i = I(see: See(tester: tester));
+
+  await i.see.button('Sign Up').tap().wait(1000).go();
+  await i.see.button('Create a Wallet').tap().go();
+  await i.waitToSee('password', tester, 50);
+  await i.see.textField('password').enterText('12345678').go();
+  await i.see.textField('confirmPassword').enterText('12345678').go();
+  await i.wait(500);
+  await i.see.button('Continue').tap().wait(3000).go();
+  await i.see.button('Next').tap().wait(1000).go();
+  await i.see.button('Next').tap().wait(1000).go();
+  await i.see.button('Get your wallet').tap().wait(1000).go();
+  await i.see.button('Download Keyfile').tap().wait(1000).go();
+  await i.see.checkbox().tap().wait(1000).go();
+  await i.see.button('Go to App').tap().wait(1000).go();
+  await i.waitToSee('NoDrivesPage', tester, 30);
+  await i.see.page('NoDrivesPage').go();
 }
 
 void main() {

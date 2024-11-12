@@ -94,16 +94,18 @@ class NSeconds extends Seconds {
 }
 
 Future<void> runPreConditionUserLoggedIn(WidgetTester tester) async {
+  final i = I(see: See(tester: tester));
+
   await initApp(tester, deleteDatabase: true);
-  await I.wait(1000);
+  await i.wait(3000);
   await testLoginSuccess(tester);
-  await I.wait(5000);
+  await i.wait(5000);
 }
 
-ButtonTestWithKey publicDriveButton(String driveName) {
-  return ButtonTestWithKey('public_drives_$driveName');
+ButtonTestWithKey publicDriveButton(String driveName, WidgetTester tester) {
+  return ButtonTestWithKey('public_drives_$driveName', tester: tester);
 }
 
-ButtonTestWithKey privateDriveButton(String driveName) {
-  return ButtonTestWithKey('private_drives_$driveName');
+ButtonTestWithKey privateDriveButton(String driveName, WidgetTester tester) {
+  return ButtonTestWithKey('private_drives_$driveName', tester: tester);
 }

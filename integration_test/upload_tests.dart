@@ -15,15 +15,17 @@ import 'login_tests.dart';
 import 'utils.dart';
 
 Future<void> testPublicFileUpload(WidgetTester tester) async {
-  await I.see.newButton().tap().wait(100).go(tester);
-  await I.see.text('Upload File(s)').wait(100).go(tester);
+  final i = I(see: See(tester: tester));
+
+  await i.see.newButton().tap().wait(100).go();
+  await i.see.text('Upload File(s)').wait(100).go();
   String randomFileName = 'test_${DateTime.now().millisecondsSinceEpoch}.txt';
   await setNewFileUploadResult(tester, randomFileName);
-  await I.waitToSee(uploadReadyModalKey, tester, 30);
-  await I.see.button('UPLOAD').tap().wait(100).go(tester);
-  await I.wait(10 * 1000); // 10 seconds
-  await I.see.text(randomFileName).tap().wait(100).go(tester);
-  I.see.multipleText(randomFileName, 2);
+  await i.waitToSee(uploadReadyModalKey, tester, 30);
+  await i.see.button('UPLOAD').tap().wait(100).go();
+  await i.wait(10 * 1000);
+  await i.see.text(randomFileName).tap().wait(100).go();
+  i.see.multipleText(randomFileName, 2);
 }
 
 Future<void> testPublicMultipleFileUpload(
@@ -116,9 +118,10 @@ Future<void> setNewFileUploadResult(
 void main() {
   group('Upload Tests', () {
     testWidgets('Test public file upload', (tester) async {
+      final i = I(see: See(tester: tester));
       await initApp(tester, deleteDatabase: true);
       await testLoginSuccess(tester);
-      await I.wait(10000);
+      await i.wait(10000);
       await testPublicFileUpload(tester);
     });
   });

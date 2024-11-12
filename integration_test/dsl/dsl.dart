@@ -43,6 +43,10 @@ class Wait extends Action {
 }
 
 abstract class Component {
+  Component({required this.tester});
+
+  final WidgetTester tester;
+
   Finder findComponent();
 
   void expectComponent() {
@@ -70,7 +74,7 @@ abstract class Component {
     return this;
   }
 
-  Future<void> go(WidgetTester tester) async {
+  Future<void> go() async {
     for (var action in actions) {
       await action.execute(tester, this);
     }
@@ -80,9 +84,11 @@ abstract class Component {
 }
 
 abstract class ButtonTest extends Component {
+  ButtonTest({required super.tester});
+
   Future<ButtonTest> andTap(WidgetTester tester) async {
     actions.add(Tap());
-    await go(tester);
+    await go();
     return this;
   }
 }
@@ -90,23 +96,23 @@ abstract class ButtonTest extends Component {
 abstract class ButtonTestByText extends ButtonTest {
   final String text;
 
-  ButtonTestByText(this.text);
+  ButtonTestByText(this.text, {required super.tester});
 }
 
-abstract class ButtonTestByKey extends Component {
+abstract class ButtonTestByKey extends ButtonTest {
   final String key;
 
-  ButtonTestByKey(this.key);
+  ButtonTestByKey(this.key, {required super.tester});
 }
 
 abstract class TextFieldTest extends Component {
   final String key;
 
-  TextFieldTest(this.key);
+  TextFieldTest(this.key, {required super.tester});
 }
 
 class _TextFieldTest extends TextFieldTest {
-  _TextFieldTest(super.key);
+  _TextFieldTest(super.key, {required super.tester});
 
   @override
   Finder findComponent() {
@@ -115,7 +121,7 @@ class _TextFieldTest extends TextFieldTest {
 }
 
 class ButtonTestWithKey extends ButtonTestByKey {
-  ButtonTestWithKey(super.key);
+  ButtonTestWithKey(super.key, {required super.tester});
 
   @override
   Finder findComponent() {
@@ -124,7 +130,7 @@ class ButtonTestWithKey extends ButtonTestByKey {
 }
 
 class GenericButtonTest extends ButtonTestByText {
-  GenericButtonTest(super.text);
+  GenericButtonTest(super.text, {required super.tester});
 
   @override
   Finder findComponent() {
@@ -135,6 +141,8 @@ class GenericButtonTest extends ButtonTestByText {
 }
 
 class CheckboxTest extends Component {
+  CheckboxTest({required super.tester});
+
   @override
   Finder findComponent() {
     final component = find.byType(Checkbox);
@@ -146,7 +154,7 @@ class CheckboxTest extends Component {
 class PageTest extends Component {
   final String pageKey;
 
-  PageTest(this.pageKey);
+  PageTest(this.pageKey, {required super.tester});
 
   @override
   Finder findComponent() {
@@ -159,7 +167,7 @@ class PageTest extends Component {
 class TextTest extends Component {
   final String text;
 
-  TextTest(this.text);
+  TextTest(this.text, {required super.tester});
 
   @override
   Finder findComponent() {
@@ -173,7 +181,7 @@ class MultipleTextTest extends Component {
   final String text;
   final int count;
 
-  MultipleTextTest(this.text, this.count);
+  MultipleTextTest(this.text, this.count, {required super.tester});
 
   @override
   Finder findComponent() {
@@ -189,68 +197,74 @@ class MultipleTextTest extends Component {
 }
 
 class See extends Action {
+  See({required this.tester});
+
+  final WidgetTester tester;
+
   ButtonTestByText button(String text) {
-    final button = GenericButtonTest(text);
+    final button = GenericButtonTest(text, tester: tester);
     button.expectComponent();
     return button;
   }
 
   ButtonTestByKey buttonByKey(String key) {
-    final button = ButtonTestWithKey(key);
+    final button = ButtonTestWithKey(key, tester: tester);
     button.expectComponent();
     return button;
   }
 
   ButtonTestByText newButton() {
-    final newButton = NewButtonTest();
+    final newButton = NewButtonTest(tester: tester);
     newButton.expectComponent();
     return newButton;
   }
 
   TextFieldTest textField(String key) {
-    final textField = _TextFieldTest(key);
+    final textField = _TextFieldTest(key, tester: tester);
     textField.expectComponent();
     return textField;
   }
 
   PageTest page(String pageKey) {
-    final page = PageTest(pageKey);
+    final page = PageTest(pageKey, tester: tester);
     page.expectComponent();
     return page;
   }
 
   TextTest text(String text) {
-    final textTest = TextTest(text);
+    final textTest = TextTest(text, tester: tester);
     textTest.expectComponent();
     return textTest;
   }
 
   CheckboxTest checkbox() {
-    final checkbox = CheckboxTest();
+    final checkbox = CheckboxTest(tester: tester);
     checkbox.expectComponent();
     return checkbox;
   }
 
   MultipleTextTest multipleText(String text, int count) {
-    final multipleTextTest = MultipleTextTest(text, count);
+    final multipleTextTest = MultipleTextTest(text, count, tester: tester);
     multipleTextTest.expectComponent();
     return multipleTextTest;
   }
 
   ButtonTestWithKey publicDriveButton(String driveName) {
-    final driveButton = ButtonTestWithKey('public_drives_$driveName');
+    final driveButton =
+        ButtonTestWithKey('public_drives_$driveName', tester: tester);
     driveButton.expectComponent();
     return driveButton;
   }
 
   ButtonTestWithKey privateDriveButton(String driveName) {
-    final driveButton = ButtonTestWithKey('private_drives_$driveName');
+    final driveButton =
+        ButtonTestWithKey('private_drives_$driveName', tester: tester);
     driveButton.expectComponent();
     return driveButton;
   }
 
   ButtonTestWithKey profileCard() {
-    final profileCard = ButtonTestWithKey('profile_card');
+    final profileCard = ButtonTestWithKey('profile_card', tester: tester);
     profileCard.expectComponent();
     return profileCard;
   }
@@ -262,22 +276,25 @@ class See extends Action {
 }
 
 class I extends Tester {
-  static See see = See();
-  static Future<void> wait(int milliseconds) async {
+  I({required this.see});
+
+  final See see;
+
+  Future<void> wait(int milliseconds) async {
     await Future.delayed(Duration(milliseconds: milliseconds));
   }
 
-  static Future<void> waitAppToLoad(WidgetTester tester, int seconds) async {
+  Future<void> waitAppToLoad(WidgetTester tester, int seconds) async {
     await waitAndUpdate(tester, seconds);
   }
 
-  static Future<void> pickFileTestWallet(WidgetTester tester) async {
+  Future<void> pickFileTestWallet(WidgetTester tester) async {
     final context = arDriveAppKey.currentState!.context;
     final ardriveIO = context.read<ArDriveIO>() as ArDriveIOIntegrationTest;
     ardriveIO.setPickFileResult(await testWalletFile());
   }
 
-  static Future<void> waitToSee(
+  Future<void> waitToSee(
       String widgetKey, WidgetTester tester, int timeout) async {
     await waitAndUpdate(tester, timeout, breakCondition: () {
       try {
@@ -292,7 +309,7 @@ class I extends Tester {
 }
 
 class NewButtonTest extends ButtonTestByText {
-  NewButtonTest() : super('New');
+  NewButtonTest({required super.tester}) : super('New');
 
   @override
   Finder findComponent() {
