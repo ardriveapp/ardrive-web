@@ -43,7 +43,8 @@ Future<void> testLoginSuccess(WidgetTester tester) async {
   i.see.multipleText('Import Wallet', 2);
   await i.pickFileTestWallet(tester);
   i.see.button('Continue');
-  await i.see.button('Use Keyfile').tap().wait(5000).go();
+  await i.see.button('Use Keyfile').tap().go();
+  await i.waitToSee('password-input', tester, 30);
   await i.see.textField('password-input').enterText('123').go();
   await i.wait(100);
   await i.see.button('Continue').tap().wait(5000).go();

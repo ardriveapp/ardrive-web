@@ -112,6 +112,8 @@ class AppShellState extends State<AppShell> {
                                       child: Material(
                                         borderRadius: BorderRadius.circular(8),
                                         child: ProgressDialog(
+                                          key:
+                                              const Key('sync_progress_dialog'),
                                           useNewArDriveUI: true,
                                           progressBar: ProgressBar(
                                             percentage: context

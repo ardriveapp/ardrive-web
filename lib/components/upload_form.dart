@@ -208,12 +208,11 @@ class _UploadFormState extends State<UploadForm> {
 
             if (state is UploadComplete || state is UploadWalletMismatch) {
               if (!_isShowingCancelDialog) {
+                widget.driveDetailCubit.refreshDriveDataTable();
                 Navigator.pop(context);
                 context.read<ActivityTracker>().setUploading(false);
                 context.read<SyncCubit>().startSync();
               }
-
-              widget.driveDetailCubit.refreshDriveDataTable();
             }
             if (state is UploadWalletMismatch) {
               Navigator.pop(context);
@@ -357,6 +356,7 @@ class _UploadingManifestsWidget extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
 
     return ArDriveStandardModalNew(
+      key: const Key('uploading-manifests-modal'),
       title: 'Uploading Manifests',
       content: ConstrainedBox(
         constraints: const BoxConstraints(maxHeight: 400),
@@ -1559,6 +1559,7 @@ class _UploadFileConflictWidget extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return ArDriveStandardModalNew(
+      key: const ValueKey('upload-file-conflict'),
       title: appLocalizationsOf(context)
           .duplicateFiles(state.conflictingFileNames.length),
       content: SizedBox(

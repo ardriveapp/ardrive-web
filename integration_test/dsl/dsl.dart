@@ -146,12 +146,36 @@ class GenericButtonTest extends ButtonTestByText {
   }
 }
 
-class CheckboxTest extends Component {
-  CheckboxTest({required super.tester});
+class NativeCheckboxTest extends Component {
+  NativeCheckboxTest({required super.tester});
 
   @override
   Finder findComponent() {
     final component = find.byType(Checkbox);
+    expect(component, findsOneWidget);
+    return component;
+  }
+}
+
+class ArDriveCheckboxTest extends Component {
+  ArDriveCheckboxTest({required super.tester});
+
+  @override
+  Finder findComponent() {
+    final component = find.byType(ArDriveCheckBox);
+    expect(component, findsOneWidget);
+    return component;
+  }
+}
+
+class ArDriveCheckboxTestByKey extends Component {
+  final String key;
+
+  ArDriveCheckboxTestByKey(this.key, {required super.tester});
+
+  @override
+  Finder findComponent() {
+    final component = find.byKey(Key(key));
     expect(component, findsOneWidget);
     return component;
   }
@@ -243,10 +267,22 @@ class See extends Action {
     return textTest;
   }
 
-  CheckboxTest checkbox() {
-    final checkbox = CheckboxTest(tester: tester);
+  NativeCheckboxTest checkbox() {
+    final checkbox = NativeCheckboxTest(tester: tester);
     checkbox.expectComponent();
     return checkbox;
+  }
+
+  ArDriveCheckboxTest arDriveCheckbox() {
+    final arDriveCheckbox = ArDriveCheckboxTest(tester: tester);
+    arDriveCheckbox.expectComponent();
+    return arDriveCheckbox;
+  }
+
+  ArDriveCheckboxTestByKey arDriveCheckboxByKey(String key) {
+    final arDriveCheckbox = ArDriveCheckboxTestByKey(key, tester: tester);
+    arDriveCheckbox.expectComponent();
+    return arDriveCheckbox;
   }
 
   MultipleTextTest multipleText(String text, int count) {

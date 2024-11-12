@@ -854,7 +854,6 @@ class _ArDriveDataTableState<T extends IndexedItem>
           _multiSelectColumn(false, index: index, row: row),
           Flexible(
             child: ArDriveCard(
-              key: ValueKey(row.widgetKey),
               backgroundColor: (!_isMultiSelecting && _selectedItem == row) ||
                       multiselect.selectedItems.contains(row)
                   ? ArDriveTheme.of(context)

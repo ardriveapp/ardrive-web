@@ -12,6 +12,13 @@ void main() {
   });
 }
 
+/// This test demonstrates navigation through a drive using the DSL methods:
+/// - publicDriveButton(): Finds and interacts with a public drive button by name
+/// - folderOnDriveExplorer(): Finds and interacts with a folder in the drive explorer
+/// - fileOnDriveExplorer(): Finds and verifies a file exists in the drive explorer
+///
+/// The test chains actions like tap(), doubleTap() and wait() to simulate user interactions
+/// and waits for UI updates. The go() method executes the chain of actions.
 Future<void> testSeeFile(WidgetTester tester) async {
   final i = I(see: See(tester: tester));
 

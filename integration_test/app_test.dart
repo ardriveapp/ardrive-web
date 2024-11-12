@@ -15,8 +15,9 @@ void main() {
   binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
 
   drive_navigation_test.main();
+  // upload_test.main();
   // onboarding_test.main();
-  // login_test.main();
+  // login_test.smain();
   // logout_test.main();
   // TODO: re-enable commented tests
   // snapshot_test.main();
