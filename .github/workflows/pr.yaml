@@ -32,14 +32,14 @@ jobs:
       - name: Gradle cache
         uses: gradle/gradle-build-action@v2
 
-      - name: AVD cache
-        uses: actions/cache@v3
-        id: avd-cache
-        with:
-          path: |
-            ~/.android/avd/*
-            ~/.android/adb*
-          key: avd-${{ matrix.api-level }}
+      # - name: AVD cache
+      #   uses: actions/cache@v3
+      #   id: avd-cache
+      #   with:
+      #     path: |
+      #       ~/.android/avd/*
+      #       ~/.android/adb*
+      #     key: avd-${{ matrix.api-level }}
 
       # - name: Create AVD and generate snapshot for caching
       #   if: steps.avd-cache.outputs.cache-hit != 'true'
@@ -59,7 +59,7 @@ jobs:
           api-level: ${{ matrix.api-level }}
           target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
-          force-avd-creation: false
+          # force-avd-creation: false
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: scr test-integration-android
