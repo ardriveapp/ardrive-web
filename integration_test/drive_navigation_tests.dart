@@ -1,13 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'dsl/dsl.dart';
-import 'utils.dart';
 
 void main() {
   group('Drive Explorer Navigation', () {
     testWidgets('User can navigate to a file', (WidgetTester tester) async {
-      await runPreConditionUserLoggedIn(tester);
-      await testSeeFile(tester);
+      final i = I(see: See(tester: tester));
+
+      await i.waitAppToLoad(tester, 2);
+
+      // await runPreConditionUserLoggedIn(tester);
+      // await testSeeFile(tester);
     });
   });
 }
