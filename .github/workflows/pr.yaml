@@ -43,6 +43,12 @@ jobs:
       - name: Install script_runner
         run: flutter pub global activate script_runner
 
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
       - name: Gradle cache
         uses: gradle/gradle-build-action@v2
 
