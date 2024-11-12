@@ -64,6 +64,12 @@ abstract class Component {
     return this;
   }
 
+  Component doubleTap() {
+    actions.add(Tap());
+    actions.add(Tap());
+    return this;
+  }
+
   Component enterText(String text) {
     actions.add(EnterText(text));
     return this;
@@ -267,6 +273,12 @@ class See extends Action {
     final profileCard = ButtonTestWithKey('profile_card', tester: tester);
     profileCard.expectComponent();
     return profileCard;
+  }
+
+  ButtonTestWithKey folderOnDriveExplorer(String folderName) {
+    final folder = ButtonTestWithKey('folder_$folderName', tester: tester);
+    folder.expectComponent();
+    return folder;
   }
 
   @override

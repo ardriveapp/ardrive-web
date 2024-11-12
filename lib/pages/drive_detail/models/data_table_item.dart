@@ -20,7 +20,6 @@ abstract class ArDriveDataTableItem extends IndexedItem {
   final String driveId;
   final bool isOwner;
   final bool isHidden;
-
   ArDriveDataTableItem({
     required this.id,
     this.size,
@@ -34,7 +33,8 @@ abstract class ArDriveDataTableItem extends IndexedItem {
     required int index,
     required this.isOwner,
     this.isHidden = false,
-  }) : super(index);
+    required String widgetKey,
+  }) : super(index, widgetKey);
 }
 
 class DriveDataItem extends ArDriveDataTableItem {
@@ -48,6 +48,7 @@ class DriveDataItem extends ArDriveDataTableItem {
     required super.index,
     required super.isOwner,
     super.isHidden,
+    required super.widgetKey,
   });
 
   @override
@@ -71,7 +72,7 @@ class FolderDataTableItem extends ArDriveDataTableItem {
     required super.isOwner,
     this.parentFolderId,
     this.isGhostFolder = false,
-  }) : super(id: folderId);
+  }) : super(id: folderId, widgetKey: 'folder_$name');
 
   @override
   List<Object> get props => [id, name, isHidden];
@@ -90,30 +91,30 @@ class FileDataTableItem extends ArDriveDataTableItem {
   final Thumbnail? thumbnail;
   final List<String>? assignedNames;
 
-  FileDataTableItem(
-      {required super.driveId,
-      required super.lastUpdated,
-      required super.name,
-      required super.size,
-      required super.dateCreated,
-      required super.contentType,
-      super.isHidden,
-      super.fileStatusFromTransactions,
-      required super.index,
-      required super.isOwner,
-      required this.fileId,
-      required this.parentFolderId,
-      required this.dataTxId,
-      required this.lastModifiedDate,
-      required this.metadataTx,
-      required this.dataTx,
-      required this.pinnedDataOwnerAddress,
-      this.assignedNames,
-      this.thumbnail,
-      super.licenseType,
-      this.licenseTxId,
-      this.bundledIn})
-      : super(id: fileId);
+  FileDataTableItem({
+    required super.driveId,
+    required super.lastUpdated,
+    required super.name,
+    required super.size,
+    required super.dateCreated,
+    required super.contentType,
+    super.isHidden,
+    super.fileStatusFromTransactions,
+    required super.index,
+    required super.isOwner,
+    required this.fileId,
+    required this.parentFolderId,
+    required this.dataTxId,
+    required this.lastModifiedDate,
+    required this.metadataTx,
+    required this.dataTx,
+    required this.pinnedDataOwnerAddress,
+    this.assignedNames,
+    this.thumbnail,
+    super.licenseType,
+    this.licenseTxId,
+    this.bundledIn,
+  }) : super(id: fileId, widgetKey: 'file_$name');
 
   @override
   List<Object> get props => [fileId];
@@ -191,7 +192,7 @@ class DriveDataTableItemMapper {
     );
   }
 
-static FolderDataTableItem fromFolderEntry(
+  static FolderDataTableItem fromFolderEntry(
     FolderEntry folderEntry,
     int index,
     bool isOwner,
@@ -228,6 +229,7 @@ static FolderDataTableItem fromFolderEntry(
       contentType: 'drive',
       id: drive.id,
       isHidden: drive.isHidden,
+      widgetKey: 'drive_$drive.name',
     );
   }
 

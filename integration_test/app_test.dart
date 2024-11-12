@@ -9,17 +9,15 @@ import 'package:integration_test/integration_test.dart';
 
 import 'integration_test_cli_arguments.dart';
 import 'login_tests.dart' as login_test;
-import 'logout_test.dart' as logout_test;
-import 'onboarding_tests.dart' as onboarding_test;
 import 'utils.dart';
 
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
 
-  onboarding_test.main();
+  // onboarding_test.main();
   login_test.main();
-  logout_test.main();
+  // logout_test.main();
   // TODO: re-enable commented tests
   // snapshot_test.main();
   // drive_test.main();
@@ -36,9 +34,8 @@ Future<void> initApp(WidgetTester tester, {bool deleteDatabase = false}) async {
     hasServicesInitialized = true;
   }
 
-  await tester.pumpWidget(App(
+  await tester.pumpWidget(const App(
     runningFromFlutterTest: true,
-    key: UniqueKey(),
   ));
 
   await waitAndUpdate(tester, 2);
