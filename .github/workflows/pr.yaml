@@ -26,32 +26,22 @@ jobs:
         target: [google_apis]
         arch: [x86_64]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      # Checkout
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+
+      # Set Flutter version from fvm
+      - uses: kuhnroyal/flutter-fvm-config-action@v1
+
+      # Install Flutter
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Gradle cache
         uses: gradle/gradle-build-action@v2
-
-      # - name: AVD cache
-      #   uses: actions/cache@v3
-      #   id: avd-cache
-      #   with:
-      #     path: |
-      #       ~/.android/avd/*
-      #       ~/.android/adb*
-      #     key: avd-${{ matrix.api-level }}
-
-      # - name: Create AVD and generate snapshot for caching
-      #   if: steps.avd-cache.outputs.cache-hit != 'true'
-      #   uses: reactivecircus/android-emulator-runner@v2
-      #   with:
-      #     api-level: ${{ matrix.api-level }}
-      #     target: ${{ matrix.target }}
-      #     arch: ${{ matrix.arch }}
-      #     force-avd-creation: false
-      #     emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-      #     disable-animations: false
-      #     script: echo "Generated AVD snapshot for caching."
 
       - name: Enable KVM
         run: |
