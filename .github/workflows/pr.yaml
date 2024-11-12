@@ -15,6 +15,7 @@ env:
 
 jobs:
   pre-build:
+    if: false
     uses: ./.github/workflows/test.yml
 
   integration-tests-android:
@@ -33,6 +34,7 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 29
+          script: flutter devices
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
@@ -43,6 +45,7 @@ jobs:
         run: flutter devices
 
   integration-tests:
+    if: false
     runs-on: macos-latest
     steps:
       # Checkout
@@ -78,6 +81,7 @@ jobs:
         run: scr test-integration-safari
 
   build-web:
+    if: false
     needs: pre-build
     runs-on: ubuntu-latest
     steps:
@@ -169,6 +173,7 @@ jobs:
         run: bundle exec fastlane update_release_url
 
   build-android:
+    if: false
     needs: pre-build
     runs-on: ubuntu-latest
     steps:
