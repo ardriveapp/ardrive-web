@@ -245,16 +245,20 @@ class _SyncRepository implements SyncRepository {
 
       logger.i('Syncing licenses...');
 
-      final licenseTxIds = <String>{};
-      final revisionsToSyncLicense = (await _driveDao
-          .allFileRevisionsWithLicenseReferencedButNotSynced()
-          .get())
-        ..retainWhere((rev) => licenseTxIds.add(rev.licenseTxId!));
-      logger.d('Found ${revisionsToSyncLicense.length} licenses to sync');
+      try {
+        final licenseTxIds = <String>{};
+        final revisionsToSyncLicense = (await _driveDao
+            .allFileRevisionsWithLicenseReferencedButNotSynced()
+            .get())
+          ..retainWhere((rev) => licenseTxIds.add(rev.licenseTxId!));
+        logger.d('Found ${revisionsToSyncLicense.length} licenses to sync');
 
-      await _updateLicenses(
-        revisionsToSyncLicense: revisionsToSyncLicense,
-      );
+        await _updateLicenses(
+          revisionsToSyncLicense: revisionsToSyncLicense,
+        );
+      } catch (e) {
+        logger.e('Error syncing licenses. Proceeding.', e);
+      }
 
       logger.i('Licenses synced');
 

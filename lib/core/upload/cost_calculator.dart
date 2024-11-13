@@ -1,6 +1,7 @@
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/utils.dart';
 import 'package:equatable/equatable.dart';
 import 'package:pst/pst.dart';
@@ -64,7 +65,12 @@ class UploadCostEstimateCalculatorForAR extends ArDriveUploadCostCalculator {
   }) async {
     final costInAR = await _arweaveService.getPrice(byteSize: totalSize);
 
-    final pstFee = await _pstService.getPSTFee(costInAR);
+    Winston pstFee = Winston(BigInt.zero);
+    try {
+      pstFee = await _pstService.getPSTFee(costInAR);
+    } catch (e) {
+      logger.e('Error adding community tip to transaction. Proceeding.', e);
+    }
 
     final totalCostAR = costInAR + pstFee.value;
 
