@@ -87,7 +87,7 @@ Future<void> testMultipleFileUploadWithConflictResolution(
     WidgetTester tester) async {
   final i = I(see: See(tester: tester));
   await i.see.publicDriveButton('public drive').tap().wait(1000).go();
-  await i.see.newButton().tap().wait(300).go();
+await i.see.newButton().tap().wait(300).go();
   final context = arDriveAppKey.currentState!.context;
   final ardriveIO = context.read<ArDriveIO>() as ArDriveIOIntegrationTest;
 

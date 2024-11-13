@@ -187,6 +187,10 @@ class _ARNSRepository implements ARNSRepository {
     String address, {
     bool update = false,
   }) async {
+    if (!sdk.isArioSDKSupportedOnPlatform()) {
+      return [];
+    }
+
     if (!update &&
         lastUpdated != null &&
         lastUpdated!
@@ -201,6 +205,7 @@ class _ARNSRepository implements ARNSRepository {
     if (_getARNSUndernamesCompleter != null) {
       return _getARNSUndernamesCompleter!.future;
     }
+
     logger.d('Loading names');
     final date = DateTime.now();
 

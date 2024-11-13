@@ -6,18 +6,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
-import 'drive_navigation_tests.dart' as drive_navigation_test;
 import 'integration_test_cli_arguments.dart';
+import 'login_tests_mobile.dart' as login_test_mobile;
 import 'utils.dart';
 
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
 
-  drive_navigation_test.main();
+  // drive_navigation_test.main();
   // upload_test.main();
   // onboarding_test.main();
-  // login_test.smain();
+  login_test_mobile.main();
   // logout_test.main();
   // TODO: re-enable commented tests
   // snapshot_test.main();
@@ -30,10 +30,8 @@ void main() {
 bool hasServicesInitialized = false;
 
 Future<void> initApp(WidgetTester tester, {bool deleteDatabase = false}) async {
-  if (!hasServicesInitialized) {
-    await initializeServices(deleteDatabase: deleteDatabase);
-    hasServicesInitialized = true;
-  }
+  await initializeServices(deleteDatabase: deleteDatabase);
+  hasServicesInitialized = true;
 
   await tester.pumpWidget(const App(
     runningFromFlutterTest: true,

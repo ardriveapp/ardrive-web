@@ -23,6 +23,7 @@ script_runner:
     - test: scripts/run_tests.sh
     - test-integration: scripts/run_integration_tests.sh
     - test-integration-android: scripts/run_integration_tests_android.sh
+    - test-integration-android-without-build: scripts/run_integration_tsts_android_without_build.sh
     - test-integration-fvm: scripts/run_integration_tests_fvm.sh
     - test-integration-safari: scripts/run_integration_tests_safari.sh
     - check-db: lefthook/database_checker.sh
@@ -173,11 +174,11 @@ dependency_overrides:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
       ref: v3.9.0
-
   ardrive_io:
-    git:
-      url: https://github.com/ar-io/ardrive_io.git
-      ref: v1.4.6
+    path: ../../ardrive/ardrive_io
+    # git:
+    #   url: https://github.com/ar-io/ardrive_io.git
+    #   ref: v1.4.6
   ardrive_ui:
     path: ./packages/ardrive_ui
 
