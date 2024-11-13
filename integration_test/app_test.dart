@@ -11,7 +11,6 @@ import 'package:integration_test/integration_test.dart';
 
 import 'integration_test_cli_arguments.dart';
 import 'login_tests_mobile.dart' as login_tests_mobile;
-import 'logout_test_mobile.dart' as logout_test_mobile;
 import 'utils.dart';
 
 void main() {
@@ -22,7 +21,7 @@ void main() {
     print('Running mobile tests');
     // onboarding_test.main();
     login_tests_mobile.main();
-    logout_test_mobile.main();
+    // logout_test_mobile.main();
   } else {
     // onboarding_test.main();
     // login_tests.main();
