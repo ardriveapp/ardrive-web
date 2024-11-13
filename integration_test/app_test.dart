@@ -1,30 +1,39 @@
+// ignore_for_file: avoid_print
+
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import 'integration_test_cli_arguments.dart';
-import 'login_tests_mobile.dart' as login_test_mobile;
+import 'login_tests_mobile.dart' as login_tests_mobile;
+import 'logout_test_mobile.dart' as logout_test_mobile;
 import 'utils.dart';
 
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
 
-  // drive_navigation_test.main();
-  // upload_test.main();
-  // onboarding_test.main();
-  login_test_mobile.main();
-  // logout_test.main();
-  // TODO: re-enable commented tests
-  // snapshot_test.main();
-  // drive_test.main();
-  // folder_test.main();
-  //upload_test.main();
-  // manifest_test.main();
+  if (AppPlatform.isAndroid) {
+    print('Running mobile tests');
+    // onboarding_test.main();
+    login_tests_mobile.main();
+    logout_test_mobile.main();
+  } else {
+    // onboarding_test.main();
+    // login_tests.main();
+    // logout_test.main();
+    // upload_test.main();
+    // snapshot_test.main();
+    // drive_test.main();
+    // folder_test.main();
+    // manifest_test.main();
+    testWidgets('dummy test', (tester) async {});
+  }
 }
 
 bool hasServicesInitialized = false;

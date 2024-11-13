@@ -7,7 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'app_test.dart';
 import 'dsl/dsl.dart';
 import 'integration_test_cli_arguments.dart';
-import 'login_tests.dart';
+import 'login_tests.dart' as login_tests;
+import 'login_tests_mobile.dart' as login_tests_mobile;
 
 Future<void> waitAndUpdate(WidgetTester tester, int seconds,
     {bool Function()? breakCondition}) async {
@@ -98,8 +99,13 @@ Future<void> runPreConditionUserLoggedIn(WidgetTester tester) async {
 
   await initApp(tester, deleteDatabase: true);
   await i.wait(3000);
-  await testLoginSuccess(tester);
+  await login_tests.testLoginSuccess(tester);
   await i.wait(5000);
+}
+
+Future<void> runPreConditionUserLoggedInMobile(WidgetTester tester) async {
+  await initApp(tester, deleteDatabase: true);
+  await login_tests_mobile.testLoginSuccess(tester);
 }
 
 ButtonTestWithKey publicDriveButton(String driveName, WidgetTester tester) {
