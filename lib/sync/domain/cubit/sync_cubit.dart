@@ -267,7 +267,9 @@ class SyncCubit extends Cubit<SyncState> {
       ' ${_lastSync!.difference(_initSync).inMilliseconds}ms to finish',
     );
 
-    _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
+    if (!_promptToSnapshotBloc.isClosed) {
+      _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
+    }
 
     unawaited(_updateContext());
 
