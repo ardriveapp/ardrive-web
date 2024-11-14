@@ -17,9 +17,13 @@ Future<void> testSignUpAndOnboarding(WidgetTester tester) async {
   FocusManager.instance.primaryFocus?.unfocus();
   await i.wait(1000);
   await i.see.button('Continue').tap().wait(3000).go();
-  await tester.scrollUntilVisible(find.text('Next'), 1000);
+  final listFinder = find.byType(Scrollable).last;
+  await tester.scrollUntilVisible(find.text('Next'), 1000,
+      scrollable: listFinder);
   await i.see.button('Next').tap().wait(1000).go();
-  await tester.scrollUntilVisible(find.text('Next'), 1000);
+  final listFinder2 = find.byType(Scrollable).last;
+  await tester.scrollUntilVisible(find.text('Next'), 1000,
+      scrollable: listFinder2);
   await i.see.button('Next').tap().wait(1000).go();
   await i.see.button('Get your wallet').tap().wait(1000).go();
   await i.see.button('Download Keyfile').tap().wait(1000).go();
