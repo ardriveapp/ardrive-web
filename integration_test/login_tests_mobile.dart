@@ -53,7 +53,7 @@ Future<void> testLoginSuccess(WidgetTester tester) async {
 
   // unfocus the text field
   FocusManager.instance.primaryFocus?.unfocus();
-  await i.wait(1000);
+  await i.wait(3000);
   await i.see.button('Continue').tap().wait(5000).go();
   await i.waitToSee(driveDetailPageKey, tester, 30);
   i.see.page(driveDetailPageKey);
@@ -69,7 +69,7 @@ Future<void> testLoginFailure(WidgetTester tester) async {
 
   // unfocus the text field
   FocusManager.instance.primaryFocus?.unfocus();
-  await i.wait(1000);
+  await i.wait(3000);
 
   await i.pickFileTestWallet(tester);
   await i.see.button('Use Keyfile').tap().go();
@@ -93,7 +93,7 @@ Future<void> unlockUser(WidgetTester tester) async {
   await i.see.textField('password-input').enterText('123').wait(500).go();
   // unfocus the text field
   FocusManager.instance.primaryFocus?.unfocus();
-  await i.wait(1000);
+  await i.wait(3000);
   await i.see.button('Continue').tap().wait(5000).go();
   await i.waitToSee(driveDetailPageKey, tester, 30);
   i.see.page(driveDetailPageKey);
@@ -111,13 +111,13 @@ Future<void> testLoginSeedPhrase(WidgetTester tester) async {
       .go();
   // unfocus the text field
   FocusManager.instance.primaryFocus?.unfocus();
-  await i.wait(1000);
+  await i.wait(3000);
   await i.see.button('Continue').tap().go();
   await i.waitToSee('password-input', tester, 30);
   await i.see.textField('password-input').enterText('123').wait(1000).go();
   // unfocus the text field
   FocusManager.instance.primaryFocus?.unfocus();
-  await i.wait(1000);
+  await i.wait(3000);
   await i.see.button('Continue').tap().wait(3000).go();
   await i.waitToSee(driveDetailPageKey, tester, 1000);
   i.see.page(driveDetailPageKey);
