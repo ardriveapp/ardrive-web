@@ -13,6 +13,11 @@ void main() {
       await testLoginSuccess(tester);
     });
 
+    testWidgets('User can unlock their wallet', (WidgetTester tester) async {
+      await initApp(tester);
+      await unlockUser(tester);
+    });
+
     testWidgets('Login fails with incorrect credentials',
         (WidgetTester tester) async {
       await initApp(tester, deleteDatabase: true);
@@ -23,11 +28,6 @@ void main() {
     //     (WidgetTester tester) async {
     //   await initApp(tester, deleteDatabase: true);
     //   await testLoginSeedPhrase(tester);
-    // });
-
-    // testWidgets('User can unlock their wallet', (WidgetTester tester) async {
-    //   await initApp(tester);
-    //   await unlockUser(tester);
     // });
   });
 }
