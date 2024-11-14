@@ -13,11 +13,11 @@ void main() {
       await testLoginSuccess(tester);
     });
 
-    // testWidgets('Login fails with incorrect credentials',
-    //     (WidgetTester tester) async {
-    //   await initApp(tester, deleteDatabase: true);
-    //   await testLoginFailure(tester);
-    // });
+    testWidgets('Login fails with incorrect credentials',
+        (WidgetTester tester) async {
+      await initApp(tester, deleteDatabase: true);
+      await testLoginFailure(tester);
+    });
 
     // testWidgets('User can log in with seed phrase',
     //     (WidgetTester tester) async {
@@ -65,19 +65,18 @@ Future<void> testLoginFailure(WidgetTester tester) async {
   await i.see.button('Log In').tap().wait(500).go();
   await tester.sendKeyDownEvent(LogicalKeyboardKey.enter);
   await i.wait(3000);
-  await i.see.button('Import Wallet').tap().wait(1000).go();
+  await i.see.button('Import Wallet').tap().wait(3000).go();
 
   // unfocus the text field
   FocusManager.instance.primaryFocus?.unfocus();
   await i.wait(3000);
-
   await i.pickFileTestWallet(tester);
   await i.see.button('Use Keyfile').tap().go();
   await i.waitToSee('password-input', tester, 30);
   await i.see
       .textField('password-input')
       .enterText('WRONG_PASSWORD')
-      .wait(500)
+      .wait(2000)
       .go();
   // unfocus the text field
   FocusManager.instance.primaryFocus?.unfocus();

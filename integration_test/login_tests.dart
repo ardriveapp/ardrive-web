@@ -15,10 +15,10 @@ void main() {
       await testLoginSuccess(tester);
     });
 
-    // testWidgets('User can unlock their account', (WidgetTester tester) async {
-    //   await initApp(tester);
-    //   await unlockUser(tester);
-    // });
+    testWidgets('User can unlock their account', (WidgetTester tester) async {
+      await initApp(tester);
+      await unlockUser(tester);
+    });
 
     // testWidgets('Login fails with incorrect credentials',
     //     (WidgetTester tester) async {
