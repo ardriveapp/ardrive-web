@@ -91,9 +91,11 @@ packages:
   ardrive_io:
     dependency: "direct main"
     description:
-      path: "../../ardrive/ardrive_io"
-      relative: true
-    source: path
+      path: "."
+      ref: integration-tests-ardrive
+      resolved-ref: "899e5232dfb40f37c085c5ff7e3491512f6fcff6"
+      url: "https://github.com/ar-io/ardrive_io.git"
+    source: git
     version: "1.4.6"
   ardrive_logger:
     dependency: "direct main"
