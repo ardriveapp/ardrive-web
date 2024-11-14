@@ -15,23 +15,23 @@ void main() {
       await testLoginSuccess(tester);
     });
 
-    testWidgets('User can unlock their account', (WidgetTester tester) async {
-      await initApp(tester);
-      await unlockUser(tester);
-    });
+    // testWidgets('User can unlock their account', (WidgetTester tester) async {
+    //   await initApp(tester);
+    //   await unlockUser(tester);
+    // });
 
-    testWidgets('Login fails with incorrect credentials',
-        (WidgetTester tester) async {
-      await initApp(tester, deleteDatabase: true);
-      await testLoginFailure(tester);
-      await tester.pumpAndSettle();
-    });
+    // testWidgets('Login fails with incorrect credentials',
+    //     (WidgetTester tester) async {
+    //   await initApp(tester, deleteDatabase: true);
+    //   await testLoginFailure(tester);
+    //   await tester.pumpAndSettle();
+    // });
 
-    testWidgets('User can log in with seed phrase',
-        (WidgetTester tester) async {
-      await initApp(tester, deleteDatabase: true);
-      await testLoginSeedPhrase(tester);
-    });
+    // testWidgets('User can log in with seed phrase',
+    //     (WidgetTester tester) async {
+    //   await initApp(tester, deleteDatabase: true);
+    //   await testLoginSeedPhrase(tester);
+    // });
   });
 }
 

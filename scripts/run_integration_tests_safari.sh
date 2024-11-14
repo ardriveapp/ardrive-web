@@ -5,7 +5,6 @@ JSON_VALUE='{"d":"boMCYRnKbWMZ2iKZtdWlNtMzQqk8rw6gNqT6l_l5VgdXnQ-dtxPhrgwJ0sGi8k
 
 # Run the Flutter drive command with the necessary parameters
 flutter drive \
-    --profile \
     --driver=test_driver/integration_test.dart \
     --target=integration_test/app_test.dart \
     -d web-server \
