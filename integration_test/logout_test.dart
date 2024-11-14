@@ -27,4 +27,5 @@ Future<void> testLogoutSuccess(WidgetTester tester) async {
   await i.wait(1000);
   await i.see.button('Log out').tap().wait(1000).go();
   i.see.button('Log In');
+  await tester.pumpAndSettle();
 }

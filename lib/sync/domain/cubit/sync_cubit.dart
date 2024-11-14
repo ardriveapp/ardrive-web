@@ -273,7 +273,9 @@ class SyncCubit extends Cubit<SyncState> {
 
     unawaited(_updateContext());
 
-    emit(SyncIdle());
+    if (!isClosed) {
+      emit(SyncIdle());
+    }
   }
 
   Future<void> _updateContext() async {
