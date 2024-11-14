@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:ardrive/utils/ardrive_io_integration_test.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';

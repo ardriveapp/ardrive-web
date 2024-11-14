@@ -12,7 +12,7 @@ import 'package:arweave/arweave.dart' as arweave;
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
 
-abstract class ArDriveDownloader {
+abstract class ArDriveFileDownloader {
   Future<Stream<double>> downloadFile({
     required TransactionCommonMixin dataTx,
     required int fileSize,
@@ -25,7 +25,7 @@ abstract class ArDriveDownloader {
     String? cipher,
     String? cipherIvString,
   });
-    Future<Uint8List> downloadToMemory({
+  Future<Uint8List> downloadToMemory({
     required TransactionCommonMixin dataTx,
     required int fileSize,
     required String fileName,
@@ -39,7 +39,7 @@ abstract class ArDriveDownloader {
   });
   Future<void> abortDownload();
 
-  factory ArDriveDownloader({
+  factory ArDriveFileDownloader({
     required IOFileAdapter ioFileAdapter,
     required ArDriveIO ardriveIo,
     required ArweaveService arweave,
@@ -48,7 +48,7 @@ abstract class ArDriveDownloader {
   }
 }
 
-class _ArDriveDownloader implements ArDriveDownloader {
+class _ArDriveDownloader implements ArDriveFileDownloader {
   final IOFileAdapter _ioFileAdapter;
   final ArDriveIO _ardriveIo;
   final ArweaveService _arweave;

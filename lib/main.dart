@@ -35,6 +35,7 @@ import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
+import 'package:ardrive/utils/ardrive_downloader_factory.dart';
 import 'package:ardrive/utils/ardrive_io_factory.dart';
 import 'package:ardrive/utils/dependency_injection_utils.dart';
 import 'package:ardrive/utils/integration_tests_utils.dart';
@@ -148,7 +149,7 @@ Future<void> initializeServices({bool deleteDatabase = false}) async {
   logger.d('Configuring mobile status bar');
   MobileStatusBar.show();
   MobileScreenOrientation.lockInPortraitUp();
-  ArDriveMobileDownloader.initialize();
+  ArDriveIODownloaderFactory.createArDriveDownloader().initialize();
 
   logger.d('Configuring system UI overlay style');
   SystemChrome.setSystemUIOverlayStyle(
@@ -513,15 +514,14 @@ class AppState extends State<App> {
             userPreferencesRepository: _.read<UserPreferencesRepository>(),
           ),
         ),
-
         RepositoryProvider(
-          create: (_) => ArDriveDownloader(
+          create: (_) =>
+              ArDriveFileDownloaderFactory.createArDriveFileDownloader(
             ardriveIo: _.read<ArDriveIO>(),
             arweave: arweave,
             ioFileAdapter: IOFileAdapter(),
           ),
         ),
-        // ArDriveUploader
         RepositoryProvider(
           create: (_) => ArDriveUploader(
             arweave: arweave.client,
@@ -539,7 +539,7 @@ class AppState extends State<App> {
 
         RepositoryProvider(
           create: (context) => ThumbnailRepository(
-            arDriveDownloader: ArDriveDownloader(
+            arDriveDownloader: ArDriveFileDownloader(
               arweave: context.read<ArweaveService>(),
               ardriveIo: context.read<ArDriveIO>(),
               ioFileAdapter: IOFileAdapter(),

@@ -23,7 +23,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
   final DriveDao _driveDao;
   final ArweaveService _arweave;
   final io.ArDriveMobileDownloader _downloader;
-  final ArDriveDownloader _arDriveDownloader;
+  final ArDriveFileDownloader _arDriveDownloader;
   final ARFSRepository _arfsRepository;
 
   ProfileFileDownloadCubit({
@@ -31,7 +31,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     required DriveDao driveDao,
     required ArweaveService arweave,
     required io.ArDriveMobileDownloader downloader,
-    required ArDriveDownloader arDriveDownloader,
+    required ArDriveFileDownloader arDriveDownloader,
     required ARFSRepository arfsRepository,
     required ArDriveCrypto crypto,
   })  : _driveDao = driveDao,

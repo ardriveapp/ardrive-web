@@ -33,13 +33,15 @@ class ArDriveIOIntegrationTest implements ArDriveIO {
 
   @override
   Future<void> saveFile(IOFile file) {
-    throw UnimplementedError();
+    return Future.value();
   }
 
   @override
   Stream<SaveStatus> saveFileStream(IOFile file, Completer<bool> finalize) {
-    // TODO: implement saveFileStream
-    throw UnimplementedError();
+    return Stream.value(SaveStatus(
+      bytesSaved: 0,
+      totalBytes: 0,
+    ));
   }
 }
 //

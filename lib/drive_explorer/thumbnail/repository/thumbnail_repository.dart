@@ -20,7 +20,7 @@ import 'package:drift/drift.dart' as drift;
 // TODO(@thiagocarvalhodev): implement unit tests
 class ThumbnailRepository {
   final ArweaveService _arweaveService;
-  final ArDriveDownloader _arDriveDownloader;
+  final ArDriveFileDownloader _arDriveDownloader;
   final DriveDao _driveDao;
   final ArDriveAuth _arDriveAuth;
   final ArDriveUploader _arDriveUploader;
@@ -28,7 +28,7 @@ class ThumbnailRepository {
 
   ThumbnailRepository({
     required ArweaveService arweaveService,
-    required ArDriveDownloader arDriveDownloader,
+    required ArDriveFileDownloader arDriveDownloader,
     required DriveDao driveDao,
     required ArDriveAuth arDriveAuth,
     required ArDriveUploader arDriveUploader,

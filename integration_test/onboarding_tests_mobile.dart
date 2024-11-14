@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'app_test.dart';
@@ -11,9 +12,14 @@ Future<void> testSignUpAndOnboarding(WidgetTester tester) async {
   await i.waitToSee('password', tester, 50);
   await i.see.textField('password').enterText('12345678').go();
   await i.see.textField('confirmPassword').enterText('12345678').go();
-  await i.wait(500);
+  await i.wait(1000);
+  // unfocus the text field
+  FocusManager.instance.primaryFocus?.unfocus();
+  await i.wait(1000);
   await i.see.button('Continue').tap().wait(3000).go();
+  await tester.scrollUntilVisible(find.text('Next'), 1000);
   await i.see.button('Next').tap().wait(1000).go();
+  await tester.scrollUntilVisible(find.text('Next'), 1000);
   await i.see.button('Next').tap().wait(1000).go();
   await i.see.button('Get your wallet').tap().wait(1000).go();
   await i.see.button('Download Keyfile').tap().wait(1000).go();
