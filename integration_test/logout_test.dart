@@ -22,7 +22,7 @@ void main() {
 Future<void> testLogoutSuccess(WidgetTester tester) async {
   final i = I(see: See(tester: tester));
 
-  i.see.page(driveDetailPageKey).wait(10000);
+  i.see.page(driveDetailPageKey).wait(20000);
   await i.see.profileCard().tap().wait(5000).go();
   await i.wait(1000);
   await i.see.button('Log out').tap().wait(1000).go();

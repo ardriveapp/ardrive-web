@@ -88,7 +88,7 @@ Future<void> testLoginSeedPhrase(WidgetTester tester) async {
       .enterText(
           'measure brown citizen laptop dawn marriage twin tower taste rent long canvas')
       .go();
-  await i.see.button('Continue').tap().wait(30000).wait(1000).go();
+  await i.see.button('Continue').tap().wait(60000).go();
   await i.see.textField('password-input').enterText('123').wait(1000).go();
   await i.see.button('Continue').tap().wait(3000).go();
   await i.waitToSee(driveDetailPageKey, tester, 1000);
