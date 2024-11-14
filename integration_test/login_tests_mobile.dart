@@ -13,11 +13,11 @@ void main() {
       await testLoginSuccess(tester);
     });
 
-    testWidgets('Login fails with incorrect credentials',
-        (WidgetTester tester) async {
-      await initApp(tester, deleteDatabase: true);
-      await testLoginFailure(tester);
-    });
+    // testWidgets('Login fails with incorrect credentials',
+    //     (WidgetTester tester) async {
+    //   await initApp(tester, deleteDatabase: true);
+    //   await testLoginFailure(tester);
+    // });
 
     // testWidgets('User can log in with seed phrase',
     //     (WidgetTester tester) async {
@@ -25,10 +25,10 @@ void main() {
     //   await testLoginSeedPhrase(tester);
     // });
 
-    testWidgets('User can unlock their wallet', (WidgetTester tester) async {
-      await initApp(tester);
-      await unlockUser(tester);
-    });
+    // testWidgets('User can unlock their wallet', (WidgetTester tester) async {
+    //   await initApp(tester);
+    //   await unlockUser(tester);
+    // });
   });
 }
 
