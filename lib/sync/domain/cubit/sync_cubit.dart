@@ -234,6 +234,10 @@ class SyncCubit extends Cubit<SyncState> {
           cipherKey: cipherKey,
           syncDeep: deepSync,
           txFechedCallback: (driveId, txCount) {
+            if (_promptToSnapshotBloc.isClosed) {
+              return;
+            }
+
             _promptToSnapshotBloc.add(
               CountSyncedTxs(
                 driveId: driveId,
