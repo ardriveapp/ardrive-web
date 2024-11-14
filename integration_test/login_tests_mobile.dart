@@ -88,7 +88,7 @@ Future<void> testLoginFailure(WidgetTester tester) async {
 
 Future<void> unlockUser(WidgetTester tester) async {
   final i = I(see: See(tester: tester));
-
+  await i.wait(1000);
   i.see.text('Enter Your Password');
   await i.see.textField('password-input').enterText('123').wait(500).go();
   // unfocus the text field
@@ -102,7 +102,7 @@ Future<void> unlockUser(WidgetTester tester) async {
 Future<void> testLoginSeedPhrase(WidgetTester tester) async {
   final i = I(see: See(tester: tester));
 
-  await i.see.button('Log In').tap().wait(100).go();
+  await i.see.button('Log In').tap().wait(500).go();
   await i.see.button('Import Wallet').tap().wait(1000).go();
   await i.see
       .textField('import_wallet_modal_seed_phrase_text_field')
