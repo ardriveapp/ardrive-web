@@ -376,6 +376,7 @@ class _SyncRepository implements SyncRepository {
     //
     // It also adds the encryption keys onto the drive models which isn't touched by the
     // later system.
+
     final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
       wallet,
       password,
