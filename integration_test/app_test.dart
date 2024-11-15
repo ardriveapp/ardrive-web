@@ -1,5 +1,3 @@
-// ignore_for_file: avoid_print
-
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/main.dart';
@@ -10,12 +8,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import 'integration_test_cli_arguments.dart';
-import 'login_tests.dart' as login_tests;
 import 'login_tests_mobile.dart' as login_tests_mobile;
-// import 'onboarding_tests_mobile.dart' as onboarding_test_mobile;
-import 'logout_test.dart' as logout_test;
 import 'logout_test_mobile.dart' as logout_test_mobile;
 import 'onboarding_tests.dart' as onboarding_test;
+import 'onboarding_tests_mobile.dart' as onboarding_test_mobile;
 import 'utils.dart';
 
 void main() {
@@ -23,19 +19,11 @@ void main() {
   binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
 
   if (AppPlatform.isAndroid) {
-    print('Running mobile tests');
-    // onboarding_test_mobile.main();
+    onboarding_test_mobile.main();
     login_tests_mobile.main();
     logout_test_mobile.main();
   } else {
     onboarding_test.main();
-    login_tests.main();
-    logout_test.main();
-    // upload_test.main();
-    // snapshot_test.main();
-    // drive_test.main();
-    // folder_test.main();
-    // manifest_test.main();
   }
 }
 
