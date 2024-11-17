@@ -18,12 +18,11 @@ final class LoadNames extends AssignNameEvent {
 final class CloseAssignName extends AssignNameEvent {}
 
 final class SelectName extends AssignNameEvent {
-  final ANTRecord name;
-
-  const SelectName(this.name);
+  final ArNSNameModel nameModel;
+  const SelectName(this.nameModel);
 
   @override
-  List<Object> get props => [name];
+  List<Object> get props => [nameModel];
 }
 
 final class LoadUndernames extends AssignNameEvent {
@@ -47,3 +46,13 @@ final class SelectUndername extends AssignNameEvent {
 final class ConfirmSelectionAndUpload extends AssignNameEvent {}
 
 final class ConfirmSelection extends AssignNameEvent {}
+
+final class ShowSuccessModal extends AssignNameEvent {
+  final ARNSUndername undername;
+
+  const ShowSuccessModal({required this.undername});
+
+  @override
+  List<Object> get props => [undername];
+}
+//

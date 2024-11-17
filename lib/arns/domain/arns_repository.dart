@@ -35,6 +35,7 @@ abstract class ARNSRepository {
   Future<void> waitForARNSRecordsToUpdate();
   Future<sdk.ARNSUndername> getUndernameByDomainAndName(
       String domain, String name);
+  Future<List<sdk.ArNSNameModel>> getARNSNameModelsForWallet(String address);
 
   factory ARNSRepository({
     required ArioSDK sdk,
@@ -392,6 +393,12 @@ class _ARNSRepository implements ARNSRepository {
     }
 
     return undername;
+  }
+
+  @override
+  Future<List<sdk.ArNSNameModel>> getARNSNameModelsForWallet(
+      String address) async {
+    return _sdk.getArNSNames(address);
   }
 }
 

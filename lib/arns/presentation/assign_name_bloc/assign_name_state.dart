@@ -12,20 +12,20 @@ final class AssignNameInitial extends AssignNameState {}
 final class LoadingNames extends AssignNameState {}
 
 final class NamesLoaded extends AssignNameState {
-  final List<ANTRecord> names;
-  final ANTRecord? selectedName;
+  final List<ArNSNameModel> nameModels;
+  final ArNSNameModel? selectedName;
 
-  const NamesLoaded({required this.names, this.selectedName});
+  const NamesLoaded({required this.nameModels, this.selectedName});
 
   @override
-  List<Object?> get props => [names, selectedName];
+  List<Object?> get props => [nameModels, selectedName];
 
   NamesLoaded copyWith({
-    List<ANTRecord>? names,
-    ANTRecord? selectedName,
+    List<ArNSNameModel>? nameModels,
+    ArNSNameModel? selectedName,
   }) {
     return NamesLoaded(
-      names: names ?? this.names,
+      nameModels: nameModels ?? this.nameModels,
       selectedName: selectedName ?? this.selectedName,
     );
   }
@@ -34,13 +34,13 @@ final class NamesLoaded extends AssignNameState {
 final class AssignNameEmptyState extends AssignNameState {}
 
 final class UndernamesLoaded extends AssignNameState {
-  final List<ANTRecord> names;
-  final ANTRecord selectedName;
+  final List<ArNSNameModel> nameModels;
   final List<ARNSUndername> undernames;
   final ARNSUndername? selectedUndername;
+  final ArNSNameModel? selectedName;
 
   const UndernamesLoaded({
-    required this.names,
+    required this.nameModels,
     required this.undernames,
     required this.selectedUndername,
     required this.selectedName,
@@ -48,20 +48,20 @@ final class UndernamesLoaded extends AssignNameState {
 
   @override
   List<Object?> get props => [
-        names,
+        nameModels,
         selectedName,
         undernames,
         selectedUndername,
       ];
 
   UndernamesLoaded copyWith({
-    List<ANTRecord>? names,
-    ANTRecord? selectedName,
     List<ARNSUndername>? undernames,
     ARNSUndername? selectedUndername,
+    List<ArNSNameModel>? nameModels,
+    ArNSNameModel? selectedName,
   }) {
     return UndernamesLoaded(
-      names: names ?? this.names,
+      nameModels: nameModels ?? this.nameModels,
       selectedName: selectedName ?? this.selectedName,
       undernames: undernames ?? this.undernames,
       selectedUndername: selectedUndername ?? this.selectedUndername,
@@ -80,7 +80,7 @@ final class NameAssignedWithSuccess extends AssignNameState {
 }
 
 final class SelectionConfirmed extends AssignNameState {
-  final ANTRecord selectedName;
+  final ArNSNameModel selectedName;
   final ARNSUndername? selectedUndername;
 
   const SelectionConfirmed({

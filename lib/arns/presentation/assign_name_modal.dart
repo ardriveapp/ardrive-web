@@ -2,6 +2,7 @@
 
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/arns/presentation/assign_name_bloc/assign_name_bloc.dart';
+import 'package:ardrive/arns/presentation/create_undername.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
@@ -188,9 +189,9 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                     const SizedBox(
                       height: 16,
                     ),
-                    _NameSelectorDropdown<ANTRecord>(
+                    _NameSelectorDropdown<ArNSNameModel>(
                       label: 'ArNS name',
-                      names: state.names,
+                      names: state.nameModels,
                       hintText: 'Choose ArNS name',
                       selectedName: state.selectedName,
                       onSelected: (name) {
@@ -238,10 +239,10 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                       const SizedBox(
                         height: 16,
                       ),
-                      _NameSelectorDropdown<ANTRecord>(
+                      _NameSelectorDropdown<ArNSNameModel>(
                         selectedName: state.selectedName,
                         label: 'ArNS name',
-                        names: state.names,
+                        names: state.nameModels,
                         hintText: 'Choose ArNS name',
                         onSelected: (name) {
                           context.read<AssignNameBloc>().add(SelectName(name));
@@ -264,6 +265,40 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                               .add(SelectUndername(undername: name));
                         },
                       ),
+                      // or add a new name
+                      if (state.selectedName != null) ...[
+                        const SizedBox(height: 16),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child:
+                              Text('or', style: typography.paragraphNormal()),
+                        ),
+                        const SizedBox(height: 16),
+                        ArDriveButtonNew(
+                          text: state.selectedName!.records >=
+                                  state.selectedName!.undernameLimit
+                              ? 'You cant create more undernames ${state.selectedName!.records} of ${state.selectedName!.undernameLimit} in use'
+                              : 'Add new undername ${state.selectedName!.records} of ${state.selectedName!.undernameLimit} in use',
+                          onPressed: () {
+                            showArDriveDialog(
+                              context,
+                              content: BlocProvider(
+                                create: (context) =>
+                                    this.context.read<AssignNameBloc>(),
+                                child: CreateUndernameModal(
+                                  nameModel: state.selectedName!,
+                                  driveId: widget.file!.driveId,
+                                  fileId: widget.file!.id,
+                                  transactionId: widget.file!.dataTxId,
+                                ),
+                              ),
+                            );
+                          },
+                          typography: typography,
+                          isDisabled: state.selectedName!.records >=
+                              state.selectedName!.undernameLimit,
+                        ),
+                      ],
                     ],
                   ),
                 );
@@ -326,7 +361,7 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
         ModalAction(
           action: () {
             Navigator.of(context).pop();
-        },
+          },
           title: 'Cancel',
         ),
         ModalAction(
@@ -547,8 +582,8 @@ class __NameSelectorDropdownState<T> extends State<_NameSelectorDropdown<T>> {
   String _getName(T item) {
     String name;
 
-    if (item is ANTRecord) {
-      name = item.domain;
+    if (item is ArNSNameModel) {
+      name = item.name;
     } else if (item is ARNSUndername) {
       name = item.name;
     } else {
