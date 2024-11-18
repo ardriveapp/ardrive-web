@@ -112,7 +112,9 @@ class UploadCubit extends Cubit<UploadState> {
   UploadMethod? _manifestUploadMethod;
 
   bool _isManifestsUploadCancelled = false;
-  bool _isUploadingCustomManifest = false;
+
+  /// if true, the file will change its content type to `application/x.arweave-manifest+json`
+  bool _uploadFileAsCustomManifest = false;
 
   void updateManifestSelection(List<ManifestSelection> selections) {
     _selectedManifestModels.clear();
@@ -130,7 +132,7 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   void setIsUploadingCustomManifest(bool value) {
-    _isUploadingCustomManifest = value;
+    _uploadFileAsCustomManifest = value;
     emit((state as UploadReady).copyWith(isUploadingCustomManifest: value));
   }
 
@@ -449,9 +451,8 @@ class UploadCubit extends Cubit<UploadState> {
       bool showArnsCheckbox = false;
 
       if (_targetDrive.isPublic && _files.length == 1) {
-        final isACustomManifest = await isCustomManifest(_files.first.ioFile);
-
-        logger.d('Is a custom manifest: $isACustomManifest');
+        final fileIsACustomManifest =
+            await isCustomManifest(_files.first.ioFile);
 
         emit(
           UploadReady(
@@ -473,8 +474,8 @@ class UploadCubit extends Cubit<UploadState> {
             arnsRecords: _ants,
             showReviewButtonText: false,
             selectedManifestSelections: _selectedManifestModels,
-            isCustomManifest: isACustomManifest,
-            isUploadingCustomManifest: false,
+            shouldShowCustomManifestCheckbox: fileIsACustomManifest,
+            uploadFileAsCustomManifest: false,
           ),
         );
 
@@ -519,8 +520,9 @@ class UploadCubit extends Cubit<UploadState> {
             canShowSettings: showSettings,
             showReviewButtonText: false,
             selectedManifestSelections: _selectedManifestModels,
-            isCustomManifest: false, // only applies for single file uploads
-            isUploadingCustomManifest: false,
+            uploadFileAsCustomManifest: false,
+            // only applies for single file uploads
+            shouldShowCustomManifestCheckbox: false,
           ),
         );
       }
@@ -1099,7 +1101,7 @@ class UploadCubit extends Cubit<UploadState> {
       return;
     }
 
-    if (_isUploadingCustomManifest) {
+    if (_uploadFileAsCustomManifest) {
       final fileWithCustomContentType = await IOFile.fromData(
         await _files.first.ioFile.readAsBytes(),
         name: _files.first.ioFile.name,
