@@ -164,8 +164,8 @@ class UploadReady extends UploadState {
     List<ANTRecord>? arnsRecords,
     bool? showReviewButtonText,
     List<ManifestSelection>? selectedManifestSelections,
-    bool? isCustomManifest,
-    bool? isUploadingCustomManifest,
+    bool? shouldShowCustomManifestCheckbox,
+    bool? uploadFileAsCustomManifest,
   }) {
     return UploadReady(
       loadingArNSNames: loadingArNSNames ?? this.loadingArNSNames,
@@ -190,10 +190,10 @@ class UploadReady extends UploadState {
       showReviewButtonText: showReviewButtonText ?? this.showReviewButtonText,
       selectedManifestSelections:
           selectedManifestSelections ?? this.selectedManifestSelections,
-      shouldShowCustomManifestCheckbox:
-          isCustomManifest ?? this.shouldShowCustomManifestCheckbox,
+      shouldShowCustomManifestCheckbox: shouldShowCustomManifestCheckbox ??
+          this.shouldShowCustomManifestCheckbox,
       uploadFileAsCustomManifest:
-          isUploadingCustomManifest ?? this.uploadFileAsCustomManifest,
+          uploadFileAsCustomManifest ?? this.uploadFileAsCustomManifest,
     );
   }
 
