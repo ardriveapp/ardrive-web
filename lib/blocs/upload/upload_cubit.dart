@@ -902,6 +902,10 @@ class UploadCubit extends Cubit<UploadState> {
       if (state is UploadReady) {
         emit((state as UploadReady).copyWith(arnsRecords: value));
       }
+    }).catchError((e) {
+      logger.e(
+          'Error getting ant records for wallet. Proceeding with the upload...',
+          e);
     });
 
     _files
@@ -1048,9 +1052,15 @@ class UploadCubit extends Cubit<UploadState> {
       }
 
       if (manifestFileEntries.isNotEmpty) {
-        // load arns names
-        await _arnsRepository
-            .getAntRecordsForWallet(_auth.currentUser.walletAddress);
+        try {
+          // load arns names
+          await _arnsRepository
+              .getAntRecordsForWallet(_auth.currentUser.walletAddress);
+        } catch (e) {
+          logger.e(
+              'Error getting ant records for wallet. Proceeding with the upload...',
+              e);
+        }
       }
 
       emit(
