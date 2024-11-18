@@ -133,7 +133,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   void setIsUploadingCustomManifest(bool value) {
     _uploadFileAsCustomManifest = value;
-    emit((state as UploadReady).copyWith(isUploadingCustomManifest: value));
+    emit((state as UploadReady).copyWith(uploadFileAsCustomManifest: value));
   }
 
   Future<void> prepareManifestUpload() async {
