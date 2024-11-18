@@ -597,16 +597,18 @@ class ArweaveService {
             driveTx.getTag(EntityTag.driveId)!,
           );
 
-          driveKey ??= await _crypto.deriveDriveKey(
-            wallet,
-            driveTx.getTag(EntityTag.driveId)!,
-            password,
-          );
+          if (driveKey == null) {
+            driveKey = await _crypto.deriveDriveKey(
+              wallet,
+              driveTx.getTag(EntityTag.driveId)!,
+              password,
+            );
 
-          _driveDao.putDriveKeyInMemory(
-            driveID: driveTx.getTag(EntityTag.driveId)!,
-            driveKey: driveKey,
-          );
+            _driveDao.putDriveKeyInMemory(
+              driveID: driveTx.getTag(EntityTag.driveId)!,
+              driveKey: driveKey,
+            );
+          }
         }
         try {
           final drive = await DriveEntity.fromTransaction(
