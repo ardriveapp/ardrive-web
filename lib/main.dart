@@ -75,6 +75,7 @@ late ConfigService configService;
 late ArweaveService arweave;
 late TurboUploadService _turboUpload;
 late PaymentService _turboPayment;
+late Database db;
 
 void main() async {
   await runZonedGuarded(() async {
@@ -129,11 +130,14 @@ Future<void> _initializeServices() async {
 
   final config = configService.config;
 
+  db = Database();
+
   arweave = ArweaveService(
     Arweave(
       gatewayUrl: Uri.parse(config.defaultArweaveGatewayForDataRequest.url),
     ),
     ArDriveCrypto(),
+    db.driveDao,
     configService,
   );
   _turboUpload = config.useTurboUpload
@@ -395,7 +399,7 @@ class AppState extends State<App> {
             ),
           ),
         ),
-        RepositoryProvider<Database>(create: (_) => Database()),
+        RepositoryProvider<Database>(create: (_) => db),
         RepositoryProvider<ProfileDao>(
             create: (context) => context.read<Database>().profileDao),
         RepositoryProvider<DriveDao>(
