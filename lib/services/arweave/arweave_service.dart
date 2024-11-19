@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/services/arweave/arweave_service_exception.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
 import 'package:ardrive/services/arweave/get_segmented_transaction_from_drive_strategy.dart';
@@ -42,12 +43,13 @@ const kMaxNumberOfTransactionsPerPage = 100;
 class ArweaveService {
   Arweave client;
   final ArDriveCrypto _crypto;
-
+  final DriveDao _driveDao;
   final ArtemisClient _gql;
 
   ArweaveService(
     this.client,
     this._crypto,
+    this._driveDao,
     ConfigService configService, {
     ArtemisClient? artemisClient,
   }) : _gql = artemisClient ??
@@ -588,15 +590,26 @@ class ArweaveService {
           continue;
         }
 
-        final driveKey =
-            driveTx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private
-                ? await _crypto.deriveDriveKey(
-                    wallet,
-                    driveTx.getTag(EntityTag.driveId)!,
-                    password,
-                  )
-                : null;
+        SecretKey? driveKey;
 
+        if (driveTx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private) {
+          driveKey = await _driveDao.getDriveKeyFromMemory(
+            driveTx.getTag(EntityTag.driveId)!,
+          );
+
+          if (driveKey == null) {
+            driveKey = await _crypto.deriveDriveKey(
+              wallet,
+              driveTx.getTag(EntityTag.driveId)!,
+              password,
+            );
+
+            _driveDao.putDriveKeyInMemory(
+              driveID: driveTx.getTag(EntityTag.driveId)!,
+              driveKey: driveKey,
+            );
+          }
+        }
         try {
           final drive = await DriveEntity.fromTransaction(
             driveTx,
