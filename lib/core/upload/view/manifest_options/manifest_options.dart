@@ -195,7 +195,7 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
                       size: 16,
                       color: colorTokens.textHigh,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 18),
                     Flexible(
                       child: Text(
                         getLiteralArNSName(widget.manifestSelection.antRecord!,
@@ -214,8 +214,11 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
                 const SizedBox(height: 8),
                 Expanded(
                   flex: 1,
-                  child: AntSelector(
-                    manifestSelection: widget.manifestSelection,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 34),
+                    child: AntSelector(
+                      manifestSelection: widget.manifestSelection,
+                    ),
                   ),
                 ),
               ],
