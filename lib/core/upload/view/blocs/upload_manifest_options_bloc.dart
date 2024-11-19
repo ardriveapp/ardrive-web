@@ -85,7 +85,7 @@ class UploadManifestOptionsBloc
                 undername: existingUndername,
               ));
             } catch (e) {
-              logger.e('Error getting undername: $e');
+              logger.e('Error getting undername.', e);
             }
           }
         }
