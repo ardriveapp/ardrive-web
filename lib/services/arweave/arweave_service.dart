@@ -262,7 +262,7 @@ class ArweaveService {
 
       yield licenseComposedQuery.data!.transactions.edges
           .map((e) => e.node)
-          .where(e)
+          .where((e) => e.tags.any((t) => t.name == 'License'))
           .toList();
     }
   }
