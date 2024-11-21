@@ -115,6 +115,8 @@ class UploadReady extends UploadState {
 
   final bool isArConnect;
   final bool showReviewButtonText;
+  final bool shouldShowCustomManifestCheckbox;
+  final bool uploadFileAsCustomManifest;
 
   UploadReady({
     required this.paymentInfo,
@@ -136,6 +138,8 @@ class UploadReady extends UploadState {
     required this.arnsRecords,
     required this.showReviewButtonText,
     required this.selectedManifestSelections,
+    required this.shouldShowCustomManifestCheckbox,
+    required this.uploadFileAsCustomManifest,
   });
 
   // copyWith
@@ -160,6 +164,8 @@ class UploadReady extends UploadState {
     List<ANTRecord>? arnsRecords,
     bool? showReviewButtonText,
     List<ManifestSelection>? selectedManifestSelections,
+    bool? shouldShowCustomManifestCheckbox,
+    bool? uploadFileAsCustomManifest,
   }) {
     return UploadReady(
       loadingArNSNames: loadingArNSNames ?? this.loadingArNSNames,
@@ -184,6 +190,10 @@ class UploadReady extends UploadState {
       showReviewButtonText: showReviewButtonText ?? this.showReviewButtonText,
       selectedManifestSelections:
           selectedManifestSelections ?? this.selectedManifestSelections,
+      shouldShowCustomManifestCheckbox: shouldShowCustomManifestCheckbox ??
+          this.shouldShowCustomManifestCheckbox,
+      uploadFileAsCustomManifest:
+          uploadFileAsCustomManifest ?? this.uploadFileAsCustomManifest,
     );
   }
 

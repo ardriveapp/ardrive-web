@@ -11,6 +11,7 @@ import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/upload/domain/repository/upload_repository.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/core/upload/view/blocs/upload_manifest_options_bloc.dart';
+import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/models/forms/cc.dart';
@@ -21,6 +22,7 @@ import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/services/license/license.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/constants.dart';
+import 'package:ardrive/utils/is_custom_manifest.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
@@ -111,6 +113,9 @@ class UploadCubit extends Cubit<UploadState> {
 
   bool _isManifestsUploadCancelled = false;
 
+  /// if true, the file will change its content type to `application/x.arweave-manifest+json`
+  bool _uploadFileAsCustomManifest = false;
+
   void updateManifestSelection(List<ManifestSelection> selections) {
     _selectedManifestModels.clear();
 
@@ -124,6 +129,11 @@ class UploadCubit extends Cubit<UploadState> {
   void setManifestUploadMethod(
       UploadMethod method, UploadPaymentMethodInfo info, bool canUpload) {
     _manifestUploadMethod = method;
+  }
+
+  void setIsUploadingCustomManifest(bool value) {
+    _uploadFileAsCustomManifest = value;
+    emit((state as UploadReady).copyWith(uploadFileAsCustomManifest: value));
   }
 
   Future<void> prepareManifestUpload() async {
@@ -441,6 +451,9 @@ class UploadCubit extends Cubit<UploadState> {
       bool showArnsCheckbox = false;
 
       if (_targetDrive.isPublic && _files.length == 1) {
+        final fileIsACustomManifest =
+            await isCustomManifest(_files.first.ioFile);
+
         emit(
           UploadReady(
             params: (state as UploadReadyToPrepare).params,
@@ -461,6 +474,8 @@ class UploadCubit extends Cubit<UploadState> {
             arnsRecords: _ants,
             showReviewButtonText: false,
             selectedManifestSelections: _selectedManifestModels,
+            shouldShowCustomManifestCheckbox: fileIsACustomManifest,
+            uploadFileAsCustomManifest: false,
           ),
         );
 
@@ -507,6 +522,9 @@ class UploadCubit extends Cubit<UploadState> {
             canShowSettings: showSettings,
             showReviewButtonText: false,
             selectedManifestSelections: _selectedManifestModels,
+            uploadFileAsCustomManifest: false,
+            // only applies for single file uploads
+            shouldShowCustomManifestCheckbox: false,
           ),
         );
       }
@@ -1092,6 +1110,21 @@ class UploadCubit extends Cubit<UploadState> {
   }) async {
     if (_uploadIsInProgress) {
       return;
+    }
+
+    if (_uploadFileAsCustomManifest) {
+      final fileWithCustomContentType = await IOFile.fromData(
+        await _files.first.ioFile.readAsBytes(),
+        name: _files.first.ioFile.name,
+        lastModifiedDate: _files.first.ioFile.lastModifiedDate,
+        contentType: ContentType.manifest,
+      );
+
+      _files.first = UploadFile(
+        ioFile: fileWithCustomContentType,
+        parentFolderId: _files.first.parentFolderId,
+        relativeTo: _files.first.relativeTo,
+      );
     }
 
     _uploadIsInProgress = true;
