@@ -481,9 +481,11 @@ class UploadCubit extends Cubit<UploadState> {
           emit(readyState.copyWith(
               loadingArNSNames: false, showArnsCheckbox: showArnsCheckbox));
         } catch (e) {
-          final readyState = state as UploadReady;
-          emit(readyState.copyWith(
-              loadingArNSNamesError: true, loadingArNSNames: false));
+          if (state is UploadReady) {
+            final readyState = state as UploadReady;
+            emit(readyState.copyWith(
+                loadingArNSNamesError: true, loadingArNSNames: false));
+          }
         }
       } else {
         emit(
