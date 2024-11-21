@@ -1,5 +1,3 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'dart:async';
 import 'dart:math';
 
@@ -1975,6 +1973,22 @@ class _UploadReadyWidget extends StatelessWidget {
                     },
                     useNewArDriveUI: true,
                   ),
+                ),
+              ],
+              if (state.shouldShowCustomManifestCheckbox) ...[
+                const SizedBox(height: 8),
+                ArDriveCheckBox(
+                  title: 'Convert this file to an Arweave manifest.',
+                  checked: state.uploadFileAsCustomManifest,
+                  useNewIcons: true,
+                  titleStyle: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                  onChange: (value) {
+                    context
+                        .read<UploadCubit>()
+                        .setIsUploadingCustomManifest(value);
+                  },
                 ),
               ],
             ],
