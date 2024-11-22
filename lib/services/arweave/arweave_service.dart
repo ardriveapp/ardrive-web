@@ -272,7 +272,6 @@ class ArweaveService {
   /// Get the metadata of transactions
   ///
   /// mounts the `blockHistory`
-  ///
   /// returns DriveEntityHistory object
   Future<DriveEntityHistory> createDriveEntityHistoryFromTransactions(
     List<DriveEntityHistoryTransactionModel> entityTxs,

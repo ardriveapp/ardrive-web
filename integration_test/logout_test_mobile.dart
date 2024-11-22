@@ -1,14 +1,10 @@
 import 'package:ardrive/utils/widget_keys.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 
 import 'dsl/dsl.dart';
 import 'utils.dart';
 
 void main() {
-  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
-
   group('Logout Tests', () {
     testWidgets('User can log out successfully', (WidgetTester tester) async {
       final i = I(see: See(tester: tester));

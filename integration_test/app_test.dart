@@ -1,14 +1,14 @@
-import 'package:ardrive/authentication/ardrive_auth.dart';
-import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/main.dart';
-import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
+import 'drive_tests.dart' as drive_tests;
+import 'folder_tests.dart' as folder_tests;
 import 'integration_test_cli_arguments.dart';
+import 'login_tests.dart' as login_tests;
 import 'login_tests_mobile.dart' as login_tests_mobile;
+import 'logout_test.dart' as logout_test;
 import 'logout_test_mobile.dart' as logout_test_mobile;
 import 'onboarding_tests.dart' as onboarding_test;
 import 'onboarding_tests_mobile.dart' as onboarding_test_mobile;
@@ -24,6 +24,10 @@ void main() {
     logout_test_mobile.main();
   } else {
     onboarding_test.main();
+    login_tests.main();
+    logout_test.main();
+    drive_tests.main();
+    folder_tests.main();
   }
 }
 
@@ -43,11 +47,3 @@ Future<void> initApp(WidgetTester tester, {bool deleteDatabase = false}) async {
 final testCaseList = testCases.isNotEmpty
     ? testCases.split(',').map((s) => s.trim()).toSet()
     : <String>{};
-
-Future<void> logoutUser() async {
-  final ardriveAuth = arDriveAppKey.currentState!.context.read<ArDriveAuth>();
-  final profileCubit = arDriveAppKey.currentState!.context.read<ProfileCubit>();
-
-  await ardriveAuth.logout();
-  profileCubit.logoutProfile();
-}

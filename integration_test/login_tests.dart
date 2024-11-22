@@ -1,14 +1,10 @@
 import 'package:ardrive/utils/widget_keys.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 
 import 'app_test.dart';
 import 'dsl/dsl.dart';
 
 void main() {
-  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
-
   group('Login Tests', () {
     testWidgets('User can log in successfully', (WidgetTester tester) async {
       await initApp(tester, deleteDatabase: true);
@@ -20,18 +16,17 @@ void main() {
       await unlockUser(tester);
     });
 
-    // testWidgets('Login fails with incorrect credentials',
-    //     (WidgetTester tester) async {
-    //   await initApp(tester, deleteDatabase: true);
-    //   await testLoginFailure(tester);
-    //   await tester.pumpAndSettle();
-    // });
+    testWidgets('Login fails with incorrect credentials',
+        (WidgetTester tester) async {
+      await initApp(tester, deleteDatabase: true);
+      await testLoginFailure(tester);
+    });
 
-    // testWidgets('User can log in with seed phrase',
-    //     (WidgetTester tester) async {
-    //   await initApp(tester, deleteDatabase: true);
-    //   await testLoginSeedPhrase(tester);
-    // });
+    testWidgets('User can log in with seed phrase',
+        (WidgetTester tester) async {
+      await initApp(tester, deleteDatabase: true);
+      await testLoginSeedPhrase(tester);
+    });
   });
 }
 

@@ -108,10 +108,10 @@ Future<void> runPreConditionUserLoggedInMobile(WidgetTester tester) async {
   await login_tests_mobile.testLoginSuccess(tester);
 }
 
-ButtonTestWithKey publicDriveButton(String driveName, WidgetTester tester) {
-  return ButtonTestWithKey('public_drives_$driveName', tester: tester);
+ButtonTestWithKey publicDriveButton(String driveId, WidgetTester tester) {
+  return ButtonTestWithKey('public_drives_$driveId', tester: tester);
 }
 
-ButtonTestWithKey privateDriveButton(String driveName, WidgetTester tester) {
-  return ButtonTestWithKey('private_drives_$driveName', tester: tester);
+ButtonTestWithKey privateDriveButton(String driveId, WidgetTester tester) {
+  return ButtonTestWithKey('private_drives_$driveId', tester: tester);
 }

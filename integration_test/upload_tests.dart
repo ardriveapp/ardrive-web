@@ -18,7 +18,11 @@ Future<void> testSingleFileUpload(WidgetTester tester, bool isPublic) async {
   if (isPublic) {
     await i.see.publicDriveButton('public drive').tap().wait(1000).go();
   } else {
-    await i.see.privateDriveButton('private drive').tap().wait(100).go();
+    await i.see
+        .privateDriveButton('602dd1b9-6e1b-442b-95ec-77f8ba00268e')
+        .tap()
+        .wait(100)
+        .go();
   }
 
   await i.see.newButton().tap().wait(300).go();
@@ -40,7 +44,11 @@ Future<void> testMultipleFileUpload(WidgetTester tester, bool isPublic) async {
   if (isPublic) {
     await i.see.publicDriveButton('public drive').tap().wait(1000).go();
   } else {
-    await i.see.privateDriveButton('private drive').tap().wait(100).go();
+    await i.see
+        .privateDriveButton('602dd1b9-6e1b-442b-95ec-77f8ba00268e')
+        .tap()
+        .wait(100)
+        .go();
   }
 
   await i.see.newButton().tap().wait(300).go();
@@ -60,7 +68,19 @@ Future<void> testMultipleFileUpload(WidgetTester tester, bool isPublic) async {
 Future<void> testMultipleFileUploadAndUpdateManifest(
     WidgetTester tester, bool isPublic) async {
   final i = I(see: See(tester: tester));
-  await i.see.publicDriveButton('auto-update-drive-test').tap().wait(1000).go();
+  if (isPublic) {
+    await i.see
+        .publicDriveButton('auto-update-drive-test')
+        .tap()
+        .wait(1000)
+        .go();
+  } else {
+    await i.see
+        .privateDriveButton('602dd1b9-6e1b-442b-95ec-77f8ba00268e')
+        .tap()
+        .wait(100)
+        .go();
+  }
   await i.see.newButton().tap().wait(300).go();
   final fileNames = await setListOfFilesForUpload(tester, 10, 1000);
   await i.see.button('Upload File(s)').tap().wait(300).go();
@@ -84,10 +104,19 @@ Future<void> testMultipleFileUploadAndUpdateManifest(
 }
 
 Future<void> testMultipleFileUploadWithConflictResolution(
-    WidgetTester tester) async {
+    WidgetTester tester, bool isPublic) async {
   final i = I(see: See(tester: tester));
-  await i.see.publicDriveButton('public drive').tap().wait(1000).go();
-await i.see.newButton().tap().wait(300).go();
+  if (isPublic) {
+    await i.see.publicDriveButton('public drive').tap().wait(1000).go();
+  } else {
+    await i.see
+        .privateDriveButton('602dd1b9-6e1b-442b-95ec-77f8ba00268e')
+        .tap()
+        .wait(100)
+        .go();
+  }
+
+  await i.see.newButton().tap().wait(300).go();
   final context = arDriveAppKey.currentState!.context;
   final ardriveIO = context.read<ArDriveIO>() as ArDriveIOIntegrationTest;
 
@@ -111,9 +140,19 @@ await i.see.newButton().tap().wait(300).go();
 }
 
 Future<void> testMultipleFileUploadWithPartialConflictResolution(
-    WidgetTester tester) async {
+    WidgetTester tester, bool isPublic) async {
   final i = I(see: See(tester: tester));
-  await i.see.publicDriveButton('public drive').tap().wait(1000).go();
+
+  if (isPublic) {
+    await i.see.publicDriveButton('public drive').tap().wait(1000).go();
+  } else {
+    await i.see
+        .privateDriveButton('602dd1b9-6e1b-442b-95ec-77f8ba00268e')
+        .tap()
+        .wait(100)
+        .go();
+  }
+
   await i.see.newButton().tap().wait(300).go();
   final context = arDriveAppKey.currentState!.context;
   final ardriveIO = context.read<ArDriveIO>() as ArDriveIOIntegrationTest;
