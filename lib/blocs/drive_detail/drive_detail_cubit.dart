@@ -138,12 +138,21 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       _folderSubscription =
           Rx.combineLatest3<Drive?, FolderWithContents, ProfileState, void>(
         _driveRepository.watchDrive(driveId: driveId),
-        _driveDao.watchFolderContents(
+        _driveDao
+            .watchFolderContents(
           driveId,
           orderBy: contentOrderBy,
           orderingMode: contentOrderingMode,
           folderId: folderId,
-        ),
+        )
+            .handleError((error, stack) {
+          logger.e('Error watching folder contents', error, stack);
+          if (error is DriveNotFoundException) {
+            emit(DriveDetailLoadNotFound());
+          }
+
+          return null;
+        }),
         _profileCubit.stream.startWith(ProfileCheckingAvailability()),
         (drive, folderContents, _) async {
           if (isClosed) {
