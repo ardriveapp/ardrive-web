@@ -75,7 +75,6 @@ Future<void> unlockUser(WidgetTester tester) async {
 
 Future<void> testLoginSeedPhrase(WidgetTester tester) async {
   final i = I(see: See(tester: tester));
-
   await i.see.button('Log In').tap().wait(100).go();
   await i.see.button('Import Wallet').tap().wait(1000).go();
   await i.see

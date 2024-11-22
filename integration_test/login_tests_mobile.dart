@@ -90,7 +90,7 @@ Future<void> unlockUser(WidgetTester tester) async {
   i.see.page(driveDetailPageKey);
 }
 
-Future<void> testLoginSeedPhrase(WidgetTester tester) async {
+Future<void> testLoginSeedPhraseMobile(WidgetTester tester) async {
   final i = I(see: See(tester: tester));
   await i.see.button('Log In').tap().wait(500).go();
   await i.see.button('Import Wallet').tap().wait(1000).go();
