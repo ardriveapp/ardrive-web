@@ -34,23 +34,17 @@ void main() {
 
 Future<void> testLoginSuccess(WidgetTester tester) async {
   final i = I(see: See(tester: tester));
-
   await i.see.button('Log In').tap().wait(500).go();
-
   await i.see.button('Import Wallet').tap().wait(500).go();
   i.see.multipleText('Import Wallet', 2);
-
   // unfocus the text field
   FocusManager.instance.primaryFocus?.unfocus();
-
   await i.wait(1000);
-
   await i.pickFileTestWallet(tester);
   i.see.button('Continue');
-  await i.see.button('Use Keyfile').tap().go();
+  await i.see.button('Use Keyfile').tap().wait(500).go();
   await i.waitToSee('password-input', tester, 30);
   await i.see.textField('password-input').enterText('123').go();
-
   // unfocus the text field
   FocusManager.instance.primaryFocus?.unfocus();
   await i.wait(3000);
@@ -61,17 +55,15 @@ Future<void> testLoginSuccess(WidgetTester tester) async {
 
 Future<void> testLoginFailure(WidgetTester tester) async {
   final i = I(see: See(tester: tester));
-
   await i.see.button('Log In').tap().wait(500).go();
   await tester.sendKeyDownEvent(LogicalKeyboardKey.enter);
   await i.wait(3000);
   await i.see.button('Import Wallet').tap().wait(3000).go();
-
   // unfocus the text field
   FocusManager.instance.primaryFocus?.unfocus();
   await i.wait(3000);
   await i.pickFileTestWallet(tester);
-  await i.see.button('Use Keyfile').tap().go();
+  await i.see.button('Use Keyfile').tap().wait(500).go();
   await i.waitToSee('password-input', tester, 30);
   await i.see
       .textField('password-input')
@@ -100,7 +92,6 @@ Future<void> unlockUser(WidgetTester tester) async {
 
 Future<void> testLoginSeedPhrase(WidgetTester tester) async {
   final i = I(see: See(tester: tester));
-
   await i.see.button('Log In').tap().wait(500).go();
   await i.see.button('Import Wallet').tap().wait(1000).go();
   await i.see
