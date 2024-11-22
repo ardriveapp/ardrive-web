@@ -3,6 +3,7 @@ import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/integration_tests_utils.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -11,14 +12,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 Future<void> showCongestionDependentModalDialog(
     BuildContext context, Function() showAppDialog) async {
   late bool warnAboutCongestion;
-
-  try {
-    final mempoolSize =
-        await context.read<ArweaveService>().getMempoolSizeFromArweave();
-
-    warnAboutCongestion = mempoolSize > mempoolWarningSizeLimit;
-  } catch (e) {
+  if (isIntegrationTest()) {
     warnAboutCongestion = false;
+  } else {
+    try {
+      final mempoolSize =
+          await context.read<ArweaveService>().getMempoolSizeFromArweave();
+
+      warnAboutCongestion = mempoolSize > mempoolWarningSizeLimit;
+    } catch (e) {
+      warnAboutCongestion = false;
+    }
   }
 
   // ignore: use_build_context_synchronously

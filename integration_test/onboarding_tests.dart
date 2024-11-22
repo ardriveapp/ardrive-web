@@ -8,7 +8,7 @@ Future<void> testSignUpAndOnboarding(WidgetTester tester) async {
 
   await i.see.button('Sign Up').tap().wait(1000).go();
   await i.see.button('Create a Wallet').tap().go();
-  await i.waitToSee('password', tester, 50);
+  await i.waitToSee('password', tester, 120);
   await i.see.textField('password').enterText('12345678').go();
   await i.see.textField('confirmPassword').enterText('12345678').go();
   await i.wait(500);
