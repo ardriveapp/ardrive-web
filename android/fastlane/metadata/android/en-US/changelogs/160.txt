@@ -1,0 +1,1 @@
+- Enable uploads even if contract state retrieval fails

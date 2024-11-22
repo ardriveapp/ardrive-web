@@ -169,6 +169,7 @@ Future<void> initializeServices({bool deleteDatabase = false}) async {
       gatewayUrl: Uri.parse(config.defaultArweaveGatewayForDataRequest.url),
     ),
     ArDriveCrypto(),
+    _database.driveDao,
     configService,
   );
   _turboUpload = config.useTurboUpload

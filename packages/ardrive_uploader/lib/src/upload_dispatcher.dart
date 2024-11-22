@@ -29,6 +29,14 @@ class UploadDispatcher {
   }) async {
     try {
       if (task is FileUploadTask) {
+        logger.d('Preparing data items for file ${task.file.name}...');
+
+        controller.updateProgress(
+          task: task.copyWith(
+            status: UploadStatus.creatingMetadata,
+          ),
+        );
+
         final uploadPreparation = await prepareDataItems(
           file: task.file,
           metadata: task.metadata,

@@ -59,7 +59,11 @@ class ArweaveBundleTransactionSigner implements BundleTransactionSigner {
 
     logger.i('Adding tip...');
 
-    await pstService.addCommunityTipToTx(bundleTx);
+    try {
+      await pstService.addCommunityTipToTx(bundleTx);
+    } catch (e) {
+      logger.e('Error adding community tip to transaction. Proceeding.', e);
+    }
 
     logger.i('Tip added');
 
