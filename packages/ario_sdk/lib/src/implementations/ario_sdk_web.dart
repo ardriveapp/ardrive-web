@@ -97,6 +97,13 @@ class ArioSDKWeb implements ArioSDK {
 
     return _setARNSImpl('', arnsUndername, true);
   }
+
+  @override
+  Future<String> getPrimaryName(String address) async {
+    final primaryName = await _getPrimaryNameImpl(address);
+
+    return primaryName;
+  }
 }
 
 @JS('setARNS')
@@ -188,4 +195,16 @@ Future<List<ARNSProcessData>> _getARNSRecordsForWalletImpl(
   final object = ResponseObject.fromJson(jsonDecode(stringified));
 
   return object.data.values.toList();
+}
+
+@JS('getPrimaryName')
+external Object _getPrimaryName(String address);
+
+Future<String> _getPrimaryNameImpl(String address) async {
+  final promise = _getPrimaryName(address);
+  final stringified = await promiseToFuture(promise);
+
+  final json = jsonDecode(stringified);
+
+  return json['name'];
 }

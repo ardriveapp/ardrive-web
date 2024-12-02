@@ -5,7 +5,7 @@ part 'app_banner_event.dart';
 part 'app_banner_state.dart';
 
 class AppBannerBloc extends Bloc<AppBannerEvent, AppBannerState> {
-  AppBannerBloc() : super(AppBannerVisible()) {
+  AppBannerBloc() : super(AppBannerHidden()) {
     on<AppBannerEvent>((event, emit) {
       if (event is AppBannerCloseEvent) {
         emit(AppBannerHidden());

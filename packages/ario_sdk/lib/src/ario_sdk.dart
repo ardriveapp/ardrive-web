@@ -27,4 +27,6 @@ abstract class ArioSDK {
     required String domain,
     String undername = '@',
   });
+
+  Future<String> getPrimaryName(String address);
 }

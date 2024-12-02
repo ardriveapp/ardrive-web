@@ -21,7 +21,6 @@ abstract class ARNSRepository {
     required String processId,
     bool uploadNewRevision = true,
   });
-
   Future<List<sdk.ANTRecord>> getAntRecordsForWallet(String address,
       {bool update = false});
   Future<List<sdk.ARNSUndername>> getARNSUndernames(sdk.ANTRecord record,
@@ -33,6 +32,7 @@ abstract class ARNSRepository {
   Future<void> saveAllFilesWithAssignedNames();
   Future<List<ArnsRecord>> getActiveARNSRecordsForFile(String fileId);
   Future<void> waitForARNSRecordsToUpdate();
+  Future<String> getPrimaryName(String address);
 
   factory ARNSRepository({
     required ArioSDK sdk,
@@ -370,6 +370,17 @@ class _ARNSRepository implements ARNSRepository {
     }
 
     await _getARNSUndernamesCompleter!.future;
+  }
+
+  @override
+  Future<String> getPrimaryName(String address) async {
+    logger.d('Getting primary name for address: $address');
+
+    final primaryName = await _sdk.getPrimaryName(address);
+
+    logger.d('Primary name: $primaryName');
+
+    return primaryName;
   }
 }
 

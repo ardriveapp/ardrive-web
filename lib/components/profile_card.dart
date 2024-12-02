@@ -17,6 +17,7 @@ import 'package:ardrive/turbo/topup/components/turbo_balance_widget.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/user/balance/user_balance_bloc.dart';
 import 'package:ardrive/user/download_wallet/download_wallet_modal.dart';
+import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/open_url_utils.dart';
@@ -548,15 +549,23 @@ class _ProfileCardState extends State<ProfileCard> {
 
   Widget _buildProfileCardHeader(BuildContext context, String walletAddress) {
     final typography = ArDriveTypographyNew.of(context);
-    return ArDriveButtonNew(
-      text: truncateString(walletAddress, offsetStart: 2, offsetEnd: 2),
-      typography: typography,
-      variant: ButtonVariant.outline,
-      maxWidth: 100,
-      onPressed: () {
-        setState(() {
-          _showProfileCard = !_showProfileCard;
-        });
+    return BlocBuilder<ProfileNameBloc, ProfileNameState>(
+      builder: (context, state) {
+        final primaryName = state is ProfileNameLoaded
+            ? state.primaryName
+            : truncateString(walletAddress, offsetStart: 2, offsetEnd: 2);
+
+        return ArDriveButtonNew(
+          text: primaryName,
+          typography: typography,
+          variant: ButtonVariant.outline,
+          maxWidth: 100,
+          onPressed: () {
+            setState(() {
+              _showProfileCard = !_showProfileCard;
+            });
+          },
+        );
       },
     );
   }

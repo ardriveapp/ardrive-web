@@ -9,6 +9,7 @@ window.ario = {
   setAnt,
   getUndernames,
   getARNSRecordsForWallet,
+  getPrimaryName,
 };
 
 const io = IO.init({
@@ -156,4 +157,11 @@ async function getProcesses(address) {
       pageSize: 10000
     });
   });
+}
+
+async function getPrimaryName(address) {
+  console.log('Fetching primary name for address:', address);
+  const result = await io.getPrimaryName({ address: address });
+  console.log('Primary name:', result);
+  return JSON.stringify(result);
 }
