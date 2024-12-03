@@ -30,6 +30,9 @@ final class ProfileNameLoaded extends ProfileNameState {
 
   @override
   final String walletAddress;
+
+  @override
+  List<Object> get props => [primaryName, walletAddress];
 }
 
 // if fails to load primary name, show current wallet address
