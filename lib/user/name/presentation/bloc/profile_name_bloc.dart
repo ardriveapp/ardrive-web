@@ -44,11 +44,7 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
       final primaryName =
           await _arnsRepository.getPrimaryName(walletAddress, update: refresh);
 
-      final truncatedPrimaryName = _truncatePrimaryName(primaryName);
-
-      emit(
-        ProfileNameLoaded(truncatedPrimaryName, walletAddress),
-      );
+      emit(ProfileNameLoaded(primaryName, walletAddress));
     } catch (e) {
       if (e is PrimaryNameNotFoundException) {
         logger.d('Primary name not found for address: $walletAddress');
@@ -62,14 +58,5 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
         ),
       );
     }
-  }
-
-  /// Truncates the primary name to 20 characters
-  String _truncatePrimaryName(String primaryName) {
-    if (primaryName.length > 20) {
-      return primaryName.substring(0, 20);
-    }
-
-    return primaryName;
   }
 }

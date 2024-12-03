@@ -563,8 +563,8 @@ class _ProfileCardState extends State<ProfileCard> {
             maxWidth = 100;
           }
 
-          if (maxWidth > 180) {
-            maxWidth = 180;
+          if (maxWidth > 200) {
+            maxWidth = 200;
           }
         }
 
