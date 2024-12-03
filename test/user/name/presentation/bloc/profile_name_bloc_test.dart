@@ -71,7 +71,7 @@ void main() {
       act: (bloc) => bloc.add(LoadProfileName()),
       expect: () => [
         const ProfileNameLoading(testWalletAddress),
-        const ProfileNameLoaded('verylongprimarynamen', testWalletAddress),
+        const ProfileNameLoaded('verylongprimarynamet', testWalletAddress),
       ],
     );
 
