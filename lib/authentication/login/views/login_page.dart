@@ -16,6 +16,7 @@ import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/authentication/biometric_permission_dialog.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -95,6 +96,7 @@ class _LoginPageState extends State<LoginPage> {
           if (loginState is LoginSuccess) {
             logger.setContext(logger.context
                 .copyWith(userAddress: loginState.user.walletAddress));
+            context.read<ProfileNameBloc>().add(LoadProfileName());
           }
 
           if (loginState is PromptPassword) {

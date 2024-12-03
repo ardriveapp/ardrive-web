@@ -7,7 +7,6 @@ import 'dart:convert';
 import 'dart:js_util';
 
 import 'package:ario_sdk/ario_sdk.dart';
-import 'package:ario_sdk/src/exceptions.dart';
 import 'package:ario_sdk/src/models/response_object.dart';
 import 'package:js/js.dart';
 
@@ -96,6 +95,17 @@ class ArioSDKWeb implements ArioSDK {
     );
 
     return _setARNSImpl('', arnsUndername, true);
+  }
+
+  @override
+  Future<String> getPrimaryName(String address) async {
+    final primaryName = await _getPrimaryNameImpl(address);
+
+    if (primaryName.contains('Primary name data not found')) {
+      throw PrimaryNameNotFoundException(primaryName);
+    }
+
+    return primaryName;
   }
 }
 
@@ -188,4 +198,16 @@ Future<List<ARNSProcessData>> _getARNSRecordsForWalletImpl(
   final object = ResponseObject.fromJson(jsonDecode(stringified));
 
   return object.data.values.toList();
+}
+
+@JS('getPrimaryName')
+external Object _getPrimaryName(String address);
+
+Future<String> _getPrimaryNameImpl(String address) async {
+  final promise = _getPrimaryName(address);
+  final stringified = await promiseToFuture(promise);
+
+  final json = jsonDecode(stringified);
+
+  return json['name'];
 }

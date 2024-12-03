@@ -1,0 +1,1 @@
+- Added support for displaying Primary Names in the ArDrive app
