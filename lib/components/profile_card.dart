@@ -557,7 +557,7 @@ class _ProfileCardState extends State<ProfileCard> {
         double maxWidth = 100;
 
         if (state is ProfileNameLoaded) {
-          maxWidth = primaryName.length * 15;
+          maxWidth = primaryName.length.toDouble() * 10;
 
           if (maxWidth < 100) {
             maxWidth = 100;
@@ -577,7 +577,7 @@ class _ProfileCardState extends State<ProfileCard> {
         return ArDriveTooltip(
           message: tooltipMessage ?? '',
           child: ArDriveButtonNew(
-            text: 'reciferecife',
+            text: primaryName,
             typography: typography,
             variant: ButtonVariant.outline,
             maxWidth: maxWidth,
