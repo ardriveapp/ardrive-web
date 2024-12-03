@@ -1,4 +1,5 @@
 import 'package:ardrive/app_shell.dart';
+import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
@@ -299,6 +300,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                         promptToSnapshotBloc:
                             context.read<PromptToSnapshotBloc>(),
                         tabVisibility: TabVisibilitySingleton(),
+                        arnsRepository: context.read<ARNSRepository>(),
                       ),
                     ),
                     BlocProvider(
