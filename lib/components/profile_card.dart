@@ -557,7 +557,7 @@ class _ProfileCardState extends State<ProfileCard> {
         double maxWidth = 100;
 
         if (state is ProfileNameLoaded) {
-          maxWidth = primaryName.length.toDouble() * 10;
+          maxWidth = primaryName.length * 15;
 
           if (maxWidth < 100) {
             maxWidth = 100;
@@ -568,17 +568,26 @@ class _ProfileCardState extends State<ProfileCard> {
           }
         }
 
-        return ArDriveButtonNew(
-          text: primaryName,
-          typography: typography,
-          variant: ButtonVariant.outline,
-          maxWidth: maxWidth,
-          maxHeight: 40,
-          onPressed: () {
-            setState(() {
-              _showProfileCard = !_showProfileCard;
-            });
-          },
+        String? tooltipMessage;
+
+        if (primaryName.length > 20) {
+          tooltipMessage = primaryName;
+        }
+
+        return ArDriveTooltip(
+          message: tooltipMessage ?? '',
+          child: ArDriveButtonNew(
+            text: 'reciferecife',
+            typography: typography,
+            variant: ButtonVariant.outline,
+            maxWidth: maxWidth,
+            maxHeight: 40,
+            onPressed: () {
+              setState(() {
+                _showProfileCard = !_showProfileCard;
+              });
+            },
+          ),
         );
       },
     );
