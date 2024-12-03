@@ -557,7 +557,7 @@ class _ProfileCardState extends State<ProfileCard> {
         double maxWidth = 100;
 
         if (state is ProfileNameLoaded) {
-          maxWidth = primaryName.length.toDouble() * 10;
+          maxWidth = primaryName.length * 15;
 
           if (maxWidth < 100) {
             maxWidth = 100;
