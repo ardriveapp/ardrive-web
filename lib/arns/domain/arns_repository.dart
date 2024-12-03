@@ -83,6 +83,7 @@ class _ARNSRepository implements ARNSRepository {
     auth.onAuthStateChanged().listen((user) {
       if (user == null) {
         _cachedUndernames.clear();
+        _cachedPrimaryName = null;
       }
     });
   }
