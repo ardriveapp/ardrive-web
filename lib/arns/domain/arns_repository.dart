@@ -21,7 +21,6 @@ abstract class ARNSRepository {
     required String processId,
     bool uploadNewRevision = true,
   });
-
   Future<List<sdk.ANTRecord>> getAntRecordsForWallet(String address,
       {bool update = false});
   Future<List<sdk.ARNSUndername>> getARNSUndernames(sdk.ANTRecord record,
@@ -33,6 +32,7 @@ abstract class ARNSRepository {
   Future<void> saveAllFilesWithAssignedNames();
   Future<List<ArnsRecord>> getActiveARNSRecordsForFile(String fileId);
   Future<void> waitForARNSRecordsToUpdate();
+  Future<String> getPrimaryName(String address, {bool update = false});
 
   factory ARNSRepository({
     required ArioSDK sdk,
@@ -83,11 +83,13 @@ class _ARNSRepository implements ARNSRepository {
     auth.onAuthStateChanged().listen((user) {
       if (user == null) {
         _cachedUndernames.clear();
+        _cachedPrimaryName = null;
       }
     });
   }
 
   final Map<String, Map<String, ARNSUndername>> _cachedUndernames = {};
+  String? _cachedPrimaryName;
 
   @override
   Future<void> setUndernamesToFile({
@@ -370,6 +372,23 @@ class _ARNSRepository implements ARNSRepository {
     }
 
     await _getARNSUndernamesCompleter!.future;
+  }
+
+  @override
+  Future<String> getPrimaryName(String address, {bool update = false}) async {
+    logger.d('Getting primary name for address: $address');
+
+    if (!update && _cachedPrimaryName != null) {
+      return _cachedPrimaryName!;
+    }
+
+    final primaryName = await _sdk.getPrimaryName(address);
+
+    logger.d('Primary name: $primaryName');
+
+    _cachedPrimaryName = primaryName;
+
+    return primaryName;
   }
 }
 

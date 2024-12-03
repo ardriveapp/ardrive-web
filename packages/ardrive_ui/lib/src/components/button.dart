@@ -367,8 +367,14 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
     final text = Text(widget.text,
         textAlign: TextAlign.center,
         style: widget.fontStyle ??
-            typography.paragraphLarge(
-                color: foregroundColor, fontWeight: ArFontWeight.semiBold));
+            typography
+                .paragraphLarge(
+                  color: foregroundColor,
+                  fontWeight: ArFontWeight.semiBold,
+                )
+                .copyWith(
+                  overflow: TextOverflow.ellipsis,
+                ));
 
     final buttonH = widget.maxHeight ?? buttonDefaultHeight;
 

@@ -32,6 +32,7 @@ import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
+import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
@@ -356,6 +357,12 @@ class AppState extends State<App> {
           ),
         ),
         BlocProvider<AppBannerBloc>(create: (context) => AppBannerBloc()),
+        BlocProvider(
+          create: (context) => ProfileNameBloc(
+            context.read<ARNSRepository>(),
+            context.read<ArDriveAuth>(),
+          ),
+        ),
       ];
 
   List<SingleChildWidget> get repositoryProviders => [
