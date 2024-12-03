@@ -16,7 +16,7 @@ const io = IO.init({
   process: new AOProcess({
     processId: IO_TESTNET_PROCESS_ID,
     ao: connect({
-      CU_URL: 'https://cu.ar-io.dev'
+      CU_URL: 'https://cu.ardrive.io'
     })
   }),
 });
