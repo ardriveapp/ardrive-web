@@ -1,6 +1,7 @@
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -13,33 +14,62 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
 
   ProfileNameBloc(this._arnsRepository, this._auth)
       : super(ProfileNameInitial(_auth.currentUser.walletAddress)) {
-    on<ProfileNameEvent>((event, emit) async {
-      try {
-        logger.d(
-            'Loading primary name for address: ${_auth.currentUser.walletAddress}');
-
-        // loads primary name for the wallet
-        emit(ProfileNameLoading(_auth.currentUser.walletAddress));
-
-        final primaryName = await _arnsRepository.getPrimaryName(
-          _auth.currentUser.walletAddress,
-        );
-
-        logger.d('Primary Name Loaded: $primaryName');
-
-        // we only show the first 7 characters of the primary name
-        // if the primary name is longer than 7 characters
-        final truncatedPrimaryName =
-            primaryName.length > 7 ? primaryName.substring(0, 7) : primaryName;
-
-        emit(ProfileNameLoaded(
-            truncatedPrimaryName, _auth.currentUser.walletAddress));
-      } catch (e) {
-        logger.e('Error getting primary name.', e);
-        emit(ProfileNameLoadedWithWalletAddress(
-          _auth.currentUser.walletAddress,
-        ));
-      }
+    on<LoadProfileName>((event, emit) async {
+      await _loadProfileName(
+        walletAddress: _auth.currentUser.walletAddress,
+        refresh: false,
+        emit: emit,
+      );
     });
+    on<RefreshProfileName>((event, emit) async {
+      await _loadProfileName(
+        walletAddress: _auth.currentUser.walletAddress,
+        refresh: true,
+        emit: emit,
+      );
+    });
+  }
+
+  Future<void> _loadProfileName({
+    required String walletAddress,
+    required bool refresh,
+    required Emitter<ProfileNameState> emit,
+  }) async {
+    try {
+      /// if we are not refreshing, we emit a loading state
+      if (!refresh) {
+        emit(ProfileNameLoading(walletAddress));
+      }
+
+      final primaryName =
+          await _arnsRepository.getPrimaryName(walletAddress, update: refresh);
+
+      final truncatedPrimaryName = _truncatePrimaryName(primaryName);
+
+      emit(
+        ProfileNameLoaded(truncatedPrimaryName, walletAddress),
+      );
+    } catch (e) {
+      if (e is PrimaryNameNotFoundException) {
+        logger.d('Primary name not found for address: $walletAddress');
+      } else {
+        logger.e('Error getting primary name.', e);
+      }
+
+      emit(
+        ProfileNameLoadedWithWalletAddress(
+          walletAddress,
+        ),
+      );
+    }
+  }
+
+  /// Truncates the primary name to 20 characters
+  String _truncatePrimaryName(String primaryName) {
+    if (primaryName.length > 20) {
+      return primaryName.substring(0, 20);
+    }
+
+    return primaryName;
   }
 }

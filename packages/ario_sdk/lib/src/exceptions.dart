@@ -16,3 +16,7 @@ class GetIOTokensException extends ARIOException {
 class GetGatewaysException extends ARIOException {
   GetGatewaysException(super.message);
 }
+
+class PrimaryNameNotFoundException extends ARIOException {
+  PrimaryNameNotFoundException(super.message);
+}

@@ -28,5 +28,8 @@ abstract class ArioSDK {
     String undername = '@',
   });
 
+  /// Get the primary name for the given address
+  ///
+  /// Throws [PrimaryNameNotFoundException] if the primary name is not found
   Future<String> getPrimaryName(String address);
 }

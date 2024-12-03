@@ -102,6 +102,10 @@ class ArioSDKWeb implements ArioSDK {
   Future<String> getPrimaryName(String address) async {
     final primaryName = await _getPrimaryNameImpl(address);
 
+    if (primaryName.contains('Primary name data not found')) {
+      throw PrimaryNameNotFoundException(primaryName);
+    }
+
     return primaryName;
   }
 }

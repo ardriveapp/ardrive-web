@@ -554,12 +554,25 @@ class _ProfileCardState extends State<ProfileCard> {
         final primaryName = state is ProfileNameLoaded
             ? state.primaryName
             : truncateString(walletAddress, offsetStart: 2, offsetEnd: 2);
+        double maxWidth = 100;
+
+        if (state is ProfileNameLoaded) {
+          maxWidth = primaryName.length.toDouble() * 10;
+
+          if (maxWidth < 100) {
+            maxWidth = 100;
+          }
+
+          if (maxWidth > 180) {
+            maxWidth = 180;
+          }
+        }
 
         return ArDriveButtonNew(
           text: primaryName,
           typography: typography,
           variant: ButtonVariant.outline,
-          maxWidth: 100,
+          maxWidth: maxWidth,
           onPressed: () {
             setState(() {
               _showProfileCard = !_showProfileCard;
