@@ -573,6 +573,7 @@ class _ProfileCardState extends State<ProfileCard> {
           typography: typography,
           variant: ButtonVariant.outline,
           maxWidth: maxWidth,
+          maxHeight: 40,
           onPressed: () {
             setState(() {
               _showProfileCard = !_showProfileCard;
