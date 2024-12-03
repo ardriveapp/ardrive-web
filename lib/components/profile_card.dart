@@ -491,7 +491,7 @@ class _ProfileCardState extends State<ProfileCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'tIO Tokens',
+                    'tARIO Tokens',
                     style: typography.paragraphNormal(
                       fontWeight: ArFontWeight.semiBold,
                       color: colorTokens.textHigh,
