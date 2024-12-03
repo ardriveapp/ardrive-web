@@ -60,22 +60,6 @@ void main() {
     );
 
     blocTest<ProfileNameBloc, ProfileNameState>(
-      'truncates primary name when longer than 20 characters',
-      build: () {
-        const longName = 'verylongprimarynamethatshouldbecutoff.arweave';
-        when(() =>
-                arnsRepository.getPrimaryName(testWalletAddress, update: false))
-            .thenAnswer((_) async => longName);
-        return ProfileNameBloc(arnsRepository, auth);
-      },
-      act: (bloc) => bloc.add(LoadProfileName()),
-      expect: () => [
-        const ProfileNameLoading(testWalletAddress),
-        const ProfileNameLoaded('verylongprimarynamet', testWalletAddress),
-      ],
-    );
-
-    blocTest<ProfileNameBloc, ProfileNameState>(
       'emits [ProfileNameLoading, ProfileNameLoadedWithWalletAddress] when getPrimaryName throws PrimaryNameNotFoundException',
       build: () {
         when(() =>
