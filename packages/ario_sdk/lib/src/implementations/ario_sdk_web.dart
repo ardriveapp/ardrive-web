@@ -7,7 +7,6 @@ import 'dart:convert';
 import 'dart:js_util';
 
 import 'package:ario_sdk/ario_sdk.dart';
-import 'package:ario_sdk/src/exceptions.dart';
 import 'package:ario_sdk/src/models/response_object.dart';
 import 'package:js/js.dart';
 
