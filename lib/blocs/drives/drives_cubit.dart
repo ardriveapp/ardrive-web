@@ -111,6 +111,10 @@ class DrivesCubit extends Cubit<DrivesState> {
 
       _promptToSnapshotBloc.add(SelectedDrive(driveId: selectedDriveId));
 
+      if (isClosed) {
+        return;
+      }
+
       emit(
         DrivesLoadSuccess(
           selectedDriveId: selectedDriveId,

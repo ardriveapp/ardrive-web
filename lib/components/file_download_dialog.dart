@@ -36,11 +36,7 @@ Future<void> promptToDownloadProfileFile({
       context.read<DriveDao>(),
       ARFSFactory(),
     ),
-    arDriveDownloader: ArDriveDownloader(
-      ardriveIo: ArDriveIO(),
-      ioFileAdapter: IOFileAdapter(),
-      arweave: arweave,
-    ),
+    arDriveDownloader: context.read<ArDriveFileDownloader>(),
     downloader: ArDriveMobileDownloader(),
     file: arfsFile,
     driveDao: context.read<DriveDao>(),
@@ -74,11 +70,7 @@ Future<void> promptToDownloadFileRevision({
       context.read<DriveDao>(),
       ARFSFactory(),
     ),
-    arDriveDownloader: ArDriveDownloader(
-      ardriveIo: ArDriveIO(),
-      ioFileAdapter: IOFileAdapter(),
-      arweave: arweave,
-    ),
+    arDriveDownloader: context.read<ArDriveFileDownloader>(),
     downloader: ArDriveMobileDownloader(),
     file: arfsFile,
     driveDao: context.read<DriveDao>(),
@@ -101,11 +93,7 @@ Future<void> promptToDownloadSharedFile({
   required ARFSFileEntity revision,
 }) {
   final cubit = SharedFileDownloadCubit(
-    arDriveDownloader: ArDriveDownloader(
-      ardriveIo: ArDriveIO(),
-      ioFileAdapter: IOFileAdapter(),
-      arweave: context.read<ArweaveService>(),
-    ),
+    arDriveDownloader: context.read<ArDriveFileDownloader>(),
     crypto: ArDriveCrypto(),
     revision: revision,
     fileKey: fileKey,

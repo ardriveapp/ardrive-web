@@ -144,6 +144,7 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                     fontWeight: ArFontWeight.semiBold)),
             const SizedBox(height: 8),
             ArDriveTextFieldNew(
+              key: const Key('password-input'),
               controller: _passwordController,
               hintText: 'Enter your password',
               showObfuscationToggle: true,

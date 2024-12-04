@@ -25,6 +25,7 @@ import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/widget_keys.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart';
@@ -256,6 +257,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                       ],
                       child: AppShell(
                         page: DriveDetailPage(
+                          key: const Key(driveDetailPageKey),
                           context: navigatorKey.currentContext!,
                           anonymouslyShowDriveDetail:
                               anonymouslyShowDriveDetail,

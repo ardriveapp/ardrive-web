@@ -1,4 +1,6 @@
 import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/utils/integration_tests_utils.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -29,6 +31,9 @@ void preCacheLoginAssets(BuildContext context) {
     precacheImage(
       AssetImage(assetPath),
       context,
+      onError: (error, stackTrace) {
+        logger.w('Error on pre-caching login assets.');
+      },
     );
   }
 
@@ -42,8 +47,11 @@ void preCacheLoginAssets(BuildContext context) {
 }
 
 void preCacheOnBoardingAssets(BuildContext context) {
+  if (isIntegrationTest()) {
+    return;
+  }
+
   List<String> assetPaths = [
-    Resources.images.login.ardriveLogoOnboarding,
     Resources.images.login.arrowRed,
     Resources.images.login.confetti,
     Resources.images.login.confettiLeft,
@@ -54,6 +62,9 @@ void preCacheOnBoardingAssets(BuildContext context) {
     precacheImage(
       AssetImage(assetPath),
       context,
+      onError: (error, stackTrace) {
+        logger.w('Error on pre-caching onBoarding assets.');
+      },
     );
   }
 }

@@ -31,6 +31,7 @@ abstract class ArDriveUploader {
     SecretKey? driveKey,
     required UploadType type,
     bool uploadThumbnail = true,
+    bool dryRun = false,
   }) {
     throw UnimplementedError();
   }
@@ -62,6 +63,7 @@ abstract class ArDriveUploader {
     required Uri turboUploadUri,
     Arweave? arweave,
     PstService? pstService,
+    bool isDryRun = false,
   }) {
     metadataGenerator ??= ARFSUploadMetadataGenerator(
       tagsGenerator: ARFSTagsGenetator(
@@ -86,6 +88,7 @@ abstract class ArDriveUploader {
 
     final streamedUploadFactory = StreamedUploadFactory(
       turboUploadUri: turboUploadUri,
+      isDryRun: isDryRun,
     );
 
     return _ArDriveUploader(
@@ -180,6 +183,7 @@ class _ArDriveUploader implements ArDriveUploader {
     SecretKey? driveKey,
     bool uploadThumbnail = true,
     required UploadType type,
+    bool dryRun = false,
   }) async {
     logger.i('Creating a new upload controller using the upload type $type');
 

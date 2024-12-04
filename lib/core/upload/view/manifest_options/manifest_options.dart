@@ -143,9 +143,10 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
                         Flexible(
                           flex: 1,
                           child: ArDriveCheckBox(
+                            key: ValueKey('auto-update-checkbox-${file.name}'),
                             checked: widget.isSelected,
                             onChange: (value) {
-                              if (value) {
+                            if (value) {
                                 context
                                     .read<UploadManifestOptionsBloc>()
                                     .add(SelectManifest(manifest: file));

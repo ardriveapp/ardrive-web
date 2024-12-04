@@ -234,6 +234,10 @@ class SyncCubit extends Cubit<SyncState> {
           cipherKey: cipherKey,
           syncDeep: deepSync,
           txFechedCallback: (driveId, txCount) {
+            if (_promptToSnapshotBloc.isClosed) {
+              return;
+            }
+
             _promptToSnapshotBloc.add(
               CountSyncedTxs(
                 driveId: driveId,
@@ -265,11 +269,15 @@ class SyncCubit extends Cubit<SyncState> {
       ' ${_lastSync!.difference(_initSync).inMilliseconds}ms to finish',
     );
 
-    _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
+    if (!_promptToSnapshotBloc.isClosed) {
+      _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
+    }
 
     unawaited(_updateContext());
 
-    emit(SyncIdle());
+    if (!isClosed) {
+      emit(SyncIdle());
+    }
   }
 
   Future<void> _updateContext() async {

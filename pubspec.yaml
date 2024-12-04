@@ -19,7 +19,13 @@ script_runner:
   line_length: 80
   scripts:
     - setup: flutter clean && flutter pub get && cd packages/ario_sdk && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs && cd ../../ && flutter pub run build_runner build --delete-conflicting-outputs
+    - setup-fvm: fvm flutter clean && fvm flutter pub get && cd packages/ario_sdk && fvm flutter pub get && fvm flutter pub run build_runner build --delete-conflicting-outputs && cd ../../ && fvm flutter pub run build_runner build --delete-conflicting-outputs
     - test: scripts/run_tests.sh
+    - test-integration: scripts/run_integration_tests.sh
+    - test-integration-android: scripts/run_integration_tests_android.sh
+    - test-integration-android-without-build: scripts/run_integration_tsts_android_without_build.sh
+    - test-integration-fvm: scripts/run_integration_tests_fvm.sh
+    - test-integration-safari: scripts/run_integration_tests_safari.sh
     - check-db: lefthook/database_checker.sh
     - check-flutter: lefthook/version_checker.sh
     - deploy-to-arweave: cd deploy && yarn install --frozen-lockfile --ignore-engines && yarn deploy
@@ -142,6 +148,7 @@ dependencies:
   carousel_slider: ^4.2.1
   dots_indicator: ^3.0.0
   markdown_editor_plus: ^0.2.15
+  sqlite3: ^2.4.3
 
 dependency_overrides:
   stripe_js:
@@ -167,11 +174,10 @@ dependency_overrides:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
       ref: v3.9.0
-
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
-      ref: v1.4.6
+      ref: integration-tests-ardrive
   ardrive_ui:
     path: ./packages/ardrive_ui
 

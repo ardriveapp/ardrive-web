@@ -17,6 +17,10 @@ class GlobalHideBloc extends Bloc<GlobalHideEvent, GlobalHideState> {
         _driveDao = driveDao,
         super(const GlobalHideInitial(userHasHiddenDrive: false)) {
     _userPreferencesRepository.watch().listen((userPreferences) async {
+      if (isClosed) {
+        return;
+      }
+
       if (userPreferences.showHiddenFiles) {
         add(ShowItems(userHasHiddenItems: userPreferences.userHasHiddenDrive));
       } else {

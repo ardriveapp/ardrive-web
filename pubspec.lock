@@ -92,8 +92,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.4.6"
-      resolved-ref: "93bc5bb82e5070fbffd22544d3057e3ccbe5889a"
+      ref: integration-tests-ardrive
+      resolved-ref: "899e5232dfb40f37c085c5ff7e3491512f6fcff6"
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
     version: "1.4.6"
@@ -2102,13 +2102,13 @@ packages:
     source: hosted
     version: "2.5.4"
   sqlite3:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: sqlite3
-      sha256: "1abbeb84bf2b1a10e5e1138c913123c8aa9d83cd64e5f9a0dd847b3c83063202"
+      sha256: b384f598b813b347c5a7e5ffad82cbaff1bec3d1561af267041e66f6f0899295
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.2"
+    version: "2.4.3"
   sqlite3_flutter_libs:
     dependency: "direct main"
     description:

@@ -177,6 +177,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                   builder: (context, driveDetailState) {
                     if (driveDetailState is DriveDetailLoadEmpty) {
                       return NoDrivesPage(
+                        key: const ValueKey('NoDrivesPage'),
                         anonymouslyShowDriveDetail:
                             widget.anonymouslyShowDriveDetail,
                       );

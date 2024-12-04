@@ -152,6 +152,10 @@ class ProfileCubit extends Cubit<ProfileState> {
 
     await _arDriveAuth.refreshBalance();
 
+    if (isClosed) {
+      return;
+    }
+
     emit(profile.copyWith(user: _arDriveAuth.currentUser));
   }
 

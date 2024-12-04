@@ -6,14 +6,14 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
   final SecretKey? fileKey;
   final ARFSFileEntity revision;
   final ArweaveService _arweave;
-  final ArDriveDownloader _arDriveDownloader;
+  final ArDriveFileDownloader _arDriveDownloader;
 
   SharedFileDownloadCubit({
     this.fileKey,
     required this.revision,
     required ArweaveService arweave,
     required ArDriveCrypto crypto,
-    required ArDriveDownloader arDriveDownloader,
+    required ArDriveFileDownloader arDriveDownloader,
   })  : _arweave = arweave,
         _arDriveDownloader = arDriveDownloader,
         super(FileDownloadStarting()) {

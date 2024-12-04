@@ -557,6 +557,7 @@ class ModalAction {
     this.isEnable = true,
     this.customWidth,
     this.customHeight,
+    this.key,
   });
 
   final String title;
@@ -564,6 +565,7 @@ class ModalAction {
   final bool isEnable;
   final double? customWidth;
   final double? customHeight;
+  final Key? key;
 }
 
 Future<void> showAnimatedDialog(
@@ -801,6 +803,7 @@ class ArDriveStandardModalNew extends StatelessWidget {
       children: [
         if (actions.isNotEmpty)
           ArDriveButtonNew(
+            key: actions.first.key,
             maxHeight: actions[0].customHeight ?? 40,
             maxWidth: actions[0].customWidth ?? 100,
             typography: typography,
@@ -814,6 +817,7 @@ class ArDriveStandardModalNew extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(left: 16),
             child: ArDriveButtonNew(
+              key: actions[1].key,
               maxHeight: actions[1].customHeight ?? 40,
               maxWidth: actions[1].customWidth ?? 110,
               variant: actions.length > 2
@@ -829,6 +833,7 @@ class ArDriveStandardModalNew extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(left: 16),
             child: ArDriveButtonNew(
+              key: actions[2].key,
               typography: typography,
               variant: ButtonVariant.primary,
               maxHeight: 40,

@@ -101,6 +101,7 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
           content: SizedBox(
             width: kMediumDialogWidth,
             child: ArDriveTextFieldNew(
+              key: const Key('folderNameTextField'),
               controller: _folderNameController,
               autofocus: true,
               onFieldSubmitted: (value) {

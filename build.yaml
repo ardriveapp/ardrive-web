@@ -1,5 +1,11 @@
 targets:
   $default:
+    sources:
+      - lib/**
+      - pubspec.*
+      - $package$
+        # Allows the code generator to target files outside of the lib folder
+      - integration_test/**.dart
     builders:
       artemis:
         options:

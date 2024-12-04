@@ -97,6 +97,7 @@ class NewButton extends StatelessWidget {
 
     return ScreenTypeLayout.builder(
       mobile: (_) => ArDriveSubmenu(
+        key: const Key('newButton_mobile'),
         onOpen: () {
           PlausibleEventTracker.trackNewButton(
             location: NewButtonLocation.sidebar,
@@ -111,6 +112,7 @@ class NewButton extends StatelessWidget {
             location: NewButtonLocation.sidebar,
           );
         },
+        key: const Key('newButton_desktop'),
         alignmentOffset: offset,
         menuChildren: menuItems,
         child: subMenuChild,

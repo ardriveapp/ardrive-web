@@ -5,6 +5,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/io_utils.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,7 +16,10 @@ void showDownloadWalletModal(BuildContext context) {
     content: BlocProvider<DownloadWalletBloc>(
       create: (_) => DownloadWalletBloc(
         ardriveAuth: context.read<ArDriveAuth>(),
-        ardriveIOUtils: ArDriveIOUtils(),
+        ardriveIOUtils: ArDriveIOUtils(
+          io: context.read<ArDriveIO>(),
+          fileAdapter: IOFileAdapter(),
+        ),
       ),
       child: DownloadWalletModal(),
     ),

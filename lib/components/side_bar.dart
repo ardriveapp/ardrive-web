@@ -453,7 +453,6 @@ class DriveListTile extends StatelessWidget {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return GestureDetector(
-      key: key,
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.only(
@@ -680,6 +679,7 @@ class _Accordion extends StatelessWidget {
                         },
                         isSelected: state.selectedDriveId == d.id,
                         isHidden: d.isHidden,
+                        key: Key('public_drives_${d.id}'),
                       ),
                     )
                     .toList(),
@@ -710,6 +710,7 @@ class _Accordion extends StatelessWidget {
                         },
                         isSelected: state.selectedDriveId == d.id,
                         isHidden: d.isHidden,
+                        key: Key('private_drives_${d.id}'),
                       ),
                     )
                     .toList(),

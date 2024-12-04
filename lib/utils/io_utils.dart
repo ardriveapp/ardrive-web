@@ -10,10 +10,9 @@ class ArDriveIOUtils {
   final IOFileAdapter fileAdapter;
 
   ArDriveIOUtils({
-    ArDriveIO? io,
-    IOFileAdapter? fileAdapter,
-  })  : io = io ?? ArDriveIO(),
-        fileAdapter = fileAdapter ?? IOFileAdapter();
+    required this.io,
+    required this.fileAdapter,
+  });
 
   /// Download the wallet as a json file
   /// Throws an exception if the wallet is an ArConnect wallet

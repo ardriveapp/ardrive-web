@@ -288,6 +288,7 @@ DriveDataItem createMockDriveDataItem(
     dateCreated: dateCreated ?? DateTime.now(),
     index: index,
     isOwner: isOwner,
+    widgetKey: 'widgetKey',
   );
 }
 

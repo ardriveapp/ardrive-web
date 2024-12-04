@@ -2,12 +2,14 @@ import 'package:ardrive/authentication/components/lined_text_divider.dart';
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ImportWalletModal extends StatefulWidget {
   const ImportWalletModal({super.key, required this.loginBloc});
@@ -76,6 +78,7 @@ class _ImportWalletModalState extends State<ImportWalletModal> {
                       fontWeight: ArFontWeight.semiBold)),
               const SizedBox(height: 8),
               ArDriveTextFieldNew(
+                key: const Key('import_wallet_modal_seed_phrase_text_field'),
                 autofocus: true,
                 controller: _seedPhraseController,
                 showObfuscationToggle: true,
@@ -107,10 +110,14 @@ class _ImportWalletModalState extends State<ImportWalletModal> {
                   typography: typography,
                   variant: ButtonVariant.outline,
                   onPressed: () async {
-                    final selectedFile = await ArDriveIO()
+                    final selectedFile = await context
+                        .read<ArDriveIO>()
                         .pickFile(fileSource: FileSource.fileSystem);
+                    logger.d('selectedFile: $selectedFile');
+
                     final wallet = await widget.loginBloc
                         .validateAndReturnWalletFile(selectedFile);
+                    logger.d('wallet: $wallet');
                     if (wallet != null) {
                       navigator.pop();
                       PlausibleEventTracker.trackClickUseKeyfileButton();

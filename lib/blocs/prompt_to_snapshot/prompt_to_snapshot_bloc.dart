@@ -51,6 +51,10 @@ class PromptToSnapshotBloc
     Duration durationBeforePrompting = defaultDurationBeforePrompting,
     int numberOfTxsBeforeSnapshot = defaultNumberOfTxsBeforeSnapshot,
   }) : super(const PromptToSnapshotIdle()) {
+    if (isClosed) {
+      return;
+    }
+
     on<CountSyncedTxs>(_onCountSyncedTxs);
     on<SelectedDrive>(_onDriveSelected);
     on<DriveSnapshotting>(_onDriveSnapshotting);

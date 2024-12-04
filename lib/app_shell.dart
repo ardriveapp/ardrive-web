@@ -112,6 +112,8 @@ class AppShellState extends State<AppShell> {
                                       child: Material(
                                         borderRadius: BorderRadius.circular(8),
                                         child: ProgressDialog(
+                                          key:
+                                              const Key('sync_progress_dialog'),
                                           useNewArDriveUI: true,
                                           progressBar: ProgressBar(
                                             percentage: context
@@ -382,7 +384,9 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
             ],
             const Padding(
               padding: EdgeInsets.only(right: 12.0),
-              child: ProfileCard(),
+              child: ProfileCard(
+                key: Key('profile_card'),
+              ),
             ),
           ],
         ),

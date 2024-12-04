@@ -80,9 +80,10 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
 enum TableSort { asc, desc }
 
 abstract class IndexedItem with EquatableMixin {
-  IndexedItem(this.index);
+  IndexedItem(this.index, this.widgetKey);
 
   final int index;
+  final String widgetKey;
 }
 
 class _ArDriveDataTableState<T extends IndexedItem>
@@ -426,12 +427,9 @@ class _ArDriveDataTableState<T extends IndexedItem>
       backgroundColor:
           ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-      key: widget.key,
       content: Column(
         children: [
-          const SizedBox(
-            height: 28,
-          ),
+          const SizedBox(height: 28),
           Row(
             children: [
               _masterMultiselectCheckBox(),
@@ -856,7 +854,6 @@ class _ArDriveDataTableState<T extends IndexedItem>
           _multiSelectColumn(false, index: index, row: row),
           Flexible(
             child: ArDriveCard(
-              key: ValueKey(row),
               backgroundColor: (!_isMultiSelecting && _selectedItem == row) ||
                       multiselect.selectedItems.contains(row)
                   ? ArDriveTheme.of(context)

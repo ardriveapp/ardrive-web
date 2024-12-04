@@ -56,7 +56,9 @@ class AppTopBar extends StatelessWidget {
             const SizedBox(width: 8),
             const HelpButtonTopBar(),
             const SizedBox(width: 24),
-            const ProfileCard(),
+            const ProfileCard(
+              key: Key('profile_card'),
+            ),
           ],
         ),
       ),

@@ -1,4 +1,4 @@
-import 'package:ardrive_utils/src/app_platform.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class AppInfo {
