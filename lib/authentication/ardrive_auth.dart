@@ -231,16 +231,13 @@ class ArDriveAuthImpl implements ArDriveAuth {
     logger.d('Logging out user');
 
     try {
-      if (_currentUser != null) {
-        await _secureKeyValueStore.remove('password');
-        await _secureKeyValueStore.remove('biometricEnabled');
-        currentUser = null;
-        await _disconnectFromArConnect();
-      }
-
       await _userRepository.deleteUser();
+      await _disconnectFromArConnect();
       await _databaseHelpers.deleteAllTables();
       (await _metadataCache).clear();
+      await _secureKeyValueStore.remove('password');
+      await _secureKeyValueStore.remove('biometricEnabled');
+      currentUser = null;
       _userStreamController.add(null);
     } catch (e, stacktrace) {
       logger.e('Failed to logout user', e, stacktrace);
