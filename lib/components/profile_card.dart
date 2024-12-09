@@ -552,7 +552,7 @@ class _ProfileCardState extends State<ProfileCard> {
     return BlocBuilder<ProfileNameBloc, ProfileNameState>(
       builder: (context, state) {
         final primaryName = state is ProfileNameLoaded
-            ? state.primaryName
+            ? state.primaryNameDetails.primaryName
             : truncateString(walletAddress, offsetStart: 2, offsetEnd: 2);
         double maxWidth = 100;
 
@@ -574,12 +574,47 @@ class _ProfileCardState extends State<ProfileCard> {
           tooltipMessage = primaryName;
         }
 
+        Widget? icon;
+
+        if (state is ProfileNameLoaded) {
+          if (state.primaryNameDetails.logo != null) {
+            icon = ArDriveImage(
+              image: NetworkImage(
+                  'https://arweave.net/${state.primaryNameDetails.logo}'),
+              width: 24,
+              height: 24,
+            );
+          }
+        }
+
+        Widget? content;
+
+        if (icon != null) {
+          content = Row(
+            children: [
+              icon,
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  primaryName,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  style: typography.paragraphLarge(
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+
         return ArDriveTooltip(
           message: tooltipMessage ?? '',
           child: ArDriveButtonNew(
             text: primaryName,
             typography: typography,
             variant: ButtonVariant.outline,
+            content: content,
             maxWidth: maxWidth,
             maxHeight: 40,
             onPressed: () {

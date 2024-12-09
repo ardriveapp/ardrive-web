@@ -9,6 +9,8 @@ class ArDriveImage extends StatelessWidget {
   final Color? color;
   final Animation<double>? opacity;
   final BlendMode? colorBlendMode;
+  final Widget Function(BuildContext, Object, StackTrace?)? errorBuilder;
+
   const ArDriveImage({
     super.key,
     required this.image,
@@ -19,6 +21,7 @@ class ArDriveImage extends StatelessWidget {
     this.color,
     this.opacity,
     this.colorBlendMode,
+    this.errorBuilder,
   });
 
   @override
@@ -31,6 +34,7 @@ class ArDriveImage extends StatelessWidget {
         image: image,
         height: height,
         width: width,
+        imageErrorBuilder: errorBuilder,
       );
     }
     return Image(
@@ -42,6 +46,7 @@ class ArDriveImage extends StatelessWidget {
       filterQuality: FilterQuality.high,
       opacity: opacity,
       colorBlendMode: colorBlendMode,
+      errorBuilder: errorBuilder,
     );
   }
 }

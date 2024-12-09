@@ -9,7 +9,7 @@ window.ario = {
   setAnt,
   getUndernames,
   getARNSRecordsForWallet,
-  getPrimaryName,
+  getPrimaryNameAndLogo,
 };
 
 const io = IO.init({
@@ -159,8 +159,18 @@ async function getProcesses(address) {
   });
 }
 
-async function getPrimaryName(address) {
-  console.log('Fetching primary name for address:', address);
-  const result = await io.getPrimaryName({ address: address });
-  return JSON.stringify(result);
+async function getPrimaryNameAndLogo(address) {
+  const primaryName = await io.getPrimaryName({ address: address });
+  const record = await io.getArNSRecord({ name: primaryName.name }).catch((e) => {
+    console.error('Error fetching ARNS record:', e);
+    return null;
+  });
+  const ant = ANT.init({processId: record.processId});
+  const info = !record ? null : await ant.getInfo().catch((e) => {
+    console.error('Error fetching ANT info:', e);
+    return null;
+  });
+  // antInfo can be null
+  // arnsRecord can be null
+  return JSON.stringify({primaryName: primaryName, antInfo: info, arnsRecord: record });
 }
