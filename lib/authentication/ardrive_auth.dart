@@ -239,6 +239,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
         await _secureKeyValueStore.remove('password');
         await _secureKeyValueStore.remove('biometricEnabled');
       }
+      
       await _databaseHelpers.deleteAllTables();
       currentUser = null;
       _userStreamController.add(null);

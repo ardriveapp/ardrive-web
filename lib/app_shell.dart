@@ -52,6 +52,7 @@ class AppShellState extends State<AppShell> {
           if (_showWalletSwitchDialog) {
             if (isCurrentProfileArConnect) {
               context.read<ArDriveAuth>().isUserLoggedIn().then((isLoggedIn) {
+                context.read<ProfileCubit>().logoutIfWalletMismatch();
                 if (isLoggedIn) {
                   logger.d('Wallet switch detected while logged in'
                       ' to ArConnect. Showing wallet switch dialog.');
