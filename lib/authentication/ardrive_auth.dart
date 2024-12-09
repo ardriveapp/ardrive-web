@@ -232,7 +232,6 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
     try {
       await _userRepository.deleteUser();
-      await _databaseHelpers.deleteAllTables();
 
       if (_currentUser != null) {
         await _disconnectFromArConnect();
@@ -240,7 +239,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
         await _secureKeyValueStore.remove('password');
         await _secureKeyValueStore.remove('biometricEnabled');
       }
-
+      await _databaseHelpers.deleteAllTables();
       currentUser = null;
       _userStreamController.add(null);
     } catch (e, stacktrace) {
