@@ -559,13 +559,22 @@ class _ProfileCardState extends State<ProfileCard> {
         if (state is ProfileNameLoaded) {
           maxWidth = primaryName.length * 15;
 
-          if (maxWidth < 100) {
-            maxWidth = 100;
+          if (maxWidth < 110) {
+            maxWidth = 110;
           }
 
           if (maxWidth > 200) {
             maxWidth = 200;
           }
+        }
+        String truncatedWalletAddress;
+        if (primaryName.length > 20) {
+          truncatedWalletAddress =
+              truncateString(walletAddress, offsetStart: 10, offsetEnd: 10);
+        } else {
+          truncatedWalletAddress = truncateString(walletAddress,
+              offsetStart: primaryName.length ~/ 2,
+              offsetEnd: primaryName.length ~/ 2);
         }
 
         String? tooltipMessage;
@@ -578,33 +587,64 @@ class _ProfileCardState extends State<ProfileCard> {
 
         if (state is ProfileNameLoaded) {
           if (state.primaryNameDetails.logo != null) {
-            icon = ArDriveImage(
-              image: NetworkImage(
-                  'https://arweave.net/${state.primaryNameDetails.logo}'),
-              width: 24,
-              height: 24,
+            icon = ClipOval(
+              child: ArDriveImage(
+                image: NetworkImage(
+                    'https://arweave.net/${state.primaryNameDetails.logo}'),
+                width: 28,
+                height: 28,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return const SizedBox.shrink();
+                },
+              ),
             );
           }
         }
 
         Widget? content;
 
+        final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
         if (icon != null) {
-          content = Row(
-            children: [
-              icon,
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  primaryName,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                  style: typography.paragraphLarge(
-                    fontWeight: ArFontWeight.semiBold,
+          content = SizedBox(
+            height: 46,
+            width: maxWidth,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                icon,
+                Expanded(
+                  child: SizedBox(
+                    height: 46,
+                    width: maxWidth,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          primaryName,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          style: typography.paragraphLarge(
+                            fontWeight: ArFontWeight.semiBold,
+                            color: colorTokens.textHigh,
+                          ),
+                        ),
+                        Text(
+                          truncatedWalletAddress,
+                          overflow: TextOverflow.clip,
+                          maxLines: 1,
+                          style: typography.paragraphSmall(
+                            fontWeight: ArFontWeight.book,
+                            color: colorTokens.textLow,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         }
 
@@ -616,7 +656,7 @@ class _ProfileCardState extends State<ProfileCard> {
             variant: ButtonVariant.outline,
             content: content,
             maxWidth: maxWidth,
-            maxHeight: 40,
+            maxHeight: content != null ? 60 : 46,
             onPressed: () {
               setState(() {
                 _showProfileCard = !_showProfileCard;
