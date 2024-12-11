@@ -587,16 +587,19 @@ class _ProfileCardState extends State<ProfileCard> {
 
         if (state is ProfileNameLoaded) {
           if (state.primaryNameDetails.logo != null) {
-            icon = ClipOval(
-              child: ArDriveImage(
-                image: NetworkImage(
-                    'https://arweave.net/${state.primaryNameDetails.logo}'),
-                width: 28,
-                height: 28,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return const SizedBox.shrink();
-                },
+            icon = Padding(
+              padding: const EdgeInsets.only(right: 4.0),
+              child: ClipOval(
+                child: ArDriveImage(
+                  image: NetworkImage(
+                      'https://arweave.net/${state.primaryNameDetails.logo}'),
+                  width: 28,
+                  height: 28,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const SizedBox.shrink();
+                  },
+                ),
               ),
             );
           }
@@ -617,36 +620,31 @@ class _ProfileCardState extends State<ProfileCard> {
                   icon,
                 ],
                 Expanded(
-                  child: Padding(
-                    padding: icon != null
-                        ? const EdgeInsets.only(left: 8.0)
-                        : const EdgeInsets.all(0),
-                    child: SizedBox(
-                      height: 46,
-                      width: maxWidth,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            primaryName,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                            style: typography.paragraphLarge(
-                              fontWeight: ArFontWeight.semiBold,
-                              color: colorTokens.textHigh,
-                            ),
+                  child: SizedBox(
+                    height: 46,
+                    width: maxWidth,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          primaryName,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          style: typography.paragraphLarge(
+                            fontWeight: ArFontWeight.semiBold,
+                            color: colorTokens.textHigh,
                           ),
-                          Text(
-                            truncatedWalletAddress,
-                            overflow: TextOverflow.clip,
-                            maxLines: 1,
-                            style: typography.paragraphSmall(
-                              fontWeight: ArFontWeight.book,
-                              color: colorTokens.textLow,
-                            ),
+                        ),
+                        Text(
+                          truncatedWalletAddress,
+                          overflow: TextOverflow.clip,
+                          maxLines: 1,
+                          style: typography.paragraphSmall(
+                            fontWeight: ArFontWeight.book,
+                            color: colorTokens.textLow,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
