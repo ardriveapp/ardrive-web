@@ -722,10 +722,21 @@ class ProfileCardHeader extends StatelessWidget {
     if (primaryName.length > 20) {
       return truncateString(walletAddress, offsetStart: 10, offsetEnd: 10);
     }
+    var offsetStart = primaryName.length ~/ 2;
+    var offsetEnd = primaryName.length ~/ 2;
+
+    if (offsetStart < 6) {
+      offsetStart = 3;
+    }
+
+    if (offsetEnd < 6) {
+      offsetEnd = 3;
+    }
+
     return truncateString(
       walletAddress,
-      offsetStart: primaryName.length ~/ 2,
-      offsetEnd: primaryName.length ~/ 2,
+      offsetStart: offsetStart,
+      offsetEnd: offsetEnd,
     );
   }
 
