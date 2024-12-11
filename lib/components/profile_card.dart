@@ -605,7 +605,7 @@ class _ProfileCardState extends State<ProfileCard> {
         Widget? content;
 
         final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-        if (icon != null) {
+        if (state is ProfileNameLoaded) {
           content = SizedBox(
             height: 46,
             width: maxWidth,
@@ -613,33 +613,38 @@ class _ProfileCardState extends State<ProfileCard> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               mainAxisSize: MainAxisSize.max,
               children: [
-                icon,
+                if (icon != null) ...[
+                  icon,
+                ],
                 Expanded(
-                  child: SizedBox(
-                    height: 46,
-                    width: maxWidth,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          primaryName,
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                          style: typography.paragraphLarge(
-                            fontWeight: ArFontWeight.semiBold,
-                            color: colorTokens.textHigh,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 8.0),
+                    child: SizedBox(
+                      height: 46,
+                      width: maxWidth,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            primaryName,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            style: typography.paragraphLarge(
+                              fontWeight: ArFontWeight.semiBold,
+                              color: colorTokens.textHigh,
+                            ),
                           ),
-                        ),
-                        Text(
-                          truncatedWalletAddress,
-                          overflow: TextOverflow.clip,
-                          maxLines: 1,
-                          style: typography.paragraphSmall(
-                            fontWeight: ArFontWeight.book,
-                            color: colorTokens.textLow,
+                          Text(
+                            truncatedWalletAddress,
+                            overflow: TextOverflow.clip,
+                            maxLines: 1,
+                            style: typography.paragraphSmall(
+                              fontWeight: ArFontWeight.book,
+                              color: colorTokens.textLow,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
