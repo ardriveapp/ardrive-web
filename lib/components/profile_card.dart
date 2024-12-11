@@ -618,7 +618,9 @@ class _ProfileCardState extends State<ProfileCard> {
                 ],
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.only(left: 8.0),
+                    padding: icon != null
+                        ? const EdgeInsets.only(left: 8.0)
+                        : const EdgeInsets.all(0),
                     child: SizedBox(
                       height: 46,
                       width: maxWidth,
