@@ -715,7 +715,7 @@ class ProfileCardHeader extends StatelessWidget {
     }
 
     double width = primaryName.length * 15;
-    return width.clamp(110, 200);
+    return width.clamp(110, 220);
   }
 
   String _getTruncatedWalletAddress(String primaryName, String walletAddress) {
