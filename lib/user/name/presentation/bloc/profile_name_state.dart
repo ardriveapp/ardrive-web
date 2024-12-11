@@ -24,15 +24,15 @@ final class ProfileNameLoading extends ProfileNameState {
 }
 
 final class ProfileNameLoaded extends ProfileNameState {
-  final String primaryName;
+  final PrimaryNameDetails primaryNameDetails;
 
-  const ProfileNameLoaded(this.primaryName, this.walletAddress);
+  const ProfileNameLoaded(this.primaryNameDetails, this.walletAddress);
 
   @override
   final String walletAddress;
 
   @override
-  List<Object> get props => [primaryName, walletAddress];
+  List<Object> get props => [primaryNameDetails, walletAddress];
 }
 
 // if fails to load primary name, show current wallet address

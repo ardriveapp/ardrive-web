@@ -13,8 +13,9 @@
 ///
 ///
 ///
-library;
 // ignore_for_file: constant_identifier_names
+
+library;
 
 import 'package:flutter/widgets.dart';
 
@@ -188,6 +189,8 @@ class ArDriveIconsData {
       IconData(0xe850, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData box =
       IconData(0xe851, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData open =
+      IconData(0xe852, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData checked =
       IconData(0xe853, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData advanced_chevron =
@@ -200,6 +203,12 @@ class ArDriveIconsData {
       IconData(0xe858, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData turbo_coin =
       IconData(0xe859, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData question_circle_1 =
+      IconData(0xe85a, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData close =
+      IconData(0xe85b, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData refresh1 =
+      IconData(0xe85c, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData arrow_download =
       IconData(0xe880, fontFamily: _kFontFam, fontPackage: _kFontPkg);
 }
