@@ -275,7 +275,7 @@ class ArDriveIcons {
 
   // refresh
   static ArDriveIcon refresh({double? size, Color? color}) => ArDriveIcon(
-        icon: ArDriveIconsData.refresh,
+        icon: ArDriveIconsData.refresh1,
         size: size,
         color: color,
       );
@@ -347,7 +347,7 @@ class ArDriveIcons {
 
   // help
   static ArDriveIcon question({double? size, Color? color}) => ArDriveIcon(
-        icon: ArDriveIconsData.question_circle,
+        icon: ArDriveIconsData.question_circle_1,
         size: size,
         color: color,
       );
@@ -388,14 +388,14 @@ class ArDriveIcons {
 
   // eye_closed
   static ArDriveIcon eyeClosed({double? size, Color? color}) => ArDriveIcon(
-        icon: ArDriveIconsData.eye_closed,
+        icon: ArDriveIconsData.close,
         size: size,
         color: color,
       );
 
   // eye_open
   static ArDriveIcon eyeOpen({double? size, Color? color}) => ArDriveIcon(
-        icon: ArDriveIconsData.eye_open,
+        icon: ArDriveIconsData.open,
         size: size,
         color: color,
       );
