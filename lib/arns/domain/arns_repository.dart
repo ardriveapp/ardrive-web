@@ -32,7 +32,8 @@ abstract class ARNSRepository {
   Future<void> saveAllFilesWithAssignedNames();
   Future<List<ArnsRecord>> getActiveARNSRecordsForFile(String fileId);
   Future<void> waitForARNSRecordsToUpdate();
-  Future<String> getPrimaryName(String address, {bool update = false});
+  Future<PrimaryNameDetails> getPrimaryName(String address,
+      {bool update = false});
 
   factory ARNSRepository({
     required ArioSDK sdk,
@@ -89,7 +90,7 @@ class _ARNSRepository implements ARNSRepository {
   }
 
   final Map<String, Map<String, ARNSUndername>> _cachedUndernames = {};
-  String? _cachedPrimaryName;
+  PrimaryNameDetails? _cachedPrimaryName;
 
   @override
   Future<void> setUndernamesToFile({
@@ -375,14 +376,15 @@ class _ARNSRepository implements ARNSRepository {
   }
 
   @override
-  Future<String> getPrimaryName(String address, {bool update = false}) async {
+  Future<PrimaryNameDetails> getPrimaryName(String address,
+      {bool update = false}) async {
     logger.d('Getting primary name for address: $address');
 
     if (!update && _cachedPrimaryName != null) {
       return _cachedPrimaryName!;
     }
 
-    final primaryName = await _sdk.getPrimaryName(address);
+    final primaryName = await _sdk.getPrimaryNameDetails(address);
 
     logger.d('Primary name: $primaryName');
 

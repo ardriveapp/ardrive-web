@@ -14,6 +14,7 @@ class HelpButtonTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return HoverWidget(
+      tooltip: appLocalizationsOf(context).help,
       child: ArDriveDropdown(
         anchor: const Aligned(
           follower: Alignment.topRight,
@@ -53,13 +54,7 @@ class HelpButtonTopBar extends StatelessWidget {
             ),
           ),
         ],
-        child: ArDriveIconButton(
-          icon: ArDriveIcons.question(
-            size: 20,
-            color: colorTokens.textMid,
-          ),
-          tooltip: appLocalizationsOf(context).help,
-        ),
+        child: ArDriveIcons.question(color: colorTokens.textMid),
       ),
     );
   }

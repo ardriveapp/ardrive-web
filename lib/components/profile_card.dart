@@ -548,47 +548,12 @@ class _ProfileCardState extends State<ProfileCard> {
   }
 
   Widget _buildProfileCardHeader(BuildContext context, String walletAddress) {
-    final typography = ArDriveTypographyNew.of(context);
-    return BlocBuilder<ProfileNameBloc, ProfileNameState>(
-      builder: (context, state) {
-        final primaryName = state is ProfileNameLoaded
-            ? state.primaryName
-            : truncateString(walletAddress, offsetStart: 2, offsetEnd: 2);
-        double maxWidth = 100;
-
-        if (state is ProfileNameLoaded) {
-          maxWidth = primaryName.length * 15;
-
-          if (maxWidth < 100) {
-            maxWidth = 100;
-          }
-
-          if (maxWidth > 200) {
-            maxWidth = 200;
-          }
-        }
-
-        String? tooltipMessage;
-
-        if (primaryName.length > 20) {
-          tooltipMessage = primaryName;
-        }
-
-        return ArDriveTooltip(
-          message: tooltipMessage ?? '',
-          child: ArDriveButtonNew(
-            text: primaryName,
-            typography: typography,
-            variant: ButtonVariant.outline,
-            maxWidth: maxWidth,
-            maxHeight: 40,
-            onPressed: () {
-              setState(() {
-                _showProfileCard = !_showProfileCard;
-              });
-            },
-          ),
-        );
+    return ProfileCardHeader(
+      walletAddress: walletAddress,
+      onPressed: () {
+        setState(() {
+          _showProfileCard = !_showProfileCard;
+        });
       },
     );
   }
@@ -691,6 +656,152 @@ class _ProfileMenuAccordionItem extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class ProfileCardHeader extends StatelessWidget {
+  final String walletAddress;
+  final VoidCallback onPressed;
+
+  const ProfileCardHeader({
+    super.key,
+    required this.walletAddress,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+
+    return BlocBuilder<ProfileNameBloc, ProfileNameState>(
+      builder: (context, state) {
+        final primaryName = _getPrimaryName(state, walletAddress);
+        final maxWidth = _calculateMaxWidth(primaryName, state);
+        final truncatedWalletAddress =
+            _getTruncatedWalletAddress(primaryName, walletAddress);
+        final tooltipMessage = primaryName.length > 20 ? primaryName : null;
+
+        return ArDriveTooltip(
+          message: tooltipMessage ?? '',
+          child: ArDriveButtonNew(
+            text: primaryName,
+            typography: typography,
+            variant: ButtonVariant.outline,
+            content: state is ProfileNameLoaded
+                ? _buildLoadedContent(context, state, primaryName,
+                    truncatedWalletAddress, maxWidth)
+                : null,
+            maxWidth: maxWidth,
+            maxHeight: state is ProfileNameLoaded ? 60 : 46,
+            onPressed: onPressed,
+          ),
+        );
+      },
+    );
+  }
+
+  String _getPrimaryName(ProfileNameState state, String walletAddress) {
+    if (state is ProfileNameLoaded) {
+      return state.primaryNameDetails.primaryName;
+    }
+    return truncateString(walletAddress, offsetStart: 2, offsetEnd: 2);
+  }
+
+  double _calculateMaxWidth(String primaryName, ProfileNameState state) {
+    if (state is! ProfileNameLoaded) {
+      return 100;
+    }
+
+    double width = primaryName.length * 15;
+    return width.clamp(110, 220);
+  }
+
+  String _getTruncatedWalletAddress(String primaryName, String walletAddress) {
+    if (primaryName.length > 20) {
+      return truncateString(walletAddress, offsetStart: 10, offsetEnd: 10);
+    }
+    return truncateString(
+      walletAddress,
+      offsetStart: primaryName.length ~/ 2,
+      offsetEnd: primaryName.length ~/ 2,
+    );
+  }
+
+  Widget? _buildProfileIcon(ProfileNameLoaded state) {
+    if (state.primaryNameDetails.logo == null) {
+      return null;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 8.0),
+      child: ClipOval(
+        child: ArDriveImage(
+          image: NetworkImage(
+            'https://arweave.net/${state.primaryNameDetails.logo}',
+          ),
+          width: 28,
+          height: 28,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadedContent(
+    BuildContext context,
+    ProfileNameLoaded state,
+    String primaryName,
+    String truncatedWalletAddress,
+    double maxWidth,
+  ) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final icon = _buildProfileIcon(state);
+
+    return SizedBox(
+      height: 46,
+      width: maxWidth,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          if (icon != null) icon,
+          Expanded(
+            child: SizedBox(
+              height: 46,
+              width: maxWidth,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    primaryName,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: typography.paragraphLarge(
+                      fontWeight: ArFontWeight.semiBold,
+                      color: colorTokens.textHigh,
+                    ),
+                  ),
+                  Text(
+                    truncatedWalletAddress,
+                    overflow: TextOverflow.clip,
+                    maxLines: 1,
+                    style: typography.paragraphSmall(
+                      fontWeight: ArFontWeight.book,
+                      color: colorTokens.textLow,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
