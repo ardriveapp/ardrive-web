@@ -735,7 +735,7 @@ class ProfileCardHeader extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(right: 16.0),
+      padding: const EdgeInsets.only(right: 8.0),
       child: ClipOval(
         child: ArDriveImage(
           image: NetworkImage(
