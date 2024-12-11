@@ -35,7 +35,7 @@ void main() {
       build: () {
         when(() =>
                 arnsRepository.getPrimaryName(testWalletAddress, update: false))
-            .thenAnswer((_) async => PrimaryNameDetails(
+            .thenAnswer((_) async => const PrimaryNameDetails(
                   primaryName: testPrimaryName,
                   logo: null,
                 ));
@@ -44,7 +44,7 @@ void main() {
       act: (bloc) => bloc.add(LoadProfileName()),
       expect: () => [
         const ProfileNameLoading(testWalletAddress),
-        ProfileNameLoaded(
+        const ProfileNameLoaded(
           PrimaryNameDetails(
             primaryName: testPrimaryName,
             logo: null,
@@ -59,7 +59,7 @@ void main() {
       build: () {
         when(() =>
                 arnsRepository.getPrimaryName(testWalletAddress, update: true))
-            .thenAnswer((_) async => PrimaryNameDetails(
+            .thenAnswer((_) async => const PrimaryNameDetails(
                   primaryName: testPrimaryName,
                   logo: null,
                 ));
@@ -67,7 +67,7 @@ void main() {
       },
       act: (bloc) => bloc.add(RefreshProfileName()),
       expect: () => [
-        ProfileNameLoaded(
+        const ProfileNameLoaded(
           PrimaryNameDetails(
             primaryName: testPrimaryName,
             logo: null,

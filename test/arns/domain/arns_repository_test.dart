@@ -73,7 +73,7 @@ void main() {
     test('clears cached undernames when user logs out', () async {
       // Setup initial state with cached primary name
       when(() => sdk.getPrimaryNameDetails(testAddress))
-          .thenAnswer((_) async => PrimaryNameDetails(
+          .thenAnswer((_) async => const PrimaryNameDetails(
                 primaryName: testPrimaryName,
                 logo: null,
               ));
@@ -101,20 +101,21 @@ void main() {
         () async {
       // First call to populate cache
       when(() => sdk.getPrimaryNameDetails(testAddress))
-          .thenAnswer((_) async => PrimaryNameDetails(
+          .thenAnswer((_) async => const PrimaryNameDetails(
                 primaryName: testPrimaryName,
                 logo: null,
+                recordId: null,
               ));
 
       final result1 = await arnsRepository.getPrimaryName(testAddress);
-      expect(result1, equals(testPrimaryName));
+      expect(result1, isA<PrimaryNameDetails>());
 
       // Verify SDK was called once
       verify(() => sdk.getPrimaryNameDetails(testAddress)).called(1);
 
       // Second call should use cache
       final result2 = await arnsRepository.getPrimaryName(testAddress);
-      expect(result2, equals(testPrimaryName));
+      expect(result2, isA<PrimaryNameDetails>());
 
       // Verify SDK wasn't called again
       verifyNoMoreInteractions(sdk);
@@ -122,9 +123,10 @@ void main() {
 
     test('bypasses cache when update is true', () async {
       when(() => sdk.getPrimaryNameDetails(testAddress))
-          .thenAnswer((_) async => PrimaryNameDetails(
+          .thenAnswer((_) async => const PrimaryNameDetails(
                 primaryName: testPrimaryName,
                 logo: null,
+                recordId: null,
               ));
 
       // First call to populate cache
@@ -136,7 +138,7 @@ void main() {
         update: true,
       );
 
-      expect(result, equals(testPrimaryName));
+      expect(result, isA<PrimaryNameDetails>());
       // Verify SDK was called twice
       verify(() => sdk.getPrimaryNameDetails(testAddress)).called(2);
     });
