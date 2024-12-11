@@ -43,4 +43,10 @@ class ArioSDKWeb implements ArioSDK {
     // TODO: implement setUndernameWithArConnect
     throw UnimplementedError();
   }
+
+  @override
+  Future<String> getPrimaryName(String address) {
+    // TODO: implement getPrimaryName
+    throw UnimplementedError();
+  }
 }

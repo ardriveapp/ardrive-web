@@ -64,21 +64,26 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
     Function? onStartBundleCreation,
     Function? onFinishBundleCreation,
   }) async {
-    final uploadPreparation = await prepareDataItems(
-      file: file,
-      metadata: metadata,
-      wallet: wallet,
-      driveKey: driveKey,
-      onStartMetadataCreation: onStartMetadataCreation,
-      onFinishMetadataCreation: onFinishMetadataCreation,
-    );
+    List<DataItemFile> dataItemFilesToUse = [];
+    if (dataItemFiles == null) {
+      final uploadPreparation = await prepareDataItems(
+        file: file,
+        metadata: metadata,
+        wallet: wallet,
+        driveKey: driveKey,
+        onStartMetadataCreation: onStartMetadataCreation,
+        onFinishMetadataCreation: onFinishMetadataCreation,
+      );
 
-    dataItemFiles ??= uploadPreparation.dataItemFiles;
+      dataItemFilesToUse = uploadPreparation.dataItemFiles;
+    } else {
+      dataItemFilesToUse = dataItemFiles;
+    }
 
     onStartBundleCreation?.call();
 
     final transactionResult = await createDataBundleTransaction(
-      dataItemFiles: dataItemFiles,
+      dataItemFiles: dataItemFilesToUse,
       wallet: wallet,
       tags: getBundleTags(AppInfoServices(), customBundleTags)
           .map((e) => createTag(e.name, e.value))
@@ -442,6 +447,8 @@ Future<DataItemFile> _generateMetadataDataItem({
     print(StackTrace.current);
     throw l;
   }, (metadataDataItem) {
+    logger.d(
+        'Metadata tx id: on _generateMetadataDataItem ${metadataDataItem.id}');
     metadata.setMetadataTxId = metadataDataItem.id;
     return metadataDataItem;
   });
@@ -520,6 +527,8 @@ Future<DataItemFile> _generateFileMetadataDataItem({
   metadataTaskEither.match((l) {
     throw l;
   }, (metadataDataItem) {
+    logger.d(
+        'Metadata tx id on _generateFileMetadataDataItem: ${metadataDataItem.id}');
     metadata.setMetadataTxId = metadataDataItem.id;
     return metadataDataItem;
   });
@@ -791,6 +800,7 @@ Future<DataItemResult> _getDataItemResult({
   return fileDataItemResult.match((l) {
     throw l;
   }, (r) {
+    logger.d('Data tx id: ${r.id}');
     metadata.updateDataTxId(r.id);
 
     return r;

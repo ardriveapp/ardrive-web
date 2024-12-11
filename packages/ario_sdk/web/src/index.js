@@ -9,13 +9,14 @@ window.ario = {
   setAnt,
   getUndernames,
   getARNSRecordsForWallet,
+  getPrimaryName,
 };
 
 const io = IO.init({
   process: new AOProcess({
     processId: IO_TESTNET_PROCESS_ID,
     ao: connect({
-      CU_URL: 'https://cu.ar-io.dev'
+      CU_URL: 'https://cu.ardrive.io'
     })
   }),
 });
@@ -156,4 +157,10 @@ async function getProcesses(address) {
       pageSize: 10000
     });
   });
+}
+
+async function getPrimaryName(address) {
+  console.log('Fetching primary name for address:', address);
+  const result = await io.getPrimaryName({ address: address });
+  return JSON.stringify(result);
 }
