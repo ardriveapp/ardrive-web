@@ -44,6 +44,13 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
       final primaryName =
           await _arnsRepository.getPrimaryName(walletAddress, update: refresh);
 
+      if (_auth.currentUser.walletAddress != walletAddress) {
+        // A user can load profile name and log out while fetching this request. Then log in again. We should not emit a profile name loaded state in this case.
+        logger.d('User logged out while fetching profile name');
+
+        return;
+      }
+
       emit(ProfileNameLoaded(primaryName, walletAddress));
     } catch (e) {
       if (e is PrimaryNameNotFoundException) {
