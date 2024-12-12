@@ -444,23 +444,22 @@ class ArweaveService {
     required String driveId,
     required bool isPrivate,
   }) async {
-    try {
-      final txId = entityId;
+    final txId = entityId;
 
-      final cachedData = await _getCachedEntityDataFromSnapshot(
-        driveId: driveId,
-        txId: txId,
-        isPrivate: isPrivate,
-      );
+    final cachedData = await _getCachedEntityDataFromSnapshot(
+      driveId: driveId,
+      txId: txId,
+      isPrivate: isPrivate,
+    );
 
-      if (cachedData != null) {
-        return cachedData;
-      }
-
-      return getEntityDataFromNetwork(txId: txId);
-    } catch (e) {
-      return Uint8List(0);
+    if (cachedData != null) {
+      return cachedData;
     }
+
+    return getEntityDataFromNetwork(txId: txId).catchError((e) {
+      logger.e('Failed to get entity data from network', e);
+      return Uint8List(0);
+    });
   }
 
   Future<Uint8List?> _getCachedEntityDataFromSnapshot({
