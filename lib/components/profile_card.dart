@@ -714,8 +714,9 @@ class ProfileCardHeader extends StatelessWidget {
       return 100;
     }
 
-    double width = primaryName.length * 15;
-    return width.clamp(110, 220);
+    double width = primaryName.length * 20;
+
+    return width.clamp(110, 230);
   }
 
   String _getTruncatedWalletAddress(String primaryName, String walletAddress) {
@@ -752,8 +753,8 @@ class ProfileCardHeader extends StatelessWidget {
           image: NetworkImage(
             'https://arweave.net/${state.primaryNameDetails.logo}',
           ),
-          width: 28,
-          height: 28,
+          width: 34,
+          height: 34,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return const SizedBox.shrink();
