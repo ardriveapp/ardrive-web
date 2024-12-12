@@ -774,38 +774,40 @@ class ProfileCardHeader extends StatelessWidget {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final icon = _buildProfileIcon(state);
 
-    return SizedBox(
-      height: 46,
-      width: maxWidth,
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        mainAxisSize: MainAxisSize.max,
+        mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) icon,
-          Expanded(
+          Flexible(
             child: SizedBox(
               height: 46,
-              width: maxWidth,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    primaryName,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    style: typography.paragraphLarge(
-                      fontWeight: ArFontWeight.semiBold,
-                      color: colorTokens.textHigh,
+                  Flexible(
+                    child: Text(
+                      primaryName,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: typography.paragraphLarge(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colorTokens.textHigh,
+                      ),
                     ),
                   ),
-                  Text(
-                    truncatedWalletAddress,
-                    overflow: TextOverflow.clip,
-                    maxLines: 1,
-                    style: typography.paragraphSmall(
-                      fontWeight: ArFontWeight.book,
-                      color: colorTokens.textLow,
+                  Flexible(
+                    child: Text(
+                      truncatedWalletAddress,
+                      overflow: TextOverflow.clip,
+                      maxLines: 1,
+                      style: typography.paragraphSmall(
+                        fontWeight: ArFontWeight.book,
+                        color: colorTokens.textLow,
+                      ),
                     ),
                   ),
                 ],
