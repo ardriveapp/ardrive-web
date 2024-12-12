@@ -456,7 +456,10 @@ class ArweaveService {
       return cachedData;
     }
 
-    return getEntityDataFromNetwork(txId: txId);
+    return getEntityDataFromNetwork(txId: txId).catchError((e) {
+      logger.e('Failed to get entity data from network', e);
+      return Uint8List(0);
+    });
   }
 
   Future<Uint8List?> _getCachedEntityDataFromSnapshot({
