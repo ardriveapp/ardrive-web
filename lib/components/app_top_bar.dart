@@ -149,9 +149,7 @@ class SyncButton extends StatelessWidget {
             ),
           ),
         ],
-        child: ArDriveIcons.refresh(
-          color: colorTokens.textMid,
-        ),
+        child: ArDriveIcons.refresh(color: colorTokens.textMid),
       ),
     );
   }
