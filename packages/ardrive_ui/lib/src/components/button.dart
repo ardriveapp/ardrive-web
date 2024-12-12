@@ -381,9 +381,11 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
     final buttonH = widget.maxHeight ?? buttonDefaultHeight;
 
     if (widget.content != null) {
-      return SizedBox(
-        height: buttonH,
-        width: widget.maxWidth,
+      return ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: widget.maxWidth ?? double.infinity,
+          maxHeight: buttonH,
+        ),
         child: TextButton(
           onPressed: widget.onPressed,
           style: style,

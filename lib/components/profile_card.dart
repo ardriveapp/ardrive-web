@@ -714,18 +714,30 @@ class ProfileCardHeader extends StatelessWidget {
       return 100;
     }
 
-    double width = primaryName.length * 15;
-    return width.clamp(110, 220);
+    double width = primaryName.length * 20;
+
+    return width.clamp(110, 230);
   }
 
   String _getTruncatedWalletAddress(String primaryName, String walletAddress) {
     if (primaryName.length > 20) {
       return truncateString(walletAddress, offsetStart: 10, offsetEnd: 10);
     }
+    var offsetStart = primaryName.length ~/ 2;
+    var offsetEnd = primaryName.length ~/ 2;
+
+    if (offsetStart < 6) {
+      offsetStart = 3;
+    }
+
+    if (offsetEnd < 6) {
+      offsetEnd = 3;
+    }
+
     return truncateString(
       walletAddress,
-      offsetStart: primaryName.length ~/ 2,
-      offsetEnd: primaryName.length ~/ 2,
+      offsetStart: offsetStart,
+      offsetEnd: offsetEnd,
     );
   }
 
@@ -741,8 +753,8 @@ class ProfileCardHeader extends StatelessWidget {
           image: NetworkImage(
             'https://arweave.net/${state.primaryNameDetails.logo}',
           ),
-          width: 28,
-          height: 28,
+          width: 34,
+          height: 34,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return const SizedBox.shrink();
@@ -763,38 +775,40 @@ class ProfileCardHeader extends StatelessWidget {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final icon = _buildProfileIcon(state);
 
-    return SizedBox(
-      height: 46,
-      width: maxWidth,
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        mainAxisSize: MainAxisSize.max,
+        mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) icon,
-          Expanded(
+          Flexible(
             child: SizedBox(
               height: 46,
-              width: maxWidth,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    primaryName,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    style: typography.paragraphLarge(
-                      fontWeight: ArFontWeight.semiBold,
-                      color: colorTokens.textHigh,
+                  Flexible(
+                    child: Text(
+                      primaryName,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: typography.paragraphLarge(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colorTokens.textHigh,
+                      ),
                     ),
                   ),
-                  Text(
-                    truncatedWalletAddress,
-                    overflow: TextOverflow.clip,
-                    maxLines: 1,
-                    style: typography.paragraphSmall(
-                      fontWeight: ArFontWeight.book,
-                      color: colorTokens.textLow,
+                  Flexible(
+                    child: Text(
+                      truncatedWalletAddress,
+                      overflow: TextOverflow.clip,
+                      maxLines: 1,
+                      style: typography.paragraphSmall(
+                        fontWeight: ArFontWeight.book,
+                        color: colorTokens.textLow,
+                      ),
                     ),
                   ),
                 ],
