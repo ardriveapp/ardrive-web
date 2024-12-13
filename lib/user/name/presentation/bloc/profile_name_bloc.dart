@@ -13,7 +13,7 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
   final ArDriveAuth _auth;
 
   ProfileNameBloc(this._arnsRepository, this._auth)
-      : super(ProfileNameInitial(_auth.currentUser.walletAddress)) {
+      : super(const ProfileNameInitial(null)) {
     on<LoadProfileName>((event, emit) async {
       await _loadProfileName(
         walletAddress: _auth.currentUser.walletAddress,
@@ -28,12 +28,29 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
         emit: emit,
       );
     });
+    on<LoadProfileNameAnonymous>((event, emit) async {
+      emit(ProfileNameLoading(event.walletAddress));
+
+      logger
+          .d('Loading profile name for anonymous user ${event.walletAddress}');
+
+      await _loadProfileName(
+        walletAddress: event.walletAddress,
+        refresh: true,
+        emit: emit,
+        isUserLoggedIn: false,
+      );
+    });
+    on<CleanProfileName>((event, emit) {
+      emit(const ProfileNameInitial(null));
+    });
   }
 
   Future<void> _loadProfileName({
     required String walletAddress,
     required bool refresh,
     required Emitter<ProfileNameState> emit,
+    bool isUserLoggedIn = true,
   }) async {
     try {
       /// if we are not refreshing, we emit a loading state
@@ -44,7 +61,7 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
       final primaryName =
           await _arnsRepository.getPrimaryName(walletAddress, update: refresh);
 
-      if (_auth.currentUser.walletAddress != walletAddress) {
+      if (isUserLoggedIn && _auth.currentUser.walletAddress != walletAddress) {
         // A user can load profile name and log out while fetching this request. Then log in again. We should not emit a profile name loaded state in this case.
         logger.d('User logged out while fetching profile name');
 

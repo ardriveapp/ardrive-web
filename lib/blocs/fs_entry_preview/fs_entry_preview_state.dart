@@ -31,6 +31,13 @@ class FsEntryPreviewImage extends FsEntryPreviewSuccess {
   List<Object> get props => [previewUrl];
 }
 
+class FsEntryPreviewPdf extends FsEntryPreviewSuccess {
+  const FsEntryPreviewPdf({required super.previewUrl});
+
+  @override
+  List<Object> get props => [previewUrl];
+}
+
 class FsEntryPreviewAudio extends FsEntryPreviewSuccess {
   final String filename;
   const FsEntryPreviewAudio(
