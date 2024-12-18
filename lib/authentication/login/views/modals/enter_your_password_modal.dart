@@ -8,6 +8,7 @@ import 'package:ardrive/services/ethereum/provider/ethereum_provider_wallet.dart
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/open_view_block.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -155,7 +156,9 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
               if (state is ProfileNameLoaded) {
                 return ProfileCardHeader(
                   walletAddress: state.walletAddress,
-                  onPressed: () {},
+                  onPressed: () {
+                    openViewBlockWallet(state.walletAddress);
+                  },
                   isExpanded: true,
                   hasLogoutButton: true,
                   logoutTooltip: 'Forget wallet',
@@ -169,7 +172,11 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
 
               return ProfileCardHeader(
                 walletAddress: state.walletAddress ?? '',
-                onPressed: () {},
+                onPressed: () {
+                  if (state.walletAddress != null) {
+                    openViewBlockWallet(state.walletAddress!);
+                  }
+                },
                 isExpanded: true,
                 hasLogoutButton: true,
                 logoutTooltip: 'Forget wallet',
