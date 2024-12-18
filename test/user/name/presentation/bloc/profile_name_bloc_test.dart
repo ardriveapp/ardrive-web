@@ -38,7 +38,7 @@ void main() {
       'emits [ProfileNameLoading, ProfileNameLoaded] when LoadProfileName is successful',
       build: () {
         when(() => arnsRepository.getPrimaryName(testWalletAddress,
-                update: false, getLogo: false))
+                update: false, getLogo: true))
             .thenAnswer((_) async => const PrimaryNameDetails(
                   primaryName: testPrimaryName,
                   logo: null,
