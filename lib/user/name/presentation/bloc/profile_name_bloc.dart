@@ -75,13 +75,17 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
         logger.d('Profile logo tx id: $profileLogoTxId');
       }
 
+      final getLogo = refreshLogo || profileLogoTxId == null;
+
+      logger.d('Getting primary name with getLogo: $getLogo');
+
       var primaryNameDetails = await _arnsRepository.getPrimaryName(
         walletAddress,
         update: refreshName,
-        getLogo: refreshLogo || profileLogoTxId == null,
+        getLogo: getLogo,
       );
 
-      if (refreshLogo && profileLogoTxId != null) {
+      if (!refreshLogo && profileLogoTxId != null) {
         primaryNameDetails = primaryNameDetails.copyWith(logo: profileLogoTxId);
       }
 
