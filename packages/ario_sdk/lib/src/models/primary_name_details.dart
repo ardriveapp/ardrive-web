@@ -13,4 +13,16 @@ class PrimaryNameDetails extends Equatable {
 
   @override
   List<Object?> get props => [primaryName, logo, recordId];
+
+  PrimaryNameDetails copyWith({
+    String? primaryName,
+    String? logo,
+    String? recordId,
+  }) {
+    return PrimaryNameDetails(
+      primaryName: primaryName ?? this.primaryName,
+      logo: logo ?? this.logo,
+      recordId: recordId ?? this.recordId,
+    );
+  }
 }

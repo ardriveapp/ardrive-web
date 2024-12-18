@@ -98,8 +98,9 @@ class ArioSDKWeb implements ArioSDK {
   }
 
   @override
-  Future<PrimaryNameDetails> getPrimaryNameDetails(String address) async {
-    final primaryName = await _getPrimaryNameImpl(address);
+  Future<PrimaryNameDetails> getPrimaryNameDetails(
+      String address, bool getLogo) async {
+    final primaryName = await _getPrimaryNameImpl(address, getLogo);
 
     if (primaryName.primaryName.contains('Primary name data not found')) {
       throw PrimaryNameNotFoundException(primaryName.primaryName);
@@ -201,10 +202,11 @@ Future<List<ARNSProcessData>> _getARNSRecordsForWalletImpl(
 }
 
 @JS('getPrimaryNameAndLogo')
-external Object _getPrimaryNameAndLogo(String address);
+external Object _getPrimaryNameAndLogo(String address, bool getLogo);
 
-Future<PrimaryNameDetails> _getPrimaryNameImpl(String address) async {
-  final promise = _getPrimaryNameAndLogo(address);
+Future<PrimaryNameDetails> _getPrimaryNameImpl(
+    String address, bool getLogo) async {
+  final promise = _getPrimaryNameAndLogo(address, getLogo);
   final stringified = await promiseToFuture(promise);
 
   final json = jsonDecode(stringified);

@@ -159,17 +159,19 @@ async function getProcesses(address) {
   });
 }
 
-async function getPrimaryNameAndLogo(address) {
+async function getPrimaryNameAndLogo(address, getLogo = true) {
   const primaryName = await io.getPrimaryName({ address: address });
-  const record = await io.getArNSRecord({ name: primaryName.name }).catch((e) => {
-    console.error('Error fetching ARNS record:', e);
-    return null;
-  });
-  const ant = ANT.init({processId: record.processId});
-  const info = !record ? null : await ant.getInfo().catch((e) => {
-    console.error('Error fetching ANT info:', e);
-    return null;
-  });
+  if (getLogo) {
+    const record = await io.getArNSRecord({ name: primaryName.name }).catch((e) => {
+      console.error('Error fetching ARNS record:', e);
+      return null;
+    });
+    const ant = ANT.init({processId: record.processId});
+    const info = !record ? null : await ant.getInfo().catch((e) => {
+      console.error('Error fetching ANT info:', e);
+      return null;
+    });
+  }
   // antInfo can be null
   // arnsRecord can be null
   return JSON.stringify({primaryName: primaryName, antInfo: info, arnsRecord: record });

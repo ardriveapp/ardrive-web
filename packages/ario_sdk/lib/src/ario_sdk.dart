@@ -31,5 +31,8 @@ abstract class ArioSDK {
   /// Get the primary name for the given address
   ///
   /// Throws [PrimaryNameNotFoundException] if the primary name is not found
-  Future<PrimaryNameDetails> getPrimaryNameDetails(String address);
+  Future<PrimaryNameDetails> getPrimaryNameDetails(
+    String address,
+    bool getLogo,
+  );
 }

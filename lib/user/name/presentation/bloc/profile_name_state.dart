@@ -6,7 +6,7 @@ sealed class ProfileNameState extends Equatable {
   abstract final String? walletAddress;
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [walletAddress];
 }
 
 final class ProfileNameInitial extends ProfileNameState {

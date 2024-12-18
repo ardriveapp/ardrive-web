@@ -33,7 +33,7 @@ abstract class ARNSRepository {
   Future<List<ArnsRecord>> getActiveARNSRecordsForFile(String fileId);
   Future<void> waitForARNSRecordsToUpdate();
   Future<PrimaryNameDetails> getPrimaryName(String address,
-      {bool update = false});
+      {bool update = false, bool getLogo = true});
 
   factory ARNSRepository({
     required ArioSDK sdk,
@@ -377,14 +377,14 @@ class _ARNSRepository implements ARNSRepository {
 
   @override
   Future<PrimaryNameDetails> getPrimaryName(String address,
-      {bool update = false}) async {
+      {bool update = false, bool getLogo = true}) async {
     logger.d('Getting primary name for address: $address');
 
     if (!update && _cachedPrimaryName != null) {
       return _cachedPrimaryName!;
     }
 
-    final primaryName = await _sdk.getPrimaryNameDetails(address);
+    final primaryName = await _sdk.getPrimaryNameDetails(address, getLogo);
 
     logger.d('Primary name: $primaryName');
 

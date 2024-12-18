@@ -12,7 +12,6 @@ import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.da
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -275,43 +274,6 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                   _onSubmit();
                 }
               }),
-          if (widget.alreadyLoggedIn) ...[
-            const SizedBox(height: 40),
-            Text.rich(
-              textAlign: TextAlign.center,
-              TextSpan(
-                children: [
-                  TextSpan(
-                    // TODO: create/update localization key
-                    text: appLocalizationsOf(context).forgetWallet,
-                    style: typography.paragraphLarge(
-                        color: colorTokens.textLow,
-                        fontWeight: ArFontWeight.semiBold),
-                    recognizer: TapGestureRecognizer()
-                      ..onTap = () {
-                        Navigator.of(context).pop();
-                        widget.loginBloc.add(const ForgetWallet());
-                        PlausibleEventTracker
-                            .trackClickForgetWalletTextButton();
-                      },
-                  ),
-                ],
-              ),
-            )
-          ],
-          // if (isArioSDKSupportedOnPlatform())
-          //   Padding(
-          //     padding: const EdgeInsets.only(top: 16.0),
-          //     child: ArDriveButtonNew(
-          //       variant: ButtonVariant.outline,
-          //       text: 'Advanced Settings',
-          //       maxHeight: 40,
-          //       typography: typography,
-          //       onPressed: () {
-          //         showGatewaySwitcherModal(context);
-          //       },
-          //     ),
-          //   )
         ],
       ),
     );

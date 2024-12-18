@@ -32,6 +32,7 @@ import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
+import 'package:ardrive/user/name/domain/repository/profile_logo_repository.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
@@ -77,6 +78,7 @@ late ArweaveService arweave;
 late TurboUploadService _turboUpload;
 late PaymentService _turboPayment;
 late Database db;
+late final LocalKeyValueStore localKeyValueStore;
 
 void main() async {
   await runZonedGuarded(() async {
@@ -110,13 +112,13 @@ Future<void> _runWithSentryLogging() async {
 }
 
 Future<void> _initializeServices() async {
-  final localStore = await LocalKeyValueStore.getInstance();
+  localKeyValueStore = await LocalKeyValueStore.getInstance();
 
   await AppInfoServices().loadAppInfo();
 
   configService = ConfigService(
     appFlavors: AppFlavors(EnvFetcher()),
-    configFetcher: ConfigFetcher(localStore: localStore),
+    configFetcher: ConfigFetcher(localStore: localKeyValueStore),
   );
 
   MobileStatusBar.show();
@@ -360,6 +362,7 @@ class AppState extends State<App> {
         BlocProvider(
           create: (context) => ProfileNameBloc(
             context.read<ARNSRepository>(),
+            context.read<ProfileLogoRepository>(),
             context.read<ArDriveAuth>(),
           ),
         ),
@@ -523,6 +526,11 @@ class AppState extends State<App> {
         ),
         RepositoryProvider(
           create: (context) => createUploadRepository(context),
-        )
+        ),
+        RepositoryProvider(
+          create: (context) => ProfileLogoRepository(
+            localKeyValueStore,
+          ),
+        ),
       ];
 }
