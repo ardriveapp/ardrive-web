@@ -1,7 +1,10 @@
 import 'package:ardrive/arns/domain/arns_repository.dart';
+import 'package:ardrive/arns/utils/parse_assigned_names_from_string.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ario_sdk/ario_sdk.dart';
+import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -57,6 +60,37 @@ class UploadManifestOptionsBloc
     on<LoadAnts>((event, emit) async {
       final walletAddress = await arDriveAuth.getWalletAddress();
       _ants = await arnsRepository.getAntRecordsForWallet(walletAddress!);
+
+      for (var file in manifestFiles) {
+        if (file.manifest.assignedNames != null &&
+            file.manifest.assignedNames!.isNotEmpty) {
+          final assignedNames =
+              parseAssignedNamesFromString(file.manifest.assignedNames!);
+          final assignedName = assignedNames!.first;
+
+          final (domain, undername) = splitArNSRecordName(assignedName);
+
+          /// For now, we only support adding one name
+          final antRecord = _ants!.firstWhereOrNull((e) => e.domain == domain);
+
+          if (antRecord != null) {
+            try {
+              final existingUndername = await arnsRepository
+                  .getUndernameByDomainAndName(domain, undername ?? '@');
+
+              add(SelectManifest(manifest: file.manifest));
+              add(LinkManifestToUndername(
+                manifest: file.manifest,
+                antRecord: antRecord,
+                undername: existingUndername,
+              ));
+            } catch (e) {
+              logger.e('Error getting undername.', e);
+            }
+          }
+        }
+      }
+
       emit(_createReadyState());
     });
 
