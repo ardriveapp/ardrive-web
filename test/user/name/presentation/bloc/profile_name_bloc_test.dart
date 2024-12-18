@@ -37,12 +37,14 @@ void main() {
     blocTest<ProfileNameBloc, ProfileNameState>(
       'emits [ProfileNameLoading, ProfileNameLoaded] when LoadProfileName is successful',
       build: () {
-        when(() =>
-                arnsRepository.getPrimaryName(testWalletAddress, update: false))
+        when(() => arnsRepository.getPrimaryName(testWalletAddress,
+                update: false, getLogo: false))
             .thenAnswer((_) async => const PrimaryNameDetails(
                   primaryName: testPrimaryName,
                   logo: null,
                 ));
+        when(() => profileLogoRepository.getProfileLogoTxId(testWalletAddress))
+            .thenAnswer((_) async => null);
         return ProfileNameBloc(arnsRepository, profileLogoRepository, auth);
       },
       act: (bloc) => bloc.add(LoadProfileName()),
