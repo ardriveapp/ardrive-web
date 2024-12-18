@@ -230,7 +230,7 @@ class UploadCubit extends Cubit<UploadState> {
       );
 
       emit(UploadingManifests(
-        manifestFiles: manifestModels,
+      manifestFiles: manifestModels,
         completedCount: completedCount,
       ));
 
@@ -266,7 +266,7 @@ class UploadCubit extends Cubit<UploadState> {
             name: manifestModels[i].undername!.name,
             domain: manifestModels[i].antRecord!.domain,
             record: ARNSRecord(
-              transactionId: manifestFile.dataTxId, 
+              transactionId: manifestFile.dataTxId,
               ttlSeconds: 3600,
             ),
           );

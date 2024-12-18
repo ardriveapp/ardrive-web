@@ -11,10 +11,10 @@ final class RefreshProfileName extends ProfileNameEvent {}
 
 final class LoadProfileName extends ProfileNameEvent {}
 
-final class LoadProfileNameAnonymous extends ProfileNameEvent {
+final class LoadProfileNameBeforeLogin extends ProfileNameEvent {
   final String walletAddress;
 
-  const LoadProfileNameAnonymous(this.walletAddress);
+  const LoadProfileNameBeforeLogin(this.walletAddress);
 }
 
 final class CleanProfileName extends ProfileNameEvent {

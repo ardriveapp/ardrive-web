@@ -57,7 +57,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
 
       context
           .read<ProfileNameBloc>()
-          .add(LoadProfileNameAnonymous(walletAddress));
+          .add(LoadProfileNameBeforeLogin(walletAddress));
     });
   }
 

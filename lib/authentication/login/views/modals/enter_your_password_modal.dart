@@ -80,7 +80,7 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
 
       context
           .read<ProfileNameBloc>()
-          .add(LoadProfileNameAnonymous(walletAddress ?? ''));
+          .add(LoadProfileNameBeforeLogin(walletAddress ?? ''));
     });
   }
 

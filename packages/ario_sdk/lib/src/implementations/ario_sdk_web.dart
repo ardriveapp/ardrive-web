@@ -213,7 +213,7 @@ Future<PrimaryNameDetails> _getPrimaryNameImpl(
 
   return PrimaryNameDetails(
     primaryName: json['primaryName']['name'],
-    logo: json['antInfo']['Logo'],
+    logo: json['antInfo']?['Logo'],
     recordId: json['arnsRecord']?['processId'],
   );
 }

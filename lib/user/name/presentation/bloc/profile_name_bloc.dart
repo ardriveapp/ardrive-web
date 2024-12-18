@@ -22,26 +22,26 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
     on<LoadProfileName>((event, emit) async {
       await _loadProfileName(
         walletAddress: _auth.currentUser.walletAddress,
-        refresh: false,
+        refreshName: false,
+        refreshLogo: false,
         emit: emit,
       );
     });
     on<RefreshProfileName>((event, emit) async {
       await _loadProfileName(
         walletAddress: _auth.currentUser.walletAddress,
-        refresh: true,
+        refreshName: true,
+        refreshLogo: true,
         emit: emit,
       );
     });
-    on<LoadProfileNameAnonymous>((event, emit) async {
+    on<LoadProfileNameBeforeLogin>((event, emit) async {
       emit(ProfileNameLoading(event.walletAddress));
-
-      logger
-          .d('Loading profile name for anonymous user ${event.walletAddress}');
 
       await _loadProfileName(
         walletAddress: event.walletAddress,
-        refresh: true,
+        refreshName: true,
+        refreshLogo: false,
         emit: emit,
         isUserLoggedIn: false,
       );
@@ -53,7 +53,8 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
 
   Future<void> _loadProfileName({
     required String walletAddress,
-    required bool refresh,
+    required bool refreshName,
+    required bool refreshLogo,
     required Emitter<ProfileNameState> emit,
     bool isUserLoggedIn = true,
   }) async {
@@ -61,24 +62,28 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
       String? profileLogoTxId;
 
       /// if we are not refreshing, we emit a loading state
-      if (!refresh) {
+      if (!refreshName) {
         emit(ProfileNameLoading(walletAddress));
       }
 
-      if (refresh && !isUserLoggedIn) {
+      if (!refreshLogo) {
+        logger.d('Getting profile logo tx id from cache');
+
         profileLogoTxId =
             await _profileLogoRepository.getProfileLogoTxId(walletAddress);
+
+        logger.d('Profile logo tx id: $profileLogoTxId');
       }
 
       var primaryNameDetails = await _arnsRepository.getPrimaryName(
         walletAddress,
-        update: refresh,
-        getLogo: profileLogoTxId == null,
+        update: refreshName,
+        getLogo: refreshLogo,
       );
 
-      primaryNameDetails = primaryNameDetails.copyWith(
-        logo: profileLogoTxId == null ? primaryNameDetails.logo : null,
-      );
+      if (refreshLogo && profileLogoTxId != null) {
+        primaryNameDetails = primaryNameDetails.copyWith(logo: profileLogoTxId);
+      }
 
       if (isUserLoggedIn && _auth.currentUser.walletAddress != walletAddress) {
         // A user can load profile name and log out while fetching this request. Then log in again. We should not emit a profile name loaded state in this case.
