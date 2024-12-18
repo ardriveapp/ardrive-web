@@ -161,13 +161,15 @@ async function getProcesses(address) {
 
 async function getPrimaryNameAndLogo(address, getLogo = true) {
   const primaryName = await io.getPrimaryName({ address: address });
+  var info;
+  var record;
   if (getLogo) {
-    const record = await io.getArNSRecord({ name: primaryName.name }).catch((e) => {
+    record = await io.getArNSRecord({ name: primaryName.name }).catch((e) => {
       console.error('Error fetching ARNS record:', e);
       return null;
     });
     const ant = ANT.init({processId: record.processId});
-    const info = !record ? null : await ant.getInfo().catch((e) => {
+    info = !record ? null : await ant.getInfo().catch((e) => {
       console.error('Error fetching ANT info:', e);
       return null;
     });
