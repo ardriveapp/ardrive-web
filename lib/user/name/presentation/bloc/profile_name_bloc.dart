@@ -78,7 +78,7 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
       var primaryNameDetails = await _arnsRepository.getPrimaryName(
         walletAddress,
         update: refreshName,
-        getLogo: refreshLogo,
+        getLogo: refreshLogo || profileLogoTxId == null,
       );
 
       if (refreshLogo && profileLogoTxId != null) {
