@@ -72,7 +72,7 @@ void main() {
 
     test('clears cached undernames when user logs out', () async {
       // Setup initial state with cached primary name
-      when(() => sdk.getPrimaryNameDetails(testAddress))
+      when(() => sdk.getPrimaryNameDetails(testAddress, true))
           .thenAnswer((_) async => const PrimaryNameDetails(
                 primaryName: testPrimaryName,
                 logo: null,
@@ -82,7 +82,7 @@ void main() {
       await arnsRepository.getPrimaryName(testAddress);
 
       // Verify first call works and caches
-      verify(() => sdk.getPrimaryNameDetails(testAddress)).called(1);
+      verify(() => sdk.getPrimaryNameDetails(testAddress, true)).called(1);
 
       // Simulate user logout
       authStateController.add(null);
@@ -94,13 +94,13 @@ void main() {
       await arnsRepository.getPrimaryName(testAddress);
 
       // Verify SDK was called again after cache clear
-      verify(() => sdk.getPrimaryNameDetails(testAddress)).called(1);
+      verify(() => sdk.getPrimaryNameDetails(testAddress, true)).called(1);
     });
 
     test('returns cached primary name when available and update is false',
         () async {
       // First call to populate cache
-      when(() => sdk.getPrimaryNameDetails(testAddress))
+      when(() => sdk.getPrimaryNameDetails(testAddress, true))
           .thenAnswer((_) async => const PrimaryNameDetails(
                 primaryName: testPrimaryName,
                 logo: null,
@@ -111,7 +111,7 @@ void main() {
       expect(result1, isA<PrimaryNameDetails>());
 
       // Verify SDK was called once
-      verify(() => sdk.getPrimaryNameDetails(testAddress)).called(1);
+      verify(() => sdk.getPrimaryNameDetails(testAddress, true)).called(1);
 
       // Second call should use cache
       final result2 = await arnsRepository.getPrimaryName(testAddress);
@@ -122,7 +122,7 @@ void main() {
     });
 
     test('bypasses cache when update is true', () async {
-      when(() => sdk.getPrimaryNameDetails(testAddress))
+      when(() => sdk.getPrimaryNameDetails(testAddress, true))
           .thenAnswer((_) async => const PrimaryNameDetails(
                 primaryName: testPrimaryName,
                 logo: null,
@@ -140,11 +140,11 @@ void main() {
 
       expect(result, isA<PrimaryNameDetails>());
       // Verify SDK was called twice
-      verify(() => sdk.getPrimaryNameDetails(testAddress)).called(2);
+      verify(() => sdk.getPrimaryNameDetails(testAddress, true)).called(2);
     });
 
     test('throws exception when SDK call fails', () async {
-      when(() => sdk.getPrimaryNameDetails(testAddress))
+      when(() => sdk.getPrimaryNameDetails(testAddress, true))
           .thenThrow(Exception('Failed to get primary name'));
 
       expect(

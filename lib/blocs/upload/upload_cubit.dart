@@ -230,7 +230,7 @@ class UploadCubit extends Cubit<UploadState> {
       );
 
       emit(UploadingManifests(
-        manifestFiles: manifestModels,
+      manifestFiles: manifestModels,
         completedCount: completedCount,
       ));
 

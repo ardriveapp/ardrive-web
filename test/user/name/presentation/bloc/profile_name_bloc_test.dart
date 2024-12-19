@@ -1,5 +1,6 @@
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/user/name/domain/repository/profile_logo_repository.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ario_sdk/ario_sdk.dart';
@@ -13,10 +14,13 @@ class MockArDriveAuth extends Mock implements ArDriveAuth {}
 
 class MockCurrentUser extends Mock implements User {}
 
+class MockProfileLogoRepository extends Mock implements ProfileLogoRepository {}
+
 void main() {
   late MockARNSRepository arnsRepository;
   late MockArDriveAuth auth;
   late MockCurrentUser currentUser;
+  late MockProfileLogoRepository profileLogoRepository;
   const testWalletAddress = '0x123456789';
   const testPrimaryName = 'test.arweave';
 
@@ -24,7 +28,7 @@ void main() {
     arnsRepository = MockARNSRepository();
     auth = MockArDriveAuth();
     currentUser = MockCurrentUser();
-
+    profileLogoRepository = MockProfileLogoRepository();
     when(() => auth.currentUser).thenReturn(currentUser);
     when(() => currentUser.walletAddress).thenReturn(testWalletAddress);
   });
@@ -33,13 +37,15 @@ void main() {
     blocTest<ProfileNameBloc, ProfileNameState>(
       'emits [ProfileNameLoading, ProfileNameLoaded] when LoadProfileName is successful',
       build: () {
-        when(() =>
-                arnsRepository.getPrimaryName(testWalletAddress, update: false))
+        when(() => arnsRepository.getPrimaryName(testWalletAddress,
+                update: false, getLogo: true))
             .thenAnswer((_) async => const PrimaryNameDetails(
                   primaryName: testPrimaryName,
                   logo: null,
                 ));
-        return ProfileNameBloc(arnsRepository, auth);
+        when(() => profileLogoRepository.getProfileLogoTxId(testWalletAddress))
+            .thenAnswer((_) async => null);
+        return ProfileNameBloc(arnsRepository, profileLogoRepository, auth);
       },
       act: (bloc) => bloc.add(LoadProfileName()),
       expect: () => [
@@ -63,7 +69,7 @@ void main() {
                   primaryName: testPrimaryName,
                   logo: null,
                 ));
-        return ProfileNameBloc(arnsRepository, auth);
+        return ProfileNameBloc(arnsRepository, profileLogoRepository, auth);
       },
       act: (bloc) => bloc.add(RefreshProfileName()),
       expect: () => [
@@ -83,7 +89,7 @@ void main() {
         when(() =>
                 arnsRepository.getPrimaryName(testWalletAddress, update: false))
             .thenThrow(PrimaryNameNotFoundException('Test error'));
-        return ProfileNameBloc(arnsRepository, auth);
+        return ProfileNameBloc(arnsRepository, profileLogoRepository, auth);
       },
       act: (bloc) => bloc.add(LoadProfileName()),
       expect: () => [
@@ -98,7 +104,7 @@ void main() {
         when(() =>
                 arnsRepository.getPrimaryName(testWalletAddress, update: false))
             .thenThrow(Exception('Test error'));
-        return ProfileNameBloc(arnsRepository, auth);
+        return ProfileNameBloc(arnsRepository, profileLogoRepository, auth);
       },
       act: (bloc) => bloc.add(LoadProfileName()),
       expect: () => [

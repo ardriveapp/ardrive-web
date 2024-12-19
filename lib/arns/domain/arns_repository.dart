@@ -32,8 +32,10 @@ abstract class ARNSRepository {
   Future<void> saveAllFilesWithAssignedNames();
   Future<List<ArnsRecord>> getActiveARNSRecordsForFile(String fileId);
   Future<void> waitForARNSRecordsToUpdate();
+  Future<sdk.ARNSUndername> getUndernameByDomainAndName(
+      String domain, String name);
   Future<PrimaryNameDetails> getPrimaryName(String address,
-      {bool update = false});
+      {bool update = false, bool getLogo = true});
 
   factory ARNSRepository({
     required ArioSDK sdk,
@@ -376,15 +378,35 @@ class _ARNSRepository implements ARNSRepository {
   }
 
   @override
+  Future<sdk.ARNSUndername> getUndernameByDomainAndName(
+      String domain, String name) async {
+    if (_cachedUndernames.isEmpty) {
+      await waitForARNSRecordsToUpdate();
+    }
+
+    if (_cachedUndernames[domain] == null) {
+      throw Exception('Domain not cached');
+    }
+
+    final undername = _cachedUndernames[domain]![name];
+
+    if (undername == null) {
+      throw Exception('Undername not cached');
+    }
+
+    return undername;
+  }
+
+  @override
   Future<PrimaryNameDetails> getPrimaryName(String address,
-      {bool update = false}) async {
+      {bool update = false, bool getLogo = true}) async {
     logger.d('Getting primary name for address: $address');
 
     if (!update && _cachedPrimaryName != null) {
       return _cachedPrimaryName!;
     }
 
-    final primaryName = await _sdk.getPrimaryNameDetails(address);
+    final primaryName = await _sdk.getPrimaryNameDetails(address, getLogo);
 
     logger.d('Primary name: $primaryName');
 

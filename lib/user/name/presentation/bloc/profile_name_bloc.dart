@@ -1,5 +1,6 @@
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/user/name/domain/repository/profile_logo_repository.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:equatable/equatable.dart';
@@ -10,48 +11,97 @@ part 'profile_name_state.dart';
 
 class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
   final ARNSRepository _arnsRepository;
+  final ProfileLogoRepository _profileLogoRepository;
   final ArDriveAuth _auth;
 
-  ProfileNameBloc(this._arnsRepository, this._auth)
-      : super(ProfileNameInitial(_auth.currentUser.walletAddress)) {
+  ProfileNameBloc(
+    this._arnsRepository,
+    this._profileLogoRepository,
+    this._auth,
+  ) : super(const ProfileNameInitial(null)) {
     on<LoadProfileName>((event, emit) async {
       await _loadProfileName(
         walletAddress: _auth.currentUser.walletAddress,
-        refresh: false,
+        refreshName: false,
+        refreshLogo: false,
         emit: emit,
       );
     });
     on<RefreshProfileName>((event, emit) async {
       await _loadProfileName(
         walletAddress: _auth.currentUser.walletAddress,
-        refresh: true,
+        refreshName: true,
+        refreshLogo: true,
         emit: emit,
       );
+    });
+    on<LoadProfileNameBeforeLogin>((event, emit) async {
+      emit(ProfileNameLoading(event.walletAddress));
+
+      await _loadProfileName(
+        walletAddress: event.walletAddress,
+        refreshName: true,
+        refreshLogo: false,
+        emit: emit,
+        isUserLoggedIn: false,
+      );
+    });
+    on<CleanProfileName>((event, emit) {
+      emit(const ProfileNameInitial(null));
     });
   }
 
   Future<void> _loadProfileName({
     required String walletAddress,
-    required bool refresh,
+    required bool refreshName,
+    required bool refreshLogo,
     required Emitter<ProfileNameState> emit,
+    bool isUserLoggedIn = true,
   }) async {
     try {
+      String? profileLogoTxId;
+
       /// if we are not refreshing, we emit a loading state
-      if (!refresh) {
+      if (!refreshName) {
         emit(ProfileNameLoading(walletAddress));
       }
 
-      final primaryName =
-          await _arnsRepository.getPrimaryName(walletAddress, update: refresh);
+      if (!refreshLogo) {
+        logger.d('Getting profile logo tx id from cache');
 
-      if (_auth.currentUser.walletAddress != walletAddress) {
+        profileLogoTxId =
+            await _profileLogoRepository.getProfileLogoTxId(walletAddress);
+
+        logger.d('Profile logo tx id: $profileLogoTxId');
+      }
+
+      final getLogo = refreshLogo || profileLogoTxId == null;
+
+      var primaryNameDetails = await _arnsRepository.getPrimaryName(
+        walletAddress,
+        update: refreshName,
+        getLogo: getLogo,
+      );
+
+      if (!refreshLogo && profileLogoTxId != null) {
+        primaryNameDetails = primaryNameDetails.copyWith(logo: profileLogoTxId);
+      }
+
+      if (isUserLoggedIn && _auth.currentUser.walletAddress != walletAddress) {
         // A user can load profile name and log out while fetching this request. Then log in again. We should not emit a profile name loaded state in this case.
         logger.d('User logged out while fetching profile name');
 
         return;
       }
 
-      emit(ProfileNameLoaded(primaryName, walletAddress));
+      if (profileLogoTxId == null && primaryNameDetails.logo != null) {
+        _profileLogoRepository.setProfileLogoTxId(
+          walletAddress,
+          primaryNameDetails.logo!,
+        );
+      }
+
+      emit(ProfileNameLoaded(primaryNameDetails, walletAddress));
     } catch (e) {
       if (e is PrimaryNameNotFoundException) {
         logger.d('Primary name not found for address: $walletAddress');

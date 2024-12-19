@@ -45,7 +45,10 @@ class ArioSDKWeb implements ArioSDK {
   }
 
   @override
-  Future<PrimaryNameDetails> getPrimaryNameDetails(String address) {
+  Future<PrimaryNameDetails> getPrimaryNameDetails(
+    String address,
+    bool getLogo,
+  ) {
     // TODO: implement getPrimaryName
     throw UnimplementedError();
   }
