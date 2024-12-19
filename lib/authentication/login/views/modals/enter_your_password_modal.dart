@@ -196,23 +196,6 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                       fontWeight: ArFontWeight.semiBold),
                 )
               : const SizedBox(),
-          // Row(
-          //     mainAxisAlignment: MainAxisAlignment.center,
-          //     crossAxisAlignment: CrossAxisAlignment.center,
-          //     children: [
-          //       Text(appLocalizationsOf(context).walletAddress,
-          //           style: typography.paragraphNormal(
-          //               color: colorTokens.textLow,
-          //               fontWeight: ArFontWeight.semiBold)),
-          //       const SizedBox(width: 8),
-          //       FutureBuilder(
-          //           future: _getWalletAddress(),
-          //           builder: (context, address) => address.hasData
-          //               ? TruncatedAddressNew(
-          //                   walletAddress: address.data!)
-          //               : const Text(''))
-          //     ],
-          //   ),
           const SizedBox(height: 40),
           Text('Password',
               style: typography.paragraphNormal(
