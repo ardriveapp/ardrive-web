@@ -103,6 +103,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             previewUrl,
           );
           break;
+        case 'pdf':
+          _previewPdf(
+            fileKey != null,
+            selectedItem,
+            previewUrl,
+          );
+          break;
 
         default:
           emit(FsEntryPreviewUnavailable());
@@ -110,6 +117,14 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     } else {
       emit(FsEntryPreviewUnavailable());
     }
+  }
+
+  void _previewPdf(
+    bool isPrivate,
+    FileDataTableItem selectedItem,
+    String previewUrl,
+  ) {
+    emit(FsEntryPreviewUnavailable());
   }
 
   Future<void> _preview() async {

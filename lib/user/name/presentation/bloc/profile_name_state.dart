@@ -3,17 +3,17 @@ part of 'profile_name_bloc.dart';
 sealed class ProfileNameState extends Equatable {
   const ProfileNameState();
 
-  abstract final String walletAddress;
+  abstract final String? walletAddress;
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [walletAddress];
 }
 
 final class ProfileNameInitial extends ProfileNameState {
   const ProfileNameInitial(this.walletAddress);
 
   @override
-  final String walletAddress;
+  final String? walletAddress;
 }
 
 final class ProfileNameLoading extends ProfileNameState {

@@ -19,6 +19,7 @@ import 'package:ardrive/user/balance/user_balance_bloc.dart';
 import 'package:ardrive/user/download_wallet/download_wallet_modal.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/open_url_utils.dart';
 import 'package:ardrive/utils/open_urls.dart';
@@ -664,11 +665,19 @@ class _ProfileMenuAccordionItem extends StatelessWidget {
 class ProfileCardHeader extends StatelessWidget {
   final String walletAddress;
   final VoidCallback onPressed;
+  final bool isExpanded;
+  final bool hasLogoutButton;
+  final Function()? onClickLogout;
+  final String? logoutTooltip;
 
   const ProfileCardHeader({
     super.key,
     required this.walletAddress,
     required this.onPressed,
+    this.isExpanded = false,
+    this.hasLogoutButton = false,
+    this.onClickLogout,
+    this.logoutTooltip,
   });
 
   @override
@@ -677,22 +686,24 @@ class ProfileCardHeader extends StatelessWidget {
 
     return BlocBuilder<ProfileNameBloc, ProfileNameState>(
       builder: (context, state) {
+        if (state.walletAddress == null || state.walletAddress!.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
         final primaryName = _getPrimaryName(state, walletAddress);
         final maxWidth = _calculateMaxWidth(primaryName, state);
         final truncatedWalletAddress =
             _getTruncatedWalletAddress(primaryName, walletAddress);
+        logger.d('Truncated wallet address: $truncatedWalletAddress');
         final tooltipMessage = primaryName.length > 20 ? primaryName : null;
-
         return ArDriveTooltip(
           message: tooltipMessage ?? '',
           child: ArDriveButtonNew(
             text: primaryName,
             typography: typography,
             variant: ButtonVariant.outline,
-            content: state is ProfileNameLoaded
-                ? _buildLoadedContent(context, state, primaryName,
-                    truncatedWalletAddress, maxWidth)
-                : null,
+            content: _buildLoadedContent(
+                context, state, primaryName, truncatedWalletAddress, maxWidth),
             maxWidth: maxWidth,
             maxHeight: state is ProfileNameLoaded ? 60 : 46,
             onPressed: onPressed,
@@ -710,7 +721,7 @@ class ProfileCardHeader extends StatelessWidget {
   }
 
   double _calculateMaxWidth(String primaryName, ProfileNameState state) {
-    if (state is! ProfileNameLoaded) {
+    if (state is! ProfileNameLoaded && !isExpanded) {
       return 100;
     }
 
@@ -720,9 +731,12 @@ class ProfileCardHeader extends StatelessWidget {
   }
 
   String _getTruncatedWalletAddress(String primaryName, String walletAddress) {
-    if (primaryName.length > 20) {
-      return truncateString(walletAddress, offsetStart: 10, offsetEnd: 10);
+    if (primaryName.length > 20 || isExpanded) {
+      // replace the hyphen with a unicode minus to avoid truncation in the middle of the text
+      return truncateString(walletAddress.replaceAll('-', '−'),
+          offsetStart: 12, offsetEnd: 12);
     }
+
     var offsetStart = primaryName.length ~/ 2;
     var offsetEnd = primaryName.length ~/ 2;
 
@@ -766,55 +780,125 @@ class ProfileCardHeader extends StatelessWidget {
 
   Widget _buildLoadedContent(
     BuildContext context,
-    ProfileNameLoaded state,
+    ProfileNameState state,
     String primaryName,
     String truncatedWalletAddress,
     double maxWidth,
   ) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    if (state is! ProfileNameLoaded) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.only(left: 8.0, right: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Text(
+                  isExpanded ? state.walletAddress! : truncatedWalletAddress,
+                  softWrap: true,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  style: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.semiBold,
+                    color:
+                        isExpanded ? colorTokens.textLow : colorTokens.textHigh,
+                  ),
+                ),
+              ),
+              if (hasLogoutButton)
+                Padding(
+                  padding: const EdgeInsets.only(left: 16.0),
+                  child: GestureDetector(
+                    onTap: onClickLogout,
+                    child: ArDriveClickArea(
+                      tooltip: logoutTooltip,
+                      child: ArDriveIcons.closeCircle(
+                        size: 21,
+                        color: colorTokens.iconLow,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final icon = _buildProfileIcon(state);
 
     return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: maxWidth),
+      constraints: isExpanded
+          ? const BoxConstraints(maxWidth: double.infinity)
+          : BoxConstraints(maxWidth: maxWidth),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: isExpanded
+            ? MainAxisAlignment.spaceBetween
+            : MainAxisAlignment.spaceEvenly,
+        mainAxisSize: isExpanded ? MainAxisSize.max : MainAxisSize.min,
         children: [
-          if (icon != null) icon,
           Flexible(
-            child: SizedBox(
-              height: 46,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Flexible(
-                    child: Text(
-                      primaryName,
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                      style: typography.paragraphLarge(
-                        fontWeight: ArFontWeight.semiBold,
-                        color: colorTokens.textHigh,
-                      ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) icon,
+                Flexible(
+                  child: SizedBox(
+                    height: 46,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            primaryName,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            style: typography.paragraphLarge(
+                              fontWeight: ArFontWeight.semiBold,
+                              color: colorTokens.textHigh,
+                            ),
+                          ),
+                        ),
+                        Flexible(
+                          child: Text(
+                            isExpanded
+                                ? state.walletAddress
+                                : truncatedWalletAddress,
+                            overflow: TextOverflow.ellipsis,
+                            softWrap: true,
+                            maxLines: 1,
+                            style: typography.paragraphSmall(
+                              fontWeight: ArFontWeight.book,
+                              color: colorTokens.textLow,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  Flexible(
-                    child: Text(
-                      truncatedWalletAddress,
-                      overflow: TextOverflow.clip,
-                      maxLines: 1,
-                      style: typography.paragraphSmall(
-                        fontWeight: ArFontWeight.book,
-                        color: colorTokens.textLow,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
+          if (hasLogoutButton)
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: GestureDetector(
+                onTap: onClickLogout,
+                child: ArDriveClickArea(
+                  tooltip: logoutTooltip,
+                  child: ArDriveIcons.closeCircle(
+                    size: 21,
+                    color: colorTokens.iconLow,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
