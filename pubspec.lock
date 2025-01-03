@@ -92,11 +92,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.4.6"
-      resolved-ref: "93bc5bb82e5070fbffd22544d3057e3ccbe5889a"
+      ref: "v1.4.7"
+      resolved-ref: "07983a8ae7f3fc529e044f5509d8a0be70b765c0"
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
-    version: "1.4.6"
+    version: "1.4.7"
   ardrive_logger:
     dependency: "direct main"
     description:

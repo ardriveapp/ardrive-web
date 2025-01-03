@@ -1,4 +1,5 @@
 import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
+import 'package:ardrive/gar/presentation/widgets/gar_modal.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
@@ -11,6 +12,7 @@ class ArDriveLoginModal extends StatelessWidget {
     required this.content,
     this.width,
     this.hasCloseButton = true,
+    this.hasSettingsButton = false,
     this.onClose,
     this.padding,
   });
@@ -18,6 +20,7 @@ class ArDriveLoginModal extends StatelessWidget {
   final Widget content;
   final double? width;
   final bool hasCloseButton;
+  final bool hasSettingsButton;
   final Function()? onClose;
   final EdgeInsets? padding;
 
@@ -34,8 +37,8 @@ class ArDriveLoginModal extends StatelessWidget {
     }
 
     final contentPadding = (deviceWidth < TABLET)
-        ? EdgeInsets.fromLTRB(22, hasCloseButton ? 0 : 44, 22, 32)
-        : EdgeInsets.fromLTRB(56, hasCloseButton ? 0 : 44, 56, 64);
+        ? EdgeInsets.fromLTRB(22, hasCloseButton ? 0 : 24, 22, 32)
+        : EdgeInsets.fromLTRB(56, hasCloseButton ? 0 : 24, 56, 64);
 
     return ConstrainedBox(
       constraints: BoxConstraints(
@@ -57,27 +60,45 @@ class ArDriveLoginModal extends StatelessWidget {
                 child: Container(
                   color: colorTokens.containerRed,
                 )),
-            Row(children: [
-              const Spacer(),
-              if (hasCloseButton)
-                Padding(
-                  padding: const EdgeInsets.all(22.0),
-                  child: hasCloseButton
-                      ? ArDriveClickArea(
-                          child: GestureDetector(
-                            onTap: onClose ?? () => Navigator.pop(context),
-                            child: const Align(
-                              alignment: Alignment.centerRight,
-                              child: ArDriveIcon(
-                                icon: ArDriveIconsData.x,
-                                size: 20,
+            Row(
+              children: [
+                const Spacer(),
+                if (hasCloseButton)
+                  Padding(
+                    padding: const EdgeInsets.all(22.0),
+                    child: hasCloseButton
+                        ? ArDriveClickArea(
+                            child: GestureDetector(
+                              onTap: onClose ?? () => Navigator.pop(context),
+                              child: const Align(
+                                alignment: Alignment.centerRight,
+                                child: ArDriveIcon(
+                                  icon: ArDriveIconsData.x,
+                                  size: 20,
+                                ),
                               ),
                             ),
-                          ),
-                        )
-                      : Container(),
-                )
-            ]),
+                          )
+                        : Container(),
+                  ),
+                if (!hasCloseButton && hasSettingsButton)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 22.0, right: 22.0),
+                    child: GestureDetector(
+                      onTap: () {
+                        showGatewaySwitcherModal(context);
+                      },
+                      child: ArDriveClickArea(
+                        tooltip: 'Advanced Settings',
+                        child: Icon(
+                          Icons.settings,
+                          color: colorTokens.iconLow,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             Padding(
               padding: padding ?? contentPadding,
               child: content,

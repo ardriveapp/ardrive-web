@@ -9,13 +9,14 @@ window.ario = {
   setAnt,
   getUndernames,
   getARNSRecordsForWallet,
+  getPrimaryNameAndLogo,
 };
 
 const io = IO.init({
   process: new AOProcess({
     processId: IO_TESTNET_PROCESS_ID,
     ao: connect({
-      CU_URL: 'https://cu.ar-io.dev'
+      CU_URL: 'https://cu.ardrive.io'
     })
   }),
 });
@@ -156,4 +157,24 @@ async function getProcesses(address) {
       pageSize: 10000
     });
   });
+}
+
+async function getPrimaryNameAndLogo(address, getLogo = true) {
+  const primaryName = await io.getPrimaryName({ address: address });
+  var info;
+  var record;
+  if (getLogo) {
+    record = await io.getArNSRecord({ name: primaryName.name }).catch((e) => {
+      console.error('Error fetching ARNS record:', e);
+      return null;
+    });
+    const ant = ANT.init({processId: record.processId});
+    info = !record ? null : await ant.getInfo().catch((e) => {
+      console.error('Error fetching ANT info:', e);
+      return null;
+    });
+  }
+  // antInfo can be null
+  // arnsRecord can be null
+  return JSON.stringify({primaryName: primaryName, antInfo: info, arnsRecord: record });
 }

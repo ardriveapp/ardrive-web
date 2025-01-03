@@ -270,6 +270,7 @@ class ArDriveButtonNew extends StatefulWidget {
     this.hoverIcon,
     this.isDisabled = false,
     this.customContent,
+    this.content,
   });
 
   final String text;
@@ -282,6 +283,7 @@ class ArDriveButtonNew extends StatefulWidget {
   final double? maxWidth;
   final double borderRadius;
   final bool isDisabled;
+  final Widget? content;
 
   /// An optional icon to display to the left of the button text.
   /// Only applies to primary and secondary buttons.
@@ -367,48 +369,79 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
     final text = Text(widget.text,
         textAlign: TextAlign.center,
         style: widget.fontStyle ??
-            typography.paragraphLarge(
-                color: foregroundColor, fontWeight: ArFontWeight.semiBold));
+            typography
+                .paragraphLarge(
+                  color: foregroundColor,
+                  fontWeight: ArFontWeight.semiBold,
+                )
+                .copyWith(
+                  overflow: TextOverflow.ellipsis,
+                ));
 
     final buttonH = widget.maxHeight ?? buttonDefaultHeight;
+
+    if (widget.content != null) {
+      return ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: widget.maxWidth ?? double.infinity,
+          maxHeight: buttonH,
+        ),
+        child: TextButton(
+          onPressed: widget.onPressed,
+          style: style,
+          child: widget.content!,
+        ),
+      );
+    }
 
     return SizedBox(
         height: buttonH,
         width: widget.maxWidth,
         child: Stack(fit: StackFit.expand, children: [
-          TextButton(
-              onPressed: widget.isDisabled ? null : widget.onPressed,
-              onHover: widget.hoverIcon == null || isMobile(context)
-                  ? null
-                  : (hovering) {
-                      setState(() {
-                        offsetY = hovering ? -1 : 0;
-                      });
-                    },
-              style: style,
-              child: widget.hoverIcon == null || isMobile(context)
-                  ? isMobile(context) && buttonH < 45
-                      ? Transform.translate(
-                          offset: const Offset(0, -2), child: text)
-                      : text
-                  : Stack(
-                      fit: StackFit.expand,
-                      alignment: Alignment.center,
-                      children: [
-                        AnimatedPositioned(
-                            // FIXME: this is a hack to make the text align properly
-                            // and will need to be updated for different typography
-                            top: 12 + offsetY * buttonH,
-                            duration: const Duration(milliseconds: 100),
-                            child: SizedBox(height: buttonH, child: text)),
-                        if (widget.hoverIcon != null)
-                          AnimatedSlide(
-                            offset: Offset(0, offsetY + 1),
-                            duration: const Duration(milliseconds: 100),
-                            child: widget.hoverIcon!,
-                          )
-                      ],
-                    )),
+          Padding(
+            padding: EdgeInsets.only(
+                left: widget.icon != null ? 24 : 0,
+                right: widget.icon != null ? 24 : 0),
+            child: TextButton(
+                onPressed: widget.isDisabled ? null : widget.onPressed,
+                onHover: widget.hoverIcon == null || isMobile(context)
+                    ? null
+                    : (hovering) {
+                        setState(() {
+                          offsetY = hovering ? -1 : 0;
+                        });
+                      },
+                style: style,
+                child: widget.hoverIcon == null || isMobile(context)
+                    ? isMobile(context) && buttonH < 45
+                        ? Transform.translate(
+                            offset: const Offset(0, -2), child: text)
+                        : text
+                    : Stack(
+                        fit: StackFit.expand,
+                        alignment: Alignment.center,
+                        children: [
+                          AnimatedPositioned(
+                              // FIXME: this is a hack to make the text align properly
+                              // and will need to be updated for different typography
+                              top: 12 + offsetY * buttonH,
+                              duration: const Duration(milliseconds: 100),
+                              child: SizedBox(height: buttonH, child: text)),
+                          if (widget.hoverIcon != null)
+                            AnimatedSlide(
+                              offset: Offset(0, offsetY + 1),
+                              duration: const Duration(milliseconds: 100),
+                              child: widget.hoverIcon!,
+                            )
+                        ],
+                      )),
+          ),
+          if (widget.icon != null)
+            Container(
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.only(left: 32),
+              child: widget.icon!,
+            ),
           if (widget.rightIcon != null)
             Container(
               alignment: Alignment.centerRight,

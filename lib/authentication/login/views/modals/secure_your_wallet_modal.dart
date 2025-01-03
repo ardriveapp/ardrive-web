@@ -1,9 +1,14 @@
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/views/modals/common.dart';
+import 'package:ardrive/authentication/login/views/modals/enter_your_password_modal.dart';
+import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider_wallet.dart';
+import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/open_view_block.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -47,6 +52,14 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
     PlausibleEventTracker.trackPageview(
       page: PlausiblePageView.createAndConfirmPasswordPage,
     );
+
+    widget.wallet.getAddress().then((walletAddress) {
+      logger.d('Loading profile name for anonymous user $walletAddress');
+
+      context
+          .read<ProfileNameBloc>()
+          .add(LoadProfileNameBeforeLogin(walletAddress));
+    });
   }
 
   @override
@@ -96,7 +109,46 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                   style: typography.paragraphNormal(
                       color: colorTokens.textLow,
                       fontWeight: ArFontWeight.semiBold)),
-              const SizedBox(height: 40),
+              const SizedBox(height: 32),
+              if (!widget.showTutorials)
+                BlocBuilder<ProfileNameBloc, ProfileNameState>(
+                  builder: (context, state) {
+                    if (state is ProfileNameLoaded) {
+                      return ProfileCardHeader(
+                        walletAddress: state.walletAddress,
+                        onPressed: () {
+                          openViewBlockWallet(state.walletAddress);
+                        },
+                        isExpanded: true,
+                        hasLogoutButton: true,
+                        logoutTooltip: 'Forget wallet',
+                        onClickLogout: () {
+                          showArDriveDialog(context,
+                              content: ForgetWalletDialog(
+                                  loginBloc: widget.loginBloc));
+                        },
+                      );
+                    }
+
+                    return ProfileCardHeader(
+                      walletAddress: state.walletAddress ?? '',
+                      onPressed: () {
+                        if (state.walletAddress != null) {
+                          openViewBlockWallet(state.walletAddress!);
+                        }
+                      },
+                      isExpanded: true,
+                      hasLogoutButton: true,
+                      logoutTooltip: 'Forget wallet',
+                      onClickLogout: () {
+                        showArDriveDialog(context,
+                            content: ForgetWalletDialog(
+                                loginBloc: widget.loginBloc));
+                      },
+                    );
+                  },
+                ),
+              const SizedBox(height: 32),
               Text('Password',
                   style: typography.paragraphNormal(
                       color: colorTokens.textLow,

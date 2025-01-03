@@ -32,6 +32,8 @@ import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
+import 'package:ardrive/user/name/domain/repository/profile_logo_repository.dart';
+import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
@@ -75,6 +77,8 @@ late ConfigService configService;
 late ArweaveService arweave;
 late TurboUploadService _turboUpload;
 late PaymentService _turboPayment;
+late Database db;
+late final LocalKeyValueStore localKeyValueStore;
 
 void main() async {
   await runZonedGuarded(() async {
@@ -108,13 +112,13 @@ Future<void> _runWithSentryLogging() async {
 }
 
 Future<void> _initializeServices() async {
-  final localStore = await LocalKeyValueStore.getInstance();
+  localKeyValueStore = await LocalKeyValueStore.getInstance();
 
   await AppInfoServices().loadAppInfo();
 
   configService = ConfigService(
     appFlavors: AppFlavors(EnvFetcher()),
-    configFetcher: ConfigFetcher(localStore: localStore),
+    configFetcher: ConfigFetcher(localStore: localKeyValueStore),
   );
 
   MobileStatusBar.show();
@@ -129,11 +133,14 @@ Future<void> _initializeServices() async {
 
   final config = configService.config;
 
+  db = Database();
+
   arweave = ArweaveService(
     Arweave(
       gatewayUrl: Uri.parse(config.defaultArweaveGatewayForDataRequest.url),
     ),
     ArDriveCrypto(),
+    db.driveDao,
     configService,
   );
   _turboUpload = config.useTurboUpload
@@ -352,6 +359,13 @@ class AppState extends State<App> {
           ),
         ),
         BlocProvider<AppBannerBloc>(create: (context) => AppBannerBloc()),
+        BlocProvider(
+          create: (context) => ProfileNameBloc(
+            context.read<ARNSRepository>(),
+            context.read<ProfileLogoRepository>(),
+            context.read<ArDriveAuth>(),
+          ),
+        ),
       ];
 
   List<SingleChildWidget> get repositoryProviders => [
@@ -395,7 +409,7 @@ class AppState extends State<App> {
             ),
           ),
         ),
-        RepositoryProvider<Database>(create: (_) => Database()),
+        RepositoryProvider<Database>(create: (_) => db),
         RepositoryProvider<ProfileDao>(
             create: (context) => context.read<Database>().profileDao),
         RepositoryProvider<DriveDao>(
@@ -512,6 +526,11 @@ class AppState extends State<App> {
         ),
         RepositoryProvider(
           create: (context) => createUploadRepository(context),
-        )
+        ),
+        RepositoryProvider(
+          create: (context) => ProfileLogoRepository(
+            localKeyValueStore,
+          ),
+        ),
       ];
 }

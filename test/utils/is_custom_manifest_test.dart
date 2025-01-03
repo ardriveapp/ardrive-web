@@ -27,7 +27,7 @@ void main() {
       when(() => mockFile.contentType).thenReturn('application/json');
       when(() => mockFile.openReadStream(any(), any()))
           .thenAnswer((_) => Stream.value(Uint8List.fromList(bytes)));
-
+      when(() => mockFile.length).thenReturn(bytes.length);
       // Act
       final result = await isCustomManifest(mockFile);
 
@@ -45,19 +45,20 @@ void main() {
       when(() => mockFile.contentType).thenReturn('application/json');
       when(() => mockFile.openReadStream(any(), any()))
           .thenAnswer((_) => Stream.value(Uint8List.fromList(bytes)));
+      when(() => mockFile.length).thenReturn(bytes.length);
 
       // Act
       final result = await isCustomManifest(mockFile);
 
       // Assert
       expect(result, false);
-      verify(() => mockFile.openReadStream(0, 100)).called(1);
+      verify(() => mockFile.openReadStream(0, 33)).called(1);
     });
 
     test('returns false when file is not JSON', () async {
       // Arrange
       when(() => mockFile.contentType).thenReturn('text/plain');
-
+      when(() => mockFile.length).thenReturn(0);
       // Act
       final result = await isCustomManifest(mockFile);
 
@@ -71,13 +72,13 @@ void main() {
       when(() => mockFile.contentType).thenReturn('application/json');
       when(() => mockFile.openReadStream(any(), any()))
           .thenAnswer((_) => Stream.value(Uint8List(0)));
-
+      when(() => mockFile.length).thenReturn(0);
       // Act
       final result = await isCustomManifest(mockFile);
 
       // Assert
       expect(result, false);
-      verify(() => mockFile.openReadStream(0, 100)).called(1);
+      verify(() => mockFile.openReadStream(0, 0)).called(1);
     });
   });
 }

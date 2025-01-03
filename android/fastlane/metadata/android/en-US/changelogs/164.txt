@@ -1,0 +1,1 @@
+- Added support for uploading custom Arweave manifest files

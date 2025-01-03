@@ -7,7 +7,6 @@ import 'dart:convert';
 import 'dart:js_util';
 
 import 'package:ario_sdk/ario_sdk.dart';
-import 'package:ario_sdk/src/exceptions.dart';
 import 'package:js/js.dart';
 
 class ArioSDKWeb implements ArioSDK {
@@ -123,6 +122,18 @@ class ArioSDKWeb implements ArioSDK {
 
     return names;
   }
+
+  @override
+  Future<PrimaryNameDetails> getPrimaryNameDetails(
+      String address, bool getLogo) async {
+    final primaryName = await _getPrimaryNameImpl(address, getLogo);
+
+    if (primaryName.primaryName.contains('Primary name data not found')) {
+      throw PrimaryNameNotFoundException(primaryName.primaryName);
+    }
+
+    return primaryName;
+  }
 }
 
 @JS('setARNS')
@@ -214,4 +225,21 @@ Future<List<ARNSProcessData>> _getARNSRecordsForWalletImpl(
   final object = ResponseObject.fromJson(jsonDecode(stringified));
 
   return object.data.values.toList();
+}
+
+@JS('getPrimaryNameAndLogo')
+external Object _getPrimaryNameAndLogo(String address, bool getLogo);
+
+Future<PrimaryNameDetails> _getPrimaryNameImpl(
+    String address, bool getLogo) async {
+  final promise = _getPrimaryNameAndLogo(address, getLogo);
+  final stringified = await promiseToFuture(promise);
+
+  final json = jsonDecode(stringified);
+
+  return PrimaryNameDetails(
+    primaryName: json['primaryName']['name'],
+    logo: json['antInfo']?['Logo'],
+    recordId: json['arnsRecord']?['processId'],
+  );
 }

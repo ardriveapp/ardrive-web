@@ -1,6 +1,4 @@
 import 'package:ario_sdk/ario_sdk.dart';
-import 'package:ario_sdk/src/models/arns_name_model.dart';
-import 'package:ario_sdk/src/models/response_object.dart';
 
 class ArioSDKWeb implements ArioSDK {
   @override
@@ -48,6 +46,12 @@ class ArioSDKWeb implements ArioSDK {
   @override
   Future<List<ArNSNameModel>> getArNSNames(String address) {
     // TODO: implement getArNSNames
+  }
+  Future<PrimaryNameDetails> getPrimaryNameDetails(
+    String address,
+    bool getLogo,
+  ) {
+    // TODO: implement getPrimaryName
     throw UnimplementedError();
   }
 }

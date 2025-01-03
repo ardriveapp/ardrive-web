@@ -1,4 +1,5 @@
 import 'package:ario_sdk/ario_sdk.dart';
+import 'package:flutter/foundation.dart';
 
 class ResponseObject {
   final Map<String, ARNSProcessData> data;
@@ -6,10 +7,19 @@ class ResponseObject {
   ResponseObject({required this.data});
 
   factory ResponseObject.fromJson(Map<String, dynamic> json) {
-    return ResponseObject(
-      data: json
-          .map((key, value) => MapEntry(key, ARNSProcessData.fromJson(value))),
-    );
+    final processedData = <String, ARNSProcessData>{};
+
+    for (var entry in json.entries) {
+      try {
+        processedData[entry.key] = ARNSProcessData.fromJson(entry.value);
+      } catch (e) {
+        /// Filter out the processData that throws error.
+        /// It will avoid breaking the whole response object because of a single processData.
+        debugPrint('Error processing ARNSProcessData: $e');
+      }
+    }
+
+    return ResponseObject(data: processedData);
   }
 
   Map<String, dynamic> toJson() {

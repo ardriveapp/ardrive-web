@@ -1,7 +1,6 @@
 library ario;
 
 import 'package:ario_sdk/ario_sdk.dart';
-import 'package:ario_sdk/src/models/arns_name_model.dart';
 
 abstract class ArioSDK {
   /// Get the list of available gateways
@@ -29,4 +28,12 @@ abstract class ArioSDK {
   });
 
   Future<List<ArNSNameModel>> getArNSNames(String address);
+
+  /// Get the primary name for the given address
+  ///
+  /// Throws [PrimaryNameNotFoundException] if the primary name is not found
+  Future<PrimaryNameDetails> getPrimaryNameDetails(
+    String address,
+    bool getLogo,
+  );
 }

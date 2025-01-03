@@ -246,7 +246,9 @@ class SyncCubit extends Cubit<SyncState> {
         syncProgressController.add(_syncProgress);
       }
 
-      if (profile is ProfileLoggedIn) _profileCubit.refreshBalance();
+      if (profile is ProfileLoggedIn) {
+        _profileCubit.refreshBalance();
+      }
 
       logger.i('Transaction statuses updated');
     } catch (err, stackTrace) {

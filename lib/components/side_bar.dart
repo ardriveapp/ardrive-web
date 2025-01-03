@@ -518,21 +518,6 @@ class DriveListTile extends StatelessWidget {
   }
 }
 
-class HelpButton extends StatelessWidget {
-  const HelpButton({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return ArDriveIconButton(
-      tooltip: appLocalizationsOf(context).help,
-      icon: ArDriveIcons.question(),
-      onPressed: () {
-        openUrl(url: Resources.helpLink);
-      },
-    );
-  }
-}
-
 Future<void> shareLogs({
   required BuildContext context,
 }) async {

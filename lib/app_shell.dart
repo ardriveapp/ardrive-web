@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/side_bar.dart';
+import 'package:ardrive/components/topbar/help_button.dart';
 import 'package:ardrive/drive_explorer/multi_thumbnail_creation/multi_thumbnail_creation_warn_modal.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
@@ -371,15 +372,13 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
             const GlobalHideToggleButton(),
             const SizedBox(width: 8),
             const SyncButton(),
+            const SizedBox(width: 8),
+            if (AppPlatform.isMobileWeb()) ...[
+              const HelpButtonTopBar(),
+            ],
             const SizedBox(
               width: 24,
             ),
-            if (AppPlatform.isMobileWeb()) ...[
-              const HelpButton(),
-              const SizedBox(
-                width: 24,
-              ),
-            ],
             const Padding(
               padding: EdgeInsets.only(right: 12.0),
               child: ProfileCard(),

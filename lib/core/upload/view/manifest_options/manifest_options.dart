@@ -94,21 +94,20 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
               widget.manifestSelection.undername != null);
       final hasSelectedAnt = widget.manifestSelection.antRecord != null;
 
-      return AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        decoration: BoxDecoration(
-          color: colorTokens.containerL2,
-          borderRadius: BorderRadius.circular(5),
-        ),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        height: isExpanded
-            ? 168
-            : showingName
-                ? 70
-                : 50,
-        child: GestureDetector(
-          onTap: () {},
+      return SingleChildScrollView(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          decoration: BoxDecoration(
+            color: colorTokens.containerL2,
+            borderRadius: BorderRadius.circular(5),
+          ),
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          height: isExpanded
+              ? 168
+              : showingName
+                  ? 70
+                  : 50,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -116,51 +115,47 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
               Row(
                 mainAxisSize: MainAxisSize.max,
                 children: [
+                  ArDriveCheckBox(
+                    key: ValueKey(widget.isSelected),
+                    checked: widget.isSelected,
+                    onChange: (value) {
+                      if (value) {
+                        context
+                            .read<UploadManifestOptionsBloc>()
+                            .add(SelectManifest(manifest: file));
+                      } else {
+                        context
+                            .read<UploadManifestOptionsBloc>()
+                            .add(DeselectManifest(manifest: file));
+                      }
+                    },
+                  ),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Row(
+                      mainAxisSize: MainAxisSize.max,
                       children: [
-                        Flexible(
-                          flex: 2,
-                          child: Row(
-                            children: [
-                              ArDriveIcons.manifest(
-                                  size: 16,
-                                  color: file.isHidden ? hiddenColor : null),
-                              const SizedBox(width: 8),
-                              Text(
-                                file.name,
-                                style: typography.paragraphNormal(
-                                  color: file.isHidden ? hiddenColor : null,
-                                ),
-                              ),
-                              if (file.isHidden) ...[
-                                const SizedBox(width: 8),
-                                Text('(hidden)',
-                                    style: typography.paragraphNormal(
-                                      color: hiddenColor,
-                                    ))
-                              ]
-                            ],
+                        ArDriveIcons.manifest(
+                            size: 16,
+                            color: file.isHidden ? hiddenColor : null),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            file.name,
+                            style: typography.paragraphNormal(
+                              color: file.isHidden ? hiddenColor : null,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        Flexible(
-                          flex: 1,
-                          child: ArDriveCheckBox(
-                            key: ValueKey(widget.isSelected),
-                            checked: widget.isSelected,
-                            onChange: (value) {
-                              if (value) {
-                                context
-                                    .read<UploadManifestOptionsBloc>()
-                                    .add(SelectManifest(manifest: file));
-                              } else {
-                                context
-                                    .read<UploadManifestOptionsBloc>()
-                                    .add(DeselectManifest(manifest: file));
-                              }
-                            },
-                          ),
-                        ),
+                        if (file.isHidden) ...[
+                          const SizedBox(width: 8),
+                          Text('(hidden)',
+                              style: typography.paragraphNormal(
+                                color: hiddenColor,
+                              ))
+                        ]
                       ],
                     ),
                   ),
@@ -172,8 +167,8 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
                       text: !state.arnsNamesLoaded
                           ? 'Loading Names...'
                           : hasSelectedAnt
-                              ? 'Change ArNS'
-                              : 'Add ArNS',
+                              ? 'Change ArNS Name'
+                              : 'Add ArNS Name',
                       typography: typography,
                       isDisabled: isExpanded ||
                           !widget.isSelected ||
@@ -181,7 +176,7 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
                           (state.arnsNamesLoaded && state.ants!.isEmpty),
                       fontStyle: typography.paragraphSmall(),
                       variant: ButtonVariant.primary,
-                      maxWidth: state.arnsNamesLoaded ? 100 : 120,
+                      maxWidth: state.arnsNamesLoaded ? 140 : 160,
                       maxHeight: 30,
                       onPressed: () {
                         context
@@ -190,7 +185,6 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
                       },
                     ),
                   )
-                  // TODO: Add back when we have the right UI for it
                 ],
               ),
               if (showingName) ...[
@@ -201,7 +195,7 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
                       size: 16,
                       color: colorTokens.textHigh,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 18),
                     Flexible(
                       child: Text(
                         getLiteralArNSName(widget.manifestSelection.antRecord!,
@@ -220,8 +214,11 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
                 const SizedBox(height: 8),
                 Expanded(
                   flex: 1,
-                  child: AntSelector(
-                    manifestSelection: widget.manifestSelection,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 34),
+                    child: AntSelector(
+                      manifestSelection: widget.manifestSelection,
+                    ),
                   ),
                 ),
               ],

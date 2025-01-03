@@ -1978,11 +1978,11 @@ class _UploadReadyWidget extends StatelessWidget {
                   ),
                 ),
               ],
-              if (state.isCustomManifest) ...[
+              if (state.shouldShowCustomManifestCheckbox) ...[
                 const SizedBox(height: 8),
                 ArDriveCheckBox(
                   title: 'Convert this file to an Arweave manifest.',
-                  checked: state.isUploadingCustomManifest,
+                  checked: state.uploadFileAsCustomManifest,
                   useNewIcons: true,
                   titleStyle: typography.paragraphNormal(
                     fontWeight: ArFontWeight.semiBold,

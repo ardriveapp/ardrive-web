@@ -8,6 +8,7 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/search/search_modal.dart';
 import 'package:ardrive/search/search_text_field.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
+import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
@@ -26,7 +27,7 @@ class AppTopBar extends StatelessWidget {
       height: 110,
       width: double.maxFinite,
       child: Padding(
-        padding: const EdgeInsets.only(right: 24.0),
+        padding: const EdgeInsets.only(right: 17.0),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.end,
@@ -124,6 +125,7 @@ class SyncButton extends StatelessWidget {
           ArDriveDropdownItem(
             onClick: () {
               context.read<SyncCubit>().startSync(deepSync: false);
+              context.read<ProfileNameBloc>().add(RefreshProfileName());
               PlausibleEventTracker.trackResync(type: ResyncType.resync);
             },
             content: ArDriveDropdownItemTile(
@@ -136,6 +138,7 @@ class SyncButton extends StatelessWidget {
           ArDriveDropdownItem(
             onClick: () {
               context.read<SyncCubit>().startSync(deepSync: true);
+              context.read<ProfileNameBloc>().add(RefreshProfileName());
               PlausibleEventTracker.trackResync(type: ResyncType.deepResync);
             },
             content: ArDriveDropdownItemTile(
@@ -146,9 +149,7 @@ class SyncButton extends StatelessWidget {
             ),
           ),
         ],
-        child: ArDriveIcons.refresh(
-          color: colorTokens.textMid,
-        ),
+        child: ArDriveIcons.refresh(color: colorTokens.textMid),
       ),
     );
   }

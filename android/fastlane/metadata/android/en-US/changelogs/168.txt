@@ -1,0 +1,2 @@
+- Added support for displaying profile's logo in the ArDrive app
+- Fixed 'help' button alignment on mobile view

@@ -12,6 +12,7 @@ This SDK facilitates interaction with the Ario network by providing Dart APIs fo
     - [Creating an Instance](#creating-an-instance)
     - [Fetching Gateways](#fetching-gateways)
     - [Fetching IO Token Balance](#fetching-io-token-balance)
+    - [Fetching Primary Name](#fetching-primary-name)
   - [Models](#models)
   - [Platform Support](#platform-support)
 
@@ -71,6 +72,19 @@ Future<void> fetchIOTokens(String address) async {
   print('IO Token Balance: $balance');
 }
 ```
+
+### Fetching Primary Name
+
+Fetch the primary name for a specific wallet address:
+
+```dart
+Future<void> fetchPrimaryName(String address) async {
+  final primaryName = await arioSDK.getPrimaryName(address);
+  print('Primary Name: $primaryName');
+}
+```
+
+Throws a [PrimaryNameNotFoundException] if the primary name is not found.
 
 ## Models
 

@@ -132,7 +132,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
         child: BlocListener<DrivesCubit, DrivesState>(
           listener: (context, state) {
             if (state is DrivesLoadSuccess) {
-              if (state.userDrives.isNotEmpty) {
+              if (state.userDrives.isNotEmpty ||
+                  state.sharedDrives.isNotEmpty) {
                 final driveDetailState = context.read<DriveDetailCubit>().state;
 
                 if (driveDetailState is DriveDetailLoadSuccess &&
