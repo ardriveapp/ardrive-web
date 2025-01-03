@@ -1,8 +1,8 @@
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ario_sdk/ario_sdk.dart';
-import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 part 'create_undername_event.dart';
 part 'create_undername_state.dart';
@@ -35,6 +35,7 @@ class CreateUndernameBloc
         );
 
         logger.d('Process ID: ${_nameModel.processId}');
+
         await _arnsRepository.setUndernamesToFile(
           undername: undername,
           driveId: driveId,

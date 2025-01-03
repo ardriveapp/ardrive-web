@@ -30,7 +30,7 @@ class CreateUndernameModal extends StatelessWidget {
         fileId,
         transactionId,
       ),
-      child: CreateUndernameView(),
+      child: const CreateUndernameView(),
     );
   }
 }
@@ -44,6 +44,7 @@ class CreateUndernameView extends StatefulWidget {
 
 class _CreateUndernameViewState extends State<CreateUndernameView> {
   final controller = TextEditingController();
+  bool isLoading = false;
 
   @override
   void initState() {
@@ -61,6 +62,9 @@ class _CreateUndernameViewState extends State<CreateUndernameView> {
       content: BlocConsumer<CreateUndernameBloc, CreateUndernameState>(
         listener: (context, state) {
           if (state is CreateUndernameSuccess) {
+            setState(() {
+              isLoading = false;
+            });
             context.read<AssignNameBloc>().add(
                   ShowSuccessModal(
                     undername: state.undername,
@@ -100,8 +104,11 @@ class _CreateUndernameViewState extends State<CreateUndernameView> {
           title: 'Cancel',
         ),
         ModalAction(
-          isEnable: controller.text.isNotEmpty,
+          isEnable: controller.text.isNotEmpty && !isLoading,
           action: () {
+            setState(() {
+              isLoading = true;
+            });
             context
                 .read<CreateUndernameBloc>()
                 .add(CreateNewUndername(controller.text));
