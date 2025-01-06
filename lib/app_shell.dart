@@ -1,3 +1,4 @@
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/components/profile_card.dart';
@@ -46,14 +47,22 @@ class AppShellState extends State<AppShell> {
   @override
   void initState() {
     onArConnectWalletSwitch(() {
+      logger.d('Wallet switch detected');
       context.read<ProfileCubit>().isCurrentProfileArConnect().then(
         (isCurrentProfileArConnect) {
           if (_showWalletSwitchDialog) {
             if (isCurrentProfileArConnect) {
-              showDialog(
-                context: context,
-                builder: (context) => const WalletSwitchDialog(),
-              );
+              context.read<ArDriveAuth>().isUserLoggedIn().then((isLoggedIn) {
+                context.read<ProfileCubit>().logoutIfWalletMismatch();
+                if (isLoggedIn) {
+                  logger.d('Wallet switch detected while logged in'
+                      ' to ArConnect. Showing wallet switch dialog.');
+                  showArDriveDialog(
+                    context,
+                    content: const WalletSwitchDialog(),
+                  );
+                }
+              });
             } else {
               logger.d('Wallet switch detected while not logged in'
                   ' to ArConnect. Ignoring.');

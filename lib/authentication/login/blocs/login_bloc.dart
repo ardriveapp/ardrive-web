@@ -571,6 +571,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     }
 
     onArConnectWalletSwitch(() async {
+      logger.d('Wallet switch detected on LoginBloc');
       final isUserLoggedIng = await _arDriveAuth.isUserLoggedIn();
       if (isUserLoggedIng && !_isArConnectWallet()) {
         logger.d(
