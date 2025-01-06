@@ -160,10 +160,13 @@ class ManifestDataBuilder {
         ): ManifestPath(file.dataTxId, fileId: file.id)
     };
 
+    final fallback =
+        fallbackTxId != null ? ManifestFallback(fallbackTxId) : null;
+
     return ManifestData(
       index,
       paths,
-      fallback: fallbackTxId != null ? ManifestFallback(fallbackTxId) : null,
+      fallback: fallback,
     );
   }
 }

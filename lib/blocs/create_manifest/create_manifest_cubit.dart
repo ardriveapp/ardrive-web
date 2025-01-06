@@ -251,7 +251,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         manifestName: manifestName,
         rootFolderNode: rootFolderNode,
         driveId: _drive.id,
-        fallbackTxId: getFallbackTxId(),
+        fallbackTxId: _getFallbackTxId(),
       );
 
       ARNSUndername? undername = getSelectedUndername();
@@ -267,7 +267,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
           existingManifestFileId: existingManifestFileId,
           assignedName:
               undername != null ? getLiteralARNSRecordName(undername) : null,
-          fallbackTxId: getFallbackTxId(),
+          fallbackTxId: _getFallbackTxId(),
         ),
       );
     } catch (e) {
@@ -378,13 +378,13 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
     emit(
       (state as CreateManifestFolderLoadSuccess).copyWith(
-        fallbackTxId: getFallbackTxId(),
+        fallbackTxId: _getFallbackTxId(),
         enableManifestCreationButton: _getEnableManifestCreationButton(),
       ),
     );
   }
 
-  TxID? getFallbackTxId() {
+  TxID? _getFallbackTxId() {
     if (_fallbackTxId == null || _fallbackTxId!.isEmpty) {
       return null;
     }
@@ -393,9 +393,9 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   }
 
   bool _getEnableManifestCreationButton() {
-    return getFallbackTxId() == null ||
-        getFallbackTxId()!.isEmpty ||
-        isValidArweaveTxId(getFallbackTxId()!);
+    return _getFallbackTxId() == null ||
+        _getFallbackTxId()!.isEmpty ||
+        isValidArweaveTxId(_getFallbackTxId()!);
   }
 
   @override
