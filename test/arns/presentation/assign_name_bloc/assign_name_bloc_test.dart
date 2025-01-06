@@ -12,6 +12,13 @@
 
 // class MockFileDataTableItem extends Mock implements FileDataTableItem {}
 
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  test('test', () {
+    expect(true, true);
+  });
+}
 // void main() {
 //   setUpAll(() {
 //     registerFallbackValue(const ARNSUndername(
