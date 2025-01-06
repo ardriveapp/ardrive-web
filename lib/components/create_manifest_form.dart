@@ -941,7 +941,9 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                 },
               ),
             ),
-            const Divider(),
+            const Divider(
+              height: 24,
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: ArDriveCard(
