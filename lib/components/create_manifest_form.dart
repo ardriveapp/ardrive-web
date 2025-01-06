@@ -902,7 +902,8 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: ArDriveClickArea(
                 child: ArDriveTooltip(
-                  message: 'Fallback TxId is the TxId of the fallback file.',
+                  message:
+                      'The fallback specifies a default content to show if the requested path cannot be found.\nThis is typically used for handling missing pages or errors, like a \'404 Not Found\' page.',
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
