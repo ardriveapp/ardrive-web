@@ -71,6 +71,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
           canUpload: canUpload,
           freeUpload: info.isFreeThanksToTurbo,
           assignedName: (state as CreateManifestUploadReview).assignedName,
+          fallbackTxId: (state as CreateManifestUploadReview).fallbackTxId,
         ),
       );
     }
@@ -139,6 +140,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
             CreateManifestFolderLoadSuccess(
               viewingRootFolder: f.folder.parentFolderId == null,
               viewingFolder: f,
+              enableManifestCreationButton: _getEnableManifestCreationButton(),
             ),
           ),
         );
@@ -249,6 +251,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         manifestName: manifestName,
         rootFolderNode: rootFolderNode,
         driveId: _drive.id,
+        fallbackTxId: getFallbackTxId(),
       );
 
       ARNSUndername? undername = getSelectedUndername();
@@ -264,6 +267,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
           existingManifestFileId: existingManifestFileId,
           assignedName:
               undername != null ? getLiteralARNSRecordName(undername) : null,
+          fallbackTxId: getFallbackTxId(),
         ),
       );
     } catch (e) {
@@ -365,6 +369,33 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         (state as CreateManifestPreparingManifestWithARNS).manifestName;
 
     prepareManifestTx(manifestName: manifestName);
+  }
+
+  TxID? _fallbackTxId;
+
+  void setFallbackTxId(TxID txId) {
+    _fallbackTxId = txId;
+
+    emit(
+      (state as CreateManifestFolderLoadSuccess).copyWith(
+        fallbackTxId: getFallbackTxId(),
+        enableManifestCreationButton: _getEnableManifestCreationButton(),
+      ),
+    );
+  }
+
+  TxID? getFallbackTxId() {
+    if (_fallbackTxId == null || _fallbackTxId!.isEmpty) {
+      return null;
+    }
+
+    return _fallbackTxId;
+  }
+
+  bool _getEnableManifestCreationButton() {
+    return getFallbackTxId() == null ||
+        getFallbackTxId()!.isEmpty ||
+        isValidArweaveTxId(getFallbackTxId()!);
   }
 
   @override

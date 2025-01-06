@@ -36,6 +36,7 @@ abstract class ManifestRepository {
     required String manifestName,
     required FolderNode rootFolderNode,
     required String driveId,
+    String? fallbackTxId,
   });
 
   Future<bool> hasPendingFilesOnTargetFolder({required FolderNode folderNode});
@@ -192,6 +193,7 @@ class ManifestRepositoryImpl implements ManifestRepository {
     required String manifestName,
     required FolderNode rootFolderNode,
     required String driveId,
+    String? fallbackTxId,
   }) async {
     try {
       final folderNode = rootFolderNode.searchForFolder(parentFolder.id) ??
@@ -199,6 +201,7 @@ class ManifestRepositoryImpl implements ManifestRepository {
 
       final arweaveManifest = await _builder.build(
         folderNode: folderNode,
+        fallbackTxId: fallbackTxId,
       );
 
       final manifestFile = await IOFileAdapter().fromData(

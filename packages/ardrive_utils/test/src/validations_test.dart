@@ -87,4 +87,45 @@ void main() {
       expect(isValidUuidFormat(''), isFalse);
     });
   });
+
+  group('isValidArweaveTxId Tests', () {
+    test('should return true for valid Arweave transaction IDs', () {
+      expect(isValidArweaveTxId('mn8q_r4h8i7oZaVDnpusJ6uOGIVH1Ak80ZBhy8sUc7w'),
+          isTrue);
+
+      expect(isValidArweaveTxId('cQU3_wXscrghGlqmbF5ef-iu9tOdFq2Xuq-anLRIAHA'),
+          isTrue);
+      expect(isValidArweaveTxId('2FivxlgSuK9s2GZ0cvAYkQTc0ZrmEZLPhwBmVtY_bVY'),
+          isTrue);
+    });
+
+    test('should return false for invalid length', () {
+      expect(isValidArweaveTxId('abc'), isFalse); // Too short
+      expect(
+          isValidArweaveTxId('_R4bUV8qt7UYsBAGJHmXwKpKP2qJuwWGPOfnQYRXVIw123'),
+          isFalse); // Too long
+      expect(isValidArweaveTxId(''), isFalse); // Empty string
+    });
+
+    test('should return false for invalid characters', () {
+      expect(isValidArweaveTxId('_R4bUV8qt7UYsB@GJHmXwKpKP2qJuwWGPOfnQYRXVIw'),
+          isFalse); // Contains @
+      expect(isValidArweaveTxId('_R4bUV8qt7UYsB#GJHmXwKpKP2qJuwWGPOfnQYRXVIw'),
+          isFalse); // Contains #
+      expect(isValidArweaveTxId('_R4bUV8qt7UYsB GJHmXwKpKP2qJuwWGPOfnQYRXVIw'),
+          isFalse); // Contains space
+    });
+
+    test('should return false for invalid base64url encoding', () {
+      // Contains invalid padding character '='
+      expect(isValidArweaveTxId('_R4bUV8qt7UYsBAGJHmXwKpKP2qJuwWGPOfnQYRXVI='),
+          isFalse);
+      // Contains '/' which is not base64url safe
+      expect(isValidArweaveTxId('_R4bUV8qt7/YsBAGJHmXwKpKP2qJuwWGPOfnQYRXVIw'),
+          isFalse);
+      // Contains '+' which is not base64url safe
+      expect(isValidArweaveTxId('_R4bUV8qt7+YsBAGJHmXwKpKP2qJuwWGPOfnQYRXVIw'),
+          isFalse);
+    });
+  });
 }

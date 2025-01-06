@@ -1,0 +1,2 @@
+- Fixed profile card alignment
+- Fixed an issue where sync gets stuck after failing to fetch a metadata t
