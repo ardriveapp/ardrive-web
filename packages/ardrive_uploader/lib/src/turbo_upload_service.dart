@@ -2,12 +2,14 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:arconnect/arconnect.dart';
 import 'package:ardrive_uploader/src/exceptions.dart';
 import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:dio/dio.dart';
 import 'package:retry/retry.dart';
+import 'package:uuid/uuid.dart';
 
 abstract class TurboUploadService {
   Future<Response> post({
@@ -20,8 +22,9 @@ abstract class TurboUploadService {
   Future<void> cancel();
 }
 
-abstract class TurboUploadServiceBase implements TurboUploadService {
-  TurboUploadServiceBase(this.turboUploadUri);
+abstract class TurboUploadServiceChunkUploadsBase
+    implements TurboUploadService {
+  TurboUploadServiceChunkUploadsBase(this.turboUploadUri);
 
   final Uri turboUploadUri;
   final r = RetryOptions(maxAttempts: 8);
@@ -248,7 +251,7 @@ int _calculateChunkSize({
   }
 }
 
-class TurboUploadServiceMultipart extends TurboUploadServiceBase {
+class TurboUploadServiceMultipart extends TurboUploadServiceChunkUploadsBase {
   TurboUploadServiceMultipart({required Uri turboUploadUri})
       : super(turboUploadUri);
 
@@ -375,85 +378,106 @@ class TurboUploadServiceMultipart extends TurboUploadServiceBase {
   }
 }
 
-class TurboUploadServiceChunked extends TurboUploadServiceBase {
-  TurboUploadServiceChunked({required Uri turboUploadUri})
-      : super(turboUploadUri);
+class TurboUploadServiceNonChunked extends TurboUploadService {
+  TurboUploadServiceNonChunked(this.turboUploadUri) : super();
 
-  final dataItemConfirmationRetryDelay = Duration(seconds: 15);
+  final Uri turboUploadUri;
+  final r = RetryOptions(maxAttempts: 8);
+  final dio = Dio();
+  Timer? onSendProgressTimer;
+  final cancelToken = CancelToken();
+  final TabVisibilitySingleton _tabVisibility = TabVisibilitySingleton();
 
   @override
-  Future<Response> finalizeUpload({
-    required String uploadId,
-    required int dataItemSize,
-    required TxID dataItemId,
+  Future<void> cancel() {
+    onSendProgressTimer?.cancel();
+    cancelToken.cancel();
+    return Future.value();
+  }
+
+  @override
+  Future<Response> post({
+    required DataItemResult dataItem,
+    required Wallet wallet,
+    Function(double p1)? onSendProgress,
+    Map<String, dynamic>? headers,
   }) async {
+    final controller = StreamController<double>();
+
+    controller.add(0);
     try {
-      // In the non-multipart flow, we finalize with POST /$uploadId/-1
-      final finalizeResponse = await r.retry(
-        () => dio.post(
-          '$turboUploadUri/chunks/arweave/$uploadId/-1',
-          options: Options(
-            validateStatus: (status) {
-              // Accept 2xx or 504
-              return status != null &&
-                  ((status >= 200 && status < 300) || status == 504);
-            },
-          ),
-        ),
+      final acceptedStatusCodes = [200, 202, 204];
+
+      final nonce = const Uuid().v4();
+      final publicKey = await safeArConnectAction<String>(
+        _tabVisibility,
+        (_) async {
+          logger.d('Getting public key with safe ArConnect action');
+          return wallet.getOwner();
+        },
+      );
+      final signature = await safeArConnectAction<String>(
+        _tabVisibility,
+        (_) async {
+          logger.d('Signing with safe ArConnect action');
+          return signNonceAndData(
+            nonce: nonce,
+            wallet: wallet,
+          );
+        },
       );
 
-      // If the server replies 504, we need to confirm in a separate loop
-      if (finalizeResponse.statusCode == 504) {
-        return _confirmUpload(uploadId);
+      final headers = {
+        'x-nonce': nonce,
+        'x-signature': signature,
+        'x-public-key': publicKey,
+      };
+
+      final url = '$turboUploadUri/v1/tx';
+      const receiveTimeout = Duration(days: 365);
+      const sendTimeout = Duration(days: 365);
+
+      final response = await dio.post(
+        url,
+        onSendProgress: (sent, total) => onSendProgress?.call(sent / total),
+        data: dataItem.streamGenerator(),
+        options: Options(
+          headers: headers,
+          receiveTimeout: receiveTimeout,
+          sendTimeout: sendTimeout,
+        ),
+        cancelToken: cancelToken,
+      );
+
+      if (!acceptedStatusCodes.contains(response.statusCode)) {
+        logger.e('Error posting bytes', response.data);
+        throw Exception('Error posting bytes');
       }
 
-      return finalizeResponse;
-    } catch (err) {
-      rethrow;
+      if (!acceptedStatusCodes.contains(response.statusCode)) {
+        logger.e('Error posting bytes', response.data);
+        throw _handleException(response);
+      }
+
+      return response;
+    } catch (e, stacktrace) {
+      logger.e('Catching error in postDataItem', e, stacktrace);
+      throw _handleException(e);
     }
   }
 
-  @override
-  Future<Response> _uploadChunkRequest({
-    required String uploadId,
-    required Uint8List chunk,
-    required int offset,
-    required Map<String, dynamic> headers,
-    required Function(int) onSendProgress,
-    required CancelToken cancelToken,
-  }) async {
-    // The chunk upload call is effectively the same—just post the bytes
-    return dio.post(
-      '$turboUploadUri/chunks/arweave/$uploadId/$offset',
-      data: chunk,
-      onSendProgress: (sent, total) => onSendProgress(sent.toInt()),
-      options: Options(
-        headers: {
-          'Content-Type': 'application/octet-stream',
-          'Content-Length': chunk.length.toString(),
-          ...headers,
-        },
-      ),
-      cancelToken: cancelToken,
-    );
-  }
+  Exception _handleException(Object error) {
+    logger.e('Handling exception in UploadService', error);
 
-  Future<Response> _confirmUpload(String dataItemId) async {
-    try {
-      final response =
-          await dio.get('$turboUploadUri/v1/tx/$dataItemId/status');
-      if (response.data['status'] == 'CONFIRMED' ||
-          response.data['status'] == 'FINALIZED') {
-        return response;
-      } else {
-        // Sleep a bit, then poll again
-        await Future.delayed(dataItemConfirmationRetryDelay);
-        return _confirmUpload(dataItemId);
-      }
-    } catch (_) {
-      // If there's an error, wait and retry
-      await Future.delayed(dataItemConfirmationRetryDelay);
-      return _confirmUpload(dataItemId);
+    if (error is DioException && error.response?.statusCode == 408) {
+      logger.e(
+        'Handling exception in UploadService with status code: ${error.response?.statusCode}',
+        error,
+      );
+
+      return TurboUploadTimeoutException();
     }
+
+    return Exception(error);
   }
 }

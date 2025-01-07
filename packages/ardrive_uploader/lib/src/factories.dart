@@ -145,7 +145,7 @@ class TurboUploadServiceFactory {
     if (isMultipart) {
       return TurboUploadServiceMultipart(turboUploadUri: turboUploadUri);
     } else {
-      return TurboUploadServiceChunked(turboUploadUri: turboUploadUri);
+      return TurboUploadServiceNonChunked(turboUploadUri);
     }
   }
 }

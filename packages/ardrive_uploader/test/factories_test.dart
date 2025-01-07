@@ -134,7 +134,7 @@ void main() {
         final streamedUpload = await uploadFactory.fromUploadType(task);
         expect(streamedUpload, isA<TurboStreamedUpload>());
         expect((streamedUpload as TurboStreamedUpload).service,
-            isA<TurboUploadServiceChunked>());
+            isA<TurboUploadServiceNonChunked>());
       });
 
       test('should use multipart for non-file upload tasks', () async {
@@ -144,7 +144,7 @@ void main() {
         final streamedUpload = await uploadFactory.fromUploadType(task);
         expect(streamedUpload, isA<TurboStreamedUpload>());
         expect((streamedUpload as TurboStreamedUpload).service,
-            isA<TurboUploadServiceChunked>());
+            isA<TurboUploadServiceNonChunked>());
       });
     });
   });
