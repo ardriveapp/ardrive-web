@@ -157,14 +157,12 @@ abstract class TurboUploadServiceBase implements TurboUploadService {
     }
   }
 
-  // Subclasses override this to finalize in their own way
   Future<Response> finalizeUpload({
     required String uploadId,
     required int dataItemSize,
     required TxID dataItemId,
   });
 
-  // Subclasses override this for the actual chunk upload call
   Future<Response> _uploadChunkRequest({
     required String uploadId,
     required Uint8List chunk,
