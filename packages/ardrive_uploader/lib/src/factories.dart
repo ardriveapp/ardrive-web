@@ -5,6 +5,8 @@ import 'package:ardrive_uploader/src/data_bundler.dart';
 import 'package:ardrive_uploader/src/streamed_upload.dart';
 import 'package:ardrive_uploader/src/turbo_streamed_upload.dart';
 import 'package:ardrive_uploader/src/turbo_upload_service.dart';
+import 'package:ardrive_uploader/src/utils/logger.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:pst/pst.dart';
 
@@ -101,19 +103,49 @@ class StreamedUploadFactory {
     required this.turboUploadUri,
   });
 
-  StreamedUpload fromUploadType(
-    UploadType type,
-  ) {
-    if (type == UploadType.d2n) {
+  Future<StreamedUpload> fromUploadType(
+    UploadTask task,
+  ) async {
+    if (task.type == UploadType.d2n) {
       return D2NStreamedUpload();
-    } else if (type == UploadType.turbo) {
+    } else if (task.type == UploadType.turbo) {
+      bool useMultipart;
+
+      if (task is FileUploadTask) {
+        final fileSize = await (task).file.length;
+
+        if (fileSize >= MiB(5).size) {
+          useMultipart = true;
+        } else {
+          useMultipart = false;
+        }
+      } else {
+        /// Non-file uploads e.g. folder uploads (bundle of folders metadata)
+        /// are always chunked
+        useMultipart = false;
+      }
+
+      logger.i('useMultipart: $useMultipart');
+
       return TurboStreamedUpload(
-        TurboUploadService(
-          turboUploadUri: turboUploadUri,
+        TurboUploadServiceFactory().createTurboUploadService(
+          useMultipart,
+          turboUploadUri,
         ),
       );
     } else {
       throw Exception('Invalid upload type');
+    }
+  }
+}
+
+class TurboUploadServiceFactory {
+  TurboUploadService createTurboUploadService(
+      bool isMultipart, Uri turboUploadUri) {
+    if (isMultipart) {
+      return TurboUploadServiceMultipart(turboUploadUri: turboUploadUri);
+    } else {
+      return TurboUploadServiceChunked(turboUploadUri: turboUploadUri);
     }
   }
 }

@@ -1,7 +1,10 @@
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_uploader/src/d2n_streamed_upload.dart';
 import 'package:ardrive_uploader/src/data_bundler.dart';
 import 'package:ardrive_uploader/src/turbo_streamed_upload.dart';
+import 'package:ardrive_uploader/src/turbo_upload_service.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pst/pst.dart';
@@ -19,6 +22,12 @@ class MockDataBundlerFactory extends Mock implements DataBundlerFactory {}
 class MockDataBundler extends Mock implements DataBundler {}
 
 class MockStreamedUploadFactory extends Mock implements StreamedUploadFactory {}
+
+class MockFileUploadTask extends Mock implements FileUploadTask {}
+
+class MockFile extends Mock implements IOFile {}
+
+class MockUploadTask extends Mock implements UploadTask {}
 
 void main() {
   setUpAll(() {
@@ -93,19 +102,50 @@ void main() {
       uploadFactory = StreamedUploadFactory(turboUploadUri: mockUri);
     });
 
-    test('should return D2NStreamedUpload for UploadType.d2n', () {
-      var streamedUpload = uploadFactory.fromUploadType(UploadType.d2n);
+    test('should return D2NStreamedUpload for UploadType.d2n', () async {
+      final task = MockFileUploadTask();
+      when(() => task.type).thenReturn(UploadType.d2n);
+
+      final streamedUpload = await uploadFactory.fromUploadType(task);
       expect(streamedUpload, isA<D2NStreamedUpload>());
     });
 
-    test('should return TurboStreamedUpload for UploadType.turbo', () {
-      var streamedUpload = uploadFactory.fromUploadType(UploadType.turbo);
-      expect(streamedUpload, isA<TurboStreamedUpload>());
+    group('TurboStreamedUpload', () {
+      test('should use multipart for files equal or larger than 5MB', () async {
+        final task = MockFileUploadTask();
+        final file = MockFile();
+        when(() => task.type).thenReturn(UploadType.turbo);
+        when(() => task.file).thenReturn(file);
+        when(() => file.length).thenAnswer((_) async => MiB(5).size);
 
-      // Additional check to verify TurboUploadService initialization
-      var turboUploadUri =
-          (streamedUpload as TurboStreamedUpload).service.turboUploadUri;
-      expect(turboUploadUri, equals(mockUri));
+        final streamedUpload = await uploadFactory.fromUploadType(task);
+        expect(streamedUpload, isA<TurboStreamedUpload>());
+        expect((streamedUpload as TurboStreamedUpload).service,
+            isA<TurboUploadServiceMultipart>());
+      });
+
+      test('should use chunked for files smaller than 5MB', () async {
+        final task = MockFileUploadTask();
+        final file = MockFile();
+        when(() => task.type).thenReturn(UploadType.turbo);
+        when(() => task.file).thenReturn(file);
+        when(() => file.length).thenAnswer((_) async => MiB(4).size);
+
+        final streamedUpload = await uploadFactory.fromUploadType(task);
+        expect(streamedUpload, isA<TurboStreamedUpload>());
+        expect((streamedUpload as TurboStreamedUpload).service,
+            isA<TurboUploadServiceChunked>());
+      });
+
+      test('should use multipart for non-file upload tasks', () async {
+        final task = MockUploadTask();
+        when(() => task.type).thenReturn(UploadType.turbo);
+
+        final streamedUpload = await uploadFactory.fromUploadType(task);
+        expect(streamedUpload, isA<TurboStreamedUpload>());
+        expect((streamedUpload as TurboStreamedUpload).service,
+            isA<TurboUploadServiceChunked>());
+      });
     });
   });
 }
