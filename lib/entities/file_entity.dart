@@ -45,6 +45,9 @@ class FileEntity extends EntityWithCustomMetadata {
   @JsonKey(includeFromJson: true, includeToJson: true)
   Thumbnail? thumbnail;
 
+  @JsonKey(includeIfNull: false, name: 'fallbackTxId')
+  String? fallbackTxId;
+
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   List<String> reservedGqlTags = [
@@ -79,6 +82,7 @@ class FileEntity extends EntityWithCustomMetadata {
     this.isHidden,
     this.thumbnail,
     this.assignedNames,
+    this.fallbackTxId,
   }) : super(ArDriveCrypto());
 
   FileEntity.withUserProvidedDetails({

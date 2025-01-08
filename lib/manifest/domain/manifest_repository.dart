@@ -91,6 +91,7 @@ class ManifestRepositoryImpl implements ManifestRepository {
         dataContentType: ContentType.manifest,
         assignedNames:
             manifest.assignedName != null ? [manifest.assignedName!] : null,
+        fallbackTxId: manifest.fallbackTxId,
       );
 
       manifestFileEntity.txId = manifest.metadataTxId!;
@@ -133,6 +134,7 @@ class ManifestRepositoryImpl implements ManifestRepository {
           privacy: DrivePrivacyTag.public,
           assignedName:
               undername != null ? getLiteralARNSRecordName(undername) : null,
+          fallbackTxId: params.fallbackTxId,
         ),
         wallet: params.wallet,
         type: params.uploadType,
@@ -307,6 +309,7 @@ class ManifestUploadParams {
   final String? existingManifestFileId;
   final UploadType uploadType;
   final Wallet wallet;
+  final String? fallbackTxId;
 
   ManifestUploadParams({
     required this.manifestFile,
@@ -315,5 +318,6 @@ class ManifestUploadParams {
     required this.uploadType,
     this.existingManifestFileId,
     required this.wallet,
+    this.fallbackTxId,
   });
 }
