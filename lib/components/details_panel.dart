@@ -776,6 +776,21 @@ class _DetailsPanelState extends State<DetailsPanel> {
         itemTitle: appLocalizationsOf(context).dataTxID,
       ),
       sizedBoxHeight16px,
+      if (item.fallbackTxId != null)
+        DetailsPanelItem(
+          leading: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _TxIdTextLink(txId: item.fallbackTxId!),
+              const SizedBox(width: 12),
+              CopyButton(
+                text: item.fallbackTxId!,
+              ),
+            ],
+          ),
+          itemTitle: 'Manifest Fallback TxID',
+        ),
+      sizedBoxHeight16px,
       if (state is FsEntryFileInfoSuccess)
         DetailsPanelItem(
           // TODO: Localize
