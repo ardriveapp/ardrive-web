@@ -167,11 +167,10 @@ dependency_overrides:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
       ref: v3.9.0
-
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
-      ref: v1.4.7
+      ref: PE-7399-error-downloading-files-device-info-plus-web-plugin-device-info-throws-an-error
   ardrive_ui:
     path: ./packages/ardrive_ui
 

@@ -92,11 +92,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.4.7"
-      resolved-ref: "07983a8ae7f3fc529e044f5509d8a0be70b765c0"
+      ref: PE-7399-error-downloading-files-device-info-plus-web-plugin-device-info-throws-an-error
+      resolved-ref: "754e05226724ade8d0b366d2487aaa508831f7c6"
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
-    version: "1.4.7"
+    version: "1.4.6"
   ardrive_logger:
     dependency: "direct main"
     description:
@@ -520,18 +520,18 @@ packages:
     dependency: transitive
     description:
       name: device_info_plus
-      sha256: "77f757b789ff68e4eaf9c56d1752309bd9f7ad557cb105b938a7f8eb89e59110"
+      sha256: a7fd703482b391a87d60b6061d04dfdeab07826b96f9abd8f5ed98068acc0074
       url: "https://pub.dev"
     source: hosted
-    version: "9.1.2"
+    version: "10.1.2"
   device_info_plus_platform_interface:
     dependency: transitive
     description:
       name: device_info_plus_platform_interface
-      sha256: d3b01d5868b50ae571cd1dc6e502fc94d956b665756180f7b16ead09e836fd64
+      sha256: "0b04e02b30791224b31969eb1b50d723498f402971bff3630bca2ba839bd1ed2"
       url: "https://pub.dev"
     source: hosted
-    version: "7.0.0"
+    version: "7.0.2"
   diff_match_patch:
     dependency: transitive
     description:
