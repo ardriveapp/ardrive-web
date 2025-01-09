@@ -30,7 +30,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 128, horizontal: 128),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
       child: IgnorePointer(
         child: Stack(
           children: [
@@ -104,38 +104,38 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
 
   void _onLeave() => setState(() => isHovering = false);
 
-  Widget _buildDropZoneOnHover() => Center(
-        child: Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.all(16),
-          width: MediaQuery.of(context).size.width / 1.5,
-          height: MediaQuery.of(context).size.width / 3,
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: ArDriveTheme.of(context)
-                  .themeData
-                  .colors
-                  .themeOverlayBackground,
-            ),
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(6),
+  Widget _buildDropZoneOnHover() {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
+
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
+        width: MediaQuery.of(context).size.width,
+        height: MediaQuery.of(context).size.width,
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: colorTokens.containerL0qq,
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ArDriveIcons.iconUploadFiles(
-                size: 64,
-              ),
-              const SizedBox(
-                width: 16,
-              ),
-              Text(
-                appLocalizationsOf(context).uploadFiles,
-                style: ArDriveTypography.headline.headline2Bold(),
-              ),
-            ],
-          ),
+          color: colorTokens.containerL3,
+          borderRadius: BorderRadius.circular(6),
         ),
-      );
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ArDriveIcons.iconUploadFiles(size: 64),
+            const SizedBox(width: 16),
+            Text(
+              appLocalizationsOf(context).uploadFiles,
+              style: typography.heading1(
+                fontWeight: ArFontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

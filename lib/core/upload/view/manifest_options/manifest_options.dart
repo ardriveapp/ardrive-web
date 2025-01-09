@@ -32,8 +32,6 @@ class ManifestOptions extends StatelessWidget {
                 final file = manifestFiles.elementAt(index).manifest;
                 final isSelected = selectedManifestIds.contains(file.id);
 
-                logger.d('Is selected: $isSelected');
-
                 return _ManifestOptionTile(
                   manifestSelection: manifestFiles.elementAt(index),
                   isSelected: isSelected,
