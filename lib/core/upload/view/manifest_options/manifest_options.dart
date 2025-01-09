@@ -1,6 +1,5 @@
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/core/upload/view/blocs/upload_manifest_options_bloc.dart';
-import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter/material.dart';

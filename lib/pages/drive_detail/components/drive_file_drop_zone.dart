@@ -116,7 +116,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
         height: MediaQuery.of(context).size.width,
         decoration: BoxDecoration(
           border: Border.all(
-            color: colorTokens.containerL0qq,
+            color: colorTokens.containerL0,
           ),
           color: colorTokens.containerL3,
           borderRadius: BorderRadius.circular(6),
