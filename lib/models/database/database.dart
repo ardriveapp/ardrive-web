@@ -30,7 +30,7 @@ class Database extends _$Database {
   Database([QueryExecutor? e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 23;
+  int get schemaVersion => 24;
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) {
@@ -147,6 +147,12 @@ class Database extends _$Database {
 
               await m.addColumn(drives, drives.isHidden);
               await m.addColumn(driveRevisions, driveRevisions.isHidden);
+            }
+            if (from < 24) {
+              logger.d('Migrating schema from v23 to v24');
+
+              await m.addColumn(fileEntries, fileEntries.fallbackTxId);
+              await m.addColumn(fileRevisions, fileRevisions.fallbackTxId);
             }
           } catch (e, stacktrace) {
             logger.e(
