@@ -30,6 +30,7 @@ extension FileRevisionsCompanionExtensions on FileRevisionsCompanion {
         path: '',
         thumbnail: Value(thumbnail.value),
         assignedNames: Value(assignedNames.value),
+        fallbackTxId: fallbackTxId,
       );
 
   /// Returns a list of [NetworkTransactionsCompanion] representing the metadata and data transactions
@@ -81,6 +82,7 @@ extension FileEntityExtensions on FileEntity {
       isHidden: Value(isHidden ?? false),
       thumbnail: Value(thumbnailData),
       assignedNames: Value(assignedNamesData),
+      fallbackTxId: Value(fallbackTxId),
     );
   }
 
@@ -127,6 +129,9 @@ extension FileEntityExtensions on FileEntity {
       [FileRevisionsCompanion? previousRevision]) {
     if (previousRevision == null) {
       return RevisionAction.create;
+    } else if (fallbackTxId != null &&
+        fallbackTxId != previousRevision.fallbackTxId.value) {
+      return RevisionAction.uploadNewVersion;
     } else if (name != previousRevision.name.value) {
       return RevisionAction.rename;
     } else if (parentFolderId != previousRevision.parentFolderId.value) {

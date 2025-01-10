@@ -113,6 +113,7 @@ class ThumbnailRepository {
         await _driveDao.driveById(driveId: fileEntry.driveId).getSingle();
 
     if (drive.isPrivate) {
+      logger.d('Drive is private. Getting drive key');
       final driveKey = await _driveDao.getDriveKey(
         drive.id,
         _arDriveAuth.currentUser.cipherKey,
@@ -123,6 +124,8 @@ class ThumbnailRepository {
         fileEntry.id,
       );
     }
+
+    logger.d('Downloading file to memory');
 
     final bytes = await _arDriveDownloader.downloadToMemory(
       dataTx: dataTx!,
@@ -135,6 +138,8 @@ class ThumbnailRepository {
       cipher: dataTx.getTag(EntityTag.cipher),
       cipherIvString: dataTx.getTag(EntityTag.cipherIv),
     );
+
+    logger.d('Generating thumbnail');
 
     final data = await generateThumbnail(bytes, ThumbnailSize.small);
 
@@ -154,6 +159,8 @@ class ThumbnailRepository {
       originalFileId: fileEntry.id,
     );
 
+    logger.d('Uploading thumbnail');
+
     final controller = await _arDriveUploader.uploadThumbnail(
       thumbnailMetadata: thumbnailMetadata,
       file: thumbnailFile,
@@ -163,6 +170,10 @@ class ThumbnailRepository {
     );
 
     Completer<void> completer = Completer();
+
+    controller.onError((error) {
+      logger.e('Error uploading thumbnail on upload controller', error, StackTrace.current);
+    });
 
     controller.onDone((tasks) async {
       logger.i('Thumbnail uploaded');

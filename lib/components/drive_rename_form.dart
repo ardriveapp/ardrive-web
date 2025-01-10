@@ -77,6 +77,7 @@ class _DriveRenameFormState extends State<DriveRenameForm> {
             showProgressDialog(
               context,
               title: appLocalizationsOf(context).renamingDriveEmphasized,
+              useNewArDriveUI: true,
             );
           } else if (state is DriveRenameSuccess) {
             context.read<DriveDetailCubit>().refreshDriveDataTable();
@@ -87,20 +88,35 @@ class _DriveRenameFormState extends State<DriveRenameForm> {
           } else if (state is DriveNameAlreadyExists) {
             showStandardDialog(
               context,
-              title: appLocalizationsOf(context).error,
-              description: appLocalizationsOf(context).entityAlreadyExists(
-                state.driveName,
-              ),
+              title: 'Warning',
+              description:
+                  'A drive with this name already exists. Do you want to proceed?',
+              useNewArDriveUI: true,
+              actions: [
+                ModalAction(
+                  action: () => Navigator.of(context).pop(),
+                  title: 'Cancel',
+                ),
+                ModalAction(
+                  action: () {
+                    Navigator.of(context).pop();
+                    return context.read<DriveRenameCubit>().submit(
+                          newName: controller.text,
+                          proceedIfHasConflicts: true,
+                        );
+                  },
+                  title: 'Proceed',
+                ),
+              ],
             );
-            Navigator.pop(context);
           }
         },
-        builder: (context, state) => ArDriveStandardModal(
+        builder: (context, state) => ArDriveStandardModalNew(
           title: appLocalizationsOf(context).renameDriveEmphasized,
           content: state is! FsEntryRenameInitializing
               ? SizedBox(
                   width: kMediumDialogWidth,
-                  child: ArDriveTextField(
+                  child: ArDriveTextFieldNew(
                     controller: controller,
                     autofocus: true,
                     validator: (value) {

@@ -13,14 +13,36 @@ class CreateManifestInitial extends CreateManifestState {}
 class CreateManifestFolderLoadSuccess extends CreateManifestState {
   final bool viewingRootFolder;
   final FolderWithContents viewingFolder;
+  final bool enableManifestCreationButton;
+  final String? fallbackTxId;
 
   CreateManifestFolderLoadSuccess({
     required this.viewingRootFolder,
     required this.viewingFolder,
+    required this.enableManifestCreationButton,
+    this.fallbackTxId,
   });
 
+  CreateManifestFolderLoadSuccess copyWith({
+    bool? enableManifestCreationButton,
+    String? fallbackTxId,
+  }) {
+    return CreateManifestFolderLoadSuccess(
+      viewingRootFolder: viewingRootFolder,
+      viewingFolder: viewingFolder,
+      enableManifestCreationButton:
+          enableManifestCreationButton ?? this.enableManifestCreationButton,
+      fallbackTxId: fallbackTxId ?? this.fallbackTxId,
+    );
+  }
+
   @override
-  List<Object> get props => [viewingRootFolder, viewingFolder];
+  List<Object?> get props => [
+        viewingRootFolder,
+        viewingFolder,
+        enableManifestCreationButton,
+        fallbackTxId,
+      ];
 }
 
 /// User has selected a folder and we are checking for name conflicts
@@ -109,6 +131,7 @@ class CreateManifestUploadReview extends CreateManifestState {
   final String? existingManifestFileId;
   final bool canUpload;
   final String? assignedName;
+  final String? fallbackTxId;
 
   CreateManifestUploadReview({
     required this.manifestSize,
@@ -122,6 +145,7 @@ class CreateManifestUploadReview extends CreateManifestState {
     this.existingManifestFileId,
     this.canUpload = false,
     this.assignedName,
+    this.fallbackTxId,
   });
 
   @override
@@ -136,6 +160,7 @@ class CreateManifestUploadReview extends CreateManifestState {
         parentFolder,
         existingManifestFileId,
         assignedName,
+        fallbackTxId,
       ];
 
   CreateManifestUploadReview copyWith({
@@ -150,6 +175,7 @@ class CreateManifestUploadReview extends CreateManifestState {
     String? existingManifestFileId,
     bool? canUpload,
     String? assignedName,
+    String? fallbackTxId,
   }) {
     return CreateManifestUploadReview(
       manifestSize: manifestSize ?? this.manifestSize,
@@ -165,6 +191,7 @@ class CreateManifestUploadReview extends CreateManifestState {
           existingManifestFileId ?? this.existingManifestFileId,
       canUpload: canUpload ?? this.canUpload,
       assignedName: assignedName ?? this.assignedName,
+      fallbackTxId: fallbackTxId ?? this.fallbackTxId,
     );
   }
 }

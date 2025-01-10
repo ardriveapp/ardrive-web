@@ -2,182 +2,313 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:arconnect/arconnect.dart';
 import 'package:ardrive_uploader/src/exceptions.dart';
 import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:dio/dio.dart';
 import 'package:retry/retry.dart';
+import 'package:uuid/uuid.dart';
 
-class TurboUploadService {
-  TurboUploadService({
-    required this.turboUploadUri,
+abstract class TurboUploadService {
+  Future<Response> post({
+    required DataItemResult dataItem,
+    required Wallet wallet,
+    Function(double)? onSendProgress,
+    Map<String, dynamic>? headers,
   });
+
+  Future<void> cancel();
+}
+
+abstract class TurboUploadServiceChunkUploadsBase
+    implements TurboUploadService {
+  TurboUploadServiceChunkUploadsBase(this.turboUploadUri);
 
   final Uri turboUploadUri;
   final r = RetryOptions(maxAttempts: 8);
   final List<CancelToken> _cancelTokens = [];
   final dio = Dio();
-  final maxInFlightData = MiB(100).size;
   Timer? onSendProgressTimer;
+  bool _isCanceled = false;
 
+  @override
   Future<Response> post({
     required DataItemResult dataItem,
     required Wallet wallet,
     Function(double)? onSendProgress,
     Map<String, dynamic>? headers,
   }) async {
-    logger.d('[${dataItem.id}] Uploading DataItem to Turbo');
+    logger.d('[${dataItem.id}] Starting upload...');
 
+    // 1) Fetch basic upload info
     final uploadInfo = await r.retry(
       () => dio.get('$turboUploadUri/chunks/arweave/-1/-1'),
     );
-
     final uploadId = uploadInfo.data['id'] as String;
-    final uploadChunkSizeMinInBytes = uploadInfo.data['min'] as int;
-    final uploadChunkSizeMaxInBytes = uploadInfo.data['max'] as int;
-    final uploadChunkSizeInBytes = _calculateChunkSize(
-      dataSize: dataItem.dataItemSize,
-      minChunkSize: uploadChunkSizeMinInBytes,
-      maxChunkSize: uploadChunkSizeMaxInBytes,
-    );
-    final maxUploadsInParallel = maxInFlightData ~/ uploadChunkSizeInBytes;
-    logger.i(
-        '[${dataItem.id}] Upload ID: $uploadId, Uploads in parallel: $maxUploadsInParallel, Chunk size: $uploadChunkSizeInBytes');
+    final minChunkSize = uploadInfo.data['min'] as int;
+    final maxChunkSize = uploadInfo.data['max'] as int;
 
-    // (offset: sent bytes) map for in flight requests progress
+    // 2) Calculate chunk size + concurrency
+    final chunkSize = _calculateChunkSize(
+      dataSize: dataItem.dataItemSize,
+      minChunkSize: minChunkSize,
+      maxChunkSize: maxChunkSize,
+    );
+    final maxInFlightData = MiB(100).size;
+    final maxUploadsInParallel = maxInFlightData ~/ chunkSize;
+
+    logger.d(
+      '[${dataItem.id}] UploadID=$uploadId, chunkSize=$chunkSize, parallel=$maxUploadsInParallel',
+    );
+
+    // Setup for progress tracking
     Map<int, int> inFlightRequestsBytesSent = {};
     int completedRequestsBytesSent = 0;
-
     if (onSendProgress != null) {
-      onSendProgressTimer =
-          Timer.periodic(Duration(milliseconds: 500), (timer) {
-        final inFlightBytesSent = inFlightRequestsBytesSent.isEmpty
-            ? 0
-            : inFlightRequestsBytesSent.values.reduce((a, b) => a + b);
-        final totalBytesSent = completedRequestsBytesSent + inFlightBytesSent;
+      onSendProgressTimer = Timer.periodic(Duration(milliseconds: 500), (_) {
+        if (inFlightRequestsBytesSent.isEmpty) return;
+
+        final inFlightSum =
+            inFlightRequestsBytesSent.values.fold(0, (a, b) => a + b);
+        final totalBytesSent = completedRequestsBytesSent + inFlightSum;
         final progress = totalBytesSent / dataItem.dataItemSize;
+        onSendProgress(progress);
 
-        if (progress >= 1) {
-          timer.cancel();
+        // If we reached 100%, cancel the timer
+        if (progress >= 1.0) {
+          onSendProgressTimer?.cancel();
         }
-
-        onSendProgress(totalBytesSent / dataItem.dataItemSize);
       });
     }
 
+    // 3) Stream and upload chunks concurrently
     await _processStream(
-        stream: dataItem.streamGenerator(),
-        chunkSize: uploadChunkSizeInBytes,
-        maxConcurrent: maxUploadsInParallel,
-        dataItemId: dataItem.id, (chunk, offset) async {
-      if (_isCanceled) {
-        throw UploadCanceledException('Upload canceled. Cant upload chunk.');
-      }
-
-      final cancelToken = CancelToken();
-
-      _cancelTokens.add(cancelToken);
-
-      try {
-        logger.d('[${dataItem.id}] Uploading chunk. Offset: $offset');
-        return r.retry(() {
-          return dio.post(
-            '$turboUploadUri/chunks/arweave/$uploadId/$offset',
-            data: chunk,
-            onSendProgress: (sent, total) {
-              if (onSendProgress != null) {
-                if (inFlightRequestsBytesSent[offset] == null) {
-                  inFlightRequestsBytesSent[offset] = 0;
-                } else if (inFlightRequestsBytesSent[offset]! < sent) {
-                  inFlightRequestsBytesSent[offset] = sent;
-                }
-              }
-            },
-            options: Options(
-              headers: {
-                'Content-Type': 'application/octet-stream',
-                'Content-Length': chunk.length.toString(),
-              }..addAll(headers ?? const {}),
-            ),
-            cancelToken: cancelToken,
-          );
-        }).then((response) {
-          _cancelTokens.remove(cancelToken);
-
-          if (onSendProgress != null) {
-            inFlightRequestsBytesSent.remove(offset);
-            completedRequestsBytesSent += chunk.length;
-          }
-
-          return response;
-        }, onError: (error) {
-          onSendProgressTimer?.cancel();
-          _cancelTokens.remove(cancelToken);
-
-          throw error;
-        });
-      } catch (e) {
+      stream: dataItem.streamGenerator(),
+      chunkSize: chunkSize,
+      maxConcurrent: maxUploadsInParallel,
+      dataItemId: dataItem.id,
+      processChunk: (chunk, offset) async {
         if (_isCanceled) {
-          logger.i('[${dataItem.id}] Upload canceled');
-          onSendProgressTimer?.cancel();
-          cancelToken.cancel();
+          throw UploadCanceledException('Upload canceled');
         }
 
-        _cancelTokens.remove(cancelToken);
+        final cancelToken = CancelToken();
+        _cancelTokens.add(cancelToken);
 
-        rethrow;
-      }
-    });
+        try {
+          final response = await r
+              .retry(() => _uploadChunkRequest(
+                    uploadId: uploadId,
+                    chunk: chunk,
+                    offset: offset,
+                    headers: headers ?? const {},
+                    onSendProgress: (sent) {
+                      if (onSendProgress == null) return;
+                      inFlightRequestsBytesSent[offset] =
+                          max(inFlightRequestsBytesSent[offset] ?? 0, sent);
+                    },
+                    cancelToken: cancelToken,
+                  ))
+              .then(
+            (response) {
+              // On success
+              _cancelTokens.remove(cancelToken);
+              if (onSendProgress != null) {
+                // Once chunk is fully uploaded, move to "completed"
+                final uploadedThisChunk =
+                    inFlightRequestsBytesSent[offset] ?? chunk.length;
+                completedRequestsBytesSent += uploadedThisChunk;
+                inFlightRequestsBytesSent.remove(offset);
+              }
+              return response;
+            },
+            onError: (err) {
+              // On error
+              onSendProgressTimer?.cancel();
+              _cancelTokens.remove(cancelToken);
+              throw err;
+            },
+          );
 
-    final finalizeCancelToken = CancelToken();
+          return response;
+        } catch (err) {
+          if (_isCanceled) {
+            cancelToken.cancel();
+            onSendProgressTimer?.cancel();
+          }
+          _cancelTokens.remove(cancelToken);
+          rethrow;
+        }
+      },
+    );
 
+    // 4) Finalize upload
     try {
-      logger.i('[${dataItem.id}] Finalising upload to Turbo');
-
-      _cancelTokens.add(finalizeCancelToken);
-
-      final finaliseInfo = await r.retry(
-        () => dio.post(
-          '$turboUploadUri/chunks/arweave/$uploadId/finalize',
-          data: null,
-          cancelToken: finalizeCancelToken,
-        ),
+      logger.d('[${dataItem.id}] Finalizing upload: $uploadId');
+      final finalizeResponse = await finalizeUpload(
+        uploadId: uploadId,
+        dataItemSize: dataItem.dataItemSize,
+        dataItemId: dataItem.id,
       );
-
-      if (finaliseInfo.statusCode == 202) {
-        // TODO: Send this upload to a queue. We'd need to change the
-        // type of the returned data though. Perhaps the returned object
-        // could be an event emitter that the calling client can use to
-        // listen for async outcomes like finalization success/failure.
-        final confirmInfo = await _confirmUpload(
-          dataItemId: dataItem.id,
-          uploadId: uploadId,
-          dataItemSize: dataItem.dataItemSize,
-        );
-
-        onSendProgressTimer?.cancel();
-
-        return confirmInfo;
-      }
-
-      logger.i('[${dataItem.id}] Upload finalised');
-
       onSendProgressTimer?.cancel();
-
-      return finaliseInfo;
-    } catch (e) {
-      if (e is DioException) {
-        logger.i('[${dataItem.id}] Finalising upload failed, ${e.type}');
-      } else if (_isCanceled) {
-        logger.i('[${dataItem.id}] Upload canceled');
-        finalizeCancelToken.cancel();
-      }
-
+      return finalizeResponse;
+    } catch (err) {
       onSendProgressTimer?.cancel();
-
       rethrow;
     }
+  }
+
+  Future<Response> finalizeUpload({
+    required String uploadId,
+    required int dataItemSize,
+    required TxID dataItemId,
+  });
+
+  Future<Response> _uploadChunkRequest({
+    required String uploadId,
+    required Uint8List chunk,
+    required int offset,
+    required Map<String, dynamic> headers,
+    required Function(int) onSendProgress,
+    required CancelToken cancelToken,
+  });
+
+  @override
+  Future<void> cancel() async {
+    _isCanceled = true;
+    onSendProgressTimer?.cancel();
+    for (final token in _cancelTokens) {
+      token.cancel();
+    }
+    logger.d('Upload canceled.');
+  }
+}
+
+/// A small helper to process a stream in fixed-size chunks concurrently.
+Future<void> _processStream({
+  required Future<dynamic> Function(Uint8List, int) processChunk,
+  required Stream<Uint8List> stream,
+  required int chunkSize,
+  required int maxConcurrent,
+  required TxID dataItemId,
+}) async {
+  logger.d('[$dataItemId] Processing DataItem stream');
+  final chunkedStream = streamToChunks(stream, chunkSize);
+
+  final runningTasks = <Future>[];
+  int offset = 0;
+
+  await for (final chunk in chunkedStream) {
+    if (runningTasks.length >= maxConcurrent) {
+      await Future.any(runningTasks);
+    }
+
+    final task = processChunk(chunk, offset);
+    runningTasks.add(task);
+    task.whenComplete(() => runningTasks.remove(task));
+
+    offset += chunk.length;
+  }
+
+  await Future.wait(runningTasks);
+  logger.d('[$dataItemId] All chunks uploaded');
+}
+
+/// Converts the stream into fixed-size chunks
+Stream<Uint8List> streamToChunks(
+    Stream<Uint8List> stream, int chunkSize) async* {
+  final buffer = BytesBuilder();
+  await for (final data in stream) {
+    buffer.add(data);
+    while (buffer.length >= chunkSize) {
+      final currentBytes = buffer.takeBytes();
+      yield Uint8List.fromList(currentBytes.sublist(0, chunkSize));
+      buffer.add(currentBytes.sublist(chunkSize));
+    }
+  }
+  if (buffer.isNotEmpty) {
+    yield buffer.toBytes();
+  }
+}
+
+/// Calculates a valid chunk size based on the total data size
+int _calculateChunkSize({
+  required int dataSize,
+  required int minChunkSize,
+  required int maxChunkSize,
+}) {
+  int applyLimits(int c) =>
+      c < minChunkSize ? minChunkSize : (c > maxChunkSize ? maxChunkSize : c);
+
+  if (dataSize < GiB(1).size) {
+    return applyLimits(MiB(5).size);
+  } else if (dataSize <= GiB(2).size) {
+    return applyLimits(MiB(25).size);
+  } else {
+    return applyLimits(MiB(50).size);
+  }
+}
+
+class TurboUploadServiceMultipart extends TurboUploadServiceChunkUploadsBase {
+  TurboUploadServiceMultipart({required Uri turboUploadUri})
+      : super(turboUploadUri);
+
+  @override
+  Future<Response> finalizeUpload({
+    required String uploadId,
+    required int dataItemSize,
+    required TxID dataItemId,
+  }) async {
+    try {
+      // POST /finalize
+      final finalizeResponse = await r.retry(
+        () => dio.post('$turboUploadUri/chunks/arweave/$uploadId/finalize'),
+      );
+
+      // If the server returns 202 (still assembling/finalizing), you could poll
+      // for status, like in your original _confirmUpload method. For brevity,
+      // you might just return it here or do something like:
+      if (finalizeResponse.statusCode == 202) {
+        logger.i('Still finalizing. Checking status...');
+        return _confirmUpload(
+          dataItemId: dataItemId,
+          uploadId: uploadId,
+          dataItemSize: dataItemSize,
+        );
+      }
+
+      logger.i('Multipart finalize complete.');
+      return finalizeResponse;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Response> _uploadChunkRequest({
+    required String uploadId,
+    required Uint8List chunk,
+    required int offset,
+    required Map<String, dynamic> headers,
+    required Function(int) onSendProgress,
+    required CancelToken cancelToken,
+  }) async {
+    // POST /{uploadId}/{offset}
+    return dio.post(
+      '$turboUploadUri/chunks/arweave/$uploadId/$offset',
+      data: chunk,
+      onSendProgress: (sent, total) => onSendProgress(sent.toInt()),
+      options: Options(
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'Content-Length': chunk.length.toString(),
+          ...headers,
+        },
+      ),
+      cancelToken: cancelToken,
+    );
   }
 
   // TODO: This funciton as designed should go away, but some incremental
@@ -233,113 +364,120 @@ class TurboUploadService {
         'Upload canceled. Finalization took too long.');
   }
 
+  Duration dataItemConfirmationRetryDelay(
+    int iteration, {
+    Duration baseDuration = const Duration(milliseconds: 100),
+    Duration maxDuration = const Duration(seconds: 8),
+  }) {
+    return Duration(
+      milliseconds: min(
+        baseDuration.inMilliseconds * pow(2, iteration).toInt(),
+        maxDuration.inMilliseconds,
+      ),
+    );
+  }
+}
+
+class TurboUploadServiceNonChunked extends TurboUploadService {
+  TurboUploadServiceNonChunked(this.turboUploadUri) : super();
+
+  final Uri turboUploadUri;
+  final r = RetryOptions(maxAttempts: 8);
+  final dio = Dio();
+  Timer? onSendProgressTimer;
+  final cancelToken = CancelToken();
+  final TabVisibilitySingleton _tabVisibility = TabVisibilitySingleton();
+
+  @override
   Future<void> cancel() {
-    logger.d('Stream closed');
-
-    for (var cancelToken in _cancelTokens) {
-      cancelToken.cancel();
-    }
-
-    _isCanceled = true;
     onSendProgressTimer?.cancel();
+    cancelToken.cancel();
     return Future.value();
   }
 
-  bool _isCanceled = false;
-
-  int _calculateChunkSize({
-    required int dataSize,
-    required int minChunkSize,
-    required int maxChunkSize,
-  }) {
-    getValidChunkSize(int chunkSize) {
-      if (chunkSize < minChunkSize) {
-        return minChunkSize;
-      } else if (chunkSize > maxChunkSize) {
-        return maxChunkSize;
-      } else {
-        return chunkSize;
-      }
-    }
-
-    if (dataSize < GiB(1).size) {
-      return getValidChunkSize(MiB(5).size);
-    } else if (dataSize <= GiB(2).size) {
-      return getValidChunkSize(MiB(25).size);
-    } else {
-      return getValidChunkSize(MiB(50).size);
-    }
-  }
-
-  Future<void> _processStream(
-    Future<dynamic> Function(Uint8List, int) processChunk, {
-    required Stream<Uint8List> stream,
-    required int chunkSize,
-    required int maxConcurrent,
-    required TxID dataItemId,
+  @override
+  Future<Response> post({
+    required DataItemResult dataItem,
+    required Wallet wallet,
+    Function(double p1)? onSendProgress,
+    Map<String, dynamic>? headers,
   }) async {
-    logger.d('[$dataItemId] Processing DataItem stream');
-    final chunkedStream = streamToChunks(stream, chunkSize);
-    logger.d('[$dataItemId] Stream chunked');
-    final runningTasks = <Future>[];
-    int offset = 0;
+    final controller = StreamController<double>();
 
-    await for (final chunk in chunkedStream) {
-      if (runningTasks.length >= maxConcurrent) {
-        logger.d('[$dataItemId] Waiting for a task to finish');
-        await Future.any(runningTasks);
+    controller.add(0);
+    try {
+      final acceptedStatusCodes = [200, 202, 204];
+
+      final nonce = const Uuid().v4();
+      final publicKey = await safeArConnectAction<String>(
+        _tabVisibility,
+        (_) async {
+          logger.d('Getting public key with safe ArConnect action');
+          return wallet.getOwner();
+        },
+      );
+      final signature = await safeArConnectAction<String>(
+        _tabVisibility,
+        (_) async {
+          logger.d('Signing with safe ArConnect action');
+          return signNonceAndData(
+            nonce: nonce,
+            wallet: wallet,
+          );
+        },
+      );
+
+      final headers = {
+        'x-nonce': nonce,
+        'x-signature': signature,
+        'x-public-key': publicKey,
+      };
+
+      final url = '$turboUploadUri/v1/tx';
+      const receiveTimeout = Duration(days: 365);
+      const sendTimeout = Duration(days: 365);
+
+      final response = await dio.post(
+        url,
+        onSendProgress: (sent, total) => onSendProgress?.call(sent / total),
+        data: dataItem.streamGenerator(),
+        options: Options(
+          headers: headers,
+          receiveTimeout: receiveTimeout,
+          sendTimeout: sendTimeout,
+        ),
+        cancelToken: cancelToken,
+      );
+
+      if (!acceptedStatusCodes.contains(response.statusCode)) {
+        logger.e('Error posting bytes', response.data);
+        throw Exception('Error posting bytes');
       }
 
-      logger.d('[$dataItemId] Starting new task. Offset: $offset');
-      final task = processChunk(chunk, offset);
-      task.whenComplete(() {
-        logger.d('[$dataItemId] Task completed. Offset: $offset');
-        runningTasks.remove(task);
-      });
+      if (!acceptedStatusCodes.contains(response.statusCode)) {
+        logger.e('Error posting bytes', response.data);
+        throw _handleException(response);
+      }
 
-      runningTasks.add(task);
-
-      offset += chunk.length;
-    }
-
-    logger.d('[$dataItemId] Waiting for all tasks to finish');
-    await Future.wait(runningTasks);
-  }
-}
-
-Stream<Uint8List> streamToChunks(
-  Stream<Uint8List> stream,
-  int chunkSize,
-) async* {
-  var buffer = BytesBuilder();
-
-  await for (var uint8list in stream) {
-    buffer.add(uint8list);
-
-    while (buffer.length >= chunkSize) {
-      final currentBytes = buffer.takeBytes();
-      yield Uint8List.fromList(currentBytes.sublist(0, chunkSize));
-
-      buffer.add(currentBytes.sublist(chunkSize));
+      return response;
+    } catch (e, stacktrace) {
+      logger.e('Catching error in postDataItem', e, stacktrace);
+      throw _handleException(e);
     }
   }
 
-  if (buffer.length > 0) {
-    yield buffer.toBytes();
+  Exception _handleException(Object error) {
+    logger.e('Handling exception in UploadService', error);
+
+    if (error is DioException && error.response?.statusCode == 408) {
+      logger.e(
+        'Handling exception in UploadService with status code: ${error.response?.statusCode}',
+        error,
+      );
+
+      return TurboUploadTimeoutException();
+    }
+
+    return Exception(error);
   }
-}
-
-final defaultBaseDuration = Duration(milliseconds: 250);
-
-Duration dataItemConfirmationRetryDelay(
-  int iteration, {
-  Duration baseDuration = const Duration(milliseconds: 100),
-  Duration maxDuration = const Duration(seconds: 8),
-}) {
-  return Duration(
-    milliseconds: min(
-      baseDuration.inMilliseconds * pow(2, iteration).toInt(),
-      maxDuration.inMilliseconds,
-    ),
-  );
 }

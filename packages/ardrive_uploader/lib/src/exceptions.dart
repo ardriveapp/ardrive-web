@@ -1,4 +1,4 @@
-abstract class ArDriveUploaderExceptions {
+abstract class ArDriveUploaderExceptions implements Exception {
   abstract final String message;
   abstract final Object? error;
 }
@@ -132,6 +132,18 @@ class UnderFundException implements ArDriveUploaderExceptions {
 class ThumbnailUploadException implements UploadStrategyException {
   ThumbnailUploadException({
     required this.message,
+    this.error,
+  });
+
+  @override
+  final String message;
+  @override
+  Object? error;
+}
+
+class TurboUploadTimeoutException implements ArDriveUploaderExceptions {
+  TurboUploadTimeoutException({
+    this.message = 'Turbo upload timeout',
     this.error,
   });
 
