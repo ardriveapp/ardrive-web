@@ -1,5 +1,6 @@
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -28,7 +29,8 @@ class ThumbnailCreationBloc
             fileId: event.fileDataTableItem.id);
 
         emit(ThumbnailCreationSuccess());
-      } catch (e) {
+      } catch (e, stackTrace) {
+        logger.e('Error uploading thumbnail', e, stackTrace);
         emit(ThumbnailCreationError());
       }
     });
