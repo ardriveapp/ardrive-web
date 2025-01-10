@@ -30,5 +30,7 @@ CREATE TABLE file_entries (
 
     assignedNames TEXT,
 
+    fallbackTxId TEXT,
+
     PRIMARY KEY (id, driveId)
 ) AS FileEntry;

@@ -307,6 +307,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
                 createManifestUploadReview.existingManifestFileId,
             uploadType: uploadType,
             wallet: _auth.currentUser.wallet,
+            fallbackTxId: _getFallbackTxId(),
           ),
           processId: _selectedAntRecord?.processId,
           undername: getSelectedUndername(),
@@ -373,15 +374,17 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
   TxID? _fallbackTxId;
 
-  void setFallbackTxId(TxID txId) {
+  void setFallbackTxId(TxID txId, {bool emitState = true}) {
     _fallbackTxId = txId;
 
-    emit(
-      (state as CreateManifestFolderLoadSuccess).copyWith(
-        fallbackTxId: _getFallbackTxId(),
-        enableManifestCreationButton: _getEnableManifestCreationButton(),
-      ),
-    );
+    if (emitState) {
+      emit(
+        (state as CreateManifestFolderLoadSuccess).copyWith(
+          fallbackTxId: _getFallbackTxId(),
+          enableManifestCreationButton: _getEnableManifestCreationButton(),
+        ),
+      );
+    }
   }
 
   TxID? _getFallbackTxId() {

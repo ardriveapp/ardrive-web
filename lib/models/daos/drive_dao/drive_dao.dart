@@ -661,6 +661,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           ? Value(jsonEncode(entity.thumbnail!.toJson()))
           : const Value(null),
       assignedNames: Value(_encodeAssignedNames(entity.assignedNames)),
+      fallbackTxId: Value(entity.fallbackTxId),
     );
 
     return into(fileEntries).insert(
