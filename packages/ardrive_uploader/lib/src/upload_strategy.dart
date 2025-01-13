@@ -86,7 +86,7 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
       }
 
       final metadataStreamedUpload =
-          _streamedUploadFactory.fromUploadType(task.type);
+          await _streamedUploadFactory.fromUploadType(task);
 
       final uploadResult = await metadataStreamedUpload.send(
           DataItemUploadItem(
@@ -153,7 +153,7 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
       );
     }
 
-    final streamedUpload = _streamedUploadFactory.fromUploadType(task.type);
+    final streamedUpload = await _streamedUploadFactory.fromUploadType(task);
 
     dataItemTask = dataItemTask.copyWith(
       status: UploadStatus.inProgress,
@@ -259,7 +259,7 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
       throw UploadCanceledException('Upload canceled');
     }
 
-    final streamedUpload = _streamedUploadFactory.fromUploadType(task.type);
+    final streamedUpload = await _streamedUploadFactory.fromUploadType(task);
 
     task = task.copyWith(
       status: UploadStatus.inProgress,
@@ -351,7 +351,7 @@ class UploadFolderStructureAsBundleStrategy
     }
 
     final streamedUpload =
-        _streamedUploadFactory.fromUploadType(folderTask.type);
+        await _streamedUploadFactory.fromUploadType(folderTask);
 
     final result =
         await streamedUpload.send(folderTask.uploadItem!, wallet, (progress) {
@@ -407,8 +407,7 @@ class _UploadThumbnailStrategy implements UploadThumbnailStrategy {
 
     /// It will always use the Turbo for now
 
-    final streamedUpload =
-        _streamedUploadFactory.fromUploadType(UploadType.turbo);
+    final streamedUpload = await _streamedUploadFactory.fromUploadType(task);
 
     final result = await streamedUpload.send(
       task.uploadItem!,

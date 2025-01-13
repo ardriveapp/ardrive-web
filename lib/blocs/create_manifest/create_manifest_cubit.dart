@@ -71,6 +71,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
           canUpload: canUpload,
           freeUpload: info.isFreeThanksToTurbo,
           assignedName: (state as CreateManifestUploadReview).assignedName,
+          fallbackTxId: (state as CreateManifestUploadReview).fallbackTxId,
         ),
       );
     }
@@ -139,6 +140,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
             CreateManifestFolderLoadSuccess(
               viewingRootFolder: f.folder.parentFolderId == null,
               viewingFolder: f,
+              enableManifestCreationButton: _getEnableManifestCreationButton(),
             ),
           ),
         );
@@ -249,6 +251,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         manifestName: manifestName,
         rootFolderNode: rootFolderNode,
         driveId: _drive.id,
+        fallbackTxId: _getFallbackTxId(),
       );
 
       ARNSUndername? undername = getSelectedUndername();
@@ -264,6 +267,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
           existingManifestFileId: existingManifestFileId,
           assignedName:
               undername != null ? getLiteralARNSRecordName(undername) : null,
+          fallbackTxId: _getFallbackTxId(),
         ),
       );
     } catch (e) {
@@ -303,6 +307,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
                 createManifestUploadReview.existingManifestFileId,
             uploadType: uploadType,
             wallet: _auth.currentUser.wallet,
+            fallbackTxId: _getFallbackTxId(),
           ),
           processId: _selectedAntRecord?.processId,
           undername: getSelectedUndername(),
@@ -365,6 +370,35 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         (state as CreateManifestPreparingManifestWithARNS).manifestName;
 
     prepareManifestTx(manifestName: manifestName);
+  }
+
+  TxID? _fallbackTxId;
+
+  void setFallbackTxId(TxID txId, {bool emitState = true}) {
+    _fallbackTxId = txId;
+
+    if (emitState) {
+      emit(
+        (state as CreateManifestFolderLoadSuccess).copyWith(
+          fallbackTxId: _getFallbackTxId(),
+          enableManifestCreationButton: _getEnableManifestCreationButton(),
+        ),
+      );
+    }
+  }
+
+  TxID? _getFallbackTxId() {
+    if (_fallbackTxId == null || _fallbackTxId!.isEmpty) {
+      return null;
+    }
+
+    return _fallbackTxId;
+  }
+
+  bool _getEnableManifestCreationButton() {
+    return _getFallbackTxId() == null ||
+        _getFallbackTxId()!.isEmpty ||
+        isValidArweaveTxId(_getFallbackTxId()!);
   }
 
   @override

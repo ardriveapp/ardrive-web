@@ -89,7 +89,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
   final String? pinnedDataOwnerAddress;
   final Thumbnail? thumbnail;
   final List<String>? assignedNames;
-
+  final String? fallbackTxId;
   FileDataTableItem(
       {required super.driveId,
       required super.lastUpdated,
@@ -108,6 +108,7 @@ class FileDataTableItem extends ArDriveDataTableItem {
       required this.metadataTx,
       required this.dataTx,
       required this.pinnedDataOwnerAddress,
+      this.fallbackTxId,
       this.assignedNames,
       this.thumbnail,
       super.licenseType,
@@ -158,6 +159,7 @@ class DriveDataTableItemMapper {
       thumbnail: file.thumbnail != null && file.thumbnail != 'null'
           ? Thumbnail.fromJson(jsonDecode(file.thumbnail!))
           : null,
+      fallbackTxId: file.fallbackTxId,
     );
   }
 
@@ -188,10 +190,11 @@ class DriveDataTableItemMapper {
       thumbnail: fileEntry.thumbnail != null && fileEntry.thumbnail != 'null'
           ? Thumbnail.fromJson(jsonDecode(fileEntry.thumbnail!))
           : null,
+      fallbackTxId: fileEntry.fallbackTxId,
     );
   }
 
-static FolderDataTableItem fromFolderEntry(
+  static FolderDataTableItem fromFolderEntry(
     FolderEntry folderEntry,
     int index,
     bool isOwner,
@@ -256,6 +259,7 @@ static FolderDataTableItem fromFolderEntry(
       thumbnail: revision.thumbnail != null && revision.thumbnail != 'null'
           ? Thumbnail.fromJson(jsonDecode(revision.thumbnail!))
           : null,
+      fallbackTxId: revision.fallbackTxId,
     );
   }
 }
