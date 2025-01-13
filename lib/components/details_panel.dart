@@ -761,20 +761,6 @@ class _DetailsPanelState extends State<DetailsPanel> {
         itemTitle: appLocalizationsOf(context).dataTxID,
       ),
       sizedBoxHeight16px,
-      DetailsPanelItem(
-        leading: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _TxIdTextLink(txId: item.dataTxId),
-            const SizedBox(width: 12),
-            CopyButton(
-              text: item.dataTxId,
-            ),
-          ],
-        ),
-        itemTitle: appLocalizationsOf(context).dataTxID,
-      ),
-      sizedBoxHeight16px,
       if (state is FsEntryInfoSuccess)
         DetailsPanelItem(
           leading: Row(
