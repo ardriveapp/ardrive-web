@@ -731,7 +731,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                       ))
                 ],
               ),
-              if (kIsWeb)
+              if (kIsWeb && driveDetailState.hasWritePermissions)
                 DriveFileDropZone(
                   driveId: driveDetailState.currentDrive.id,
                   folderId: driveDetailState.folderInView.folder.id,
