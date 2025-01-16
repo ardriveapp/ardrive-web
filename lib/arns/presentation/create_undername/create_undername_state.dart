@@ -12,15 +12,19 @@ final class CreateUndernameInitial extends CreateUndernameState {}
 final class CreateUndernameLoading extends CreateUndernameState {}
 
 final class CreateUndernameSuccess extends CreateUndernameState {
-  final ARNSUndername undername;
+  final ArNSNameModel nameModel;
 
-  const CreateUndernameSuccess({required this.undername});
+  const CreateUndernameSuccess({required this.nameModel});
 
   @override
-  List<Object> get props => [undername];
+  List<Object> get props => [nameModel];
 }
 
 final class CreateUndernameFailure extends CreateUndernameState {
+  final Exception exception;
+
+  const CreateUndernameFailure({required this.exception});
+
   @override
-  List<Object> get props => [];
+  List<Object> get props => [exception];
 }

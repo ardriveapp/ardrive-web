@@ -24,34 +24,32 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
   })  : _auth = auth,
         _arnsRepository = arnsRepository,
         super(AssignNameInitial()) {
-    on<LoadNames>((event, emit) async {
-      try {
-        emit(LoadingNames());
+    on<LoadNames>(
+      (event, emit) async {
+        try {
+          logger.d('Loading names');
+          emit(LoadingNames());
 
-        final walletAddress = await _auth.getWalletAddress();
+          final walletAddress = await _auth.getWalletAddress();
 
-        final names =
-            await _arnsRepository.getAntRecordsForWallet(walletAddress!);
+          final names = await _arnsRepository
+              .getAntRecordsForWallet(walletAddress!, update: false);
 
-        final nameModels =
-            await _arnsRepository.getARNSNameModelsForWallet(walletAddress);
+          final nameModels =
+              await _arnsRepository.getARNSNameModelsForWallet(walletAddress);
 
-        for (var nameModel in nameModels) {
-          logger.i('Name model: ${nameModel.toString()}');
+          if (names.isEmpty) {
+            emit(AssignNameEmptyState());
+          } else {
+            logger.d('Names loaded');
+            emit(NamesLoaded(nameModels: nameModels));
+          }
+        } catch (e) {
+          logger.e('Failed to load ArNS names', e);
+          emit(LoadingNamesFailed());
         }
-
-        if (names.isEmpty) {
-          emit(AssignNameEmptyState());
-        } else {
-          emit(NamesLoaded(
-            nameModels: nameModels,
-          ));
-        }
-      } catch (e) {
-        logger.e('Failed to load ArNS names', e);
-        emit(LoadingNamesFailed());
-      }
-    });
+      },
+    );
 
     on<SelectName>((event, emit) async {
       _selectedNameModel = event.nameModel;
@@ -74,6 +72,30 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
 
     on<LoadUndernames>(
       (event, emit) async {
+        if (state is UndernamesLoaded) {
+          final undernames = await _arnsRepository.getARNSUndernames(
+            ANTRecord(
+              domain: _selectedNameModel!.name,
+              processId: _selectedNameModel!.processId,
+            ),
+          );
+
+          if (undernames.length > 1) {
+            undernames.removeWhere((element) => element.name == '@');
+          }
+
+          emit(
+            UndernamesLoaded(
+              nameModels: (state as UndernamesLoaded).nameModels,
+              selectedName: _selectedNameModel!,
+              undernames: undernames,
+              selectedUndername: null,
+            ),
+          );
+
+          return;
+        }
+
         final names = (state as NamesLoaded).nameModels;
         emit(LoadingUndernames());
 

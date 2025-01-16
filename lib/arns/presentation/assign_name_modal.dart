@@ -7,6 +7,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -69,6 +70,8 @@ class AssignArNSNameModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    logger.d('AssignArNSNameModal build');
+
     return BlocProvider(
       create: (context) => AssignNameBloc(
           auth: context.read<ArDriveAuth>(),
@@ -118,6 +121,12 @@ class _AssignArNSNameModal extends StatefulWidget {
 }
 
 class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
+  @override
+  dispose() {
+    super.dispose();
+    logger.d('AssignArNSNameModal dispose');
+  }
+
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
@@ -170,7 +179,7 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
               ? null
               : kLargeDialogWidth,
           content: Builder(
-            builder: (context) {
+            builder: (_) {
               if (state is LoadingNames || state is AssignNameInitial) {
                 return const SizedBox(
                   height: 275,
@@ -196,7 +205,8 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                       selectedName: state.selectedName,
                       onSelected: (name) {
                         context.read<AssignNameBloc>().add(SelectName(name));
-                        context
+                        this
+                            .context
                             .read<AssignNameBloc>()
                             .add(const LoadUndernames());
                       },
@@ -245,8 +255,12 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                         names: state.nameModels,
                         hintText: 'Choose ArNS name',
                         onSelected: (name) {
-                          context.read<AssignNameBloc>().add(SelectName(name));
-                          context
+                          this
+                              .context
+                              .read<AssignNameBloc>()
+                              .add(SelectName(name));
+                          this
+                              .context
                               .read<AssignNameBloc>()
                               .add(const LoadUndernames());
                         },
@@ -254,51 +268,87 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                       const SizedBox(
                         height: 40,
                       ),
-                      _NameSelectorDropdown<ARNSUndername>(
-                        label: 'under_name (optional)',
-                        names: state.undernames,
-                        selectedName: state.selectedUndername,
-                        hintText: 'Select undername',
-                        onSelected: (name) {
-                          context
-                              .read<AssignNameBloc>()
-                              .add(SelectUndername(undername: name));
-                        },
-                      ),
-                      // or add a new name
-                      if (state.selectedName != null) ...[
-                        const SizedBox(height: 16),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child:
-                              Text('or', style: typography.paragraphNormal()),
-                        ),
-                        const SizedBox(height: 16),
-                        ArDriveButtonNew(
-                          text: state.selectedName!.records >=
-                                  state.selectedName!.undernameLimit
-                              ? 'You cant create more undernames ${state.selectedName!.records} of ${state.selectedName!.undernameLimit} in use'
-                              : 'Add new undername ${state.selectedName!.records} of ${state.selectedName!.undernameLimit} in use',
-                          onPressed: () {
-                            showArDriveDialog(
-                              context,
-                              content: BlocProvider(
-                                create: (context) =>
-                                    this.context.read<AssignNameBloc>(),
-                                child: CreateUndernameModal(
-                                  nameModel: state.selectedName!,
-                                  driveId: widget.file!.driveId,
-                                  fileId: widget.file!.id,
-                                  transactionId: widget.file!.dataTxId,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          _NameSelectorDropdown<ARNSUndername>(
+                            label: 'under_name (optional)',
+                            names: state.undernames,
+                            selectedName: state.selectedUndername,
+                            hintText: 'Select undername',
+                            onSelected: (name) {
+                              logger.d('Selecting undername');
+                              this
+                                  .context
+                                  .read<AssignNameBloc>()
+                                  .add(SelectUndername(undername: name));
+                            },
+                            records: state.selectedName?.records,
+                            undernameLimit: state.selectedName?.undernameLimit,
+                            onCreateNewUndername: () {
+                              if (state.selectedName?.records ==
+                                  state.selectedName?.undernameLimit) {
+                                return;
+                              }
+
+                              showArDriveDialog(
+                                context,
+                                content: BlocProvider.value(
+                                  value: context.read<AssignNameBloc>(),
+                                  child: CreateUndernameModal(
+                                    nameModel: state.selectedName!,
+                                    driveId: widget.file!.driveId,
+                                    fileId: widget.file!.id,
+                                    transactionId: widget.file!.dataTxId,
+                                  ),
                                 ),
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 30.0),
+                            child: ArDriveIconButton(
+                              tooltip: state.selectedName?.records ==
+                                      state.selectedName?.undernameLimit
+                                  ? 'You cant create more undernames ${state.selectedName?.records} of ${state.selectedName?.undernameLimit} in use'
+                                  : 'Add new undername ${state.selectedName?.records} of ${state.selectedName?.undernameLimit} in use',
+                              icon: ArDriveIcons.addArnsName(
+                                size: 30,
+                                color: state.selectedName?.records ==
+                                        state.selectedName?.undernameLimit
+                                    ? ArDriveTheme.of(context)
+                                        .themeData
+                                        .colorTokens
+                                        .buttonDisabled
+                                    : ArDriveTheme.of(context)
+                                        .themeData
+                                        .colorTokens
+                                        .textHigh,
                               ),
-                            );
-                          },
-                          typography: typography,
-                          isDisabled: state.selectedName!.records >=
-                              state.selectedName!.undernameLimit,
-                        ),
-                      ],
+                              onPressed: () {
+                                if (state.selectedName?.records ==
+                                    state.selectedName?.undernameLimit) {
+                                  return;
+                                }
+
+                                showArDriveDialog(
+                                  context,
+                                  content: BlocProvider.value(
+                                    value: context.read<AssignNameBloc>(),
+                                    child: CreateUndernameModal(
+                                      nameModel: state.selectedName!,
+                                      driveId: widget.file!.driveId,
+                                      fileId: widget.file!.id,
+                                      transactionId: widget.file!.dataTxId,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          )
+                        ],
+                      ),
                     ],
                   ),
                 );
@@ -473,14 +523,20 @@ class _NameSelectorDropdown<T> extends StatefulWidget {
     this.selectedName,
     required this.label,
     required this.hintText,
+    this.records,
+    this.undernameLimit,
+    this.onCreateNewUndername,
     super.key,
   });
 
   final List<T> names;
   final Function(T) onSelected;
+  final Function()? onCreateNewUndername;
   final T? selectedName;
   final String label;
   final String hintText;
+  final int? records;
+  final int? undernameLimit;
 
   @override
   State<_NameSelectorDropdown<T>> createState() =>
@@ -512,8 +568,16 @@ class __NameSelectorDropdownState<T> extends State<_NameSelectorDropdown<T>> {
       maxHeight = 48 * widget.names.length.toDouble();
     }
 
+    if (widget.onCreateNewUndername != null) {
+      maxHeight = maxHeight + 48;
+    }
+
     if (maxWidth >= MediaQuery.of(context).size.width) {
       maxWidth = MediaQuery.of(context).size.width - 32;
+    }
+
+    if (widget.onCreateNewUndername != null) {
+      maxWidth = maxWidth - 48;
     }
 
     return ArDriveDropdown(
@@ -626,6 +690,35 @@ class __NameSelectorDropdownState<T> extends State<_NameSelectorDropdown<T>> {
         ),
       );
     }
+
+    if (widget.onCreateNewUndername != null) {
+      // add create new undername button
+      final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+      list.add(
+        ArDriveDropdownItem(
+          onClick: () {
+            widget.onCreateNewUndername?.call();
+          },
+          content: Container(
+            alignment: Alignment.centerLeft,
+            width: maxWidth,
+            color: colorTokens.containerL3,
+            height: 48,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                'Create new undername. ${widget.records} of ${widget.undernameLimit} in use',
+                style: ArDriveTypographyNew.of(context).paragraphLarge(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return list;
   }
 }

@@ -56,66 +56,81 @@ class _CreateUndernameViewState extends State<CreateUndernameView> {
 
   @override
   Widget build(BuildContext context) {
-    return ArDriveStandardModalNew(
-      width: kMediumDialogWidth,
-      title: 'Create Undername',
-      content: BlocConsumer<CreateUndernameBloc, CreateUndernameState>(
-        listener: (context, state) {
-          if (state is CreateUndernameSuccess) {
-            setState(() {
-              isLoading = false;
-            });
-            context.read<AssignNameBloc>().add(
-                  ShowSuccessModal(
-                    undername: state.undername,
-                  ),
-                );
-            Navigator.pop(context);
-          }
-        },
-        builder: (context, state) {
-          final typography = ArDriveTypographyNew.of(context);
-          if (state is CreateUndernameSuccess) {
-            return Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Text('Undername created successfully',
-                  style: typography.paragraphNormal()),
-            );
-          }
+    return BlocConsumer<CreateUndernameBloc, CreateUndernameState>(
+      listener: (context, state) {
+        if (state is CreateUndernameSuccess) {
+          setState(() {
+            isLoading = false;
+          });
 
-          if (state is CreateUndernameLoading) {
-            return Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Text('Creating undername...',
-                  style: typography.paragraphNormal()),
-            );
-          }
+          /// Refresh the AssignNameBloc to update the UI with the new undername in the dropdown list
+          context.read<AssignNameBloc>().add(const LoadUndernames());
+          Navigator.pop(context);
+        }
+      },
+      builder: (context, state) {
+        Widget content;
+        List<ModalAction> actions = [];
 
-          return CreateUndernameForm(onChanged: (text) {
+        if (state is CreateUndernameFailure) {
+          actions.add(ModalAction(
+            action: () {
+              Navigator.pop(context);
+            },
+            title: 'OK',
+          ));
+        } else {
+          actions.add(ModalAction(
+            action: () {
+              Navigator.pop(context);
+            },
+            title: 'Cancel',
+          ));
+          actions.add(ModalAction(
+            isEnable: controller.text.isNotEmpty && !isLoading,
+            action: () {
+              setState(() {
+                isLoading = true;
+              });
+              context
+                  .read<CreateUndernameBloc>()
+                  .add(CreateNewUndername(controller.text));
+            },
+            title: 'Create',
+          ));
+        }
+
+        final typography = ArDriveTypographyNew.of(context);
+
+        if (state is CreateUndernameSuccess) {
+          content = Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: Text('Undername created successfully',
+                style: typography.paragraphNormal()),
+          );
+        } else if (state is CreateUndernameFailure) {
+          content = Text(
+              'Undername already exists. Please choose a different name.',
+              style: typography.paragraphNormal());
+        } else if (state is CreateUndernameLoading) {
+          content = Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: Text('Creating undername...',
+                style: typography.paragraphNormal()),
+          );
+        } else {
+          content = CreateUndernameForm(onChanged: (text) {
             controller.text = text;
           });
-        },
-      ),
-      actions: [
-        ModalAction(
-          action: () {
-            Navigator.pop(context);
-          },
-          title: 'Cancel',
-        ),
-        ModalAction(
-          isEnable: controller.text.isNotEmpty && !isLoading,
-          action: () {
-            setState(() {
-              isLoading = true;
-            });
-            context
-                .read<CreateUndernameBloc>()
-                .add(CreateNewUndername(controller.text));
-          },
-          title: 'Create',
-        ),
-      ],
+        }
+
+        return ArDriveStandardModalNew(
+          width: kMediumDialogWidth,
+          title: 'Create Undername',
+          content: content,
+          actions: actions,
+        );
+      },
     );
   }
 }

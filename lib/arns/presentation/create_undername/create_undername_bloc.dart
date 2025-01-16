@@ -1,5 +1,5 @@
 import 'package:ardrive/arns/domain/arns_repository.dart';
-import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/arns/domain/exceptions.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -34,18 +34,15 @@ class CreateUndernameBloc
           domain: _nameModel.name,
         );
 
-        logger.d('Process ID: ${_nameModel.processId}');
+        try {
+          await _arnsRepository.createUndername(undername: undername);
+        } on UndernameAlreadyExistsException {
+          emit(CreateUndernameFailure(
+              exception: UndernameAlreadyExistsException()));
+          return;
+        }
 
-        await _arnsRepository.setUndernamesToFile(
-          undername: undername,
-          driveId: driveId,
-          fileId: fileId,
-          processId: _nameModel.processId,
-        );
-
-        logger.d('Creating new undername: ${event.name}');
-
-        emit(CreateUndernameSuccess(undername: undername));
+        emit(CreateUndernameSuccess(nameModel: _nameModel));
       }
     });
   }

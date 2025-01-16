@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/arns/data/arns_dao.dart';
+import 'package:ardrive/arns/domain/exceptions.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/entities/profile_types.dart';
@@ -21,6 +22,7 @@ abstract class ARNSRepository {
     required String processId,
     bool uploadNewRevision = true,
   });
+  Future<void> createUndername({required ARNSUndername undername});
   Future<List<sdk.ANTRecord>> getAntRecordsForWallet(String address,
       {bool update = false});
   Future<List<sdk.ARNSUndername>> getARNSUndernames(sdk.ANTRecord record,
@@ -184,6 +186,53 @@ class _ARNSRepository implements ARNSRepository {
       await _fileRepository.updateFileRevision(
           fileEntity, RevisionAction.assignName);
     }
+  }
+
+  @override
+  Future<void> createUndername({
+    required ARNSUndername undername,
+  }) async {
+    // verify if the undername already exists
+    final undernames = _cachedUndernames[undername.domain]!;
+
+    if (undernames.containsKey(undername.name)) {
+      throw UndernameAlreadyExistsException();
+    }
+
+    if (_auth.currentUser.profileType == ProfileType.arConnect) {
+      logger.d('Setting undername with ArConnect');
+
+      final id = await _sdk.setUndernameWithArConnect(
+        txId: undername.record.transactionId,
+        domain: undername.domain,
+        undername: undername.name,
+      );
+
+      logger.d('Undername set with ArConnect: $id');
+    } else {
+      await _sdk.setUndername(
+        jwtString: _auth.getJWTAsString(),
+        domain: undername.domain,
+        txId: undername.record.transactionId,
+        undername: undername.name,
+      );
+    }
+
+    _cachedUndernames[undername.domain]![undername.name] = undername;
+
+    await _arnsDao.saveARNSRecord(
+      domain: undername.domain,
+      transactionId: undername.record.transactionId,
+      isActive: true,
+      undername: undername.name,
+      ttl: undername.record.ttlSeconds,
+      fileId: '', // we don't have a file id for the undername
+    );
+
+    await updateARNSRecordsActiveStatus(
+      domain: undername.domain,
+      name: undername.name,
+    );
   }
 
   Completer<List<sdk.ANTRecord>>? _getARNSUndernamesCompleter;
