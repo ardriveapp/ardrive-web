@@ -27,6 +27,7 @@ extension FileEntryExtensions on FileEntry {
               .map((e) => e.toString())
               .toList()
           : null,
+      fallbackTxId: fallbackTxId,
     );
 
     file.customJsonMetadata = parseCustomJsonMetadata(customJsonMetadata);

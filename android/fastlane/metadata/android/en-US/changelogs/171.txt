@@ -1,0 +1,5 @@
+- Introduced fallback transaction ID support for handling unresolved resource paths in manifests
+- Enhanced file upload efficiency by directly uploading small files and using chunked uploads only for files larger than 5MiB
+- Updated wallet switch dialog to use the new modal components
+- Fixed issue preventing users from renaming a drive to a name already in use
+- Fixed an issue preventing downloads for some users in Brave browser

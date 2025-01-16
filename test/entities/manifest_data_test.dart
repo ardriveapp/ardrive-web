@@ -4,6 +4,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/manifest_data.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/utils.dart';
 import 'package:mocktail/mocktail.dart';
@@ -228,8 +229,51 @@ void main() {
           manifest.toJson(),
           equals({
             'manifest': 'arweave/paths',
-            'version': '0.1.0',
+            'version': '0.2.0',
             'index': {'path': 'file-in-root-1'},
+            'paths': {
+              'file-in-root-1': {
+                'id': '0000000000000000000000000000000000000000001'
+              },
+              'file-in-root-2': {
+                'id': '0000000000000000000000000000000000000000001'
+              },
+              'parent-folder/file-in-parent-1': {
+                'id': '0000000000000000000000000000000000000000001'
+              },
+              'parent-folder/file-in-parent-2': {
+                'id': '0000000000000000000000000000000000000000001'
+              },
+              'parent-folder/child-folder/file-in-child-1': {
+                'id': '0000000000000000000000000000000000000000001'
+              },
+              'parent-folder/child-folder/file-in-child-2': {
+                'id': '0000000000000000000000000000000000000000001'
+              }
+            }
+          }));
+    });
+
+    test(
+        'returns a ManifestEntity with a valid expected manifest shape when a fallback is provided',
+        () async {
+      final builder = ManifestDataBuilder(
+        folderRepository: folderRepository,
+        fileRepository: fileRepository,
+      );
+
+      final manifest = await builder.build(
+        folderNode: stubRootFolderNode,
+        fallbackTxId: 'fallback-tx-id',
+      );
+
+      expect(
+          manifest.toJson(),
+          equals({
+            'manifest': 'arweave/paths',
+            'version': '0.2.0',
+            'index': {'path': 'file-in-root-1'},
+            'fallback': {'id': 'fallback-tx-id'},
             'paths': {
               'file-in-root-1': {
                 'id': '0000000000000000000000000000000000000000001'
@@ -269,7 +313,7 @@ void main() {
           manifest.toJson(),
           equals({
             'manifest': 'arweave/paths',
-            'version': '0.1.0',
+            'version': '0.2.0',
             'index': {'path': 'file-in-child-1'},
             'paths': {
               'file-in-child-1': {
@@ -310,6 +354,8 @@ void main() {
           owner: await wallet.getOwner(),
         );
 
+        logger.d(dataItem.data.toString());
+
         expect(dataItem.tags.length, equals(5));
         expect(decodeBase64ToString(dataItem.tags[0].name), equals('App-Name'));
         expect(decodeBase64ToString(dataItem.tags[0].value),
@@ -331,7 +377,51 @@ void main() {
         expect(dataItem.target, equals(''));
         expect(dataItem.owner, equals(await wallet.getOwner()));
 
-        expect(dataItem.data, equals(expectedManifestData));
+        expect(dataItem.data, equals(expectedManifestDataVersion020));
+      });
+      test(
+          'returns a DataItem with the expected tags, owner, and data with fallback',
+          () async {
+        final builder = ManifestDataBuilder(
+          folderRepository: folderRepository,
+          fileRepository: fileRepository,
+        );
+
+        final manifest = await builder.build(
+          folderNode: stubRootFolderNode,
+          fallbackTxId: 'fallback-tx-id',
+        );
+
+        final wallet = getTestWallet();
+
+        AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
+
+        final dataItem = await manifest.asPreparedDataItem(
+          owner: await wallet.getOwner(),
+        );
+
+        expect(dataItem.tags.length, equals(5));
+        expect(decodeBase64ToString(dataItem.tags[0].name), equals('App-Name'));
+        expect(decodeBase64ToString(dataItem.tags[0].value),
+            equals('ArDrive-App'));
+        expect(decodeBase64ToString(dataItem.tags[1].name),
+            equals('App-Platform'));
+        expect(decodeBase64ToString(dataItem.tags[1].value), equals('Android'));
+        expect(
+            decodeBase64ToString(dataItem.tags[2].name), equals('App-Version'));
+        expect(decodeBase64ToString(dataItem.tags[2].value), equals('1.3.3.7'));
+        expect(
+            decodeBase64ToString(dataItem.tags[3].name), equals('Unix-Time'));
+        expect(decodeBase64ToString(dataItem.tags[3].value).length, equals(10));
+        expect(decodeBase64ToString(dataItem.tags[4].name),
+            equals('Content-Type'));
+        expect(decodeBase64ToString(dataItem.tags[4].value),
+            equals('application/x.arweave-manifest+json'));
+
+        expect(dataItem.target, equals(''));
+        expect(dataItem.owner, equals(await wallet.getOwner()));
+
+        expect(dataItem.data, equals(expectedManifestDataWithFallback));
       });
     });
   });

@@ -88,6 +88,7 @@ class ArDriveModalNew extends StatelessWidget {
                         text: action!.title,
                         onPressed: action!.action,
                         typography: ArDriveTypographyNew.of(context),
+                        isDisabled: !action!.isEnable,
                       ),
                     ),
                   ],

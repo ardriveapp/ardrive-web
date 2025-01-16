@@ -161,6 +161,7 @@ class UploadCubit extends Cubit<UploadState> {
           )
           .getSingle();
 
+      /// If the manifest has a fallback tx id, we need to reuse it
       await _createManifestCubit.prepareManifestTx(
         manifestName: manifestFileEntry.name,
         folderId: manifestFileEntry.parentFolderId,
@@ -223,6 +224,13 @@ class UploadCubit extends Cubit<UploadState> {
           )
           .getSingle();
 
+      if (manifestFileEntry.fallbackTxId != null) {
+        _createManifestCubit.setFallbackTxId(
+          manifestFileEntry.fallbackTxId!,
+          emitState: false,
+        );
+      }
+
       await _createManifestCubit.prepareManifestTx(
         manifestName: manifestFileEntry.name,
         folderId: manifestFileEntry.parentFolderId,
@@ -230,13 +238,11 @@ class UploadCubit extends Cubit<UploadState> {
       );
 
       emit(UploadingManifests(
-      manifestFiles: manifestModels,
+        manifestFiles: manifestModels,
         completedCount: completedCount,
       ));
 
-      await _createManifestCubit.uploadManifest(
-        method: _manifestUploadMethod,
-      );
+      await _createManifestCubit.uploadManifest(method: _manifestUploadMethod);
 
       final manifestFile = await _driveDao
           .fileById(

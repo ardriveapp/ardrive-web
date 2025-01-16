@@ -35,6 +35,7 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
 
   Future<void> submit({
     required String newName,
+    bool proceedIfHasConflicts = false,
   }) async {
     try {
       final profile = _profileCubit.state as ProfileLoggedIn;
@@ -47,7 +48,7 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
         return;
       }
 
-      if (await _fileWithSameNameExistis(newName)) {
+      if (await _fileWithSameNameExistis(newName) && !proceedIfHasConflicts) {
         final previousState = state;
         emit(DriveNameAlreadyExists(newName));
         emit(previousState);

@@ -4,6 +4,7 @@ import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:collection/collection.dart';
@@ -43,12 +44,26 @@ class ManifestPath {
   Map<String, dynamic> toJson() => _$ManifestPathToJson(this);
 }
 
+@JsonSerializable()
+class ManifestFallback {
+  final String id;
+
+  ManifestFallback(this.id);
+
+  factory ManifestFallback.fromJson(Map<String, dynamic> json) =>
+      ManifestFallback(json['fallback']['id'] as String);
+
+  Map<String, dynamic> toJson() => {'id': id};
+}
+
 @JsonSerializable(explicitToJson: true)
 class ManifestData {
   @JsonKey()
   String manifest = 'arweave/paths';
   @JsonKey()
-  String version = '0.1.0';
+  String version = '0.2.0';
+  @JsonKey(includeIfNull: false)
+  final ManifestFallback? fallback;
   @JsonKey()
   final ManifestIndex index;
   @JsonKey()
@@ -56,8 +71,9 @@ class ManifestData {
 
   ManifestData(
     this.index,
-    this.paths,
-  );
+    this.paths, {
+    this.fallback,
+  });
 
   int get size => jsonData.lengthInBytes;
   Uint8List get jsonData => utf8.encode(json.encode(this));
@@ -65,6 +81,8 @@ class ManifestData {
   Future<DataItem> asPreparedDataItem({
     required ArweaveAddressString owner,
   }) async {
+    logger.d(json.encode(this));
+
     final manifestDataItem = DataItem.withBlobData(data: jsonData)
       ..setOwner(owner)
       ..addApplicationTags(
@@ -84,7 +102,7 @@ class ManifestData {
 /// replace spaces with underscores for arweave.net URL compatibility
 String prepareManifestPath({
   required String filePath,
-  required String rootFolderPath, 
+  required String rootFolderPath,
 }) {
   return filePath.substring(rootFolderPath.length + 1).replaceAll(' ', '_');
 }
@@ -100,6 +118,7 @@ class ManifestDataBuilder {
 
   Future<ManifestData> build({
     required FolderNode folderNode,
+    String? fallbackTxId,
   }) async {
     final fileList = folderNode
         .getRecursiveFiles()
@@ -141,9 +160,13 @@ class ManifestDataBuilder {
         ): ManifestPath(file.dataTxId, fileId: file.id)
     };
 
+    final fallback =
+        fallbackTxId != null ? ManifestFallback(fallbackTxId) : null;
+
     return ManifestData(
       index,
       paths,
+      fallback: fallback,
     );
   }
 }

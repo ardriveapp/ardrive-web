@@ -561,6 +561,30 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                       filesize(state.manifestSize),
                       style: textStyle,
                     ),
+                    const SizedBox(height: 8),
+                    if (state.fallbackTxId != null) ...[
+                      RichText(
+                        text: TextSpan(
+                          style: textStyle,
+                          children: [
+                            TextSpan(
+                              text: 'Fallback TxId\n',
+                              style: typography.paragraphLarge(
+                                color: colorTokens.textHigh,
+                                fontWeight: ArFontWeight.bold,
+                              ),
+                            ),
+                            TextSpan(
+                              text: state.fallbackTxId,
+                              style: typography.paragraphSmall(
+                                color: colorTokens.textMid,
+                                fontWeight: ArFontWeight.semiBold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -877,6 +901,53 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
             const Divider(),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: ArDriveClickArea(
+                child: ArDriveTooltip(
+                  message:
+                      'The fallback specifies a default content to show if the requested path cannot be found.\nThis is typically used for handling missing pages or errors, like a \'404 Not Found\' page.',
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Fallback TxId',
+                        style: typography.paragraphNormal(
+                          color: colorTokens.textLow,
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ArDriveIcons.info(
+                        size: 16,
+                        color: colorTokens.iconMid,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: ArDriveTextFieldNew(
+                hintText: 'TxId',
+                onChanged: (value) {
+                  cubit.setFallbackTxId(value);
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return null;
+                  }
+
+                  return isValidArweaveTxId(value) ? null : 'Invalid TxId';
+                },
+              ),
+            ),
+            const Divider(
+              height: 24,
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: ArDriveCard(
                 backgroundColor: colorTokens.containerL1,
                 borderRadius: 5,
@@ -902,6 +973,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
         ),
       ),
       action: ModalAction(
+        isEnable: state.enableManifestCreationButton,
         action: () => cubit.checkForConflicts(_manifestNameController.text),
         title: appLocalizationsOf(context).createHereEmphasized,
       ),

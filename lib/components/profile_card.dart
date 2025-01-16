@@ -19,7 +19,6 @@ import 'package:ardrive/user/balance/user_balance_bloc.dart';
 import 'package:ardrive/user/download_wallet/download_wallet_modal.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/open_url_utils.dart';
 import 'package:ardrive/utils/open_urls.dart';
@@ -694,7 +693,6 @@ class ProfileCardHeader extends StatelessWidget {
         final maxWidth = _calculateMaxWidth(primaryName, state);
         final truncatedWalletAddress =
             _getTruncatedWalletAddress(primaryName, walletAddress);
-        logger.d('Truncated wallet address: $truncatedWalletAddress');
         final tooltipMessage = primaryName.length > 20 ? primaryName : null;
         return ArDriveTooltip(
           message: tooltipMessage ?? '',

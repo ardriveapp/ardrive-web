@@ -43,12 +43,17 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
         super(FileDownloadStarting());
 
   Future<void> verifyUploadLimitationsAndDownload(SecretKey? cipherKey) async {
-    if (await AppPlatform.isSafari()) {
-      if (_file.size > publicDownloadSafariSizeLimit) {
-        emit(const FileDownloadFailure(
-            FileDownloadFailureReason.browserDoesNotSupportLargeDownloads));
-        return;
+    try {
+      if (await AppPlatform.isSafari()) {
+        if (_file.size > publicDownloadSafariSizeLimit) {
+          emit(const FileDownloadFailure(
+              FileDownloadFailureReason.browserDoesNotSupportLargeDownloads));
+          return;
+        }
       }
+    } catch (e) {
+      logger.d(
+          'Error verifying upload limitations and downloading file... proceeding with download');
     }
 
     download(cipherKey);
