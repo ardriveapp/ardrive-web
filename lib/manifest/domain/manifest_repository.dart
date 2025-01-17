@@ -276,9 +276,7 @@ class ManifestRepositoryImpl implements ManifestRepository {
   @override
   Future<List<FileEntry>> getManifestFilesInFolder(
       {required String folderId, required String driveId}) async {
-    final folder = await _driveDao
-        .folderById(driveId: driveId, folderId: folderId)
-        .getSingle();
+    final folder = await _driveDao.folderById(folderId: folderId).getSingle();
 
     return _getManifestFilesInFolder(folder, []);
   }
@@ -292,7 +290,7 @@ class ManifestRepositoryImpl implements ManifestRepository {
     }
 
     final parentFolder = await _driveDao
-        .folderById(driveId: folder.driveId, folderId: folder.parentFolderId!)
+        .folderById(folderId: folder.parentFolderId!)
         .getSingle();
 
     files.addAll(

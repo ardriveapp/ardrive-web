@@ -5,6 +5,7 @@ import 'package:ardrive/utils/logger.dart';
 import 'package:drift/drift.dart';
 
 abstract class FolderRepository {
+  Future<FolderEntry> getFolderEntryById(String folderId);
   Future<FolderNode> getFolderNode(String driveId, String folderId);
   Future<FolderRevision?> getLatestFolderRevisionInfo(
       String driveId, String folderId);
@@ -140,5 +141,10 @@ class _FolderRepository implements FolderRepository {
     }
 
     return folders;
+  }
+
+  @override
+  Future<FolderEntry> getFolderEntryById(String folderId) {
+    return _driveDao.folderById(folderId: folderId).getSingle();
   }
 }

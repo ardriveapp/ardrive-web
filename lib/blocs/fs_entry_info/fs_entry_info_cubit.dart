@@ -116,7 +116,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
             );
           } else {
             _entrySubscription = _driveDao
-                .fileById(driveId: driveId, fileId: selectedItem.id)
+                .fileById(fileId: selectedItem.id)
                 .watchSingle()
                 .listen(
                   (fileEntry) => fileHandler(

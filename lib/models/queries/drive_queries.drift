@@ -30,7 +30,7 @@ latestDriveRevisionsByDriveIdWithTransactions AS DriveRevisionWithTransaction:
 
 folderById:
     SELECT * FROM folder_entries
-    WHERE driveId = :driveId AND id = :folderId;
+    WHERE id = :folderId;
 
 foldersInFolder ($order = ''):
     SELECT * FROM folder_entries
@@ -76,7 +76,7 @@ latestFolderRevisionsByFolderIdWithTransactions AS FolderRevisionWithTransaction
 
 fileById:
     SELECT * FROM file_entries
-    WHERE driveId = :driveId AND id = :fileId;
+    WHERE id = :fileId;
 
 fileRevisionByDataTx:
     SELECT * FROM file_revisions

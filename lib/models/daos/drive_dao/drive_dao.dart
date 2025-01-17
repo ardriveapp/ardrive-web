@@ -425,7 +425,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           throw DriveNotFoundException(driveId);
         }
 
-        return folderById(driveId: driveId, folderId: drive.rootFolderId)
+        return folderById(folderId: drive.rootFolderId)
             .watchSingleOrNull()
             .switchMap((folder) {
           if (folder == null) {
@@ -441,8 +441,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       });
     }
 
-    final folderStream =
-        folderById(driveId: driveId, folderId: folderId).watchSingleOrNull();
+    final folderStream = folderById(folderId: folderId).watchSingleOrNull();
 
     final subfolderQuery = foldersInFolder(
       driveId: driveId,
@@ -521,7 +520,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
           if (file.parentFolderId != drive.rootFolderId) {
             folder = await folderById(
-              driveId: file.driveId,
               folderId: file.parentFolderId,
             ).getSingle();
           }
@@ -544,7 +542,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           if (folder.parentFolderId != null &&
               folder.parentFolderId! != drive.rootFolderId) {
             final parentFolderEntry = await folderById(
-              driveId: folder.driveId,
               folderId: folder.parentFolderId!,
             ).getSingle();
             parentFolder = parentFolderEntry;
@@ -606,8 +603,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   /// Constructs a tree of folders and files that are children of the specified folder.
   Future<FolderNode> getFolderTree(String driveId, String rootFolderId) async {
-    final rootFolder =
-        await folderById(driveId: driveId, folderId: rootFolderId).getSingle();
+    final rootFolder = await folderById(folderId: rootFolderId).getSingle();
 
     Future<FolderNode> getFolderChildren(FolderEntry parentFolder) async {
       final subfolders = await foldersInFolder(
