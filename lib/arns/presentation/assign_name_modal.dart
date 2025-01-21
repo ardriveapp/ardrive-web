@@ -584,7 +584,6 @@ class __NameSelectorDropdownState<T> extends State<_NameSelectorDropdown<T>> {
         target: Alignment.bottomRight,
         offset: Offset(0, 10),
       ),
-      showScrollbars: true,
       maxHeight: maxHeight,
       items: _buildList(widget.names, maxWidth),
       child: Column(

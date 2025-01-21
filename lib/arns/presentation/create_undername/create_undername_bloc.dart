@@ -1,5 +1,6 @@
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/arns/domain/exceptions.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -35,14 +36,17 @@ class CreateUndernameBloc
         );
 
         try {
+          logger.d('Creating undername...');
           await _arnsRepository.createUndername(undername: undername);
+          logger.d('Undername created successfully');
+          emit(CreateUndernameSuccess(nameModel: _nameModel));
         } on UndernameAlreadyExistsException {
           emit(CreateUndernameFailure(
               exception: UndernameAlreadyExistsException()));
-          return;
+        } catch (e, stacktrace) {
+          logger.e('Error creating undername.', e, stacktrace);
+          emit(CreateUndernameFailure(exception: e));
         }
-
-        emit(CreateUndernameSuccess(nameModel: _nameModel));
       }
     });
   }

@@ -1,4 +1,5 @@
 import 'package:ardrive/arns/domain/arns_repository.dart';
+import 'package:ardrive/arns/domain/exceptions.dart';
 import 'package:ardrive/arns/presentation/assign_name_bloc/assign_name_bloc.dart';
 import 'package:ardrive/arns/presentation/create_undername/create_undername_bloc.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -109,9 +110,17 @@ class _CreateUndernameViewState extends State<CreateUndernameView> {
                 style: typography.paragraphNormal()),
           );
         } else if (state is CreateUndernameFailure) {
-          content = Text(
+          if (state.exception is UndernameAlreadyExistsException) {
+            content = Text(
               'Undername already exists. Please choose a different name.',
-              style: typography.paragraphNormal());
+              style: typography.paragraphNormal(),
+            );
+          } else {
+            content = Text(
+              'An error occurred while creating the undername. Please try again.',
+              style: typography.paragraphNormal(),
+            );
+          }
         } else if (state is CreateUndernameLoading) {
           content = Padding(
             padding: const EdgeInsets.only(top: 8.0),

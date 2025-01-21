@@ -21,7 +21,7 @@ final class CreateUndernameSuccess extends CreateUndernameState {
 }
 
 final class CreateUndernameFailure extends CreateUndernameState {
-  final Exception exception;
+  final Object exception;
 
   const CreateUndernameFailure({required this.exception});
 
