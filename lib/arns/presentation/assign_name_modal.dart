@@ -314,7 +314,7 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                                   : 'Add new undername $undernamesPurchased of ${state.selectedName?.undernameLimit} in use',
                               icon: ArDriveIcons.addArnsName(
                                 size: 30,
-                                color: state.selectedName?.records ==
+                                color: undernamesPurchased ==
                                         state.selectedName?.undernameLimit
                                     ? ArDriveTheme.of(context)
                                         .themeData
@@ -326,7 +326,7 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                                         .textHigh,
                               ),
                               onPressed: () {
-                                if (state.selectedName?.records ==
+                                if (undernamesPurchased ==
                                     state.selectedName?.undernameLimit) {
                                   return;
                                 }
