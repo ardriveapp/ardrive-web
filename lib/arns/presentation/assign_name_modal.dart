@@ -310,7 +310,7 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                             child: ArDriveIconButton(
                               tooltip: undernamesPurchased ==
                                       state.selectedName?.undernameLimit
-                                  ? 'You can\'t create more undernames ${state.selectedName?.records} of ${state.selectedName?.undernameLimit} in use'
+                                  ? 'You can\'t create more undernames $undernamesPurchased of ${state.selectedName?.undernameLimit} in use'
                                   : 'Add new undername $undernamesPurchased of ${state.selectedName?.undernameLimit} in use',
                               icon: ArDriveIcons.addArnsName(
                                 size: 30,
