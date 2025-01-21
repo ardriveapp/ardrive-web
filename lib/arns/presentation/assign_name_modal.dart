@@ -234,6 +234,10 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                   ],
                 );
               } else if (state is UndernamesLoaded) {
+                final undernamesPurchased = state.undernames
+                    .where((element) => element.name != '@')
+                    .length;
+
                 return ConstrainedBox(
                   constraints: BoxConstraints(
                       maxHeight: MediaQuery.of(context).size.height * 0.5),
@@ -277,9 +281,7 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                                   .read<AssignNameBloc>()
                                   .add(SelectUndername(undername: name));
                             },
-                            records: state.undernames
-                                .where((element) => element.name != '@')
-                                .length,
+                            records: undernamesPurchased,
                             undernameLimit: state.selectedName?.undernameLimit,
                             key: ValueKey(state.selectedName?.name),
                             onCreateNewUndername: () {
@@ -306,10 +308,10 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                           Padding(
                             padding: const EdgeInsets.only(top: 30.0),
                             child: ArDriveIconButton(
-                              tooltip: state.undernames.length ==
+                              tooltip: undernamesPurchased ==
                                       state.selectedName?.undernameLimit
                                   ? 'You can\'t create more undernames ${state.selectedName?.records} of ${state.selectedName?.undernameLimit} in use'
-                                  : 'Add new undername ${state.undernames.length} of ${state.selectedName?.undernameLimit} in use',
+                                  : 'Add new undername $undernamesPurchased of ${state.selectedName?.undernameLimit} in use',
                               icon: ArDriveIcons.addArnsName(
                                 size: 30,
                                 color: state.selectedName?.records ==
