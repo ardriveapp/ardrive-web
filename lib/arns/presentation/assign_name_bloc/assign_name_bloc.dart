@@ -59,6 +59,7 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
           ),
         );
       }
+
       if (state is UndernamesLoaded &&
           _selectedNameModel?.name == event.nameModel.name) {
         emit(
