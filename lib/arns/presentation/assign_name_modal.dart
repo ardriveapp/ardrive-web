@@ -205,8 +205,7 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                       selectedName: state.selectedName,
                       onSelected: (name) {
                         context.read<AssignNameBloc>().add(SelectName(name));
-                        this
-                            .context
+                        context
                             .read<AssignNameBloc>()
                             .add(const LoadUndernames());
                       },
@@ -255,12 +254,8 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                         names: state.nameModels,
                         hintText: 'Choose ArNS name',
                         onSelected: (name) {
-                          this
-                              .context
-                              .read<AssignNameBloc>()
-                              .add(SelectName(name));
-                          this
-                              .context
+                          context.read<AssignNameBloc>().add(SelectName(name));
+                          context
                               .read<AssignNameBloc>()
                               .add(const LoadUndernames());
                         },
@@ -278,15 +273,15 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                             hintText: 'Select undername',
                             onSelected: (name) {
                               logger.d('Selecting undername');
-                              this
-                                  .context
+                              context
                                   .read<AssignNameBloc>()
                                   .add(SelectUndername(undername: name));
                             },
-                            records: state.selectedName?.records,
+                            records: state.undernames.length,
                             undernameLimit: state.selectedName?.undernameLimit,
+                            key: ValueKey(state.selectedName?.name),
                             onCreateNewUndername: () {
-                              if (state.selectedName?.records ==
+                              if (state.undernames.length ==
                                   state.selectedName?.undernameLimit) {
                                 return;
                               }
@@ -309,10 +304,10 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                           Padding(
                             padding: const EdgeInsets.only(top: 30.0),
                             child: ArDriveIconButton(
-                              tooltip: state.selectedName?.records ==
+                              tooltip: state.undernames.length ==
                                       state.selectedName?.undernameLimit
-                                  ? 'You cant create more undernames ${state.selectedName?.records} of ${state.selectedName?.undernameLimit} in use'
-                                  : 'Add new undername ${state.selectedName?.records} of ${state.selectedName?.undernameLimit} in use',
+                                  ? 'You can\'t create more undernames ${state.selectedName?.records} of ${state.selectedName?.undernameLimit} in use'
+                                  : 'Add new undername ${state.undernames.length} of ${state.selectedName?.undernameLimit} in use',
                               icon: ArDriveIcons.addArnsName(
                                 size: 30,
                                 color: state.selectedName?.records ==
@@ -551,6 +546,7 @@ class __NameSelectorDropdownState<T> extends State<_NameSelectorDropdown<T>> {
   initState() {
     super.initState();
     selectedName = widget.selectedName;
+    logger.d('Selected name: ${widget.selectedName}');
   }
 
   @override

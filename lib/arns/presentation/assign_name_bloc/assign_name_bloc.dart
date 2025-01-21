@@ -52,7 +52,6 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
     );
 
     on<SelectName>((event, emit) async {
-      _selectedNameModel = event.nameModel;
       if (state is NamesLoaded) {
         emit(
           (state as NamesLoaded).copyWith(
@@ -60,7 +59,8 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
           ),
         );
       }
-      if (state is UndernamesLoaded) {
+      if (state is UndernamesLoaded &&
+          _selectedNameModel?.name == event.nameModel.name) {
         emit(
           NamesLoaded(
             nameModels: (state as UndernamesLoaded).nameModels,
@@ -68,6 +68,8 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
           ),
         );
       }
+
+      _selectedNameModel = event.nameModel;
     });
 
     on<LoadUndernames>(
