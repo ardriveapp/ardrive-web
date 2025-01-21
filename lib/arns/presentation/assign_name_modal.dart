@@ -277,7 +277,9 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                                   .read<AssignNameBloc>()
                                   .add(SelectUndername(undername: name));
                             },
-                            records: state.undernames.length,
+                            records: state.undernames
+                                .where((element) => element.name != '@')
+                                .length,
                             undernameLimit: state.selectedName?.undernameLimit,
                             key: ValueKey(state.selectedName?.name),
                             onCreateNewUndername: () {
