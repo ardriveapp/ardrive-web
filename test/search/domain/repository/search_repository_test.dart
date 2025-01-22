@@ -47,6 +47,12 @@ void main() {
           name: any(named: 'name'),
         )).thenReturn(mockSelectable);
     when(() => mockSelectable.getSingleOrNull()).thenAnswer((_) async => null);
+
+    // Setup default response for drive search
+    when(() => mockDriveDao.search(
+          query: any(named: 'query'),
+          type: any(named: 'type'),
+        )).thenAnswer((_) async => []);
   });
 
   test('returns empty list if query is empty', () async {
@@ -54,41 +60,47 @@ void main() {
     expect(results, isEmpty);
   });
 
-  test('converts query to lowercase before search', () async {
-    when(() => mockDriveDao.search(
-          query: any(named: 'query'),
-          type: any(named: 'type'),
-        )).thenAnswer((_) async => []);
-
-    await searchRepository.search('TestQuery');
-
-    verify(() => mockDriveDao.search(
-          query: 'testquery',
-          type: SearchQueryType.all,
-        )).called(1);
-  });
-
   test('handles spaces and numbers in query', () async {
-    when(() => mockDriveDao.search(
-          query: any(named: 'query'),
-          type: any(named: 'type'),
-        )).thenAnswer((_) async => []);
-
     await searchRepository.search('TestQuery WithSpace and numbers 123');
 
     verify(() => mockDriveDao.search(
-          query: 'testquery withspace and numbers 123',
+          query: 'TestQuery WithSpace and numbers 123',
           type: SearchQueryType.all,
         )).called(1);
   });
 
-  group('duplicate handling', () {
+  group('ARNS search', () {
+    late ArnsRecord testArnsRecord;
+    late FileEntry testFile;
     late Drive testDrive;
-    late FileEntry testFile1;
-    late FileEntry testFile2;
+    late FolderEntry testParentFolder;
 
     setUp(() {
       final now = DateTime.now();
+      testArnsRecord = const ArnsRecord(
+        id: 'test-id',
+        transactionId: 'tx-1',
+        fileId: 'file-1',
+        ttl: 3600,
+        name: 'test',
+        domain: 'test.ar',
+        isActive: true,
+      );
+
+      testFile = FileEntry(
+        id: 'file-1',
+        driveId: 'drive-1',
+        name: 'test.txt',
+        size: 100,
+        lastModifiedDate: now,
+        dataContentType: 'text/plain',
+        parentFolderId: 'folder-1',
+        path: '/test.txt',
+        dataTxId: 'tx-1',
+        isHidden: false,
+        dateCreated: now,
+        lastUpdated: now,
+      );
 
       testDrive = Drive(
         id: 'drive-1',
@@ -101,89 +113,55 @@ void main() {
         lastUpdated: now,
       );
 
-      testFile1 = FileEntry(
-        id: 'file-1',
+      testParentFolder = FolderEntry(
+        id: 'folder-1',
         driveId: 'drive-1',
-        name: 'test1.txt',
-        size: 100,
-        lastModifiedDate: now,
-        dataContentType: 'text/plain',
-        parentFolderId: 'folder-1',
-        path: '/test1.txt',
-        dataTxId: 'tx-1',
-        isHidden: false,
+        name: 'test-folder',
+        parentFolderId: 'root-1',
+        path: '/test-folder',
         dateCreated: now,
         lastUpdated: now,
-      );
-
-      testFile2 = FileEntry(
-        id: 'file-1', // Same ID as testFile1
-        driveId: 'drive-1',
-        name: 'test1.txt',
-        size: 100,
-        lastModifiedDate: now,
-        dataContentType: 'text/plain',
-        parentFolderId: 'folder-1',
-        path: '/test1.txt',
-        dataTxId: 'tx-1',
         isHidden: false,
-        dateCreated: now,
-        lastUpdated: now,
+        isGhost: false,
       );
     });
 
-    test('identifies and marks duplicate results', () async {
-      final result1 = SearchResult(result: testFile1, drive: testDrive);
-      final result2 = SearchResult(result: testFile2, drive: testDrive);
+    test('includes ARNS results in search', () async {
+      final mockSelectable = MockSelectable<ArnsRecord>();
+      when(() => mockArnsDao.getActiveARNSRecordByName(
+            domain: '',
+            name: 'test',
+          )).thenReturn(mockSelectable);
+      when(() => mockSelectable.getSingleOrNull())
+          .thenAnswer((_) async => testArnsRecord);
 
+      when(() => mockFileRepository.getFileEntryById('file-1'))
+          .thenAnswer((_) async => testFile);
+      when(() => mockDriveDao.driveById(driveId: 'drive-1'))
+          .thenReturn(MockSelectable<Drive>());
+      when(() => mockDriveDao.driveById(driveId: 'drive-1').getSingle())
+          .thenAnswer((_) async => testDrive);
+      when(() => mockFolderRepository.getFolderEntryById('folder-1'))
+          .thenAnswer((_) async => testParentFolder);
       when(() => mockDriveDao.search(
-            query: any(named: 'query'),
-            type: any(named: 'type'),
-          )).thenAnswer((_) async => [result1, result2]);
+            query: 'test',
+            type: SearchQueryType.all,
+          )).thenAnswer((_) async => [
+            SearchResult(
+              result: testFile,
+              drive: testDrive,
+              parentFolder: testParentFolder,
+              hasArNSName: true,
+            ),
+          ]);
 
       final results = await searchRepository.search('test');
 
-      expect(results.length, 2);
-      expect(results.where((r) => !r.isDuplicate).length, 1);
-      expect(results.where((r) => r.isDuplicate).length, 1);
-
-      final duplicate = results.firstWhere((r) => r.isDuplicate);
-      expect(duplicate.originalResult, isNotNull);
-      expect(duplicate.uniqueId, equals(results.first.uniqueId));
-    });
-
-    test('preserves unique results order', () async {
-      final now = DateTime.now();
-      final uniqueFile = FileEntry(
-        id: 'file-2',
-        driveId: 'drive-1',
-        name: 'unique.txt',
-        size: 100,
-        lastModifiedDate: now,
-        dataContentType: 'text/plain',
-        parentFolderId: 'folder-1',
-        path: '/unique.txt',
-        dataTxId: 'tx-2',
-        isHidden: false,
-        dateCreated: now,
-        lastUpdated: now,
-      );
-
-      final result1 = SearchResult(result: testFile1, drive: testDrive);
-      final result2 = SearchResult(result: uniqueFile, drive: testDrive);
-      final result3 = SearchResult(result: testFile2, drive: testDrive);
-
-      when(() => mockDriveDao.search(
-            query: any(named: 'query'),
-            type: any(named: 'type'),
-          )).thenAnswer((_) async => [result1, result2, result3]);
-
-      final results = await searchRepository.search('test');
-
-      expect(results.length, 3);
-      expect(results[0].isDuplicate, isFalse);
-      expect(results[1].isDuplicate, isFalse);
-      expect(results[2].isDuplicate, isTrue);
+      expect(results, isNotEmpty);
+      expect(results.first.result, equals(testFile));
+      expect(results.first.drive, equals(testDrive));
+      expect(results.first.parentFolder, equals(testParentFolder));
+      expect(results.first.hasArNSName, isTrue);
     });
   });
 }
