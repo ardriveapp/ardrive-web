@@ -28,14 +28,14 @@ class ResponseObject {
 }
 
 class ARNSProcessData {
-  final State state;
+  final ProcessState state;
   final Map<String, ARNSName> names;
 
   ARNSProcessData({required this.state, required this.names});
 
   factory ARNSProcessData.fromJson(Map<String, dynamic> json) {
     return ARNSProcessData(
-      state: State.fromJson(json['state']),
+      state: ProcessState.fromJson(json['state']),
       names: (json['names'] as Map<String, dynamic>).map(
         (key, value) => MapEntry(key, ARNSName.fromJson(value)),
       ),
@@ -50,7 +50,7 @@ class ARNSProcessData {
   }
 }
 
-class State {
+class ProcessState {
   final int totalSupply;
   final String? sourceCodeTxId;
   final Map<String, int> balances;
@@ -63,7 +63,7 @@ class State {
   final String name;
   final String owner;
 
-  State({
+  ProcessState({
     required this.totalSupply,
     this.sourceCodeTxId,
     required this.balances,
@@ -77,8 +77,8 @@ class State {
     required this.owner,
   });
 
-  factory State.fromJson(Map<String, dynamic> json) {
-    return State(
+  factory ProcessState.fromJson(Map<String, dynamic> json) {
+    return ProcessState(
       totalSupply: json['TotalSupply'],
       sourceCodeTxId: json['Source-Code-TX-ID'],
       balances: Map<String, int>.from(json['Balances']),

@@ -1,5 +1,4 @@
 import 'package:ario_sdk/ario_sdk.dart';
-import 'package:ario_sdk/src/models/response_object.dart';
 
 class ArioSDKWeb implements ArioSDK {
   @override
@@ -41,6 +40,12 @@ class ArioSDKWeb implements ArioSDK {
   Future setUndernameWithArConnect(
       {required String txId, required String domain, String undername = '@'}) {
     // TODO: implement setUndernameWithArConnect
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<ArNSNameModel>> getArNSNames(String address) {
+    // TODO: implement getArNSNames
     throw UnimplementedError();
   }
 

@@ -14,7 +14,8 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
   final ARNSRepository _arnsRepository;
   final ArDriveAuth _auth;
   ARNSUndername? _selectedUndername;
-  ANTRecord? _selectedANTRecord;
+  // TODO: remove this later
+  ArNSNameModel? _selectedNameModel;
 
   AssignNameBloc({
     required ArDriveAuth auth,
@@ -23,52 +24,90 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
   })  : _auth = auth,
         _arnsRepository = arnsRepository,
         super(AssignNameInitial()) {
-    on<LoadNames>((event, emit) async {
-      try {
-        emit(LoadingNames());
+    on<LoadNames>(
+      (event, emit) async {
+        try {
+          logger.d('Loading names');
+          emit(LoadingNames());
 
-        final walletAddress = await _auth.getWalletAddress();
+          final walletAddress = await _auth.getWalletAddress();
 
-        final names =
-            await _arnsRepository.getAntRecordsForWallet(walletAddress!);
+          final names = await _arnsRepository
+              .getAntRecordsForWallet(walletAddress!, update: false);
 
-        if (names.isEmpty) {
-          emit(AssignNameEmptyState());
-        } else {
-          emit(NamesLoaded(names: names));
+          final nameModels =
+              await _arnsRepository.getARNSNameModelsForWallet(walletAddress);
+
+          if (names.isEmpty) {
+            emit(AssignNameEmptyState());
+          } else {
+            logger.d('Names loaded');
+            emit(NamesLoaded(nameModels: nameModels));
+          }
+        } catch (e) {
+          logger.e('Failed to load ArNS names', e);
+          emit(LoadingNamesFailed());
         }
-      } catch (e) {
-        logger.e('Failed to load ArNS names', e);
-        emit(LoadingNamesFailed());
-      }
-    });
+      },
+    );
 
     on<SelectName>((event, emit) async {
-      _selectedANTRecord = event.name;
-
       if (state is NamesLoaded) {
         emit(
           (state as NamesLoaded).copyWith(
-            selectedName: event.name,
+            selectedName: event.nameModel,
           ),
         );
       }
-      if (state is UndernamesLoaded) {
+
+      if (state is UndernamesLoaded &&
+          _selectedNameModel?.name == event.nameModel.name) {
         emit(
           NamesLoaded(
-              names: (state as UndernamesLoaded).names,
-              selectedName: _selectedANTRecord),
+            nameModels: (state as UndernamesLoaded).nameModels,
+            selectedName: _selectedNameModel,
+          ),
         );
       }
+
+      _selectedNameModel = event.nameModel;
     });
 
     on<LoadUndernames>(
       (event, emit) async {
-        final names = (state as NamesLoaded).names;
+        if (state is UndernamesLoaded) {
+          final undernames = await _arnsRepository.getARNSUndernames(
+            ANTRecord(
+              domain: _selectedNameModel!.name,
+              processId: _selectedNameModel!.processId,
+            ),
+          );
+
+          if (undernames.length > 1) {
+            undernames.removeWhere((element) => element.name == '@');
+          }
+
+          emit(
+            UndernamesLoaded(
+              nameModels: (state as UndernamesLoaded).nameModels,
+              selectedName: _selectedNameModel!,
+              undernames: undernames,
+              selectedUndername: null,
+            ),
+          );
+
+          return;
+        }
+
+        final names = (state as NamesLoaded).nameModels;
         emit(LoadingUndernames());
 
-        final undernames =
-            await _arnsRepository.getARNSUndernames(_selectedANTRecord!);
+        final undernames = await _arnsRepository.getARNSUndernames(
+          ANTRecord(
+            domain: _selectedNameModel!.name,
+            processId: _selectedNameModel!.processId,
+          ),
+        );
 
         if (undernames.length > 1) {
           undernames.removeWhere((element) => element.name == '@');
@@ -76,8 +115,8 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
 
         emit(
           UndernamesLoaded(
-            selectedName: _selectedANTRecord!,
-            names: names,
+            nameModels: names,
+            selectedName: _selectedNameModel!,
             undernames: undernames,
             selectedUndername: null,
           ),
@@ -111,7 +150,7 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
             name: '@',
             record: ARNSRecord(
                 transactionId: fileDataTableItem.dataTxId, ttlSeconds: 3600),
-            domain: _selectedANTRecord!.domain,
+            domain: _selectedNameModel!.name,
           );
         } else {
           undername = ARNSUndername(
@@ -120,7 +159,7 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
               transactionId: fileDataTableItem.dataTxId,
               ttlSeconds: 3600,
             ),
-            domain: _selectedANTRecord!.domain,
+            domain: _selectedNameModel!.name,
           );
         }
 
@@ -128,11 +167,11 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
           undername: undername,
           fileId: fileDataTableItem.fileId,
           driveId: fileDataTableItem.driveId,
-          processId: _selectedANTRecord!.processId,
+          processId: _selectedNameModel!.processId,
         );
 
         final (address, arAddress) = getAddressesFromArns(
-          domain: _selectedANTRecord!.domain,
+          domain: _selectedNameModel!.name,
           undername: _selectedUndername?.name,
         );
 
@@ -146,9 +185,21 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
       }
     });
 
+    on<ShowSuccessModal>((event, emit) async {
+      final (address, arAddress) = getAddressesFromArns(
+        domain: event.undername.domain,
+        undername: event.undername.name,
+      );
+
+      emit(NameAssignedWithSuccess(
+        address: address,
+        arAddress: arAddress,
+      ));
+    });
+
     on<ConfirmSelection>((event, emit) async {
       emit(SelectionConfirmed(
-        selectedName: _selectedANTRecord!,
+        selectedName: _selectedNameModel!,
         selectedUndername: _selectedUndername,
       ));
     });
