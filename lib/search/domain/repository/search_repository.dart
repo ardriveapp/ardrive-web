@@ -26,12 +26,10 @@ class ArDriveSearchRepository implements SearchRepository {
 
     if (query.isEmpty) return Future.value([]);
 
-    String sanitizedQuery = query.toLowerCase();
-
     // Start both searches in parallel
     final arnsSearchFuture = _searchArns(query);
     final driveSearchFuture =
-        _driveDao.search(query: sanitizedQuery, type: SearchQueryType.all);
+        _driveDao.search(query: query, type: SearchQueryType.all);
 
     // Wait for both searches to complete
     final results = await Future.wait([arnsSearchFuture, driveSearchFuture]);
@@ -45,8 +43,7 @@ class ArDriveSearchRepository implements SearchRepository {
     // Process results to identify duplicates
     for (var result in allResults) {
       if (uniqueResults.containsKey(result.uniqueId)) {
-        // This is a duplicate - mark it and keep track of the original
-        duplicates.add(result.asDuplicate());
+        continue;
       } else {
         uniqueResults[result.uniqueId] = result;
       }

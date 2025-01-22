@@ -505,117 +505,124 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     final List<SearchResult> results = [];
 
     // Run queries in parallel for better performance
-    await Future.wait([
-      // Search drives
-      if (type == SearchQueryType.all || type == SearchQueryType.drives)
-        searchDrives(
-          query: query,
-          limit: limit,
-          offset: offset,
-        ).get().then((drives) {
-          results.addAll(
-            drives.map((drive) => SearchResult<Drive>(
-                  result: drive,
-                  drive: drive,
-                )),
-          );
-        }),
+    await Future.wait(
+      [
+        // Search drives
+        if (type == SearchQueryType.all || type == SearchQueryType.drives)
+          searchDrives(
+            query: query,
+            limit: limit,
+            offset: offset,
+          ).get().then((drives) {
+            results.addAll(
+              drives.map((drive) => SearchResult<Drive>(
+                    result: drive,
+                    drive: drive,
+                  )),
+            );
+          }),
 
-      // Search folders
-      if (type == SearchQueryType.all || type == SearchQueryType.folders)
-        searchFolders(
-          query: query,
-          limit: limit,
-          offset: offset,
-        ).get().then((folders) {
-          results.addAll(
-            folders.map((folder) => SearchResult<FolderEntry>(
-                  result: FolderEntry(
-                    id: folder.id,
-                    driveId: folder.driveId,
-                    name: folder.name,
-                    parentFolderId: folder.parentFolderId,
-                    path: '',
-                    dateCreated: DateTime.now(),
-                    lastUpdated: DateTime.now(),
-                    isGhost: false,
-                    isHidden: false,
-                  ),
-                  parentFolder: folder.parentFolderId != null &&
-                          folder.parentFolderId != folder.driveId
-                      ? FolderEntry(
-                          id: folder.parentFolderId!,
-                          name: folder.parentFolderName!,
-                          driveId: folder.driveId,
-                          path: '', // Path is not used as noted in the code
-                          dateCreated: DateTime.now(),
-                          lastUpdated: DateTime.now(),
-                          isGhost: false,
-                          isHidden: false,
-                        )
-                      : null,
-                  drive: Drive(
-                    id: folder.driveId,
-                    name: folder.driveName,
-                    privacy: folder.drivePrivacy,
-                    rootFolderId: '', // Not needed for search results
-                    ownerAddress: '', // Not needed for search results
-                    lastUpdated: DateTime.now(),
-                    dateCreated: DateTime.now(),
-                    isHidden: false,
-                  ),
-                )),
-          );
-        }),
+        // Search folders
+        if (type == SearchQueryType.all || type == SearchQueryType.folders)
+          searchFolders(
+            query: query,
+            limit: limit,
+            offset: offset,
+          ).get().then((folders) {
+            results.addAll(
+              folders.map((folder) => SearchResult<FolderEntry>(
+                    result: FolderEntry(
+                      id: folder.id,
+                      driveId: folder.driveId,
+                      name: folder.name,
+                      parentFolderId: folder.parentFolderId,
+                      path: '',
+                      dateCreated: DateTime.now(),
+                      lastUpdated: DateTime.now(),
+                      isGhost: false,
+                      isHidden: false,
+                    ),
+                    parentFolder: folder.parentFolderId != null &&
+                            folder.parentFolderId != folder.driveId
+                        ? FolderEntry(
+                            id: folder.parentFolderId!,
+                            name: folder.parentFolderName!,
+                            driveId: folder.driveId,
+                            path: '', // Path is not used as noted in the code
+                            dateCreated: DateTime.now(),
+                            lastUpdated: DateTime.now(),
+                            isGhost: false,
+                            isHidden: false,
+                          )
+                        : null,
+                    drive: Drive(
+                      id: folder.driveId,
+                      name: folder.driveName,
+                      privacy: folder.drivePrivacy,
+                      rootFolderId: '', // Not needed for search results
+                      ownerAddress: '', // Not needed for search results
+                      lastUpdated: DateTime.now(),
+                      dateCreated: DateTime.now(),
+                      isHidden: false,
+                    ),
+                  )),
+            );
+          }),
 
-      // Search files
-      if (type == SearchQueryType.all || type == SearchQueryType.files)
-        searchFiles(
-          query: query,
-          limit: limit,
-          offset: offset,
-        ).get().then((files) {
-          results.addAll(
-            files.map((file) => SearchResult<FileEntry>(
-                  result: FileEntry(
-                    id: file.id,
-                    driveId: file.driveId,
-                    name: file.name,
-                    parentFolderId: file.parentFolderId,
-                    path: '',
-                    dateCreated: DateTime.now(),
-                    lastUpdated: DateTime.now(),
-                    isHidden: false,
-                    size: file.size,
-                    lastModifiedDate: file.lastModifiedDate,
-                    dataTxId: file.dataTxId,
+        // Search files
+        if (type == SearchQueryType.all || type == SearchQueryType.files)
+          searchFiles(
+            query: query,
+            limit: limit,
+            offset: offset,
+          ).get().then(
+            (files) {
+              results.addAll(
+                files.map(
+                  (file) => SearchResult<FileEntry>(
+                    result: FileEntry(
+                      id: file.id,
+                      driveId: file.driveId,
+                      name: file.name,
+                      parentFolderId: file.parentFolderId,
+                      path: '',
+                      dateCreated: DateTime.now(),
+                      lastUpdated: DateTime.now(),
+                      isHidden: false,
+                      size: file.size,
+                      lastModifiedDate: file.lastModifiedDate,
+                      dataTxId: file.dataTxId,
+                      dataContentType: file.dataContentType,
+                    ),
+                    parentFolder: file.parentFolderId != file.driveId
+                        ? FolderEntry(
+                            id: file.parentFolderId,
+                            name: file.parentFolderName!,
+                            driveId: file.driveId,
+                            path: '', // Path is not used as noted in the code
+                            dateCreated: DateTime.now(),
+                            lastUpdated: DateTime.now(),
+                            isGhost: false,
+                            isHidden: false,
+                          )
+                        : null,
+                    drive: Drive(
+                      id: file.driveId,
+                      name: file.driveName,
+                      privacy: file.drivePrivacy,
+                      rootFolderId: '', // Not needed for search results
+                      ownerAddress: '', // Not needed for search results
+                      isHidden: false,
+                      lastUpdated: DateTime.now(),
+                      dateCreated: DateTime.now(),
+                    ),
                   ),
-                  parentFolder: file.parentFolderId != file.driveId
-                      ? FolderEntry(
-                          id: file.parentFolderId,
-                          name: file.parentFolderName!,
-                          driveId: file.driveId,
-                          path: '', // Path is not used as noted in the code
-                          dateCreated: DateTime.now(),
-                          lastUpdated: DateTime.now(),
-                          isGhost: false,
-                          isHidden: false,
-                        )
-                      : null,
-                  drive: Drive(
-                    id: file.driveId,
-                    name: file.driveName,
-                    privacy: file.drivePrivacy,
-                    rootFolderId: '', // Not needed for search results
-                    ownerAddress: '', // Not needed for search results
-                    isHidden: false,
-                    lastUpdated: DateTime.now(),
-                    dateCreated: DateTime.now(),
-                  ),
-                )),
-          );
-        }),
-    ]);
+                ),
+              );
+            },
+          ),
+      ],
+    );
 
     return results;
   }

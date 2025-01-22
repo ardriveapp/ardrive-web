@@ -38,18 +38,6 @@ class SearchResult<T> extends Equatable {
     return '${drive.id}_${result.hashCode}';
   }
 
-  /// Creates a duplicate instance of this search result
-  SearchResult<T> asDuplicate() {
-    return SearchResult<T>(
-      result: result,
-      parentFolder: parentFolder,
-      drive: drive,
-      hasArNSName: hasArNSName,
-      uniqueId: uniqueId,
-      isDuplicate: true,
-      originalResult: this,
-    );
-  }
 
   @override
   List<Object?> get props => [uniqueId];
