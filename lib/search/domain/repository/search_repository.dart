@@ -21,23 +21,46 @@ class ArDriveSearchRepository implements SearchRepository {
 
   @override
   Future<List<SearchResult>> search(String query) async {
+    logger.d('Searching for $query');
+    final startTime = DateTime.now();
+
     if (query.isEmpty) return Future.value([]);
 
     String sanitizedQuery = query.toLowerCase();
 
     // Start both searches in parallel
-    final arnsSearchFuture = _searchArns( query);
+    final arnsSearchFuture = _searchArns(query);
     final driveSearchFuture =
-        _driveDao.search(query: sanitizedQuery, type: SearchQueryType.name);
+        _driveDao.search(query: sanitizedQuery, type: SearchQueryType.all);
 
     // Wait for both searches to complete
     final results = await Future.wait([arnsSearchFuture, driveSearchFuture]);
 
-    // Combine results - arnsSearch is first element, driveSearch is second
+    // Combine results and handle duplicates
+    final List<SearchResult> allResults = [...?results[0], ...results[1] ?? []];
+
+    final Map<String, SearchResult> uniqueResults = {};
+    final List<SearchResult> duplicates = [];
+
+    // Process results to identify duplicates
+    for (var result in allResults) {
+      if (uniqueResults.containsKey(result.uniqueId)) {
+        // This is a duplicate - mark it and keep track of the original
+        duplicates.add(result.asDuplicate());
+      } else {
+        uniqueResults[result.uniqueId] = result;
+      }
+    }
+
+    // Combine unique results and duplicates, with duplicates at the end
     final List<SearchResult> combinedResults = [
-      ...?results[0],
-      ...results[1] ?? []
+      ...uniqueResults.values,
+      ...duplicates,
     ];
+
+    final endTime = DateTime.now();
+    final duration = endTime.difference(startTime);
+    logger.d('Search completed in ${duration.inMilliseconds}ms');
 
     return combinedResults;
   }
@@ -52,8 +75,6 @@ class ArDriveSearchRepository implements SearchRepository {
         .getSingleOrNull();
 
     if (arnsRecord == null) return null;
-
-    logger.d('ARNs record found: ${arnsRecord.fileId}');
 
     final file = await _fileRepository.getFileEntryById(arnsRecord.fileId);
     final drive = await _driveDao.driveById(driveId: file.driveId).getSingle();
