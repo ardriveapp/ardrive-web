@@ -336,10 +336,12 @@ class _UploadFormState extends State<UploadForm> {
                   driveDetailCubit: widget.driveDetailCubit,
                   justSelectName: true,
                   onSelectionConfirmed: (name) {
-                    context.read<UploadCubit>().selectUndernameWithLicense(
-                          antRecord: name.selectedName,
-                          undername: name.selectedUndername,
-                        );
+                    // TODO: RE-ENABLE THIS
+
+                    // context.read<UploadCubit>().selectUndernameWithLicense(
+                    //       antRecord: name.selectedName,
+                    //       undername: name.selectedUndername,
+                    //     );
                   },
                   canClose: false,
                   onEmptySelection: (emptySelection) {
@@ -1746,9 +1748,10 @@ class _UploadReadyWidget extends StatelessWidget {
         driveDetailCubit: driveDetailCubit,
         justSelectName: true,
         onSelectionConfirmed: (name) {
-          context
-              .read<UploadCubit>()
-              .selectUndername(name.selectedName, name.selectedUndername);
+          // TODO: RE-ENABLE THIS
+          // context
+          //     .read<UploadCubit>()
+          //     .selectUndername(name.selectedName, name.selectedUndername);
         },
         canClose: false,
         onEmptySelection: (emptySelection) {

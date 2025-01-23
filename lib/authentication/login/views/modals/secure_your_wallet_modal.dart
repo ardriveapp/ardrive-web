@@ -104,7 +104,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
               Text(
                   showDerivedWalletNotYetCreated
                       ? 'We could not find a wallet for that Ethereum address, but you can create one now by entering a password to secure the new wallet.'
-                      : 'Please enter and confirm a password to secure your wallet.',
+                      : 'Please enter and confirm a password to secure your wallet.\nThis password is used to encrypt your private files, and can never be changed, reset, or recovered!\nBe sure to store it somewhere safe.',
                   textAlign: TextAlign.center,
                   style: typography.paragraphNormal(
                       color: colorTokens.textLow,

@@ -1,7 +1,6 @@
 library ario;
 
 import 'package:ario_sdk/ario_sdk.dart';
-import 'package:ario_sdk/src/models/response_object.dart';
 
 abstract class ArioSDK {
   /// Get the list of available gateways
@@ -27,6 +26,8 @@ abstract class ArioSDK {
     required String domain,
     String undername = '@',
   });
+
+  Future<List<ArNSNameModel>> getArNSNames(String address);
 
   /// Get the primary name for the given address
   ///

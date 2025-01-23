@@ -82,7 +82,7 @@ class UploadDispatcher {
             final thumbnailTask = ThumbnailUploadTask(
               file: uploadPreparation.thumbnailFile!,
               metadata: thumbnailMetadata!,
-              type: task.type,
+              type: UploadType.turbo,
               uploadItem: DataItemUploadItem(
                   size: uploadPreparation.thumbnailDataItem!.dataSize,
                   data: uploadPreparation.thumbnailDataItem!),

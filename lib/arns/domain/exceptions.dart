@@ -1,0 +1,1 @@
+class UndernameAlreadyExistsException implements Exception {}

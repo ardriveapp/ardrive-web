@@ -7,7 +7,6 @@ import 'dart:convert';
 import 'dart:js_util';
 
 import 'package:ario_sdk/ario_sdk.dart';
-import 'package:ario_sdk/src/models/response_object.dart';
 import 'package:js/js.dart';
 
 class ArioSDKWeb implements ArioSDK {
@@ -95,6 +94,33 @@ class ArioSDKWeb implements ArioSDK {
     );
 
     return _setARNSImpl('', arnsUndername, true);
+  }
+
+  @override
+  Future<List<ArNSNameModel>> getArNSNames(String address) async {
+    final processes = await _getARNSRecordsForWalletImpl(address);
+
+    List<ArNSNameModel> names = [];
+
+    for (var e in processes) {
+      final name = e.names[e.names.keys.first];
+      final undernameLimit = name?.undernameLimit;
+
+      if (undernameLimit == null) {
+        throw Exception('Under name limit is null');
+      }
+
+      e.state.records.removeWhere((key, value) => key == '@');
+
+      names.add(ArNSNameModel(
+        name: e.names.keys.first,
+        processId: e.names.keys.first,
+        records: e.state.records.length,
+        undernameLimit: undernameLimit,
+      ));
+    }
+
+    return names;
   }
 
   @override
