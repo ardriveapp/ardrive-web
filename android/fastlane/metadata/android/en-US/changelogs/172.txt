@@ -1,0 +1,4 @@
+- Streamlined the ArNS name assignment process by enabling users to create new undernames directly within the file or manifest workflow.
+- Reordered Data Tx ID and Metadata Tx ID display in the details panel for improved clarity.
+- Increased the size of the drag-and-drop box on the main page for easier file uploads.
+- Updated warning text to emphasize the importance of securely storing encryption passwords.
