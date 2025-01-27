@@ -1,4 +1,9 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/core/arfs/repository/file_metadata_repository.dart';
+import 'package:ardrive/core/arfs/use_cases/bulk_import_files.dart';
+import 'package:ardrive/core/arfs/use_cases/get_file_metadata.dart';
+import 'package:ardrive/core/arfs/use_cases/insert_file_metadata.dart';
+import 'package:ardrive/core/arfs/use_cases/verify_parent_folder.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/domain/repository/upload_repository.dart';
@@ -99,5 +104,26 @@ UploadRepository createUploadRepository(BuildContext context) {
     driveDao: context.read<DriveDao>(),
     auth: context.read<ArDriveAuth>(),
     licenseService: context.read<LicenseService>(),
+  );
+}
+
+GetFileMetadata createGetFileMetadata(BuildContext context) {
+  return GetFileMetadata(context.read<FileMetadataRepository>());
+}
+
+VerifyParentFolder createVerifyParentFolder(BuildContext context) {
+  return VerifyParentFolder(context.read<DriveDao>());
+}
+
+InsertFileMetadata createInsertFileMetadata(BuildContext context) {
+  return InsertFileMetadata(context.read<DriveDao>());
+}
+
+BulkImportFiles createBulkImportFiles(BuildContext context) {
+  return BulkImportFiles(
+    verifyParentFolder: createVerifyParentFolder(context),
+    insertFileMetadata: createInsertFileMetadata(context),
+    driveDao: context.read<DriveDao>(),
+    arweaveService: context.read<ArweaveService>(),
   );
 }
