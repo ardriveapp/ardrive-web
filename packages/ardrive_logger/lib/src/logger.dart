@@ -220,6 +220,8 @@ class Logger {
   bool _shouldSaveInMemory(LogLevel level) {
     return _storeLogsInMemory && level.index >= _memoryLogLevel.index;
   }
+
+  void info(String s) {}
 }
 
 abstract class LogExporter {

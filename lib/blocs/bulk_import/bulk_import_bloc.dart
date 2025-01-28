@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/bulk_import/bulk_import_event.dart';
 import 'package:ardrive/blocs/bulk_import/bulk_import_state.dart';
 import 'package:ardrive/core/arfs/use_cases/bulk_import_files.dart';
@@ -11,12 +12,15 @@ import 'package:bloc/bloc.dart';
 class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
   final BulkImportFiles _bulkImportFiles;
   final ManifestRepository _manifestRepository;
+  final ArDriveAuth _ardriveAuth;
 
   BulkImportBloc({
     required BulkImportFiles bulkImportFiles,
     required ManifestRepository manifestRepository,
+    required ArDriveAuth ardriveAuth,
   })  : _bulkImportFiles = bulkImportFiles,
         _manifestRepository = manifestRepository,
+        _ardriveAuth = ardriveAuth,
         super(const BulkImportInitial()) {
     on<StartManifestBulkImport>(_onStartManifestBulkImport);
     on<CancelBulkImport>(_onCancelBulkImport);
@@ -119,6 +123,8 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
               ));
             }
           },
+          wallet: _ardriveAuth.currentUser.wallet,
+          userCipherKey: _ardriveAuth.currentUser.cipherKey,
         );
 
         processedFiles++;
@@ -134,7 +140,7 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
       // Handle result
       if (successfulFiles == 0) {
         // All files failed to import
-        emit(BulkImportError(
+        emit(const BulkImportError(
           'Failed to import any files. Please check the manifest and try again.',
         ));
       } else {

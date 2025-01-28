@@ -1,10 +1,14 @@
 import 'package:ardrive/core/arfs/use_cases/insert_file_metadata.dart';
+import 'package:ardrive/core/arfs/use_cases/upload_file_metadata.dart';
+import 'package:ardrive/core/arfs/use_cases/upload_folder_metadata.dart';
 import 'package:ardrive/core/arfs/use_cases/verify_parent_folder.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:arweave/arweave.dart';
 import 'package:collection/collection.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 
 /// Exception thrown when bulk import fails.
@@ -76,16 +80,22 @@ class ManifestFileEntry {
 class BulkImportFiles {
   final VerifyParentFolder _verifyParentFolder;
   final InsertFileMetadata _insertFileMetadata;
+  final UploadFileMetadata _uploadFileMetadata;
+  final UploadFolderMetadata _uploadFolderMetadata;
   final DriveDao _driveDao;
   final ArweaveService _arweaveService;
 
   BulkImportFiles({
     required VerifyParentFolder verifyParentFolder,
     required InsertFileMetadata insertFileMetadata,
+    required UploadFileMetadata uploadFileMetadata,
+    required UploadFolderMetadata uploadFolderMetadata,
     required DriveDao driveDao,
     required ArweaveService arweaveService,
   })  : _verifyParentFolder = verifyParentFolder,
         _insertFileMetadata = insertFileMetadata,
+        _uploadFileMetadata = uploadFileMetadata,
+        _uploadFolderMetadata = uploadFolderMetadata,
         _driveDao = driveDao,
         _arweaveService = arweaveService;
 
@@ -95,11 +105,11 @@ class BulkImportFiles {
     String driveId,
     String parentFolderId,
     List<String> pathParts,
+    Wallet wallet,
+    bool isPrivate,
+    SecretKey? driveKey,
   ) async {
     String currentParentId = parentFolderId;
-
-    // Get drive to check if it's private
-    final targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();
 
     for (final folderName in pathParts) {
       logger.d('folderName: $folderName');
@@ -122,6 +132,7 @@ class BulkImportFiles {
       } else {
         // Create new folder
         late String newFolderId;
+        late String metadataTxId;
 
         logger.d('creating new folder with name: $folderName');
 
@@ -133,7 +144,7 @@ class BulkImportFiles {
             folderName: folderName,
           );
 
-          // Create and save the folder entity revision
+          // Create and upload the folder entity
           final folderEntity = FolderEntity(
             id: newFolderId,
             driveId: driveId,
@@ -141,15 +152,29 @@ class BulkImportFiles {
             name: folderName,
           );
 
-          // Note: We don't need to handle the drive key here because
-          // we're not uploading the folder metadata to Arweave during bulk import.
-          // The folder metadata will be synced later by the sync process.
+          try {
+            // Upload folder metadata first
+            final uploadResult = await _uploadFolderMetadata(
+              folderEntity: folderEntity,
+              customTags: [],
+              isPrivate: isPrivate,
+              wallet: wallet,
+              driveKey: driveKey,
+            );
 
-          await _driveDao.insertFolderRevision(
-            folderEntity.toRevisionCompanion(
-              performedAction: RevisionAction.create,
-            ),
-          );
+            metadataTxId = uploadResult.metadataTxId;
+            folderEntity.txId = metadataTxId;
+
+            // Insert folder revision after successful upload
+            await _driveDao.insertFolderRevision(
+              folderEntity.toRevisionCompanion(
+                performedAction: RevisionAction.create,
+              ),
+            );
+          } catch (e) {
+            logger.e('Failed to upload folder metadata', e);
+            rethrow;
+          }
         });
 
         currentParentId = newFolderId;
@@ -173,6 +198,8 @@ class BulkImportFiles {
     required String driveId,
     required String parentFolderId,
     required List<ManifestFileEntry> files,
+    required Wallet wallet,
+    required SecretKey userCipherKey,
     void Function(int total, int processed, String currentPath)?
         onFolderProgress,
     void Function(String fileName)? onFileProgress,
@@ -187,6 +214,17 @@ class BulkImportFiles {
     logger.d('starting bulk import with ${files.length} files');
 
     try {
+      // Get drive to check if it's private
+      final targetDrive =
+          await _driveDao.driveById(driveId: driveId).getSingle();
+      final isPrivate = targetDrive.isPrivate;
+
+      // Get drive key if private
+      SecretKey? driveKey;
+      if (isPrivate) {
+        driveKey = await _driveDao.getDriveKey(driveId, userCipherKey);
+      }
+
       onCreateFolderHierarchyStart?.call();
       // Phase 1: Extract all unique folder paths that need to be created
       final folderPaths = <String>{};
@@ -234,7 +272,6 @@ class BulkImportFiles {
           onFolderProgress?.call(totalFolders, processedFolders, path);
 
           final pathParts = path.split('/');
-          final folderName = pathParts.last;
           final parentPath = pathParts.length > 1
               ? pathParts.sublist(0, pathParts.length - 1).join('/')
               : '/';
@@ -242,50 +279,18 @@ class BulkImportFiles {
           final currentParentId = folderPathToId[parentPath]!;
 
           try {
-            // Check if folder already exists
-            final existingFolders = await _driveDao
-                .foldersInFolderWithName(
-                  driveId: driveId,
-                  parentFolderId: currentParentId,
-                  name: folderName,
-                )
-                .get();
-
-            if (existingFolders.isNotEmpty) {
-              folderPathToId[path] = existingFolders.first.id;
-              processedFolders++;
-              continue;
-            }
-
-            // Create new folder
-            late String newFolderId;
-            await _driveDao.transaction(() async {
-              newFolderId = await _driveDao.createFolder(
-                driveId: driveId,
-                parentFolderId: currentParentId,
-                folderName: folderName,
-              );
-
-              final folderEntity = FolderEntity(
-                id: newFolderId,
-                driveId: driveId,
-                parentFolderId: currentParentId,
-                name: folderName,
-              );
-
-              folderEntity.txId = newFolderId;
-
-              await _driveDao.insertFolderRevision(
-                folderEntity.toRevisionCompanion(
-                  performedAction: RevisionAction.create,
-                ),
-              );
-            });
-
-            folderPathToId[path] = newFolderId;
+            final folderId = await _createFolderHierarchy(
+              driveId,
+              currentParentId,
+              [pathParts.last],
+              wallet,
+              isPrivate,
+              driveKey,
+            );
+            folderPathToId[path] = folderId;
             processedFolders++;
           } catch (e) {
-            logger.e('Failed to create folder: $path');
+            logger.e('Failed to create folder: $path', e);
             throw BulkImportException(
               'Failed to create folder: $path',
               originalError: e,
@@ -295,11 +300,9 @@ class BulkImportFiles {
 
         // Final folder progress update
         onFolderProgress?.call(totalFolders, totalFolders, '');
-
-        onCreateFolderHierarchyEnd?.call();
-
-        await Future.delayed(const Duration(milliseconds: 50));
       }
+
+      onCreateFolderHierarchyEnd?.call();
 
       logger.d('files: ${files.length}');
 
@@ -337,6 +340,10 @@ class BulkImportFiles {
           // Get tx details from the batch results
           final tx = txDetails[file.dataTxId];
 
+          logger.d('tx: $tx');
+          logger.d('size: ${tx?.data.size}');
+          logger.d('txId: ${file.dataTxId}');
+
           final fileEntry = await _importFile(
             driveId: driveId,
             parentFolderId: finalParentId,
@@ -348,6 +355,8 @@ class BulkImportFiles {
                     ?.value ??
                 file.contentType,
             dataSize: int.parse(tx?.data.size ?? file.size.toString()),
+            wallet: wallet,
+            isPrivate: isPrivate,
           );
 
           await Future.delayed(const Duration(milliseconds: 50));
@@ -384,8 +393,40 @@ class BulkImportFiles {
     required String dataTxId,
     required String dataContentType,
     required int dataSize,
+    required Wallet wallet,
+    required bool isPrivate,
   }) async {
     final now = DateTime.now();
+
+    // Create FileEntity for metadata upload
+    final fileEntity = FileEntity(
+      id: fileId,
+      driveId: driveId,
+      name: fileName,
+      size: dataSize,
+      dataTxId: dataTxId,
+      parentFolderId: parentFolderId,
+      dataContentType: dataContentType,
+      lastModifiedDate: now,
+    );
+
+    // Upload metadata
+    late FileMetadataUploadResult metadataUploadResult;
+    try {
+      // metadataUploadResult = await _uploadFileMetadata(
+      //   fileEntity: fileEntity,
+      //   customTags: [],
+      //   isPrivate: isPrivate,
+      //   wallet: wallet,
+      // );
+    } catch (e) {
+      logger.e('Failed to upload metadata for file: $fileName', e);
+      throw FileImportFailure(
+        path: fileName,
+        dataTxId: dataTxId,
+        error: 'Failed to upload metadata: ${e.toString()}',
+      );
+    }
 
     final fileEntry = FileEntriesCompanion.insert(
       id: fileId,
@@ -418,7 +459,7 @@ class BulkImportFiles {
         size: dataSize,
         dataTxId: dataTxId,
         dataContentType: Value(dataContentType),
-        metadataTxId: '',
+        metadataTxId: 'metadataUploadResult.metadataTxId',
         isHidden: const Value(false),
       );
 

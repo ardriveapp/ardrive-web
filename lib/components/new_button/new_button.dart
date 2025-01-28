@@ -1,3 +1,4 @@
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/bulk_import/bulk_import_bloc.dart';
 import 'package:ardrive/components/components.dart';
@@ -427,6 +428,7 @@ class NewButton extends StatelessWidget {
                             context.read<ArweaveService>(),
                           ),
                         ),
+                        ardriveAuth: context.read<ArDriveAuth>(),
                       ),
                       child: BulkImportModal(
                         driveId: drive!.id,
@@ -537,6 +539,7 @@ class NewButton extends StatelessWidget {
                       create: (context) => BulkImportBloc(
                         bulkImportFiles: context.read<BulkImportFiles>(),
                         manifestRepository: context.read<ManifestRepository>(),
+                        ardriveAuth: context.read<ArDriveAuth>(),
                       ),
                       child: BulkImportModal(
                         driveId: drive!.id,
