@@ -109,10 +109,7 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
         final targetDrive =
             await _driveDao.driveById(driveId: ghostFolder.driveId).getSingle();
         final targetFolder = await _driveDao
-            .folderById(
-              driveId: ghostFolder.driveId,
-              folderId: ghostFolder.parentFolderId!,
-            )
+            .folderById(folderId: ghostFolder.parentFolderId!)
             .getSingle();
 
         final driveKey = targetDrive.isPrivate

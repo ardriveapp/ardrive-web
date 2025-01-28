@@ -145,7 +145,7 @@ class _ARNSRepository implements ARNSRepository {
     }
 
     // update file revision with new undernames
-    final file = await _fileRepository.getFileEntryById(driveId, fileId);
+    final file = await _fileRepository.getFileEntryById(fileId);
 
     /// current names
     List<String> currentNames;

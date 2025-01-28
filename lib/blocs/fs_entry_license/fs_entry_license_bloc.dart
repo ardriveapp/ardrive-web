@@ -221,9 +221,7 @@ class FsEntryLicenseBloc
 
     for (final item in items) {
       if (item is FileDataTableItem) {
-        final file = await _driveDao
-            .fileById(driveId: driveId, fileId: item.id)
-            .getSingle();
+        final file = await _driveDao.fileById(fileId: item.id).getSingle();
         files.add(file);
       } else if (item is FolderDataTableItem) {
         final folderTree = await _driveDao.getFolderTree(driveId, item.id);

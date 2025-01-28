@@ -30,7 +30,7 @@ class Database extends _$Database {
   Database([QueryExecutor? e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 24;
+  int get schemaVersion => 25;
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) {
@@ -153,6 +153,19 @@ class Database extends _$Database {
 
               await m.addColumn(fileEntries, fileEntries.fallbackTxId);
               await m.addColumn(fileRevisions, fileRevisions.fallbackTxId);
+            }
+            if (from < 25) {
+              logger.d('Migrating schema from v24 to v25');
+              logger.d('Adding search optimization indexes');
+
+              // Create indexes for search optimization
+              await customStatement('''
+                CREATE INDEX IF NOT EXISTS idx_drives_name ON drives(name);
+                CREATE INDEX IF NOT EXISTS idx_file_entries_name ON file_entries(name);
+                CREATE INDEX IF NOT EXISTS idx_folder_entries_name ON folder_entries(name);
+              ''');
+
+              logger.d('Search optimization indexes created');
             }
           } catch (e, stacktrace) {
             logger.e(

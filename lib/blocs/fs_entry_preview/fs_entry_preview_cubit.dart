@@ -136,7 +136,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     if (selectedItem != null) {
       if (selectedItem.runtimeType == FileDataTableItem) {
         _entrySubscription = _driveDao
-            .fileById(driveId: driveId, fileId: selectedItem.id)
+            .fileById(fileId: selectedItem.id)
             .watchSingle()
             .listen((file) async {
           final drive = await _driveDao.driveById(driveId: driveId).getSingle();

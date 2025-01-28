@@ -85,9 +85,8 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
       if (_isRenamingFolder) {
         emit(const FolderEntryRenameInProgress());
-        var folder = await _driveDao
-            .folderById(driveId: driveId, folderId: folderId!)
-            .getSingle();
+        var folder =
+            await _driveDao.folderById(folderId: folderId!).getSingle();
         folder = folder.copyWith(name: newName, lastUpdated: DateTime.now());
 
         await _driveDao.transaction(() async {
@@ -120,9 +119,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
         emit(const FolderEntryRenameSuccess());
       } else {
-        var file = await _driveDao
-            .fileById(driveId: driveId, fileId: fileId!)
-            .getSingle();
+        var file = await _driveDao.fileById(fileId: fileId!).getSingle();
 
         if (!updateExtension && !_dontVerifyExtension) {
           final newFileExtension =
@@ -206,9 +203,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   }
 
   Future<bool> _folderWithSameNameExists(String newFolderName) async {
-    final folder = await _driveDao
-        .folderById(driveId: driveId, folderId: folderId!)
-        .getSingle();
+    final folder = await _driveDao.folderById(folderId: folderId!).getSingle();
     final entityWithSameNameExists = await _driveDao.doesEntityWithNameExist(
       name: newFolderName,
       driveId: driveId,
@@ -220,8 +215,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   }
 
   Future<bool> _fileWithSameNameExistis(String newFileName) async {
-    final file =
-        await _driveDao.fileById(driveId: driveId, fileId: fileId!).getSingle();
+    final file = await _driveDao.fileById(fileId: fileId!).getSingle();
 
     final entityWithSameNameExists = await _driveDao.doesEntityWithNameExist(
       name: newFileName,

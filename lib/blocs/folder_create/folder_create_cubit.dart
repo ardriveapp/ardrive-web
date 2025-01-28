@@ -55,9 +55,8 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
       await _driveDao.transaction(() async {
         final targetDrive =
             await _driveDao.driveById(driveId: driveId).getSingle();
-        final targetFolder = await _driveDao
-            .folderById(driveId: driveId, folderId: parentFolderId)
-            .getSingle();
+        final targetFolder =
+            await _driveDao.folderById(folderId: parentFolderId).getSingle();
 
         final driveKey = targetDrive.isPrivate
             ? await _driveDao.getDriveKey(

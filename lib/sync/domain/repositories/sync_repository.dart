@@ -322,10 +322,7 @@ class _SyncRepository implements SyncRepository {
     //Finalize missing parent list
     for (final ghostFolder in ghostFolders.values) {
       final folder = await driveDao
-          .folderById(
-            driveId: ghostFolder.driveId,
-            folderId: ghostFolder.folderId,
-          )
+          .folderById(folderId: ghostFolder.folderId)
           .getSingleOrNull();
 
       final folderExists = folder != null;
