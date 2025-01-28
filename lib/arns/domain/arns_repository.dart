@@ -256,7 +256,9 @@ class _ARNSRepository implements ARNSRepository {
     if (_getARNSUndernamesCompleter != null) {
       return _getARNSUndernamesCompleter!.future;
     }
+
     logger.d('Loading names');
+
     final date = DateTime.now();
 
     _getARNSUndernamesCompleter = Completer();
@@ -309,10 +311,9 @@ class _ARNSRepository implements ARNSRepository {
       _getARNSUndernamesCompleter = null;
       return records;
     } catch (e) {
-      logger.e('Error getting ANT records for wallet: $e');
+      logger.e('Error getting ANT records for wallet.', e);
 
       _getARNSUndernamesCompleter!.completeError(e);
-
       _getARNSUndernamesCompleter = null;
 
       return [];
