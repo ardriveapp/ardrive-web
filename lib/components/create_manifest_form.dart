@@ -181,7 +181,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           title: appLocalizationsOf(context).preparingManifestEmphasized,
         );
       } else if (state is CreateManifestLoadingARNS) {
-        return ProgressDialog(
+        return const ProgressDialog(
           useNewArDriveUI: true,
           title: 'Loading ArNS Records...',
         );
