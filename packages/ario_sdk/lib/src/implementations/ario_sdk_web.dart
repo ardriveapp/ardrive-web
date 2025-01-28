@@ -232,9 +232,9 @@ Future<List<ARNSProcessData>> _getARNSRecordsForWalletImpl(
   try {
     final promise = _getARNSRecordsForWallet(address);
     final stringified = await promiseToFuture(promise)
-        .timeout(const Duration(seconds: 30), onTimeout: () {
+        .timeout(const Duration(seconds: 60), onTimeout: () {
       throw TimeoutException(
-          'Failed to get ARNS records: timeout after 30 seconds');
+          'Failed to get ARNS records: timeout after 60 seconds');
     });
 
     final object = ResponseObject.fromJson(jsonDecode(stringified));
