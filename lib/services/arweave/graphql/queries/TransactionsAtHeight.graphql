@@ -1,0 +1,17 @@
+query TransactionsAtHeight($owner: String!, $height: Int!) {
+  transactions(owners: [$owner],
+    block: {
+      min: $height,
+      max: $height
+    }
+  ) {
+    edges {
+      node {
+        id
+        data {
+          size
+        }
+      }
+    }
+  }
+}

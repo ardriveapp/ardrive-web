@@ -425,7 +425,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           throw DriveNotFoundException(driveId);
         }
 
-        return folderById(driveId: driveId, folderId: drive.rootFolderId)
+        return folderById(folderId: drive.rootFolderId)
             .watchSingleOrNull()
             .switchMap((folder) {
           if (folder == null) {
@@ -441,8 +441,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       });
     }
 
-    final folderStream =
-        folderById(driveId: driveId, folderId: folderId).watchSingleOrNull();
+    final folderStream = folderById(folderId: folderId).watchSingleOrNull();
 
     final subfolderQuery = foldersInFolder(
       driveId: driveId,
@@ -500,75 +499,130 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<List<SearchResult>> search({
     required String query,
     required SearchQueryType type,
+    int limit = 50,
+    int offset = 0,
   }) async {
-    final resultFiles = await (select(fileEntries)
-          ..where((tbl) => tbl.name.like('%$query%')))
-        .get();
-    final resultFolders = await (select(folderEntries)
-          ..where((tbl) => tbl.name.like('%$query%')))
-        .get();
-    final resultDrives =
-        await (select(drives)..where((tbl) => tbl.name.like('%$query%'))).get();
-
-    resultFolders.removeWhere((element) => element.parentFolderId == null);
-
     final List<SearchResult> results = [];
-    final fileResults = await Future.wait(
-      resultFiles.map(
-        (file) async {
-          final drive = await driveById(driveId: file.driveId).getSingle();
-          FolderEntry? folder;
 
-          if (file.parentFolderId != drive.rootFolderId) {
-            folder = await folderById(
-              driveId: file.driveId,
-              folderId: file.parentFolderId,
-            ).getSingle();
-          }
+    // Run queries in parallel for better performance
+    await Future.wait(
+      [
+        // Search drives
+        if (type == SearchQueryType.all || type == SearchQueryType.drives)
+          searchDrives(
+            query: query,
+            limit: limit,
+            offset: offset,
+          ).get().then((drives) {
+            results.addAll(
+              drives.map((drive) => SearchResult<Drive>(
+                    result: drive,
+                    drive: drive,
+                  )),
+            );
+          }),
 
-          return SearchResult<FileEntry>(
-            result: file,
-            parentFolder: folder,
-            drive: drive,
-          );
-        },
-      ),
+        // Search folders
+        if (type == SearchQueryType.all || type == SearchQueryType.folders)
+          searchFolders(
+            query: query,
+            limit: limit,
+            offset: offset,
+          ).get().then((folders) {
+            results.addAll(
+              folders.map((folder) => SearchResult<FolderEntry>(
+                    result: FolderEntry(
+                      id: folder.id,
+                      driveId: folder.driveId,
+                      name: folder.name,
+                      parentFolderId: folder.parentFolderId,
+                      path: '',
+                      dateCreated: DateTime.now(),
+                      lastUpdated: DateTime.now(),
+                      isGhost: false,
+                      isHidden: false,
+                    ),
+                    parentFolder: folder.parentFolderId != null &&
+                            folder.parentFolderId != folder.driveId
+                        ? FolderEntry(
+                            id: folder.parentFolderId!,
+                            name: folder.parentFolderName!,
+                            driveId: folder.driveId,
+                            path: '', // Path is not used as noted in the code
+                            dateCreated: DateTime.now(),
+                            lastUpdated: DateTime.now(),
+                            isGhost: false,
+                            isHidden: false,
+                          )
+                        : null,
+                    drive: Drive(
+                      id: folder.driveId,
+                      name: folder.driveName,
+                      privacy: folder.drivePrivacy,
+                      rootFolderId: '', // Not needed for search results
+                      ownerAddress: '', // Not needed for search results
+                      lastUpdated: DateTime.now(),
+                      dateCreated: DateTime.now(),
+                      isHidden: false,
+                    ),
+                  )),
+            );
+          }),
+
+        // Search files
+        if (type == SearchQueryType.all || type == SearchQueryType.files)
+          searchFiles(
+            query: query,
+            limit: limit,
+            offset: offset,
+          ).get().then(
+            (files) {
+              results.addAll(
+                files.map(
+                  (file) => SearchResult<FileEntry>(
+                    result: FileEntry(
+                      id: file.id,
+                      driveId: file.driveId,
+                      name: file.name,
+                      parentFolderId: file.parentFolderId,
+                      path: '',
+                      dateCreated: DateTime.now(),
+                      lastUpdated: DateTime.now(),
+                      isHidden: false,
+                      size: file.size,
+                      lastModifiedDate: file.lastModifiedDate,
+                      dataTxId: file.dataTxId,
+                      dataContentType: file.dataContentType,
+                    ),
+                    parentFolder: file.parentFolderId != file.driveId
+                        ? FolderEntry(
+                            id: file.parentFolderId,
+                            name: file.parentFolderName!,
+                            driveId: file.driveId,
+                            path: '', // Path is not used as noted in the code
+                            dateCreated: DateTime.now(),
+                            lastUpdated: DateTime.now(),
+                            isGhost: false,
+                            isHidden: false,
+                          )
+                        : null,
+                    drive: Drive(
+                      id: file.driveId,
+                      name: file.driveName,
+                      privacy: file.drivePrivacy,
+                      rootFolderId: '', // Not needed for search results
+                      ownerAddress: '', // Not needed for search results
+                      isHidden: false,
+                      lastUpdated: DateTime.now(),
+                      dateCreated: DateTime.now(),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+      ],
     );
-
-    final folderResults = await Future.wait(
-      resultFolders.map(
-        (folder) async {
-          FolderEntry? parentFolder;
-          final drive = await driveById(driveId: folder.driveId).getSingle();
-
-          if (folder.parentFolderId != null &&
-              folder.parentFolderId! != drive.rootFolderId) {
-            final parentFolderEntry = await folderById(
-              driveId: folder.driveId,
-              folderId: folder.parentFolderId!,
-            ).getSingle();
-            parentFolder = parentFolderEntry;
-          }
-
-          return SearchResult<FolderEntry>(
-            result: folder,
-            parentFolder: parentFolder,
-            drive: drive,
-          );
-        },
-      ),
-    );
-
-    final driveResults = await Future.wait(resultDrives.map((drive) async {
-      return SearchResult<Drive>(
-        result: drive,
-        drive: await driveById(driveId: drive.id).getSingle(),
-      );
-    }));
-
-    results.addAll(driveResults);
-    results.addAll(folderResults);
-    results.addAll(fileResults);
 
     return results;
   }
@@ -606,8 +660,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   /// Constructs a tree of folders and files that are children of the specified folder.
   Future<FolderNode> getFolderTree(String driveId, String rootFolderId) async {
-    final rootFolder =
-        await folderById(driveId: driveId, folderId: rootFolderId).getSingle();
+    final rootFolder = await folderById(folderId: rootFolderId).getSingle();
 
     Future<FolderNode> getFolderChildren(FolderEntry parentFolder) async {
       final subfolders = await foldersInFolder(
@@ -679,8 +732,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   }
 
   Future<void> writeToTransaction(Insertable<NetworkTransaction> transaction) =>
-      (update(networkTransactions)..whereSamePrimaryKey(transaction))
-          .write(transaction);
+      into(networkTransactions).insertOnConflictUpdate(transaction);
 
   Future<void> insertDriveRevision(DriveRevisionsCompanion revision) async {
     await db.transaction(() async {

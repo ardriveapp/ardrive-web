@@ -34,8 +34,7 @@ class FileShareCubit extends Cubit<FileShareState> {
 
     final drive = await _driveDao.driveById(driveId: driveId).getSingle();
 
-    final file =
-        await _driveDao.fileById(driveId: driveId, fileId: fileId).getSingle();
+    final file = await _driveDao.fileById(fileId: fileId).getSingle();
 
     final dataTxStatus = (await (_driveDao.select(_driveDao.networkTransactions)
               ..where((entry) => entry.id.equals(file.dataTxId)))

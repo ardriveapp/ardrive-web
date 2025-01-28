@@ -1,0 +1,11 @@
+query FirstTxBlockHeightForWallet($owner: String!) {
+  transactions(owners: [$owner], first: 1, sort: HEIGHT_ASC) {
+    edges {
+      node {
+        block {
+          height
+        }
+      }
+    }
+  }
+}

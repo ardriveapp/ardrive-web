@@ -10,7 +10,7 @@ abstract class FileRepository {
     String folderId,
   );
 
-  Future<FileEntry> getFileEntryById(String driveId, String fileId);
+  Future<FileEntry> getFileEntryById(String fileId);
 
   /// Updates a file entry in the database.
   ///
@@ -65,8 +65,8 @@ class _FileRepository implements FileRepository {
   }
 
   @override
-  Future<FileEntry> getFileEntryById(String driveId, String fileId) {
-    return _driveDao.fileById(driveId: driveId, fileId: fileId).getSingle();
+  Future<FileEntry> getFileEntryById(String fileId) {
+    return _driveDao.fileById(fileId: fileId).getSingle();
   }
 
   @override

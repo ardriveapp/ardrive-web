@@ -34,3 +34,5 @@ CREATE TABLE file_entries (
 
     PRIMARY KEY (id, driveId)
 ) AS FileEntry;
+
+CREATE INDEX idx_file_entries_name ON file_entries(name);

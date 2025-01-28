@@ -30,7 +30,7 @@ latestDriveRevisionsByDriveIdWithTransactions AS DriveRevisionWithTransaction:
 
 folderById:
     SELECT * FROM folder_entries
-    WHERE driveId = :driveId AND id = :folderId;
+    WHERE id = :folderId;
 
 foldersInFolder ($order = ''):
     SELECT * FROM folder_entries
@@ -76,7 +76,7 @@ latestFolderRevisionsByFolderIdWithTransactions AS FolderRevisionWithTransaction
 
 fileById:
     SELECT * FROM file_entries
-    WHERE driveId = :driveId AND id = :fileId;
+    WHERE id = :fileId;
 
 fileRevisionByDataTx:
     SELECT * FROM file_revisions
@@ -200,3 +200,41 @@ deleteFileRevisionsByDriveId:
 deleteLicensesByDriveId:
     DELETE FROM licenses
     WHERE driveId = :driveId;
+
+searchFiles ($query = '', $limit = 50, $offset = 0) AS FileSearchResult:
+    SELECT
+        f.*,
+        parent_folder.name AS parent_folder_name,
+        parent_folder.id AS parent_folder_id,
+        d.name AS drive_name,
+        d.id AS drive_id,
+        d.privacy AS drive_privacy
+    FROM file_entries f
+    JOIN drives d ON d.id = f.driveId
+    LEFT JOIN folder_entries parent_folder ON parent_folder.id = f.parentFolderId
+    WHERE f.name LIKE '%' || :query || '%'
+    ORDER BY f.name
+    LIMIT :limit OFFSET :offset;
+
+searchFolders ($query = '', $limit = 50, $offset = 0) AS FolderSearchResult:
+    SELECT
+        f.*,
+        parent_folder.name AS parent_folder_name,
+        parent_folder.id AS parent_folder_id,
+        d.name AS drive_name,
+        d.id AS drive_id,
+        d.privacy AS drive_privacy
+    FROM folder_entries f
+    JOIN drives d ON d.id = f.driveId
+    LEFT JOIN folder_entries parent_folder ON parent_folder.id = f.parentFolderId
+    WHERE f.name LIKE '%' || :query || '%'
+        AND f.parentFolderId IS NOT NULL  -- Exclude root folders
+    ORDER BY f.name
+    LIMIT :limit OFFSET :offset;
+
+searchDrives ($query = '', $limit = 50, $offset = 0):
+    SELECT *
+    FROM drives
+    WHERE name LIKE '%' || :query || '%'
+    ORDER BY name
+    LIMIT :limit OFFSET :offset;

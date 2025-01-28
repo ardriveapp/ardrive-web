@@ -1,10 +1,13 @@
 import 'dart:async';
 
+import 'package:ardrive/arns/data/arns_dao.dart';
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/components/file_download_dialog.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
+import 'package:ardrive/core/arfs/repository/file_repository.dart';
+import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
@@ -104,7 +107,12 @@ class FileSearchModal extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         RepositoryProvider<ArDriveSearchRepository>(
-          create: (_) => ArDriveSearchRepository(context.read<DriveDao>()),
+          create: (_) => ArDriveSearchRepository(
+            context.read<DriveDao>(),
+            ARNSDao(context.read<Database>()),
+            context.read<FileRepository>(),
+            context.read<FolderRepository>(),
+          ),
         ),
         BlocProvider<SearchBloc>(
           create: (context) =>
@@ -376,6 +384,14 @@ class _FileSearchModalState extends State<_FileSearchModal> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        if (searchResult.hasArNSName ?? false)
+          ArDriveTooltip(
+            message: 'This file has an ArNS name',
+            child: Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ArDriveIcons.arnsName(color: colorTokens.iconHigh),
+            ),
+          ),
         ArDriveIconButton(
           icon: ArDriveIcons.arrowRightOutline(color: colorTokens.iconHigh),
           onPressed: () => _handleNavigation(context, searchResult),

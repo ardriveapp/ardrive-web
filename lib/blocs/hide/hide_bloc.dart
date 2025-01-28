@@ -59,12 +59,8 @@ class HideBloc extends Bloc<HideEvent, HideState> {
   ) async {
     emit(const PreparingAndSigningHideState(hideAction: HideAction.hideFile));
 
-    final FileEntry currentFile = await _driveDao
-        .fileById(
-          driveId: event.driveId,
-          fileId: event.fileId,
-        )
-        .getSingle();
+    final FileEntry currentFile =
+        await _driveDao.fileById(fileId: event.fileId).getSingle();
 
     await _setHideStatus(
       currentFile,
@@ -81,12 +77,8 @@ class HideBloc extends Bloc<HideEvent, HideState> {
 
     logger.d('Hiding folder ${event.folderId} in drive ${event.driveId}');
 
-    final FolderEntry currentFolder = await _driveDao
-        .folderById(
-          driveId: event.driveId,
-          folderId: event.folderId,
-        )
-        .getSingle();
+    final FolderEntry currentFolder =
+        await _driveDao.folderById(folderId: event.folderId).getSingle();
 
     await _setHideStatus(
       currentFolder,
@@ -101,12 +93,8 @@ class HideBloc extends Bloc<HideEvent, HideState> {
   ) async {
     emit(const PreparingAndSigningHideState(hideAction: HideAction.unhideFile));
 
-    final FileEntry currentFile = await _driveDao
-        .fileById(
-          driveId: event.driveId,
-          fileId: event.fileId,
-        )
-        .getSingle();
+    final FileEntry currentFile =
+        await _driveDao.fileById(fileId: event.fileId).getSingle();
 
     await _setHideStatus(
       currentFile,
@@ -125,12 +113,8 @@ class HideBloc extends Bloc<HideEvent, HideState> {
 
     logger.d('Unhiding folder ${event.folderId} in drive ${event.driveId}');
 
-    final FolderEntry currentFolder = await _driveDao
-        .folderById(
-          driveId: event.driveId,
-          folderId: event.folderId,
-        )
-        .getSingle();
+    final FolderEntry currentFolder =
+        await _driveDao.folderById(folderId: event.folderId).getSingle();
 
     await _setHideStatus(
       currentFolder,

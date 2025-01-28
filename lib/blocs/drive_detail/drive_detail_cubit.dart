@@ -78,7 +78,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       // TODO: Handle deep-linking folders of unattached drives.
       Future.microtask(() async {
         final folder = await _driveDao
-            .folderById(driveId: driveId, folderId: initialFolderId)
+            .folderById(folderId: initialFolderId)
             .getSingleOrNull();
         // Open the root folder if the deep-linked folder could not be found.
 

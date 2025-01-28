@@ -155,10 +155,7 @@ class UploadCubit extends Cubit<UploadState> {
       manifestModels[i] = manifestModels[i].copyWith(isUploading: true);
 
       final manifestFileEntry = await _driveDao
-          .fileById(
-            driveId: _driveId,
-            fileId: manifestModels[i].existingManifestFileId,
-          )
+          .fileById(fileId: manifestModels[i].existingManifestFileId)
           .getSingle();
 
       /// If the manifest has a fallback tx id, we need to reuse it
@@ -218,10 +215,7 @@ class UploadCubit extends Cubit<UploadState> {
       ));
 
       final manifestFileEntry = await _driveDao
-          .fileById(
-            driveId: _driveId,
-            fileId: manifestModels[i].existingManifestFileId,
-          )
+          .fileById(fileId: manifestModels[i].existingManifestFileId)
           .getSingle();
 
       if (manifestFileEntry.fallbackTxId != null) {
@@ -245,10 +239,7 @@ class UploadCubit extends Cubit<UploadState> {
       await _createManifestCubit.uploadManifest(method: _manifestUploadMethod);
 
       final manifestFile = await _driveDao
-          .fileById(
-            driveId: _driveId,
-            fileId: manifestModels[i].existingManifestFileId,
-          )
+          .fileById(fileId: manifestModels[i].existingManifestFileId)
           .getSingleOrNull();
 
       if (manifestFile == null) {
@@ -921,9 +912,8 @@ class UploadCubit extends Cubit<UploadState> {
     _files
         .removeWhere((file) => filesNamesToExclude.contains(file.ioFile.name));
     _targetDrive = await _driveDao.driveById(driveId: _driveId).getSingle();
-    _targetFolder = await _driveDao
-        .folderById(driveId: _driveId, folderId: _parentFolderId)
-        .getSingle();
+    _targetFolder =
+        await _driveDao.folderById(folderId: _parentFolderId).getSingle();
 
     // TODO: check if the backend refreshed the balance instead of a timer
     if (isRetryingToPayWithTurbo) {
