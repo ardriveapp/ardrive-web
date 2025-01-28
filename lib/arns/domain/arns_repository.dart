@@ -96,6 +96,7 @@ class _ARNSRepository implements ARNSRepository {
 
   final Map<String, Map<String, ARNSUndername>> _cachedUndernames = {};
   PrimaryNameDetails? _cachedPrimaryName;
+  bool _hasErrorGettingARNSUndernames = false;
 
   @override
   Future<void> setUndernamesToFile({
@@ -242,6 +243,10 @@ class _ARNSRepository implements ARNSRepository {
     String address, {
     bool update = false,
   }) async {
+    if (!update && _hasErrorGettingARNSUndernames) {
+      return [];
+    }
+
     if (!update &&
         lastUpdated != null &&
         lastUpdated!
@@ -306,6 +311,8 @@ class _ARNSRepository implements ARNSRepository {
       logger.d(
           'Names loaded in ${DateTime.now().difference(date).inMilliseconds}ms');
 
+      _hasErrorGettingARNSUndernames = false;
+
       _getARNSUndernamesCompleter!.complete(records);
 
       _getARNSUndernamesCompleter = null;
@@ -315,6 +322,8 @@ class _ARNSRepository implements ARNSRepository {
 
       _getARNSUndernamesCompleter!.completeError(e);
       _getARNSUndernamesCompleter = null;
+
+      _hasErrorGettingARNSUndernames = true;
 
       return [];
     }
