@@ -278,11 +278,8 @@ class _ARNSRepository implements ARNSRepository {
         final undernames = process.state.records.keys.map((e) {
           final record = process.state.records[e];
 
-          return ARNSUndername(
-            record: ARNSRecord(
-              transactionId: record!.transactionId,
-              ttlSeconds: record.ttlSeconds,
-            ),
+          return ARNSUndernameFactory.create(
+            transactionId: record!.transactionId,
             name: e,
             domain: process.names.keys.first,
           );

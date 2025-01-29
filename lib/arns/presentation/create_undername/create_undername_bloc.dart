@@ -26,12 +26,9 @@ class CreateUndernameBloc
       if (event is CreateNewUndername) {
         emit(CreateUndernameLoading());
 
-        final ARNSUndername undername = ARNSUndername(
+        final ARNSUndername undername = ARNSUndernameFactory.create(
           name: event.name,
-          record: ARNSRecord(
-            transactionId: transactionId,
-            ttlSeconds: 3600,
-          ),
+          transactionId: transactionId,
           domain: _nameModel.name,
         );
 

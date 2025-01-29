@@ -45,8 +45,8 @@ class ArioSDKWeb implements ArioSDK {
     required String domain,
     String undername = '@',
   }) {
-    final arnsUndername = ARNSUndername(
-      record: ARNSRecord(transactionId: txId, ttlSeconds: 3600),
+    final arnsUndername = ARNSUndernameFactory.create(
+      transactionId: txId,
       name: undername,
       domain: domain,
     );
@@ -87,8 +87,8 @@ class ArioSDKWeb implements ArioSDK {
       {required String txId,
       required String domain,
       String undername = '@'}) async {
-    final arnsUndername = ARNSUndername(
-      record: ARNSRecord(transactionId: txId, ttlSeconds: 3600),
+    final arnsUndername = ARNSUndernameFactory.create(
+      transactionId: txId,
       name: undername,
       domain: domain,
     );
@@ -202,8 +202,8 @@ Future<List<ARNSUndername>> _getUndernamesImpl(
       ttlSeconds: jsonParsed[item]['ttlSeconds'],
     );
 
-    final undername = ARNSUndername(
-      record: antRecord,
+    final undername = ARNSUndernameFactory.create(
+      transactionId: antRecord.transactionId,
       name: item,
       domain: arnsRecord.domain,
     );
