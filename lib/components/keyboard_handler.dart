@@ -1,7 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/dev_tools/shortcut_handler.dart';
-import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 // ignore: depend_on_referenced_packages
@@ -109,10 +108,10 @@ class ArDriveDevToolsShortcuts extends StatelessWidget {
     // Define the shortcuts and their actions
     final List<Shortcut> shortcuts = [
       Shortcut(
-        modifier: LogicalKeyboardKey.shiftLeft,
+        modifier: LogicalKeyboardKey.controlLeft,
         key: LogicalKeyboardKey.keyQ,
         action: () {
-          if (context.read<ConfigService>().flavor != Flavor.production) {
+          if (HardwareKeyboard.instance.isShiftPressed) {
             ArDriveDevTools.instance.showDevTools();
           }
         },
@@ -121,10 +120,8 @@ class ArDriveDevToolsShortcuts extends StatelessWidget {
         modifier: LogicalKeyboardKey.shiftLeft,
         key: LogicalKeyboardKey.keyW,
         action: () {
-          if (context.read<ConfigService>().flavor != Flavor.production) {
-            logger.d('Closing dev tools');
-            ArDriveDevTools.instance.closeDevTools();
-          }
+          logger.d('Closing dev tools');
+          ArDriveDevTools.instance.closeDevTools();
         },
       ),
     ];
