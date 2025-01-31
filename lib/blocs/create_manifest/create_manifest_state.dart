@@ -228,3 +228,17 @@ enum CreateManifestUploadProgress {
   assigningArNS,
   completed,
 }
+
+class CreateManifestLoadingARNS extends CreateManifestState {
+  final FolderEntry parentFolder;
+  final String manifestName;
+
+  CreateManifestLoadingARNS({
+    required this.parentFolder,
+    required this.manifestName,
+  });
+
+  @override
+  @override
+  List<Object?> get props => [];
+}

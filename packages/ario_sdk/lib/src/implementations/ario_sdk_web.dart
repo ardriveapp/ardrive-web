@@ -3,11 +3,21 @@
 @JS('ario')
 library ario;
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:js_util';
 
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:js/js.dart';
+
+class GetARNSRecordsForWalletException implements Exception {
+  final String message;
+
+  GetARNSRecordsForWalletException(this.message);
+
+  @override
+  String toString() => message;
+}
 
 class ArioSDKWeb implements ArioSDK {
   Set<Gateway>? _cachedGateways;
@@ -219,12 +229,26 @@ external Object _getARNSRecordsForWallet(String address);
 
 Future<List<ARNSProcessData>> _getARNSRecordsForWalletImpl(
     String address) async {
-  final promise = _getARNSRecordsForWallet(address);
-  final stringified = await promiseToFuture(promise);
+  try {
+    final promise = _getARNSRecordsForWallet(address);
+    final stringified = await promiseToFuture(promise)
+        .timeout(const Duration(seconds: 60), onTimeout: () {
+      throw TimeoutException(
+          'Failed to get ARNS records: timeout after 60 seconds');
+    });
 
-  final object = ResponseObject.fromJson(jsonDecode(stringified));
+    final object = ResponseObject.fromJson(jsonDecode(stringified));
 
-  return object.data.values.toList();
+    return object.data.values.toList();
+  } catch (e) {
+    if (e is TimeoutException) {
+      throw GetARNSRecordsForWalletException(
+          'ARNS records fetch timed out: ${e.message}');
+    }
+
+    throw GetARNSRecordsForWalletException(
+        'Failed to get ARNS records: ${e.toString()}');
+  }
 }
 
 @JS('getPrimaryNameAndLogo')

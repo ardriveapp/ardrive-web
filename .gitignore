@@ -30,7 +30,7 @@ graphql_api.graphql.dart
 #.vscode/
 
 # Flutter/Dart/Pub related
-**/doc/api/
+**/doc/api/ 
 **/ios/Flutter/.last_build_id
 .dart_tool/
 .flutter-plugins
@@ -79,3 +79,5 @@ app.*.map.json
 # Ignore node_modules and package-lock.json in ario_sdk/web
 packages/ario_sdk/web/node_modules/
 packages/ario_sdk/web/package-lock.json
+
+.cursorignore

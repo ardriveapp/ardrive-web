@@ -180,6 +180,11 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           useNewArDriveUI: true,
           title: appLocalizationsOf(context).preparingManifestEmphasized,
         );
+      } else if (state is CreateManifestLoadingARNS) {
+        return const ProgressDialog(
+          useNewArDriveUI: true,
+          title: 'Loading ArNS Records...',
+        );
       } else if (state is CreateManifestNameConflict) {
         return _createManifestNameConflict(
           contexty: context,
