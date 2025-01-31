@@ -481,7 +481,6 @@ class AppState extends State<App> {
             userPreferencesRepository: _.read<UserPreferencesRepository>(),
           ),
         ),
-
         RepositoryProvider(
           create: (_) => ArDriveDownloader(
             ardriveIo: ArDriveIO(),

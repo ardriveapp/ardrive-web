@@ -96,6 +96,7 @@ class _ARNSRepository implements ARNSRepository {
 
   final Map<String, Map<String, ARNSUndername>> _cachedUndernames = {};
   PrimaryNameDetails? _cachedPrimaryName;
+  bool _hasErrorGettingARNSUndernames = false;
 
   @override
   Future<void> setUndernamesToFile({
@@ -235,6 +236,10 @@ class _ARNSRepository implements ARNSRepository {
     String address, {
     bool update = false,
   }) async {
+    if (!update && _hasErrorGettingARNSUndernames) {
+      return [];
+    }
+
     if (!update &&
         lastUpdated != null &&
         lastUpdated!
@@ -249,7 +254,9 @@ class _ARNSRepository implements ARNSRepository {
     if (_getARNSUndernamesCompleter != null) {
       return _getARNSUndernamesCompleter!.future;
     }
+
     logger.d('Loading names');
+
     final date = DateTime.now();
 
     _getARNSUndernamesCompleter = Completer();
@@ -294,16 +301,19 @@ class _ARNSRepository implements ARNSRepository {
       logger.d(
           'Names loaded in ${DateTime.now().difference(date).inMilliseconds}ms');
 
+      _hasErrorGettingARNSUndernames = false;
+
       _getARNSUndernamesCompleter!.complete(records);
 
       _getARNSUndernamesCompleter = null;
       return records;
     } catch (e) {
-      logger.e('Error getting ANT records for wallet: $e');
+      logger.e('Error getting ANT records for wallet.', e);
 
       _getARNSUndernamesCompleter!.completeError(e);
-
       _getARNSUndernamesCompleter = null;
+
+      _hasErrorGettingARNSUndernames = true;
 
       return [];
     }
