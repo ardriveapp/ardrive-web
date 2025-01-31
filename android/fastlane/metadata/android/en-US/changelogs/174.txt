@@ -1,0 +1,2 @@
+- Set default TTL for undernames and name updates to 15 minutes.
+- Fixed issue preventing undername creation during file uploads.
