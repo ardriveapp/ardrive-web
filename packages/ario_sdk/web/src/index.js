@@ -87,15 +87,20 @@ async function setAnt(JWKString, processId, txId, undername, useArConnect, ttlSe
 }
 
 async function setARNS(JWKString, txId, domain, undername, useArConnect, ttlSeconds = 900) {
-  const record = await io.getArNSRecord({ name: domain });
+  try {
+    const record = await io.getArNSRecord({ name: domain });
 
-  console.log(record);
+    const processId = record.processId;
 
-  const processId = record.processId;
+    const setRecordResult = await setAnt(JWKString, processId, txId, undername, useArConnect, ttlSeconds);
 
-  const setRecordResult = await setAnt(JWKString, processId, txId, undername, useArConnect, ttlSeconds);
+    console.log('setRecordResult:', setRecordResult);
 
-  return JSON.stringify(setRecordResult);
+    return JSON.stringify(setRecordResult);
+  } catch (error) {
+    console.error('Error in setARNS:', error);
+    throw error;
+  }
 }
 
 async function getUndernames(JWKString, processId) {

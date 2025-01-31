@@ -44,4 +44,17 @@ class ARNSUndernameFactory {
       transactionId: transactionId,
     );
   }
+
+  static ARNSUndername createUndernameWithDefaultTxId({
+    required String domain,
+    required String undername,
+  }) {
+    return create(
+      name: undername,
+      domain: domain,
+      transactionId: defaultTxId,
+    );
+  }
 }
+
+const defaultTxId = '-k7t8xMoB8hW482609Z9F4bTFMC3MnuW8bTvTyT8pFI';

@@ -70,8 +70,6 @@ class AssignArNSNameModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    logger.d('AssignArNSNameModal build');
-
     return BlocProvider(
       create: (context) => AssignNameBloc(
           auth: context.read<ArDriveAuth>(),
@@ -121,12 +119,6 @@ class _AssignArNSNameModal extends StatefulWidget {
 }
 
 class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
-  @override
-  dispose() {
-    super.dispose();
-    logger.d('AssignArNSNameModal dispose');
-  }
-
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
@@ -296,9 +288,6 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                                   value: context.read<AssignNameBloc>(),
                                   child: CreateUndernameModal(
                                     nameModel: state.selectedName!,
-                                    driveId: widget.file!.driveId,
-                                    fileId: widget.file!.id,
-                                    transactionId: widget.file!.dataTxId,
                                   ),
                                 ),
                               );
@@ -337,9 +326,6 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                                     value: context.read<AssignNameBloc>(),
                                     child: CreateUndernameModal(
                                       nameModel: state.selectedName!,
-                                      driveId: widget.file!.driveId,
-                                      fileId: widget.file!.id,
-                                      transactionId: widget.file!.dataTxId,
                                     ),
                                   ),
                                 );

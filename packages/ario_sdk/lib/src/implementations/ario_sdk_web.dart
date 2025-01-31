@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'dart:js_util';
 
 import 'package:ario_sdk/ario_sdk.dart';
+import 'package:flutter/foundation.dart';
 import 'package:js/js.dart';
 
 class ArioSDKWeb implements ArioSDK {
@@ -134,6 +135,16 @@ class ArioSDKWeb implements ArioSDK {
 
     return primaryName;
   }
+
+  @override
+  Future createUndername({
+    required ARNSUndername undername,
+    required bool isArConnect,
+    required String txId,
+    required String jwtString,
+  }) {
+    return _setARNSImpl(jwtString, undername, isArConnect);
+  }
 }
 
 @JS('setARNS')
@@ -142,17 +153,24 @@ external Object _setARNS(
 
 Future<dynamic> _setARNSImpl(
     String jwtString, ARNSUndername undername, bool useArConnect) async {
-  final promise = _setARNS(
-    jwtString,
-    undername.record.transactionId,
-    undername.domain,
-    undername.name,
-    useArConnect,
-  );
+  try {
+    debugPrint(
+        'undername.record.transactionId: ${undername.record.transactionId}');
 
-  final stringified = await promiseToFuture(promise);
+    final promise = _setARNS(
+      jwtString,
+      undername.record.transactionId,
+      undername.domain,
+      undername.name,
+      useArConnect,
+    );
 
-  return stringified.toString();
+    final stringified = await promiseToFuture(promise);
+
+    return stringified.toString();
+  } catch (e) {
+    throw Exception(e);
+  }
 }
 
 @JS('getGateways')

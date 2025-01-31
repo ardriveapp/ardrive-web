@@ -193,6 +193,10 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
     });
 
     on<ConfirmSelection>((event, emit) async {
+      logger.d('ConfirmSelection');
+      logger.d('selectedNameModel: ${_selectedNameModel}');
+      logger.d('selectedUndername: ${_selectedUndername}');
+
       emit(SelectionConfirmed(
         selectedName: _selectedNameModel!,
         selectedUndername: _selectedUndername,
