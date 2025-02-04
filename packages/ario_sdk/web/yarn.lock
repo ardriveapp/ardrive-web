@@ -5,20 +5,24 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
-"@ar.io/sdk@npm:^2.5.5":
-  version: 2.5.5
-  resolution: "@ar.io/sdk@npm:2.5.5"
+"@ar.io/sdk@npm:^3.4.1":
+  version: 3.4.1
+  resolution: "@ar.io/sdk@npm:3.4.1"
   dependencies:
     "@dha-team/arbundles": "npm:^1.0.1"
     "@permaweb/aoconnect": "npm:^0.0.57"
-    arweave: "npm:1.14.4"
-    axios: "npm:1.7.8"
+    arweave: "npm:1.15.5"
+    axios: "npm:1.7.9"
     axios-retry: "npm:^4.3.0"
+    commander: "npm:^12.1.0"
     eventemitter3: "npm:^5.0.1"
     plimit-lit: "npm:^3.0.1"
+    prompts: "npm:^2.4.2"
     winston: "npm:^3.13.0"
     zod: "npm:^3.23.8"
-  checksum: 10c0/1acfbbb31440a95666bcd3c96b3ddee287f6be59b6a52ce30c041f097e152a8a8f22b09b67c1bc2bb9ed74631d05b8d881ff421bfba07ac71590e6b5d2974797
+  bin:
+    ar.io: lib/esm/cli/cli.js
+  checksum: 10c0/12456ba88ffabb525dbe7479d6eb8ad8a8948deaa600915b0ed1171d2ca0f7e0694381ed6ca85203042b29b08050e8fa8a1ef595ec9a283c515936f3eecd3e09
   languageName: node
   linkType: hard
 
@@ -1841,7 +1845,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "ario_sdk@workspace:."
   dependencies:
-    "@ar.io/sdk": "npm:^2.5.5"
+    "@ar.io/sdk": "npm:^3.4.1"
     "@parcel/core": "npm:^2.10.3"
     "@permaweb/aoconnect": "npm:^0.0.59"
     arweave: "npm:^1.15.1"
@@ -1862,19 +1866,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"arweave@npm:1.14.4":
-  version: 1.14.4
-  resolution: "arweave@npm:1.14.4"
-  dependencies:
-    arconnect: "npm:^0.4.2"
-    asn1.js: "npm:^5.4.1"
-    base64-js: "npm:^1.5.1"
-    bignumber.js: "npm:^9.0.2"
-  checksum: 10c0/2d8800c61bb38dd0529190ec2357ed7ee0d7c34e2a100e6fc0a1d44abeedb265677befb4049a926078f4ee7cb0e51a9d5ed2628f7e82cbec88fa5cdbb866d569
-  languageName: node
-  linkType: hard
-
-"arweave@npm:^1.10.13, arweave@npm:^1.13.7, arweave@npm:^1.15.1":
+"arweave@npm:1.15.5, arweave@npm:^1.10.13, arweave@npm:^1.13.7, arweave@npm:^1.15.1":
   version: 1.15.5
   resolution: "arweave@npm:1.15.5"
   dependencies:
@@ -1923,14 +1915,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:1.7.8":
-  version: 1.7.8
-  resolution: "axios@npm:1.7.8"
+"axios@npm:1.7.9":
+  version: 1.7.9
+  resolution: "axios@npm:1.7.9"
   dependencies:
     follow-redirects: "npm:^1.15.6"
     form-data: "npm:^4.0.0"
     proxy-from-env: "npm:^1.1.0"
-  checksum: 10c0/23ae2d0105aea9170c34ac9b6f30d9b2ab2fa8b1370205d2f7ce98b9f9510ab420148c13359ee837ea5a4bf2fb028ff225bd2fc92052fb0c478c6b4a836e2d5f
+  checksum: 10c0/b7a41e24b59fee5f0f26c1fc844b45b17442832eb3a0fb42dd4f1430eb4abc571fe168e67913e8a1d91c993232bd1d1ab03e20e4d1fee8c6147649b576fc1b0b
   languageName: node
   linkType: hard
 
@@ -2990,6 +2982,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"kleur@npm:^3.0.3":
+  version: 3.0.3
+  resolution: "kleur@npm:3.0.3"
+  checksum: 10c0/cd3a0b8878e7d6d3799e54340efe3591ca787d9f95f109f28129bdd2915e37807bf8918bb295ab86afb8c82196beec5a1adcaf29042ce3f2bd932b038fe3aa4b
+  languageName: node
+  linkType: hard
+
 "kuler@npm:^2.0.0":
   version: 2.0.0
   resolution: "kuler@npm:2.0.0"
@@ -3742,6 +3741,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"prompts@npm:^2.4.2":
+  version: 2.4.2
+  resolution: "prompts@npm:2.4.2"
+  dependencies:
+    kleur: "npm:^3.0.3"
+    sisteransi: "npm:^1.0.5"
+  checksum: 10c0/16f1ac2977b19fe2cf53f8411cc98db7a3c8b115c479b2ca5c82b5527cd937aa405fa04f9a5960abeb9daef53191b53b4d13e35c1f5d50e8718c76917c5f1ea4
+  languageName: node
+  linkType: hard
+
 "proxy-from-env@npm:^1.1.0":
   version: 1.1.0
   resolution: "proxy-from-env@npm:1.1.0"
@@ -3887,6 +3896,13 @@ __metadata:
   dependencies:
     is-arrayish: "npm:^0.3.1"
   checksum: 10c0/df5e4662a8c750bdba69af4e8263c5d96fe4cd0f9fe4bdfa3cbdeb45d2e869dff640beaaeb1ef0e99db4d8d2ec92f85508c269f50c972174851bc1ae5bd64308
+  languageName: node
+  linkType: hard
+
+"sisteransi@npm:^1.0.5":
+  version: 1.0.5
+  resolution: "sisteransi@npm:1.0.5"
+  checksum: 10c0/230ac975cca485b7f6fe2b96a711aa62a6a26ead3e6fb8ba17c5a00d61b8bed0d7adc21f5626b70d7c33c62ff4e63933017a6462942c719d1980bb0b1207ad46
   languageName: node
   linkType: hard
 

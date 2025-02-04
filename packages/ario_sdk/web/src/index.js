@@ -132,6 +132,7 @@ async function getProcesses(address) {
       timeoutMs: 60000,
       concurrency: 10,
       contract: io,
+      antAoClient: connect({ CU_URL: "https://cu.ardrive.io" })
     });
 
     arnsEmitter.on('progress', (current, total) => {
