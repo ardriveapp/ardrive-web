@@ -1,4 +1,4 @@
-import { ANT, AOProcess, ArconnectSigner, ArNSEventEmitter, ArweaveSigner, IO, IO_TESTNET_PROCESS_ID, mIOToken } from '@ar.io/sdk';
+import { ANT, ANT_REGISTRY_ID, ANTRegistry, AOProcess, ArconnectSigner, ArNSEventEmitter, ArweaveSigner, IO, IO_TESTNET_PROCESS_ID, mIOToken } from '@ar.io/sdk';
 import { connect } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
 
@@ -72,7 +72,10 @@ async function setAnt(JWKString, processId, txId, undername, useArConnect) {
 
   const ant = ANT.init({
     signer: signer,
-    processId: processId
+    process: new AOProcess({
+      processId: processId,
+      ao: connect({ CU_URL: "https://cu.ardrive.io" })
+    })
   });
 
   const { id } = await ant.setRecord(
@@ -103,7 +106,10 @@ async function setARNS(JWKString, txId, domain, undername, useArConnect) {
 async function getUndernames(JWKString, processId) {
   const ant = ANT.init({
     signer: new ArweaveSigner(JSON.parse(JWKString)),
-    processId: processId,
+    process: new AOProcess({
+      processId: processId,
+      ao: connect({ CU_URL: "https://cu.ardrive.io" })
+    })
   });
 
   const records = await ant.getRecords();
@@ -154,8 +160,14 @@ async function getProcesses(address) {
     });
 
     arnsEmitter.fetchProcessesOwnedByWallet({
-      address: address,
-      pageSize: 10000
+    address: address,
+      pageSize: 10000,
+      antRegistry: ANTRegistry.init({
+        process: new AOProcess({
+          processId: ANT_REGISTRY_ID,
+          ao: connect({ CU_URL: "https://cu.ardrive.io" })
+        })
+      })
     });
   });
 }
@@ -169,7 +181,7 @@ async function getPrimaryNameAndLogo(address, getLogo = true) {
       console.error('Error fetching ARNS record:', e);
       return null;
     });
-    const ant = ANT.init({processId: record.processId});
+    const ant = ANT.init({process: new AOProcess({processId: record.processId, ao: connect({ CU_URL: "https://cu.ardrive.io" })})});
     info = !record ? null : await ant.getInfo().catch((e) => {
       console.error('Error fetching ANT info:', e);
       return null;
