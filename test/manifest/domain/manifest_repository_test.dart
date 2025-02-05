@@ -65,13 +65,10 @@ void main() async {
         registerFallbackValue(FileEntity());
         registerFallbackValue(const FileRevisionsCompanion());
         registerFallbackValue(
-          const ARNSUndername(
+          ARNSUndernameFactory.create(
             name: 'undername',
             domain: 'domain',
-            record: ARNSRecord(
-              transactionId: 'transaction_id',
-              ttlSeconds: 1000,
-            ),
+            transactionId: 'transaction_id',
           ),
         );
 
@@ -284,13 +281,10 @@ void main() async {
           await repository.uploadManifest(
             params: mockUploadParams,
             processId: 'process_id',
-            undername: const ARNSUndername(
+            undername: ARNSUndernameFactory.create(
               name: 'undername',
               domain: 'domain',
-              record: ARNSRecord(
-                transactionId: 'transaction_id',
-                ttlSeconds: 1000,
-              ),
+              transactionId: 'transaction_id',
             ),
           );
           // Verify interactions
@@ -347,13 +341,10 @@ void main() async {
           await repository.uploadManifest(
             params: mockUploadParams,
             processId: 'process_id',
-            undername: const ARNSUndername(
+            undername: ARNSUndernameFactory.create(
               name: 'undername',
               domain: 'domain',
-              record: ARNSRecord(
-                transactionId: 'transaction_id',
-                ttlSeconds: 1000,
-              ),
+              transactionId: 'transaction_id',
             ),
           );
           // Verify interactions

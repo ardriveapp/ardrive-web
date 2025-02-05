@@ -65,9 +65,7 @@ async function getIOTokens(address) {
 }
 
 
-async function setAnt(JWKString, processId, txId, undername, useArConnect) {
-  console.log('Setting ANT record', JWKString, processId, txId, undername, useArConnect);
-
+async function setAnt(JWKString, processId, txId, undername, useArConnect, ttlSeconds = 900) {
   const signer = useArConnect ? new ArconnectSigner(window.arweaveWallet, Arweave.init({})) : new ArweaveSigner(JSON.parse(JWKString));
 
   const ant = ANT.init({
@@ -82,7 +80,7 @@ async function setAnt(JWKString, processId, txId, undername, useArConnect) {
     {
       undername: undername,
       transactionId: txId,
-      ttlSeconds: 3600
+      ttlSeconds: ttlSeconds
     },
 
   { tags: [{ name: 'App-Name', value: 'ArDrive-App' }] },
@@ -91,14 +89,19 @@ async function setAnt(JWKString, processId, txId, undername, useArConnect) {
   return id;
 }
 
-async function setARNS(JWKString, txId, domain, undername, useArConnect) {
-  const record = await ario.getArNSRecord({ name: domain });
+async function setARNS(JWKString, txId, domain, undername, useArConnect, ttlSeconds = 900) {
+  try {
+    const record = await ario.getArNSRecord({ name: domain });
 
-  const processId = record.processId;
+    const processId = record.processId;
 
-  const setRecordResult = await setAnt(JWKString, processId, txId, undername, useArConnect);
+    const setRecordResult = await setAnt(JWKString, processId, txId, undername, useArConnect, ttlSeconds);
 
-  return JSON.stringify(setRecordResult);
+    return JSON.stringify(setRecordResult);
+  } catch (error) {
+    console.error('Error in setARNS:', error);
+    throw error;
+  }
 }
 
 async function getUndernames(JWKString, processId) {

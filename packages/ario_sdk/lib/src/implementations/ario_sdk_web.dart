@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'dart:js_util';
 
 import 'package:ario_sdk/ario_sdk.dart';
+import 'package:flutter/foundation.dart';
 import 'package:js/js.dart';
 
 class GetARNSRecordsForWalletException implements Exception {
@@ -55,8 +56,8 @@ class ArioSDKWeb implements ArioSDK {
     required String domain,
     String undername = '@',
   }) {
-    final arnsUndername = ARNSUndername(
-      record: ARNSRecord(transactionId: txId, ttlSeconds: 3600),
+    final arnsUndername = ARNSUndernameFactory.create(
+      transactionId: txId,
       name: undername,
       domain: domain,
     );
@@ -97,8 +98,8 @@ class ArioSDKWeb implements ArioSDK {
       {required String txId,
       required String domain,
       String undername = '@'}) async {
-    final arnsUndername = ARNSUndername(
-      record: ARNSRecord(transactionId: txId, ttlSeconds: 3600),
+    final arnsUndername = ARNSUndernameFactory.create(
+      transactionId: txId,
       name: undername,
       domain: domain,
     );
@@ -144,6 +145,16 @@ class ArioSDKWeb implements ArioSDK {
 
     return primaryName;
   }
+
+  @override
+  Future createUndername({
+    required ARNSUndername undername,
+    required bool isArConnect,
+    required String txId,
+    required String jwtString,
+  }) {
+    return _setARNSImpl(jwtString, undername, isArConnect);
+  }
 }
 
 @JS('setARNS')
@@ -152,17 +163,24 @@ external Object _setARNS(
 
 Future<dynamic> _setARNSImpl(
     String jwtString, ARNSUndername undername, bool useArConnect) async {
-  final promise = _setARNS(
-    jwtString,
-    undername.record.transactionId,
-    undername.domain,
-    undername.name,
-    useArConnect,
-  );
+  try {
+    debugPrint(
+        'undername.record.transactionId: ${undername.record.transactionId}');
 
-  final stringified = await promiseToFuture(promise);
+    final promise = _setARNS(
+      jwtString,
+      undername.record.transactionId,
+      undername.domain,
+      undername.name,
+      useArConnect,
+    );
 
-  return stringified.toString();
+    final stringified = await promiseToFuture(promise);
+
+    return stringified.toString();
+  } catch (e) {
+    throw Exception(e);
+  }
 }
 
 @JS('getGateways')
@@ -212,8 +230,8 @@ Future<List<ARNSUndername>> _getUndernamesImpl(
       ttlSeconds: jsonParsed[item]['ttlSeconds'],
     );
 
-    final undername = ARNSUndername(
-      record: antRecord,
+    final undername = ARNSUndernameFactory.create(
+      transactionId: antRecord.transactionId,
       name: item,
       domain: arnsRecord.domain,
     );

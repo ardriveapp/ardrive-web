@@ -1,6 +1,7 @@
 import 'package:ardrive/models/database/database.dart';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 
 part 'arns_dao.g.dart';
 
@@ -13,7 +14,7 @@ class ARNSDao extends DatabaseAccessor<Database> with _$ARNSDaoMixin {
     required String transactionId,
     String? undername,
     bool isActive = true,
-    int ttl = 3600,
+    int ttl = ARNSRecord.defaultTtlSeconds,
     required String fileId,
   }) async {
     // Create a companion object with the values to insert

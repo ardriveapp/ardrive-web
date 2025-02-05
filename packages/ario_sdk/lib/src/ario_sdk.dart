@@ -27,6 +27,13 @@ abstract class ArioSDK {
     String undername = '@',
   });
 
+  Future<dynamic> createUndername({
+    required ARNSUndername undername,
+    required bool isArConnect,
+    required String txId,
+    required String jwtString,
+  });
+
   Future<List<ArNSNameModel>> getArNSNames(String address);
 
   /// Get the primary name for the given address

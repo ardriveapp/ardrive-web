@@ -200,31 +200,24 @@ class _ARNSRepository implements ARNSRepository {
       throw UndernameAlreadyExistsException();
     }
 
-    if (_auth.currentUser.profileType == ProfileType.arConnect) {
-      logger.d('Setting undername with ArConnect');
+    logger.d('Setting undername with ArConnect');
 
-      final id = await _sdk.setUndernameWithArConnect(
-        txId: undername.record.transactionId,
-        domain: undername.domain,
-        undername: undername.name,
-      );
+    final id = await _sdk.createUndername(
+      undername: undername,
+      isArConnect: _auth.currentUser.profileType == ProfileType.arConnect,
+      txId: undername.record.transactionId,
+      jwtString: _auth.getJWTAsString(),
+    );
 
-      logger.d('Undername set with ArConnect: $id');
-    } else {
-      await _sdk.setUndername(
-        jwtString: _auth.getJWTAsString(),
-        domain: undername.domain,
-        txId: undername.record.transactionId,
-        undername: undername.name,
-      );
-    }
+    logger.d('Undername created with ArConnect: $id');
 
     _cachedUndernames[undername.domain]![undername.name] = undername;
 
     await _arnsDao.saveARNSRecord(
       domain: undername.domain,
       transactionId: undername.record.transactionId,
-      isActive: true,
+
+      isActive: false,
       undername: undername.name,
       ttl: undername.record.ttlSeconds,
       fileId: '', // we don't have a file id for the undername
@@ -285,11 +278,8 @@ class _ARNSRepository implements ARNSRepository {
         final undernames = process.state.records.keys.map((e) {
           final record = process.state.records[e];
 
-          return ARNSUndername(
-            record: ARNSRecord(
-              transactionId: record!.transactionId,
-              ttlSeconds: record.ttlSeconds,
-            ),
+          return ARNSUndernameFactory.create(
+            transactionId: record!.transactionId,
             name: e,
             domain: process.names.keys.first,
           );

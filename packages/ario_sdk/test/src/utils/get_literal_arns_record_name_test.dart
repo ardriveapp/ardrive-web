@@ -5,13 +5,10 @@ void main() {
   group('getLiteralARNSRecordName', () {
     test('returns the correct record name for a given ARNSUndername', () {
       // Arrange
-      const undername = ARNSUndername(
+      final undername = ARNSUndernameFactory.create(
         name: 'test',
         domain: 'example.com',
-        record: ARNSRecord(
-          transactionId: '123',
-          ttlSeconds: 100,
-        ),
+        transactionId: '123',
       );
 
       // Act
@@ -24,13 +21,10 @@ void main() {
     test('returns the correct record name for a given ARNSUndername with @',
         () {
       // Arrange
-      const undername = ARNSUndername(
+      final undername = ARNSUndernameFactory.create(
         name: '@', // @ is the default name for the root domain
         domain: 'example.com',
-        record: ARNSRecord(
-          transactionId: '123',
-          ttlSeconds: 100,
-        ),
+        transactionId: '123',
       );
 
       // Act

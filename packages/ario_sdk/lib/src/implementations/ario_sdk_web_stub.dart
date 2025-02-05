@@ -57,4 +57,15 @@ class ArioSDKWeb implements ArioSDK {
     // TODO: implement getPrimaryName
     throw UnimplementedError();
   }
+
+  @override
+  Future createUndername({
+    required ARNSUndername undername,
+    required bool isArConnect,
+    required String txId,
+    required String jwtString,
+  }) {
+    // TODO: implement createUndername
+    throw UnimplementedError();
+  }
 }
