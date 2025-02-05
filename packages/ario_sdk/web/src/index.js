@@ -1,4 +1,4 @@
-import { ANT, ANT_REGISTRY_ID, ANTRegistry, AOProcess, ArconnectSigner, ArNSEventEmitter, ArweaveSigner, IO, IO_TESTNET_PROCESS_ID, mIOToken } from '@ar.io/sdk';
+import { ANT, ANT_REGISTRY_ID, ANTRegistry, AOProcess, ArconnectSigner, ARIO, ARIO_TESTNET_PROCESS_ID, ArNSEventEmitter, ArweaveSigner, mIOToken } from '@ar.io/sdk';
 import { connect } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
 
@@ -12,9 +12,9 @@ window.ario = {
   getPrimaryNameAndLogo,
 };
 
-const io = IO.init({
+const ario = ARIO.init({
   process: new AOProcess({
-    processId: IO_TESTNET_PROCESS_ID,
+    processId: ARIO_TESTNET_PROCESS_ID,
     ao: connect({
       CU_URL: 'https://cu.ardrive.io'
     })
@@ -27,7 +27,7 @@ async function getGateways() {
   const limit = 100;
 
   while (true) {
-    const response = await io.getGateways({
+    const response = await ario.getGateways({
       cursor: cursor,
       limit: limit,
       sortOrder: 'desc',
@@ -52,7 +52,7 @@ async function getGateways() {
 async function getIOTokens(address) {
   try{
     // the balance will be returned in mIO as a value
-    const balance = await io
+    const balance = await ario
       .getBalance({
         address: address,
       })
@@ -92,7 +92,7 @@ async function setAnt(JWKString, processId, txId, undername, useArConnect) {
 }
 
 async function setARNS(JWKString, txId, domain, undername, useArConnect) {
-  const record = await io.getArNSRecord({ name: domain });
+  const record = await ario.getArNSRecord({ name: domain });
 
   console.log(record);
 
@@ -137,7 +137,7 @@ async function getProcesses(address) {
     const arnsEmitter = new ArNSEventEmitter({
       timeoutMs: 60000,
       concurrency: 10,
-      contract: io,
+      contract: ario,
       antAoClient: connect({ CU_URL: "https://cu.ardrive.io" })
     });
 
@@ -160,7 +160,7 @@ async function getProcesses(address) {
     });
 
     arnsEmitter.fetchProcessesOwnedByWallet({
-    address: address,
+      address: address,
       pageSize: 10000,
       antRegistry: ANTRegistry.init({
         process: new AOProcess({
@@ -173,11 +173,11 @@ async function getProcesses(address) {
 }
 
 async function getPrimaryNameAndLogo(address, getLogo = true) {
-  const primaryName = await io.getPrimaryName({ address: address });
+  const primaryName = await ario.getPrimaryName({ address: address });
   var info;
   var record;
   if (getLogo) {
-    record = await io.getArNSRecord({ name: primaryName.name }).catch((e) => {
+    record = await ario.getArNSRecord({ name: primaryName.name }).catch((e) => {
       console.error('Error fetching ARNS record:', e);
       return null;
     });
