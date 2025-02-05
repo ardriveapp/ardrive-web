@@ -24,7 +24,7 @@ const ario = ARIO.init({
 async function getGateways() {
   let cursor = null;
   let allGateways = [];
-  const limit = 100;
+  const limit = 1000;
 
   while (true) {
     const response = await ario.getGateways({
@@ -93,8 +93,6 @@ async function setAnt(JWKString, processId, txId, undername, useArConnect) {
 
 async function setARNS(JWKString, txId, domain, undername, useArConnect) {
   const record = await ario.getArNSRecord({ name: domain });
-
-  console.log(record);
 
   const processId = record.processId;
 
