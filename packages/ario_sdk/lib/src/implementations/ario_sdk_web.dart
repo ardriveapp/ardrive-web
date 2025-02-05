@@ -39,9 +39,9 @@ class ArioSDKWeb implements ArioSDK {
   }
 
   @override
-  Future<String> getIOTokens(String address) async {
+  Future<String> getARIOTokens(String address) async {
     try {
-      final tokens = await _getIOTokensImpl(address);
+      final tokens = await _getARIOTokensImpl(address);
 
       return tokens;
     } catch (e) {
@@ -202,11 +202,11 @@ Future<List<Gateway>> getGatewaysList() async {
   return gateways;
 }
 
-@JS('getIOTokens')
-external Object _getIOTokens(String address);
+@JS('getARIOTokens')
+external Object _getARIOTokens(String address);
 
-Future<dynamic> _getIOTokensImpl(String address) async {
-  final promise = _getIOTokens(address);
+Future<dynamic> _getARIOTokensImpl(String address) async {
+  final promise = _getARIOTokens(address);
   final stringified = await promiseToFuture(promise);
 
   return stringified.toString();

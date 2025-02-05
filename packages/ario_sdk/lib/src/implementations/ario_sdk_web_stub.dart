@@ -14,8 +14,8 @@ class ArioSDKWeb implements ArioSDK {
   }
 
   @override
-  Future<String> getIOTokens(String address) {
-    // TODO: implement getIOTokens
+  Future<String> getARIOTokens(String address) {
+    // TODO: implement getARIOTokens
     throw UnimplementedError();
   }
 
