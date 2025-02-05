@@ -4,7 +4,7 @@ import Arweave from 'arweave';
 
 window.ario = {
   getGateways,
-  getIOTokens,
+  getARIOTokens,
   setARNS,
   setAnt,
   getUndernames,
@@ -49,14 +49,14 @@ async function getGateways() {
   return JSON.stringify(allGateways);
 }
 
-async function getIOTokens(address) {
+async function getARIOTokens(address) {
   try{
     // the balance will be returned in mIO as a value
     const balance = await ario
       .getBalance({
         address: address,
       })
-      .then((balance) => new mARIOToken(balance).toIO());
+      .then((balance) => new mARIOToken(balance).toARIO());
 
     return balance;
   } catch(e) {

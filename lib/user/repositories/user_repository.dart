@@ -17,7 +17,7 @@ abstract class UserRepository {
   Future<void> deleteUser();
   Future<String?> getOwnerOfDefaultProfile();
   Future<BigInt> getBalance(Wallet wallet);
-  Future<String?> getIOTokens(Wallet wallet);
+  Future<String?> getARIOTokens(Wallet wallet);
 
   factory UserRepository(
           ProfileDao profileDao, ArweaveService arweave, ArioSDK arioSDK) =>
@@ -112,17 +112,17 @@ class _UserRepository implements UserRepository {
   }
 
   @override
-  Future<String?> getIOTokens(Wallet wallet) async {
-    String? ioTokens;
+  Future<String?> getARIOTokens(Wallet wallet) async {
+    String? arioTokens;
 
     if (isArioSDKSupportedOnPlatform()) {
-      ioTokens = await _arioSDK.getIOTokens(await wallet.getAddress());
-      if (ioTokens == 'null') {
-        throw Exception('Error fetching IOTokens');
+      arioTokens = await _arioSDK.getARIOTokens(await wallet.getAddress());
+      if (arioTokens == 'null') {
+        throw Exception('Error fetching ARIOTokens');
       }
     }
 
-    return ioTokens;
+    return arioTokens;
   }
 
   @override

@@ -7,7 +7,7 @@ abstract class ArioSDK {
   Future<List<Gateway>> getGateways();
 
   /// Get the amount of IO tokens for the given address
-  Future<String> getIOTokens(String address);
+  Future<String> getARIOTokens(String address);
 
   Future<List<ARNSProcessData>> getAntRecordsForWallet(String address);
 
