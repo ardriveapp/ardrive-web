@@ -4,7 +4,7 @@
   "source": "src/index.js",
   "packageManager": "yarn@1.22.22",
   "scripts": {
-    "build": "parcel build && cp dist/index.js ../../../web/js/ario_sdk.min.js && echo 'saved to web/js/ario_sdk.min.js'"
+    "build": "parcel build && terser dist/index.js -o ../../../web/js/ario_sdk.min.js && echo 'saved to web/js/ario_sdk.min.js'"
   },
   "devDependencies": {
     "@parcel/core": "^2.10.3",
