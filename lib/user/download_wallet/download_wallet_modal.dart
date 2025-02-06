@@ -36,7 +36,7 @@ class DownloadWalletModal extends StatelessWidget {
         } else if (state is DownloadWalletFailure) {
           showArDriveDialog(
             context,
-            content: ArDriveStandardModal(
+            content: ArDriveStandardModalNew(
               title: appLocalizationsOf(context).error,
               content: Text(
                 appLocalizationsOf(context)
@@ -61,14 +61,15 @@ class DownloadWalletModal extends StatelessWidget {
         }
       },
       builder: (context, state) {
-        return ArDriveStandardModal(
+        final typography = ArDriveTypographyNew.of(context);
+        return ArDriveStandardModalNew(
           title: appLocalizationsOf(context).downloadWalletKeyfile,
           content: Column(
             children: [
               if (state is DownloadWalletWrongPassword) ...[
                 Text(
                   appLocalizationsOf(context).validationPasswordIncorrect,
-                  style: ArDriveTypography.body.buttonLargeBold(
+                  style: typography.paragraphLarge(
                     color: ArDriveTheme.of(context)
                         .themeData
                         .colors
@@ -77,7 +78,7 @@ class DownloadWalletModal extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
               ],
-              ArDriveTextField(
+              ArDriveTextFieldNew(
                 autofocus: true,
                 controller: _passwordController,
                 label: appLocalizationsOf(context).pleaseEnterYourPassword,
