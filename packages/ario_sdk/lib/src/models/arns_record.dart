@@ -5,6 +5,8 @@ part 'arns_record.g.dart';
 
 @JsonSerializable()
 class ARNSRecord extends Equatable {
+  static const defaultTtlSeconds = 900; // 15 minutes
+
   final String transactionId;
   final int ttlSeconds;
 

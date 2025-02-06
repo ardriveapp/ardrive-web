@@ -250,22 +250,15 @@ class UploadCubit extends Cubit<UploadState> {
         ARNSUndername undername;
 
         if (manifestModels[i].undername == null) {
-          undername = ARNSUndername(
-            name: '@',
+          undername = ARNSUndernameFactory.createDefaultUndername(
+            transactionId: manifestFile.dataTxId,
             domain: manifestModels[i].antRecord!.domain,
-            record: ARNSRecord(
-              transactionId: manifestFile.dataTxId,
-              ttlSeconds: 3600,
-            ),
           );
         } else {
-          undername = ARNSUndername(
+          undername = ARNSUndernameFactory.create(
             name: manifestModels[i].undername!.name,
+            transactionId: manifestFile.dataTxId,
             domain: manifestModels[i].antRecord!.domain,
-            record: ARNSRecord(
-              transactionId: manifestFile.dataTxId,
-              ttlSeconds: 3600,
-            ),
           );
         }
 
@@ -1417,13 +1410,10 @@ class UploadCubit extends Cubit<UploadState> {
 
         final undername = _getSelectedUndername()!;
 
-        final newUndername = ARNSUndername(
+        final newUndername = ARNSUndernameFactory.create(
           name: undername.name,
           domain: undername.domain,
-          record: ARNSRecord(
-            transactionId: metadata.dataTxId!,
-            ttlSeconds: 3600,
-          ),
+          transactionId: metadata.dataTxId!,
         );
 
         await _arnsRepository.setUndernamesToFile(
@@ -1454,13 +1444,9 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     if (_selectedAntRecord != null) {
-      return ARNSUndername(
-        name: '@',
+      return ARNSUndernameFactory.createDefaultUndername(
         domain: _selectedAntRecord!.domain,
-        record: const ARNSRecord(
-          transactionId: 'to_assign',
-          ttlSeconds: 3600,
-        ),
+        transactionId: 'to_assign',
       );
     }
 

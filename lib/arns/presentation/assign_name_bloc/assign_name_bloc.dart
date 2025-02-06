@@ -146,19 +146,14 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
         ARNSUndername undername;
 
         if (_selectedUndername == null) {
-          undername = ARNSUndername(
-            name: '@',
-            record: ARNSRecord(
-                transactionId: fileDataTableItem.dataTxId, ttlSeconds: 3600),
+          undername = ARNSUndernameFactory.createDefaultUndername(
+            transactionId: fileDataTableItem.dataTxId,
             domain: _selectedNameModel!.name,
           );
         } else {
-          undername = ARNSUndername(
+          undername = ARNSUndernameFactory.create(
             name: _selectedUndername!.name,
-            record: ARNSRecord(
-              transactionId: fileDataTableItem.dataTxId,
-              ttlSeconds: 3600,
-            ),
+            transactionId: fileDataTableItem.dataTxId,
             domain: _selectedNameModel!.name,
           );
         }
@@ -198,6 +193,8 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
     });
 
     on<ConfirmSelection>((event, emit) async {
+      logger.d('ConfirmSelection');
+
       emit(SelectionConfirmed(
         selectedName: _selectedNameModel!,
         selectedUndername: _selectedUndername,

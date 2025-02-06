@@ -7,7 +7,7 @@ abstract class ArioSDK {
   Future<List<Gateway>> getGateways();
 
   /// Get the amount of IO tokens for the given address
-  Future<String> getIOTokens(String address);
+  Future<String> getARIOTokens(String address);
 
   Future<List<ARNSProcessData>> getAntRecordsForWallet(String address);
 
@@ -25,6 +25,13 @@ abstract class ArioSDK {
     required String txId,
     required String domain,
     String undername = '@',
+  });
+
+  Future<dynamic> createUndername({
+    required ARNSUndername undername,
+    required bool isArConnect,
+    required String txId,
+    required String jwtString,
   });
 
   Future<List<ArNSNameModel>> getArNSNames(String address);

@@ -9,27 +9,16 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class CreateUndernameModal extends StatelessWidget {
-  const CreateUndernameModal({
-    super.key,
-    required this.nameModel,
-    required this.driveId,
-    required this.fileId,
-    required this.transactionId,
-  });
+  const CreateUndernameModal({super.key, required this.nameModel});
 
   final ArNSNameModel nameModel;
-  final String driveId;
-  final String fileId;
-  final String transactionId;
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => CreateUndernameBloc(
         context.read<ARNSRepository>(),
         nameModel,
-        driveId,
-        fileId,
-        transactionId,
       ),
       child: const CreateUndernameView(),
     );

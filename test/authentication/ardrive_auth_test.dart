@@ -141,7 +141,7 @@ void main() {
           when(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
                   maxRetries: any(named: 'maxRetries')))
               .thenAnswer((_) async => 'some_id');
-          when(() => mockUserRepository.getIOTokens(wallet))
+          when(() => mockUserRepository.getARIOTokens(wallet))
               .thenAnswer((_) async => '0.4');
           when(() => mockUserRepository.getBalance(wallet))
               .thenAnswer((_) async => BigInt.one);
@@ -226,7 +226,7 @@ void main() {
 
           when(() => mockUserRepository.hasUser())
               .thenAnswer((invocation) => Future.value(true));
-          when(() => mockUserRepository.getIOTokens(wallet))
+          when(() => mockUserRepository.getARIOTokens(wallet))
               .thenAnswer((_) async => '0.4');
           when(() => mockUserRepository.getBalance(wallet))
               .thenAnswer((_) async => BigInt.one);
@@ -285,7 +285,7 @@ void main() {
           when(() => mockUserRepository.hasUser())
               .thenAnswer((invocation) => Future.value(true));
 
-          when(() => mockUserRepository.getIOTokens(wallet))
+          when(() => mockUserRepository.getARIOTokens(wallet))
               .thenAnswer((_) async => '0.4');
           when(() => mockUserRepository.getBalance(wallet))
               .thenAnswer((_) async => BigInt.one);
@@ -334,7 +334,7 @@ void main() {
           when(() => mockUserRepository.deleteUser())
               .thenAnswer((invocation) async {});
 
-          when(() => mockUserRepository.getIOTokens(wallet))
+          when(() => mockUserRepository.getARIOTokens(wallet))
               .thenAnswer((_) async => '0.4');
           when(() => mockUserRepository.getBalance(wallet))
               .thenAnswer((_) async => BigInt.one);
@@ -409,7 +409,7 @@ void main() {
           when(() => mockUserRepository.hasUser())
               .thenAnswer((_) async => true);
 
-          when(() => mockUserRepository.getIOTokens(wallet))
+          when(() => mockUserRepository.getARIOTokens(wallet))
               .thenAnswer((_) async => '0.4');
           when(() => mockUserRepository.getBalance(wallet))
               .thenAnswer((_) async => BigInt.one);
@@ -516,7 +516,7 @@ void main() {
             .thenAnswer((_) async => false);
         when(() => mockUserRepository.getUser('password'))
             .thenAnswer((invocation) async => unlockedUser);
-        when(() => mockUserRepository.getIOTokens(wallet))
+        when(() => mockUserRepository.getARIOTokens(wallet))
             .thenAnswer((_) async => '0.4');
         when(() => mockUserRepository.getBalance(wallet))
             .thenAnswer((_) async => BigInt.one);
@@ -562,7 +562,7 @@ void main() {
             .thenAnswer((_) async => false);
         when(() => mockUserRepository.hasUser())
             .thenAnswer((invocation) => Future.value(true));
-        when(() => mockUserRepository.getIOTokens(wallet))
+        when(() => mockUserRepository.getARIOTokens(wallet))
             .thenAnswer((_) async => '0.4');
         when(() => mockUserRepository.getBalance(wallet))
             .thenAnswer((_) async => BigInt.one);
@@ -633,7 +633,7 @@ void main() {
         ).thenAnswer((_) async => 'some_id');
         when(() => mockBiometricAuthentication.isEnabled())
             .thenAnswer((_) async => false);
-        when(() => mockUserRepository.getIOTokens(wallet))
+        when(() => mockUserRepository.getARIOTokens(wallet))
             .thenAnswer((_) async => '0.4');
         when(() => mockUserRepository.getBalance(wallet))
             .thenAnswer((_) async => BigInt.one);
@@ -716,7 +716,7 @@ void main() {
         ).thenAnswer((invocation) => Future.value(SecretKey([])));
         when(() => mockUserRepository.hasUser())
             .thenAnswer((invocation) => Future.value(true));
-        when(() => mockUserRepository.getIOTokens(wallet))
+        when(() => mockUserRepository.getARIOTokens(wallet))
             .thenAnswer((_) async => '0.4');
         when(() => mockUserRepository.getBalance(wallet))
             .thenAnswer((_) async => BigInt.one);
@@ -844,7 +844,7 @@ void main() {
 
         when(() => mockUserRepository.getBalance(wallet))
             .thenAnswer((_) async => updatedBalance);
-        when(() => mockUserRepository.getIOTokens(wallet))
+        when(() => mockUserRepository.getARIOTokens(wallet))
             .thenAnswer((_) async => '0.4');
 
         // Act

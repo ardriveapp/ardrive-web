@@ -251,13 +251,13 @@ void main() {
 
         AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
 
-        when(() => mockArioSDK.getIOTokens(walletAddress))
+        when(() => mockArioSDK.getARIOTokens(walletAddress))
             .thenAnswer((_) async => expectedIOTokens);
 
-        final result = await userRepository.getIOTokens(wallet);
+        final result = await userRepository.getARIOTokens(wallet);
 
         expect(result, expectedIOTokens);
-        verify(() => mockArioSDK.getIOTokens(walletAddress)).called(1);
+        verify(() => mockArioSDK.getARIOTokens(walletAddress)).called(1);
       });
 
       test('should return null when ArioSDK is not supported', () async {
@@ -265,11 +265,11 @@ void main() {
 
         AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
 
-        final result = await userRepository.getIOTokens(wallet);
+        final result = await userRepository.getARIOTokens(wallet);
 
         expect(result, isNull);
 
-        verifyNever(() => mockArioSDK.getIOTokens(any()));
+        verifyNever(() => mockArioSDK.getARIOTokens(any()));
       });
 
       test('should return null when ArioSDK is not supported', () async {
@@ -277,11 +277,11 @@ void main() {
 
         AppPlatform.setMockPlatform(platform: SystemPlatform.iOS);
 
-        final result = await userRepository.getIOTokens(wallet);
+        final result = await userRepository.getARIOTokens(wallet);
 
         expect(result, isNull);
 
-        verifyNever(() => mockArioSDK.getIOTokens(any()));
+        verifyNever(() => mockArioSDK.getARIOTokens(any()));
       });
     });
 
