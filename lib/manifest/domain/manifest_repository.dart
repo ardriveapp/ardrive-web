@@ -153,13 +153,10 @@ class ManifestRepositoryImpl implements ManifestRepository {
 
         if (undername != null && processId != null) {
           onProgress?.call(CreateManifestUploadProgress.assigningArNS);
-          final newUndername = ARNSUndername(
+          final newUndername = ARNSUndernameFactory.create(
             name: undername.name,
             domain: undername.domain,
-            record: ARNSRecord(
-              transactionId: manifestMetadata.dataTxId!,
-              ttlSeconds: undername.record.ttlSeconds,
-            ),
+            transactionId: manifestMetadata.dataTxId!,
           );
 
           await _arnsRepository.setUndernamesToFile(

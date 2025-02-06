@@ -239,7 +239,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
         await _secureKeyValueStore.remove('password');
         await _secureKeyValueStore.remove('biometricEnabled');
       }
-      
+
       await _databaseHelpers.deleteAllTables();
       currentUser = null;
       _userStreamController.add(null);
@@ -319,7 +319,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
   }
 
   void _updateBalance() {
-    _userRepository.getIOTokens(currentUser.wallet).then((value) {
+    _userRepository.getARIOTokens(currentUser.wallet).then((value) {
       _currentUser = _currentUser!.copyWith(
         ioTokens: value,
         errorFetchingIOTokens: false,
@@ -330,6 +330,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
         errorFetchingIOTokens: true,
       );
       _userStreamController.add(_currentUser);
+      logger.e('Error fetching ARIOTokens', e);
       return Future.value(null);
     });
     _userRepository.getBalance(currentUser.wallet).then((value) {

@@ -12,27 +12,18 @@ class CreateUndernameBloc
     extends Bloc<CreateUndernameEvent, CreateUndernameState> {
   final ARNSRepository _arnsRepository;
   final ArNSNameModel _nameModel;
-  final String driveId;
-  final String fileId;
-  final String transactionId;
   CreateUndernameBloc(
     this._arnsRepository,
     this._nameModel,
-    this.driveId,
-    this.fileId,
-    this.transactionId,
   ) : super(CreateUndernameInitial()) {
     on<CreateUndernameEvent>((event, emit) async {
       if (event is CreateNewUndername) {
         emit(CreateUndernameLoading());
 
-        final ARNSUndername undername = ARNSUndername(
+        final ARNSUndername undername = ARNSUndernameFactory.create(
           name: event.name,
-          record: ARNSRecord(
-            transactionId: transactionId,
-            ttlSeconds: 3600,
-          ),
           domain: _nameModel.name,
+          transactionId: defaultTxId,
         );
 
         try {

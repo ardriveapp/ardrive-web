@@ -14,8 +14,8 @@ class ArioSDKWeb implements ArioSDK {
   }
 
   @override
-  Future<String> getIOTokens(String address) {
-    // TODO: implement getIOTokens
+  Future<String> getARIOTokens(String address) {
+    // TODO: implement getARIOTokens
     throw UnimplementedError();
   }
 
@@ -55,6 +55,17 @@ class ArioSDKWeb implements ArioSDK {
     bool getLogo,
   ) {
     // TODO: implement getPrimaryName
+    throw UnimplementedError();
+  }
+
+  @override
+  Future createUndername({
+    required ARNSUndername undername,
+    required bool isArConnect,
+    required String txId,
+    required String jwtString,
+  }) {
+    // TODO: implement createUndername
     throw UnimplementedError();
   }
 }
