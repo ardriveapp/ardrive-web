@@ -1,0 +1,2 @@
+- Fixed an issue preventing Ethereum wallet users from logging in when multiple transactions occurred in the same block as the initial wallet creation
+- Enhanced search functionality to include exact matches for files with ArNS names.

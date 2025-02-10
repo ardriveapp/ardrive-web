@@ -5,6 +5,12 @@ getARNSRecordByName as ARNSRecordQueryResult:
 SELECT * FROM arns_records
 WHERE domain = :domain AND name = :name;
 
+getActiveARNSRecordByName as ARNSRecordQueryResult:
+SELECT * FROM arns_records
+WHERE domain = :domain AND name = :name
+  AND is_active = TRUE;
+
+
 getActiveARNSRecordsForFileId as ARNSRecordQueryResult:
 SELECT * FROM arns_records
 WHERE file_id = :fileId

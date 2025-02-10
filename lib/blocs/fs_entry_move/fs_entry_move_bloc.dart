@@ -215,9 +215,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
     await _driveDao.transaction(() async {
       for (var fileToMove in filesToMove) {
-        var file = await _driveDao
-            .fileById(driveId: driveId, fileId: fileToMove.id)
-            .getSingle();
+        var file = await _driveDao.fileById(fileId: fileToMove.id).getSingle();
         file = file.copyWith(
             parentFolderId: parentFolder.id, lastUpdated: DateTime.now());
         final fileKey = driveKey != null
@@ -243,9 +241,8 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
       }
 
       for (var folderToMove in foldersToMove) {
-        var folder = await _driveDao
-            .folderById(driveId: driveId, folderId: folderToMove.id)
-            .getSingle();
+        var folder =
+            await _driveDao.folderById(folderId: folderToMove.id).getSingle();
         folder = folder.copyWith(
           parentFolderId: Value(parentFolder.id),
           lastUpdated: DateTime.now(),

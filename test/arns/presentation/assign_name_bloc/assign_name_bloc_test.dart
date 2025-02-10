@@ -163,14 +163,11 @@ void main() {
         setUp: () {
           when(() => arnsRepository.getARNSUndernames(any()))
               .thenAnswer((_) async => [
-                    const sdk.ARNSUndername(
+                    sdk.ARNSUndernameFactory.create(
                       domain: 'test.ar',
                       name: 'test.ar',
-                      record: sdk.ARNSRecord(
-                        transactionId: 'transaction-id',
-                        ttlSeconds: 100,
-                      ),
-                    )
+                      transactionId: 'transaction-id',
+                    ),
                   ]);
         },
         act: (bloc) async {

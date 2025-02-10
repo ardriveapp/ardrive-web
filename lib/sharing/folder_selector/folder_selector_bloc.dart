@@ -45,9 +45,7 @@ class FolderSelectorBloc
         FolderEntry? parentFolder;
         if (event.folder.parentFolderId != null) {
           parentFolder = await driveDao
-              .folderById(
-                  driveId: event.folder.driveId,
-                  folderId: event.folder.parentFolderId!)
+              .folderById(folderId: event.folder.parentFolderId!)
               .getSingle();
         }
 

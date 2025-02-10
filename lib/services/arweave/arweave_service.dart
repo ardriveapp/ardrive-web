@@ -1109,17 +1109,52 @@ class ArweaveService {
   }
 
   Future<String?> getFirstTxForWallet(String owner) async {
-    final firstTxQuery = await graphQLRetry.execute(
+    final firstTxForWalletQuery = await graphQLRetry.execute(
       FirstTxForWalletQuery(
         variables: FirstTxForWalletArguments(owner: owner),
       ),
     );
 
-    if (firstTxQuery.data!.transactions.edges.isEmpty) {
+    if (firstTxForWalletQuery.data!.transactions.edges.isEmpty) {
       return null;
     }
 
-    return firstTxQuery.data!.transactions.edges.first.node.id;
+    return firstTxForWalletQuery.data!.transactions.edges.first.node.id;
+  }
+
+  Future<List<(String, int)>?> getTransactionsAtHeight(
+      String owner, int height) async {
+    final transactionsAtHeightQuery = await graphQLRetry.execute(
+      TransactionsAtHeightQuery(
+        variables: TransactionsAtHeightArguments(
+          owner: owner,
+          height: height,
+        ),
+      ),
+    );
+
+    if (transactionsAtHeightQuery.data!.transactions.edges.isEmpty) {
+      return null;
+    }
+
+    return transactionsAtHeightQuery.data!.transactions.edges
+        .map((e) => (e.node.id, int.parse(e.node.data.size)))
+        .toList();
+  }
+
+  Future<int?> getFirstTxBlockHeightForWallet(String owner) async {
+    final firstTxBlockHeightForWalletQuery = await graphQLRetry.execute(
+      FirstTxBlockHeightForWalletQuery(
+        variables: FirstTxBlockHeightForWalletArguments(owner: owner),
+      ),
+    );
+
+    if (firstTxBlockHeightForWalletQuery.data!.transactions.edges.isEmpty) {
+      return null;
+    }
+
+    return firstTxBlockHeightForWalletQuery
+        .data!.transactions.edges.first.node.block?.height;
   }
 
   /// Creates and signs a [Transaction] representing the provided entity.

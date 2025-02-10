@@ -3,11 +3,22 @@
 @JS('ario')
 library ario;
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:js_util';
 
 import 'package:ario_sdk/ario_sdk.dart';
+import 'package:flutter/foundation.dart';
 import 'package:js/js.dart';
+
+class GetARNSRecordsForWalletException implements Exception {
+  final String message;
+
+  GetARNSRecordsForWalletException(this.message);
+
+  @override
+  String toString() => message;
+}
 
 class ArioSDKWeb implements ArioSDK {
   Set<Gateway>? _cachedGateways;
@@ -28,9 +39,9 @@ class ArioSDKWeb implements ArioSDK {
   }
 
   @override
-  Future<String> getIOTokens(String address) async {
+  Future<String> getARIOTokens(String address) async {
     try {
-      final tokens = await _getIOTokensImpl(address);
+      final tokens = await _getARIOTokensImpl(address);
 
       return tokens;
     } catch (e) {
@@ -45,8 +56,8 @@ class ArioSDKWeb implements ArioSDK {
     required String domain,
     String undername = '@',
   }) {
-    final arnsUndername = ARNSUndername(
-      record: ARNSRecord(transactionId: txId, ttlSeconds: 3600),
+    final arnsUndername = ARNSUndernameFactory.create(
+      transactionId: txId,
       name: undername,
       domain: domain,
     );
@@ -87,8 +98,8 @@ class ArioSDKWeb implements ArioSDK {
       {required String txId,
       required String domain,
       String undername = '@'}) async {
-    final arnsUndername = ARNSUndername(
-      record: ARNSRecord(transactionId: txId, ttlSeconds: 3600),
+    final arnsUndername = ARNSUndernameFactory.create(
+      transactionId: txId,
       name: undername,
       domain: domain,
     );
@@ -134,6 +145,16 @@ class ArioSDKWeb implements ArioSDK {
 
     return primaryName;
   }
+
+  @override
+  Future createUndername({
+    required ARNSUndername undername,
+    required bool isArConnect,
+    required String txId,
+    required String jwtString,
+  }) {
+    return _setARNSImpl(jwtString, undername, isArConnect);
+  }
 }
 
 @JS('setARNS')
@@ -142,17 +163,24 @@ external Object _setARNS(
 
 Future<dynamic> _setARNSImpl(
     String jwtString, ARNSUndername undername, bool useArConnect) async {
-  final promise = _setARNS(
-    jwtString,
-    undername.record.transactionId,
-    undername.domain,
-    undername.name,
-    useArConnect,
-  );
+  try {
+    debugPrint(
+        'undername.record.transactionId: ${undername.record.transactionId}');
 
-  final stringified = await promiseToFuture(promise);
+    final promise = _setARNS(
+      jwtString,
+      undername.record.transactionId,
+      undername.domain,
+      undername.name,
+      useArConnect,
+    );
 
-  return stringified.toString();
+    final stringified = await promiseToFuture(promise);
+
+    return stringified.toString();
+  } catch (e) {
+    throw Exception(e);
+  }
 }
 
 @JS('getGateways')
@@ -174,11 +202,11 @@ Future<List<Gateway>> getGatewaysList() async {
   return gateways;
 }
 
-@JS('getIOTokens')
-external Object _getIOTokens(String address);
+@JS('getARIOTokens')
+external Object _getARIOTokens(String address);
 
-Future<dynamic> _getIOTokensImpl(String address) async {
-  final promise = _getIOTokens(address);
+Future<dynamic> _getARIOTokensImpl(String address) async {
+  final promise = _getARIOTokens(address);
   final stringified = await promiseToFuture(promise);
 
   return stringified.toString();
@@ -202,8 +230,8 @@ Future<List<ARNSUndername>> _getUndernamesImpl(
       ttlSeconds: jsonParsed[item]['ttlSeconds'],
     );
 
-    final undername = ARNSUndername(
-      record: antRecord,
+    final undername = ARNSUndernameFactory.create(
+      transactionId: antRecord.transactionId,
       name: item,
       domain: arnsRecord.domain,
     );
@@ -219,12 +247,26 @@ external Object _getARNSRecordsForWallet(String address);
 
 Future<List<ARNSProcessData>> _getARNSRecordsForWalletImpl(
     String address) async {
-  final promise = _getARNSRecordsForWallet(address);
-  final stringified = await promiseToFuture(promise);
+  try {
+    final promise = _getARNSRecordsForWallet(address);
+    final stringified = await promiseToFuture(promise)
+        .timeout(const Duration(seconds: 60), onTimeout: () {
+      throw TimeoutException(
+          'Failed to get ARNS records: timeout after 60 seconds');
+    });
 
-  final object = ResponseObject.fromJson(jsonDecode(stringified));
+    final object = ResponseObject.fromJson(jsonDecode(stringified));
 
-  return object.data.values.toList();
+    return object.data.values.toList();
+  } catch (e) {
+    if (e is TimeoutException) {
+      throw GetARNSRecordsForWalletException(
+          'ARNS records fetch timed out: ${e.message}');
+    }
+
+    throw GetARNSRecordsForWalletException(
+        'Failed to get ARNS records: ${e.toString()}');
+  }
 }
 
 @JS('getPrimaryNameAndLogo')

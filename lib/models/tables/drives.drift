@@ -24,3 +24,5 @@ CREATE TABLE drives (
     dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
     lastUpdated DATETIME NOT NULL DEFAULT (strftime('%s','now'))
 ) As Drive;
+
+CREATE INDEX idx_drives_name ON drives(name);

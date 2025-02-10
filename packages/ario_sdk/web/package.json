@@ -2,9 +2,9 @@
   "name": "ario_sdk",
   "version": "1.0.0",
   "source": "src/index.js",
-  "packageManager": "yarn@4.4.0",
+  "packageManager": "yarn@1.22.22",
   "scripts": {
-    "build": "parcel build --no-optimize && terser dist/index.js -o ../../../web/js/ario_sdk.min.js && echo 'saved to web/js/ario_sdk.min.js'"
+    "build": "parcel build && terser dist/index.js -o ../../../web/js/ario_sdk.min.js && echo 'saved to web/js/ario_sdk.min.js'"
   },
   "devDependencies": {
     "@parcel/core": "^2.10.3",
@@ -13,7 +13,7 @@
     "terser": "^5.31.6"
   },
   "dependencies": {
-    "@ar.io/sdk": "^2.5.5",
+    "@ar.io/sdk": "^3.5.0-alpha.1",
     "@permaweb/aoconnect": "^0.0.59",
     "arweave": "^1.15.1"
   }

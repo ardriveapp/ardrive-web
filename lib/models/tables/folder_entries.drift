@@ -5,7 +5,7 @@ CREATE TABLE folder_entries (
     name TEXT NOT NULL,
     parentFolderId TEXT,
     path TEXT NOT NULL,
-    
+
     dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
     lastUpdated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
     isGhost BOOLEAN NOT NULL DEFAULT FALSE,
@@ -17,3 +17,5 @@ CREATE TABLE folder_entries (
 
     PRIMARY KEY (id, driveId)
 ) As FolderEntry;
+
+CREATE INDEX idx_folder_entries_name ON folder_entries(name);

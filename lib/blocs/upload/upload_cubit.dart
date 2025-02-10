@@ -155,10 +155,7 @@ class UploadCubit extends Cubit<UploadState> {
       manifestModels[i] = manifestModels[i].copyWith(isUploading: true);
 
       final manifestFileEntry = await _driveDao
-          .fileById(
-            driveId: _driveId,
-            fileId: manifestModels[i].existingManifestFileId,
-          )
+          .fileById(fileId: manifestModels[i].existingManifestFileId)
           .getSingle();
 
       /// If the manifest has a fallback tx id, we need to reuse it
@@ -218,10 +215,7 @@ class UploadCubit extends Cubit<UploadState> {
       ));
 
       final manifestFileEntry = await _driveDao
-          .fileById(
-            driveId: _driveId,
-            fileId: manifestModels[i].existingManifestFileId,
-          )
+          .fileById(fileId: manifestModels[i].existingManifestFileId)
           .getSingle();
 
       if (manifestFileEntry.fallbackTxId != null) {
@@ -245,10 +239,7 @@ class UploadCubit extends Cubit<UploadState> {
       await _createManifestCubit.uploadManifest(method: _manifestUploadMethod);
 
       final manifestFile = await _driveDao
-          .fileById(
-            driveId: _driveId,
-            fileId: manifestModels[i].existingManifestFileId,
-          )
+          .fileById(fileId: manifestModels[i].existingManifestFileId)
           .getSingleOrNull();
 
       if (manifestFile == null) {
@@ -259,22 +250,15 @@ class UploadCubit extends Cubit<UploadState> {
         ARNSUndername undername;
 
         if (manifestModels[i].undername == null) {
-          undername = ARNSUndername(
-            name: '@',
+          undername = ARNSUndernameFactory.createDefaultUndername(
+            transactionId: manifestFile.dataTxId,
             domain: manifestModels[i].antRecord!.domain,
-            record: ARNSRecord(
-              transactionId: manifestFile.dataTxId,
-              ttlSeconds: 3600,
-            ),
           );
         } else {
-          undername = ARNSUndername(
+          undername = ARNSUndernameFactory.create(
             name: manifestModels[i].undername!.name,
+            transactionId: manifestFile.dataTxId,
             domain: manifestModels[i].antRecord!.domain,
-            record: ARNSRecord(
-              transactionId: manifestFile.dataTxId,
-              ttlSeconds: 3600,
-            ),
           );
         }
 
@@ -921,9 +905,8 @@ class UploadCubit extends Cubit<UploadState> {
     _files
         .removeWhere((file) => filesNamesToExclude.contains(file.ioFile.name));
     _targetDrive = await _driveDao.driveById(driveId: _driveId).getSingle();
-    _targetFolder = await _driveDao
-        .folderById(driveId: _driveId, folderId: _parentFolderId)
-        .getSingle();
+    _targetFolder =
+        await _driveDao.folderById(folderId: _parentFolderId).getSingle();
 
     // TODO: check if the backend refreshed the balance instead of a timer
     if (isRetryingToPayWithTurbo) {
@@ -1427,13 +1410,10 @@ class UploadCubit extends Cubit<UploadState> {
 
         final undername = _getSelectedUndername()!;
 
-        final newUndername = ARNSUndername(
+        final newUndername = ARNSUndernameFactory.create(
           name: undername.name,
           domain: undername.domain,
-          record: ARNSRecord(
-            transactionId: metadata.dataTxId!,
-            ttlSeconds: 3600,
-          ),
+          transactionId: metadata.dataTxId!,
         );
 
         await _arnsRepository.setUndernamesToFile(
@@ -1464,13 +1444,9 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     if (_selectedAntRecord != null) {
-      return ARNSUndername(
-        name: '@',
+      return ARNSUndernameFactory.createDefaultUndername(
         domain: _selectedAntRecord!.domain,
-        record: const ARNSRecord(
-          transactionId: 'to_assign',
-          ttlSeconds: 3600,
-        ),
+        transactionId: 'to_assign',
       );
     }
 

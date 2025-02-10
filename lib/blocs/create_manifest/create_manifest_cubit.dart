@@ -55,7 +55,9 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         _arnsRepository = arnsRepository,
         _auth = auth,
         super(CreateManifestInitial()) {
+    logger.i('Initializing CreateManifestCubit for drive: ${_drive.id}');
     if (_drive.isPrivate) {
+      logger.i('Preventing manifest creation for private drive: ${_drive.id}');
       // Extra guardrail to prevent private drives from creating manifests
       // Private manifests need more consideration and are currently unavailable
       emit(CreateManifestPrivacyMismatch());
@@ -64,6 +66,8 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
   void selectUploadMethod(
       UploadMethod method, UploadPaymentMethodInfo info, bool canUpload) {
+    logger.d(
+        'Selecting upload method: $method, canUpload: $canUpload, isFreeUpload: ${info.isFreeThanksToTurbo}');
     if (state is CreateManifestUploadReview) {
       emit(
         (state as CreateManifestUploadReview).copyWith(
@@ -79,10 +83,13 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
   /// Validate form before User begins choosing a target folder
   Future<void> chooseTargetFolder() async {
+    logger.i('Choosing target folder for drive: ${_drive.id}');
     rootFolderNode =
         await _folderRepository.getFolderNode(_drive.id, _drive.rootFolderId);
+    logger.d('Root folder node loaded with id: ${rootFolderNode.folder.id}');
 
     _hasPendingFiles = await _hasPendingFilesInFolder(rootFolderNode);
+    logger.d('Folder has pending files: $_hasPendingFiles');
 
     await loadFolder(_drive.rootFolderId);
   }
@@ -91,10 +98,13 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   Future<void> confirmRevision(
     String name,
   ) async {
+    logger.i('Confirming manifest revision for name: $name');
     final revisionConfirmationState = state as CreateManifestRevisionConfirm;
 
     final arns = await _arnsRepository
         .getAntRecordsForWallet(_auth.currentUser.walletAddress);
+    logger.d(
+        'Found ${arns.length} ANT records for wallet: ${_auth.currentUser.walletAddress}');
 
     if (arns.isNotEmpty) {
       emit(
@@ -117,8 +127,11 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   }
 
   Future<void> loadParentFolder() async {
+    logger.d('Loading parent folder');
     final state = this.state as CreateManifestFolderLoadSuccess;
     if (state.viewingFolder.folder.parentFolderId != null) {
+      logger.d(
+          'Loading parent folder with id: ${state.viewingFolder.folder.parentFolderId}');
       return loadFolder(state.viewingFolder.folder.parentFolderId!);
     }
   }
@@ -131,6 +144,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   }
 
   Future<void> loadFolder(String folderId) async {
+    logger.i('Loading folder contents for folder: $folderId');
     await _selectedFolderSubscription?.cancel();
 
     _selectedFolderSubscription = _folderRepository
@@ -161,8 +175,11 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   }
 
   Future<void> checkForConflicts(String name) async {
+    logger.i('Checking for manifest name conflicts: $name');
+
     /// Prevent multiple checks from being triggered
     if (state is! CreateManifestFolderLoadSuccess) {
+      logger.d('Skipping conflict check - invalid state: $state');
       return;
     }
 
@@ -174,11 +191,18 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   }
 
   Future<void> checkNameConflicts(String name) async {
-    final arns = await _arnsRepository
-        .getAntRecordsForWallet(_auth.currentUser.walletAddress);
-
     final parentFolder =
         (state as CreateManifestCheckingForConflicts).parentFolder;
+
+    emit(CreateManifestLoadingARNS(
+      parentFolder: parentFolder,
+      manifestName: name,
+    ));
+
+    logger.i('Performing name conflict check for: $name');
+    final arns = await _getAntRecordsForWallet();
+    logger.d('Found ${arns.length} ANT records for current wallet');
+
     await _selectedFolderSubscription?.cancel();
 
     final conflictTuple =
@@ -222,12 +246,26 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     }
   }
 
+  /// Fetches ANT records for the current wallet, returns an empty list if the operation fails
+  Future<List<ANTRecord>> _getAntRecordsForWallet() async {
+    try {
+      return await _arnsRepository
+          .getAntRecordsForWallet(_auth.currentUser.walletAddress)
+          .timeout(const Duration(seconds: 30));
+    } catch (e) {
+      logger.e('Failed to load ANT records. Proceeding with empty list', e);
+      return [];
+    }
+  }
+
   Future<void> prepareManifestTx({
     FileID? existingManifestFileId,
     required String manifestName,
     String? folderId,
   }) async {
-    logger.d('Preparing manifest transaction');
+    logger.i('Preparing manifest transaction for name: $manifestName');
+    logger.d(
+        'Existing manifest file ID: $existingManifestFileId, Target folder ID: $folderId');
     FolderEntry parentFolder;
     if (folderId != null) {
       rootFolderNode =
@@ -277,7 +315,9 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   }
 
   Future<void> uploadManifest({UploadMethod? method}) async {
+    logger.i('Starting manifest upload process');
     if (await _profileCubit.logoutIfWalletMismatch()) {
+      logger.i('Wallet mismatch detected, canceling upload');
       emit(CreateManifestWalletMismatch());
       return;
     }
@@ -329,6 +369,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   }
 
   void openAssignNameModal() {
+    logger.d('Opening assign name modal');
     emit(
       CreateManifestPreparingManifestWithARNS(
         parentFolder:
@@ -349,13 +390,9 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     }
 
     if (_selectedAntRecord != null) {
-      return ARNSUndername(
-        name: '@',
+      return ARNSUndernameFactory.createDefaultUndername(
         domain: _selectedAntRecord!.domain,
-        record: const ARNSRecord(
-          transactionId: 'to_assign',
-          ttlSeconds: 3600,
-        ),
+        transactionId: 'to_assign',
       );
     }
 
@@ -363,6 +400,8 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   }
 
   void selectArns(ANTRecord? antRecord, ARNSUndername? undername) {
+    logger.i(
+        'Selecting ARNS: antRecord: ${antRecord?.domain}, undername: ${undername?.name}');
     _selectedAntRecord = antRecord;
     _selectedUndername = undername;
 
@@ -375,6 +414,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   TxID? _fallbackTxId;
 
   void setFallbackTxId(TxID txId, {bool emitState = true}) {
+    logger.d('Setting fallback transaction ID: $txId');
     _fallbackTxId = txId;
 
     if (emitState) {
@@ -408,15 +448,15 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   }
 
   void backToName() {
+    logger.d('Navigating back to name input');
     emit(CreateManifestInitial());
   }
 
   @override
   void onError(Object error, StackTrace stackTrace) {
+    logger.e('Failed to create manifest', error, stackTrace);
     emit(CreateManifestFailure());
     super.onError(error, stackTrace);
-
-    logger.e('Failed to create manifest', error, stackTrace);
   }
 }
 

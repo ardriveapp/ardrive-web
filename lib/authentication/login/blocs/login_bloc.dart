@@ -228,8 +228,16 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       final verifySignature = await wallet.sign(fullEntropy);
 
       // Check GQL for generated wallet to see if the password matches
-      final String? firstTxId =
-          await _arweaveService.getFirstTxForWallet(await wallet.getAddress());
+      int? firstTxBlockHeight = await _arweaveService
+          .getFirstTxBlockHeightForWallet(await wallet.getAddress());
+
+      var firstBlockTxs = firstTxBlockHeight != null
+          ? await _arweaveService.getTransactionsAtHeight(
+              await wallet.getAddress(), firstTxBlockHeight)
+          : null;
+
+      var firstBlockTxsFilteredBySize =
+          firstBlockTxs?.where((tx) => tx.$2 == verifySignature.length);
 
       final arweaveNativeAddressForEth =
           await ownerToAddress(await derivedEthWallet.getOwner());
@@ -237,14 +245,30 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       final String? ethFirstTxId =
           await _arweaveService.getFirstTxForWallet(arweaveNativeAddressForEth);
 
-      if (firstTxId != null && ethFirstTxId != null) {
-        final recordedSignature =
-            await _downloadService.download(firstTxId, false);
+      if (firstBlockTxsFilteredBySize != null && ethFirstTxId != null) {
         final ethRecordedSignature =
             await _downloadService.download(ethFirstTxId, false);
 
-        if (!listEquals(recordedSignature, verifySignature) ||
-            !listEquals(ethRecordedSignature, verifySignature)) {
+        final ethMatches = listEquals(
+          ethRecordedSignature,
+          verifySignature,
+        );
+
+        bool arMatches = false;
+
+        if (ethMatches) {
+          for (var tx in firstBlockTxsFilteredBySize) {
+            final recordedSignature =
+                await _downloadService.download(tx.$1, false);
+
+            if (listEquals(recordedSignature, verifySignature)) {
+              arMatches = true;
+              break;
+            }
+          }
+        }
+
+        if (!ethMatches || !arMatches) {
           emit(PromptPassword(
               wallet: event.wallet,
               derivedEthWallet: event.derivedEthWallet,
