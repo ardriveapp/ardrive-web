@@ -53,7 +53,7 @@ class VerifyParentFolder {
 
       // Attempt to fetch the folder from the database
       final folder = await _driveDao
-          .folderById(driveId: driveId, folderId: parentFolderId)
+          .folderById(folderId: parentFolderId)
           .getSingleOrNull();
 
       // Check if the folder exists

@@ -507,9 +507,7 @@ class BulkImportFiles {
 
       await _driveDao.insertFileRevision(revision);
 
-      createdFile = await _driveDao
-          .fileById(driveId: driveId, fileId: fileId)
-          .getSingle();
+      createdFile = await _driveDao.fileById(fileId: fileId).getSingle();
     });
 
     return createdFile;

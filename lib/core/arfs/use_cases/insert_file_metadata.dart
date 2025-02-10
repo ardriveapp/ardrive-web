@@ -41,9 +41,8 @@ class InsertFileMetadata {
   }) async {
     try {
       // Check if the file already exists
-      final existingFile = await _driveDao
-          .fileById(driveId: driveId, fileId: metadata.id)
-          .getSingleOrNull();
+      final existingFile =
+          await _driveDao.fileById(fileId: metadata.id).getSingleOrNull();
 
       // Create or update the file entity
       final fileEntity = FileEntity(
@@ -83,9 +82,8 @@ class InsertFileMetadata {
       });
 
       // Return the updated file entry
-      final updatedFile = await _driveDao
-          .fileById(driveId: driveId, fileId: metadata.id)
-          .getSingle();
+      final updatedFile =
+          await _driveDao.fileById(fileId: metadata.id).getSingle();
       return updatedFile;
     } catch (e) {
       logger.e('Failed to insert file metadata', e);
