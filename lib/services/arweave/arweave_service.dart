@@ -1264,14 +1264,11 @@ class ArweaveService {
   }
 
   /// Fetches transaction info for multiple transactions in batches.
-  /// Returns a map of transaction IDs to their info.
-  Future<Map<String, TxInfo>> getInfoOfTxsToBePinned(
+  /// Returns a stream of transaction info batches.
+  Stream<Map<String, TxInfo>> getInfoOfTxsToBePinned(
     List<String> transactionIds, {
-    int batchSize = 20,
-    Function(List<TxInfo>)? onTxInfo,
-  }) async {
-    final results = <String, TxInfo>{};
-
+    int batchSize = 10,
+  }) async* {
     for (var i = 0; i < transactionIds.length; i += batchSize) {
       final end = (i + batchSize < transactionIds.length)
           ? i + batchSize
@@ -1290,20 +1287,19 @@ class ArweaveService {
         );
 
         if (query.data != null) {
+          final batchResults = <String, TxInfo>{};
           for (final edge in query.data!.transactions.edges) {
             final tx = edge.node;
-            results[tx.id] = tx;
+            batchResults[tx.id] = tx;
           }
+          logger.d('Batch results length: ${batchResults.length}');
+          yield batchResults;
         }
-
-        onTxInfo?.call(results.values.toList());
       } catch (e) {
         logger.e('Failed to fetch transaction info batch', e);
         // Continue with next batch even if one fails
       }
     }
-
-    return results;
   }
 }
 

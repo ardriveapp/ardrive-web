@@ -1,11 +1,10 @@
-import 'package:ardrive/core/arfs/use_cases/insert_file_metadata.dart';
 import 'package:ardrive/core/arfs/use_cases/upload_file_metadata.dart';
 import 'package:ardrive/core/arfs/use_cases/upload_folder_metadata.dart';
-import 'package:ardrive/core/arfs/use_cases/verify_parent_folder.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:collection/collection.dart';
 import 'package:cryptography/cryptography.dart';
@@ -78,23 +77,17 @@ class ManifestFileEntry {
 
 /// Use case for bulk importing files from a manifest.
 class BulkImportFiles {
-  final VerifyParentFolder _verifyParentFolder;
-  final InsertFileMetadata _insertFileMetadata;
   final UploadFileMetadata _uploadFileMetadata;
   final UploadFolderMetadata _uploadFolderMetadata;
   final DriveDao _driveDao;
   final ArweaveService _arweaveService;
 
   BulkImportFiles({
-    required VerifyParentFolder verifyParentFolder,
-    required InsertFileMetadata insertFileMetadata,
     required UploadFileMetadata uploadFileMetadata,
     required UploadFolderMetadata uploadFolderMetadata,
     required DriveDao driveDao,
     required ArweaveService arweaveService,
-  })  : _verifyParentFolder = verifyParentFolder,
-        _insertFileMetadata = insertFileMetadata,
-        _uploadFileMetadata = uploadFileMetadata,
+  })  : _uploadFileMetadata = uploadFileMetadata,
         _uploadFolderMetadata = uploadFolderMetadata,
         _driveDao = driveDao,
         _arweaveService = arweaveService;
@@ -210,6 +203,11 @@ class BulkImportFiles {
     final importedFiles = <FileEntry>[];
     final failures = <FileImportFailure>[];
     final folderPathToId = <String, String>{};
+    final fileDataTxIdToFile = <String, ManifestFileEntry>{};
+
+    for (final file in files) {
+      fileDataTxIdToFile[file.dataTxId] = file;
+    }
 
     logger.d('starting bulk import with ${files.length} files');
 
@@ -315,62 +313,106 @@ class BulkImportFiles {
       logger.i('Fetching transaction info for ${txIds.length} files');
 
       // Fetch all transaction details in batches
-      final txDetails = await _arweaveService.getInfoOfTxsToBePinned(
-        txIds,
-        onTxInfo: (txs) {
-          // logger.d('txs: ${txs.length}');
-        },
-      );
+      final txDetailsStream = _arweaveService.getInfoOfTxsToBePinned(txIds);
 
-      for (final file in files) {
-        try {
-          final pathParts = file.path.split('/');
-          final fileName = pathParts.removeLast();
-          final parentPath = pathParts.join('/');
+      await for (final txDetails in txDetailsStream) {
+        final List<FileEntity> fileEntries = [];
 
-          onFileProgress?.call(fileName);
+        for (final dataTxId in txDetails.keys) {
+          try {
+            final file = fileDataTxIdToFile[dataTxId]!;
+            final pathParts = file.path.split('/');
+            final fileName = pathParts.removeLast();
+            final parentPath = pathParts.join('/');
 
-          // For root files or files with just a leading slash, use the initial parentFolderId
-          final finalParentId = (parentPath.isEmpty ||
-                  parentPath == '/' ||
-                  pathParts.every((part) => part.isEmpty))
-              ? parentFolderId
-              : folderPathToId[parentPath]!;
+            // For root files or files with just a leading slash, use the initial parentFolderId
+            final finalParentId = (parentPath.isEmpty ||
+                    parentPath == '/' ||
+                    pathParts.every((part) => part.isEmpty))
+                ? parentFolderId
+                : folderPathToId[parentPath]!;
 
-          // Get tx details from the batch results
-          final tx = txDetails[file.dataTxId];
+            // Get tx details from the batch results
+            final tx = txDetails[file.dataTxId]!;
 
-          logger.d('tx: $tx');
-          logger.d('size: ${tx?.data.size}');
-          logger.d('txId: ${file.dataTxId}');
+            logger.d('tx: $tx');
+            logger.d('size: ${tx.data.size}');
+            logger.d('txId: ${file.dataTxId}');
+            logger.d('FileId: ${file.id}');
+            final now = DateTime.now();
 
-          final fileEntry = await _importFile(
-            driveId: driveId,
-            parentFolderId: finalParentId,
-            fileId: file.id,
-            fileName: fileName,
-            dataTxId: file.dataTxId,
-            dataContentType: tx?.tags
-                    .firstWhereOrNull((tag) => tag.name == 'Content-Type')
-                    ?.value ??
-                file.contentType,
-            dataSize: int.parse(tx?.data.size ?? file.size.toString()),
-            wallet: wallet,
-            isPrivate: isPrivate,
-          );
+            // Create FileEntity for metadata upload
+            final fileEntity = FileEntity(
+              id: file.id,
+              driveId: driveId,
+              name: fileName,
+              size: int.parse(tx.data.size),
+              dataTxId: dataTxId,
+              parentFolderId: finalParentId,
+              dataContentType: tx.tags
+                      .firstWhereOrNull((tag) => tag.name == 'Content-Type')
+                      ?.value ??
+                  file.contentType,
+              lastModifiedDate: now,
+            );
 
-          await Future.delayed(const Duration(milliseconds: 50));
+            // final fileEntry = await _importFile(
+            //   driveId: driveId,
+            //   parentFolderId: finalParentId,
+            //   fileId: file.id,
+            //   fileName: fileName,
+            //   dataTxId: file.dataTxId,
+            //   dataContentType: tx.tags
+            //           .firstWhereOrNull((tag) => tag.name == 'Content-Type')
+            //           ?.value ??
+            //       file.contentType,
+            //   dataSize: int.parse(tx.data.size),
+            //   wallet: wallet,
+            //   isPrivate: isPrivate,
+            // );
 
-          importedFiles.add(fileEntry);
-        } catch (e) {
-          onFileFailure?.call(file.path);
-          failures.add(FileImportFailure(
-            path: file.path,
-            dataTxId: file.dataTxId,
-            error: e.toString(),
-            originalError: e,
-          ));
+            fileEntries.add(fileEntity);
+          } catch (e) {
+            final file = fileDataTxIdToFile[dataTxId]!;
+            onFileFailure?.call(file.path);
+            failures.add(FileImportFailure(
+              path: file.path,
+              dataTxId: file.dataTxId,
+              error: e.toString(),
+              originalError: e,
+            ));
+          }
         }
+
+        logger.d('fileEntries: ${fileEntries.length}');
+
+        final worker = WorkerPool<FileEntity>(
+          numWorkers: 1,
+          maxTasksPerWorker: 10,
+          taskQueue: fileEntries,
+          onWorkerError: (e) {
+            logger.e('Worker error', e);
+          },
+          execute: (file) async {
+            onFileProgress?.call(file.name!);
+
+            final fileEntry = await _importFile(
+              driveId: driveId,
+              parentFolderId: file.parentFolderId!,
+              fileId: file.id!,
+              fileName: file.name!,
+              dataTxId: file.dataTxId!,
+              dataContentType: file.dataContentType!,
+              dataSize: file.size!,
+              wallet: wallet,
+              isPrivate: isPrivate,
+            );
+
+            return fileEntry;
+          },
+        );
+
+        await worker.onAllTasksCompleted;
       }
     } catch (e) {
       throw BulkImportException(
@@ -413,12 +455,12 @@ class BulkImportFiles {
     // Upload metadata
     late FileMetadataUploadResult metadataUploadResult;
     try {
-      // metadataUploadResult = await _uploadFileMetadata(
-      //   fileEntity: fileEntity,
-      //   customTags: [],
-      //   isPrivate: isPrivate,
-      //   wallet: wallet,
-      // );
+      metadataUploadResult = await _uploadFileMetadata(
+        fileEntity: fileEntity,
+        customTags: [],
+        isPrivate: isPrivate,
+        wallet: wallet,
+      );
     } catch (e) {
       logger.e('Failed to upload metadata for file: $fileName', e);
       throw FileImportFailure(
@@ -459,7 +501,7 @@ class BulkImportFiles {
         size: dataSize,
         dataTxId: dataTxId,
         dataContentType: Value(dataContentType),
-        metadataTxId: 'metadataUploadResult.metadataTxId',
+        metadataTxId: metadataUploadResult.metadataTxId,
         isHidden: const Value(false),
       );
 

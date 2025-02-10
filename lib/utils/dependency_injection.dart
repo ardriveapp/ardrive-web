@@ -42,8 +42,6 @@ List<RepositoryProvider> setupBulkImportDependencies(BuildContext context) {
     ),
     RepositoryProvider<BulkImportFiles>(
       create: (context) => BulkImportFiles(
-        verifyParentFolder: context.read<VerifyParentFolder>(),
-        insertFileMetadata: context.read<InsertFileMetadata>(),
         driveDao: context.read<DriveDao>(),
         arweaveService: context.read<ArweaveService>(),
         uploadFileMetadata: context.read<UploadFileMetadata>(),

@@ -130,8 +130,6 @@ UploadFolderMetadata createUploadFolderMetadata(BuildContext context) {
 
 BulkImportFiles createBulkImportFiles(BuildContext context) {
   return BulkImportFiles(
-    verifyParentFolder: createVerifyParentFolder(context),
-    insertFileMetadata: createInsertFileMetadata(context),
     driveDao: context.read<DriveDao>(),
     arweaveService: context.read<ArweaveService>(),
     uploadFileMetadata: createUploadFileMetadata(context),

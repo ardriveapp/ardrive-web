@@ -5,8 +5,6 @@ import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/create_snapshot_dialog.dart';
 import 'package:ardrive/components/pin_file_dialog.dart';
 import 'package:ardrive/core/arfs/use_cases/bulk_import_files.dart';
-import 'package:ardrive/core/download_service.dart';
-import 'package:ardrive/manifests/data/repositories/manifest_repository_impl.dart';
 import 'package:ardrive/manifests/domain/repositories/manifest_repository.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database.dart';
@@ -23,8 +21,6 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
-
-import '../../services/arweave/arweave_service.dart';
 
 class NewButton extends StatelessWidget {
   const NewButton({
@@ -364,6 +360,7 @@ class NewButton extends StatelessWidget {
             name: appLocalizations.newSnapshot,
             icon: ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
           ),
+          // import from manifest
         ]
       ];
     }
@@ -413,34 +410,9 @@ class NewButton extends StatelessWidget {
             icon: ArDriveIcons.iconUploadFolder1(size: defaultIconSize),
           ),
           if (driveDetailState.currentDrive.privacy == 'public')
-            ArDriveNewButtonItem(
-              onClick: () {
-                showArDriveDialog(
-                  context,
-                  content: MultiRepositoryProvider(
-                    providers: setupBulkImportDependencies(context),
-                    child: BlocProvider(
-                      create: (context) => BulkImportBloc(
-                        bulkImportFiles: context.read<BulkImportFiles>(),
-                        manifestRepository: ManifestRepositoryImpl(
-                          context.read<ArweaveService>(),
-                          DownloadService(
-                            context.read<ArweaveService>(),
-                          ),
-                        ),
-                        ardriveAuth: context.read<ArDriveAuth>(),
-                      ),
-                      child: BulkImportModal(
-                        driveId: drive!.id,
-                        parentFolderId: currentFolder!.folder.id,
-                      ),
-                    ),
-                  ),
-                );
-              },
-              isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
-              name: 'Import from Manifest',
-              icon: ArDriveIcons.manifest(size: defaultIconSize),
+            _getImportFromManifestItem(
+              context,
+              !driveDetailState.hasWritePermissions || !canUpload,
             ),
           const ArDriveNewButtonDivider(),
         ],
@@ -529,32 +501,12 @@ class NewButton extends StatelessWidget {
             icon: ArDriveIcons.iconUploadFolder1(size: defaultIconSize),
           ),
           if (driveDetailState.currentDrive.privacy == 'public')
-            ArDriveNewButtonItem(
-              onClick: () {
-                showArDriveDialog(
-                  context,
-                  content: MultiRepositoryProvider(
-                    providers: setupBulkImportDependencies(context),
-                    child: BlocProvider(
-                      create: (context) => BulkImportBloc(
-                        bulkImportFiles: context.read<BulkImportFiles>(),
-                        manifestRepository: context.read<ManifestRepository>(),
-                        ardriveAuth: context.read<ArDriveAuth>(),
-                      ),
-                      child: BulkImportModal(
-                        driveId: drive!.id,
-                        parentFolderId: currentFolder!.folder.id,
-                      ),
-                    ),
-                  ),
-                );
-              },
-              isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
-              name: 'Import from Manifest',
-              icon: ArDriveIcons.manifest(size: defaultIconSize),
+            _getImportFromManifestItem(
+              context,
+              !driveDetailState.hasWritePermissions || !canUpload,
             ),
-          const ArDriveNewButtonDivider(),
         ],
+        const ArDriveNewButtonDivider(),
         if (drivesState is DrivesLoadSuccess) ...[
           ArDriveNewButtonItem(
             onClick: () {
@@ -610,6 +562,36 @@ class NewButton extends StatelessWidget {
         ),
       ];
     }
+  }
+
+  ArDriveNewButtonItem _getImportFromManifestItem(
+    BuildContext context,
+    bool isDisabled,
+  ) {
+    return ArDriveNewButtonItem(
+      onClick: () {
+        showArDriveDialog(
+          context,
+          content: MultiRepositoryProvider(
+            providers: setupBulkImportDependencies(context),
+            child: BlocProvider(
+              create: (context) => BulkImportBloc(
+                bulkImportFiles: context.read<BulkImportFiles>(),
+                manifestRepository: context.read<ManifestRepository>(),
+                ardriveAuth: context.read<ArDriveAuth>(),
+              ),
+              child: BulkImportModal(
+                driveId: drive!.id,
+                parentFolderId: currentFolder!.folder.id,
+              ),
+            ),
+          ),
+        );
+      },
+      isDisabled: isDisabled,
+      name: 'Import from Manifest',
+      icon: ArDriveIcons.manifest(size: defaultIconSize),
+    );
   }
 }
 

@@ -113,7 +113,7 @@ class BulkImportResolvingPaths extends BulkImportState {
   final int totalPaths;
   final int processedPaths;
 
-  BulkImportResolvingPaths({
+  const BulkImportResolvingPaths({
     required this.totalPaths,
     required this.processedPaths,
   });
@@ -127,7 +127,7 @@ class BulkImportCreatingFolders extends BulkImportState {
   final int processedFolders;
   final String currentFolderPath;
 
-  BulkImportCreatingFolders({
+  const BulkImportCreatingFolders({
     required this.totalFolders,
     required this.processedFolders,
     required this.currentFolderPath,

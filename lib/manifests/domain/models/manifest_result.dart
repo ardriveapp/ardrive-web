@@ -7,13 +7,9 @@ class ManifestResult extends Equatable {
   final Manifest? manifest;
   final ManifestFailure? failure;
 
-  const ManifestResult.success(Manifest manifest)
-      : manifest = manifest,
-        failure = null;
+  const ManifestResult.success(Manifest this.manifest) : failure = null;
 
-  const ManifestResult.failure(ManifestFailure failure)
-      : manifest = null,
-        failure = failure;
+  const ManifestResult.failure(ManifestFailure this.failure) : manifest = null;
 
   bool get isSuccess => manifest != null;
   bool get isFailure => failure != null;
@@ -34,15 +30,15 @@ abstract class ManifestFailure extends Equatable {
 
 /// Indicates that the manifest data is invalid or could not be parsed.
 class InvalidManifestFailure extends ManifestFailure {
-  const InvalidManifestFailure(String message) : super(message);
+  const InvalidManifestFailure(super.message);
 }
 
 /// Indicates that there was a network error while fetching the manifest.
 class NetworkFailure extends ManifestFailure {
-  const NetworkFailure(String message) : super(message);
+  const NetworkFailure(super.message);
 }
 
 /// Indicates that the manifest could not be found.
 class NotFoundFailure extends ManifestFailure {
-  const NotFoundFailure(String message) : super(message);
+  const NotFoundFailure(super.message);
 }

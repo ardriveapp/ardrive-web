@@ -6,7 +6,7 @@ import 'package:ardrive/blocs/bulk_import/bulk_import_state.dart';
 import 'package:ardrive/core/arfs/use_cases/bulk_import_files.dart';
 import 'package:ardrive/manifests/domain/repositories/manifest_repository.dart';
 import 'package:ardrive/utils/logger.dart';
-import 'package:bloc/bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// BLoC for managing the bulk import process.
 class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
@@ -67,9 +67,9 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
         manifestTxId: event.manifestTxId,
         fileIds: files.map((f) => f.id).toList(),
         processedFiles: 0,
-        failedFiles: [],
+        failedFiles: const [],
         currentFileName: 'Starting import...',
-        failedPaths: [],
+        failedPaths: const [],
         isCreatingFolderHierarchy: true,
       ));
 
