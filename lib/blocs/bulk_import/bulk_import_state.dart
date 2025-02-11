@@ -1,3 +1,4 @@
+import 'package:ardrive/core/arfs/use_cases/check_folder_conflicts.dart';
 import 'package:equatable/equatable.dart';
 
 /// States for the bulk import process.
@@ -136,4 +137,17 @@ class BulkImportCreatingFolders extends BulkImportState {
   @override
   List<Object?> get props =>
       [totalFolders, processedFolders, currentFolderPath];
+}
+
+class BulkImportFileConflicts extends BulkImportState {
+  final String manifestTxId;
+  final List<FileTreeConflict> conflicts;
+
+  const BulkImportFileConflicts({
+    required this.manifestTxId,
+    required this.conflicts,
+  });
+
+  @override
+  List<Object?> get props => [manifestTxId, conflicts];
 }

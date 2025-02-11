@@ -4,13 +4,17 @@ import 'package:ardrive/blocs/bulk_import/bulk_import_bloc.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/create_snapshot_dialog.dart';
 import 'package:ardrive/components/pin_file_dialog.dart';
+import 'package:ardrive/core/arfs/repository/file_repository.dart';
+import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/core/arfs/use_cases/bulk_import_files.dart';
-import 'package:ardrive/manifests/domain/repositories/manifest_repository.dart';
+import 'package:ardrive/core/arfs/use_cases/check_folder_conflicts.dart';
+import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/models/enums.dart';
 import 'package:ardrive/pages/drive_detail/components/bulk_import_modal.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
+import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/dependency_injection.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
@@ -21,6 +25,8 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
+
+import '../../manifests/data/repositories/manifest_repository_impl.dart';
 
 class NewButton extends StatelessWidget {
   const NewButton({
@@ -576,10 +582,16 @@ class NewButton extends StatelessWidget {
             providers: setupBulkImportDependencies(context),
             child: BlocProvider(
               create: (context) => BulkImportBloc(
-                bulkImportFiles: context.read<BulkImportFiles>(),
-                manifestRepository: context.read<ManifestRepository>(),
-                ardriveAuth: context.read<ArDriveAuth>(),
-              ),
+                  bulkImportFiles: context.read<BulkImportFiles>(),
+                  ardriveAuth: context.read<ArDriveAuth>(),
+                  checkFolderConflicts: CheckFolderConflicts(
+                    context.read<FolderRepository>(),
+                    context.read<FileRepository>(),
+                  ),
+                  manifestRepository: ManifestRepositoryImpl(
+                    context.read<ArweaveService>(),
+                    DownloadService(context.read<ArweaveService>()),
+                  )),
               child: BulkImportModal(
                 driveId: drive!.id,
                 parentFolderId: currentFolder!.folder.id,

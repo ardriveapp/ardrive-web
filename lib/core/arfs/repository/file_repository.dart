@@ -23,12 +23,42 @@ abstract class FileRepository {
 
   Future<FileRevision> getLatestFileRevision(String driveId, String fileId);
 
+  /// Checks if a file with the given name exists in the specified folder
+  ///
+  /// Returns a list of [FileConflict] objects containing information about any conflicting files
+  Future<List<FileConflict>> checkFileConflicts({
+    required String driveId,
+    required String parentFolderId,
+    required String fileName,
+  });
+
+  /// Checks if a file has failed uploads
+  ///
+  /// Returns true if the file has any failed upload transactions
+  Future<bool> hasFailedUploads({
+    required String driveId,
+    required String fileId,
+  });
+
   factory FileRepository(
           DriveDao driveDao, FolderRepository folderRepository) =>
       _FileRepository(
         driveDao,
         folderRepository,
       );
+}
+
+/// Represents a file conflict in the system
+class FileConflict {
+  final String fileId;
+  final String fileName;
+  final String dataTxId;
+
+  FileConflict({
+    required this.fileId,
+    required this.fileName,
+    required this.dataTxId,
+  });
 }
 
 class _FileRepository implements FileRepository {
@@ -95,5 +125,66 @@ class _FileRepository implements FileRepository {
           fileId: fileId,
         )
         .getSingle();
+  }
+
+  @override
+  Future<List<FileConflict>> checkFileConflicts({
+    required String driveId,
+    required String parentFolderId,
+    required String fileName,
+  }) async {
+    final existingFiles = await _driveDao
+        .filesInFolderWithName(
+          driveId: driveId,
+          parentFolderId: parentFolderId,
+          name: fileName,
+        )
+        .get();
+
+    final conflicts = <FileConflict>[];
+
+    for (final file in existingFiles) {
+      final latestRevision = await _driveDao
+          .latestFileRevisionByFileId(
+            driveId: driveId,
+            fileId: file.id,
+          )
+          .getSingleOrNull();
+
+      if (latestRevision != null) {
+        conflicts.add(
+          FileConflict(
+            fileId: file.id,
+            fileName: file.name,
+            dataTxId: latestRevision.dataTxId,
+          ),
+        );
+      }
+    }
+
+    return conflicts;
+  }
+
+  @override
+  Future<bool> hasFailedUploads({
+    required String driveId,
+    required String fileId,
+  }) async {
+    final latestRevision = await _driveDao
+        .latestFileRevisionByFileId(
+          driveId: driveId,
+          fileId: fileId,
+        )
+        .getSingleOrNull();
+
+    if (latestRevision == null) {
+      return false;
+    }
+
+    final transaction = await (_driveDao.select(_driveDao.networkTransactions)
+          ..where((tbl) => tbl.id.equals(latestRevision.dataTxId)))
+        .getSingleOrNull();
+
+    return transaction?.status == TransactionStatus.failed;
   }
 }

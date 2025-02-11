@@ -1,5 +1,6 @@
 import 'package:ardrive/core/arfs/repository/file_metadata_repository.dart';
 import 'package:ardrive/core/arfs/repository/file_metadata_repository_impl.dart';
+import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/core/arfs/use_cases/bulk_import_files.dart';
 import 'package:ardrive/core/arfs/use_cases/get_file_metadata.dart';
 import 'package:ardrive/core/arfs/use_cases/insert_file_metadata.dart';
@@ -46,6 +47,7 @@ List<RepositoryProvider> setupBulkImportDependencies(BuildContext context) {
         arweaveService: context.read<ArweaveService>(),
         uploadFileMetadata: context.read<UploadFileMetadata>(),
         uploadFolderMetadata: context.read<UploadFolderMetadata>(),
+        fileRepository: context.read<FileRepository>(),
       ),
     ),
   ];

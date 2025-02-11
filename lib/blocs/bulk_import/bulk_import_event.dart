@@ -21,7 +21,23 @@ class StartManifestBulkImport extends BulkImportEvent {
   });
 
   @override
-  List<Object> get props => [manifestTxId, driveId, parentFolderId];
+  List<Object?> get props => [manifestTxId, driveId, parentFolderId];
+}
+
+/// Event to replace conflicting files
+class ReplaceConflictingFiles extends BulkImportEvent {
+  final String manifestTxId;
+  final String driveId;
+  final String parentFolderId;
+
+  const ReplaceConflictingFiles({
+    required this.manifestTxId,
+    required this.driveId,
+    required this.parentFolderId,
+  });
+
+  @override
+  List<Object?> get props => [manifestTxId, driveId, parentFolderId];
 }
 
 /// Event to cancel the bulk import process
@@ -30,4 +46,6 @@ class CancelBulkImport extends BulkImportEvent {
 }
 
 /// Event to reset the bulk import state to initial.
-class ResetBulkImport extends BulkImportEvent {}
+class ResetBulkImport extends BulkImportEvent {
+  const ResetBulkImport();
+}

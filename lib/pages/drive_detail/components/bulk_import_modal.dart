@@ -97,6 +97,68 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
               ],
             ),
           );
+        } else if (state is BulkImportFileConflicts) {
+          showArDriveDialog(
+            context,
+            content: ArDriveStandardModalNew(
+              width: kLargeDialogWidth,
+              title: 'File Conflicts Detected',
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'The following files already exist in the target location:',
+                    style: typography.paragraphLarge(),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 200),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: state.conflicts.map((conflict) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Text(
+                              '• ${conflict.filePath}',
+                              style: typography.paragraphNormal(),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Would you like to replace these files?',
+                    style: typography.paragraphNormal(),
+                  ),
+                ],
+              ),
+              actions: [
+                ModalAction(
+                  action: () => Navigator.pop(context),
+                  title: 'Cancel',
+                ),
+                ModalAction(
+                  action: () {
+                    context.read<BulkImportBloc>().add(
+                          ReplaceConflictingFiles(
+                            manifestTxId: _manifestTxIdController.text,
+                            driveId: widget.driveId,
+                            parentFolderId: widget.parentFolderId,
+                          ),
+                        );
+
+                    // Replace action will be implemented in the next prompt
+                    Navigator.pop(context);
+                  },
+                  title: 'Replace',
+                ),
+              ],
+            ),
+          );
         } else if (state is BulkImportError) {
           showArDriveDialog(
             context,

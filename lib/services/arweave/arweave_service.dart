@@ -1302,7 +1302,7 @@ class ArweaveService {
   /// Returns a stream of transaction info batches.
   Stream<Map<String, TxInfo>> getInfoOfTxsToBePinned(
     List<String> transactionIds, {
-    int batchSize = 10,
+    int batchSize = 5,
   }) async* {
     for (var i = 0; i < transactionIds.length; i += batchSize) {
       final end = (i + batchSize < transactionIds.length)

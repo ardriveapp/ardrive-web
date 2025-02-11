@@ -1,3 +1,4 @@
+import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/core/arfs/use_cases/upload_file_metadata.dart';
 import 'package:ardrive/core/arfs/use_cases/upload_folder_metadata.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -59,6 +60,7 @@ class FileImportFailure {
 /// Represents a file entry from a manifest.
 class ManifestFileEntry {
   final String id;
+  final String? existingFileId;
   final String path;
   final String name;
   final String dataTxId;
@@ -67,12 +69,33 @@ class ManifestFileEntry {
 
   ManifestFileEntry({
     required this.id,
+    this.existingFileId,
     required this.path,
     required this.name,
     required this.dataTxId,
     required this.contentType,
     required this.size,
   });
+
+  ManifestFileEntry copyWith({
+    String? id,
+    String? path,
+    String? name,
+    String? dataTxId,
+    String? contentType,
+    int? size,
+    String? existingFileId,
+  }) {
+    return ManifestFileEntry(
+      id: id ?? this.id,
+      path: path ?? this.path,
+      name: name ?? this.name,
+      dataTxId: dataTxId ?? this.dataTxId,
+      contentType: contentType ?? this.contentType,
+      size: size ?? this.size,
+      existingFileId: existingFileId ?? this.existingFileId,
+    );
+  }
 }
 
 /// Use case for bulk importing files from a manifest.
@@ -81,16 +104,19 @@ class BulkImportFiles {
   final UploadFolderMetadata _uploadFolderMetadata;
   final DriveDao _driveDao;
   final ArweaveService _arweaveService;
+  final FileRepository _fileRepository;
 
   BulkImportFiles({
     required UploadFileMetadata uploadFileMetadata,
     required UploadFolderMetadata uploadFolderMetadata,
     required DriveDao driveDao,
     required ArweaveService arweaveService,
+    required FileRepository fileRepository,
   })  : _uploadFileMetadata = uploadFileMetadata,
         _uploadFolderMetadata = uploadFolderMetadata,
         _driveDao = driveDao,
-        _arweaveService = arweaveService;
+        _arweaveService = arweaveService,
+        _fileRepository = fileRepository;
 
   /// Creates a folder hierarchy based on the file path.
   /// Returns the ID of the deepest folder created.
@@ -304,6 +330,13 @@ class BulkImportFiles {
 
       logger.d('files: ${files.length}');
 
+      for (var file in files) {
+        logger.d('File name: ${file.name}');
+        logger.d('File path: ${file.path}');
+        logger.d('File id: ${file.id}');
+        logger.d('File dataTxId: ${file.dataTxId}');
+      }
+
       // Phase 3: Import all files
       // First, collect all transaction IDs
       final txIds = files.map((f) => f.dataTxId).toList();
@@ -335,15 +368,18 @@ class BulkImportFiles {
             // Get tx details from the batch results
             final tx = txDetails[file.dataTxId]!;
 
-            logger.d('tx: $tx');
-            logger.d('size: ${tx.data.size}');
-            logger.d('txId: ${file.dataTxId}');
-            logger.d('FileId: ${file.id}');
             final now = DateTime.now();
 
+            logger.d(
+                'Creating file entity for file: ${file.name} with file id ${file.id}');
+
             // Create FileEntity for metadata upload
+            if (file.existingFileId != null) {
+              logger.d('Reusing file id: ${file.existingFileId}');
+            }
+
             final fileEntity = FileEntity(
-              id: file.id,
+              id: file.existingFileId ?? file.id,
               driveId: driveId,
               name: fileName,
               size: int.parse(tx.data.size),
@@ -374,6 +410,7 @@ class BulkImportFiles {
             fileEntries.add(fileEntity);
           } catch (e) {
             final file = fileDataTxIdToFile[dataTxId]!;
+            logger.e('Failed to get tx details for file: ${file.name}', e);
             onFileFailure?.call(file.path);
             failures.add(FileImportFailure(
               path: file.path,
@@ -388,7 +425,7 @@ class BulkImportFiles {
 
         final worker = WorkerPool<FileEntity>(
           numWorkers: 1,
-          maxTasksPerWorker: 10,
+          maxTasksPerWorker: 5,
           taskQueue: fileEntries,
           onWorkerError: (e) {
             logger.e('Worker error', e);
@@ -441,19 +478,36 @@ class BulkImportFiles {
     final now = DateTime.now();
 
     // Create FileEntity for metadata upload
-    final fileEntity = FileEntity(
-      id: fileId,
-      driveId: driveId,
-      name: fileName,
-      size: dataSize,
-      dataTxId: dataTxId,
-      parentFolderId: parentFolderId,
-      dataContentType: dataContentType,
-      lastModifiedDate: now,
-    );
+    late FileEntity fileEntity;
+
+    final existingFileEntity =
+        await _driveDao.fileById(fileId: fileId).getSingleOrNull();
+
+    if (existingFileEntity != null) {
+      final file = existingFileEntity.copyWith(
+        dataTxId: dataTxId,
+        dataContentType: Value(dataContentType),
+        size: dataSize,
+        lastModifiedDate: now,
+      );
+
+      fileEntity = file.asEntity();
+    } else {
+      fileEntity = FileEntity(
+        id: fileId,
+        driveId: driveId,
+        name: fileName,
+        size: dataSize,
+        dataTxId: dataTxId,
+        parentFolderId: parentFolderId,
+        dataContentType: dataContentType,
+        lastModifiedDate: now,
+      );
+    }
 
     // Upload metadata
     late FileMetadataUploadResult metadataUploadResult;
+
     try {
       metadataUploadResult = await _uploadFileMetadata(
         fileEntity: fileEntity,
@@ -469,46 +523,63 @@ class BulkImportFiles {
         error: 'Failed to upload metadata: ${e.toString()}',
       );
     }
+    final isExistingFile =
+        await _driveDao.fileById(fileId: fileId).getSingleOrNull();
 
-    final fileEntry = FileEntriesCompanion.insert(
-      id: fileId,
-      driveId: driveId,
-      name: fileName,
-      dataTxId: dataTxId,
-      size: dataSize,
-      lastModifiedDate: now,
-      dataContentType: Value(dataContentType),
-      parentFolderId: parentFolderId,
-      isHidden: const Value(false),
-      dateCreated: Value(now),
-      lastUpdated: Value(now),
-      path: '',
-    );
+    if (isExistingFile != null) {
+      logger.d('Updating existing file entry');
+
+      _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
+          performedAction: RevisionAction.uploadNewVersion));
+
+      // await _fileRepository.updateFile(fileEntity);
+      // await _fileRepository.updateFileRevision(
+      //     fileEntity, RevisionAction.uploadNewVersion);
+    } else {
+      logger.d('Creating new file entry');
+
+      final fileEntry = FileEntriesCompanion.insert(
+        id: fileId,
+        driveId: driveId,
+        name: fileName,
+        dataTxId: dataTxId,
+        size: dataSize,
+        lastModifiedDate: now,
+        dataContentType: Value(dataContentType),
+        parentFolderId: parentFolderId,
+        isHidden: const Value(false),
+        dateCreated: Value(now),
+        lastUpdated: Value(now),
+        path: '',
+      );
+
+      await _driveDao.transaction(
+        () async {
+          await _driveDao.into(_driveDao.fileEntries).insert(fileEntry);
+
+          final revision = FileRevisionsCompanion.insert(
+            driveId: driveId,
+            fileId: fileId,
+            name: fileName,
+            parentFolderId: parentFolderId,
+            action: RevisionAction.create,
+            dateCreated: Value(now),
+            lastModifiedDate: now,
+            size: dataSize,
+            dataTxId: dataTxId,
+            dataContentType: Value(dataContentType),
+            metadataTxId: metadataUploadResult.metadataTxId,
+            isHidden: const Value(false),
+          );
+
+          await _driveDao.insertFileRevision(revision);
+        },
+      );
+    }
 
     late FileEntry createdFile;
 
-    await _driveDao.transaction(() async {
-      await _driveDao.into(_driveDao.fileEntries).insert(fileEntry);
-
-      final revision = FileRevisionsCompanion.insert(
-        driveId: driveId,
-        fileId: fileId,
-        name: fileName,
-        parentFolderId: parentFolderId,
-        action: RevisionAction.create,
-        dateCreated: Value(now),
-        lastModifiedDate: now,
-        size: dataSize,
-        dataTxId: dataTxId,
-        dataContentType: Value(dataContentType),
-        metadataTxId: metadataUploadResult.metadataTxId,
-        isHidden: const Value(false),
-      );
-
-      await _driveDao.insertFileRevision(revision);
-
-      createdFile = await _driveDao.fileById(fileId: fileId).getSingle();
-    });
+    createdFile = await _driveDao.fileById(fileId: fileId).getSingle();
 
     return createdFile;
   }
