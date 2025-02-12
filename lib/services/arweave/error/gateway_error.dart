@@ -40,10 +40,8 @@ abstract class GatewayError extends Equatable implements Exception {
 }
 
 class UnexpectedRedirection extends GatewayError {
-  const UnexpectedRedirection(
-      {required super.reasonPhrase, super.requestUrl})
-      : super(
-            statusCode: UNEXPECTED_REDIRECTION);
+  const UnexpectedRedirection({required super.reasonPhrase, super.requestUrl})
+      : super(statusCode: UNEXPECTED_REDIRECTION);
 
   @override
   List<Object?> get props => [statusCode, reasonPhrase, requestUrl];
@@ -63,8 +61,7 @@ class ServerError extends GatewayError {
 /// 429s Errors
 class RateLimitError extends GatewayError {
   const RateLimitError({required super.reasonPhrase, super.requestUrl})
-      : super(
-            statusCode: RATE_LIMIT_ERROR);
+      : super(statusCode: RATE_LIMIT_ERROR);
 
   @override
   List<Object?> get props => [statusCode, reasonPhrase, requestUrl];

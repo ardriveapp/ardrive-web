@@ -25,7 +25,7 @@ abstract class ArDriveDownloader {
     String? cipher,
     String? cipherIvString,
   });
-    Future<Uint8List> downloadToMemory({
+  Future<Uint8List> downloadToMemory({
     required TransactionCommonMixin dataTx,
     required int fileSize,
     required String fileName,

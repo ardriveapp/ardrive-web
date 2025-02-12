@@ -171,7 +171,7 @@ class _UploadRepositoryImpl implements UploadRepository {
     String? assignedName,
   }) async {
     final private = targetDrive.isPrivate;
-  final driveKey = private
+    final driveKey = private
         ? await _driveDao.getDriveKey(
             targetDrive.id, _auth.currentUser.cipherKey)
         : null;

@@ -26,7 +26,7 @@ void main() {
   late DownloadService mockDownloadService;
   late ArweaveService mockArweaveService;
   late ProfileCubit mockProfileCubit;
-
+  late ConfigService mockConfigService;
   final wallet = getTestWallet();
 
   registerFallbackValue(wallet);
@@ -42,6 +42,7 @@ void main() {
       downloadService: mockDownloadService,
       userRepository: mockUserRepository,
       profileCubit: mockProfileCubit,
+      configService: mockConfigService,
     );
   }
 
@@ -54,6 +55,7 @@ void main() {
     mockDownloadService = MockDownloadService();
     mockArweaveService = MockArweaveService();
     mockProfileCubit = MockProfileCubit();
+    mockConfigService = MockConfigService();
   });
 
   group('AddWalletFile', () {
@@ -74,6 +76,7 @@ void main() {
           downloadService: mockDownloadService,
           userRepository: mockUserRepository,
           profileCubit: mockProfileCubit,
+          configService: mockConfigService,
         );
       },
       setUp: () {
@@ -90,7 +93,8 @@ void main() {
         )));
       },
       expect: () => [
-        LoginLoading(),
+        LoginLoadingIfUserAlreadyExists(),
+        LoginLoadingIfUserAlreadyExistsSuccess(),
         predicate<PromptPassword>((p) {
           return p.showWalletCreated == false && p.mnemonic == null;
         })
@@ -109,6 +113,7 @@ void main() {
           downloadService: mockDownloadService,
           userRepository: mockUserRepository,
           profileCubit: mockProfileCubit,
+          configService: mockConfigService,
         );
       },
       setUp: () {
@@ -126,7 +131,8 @@ void main() {
         )));
       },
       expect: () => [
-        LoginLoading(),
+        LoginLoadingIfUserAlreadyExists(),
+        LoginLoadingIfUserAlreadyExistsSuccess(),
         predicate<CreateNewPassword>((cnp) {
           return cnp.showWalletCreated == false &&
               cnp.mnemonic == null &&
@@ -146,6 +152,7 @@ void main() {
           downloadService: mockDownloadService,
           userRepository: mockUserRepository,
           profileCubit: mockProfileCubit,
+          configService: mockConfigService,
         );
       },
       setUp: () {
@@ -163,7 +170,8 @@ void main() {
         )));
       },
       expect: () => [
-        LoginLoading(),
+        LoginLoadingIfUserAlreadyExists(),
+        LoginLoadingIfUserAlreadyExistsSuccess(),
         predicate<CreateNewPassword>((cnp) {
           return cnp.showTutorials == false &&
               cnp.showWalletCreated == false &&
@@ -252,6 +260,7 @@ void main() {
           downloadService: mockDownloadService,
           userRepository: mockUserRepository,
           profileCubit: mockProfileCubit,
+          configService: mockConfigService,
         );
       },
       setUp: () {
@@ -306,7 +315,7 @@ void main() {
       expect: () => [
         const PromptPassword(),
         LoginCheckingPassword(),
-        LoginPasswordFailed(),
+        const TypeMatcher<LoginUnknownFailure>()
       ],
     );
   });
@@ -457,7 +466,7 @@ void main() {
         // user doesn't exist
         when(() => mockArDriveAuth.unlockUser(
               password: 'password',
-            )).thenThrow(AuthenticationFailedException('some error'));
+            )).thenThrow(WrongPasswordException('some error'));
       },
       act: (bloc) async {
         // when an error occurs we go back to the last state, so use it to test

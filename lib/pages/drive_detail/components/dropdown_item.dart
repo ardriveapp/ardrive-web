@@ -24,7 +24,7 @@ class ArDriveDropdownItemTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-  return Padding(
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 18.0),
       child: SizedBox(
         height: 48,
