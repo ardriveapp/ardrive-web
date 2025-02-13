@@ -60,7 +60,9 @@ void showErrorDialog(
                   child: ArDriveButtonNew(
                     text: 'Close',
                     typography: typography,
-                    variant: ButtonVariant.secondary,
+                    variant: showShareLogsButton
+                        ? ButtonVariant.secondary
+                        : ButtonVariant.primary,
                     onPressed: () {
                       Navigator.pop(context);
                     },
