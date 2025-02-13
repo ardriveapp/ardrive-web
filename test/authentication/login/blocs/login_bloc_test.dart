@@ -655,7 +655,11 @@ void main() {
       act: (bloc) async {
         bloc.add(const AddWalletFromArConnect());
       },
-      expect: () => [LoginLoading(), const TypeMatcher<PromptPassword>()],
+      expect: () => [
+        LoginLoadingIfUserAlreadyExists(),
+        LoginLoadingIfUserAlreadyExistsSuccess(),
+        const TypeMatcher<PromptPassword>()
+      ],
     );
 
     blocTest(
@@ -680,7 +684,8 @@ void main() {
         bloc.add(const AddWalletFromArConnect());
       },
       expect: () => [
-        LoginLoading(),
+        LoginLoadingIfUserAlreadyExists(),
+        LoginLoadingIfUserAlreadyExistsSuccess(),
         predicate<CreateNewPassword>((cnp) {
           return cnp.showWalletCreated == false &&
               cnp.mnemonic == null &&
@@ -711,7 +716,8 @@ void main() {
         bloc.add(const AddWalletFromArConnect());
       },
       expect: () => [
-        LoginLoading(),
+        LoginLoadingIfUserAlreadyExists(),
+        LoginLoadingIfUserAlreadyExistsSuccess(),
         predicate<CreateNewPassword>((cnp) {
           return cnp.showWalletCreated == false &&
               cnp.mnemonic == null &&
@@ -740,7 +746,8 @@ void main() {
       },
       expect: () => [
         const PromptPassword(),
-        LoginLoading(),
+        LoginLoadingIfUserAlreadyExists(),
+        LoginLoadingIfUserAlreadyExistsSuccess(),
         const PromptPassword(),
         const TypeMatcher<LoginFailure>(),
       ],
