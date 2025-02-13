@@ -19,6 +19,7 @@ import 'package:ardrive/services/ethereum/provider/ethereum_provider_wallet.dart
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
+import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -286,16 +287,26 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     wallet = await generateWalletFromMnemonic(mnemonic);
     emit(LoginCloseBlockingDialog());
 
-    if (!await _verifyEthereumSignature(
-      wallet: wallet,
-      derivedEthWallet: derivedEthWallet,
-      fullEntropy: fullEntropy,
-    )) {
-      emit(PromptPassword(
-          wallet: event.wallet,
-          derivedEthWallet: event.derivedEthWallet,
-          showWalletCreated: false,
-          isPasswordInvalid: true));
+    try {
+      if (!await _verifyEthereumSignature(
+        wallet: wallet,
+        derivedEthWallet: derivedEthWallet,
+        fullEntropy: fullEntropy,
+      )) {
+        emit(PromptPassword(
+            wallet: event.wallet,
+            derivedEthWallet: event.derivedEthWallet,
+            showWalletCreated: false,
+            isPasswordInvalid: true));
+        return;
+      }
+    } catch (e) {
+      if (e is GraphQLException) {
+        emit(GatewayLoginFailure(e, _getGatewayUrl()));
+        return;
+      }
+
+      emit(LoginFailure(e));
       return;
     }
 
@@ -564,7 +575,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     usingSeedphrase = false;
 
     try {
-      emit(LoginLoading());
+      emit(LoginLoadingIfUserAlreadyExists());
 
       bool hasPermissions = await _arConnectService.checkPermissions();
       if (!hasPermissions) {
@@ -590,8 +601,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       lastKnownWalletAddress = await wallet.getAddress();
 
       if (await _arDriveAuth.userHasPassword(wallet)) {
+        emit(LoginLoadingIfUserAlreadyExistsSuccess());
         emit(PromptPassword(wallet: wallet, showWalletCreated: false));
       } else {
+        emit(LoginLoadingIfUserAlreadyExistsSuccess());
         final hasDrives = await _arDriveAuth.isExistingUser(wallet);
         emit(
           CreateNewPassword(
@@ -602,8 +615,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         );
       }
     } catch (e) {
+      emit(LoginLoadingIfUserAlreadyExistsSuccess());
       emit(previousState);
-      emit(LoginFailure(e));
+      if (e is AuthenticationGatewayException) {
+        emit(GatewayLoginFailure(e, _getGatewayUrl()));
+      } else {
+        emit(LoginFailure(e));
+      }
     }
   }
 
@@ -852,8 +870,21 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     final arweaveNativeAddressForEth =
         await ownerToAddress(await derivedEthWallet.getOwner());
 
-    final String? ethFirstTxId =
-        await _arweaveService.getFirstTxForWallet(arweaveNativeAddressForEth);
+    String? ethFirstTxId;
+    try {
+      ethFirstTxId =
+          await _arweaveService.getFirstTxForWallet(arweaveNativeAddressForEth);
+    } catch (e) {
+      emit(LoginCloseBlockingDialog());
+
+      if (e is GraphQLException) {
+        emit(GatewayLoginFailure(e, _getGatewayUrl()));
+        return;
+      }
+
+      emit(LoginFailure(e));
+      return;
+    }
 
     emit(LoginCloseBlockingDialog());
 
