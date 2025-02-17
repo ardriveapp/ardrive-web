@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 2.64.2
+version: 2.64.3
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
