@@ -76,11 +76,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   @override
   // ignore: avoid_renaming_method_parameters
   Widget build(BuildContext navigatorContext) {
-    if (navigatorContext.read<ConfigService>().flavor != Flavor.production) {
-      return ArDriveAppWithDevTools(widget: _app());
-    }
-
-    return _app();
+    return ArDriveAppWithDevTools(widget: _app());
   }
 
   Widget _app() {
