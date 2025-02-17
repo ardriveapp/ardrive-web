@@ -4,6 +4,7 @@ import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/components/icon_theme_switcher.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/components/truncated_address.dart';
+import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/gar/presentation/widgets/gar_modal.dart';
 import 'package:ardrive/gift/bloc/redeem_gift_bloc.dart';
 import 'package:ardrive/gift/redeem_gift_modal.dart';
@@ -151,8 +152,10 @@ class _ProfileCardState extends State<ProfileCard> {
                       ),
                     ],
                   ),
-                const SizedBox(height: 8),
-                _buildWalletAddressRow(context, state),
+                if (state.user.profileType != ProfileType.arConnect) ...[
+                  const SizedBox(height: 8),
+                  _buildWalletAddressRow(context, state),
+                ],
                 if (state.user.wallet is! ArConnectWallet) ...[
                   const SizedBox(height: 8),
                 ],
