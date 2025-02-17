@@ -152,10 +152,8 @@ class _ProfileCardState extends State<ProfileCard> {
                       ),
                     ],
                   ),
-                if (state.user.profileType != ProfileType.arConnect) ...[
-                  const SizedBox(height: 8),
-                  _buildWalletAddressRow(context, state),
-                ],
+                const SizedBox(height: 8),
+                _buildWalletAddressRow(context, state),
                 if (state.user.wallet is! ArConnectWallet) ...[
                   const SizedBox(height: 8),
                 ],
@@ -424,15 +422,16 @@ class _ProfileCardState extends State<ProfileCard> {
                   fontSize: 18,
                 ),
               const Spacer(),
-              ArDriveIconButton(
-                icon: ArDriveIcons.download(
-                  color: colorTokens.textHigh,
-                  size: 21,
+              if (state.user.profileType != ProfileType.arConnect)
+                ArDriveIconButton(
+                  icon: ArDriveIcons.download(
+                    color: colorTokens.textHigh,
+                    size: 21,
+                  ),
+                  onPressed: () {
+                    showDownloadWalletModal(context);
+                  },
                 ),
-                onPressed: () {
-                  showDownloadWalletModal(context);
-                },
-              ),
               CopyButton(
                 size: 21,
                 text: walletAddress,
