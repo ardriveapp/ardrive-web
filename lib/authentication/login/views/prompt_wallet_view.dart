@@ -102,14 +102,14 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                         widget.isMetamaskAvailable) ...[
                       if (widget.isArConnectAvailable) ...[
                         ArDriveButtonNew(
-                          text: 'Continue with ArConnect',
+                          text: 'Continue with Wander',
                           hoverIcon: Container(
                               alignment: Alignment.center,
                               child: ArDriveImage(
                                 width: 24,
                                 height: 24,
                                 image: SvgImage.asset(
-                                    Resources.images.login.arconnectLogo),
+                                    Resources.images.login.wanderLogo),
                               )),
                           typography: typography,
                           onPressed: () {

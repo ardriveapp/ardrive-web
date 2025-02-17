@@ -199,6 +199,11 @@ class Logger {
     return true;
   }
 
+  Future<String> getLogs() async {
+    final logs = inMemoryLogs.toList();
+    return logs.join('\n');
+  }
+
   Future<void> exportLogs({
     bool share = false,
     bool shareAsEmail = false,

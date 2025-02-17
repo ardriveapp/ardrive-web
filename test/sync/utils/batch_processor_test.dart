@@ -86,7 +86,9 @@ void main() {
 
       expect(
         processor.batchProcess<int>(
-            list: list, endOfBatchCallback: mockCallback.call, batchSize: batchSize),
+            list: list,
+            endOfBatchCallback: mockCallback.call,
+            batchSize: batchSize),
         emitsError(
           isA<ArgumentError>(),
         ),

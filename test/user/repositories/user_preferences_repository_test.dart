@@ -133,10 +133,11 @@ void main() {
     test('should clear last selected drive id from storage', () async {
       when(() => mockStore.remove('lastSelectedDriveId'))
           .thenAnswer((_) async => true);
-      when(() => mockStore.remove('showHiddenFiles')).thenAnswer((_) async => true);
+      when(() => mockStore.remove('showHiddenFiles'))
+          .thenAnswer((_) async => true);
       when(() => mockStore.remove('userHasHiddenDrive'))
           .thenAnswer((_) async => true);
-      
+
       await repository.clear();
 
       verify(() => mockStore.remove('lastSelectedDriveId')).called(1);

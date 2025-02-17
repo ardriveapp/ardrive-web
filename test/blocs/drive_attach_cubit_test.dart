@@ -54,7 +54,7 @@ void main() {
       arweave = MockArweaveService();
       syncBloc = MockSyncBloc();
       drivesBloc = MockDrivesCubit();
-    when(() => arweave.getLatestDriveEntityWithId(validDriveId)).thenAnswer(
+      when(() => arweave.getLatestDriveEntityWithId(validDriveId)).thenAnswer(
         (_) => Future.value(
           DriveEntity(
             id: validDriveId,

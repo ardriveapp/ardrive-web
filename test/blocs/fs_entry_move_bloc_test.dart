@@ -305,7 +305,7 @@ void main() {
         turboUploadService: turboUploadService,
         syncCubit: syncBloc,
         driveId: driveId,
-      driveDao: driveDao,
+        driveDao: driveDao,
         profileCubit: profileCubit,
         // TODO: revisit this when we have a better way to mock the selected items
         selectedItems: [],

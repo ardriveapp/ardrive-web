@@ -58,7 +58,7 @@ class Login {
   const Login();
 
   final String ardriveLogoOnboarding = 'assets/images/brand/2x.png';
-  final String arconnectLogo = 'assets/images/login/arconnect_logo_flat.svg';
+  final String wanderLogo = 'assets/images/login/wander.svg';
   final String lattice = 'assets/images/login/lattice.svg';
   final String latticeLight = 'assets/images/login/lattice_light.svg';
   final String latticeLarge = 'assets/images/login/lattice_large.svg';

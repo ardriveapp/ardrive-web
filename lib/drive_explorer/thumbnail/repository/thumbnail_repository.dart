@@ -172,7 +172,8 @@ class ThumbnailRepository {
     Completer<void> completer = Completer();
 
     controller.onError((error) {
-      logger.e('Error uploading thumbnail on upload controller', error, StackTrace.current);
+      logger.e('Error uploading thumbnail on upload controller', error,
+          StackTrace.current);
     });
 
     controller.onDone((tasks) async {

@@ -38,7 +38,6 @@ class SearchResult<T> extends Equatable {
     return '${drive.id}_${result.hashCode}';
   }
 
-
   @override
   List<Object?> get props => [uniqueId];
 

@@ -4,6 +4,7 @@ import 'package:ardrive/components/details_panel.dart';
 import 'package:ardrive/components/icon_theme_switcher.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/components/truncated_address.dart';
+import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/gar/presentation/widgets/gar_modal.dart';
 import 'package:ardrive/gift/bloc/redeem_gift_bloc.dart';
 import 'package:ardrive/gift/redeem_gift_modal.dart';
@@ -421,15 +422,16 @@ class _ProfileCardState extends State<ProfileCard> {
                   fontSize: 18,
                 ),
               const Spacer(),
-              ArDriveIconButton(
-                icon: ArDriveIcons.download(
-                  color: colorTokens.textHigh,
-                  size: 21,
+              if (state.user.profileType != ProfileType.arConnect)
+                ArDriveIconButton(
+                  icon: ArDriveIcons.download(
+                    color: colorTokens.textHigh,
+                    size: 21,
+                  ),
+                  onPressed: () {
+                    showDownloadWalletModal(context);
+                  },
                 ),
-                onPressed: () {
-                  showDownloadWalletModal(context);
-                },
-              ),
               CopyButton(
                 size: 21,
                 text: walletAddress,

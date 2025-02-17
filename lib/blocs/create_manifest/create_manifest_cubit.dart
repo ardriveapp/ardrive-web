@@ -36,7 +36,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
   final ArDriveAuth _auth;
 
-  ANTRecord? _selectedAntRecord;
+  ArNSNameModel? _selectedAntRecord;
   ARNSUndername? _selectedUndername;
 
   CreateManifestCubit({
@@ -391,7 +391,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
     if (_selectedAntRecord != null) {
       return ARNSUndernameFactory.createDefaultUndername(
-        domain: _selectedAntRecord!.domain,
+        domain: _selectedAntRecord!.name,
         transactionId: 'to_assign',
       );
     }
@@ -399,9 +399,9 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     return null;
   }
 
-  void selectArns(ANTRecord? antRecord, ARNSUndername? undername) {
+  void selectArns(ArNSNameModel? antRecord, ARNSUndername? undername) {
     logger.i(
-        'Selecting ARNS: antRecord: ${antRecord?.domain}, undername: ${undername?.name}');
+        'Selecting ARNS: antRecord: ${antRecord?.name}, undername: ${undername?.name}');
     _selectedAntRecord = antRecord;
     _selectedUndername = undername;
 

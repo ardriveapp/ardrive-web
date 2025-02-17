@@ -113,8 +113,9 @@ class CreateSnapshotDialog extends StatelessWidget {
 
 Widget _explanationDialog(BuildContext context, Drive drive) {
   final createSnapshotCubit = context.read<CreateSnapshotCubit>();
+  final typography = ArDriveTypographyNew.of(context);
 
-  return ArDriveStandardModal(
+  return ArDriveStandardModalNew(
     title: appLocalizationsOf(context).newSnapshot,
     content: SizedBox(
       width: kMediumDialogWidth,
@@ -132,21 +133,19 @@ Widget _explanationDialog(BuildContext context, Drive drive) {
                           .createSnapshotExplanation(drive.name),
                       defaultMapper: (t) => TextSpan(
                         text: t,
-                        style: ArDriveTypography.body.buttonNormalRegular(),
+                        style: typography.paragraphNormal(),
                       ),
                       parts: {
                         drive.name: (t) => TextSpan(
                               text: t,
-                              style: ArDriveTypography.body
-                                  .buttonNormalBold()
-                                  .copyWith(
+                              style: typography.paragraphNormal().copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
                             ),
                       },
                     ),
                   ),
-                  style: ArDriveTypography.body.buttonNormalRegular(),
+                  style: typography.paragraphNormal(),
                 ),
               ],
             ),
@@ -235,7 +234,9 @@ String _loadingDialogDescription(
 }
 
 Widget _successDialog(BuildContext context, String driveName) {
-  return ArDriveStandardModal(
+  final typography = ArDriveTypographyNew.of(context);
+
+  return ArDriveStandardModalNew(
     title: appLocalizationsOf(context).snapshotSuceeded,
     content: SizedBox(
       width: kMediumDialogWidth,
@@ -251,7 +252,7 @@ Widget _successDialog(BuildContext context, String driveName) {
                     text: appLocalizationsOf(context)
                         .snapshotCreationSucceeded(driveName),
                   ),
-                  style: ArDriveTypography.body.buttonNormalRegular(),
+                  style: typography.paragraphNormal(),
                 ),
               ],
             ),
@@ -275,8 +276,9 @@ Widget _failureDialog(
   DriveID driveId,
 ) {
   final createSnapshotCubit = context.read<CreateSnapshotCubit>();
+  final typography = ArDriveTypographyNew.of(context);
 
-  return ArDriveStandardModal(
+  return ArDriveStandardModalNew(
     title: appLocalizationsOf(context).snapshotFailed,
     content: SizedBox(
       width: kMediumDialogWidth,
@@ -291,7 +293,7 @@ Widget _failureDialog(
                   TextSpan(
                     text: appLocalizationsOf(context).snapshotCreationFailed,
                   ),
-                  style: ArDriveTypography.body.buttonNormalRegular(),
+                  style: typography.paragraphNormal(),
                 ),
               ],
             ),
@@ -320,7 +322,9 @@ Widget _insufficientBalanceDialog(
   BuildContext context,
   CreateSnapshotInsufficientBalance state,
 ) {
-  return ArDriveStandardModal(
+  final typography = ArDriveTypographyNew.of(context);
+
+  return ArDriveStandardModalNew(
     title: appLocalizationsOf(context).insufficientARForUpload,
     content: SizedBox(
       width: kMediumDialogWidth,
@@ -339,7 +343,7 @@ Widget _insufficientBalanceDialog(
                       state.arCost,
                     ),
                   ),
-                  style: ArDriveTypography.body.buttonNormalRegular(),
+                  style: typography.paragraphNormal(),
                 ),
               ],
             ),
@@ -364,7 +368,9 @@ Widget _confirmDialog(
   CreateSnapshotCubit createSnapshotCubit,
   CreateSnapshotState state,
 ) {
-  return ArDriveStandardModal(
+  final typography = ArDriveTypographyNew.of(context);
+
+  return ArDriveStandardModalNew(
     title: appLocalizationsOf(context).newSnapshot,
     content: SizedBox(
         width: kMediumDialogWidth,
@@ -383,21 +389,19 @@ Widget _confirmDialog(
                               .snapshotOfDrive(drive.name),
                           defaultMapper: (t) => TextSpan(
                             text: t,
-                            style: ArDriveTypography.body.buttonNormalRegular(),
+                            style: typography.paragraphNormal(),
                           ),
                           parts: {
                             drive.name: (t) => TextSpan(
                                   text: t,
-                                  style: ArDriveTypography.body
-                                      .buttonNormalBold()
-                                      .copyWith(
+                                  style: typography.paragraphNormal().copyWith(
                                         fontWeight: FontWeight.bold,
                                       ),
                                 ),
                           },
                         ),
                       ),
-                      style: ArDriveTypography.body.buttonNormalRegular(),
+                      style: typography.paragraphNormal(),
                     ),
                     Text.rich(
                       TextSpan(
@@ -408,7 +412,7 @@ Widget _confirmDialog(
                             ),
                           ),
                         ],
-                        style: ArDriveTypography.body.buttonNormalRegular(),
+                        style: typography.paragraphNormal(),
                       ),
                     ),
                     const Divider(),
@@ -416,7 +420,7 @@ Widget _confirmDialog(
                     if (state.isFreeThanksToTurbo) ...{
                       Text(
                         appLocalizationsOf(context).freeTurboTransaction,
-                        style: ArDriveTypography.body.buttonNormalRegular(
+                        style: typography.paragraphNormal(
                           color: ArDriveTheme.of(context)
                               .themeData
                               .colors

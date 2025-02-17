@@ -69,7 +69,18 @@ class GraphQLRetry {
         exception = e;
       }
 
-      throw exception;
+      throw GraphQLException(exception);
     }
+  }
+}
+
+class GraphQLException implements Exception {
+  final Object? exception;
+
+  GraphQLException([this.exception]);
+
+  @override
+  String toString() {
+    return 'GraphQLException: $exception';
   }
 }
