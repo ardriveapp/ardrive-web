@@ -1,8 +1,8 @@
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/utils/logger.dart';
-import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 part 'verify_name_event.dart';
 part 'verify_name_state.dart';
