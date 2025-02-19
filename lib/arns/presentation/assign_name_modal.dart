@@ -113,7 +113,6 @@ class _AssignArNSNameModal extends StatefulWidget {
   final String? customLoadingText;
   final String? customNameSelectionTitle;
   final bool canClose;
-
   @override
   State<_AssignArNSNameModal> createState() => _AssignArNSNameModalState();
 }

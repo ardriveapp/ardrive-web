@@ -5,6 +5,7 @@ import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/file_revision_base.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
@@ -48,7 +49,7 @@ class SharedFilePage extends StatelessWidget {
           Widget activityPanel(SharedFileLoadSuccess state) {
             return DetailsPanel(
               item: DriveDataTableItemMapper.fromRevision(
-                state.fileRevisions.first,
+                FileRevisionBase.fromFileRevision(state.fileRevisions.first),
                 false,
               ),
               isSharePage: true,
@@ -171,7 +172,8 @@ class SharedFilePage extends StatelessWidget {
                     contentPadding: EdgeInsets.zero,
                     leading: DriveExplorerItemTileLeading(
                       item: DriveDataTableItemMapper.fromRevision(
-                        state.fileRevisions.first,
+                        FileRevisionBase.fromFileRevision(
+                            state.fileRevisions.first),
                         false, // in this page we don't have the information about the current drive, so it's impossible to know if the file is from the user logged in
                       ),
                     ),

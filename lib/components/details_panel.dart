@@ -1,4 +1,8 @@
+import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/arns/presentation/ant_icon.dart';
+import 'package:ardrive/arns/presentation/assign_name_modal.dart';
+import 'package:ardrive/arns/presentation/verify_name_bloc/verify_name_bloc.dart';
+import 'package:ardrive/arns/utils/arns_address_utils.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/app_version_widget.dart';
@@ -34,6 +38,7 @@ import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -41,6 +46,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 import '../blocs/blocs.dart';
+import '../utils/file_revision_base.dart';
 
 class DetailsPanel extends StatefulWidget {
   const DetailsPanel({
@@ -607,6 +613,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: Text(
           formatDateToUtcString(widget.item.lastUpdated),
           style: typography.paragraphNormal(),
+          textAlign: TextAlign.right,
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
       ),
@@ -615,6 +622,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: Text(
           formatDateToUtcString(widget.item.dateCreated),
           style: typography.paragraphNormal(),
+          textAlign: TextAlign.right,
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
       ),
@@ -677,6 +685,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: Text(
           formatDateToUtcString(widget.item.lastUpdated),
           style: typography.paragraphNormal(),
+          textAlign: TextAlign.right,
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
       ),
@@ -685,6 +694,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: Text(
           formatDateToUtcString(widget.item.dateCreated),
           style: typography.paragraphNormal(),
+          textAlign: TextAlign.right,
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
       ),
@@ -719,6 +729,14 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
+          'None',
+          style: typography.paragraphNormal(),
+        ),
+        itemTitle: 'ArNS Name',
+      ),
+      sizedBoxHeight16px,
+      DetailsPanelItem(
+        leading: Text(
           filesize(item.size),
           style: typography.paragraphNormal(),
         ),
@@ -729,6 +747,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: Text(
           formatDateToUtcString(item.lastUpdated),
           style: typography.paragraphNormal(),
+          textAlign: TextAlign.right,
         ),
         itemTitle: appLocalizationsOf(context).lastUpdated,
       ),
@@ -737,6 +756,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         leading: Text(
           formatDateToUtcString(item.dateCreated),
           style: typography.paragraphNormal(),
+          textAlign: TextAlign.right,
         ),
         itemTitle: appLocalizationsOf(context).dateCreated,
       ),
@@ -779,7 +799,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
           itemTitle: appLocalizationsOf(context).metadataTxID,
         ),
       sizedBoxHeight16px,
-      if (item.fallbackTxId != null)
+      if (item.fallbackTxId != null) ...[
         DetailsPanelItem(
           leading: Row(
             mainAxisSize: MainAxisSize.min,
@@ -793,11 +813,10 @@ class _DetailsPanelState extends State<DetailsPanel> {
           ),
           itemTitle: 'Manifest Fallback TxID',
         ),
-      sizedBoxHeight16px,
+        sizedBoxHeight16px,
+      ],
       if (state is FsEntryFileInfoSuccess)
         DetailsPanelItem(
-          // TODO: Localize
-          // itemTitle: appLocalizationsOf(context).license,
           itemTitle: 'License',
           leading: Row(
             mainAxisSize: MainAxisSize.min,
@@ -845,8 +864,6 @@ class _DetailsPanelState extends State<DetailsPanel> {
                           ),
                         )
                       : Text(
-                          // TODO: Localize
-                          // appLocalizationsOf(context).noLicense,
                           'None',
                           textAlign: TextAlign.right,
                           style: typography.paragraphNormal(),
@@ -854,6 +871,13 @@ class _DetailsPanelState extends State<DetailsPanel> {
             ],
           ),
         ),
+      if (widget.drivePrivacy == DrivePrivacy.public.name) ...[
+        sizedBoxHeight16px,
+        DetailsPanelItem(
+          leading: _ArnsNameDisplay(fileItem: item),
+          itemTitle: 'ArNS Name',
+        ),
+      ],
       if (pinnedDataOwnerAddress != null) ...[
         sizedBoxHeight16px,
         DetailsPanelItem(
@@ -878,6 +902,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
             null,
             revision.action,
             widget.fileKey,
+            fileRevision: revision,
           );
         },
         separatorBuilder: (contexr, index) => const SizedBox(
@@ -941,6 +966,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 licenseState,
                 revision.action,
                 null,
+                fileRevisionWithLicenseAndTransactions: revision,
               );
             } else if (revision is DriveRevisionWithTransaction) {
               switch (revision.action) {
@@ -983,8 +1009,11 @@ class _DetailsPanelState extends State<DetailsPanel> {
     ARFSFileEntity file,
     LicenseState? licenseState,
     String action,
-    SecretKey? key,
-  ) {
+    SecretKey? key, {
+    FileRevision? fileRevision,
+    FileRevisionWithLicenseAndTransactions?
+        fileRevisionWithLicenseAndTransactions,
+  }) {
     late String title;
     String? subtitle;
     Widget? leading;
@@ -1002,6 +1031,20 @@ class _DetailsPanelState extends State<DetailsPanel> {
           fileRevision: file,
           fileKey: key,
         );
+
+        if (fileRevision != null) {
+          leading = _FileRevisionOptions(
+            fileRevision: FileRevisionBase.fromFileRevision(fileRevision),
+          );
+        }
+
+        if (fileRevisionWithLicenseAndTransactions != null) {
+          leading = _FileRevisionOptions(
+            fileRevision: FileRevisionBase.fromFileRevisionWithLicense(
+                fileRevisionWithLicenseAndTransactions),
+          );
+        }
+
         break;
       case RevisionAction.rename:
         title = appLocalizationsOf(context).fileWasRenamed(file.name);
@@ -1011,12 +1054,26 @@ class _DetailsPanelState extends State<DetailsPanel> {
         break;
       case RevisionAction.uploadNewVersion:
         title = appLocalizationsOf(context).fileHadANewRevision;
-        leading = leading = _DownloadOrPreview(
+        leading = _DownloadOrPreview(
           isSharedFile: widget.isSharePage,
           privacy: widget.drivePrivacy,
           fileRevision: file,
           fileKey: key,
         );
+
+        if (fileRevision != null) {
+          leading = _FileRevisionOptions(
+            fileRevision: FileRevisionBase.fromFileRevision(fileRevision),
+          );
+        }
+
+        if (fileRevisionWithLicenseAndTransactions != null) {
+          leading = _FileRevisionOptions(
+            fileRevision: FileRevisionBase.fromFileRevisionWithLicense(
+                fileRevisionWithLicenseAndTransactions),
+          );
+        }
+
         break;
       case RevisionAction.assignName:
         title = 'File had name assigned ${file.assignedNames?.last}';
@@ -1323,6 +1380,30 @@ class _DownloadOrPreview extends StatelessWidget {
   }
 }
 
+class _FileRevisionOptions extends StatelessWidget {
+  const _FileRevisionOptions({
+    required this.fileRevision,
+  });
+
+  final FileRevisionBase fileRevision;
+
+  @override
+  Widget build(BuildContext context) {
+    final item = DriveDataTableItemMapper.fromRevision(fileRevision, true);
+
+    return EntityActionsMenu(
+      item: item,
+      isFileRevision: true,
+      withInfo: false,
+      // bottom right to top left
+      alignment: const Aligned(
+        follower: Alignment.bottomRight,
+        target: Alignment.topLeft,
+      ),
+    );
+  }
+}
+
 void downloadOrPreviewRevision({
   required String drivePrivacy,
   required BuildContext context,
@@ -1597,6 +1678,109 @@ class _LicenseDetailsPopoverButtonState
             });
           },
         ),
+      ),
+    );
+  }
+}
+
+class _ArnsNameDisplay extends StatelessWidget {
+  final FileDataTableItem fileItem;
+
+  const _ArnsNameDisplay({required this.fileItem});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => VerifyNameBloc(
+        arnsRepository: context.read<ARNSRepository>(),
+      )..add(VerifyName(fileId: fileItem.fileId)),
+      child: BlocBuilder<VerifyNameBloc, VerifyNameState>(
+        builder: (context, state) {
+          final typography = ArDriveTypographyNew.of(context);
+
+          if (state is VerifyNameLoading || state is VerifyNameInitial) {
+            return const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(),
+            );
+          }
+
+          if (state is VerifyNameEmpty || state is VerifyNameFailure) {
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ArDriveButton(
+                  text: 'Assign',
+                  icon: ArDriveIcons.arnsName(
+                    size: 16,
+                    color: ArDriveTheme.of(context).themeData.backgroundColor,
+                  ),
+                  fontStyle: ArDriveTypography.body.buttonNormalBold(
+                    color: ArDriveTheme.of(context).themeData.backgroundColor,
+                  ),
+                  backgroundColor:
+                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                  maxHeight: 32,
+                  onPressed: () {
+                    showAssignArNSNameModal(
+                      context,
+                      file: fileItem,
+                      driveDetailCubit: context.read<DriveDetailCubit>(),
+                    ).then((_) {
+                      // Refresh both the verify name bloc and the file info cubit
+                      context
+                          .read<VerifyNameBloc>()
+                          .add(VerifyName(fileId: fileItem.fileId));
+                      context.read<DriveDetailCubit>().refreshDriveDataTable();
+                    });
+                  },
+                ),
+              ],
+            );
+          }
+
+          if (state is VerifyNameSuccess) {
+            final (address, arAddress) = getAddressesFromArns(
+              domain: state.undername.domain,
+              undername: state.undername.name,
+            );
+
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: ArDriveClickArea(
+                    child: GestureDetector(
+                      onTap: () => openUrl(url: address),
+                      child: ArDriveTooltip(
+                        message: arAddress,
+                        child: Text(
+                          getLiteralARNSRecordName(
+                            ARNSUndernameFactory.create(
+                              name: state.undername.name,
+                              domain: state.undername.domain,
+                              transactionId: state.undername.transactionId,
+                            ),
+                          ),
+                          style: typography.paragraphNormal().copyWith(
+                                decoration: TextDecoration.underline,
+                              ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                CopyButton(
+                  text: arAddress,
+                ),
+              ],
+            );
+          }
+
+          return const SizedBox();
+        },
       ),
     );
   }
