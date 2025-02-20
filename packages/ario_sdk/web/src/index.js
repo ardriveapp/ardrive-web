@@ -162,7 +162,7 @@ async function getProcesses(address) {
 
     arnsEmitter.fetchProcessesOwnedByWallet({
       address: address,
-      pageSize: 10000,
+      pageSize: 1000,
       antRegistry: ANTRegistry.init({
         process: new AOProcess({
           processId: ANT_REGISTRY_ID,
