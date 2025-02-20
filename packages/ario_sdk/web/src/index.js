@@ -1,4 +1,4 @@
-import { ANT, ANT_REGISTRY_ID, ANTRegistry, AOProcess, ArconnectSigner, ARIO, ARIO_TESTNET_PROCESS_ID, ArNSEventEmitter, ArweaveSigner, mARIOToken } from '@ar.io/sdk';
+import { ANT, ANT_REGISTRY_ID, ANTRegistry, AOProcess, ArconnectSigner, ARIO, ArNSEventEmitter, ArweaveSigner, mARIOToken } from '@ar.io/sdk';
 import { connect } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
 
@@ -14,7 +14,7 @@ window.ario = {
 
 const ario = ARIO.init({
   process: new AOProcess({
-    processId: ARIO_TESTNET_PROCESS_ID,
+    processId: 'qNvAoz0TgcH7DMg8BCVn8jF32QH5L6T29VjHxhHqqGE',
     ao: connect({
       CU_URL: 'https://cu.ardrive.io'
     })
@@ -51,7 +51,6 @@ async function getGateways() {
 
 async function getARIOTokens(address) {
   try{
-    // the balance will be returned in mIO as a value
     const balance = await ario
       .getBalance({
         address: address,
