@@ -310,7 +310,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
       if (AppPlatform.isWindows()) {
         if (event.logicalKey == LogicalKeyboardKey.controlLeft) {
           setState(() {
-            _isCtrlPressed = HardwareKeyboard.instance.isMetaPressed;
+            _isCtrlPressed = true;
             widget.onChangeMultiSelecting!(_isMultiSelecting);
           });
         }
