@@ -31,6 +31,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/utils/is_supported_image_type_for_preview.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
@@ -1744,7 +1745,10 @@ class _ArnsNameDisplay extends StatelessWidget {
                 Flexible(
                   child: ArDriveClickArea(
                     child: GestureDetector(
-                      onTap: () => openUrl(url: address),
+                      onTap: () {
+                        logger.i('Opening URL: $address');
+                        openUrl(url: address);
+                      },
                       child: ArDriveTooltip(
                         message: arAddress,
                         child: Text(
