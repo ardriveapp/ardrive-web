@@ -729,14 +729,6 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          'None',
-          style: typography.paragraphNormal(),
-        ),
-        itemTitle: 'ArNS Name',
-      ),
-      sizedBoxHeight16px,
-      DetailsPanelItem(
-        leading: Text(
           filesize(item.size),
           style: typography.paragraphNormal(),
         ),
