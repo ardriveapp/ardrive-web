@@ -63,7 +63,7 @@ class ArioSDKWeb implements ArioSDK {
     required ARNSUndername undername,
     required bool isArConnect,
     required String txId,
-    required String jwtString,
+    String? jwtString,
   }) {
     // TODO: implement createUndername
     throw UnimplementedError();
