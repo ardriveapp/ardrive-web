@@ -151,18 +151,18 @@ class ArioSDKWeb implements ArioSDK {
     required ARNSUndername undername,
     required bool isArConnect,
     required String txId,
-    required String jwtString,
+    String? jwtString,
   }) {
     return _setARNSImpl(jwtString, undername, isArConnect);
   }
 }
 
 @JS('setARNS')
-external Object _setARNS(
-    String jwtString, txId, domain, String undername, bool useArConnect);
+external Object _setARNS(String? jwtString, String txId, String domain,
+    String undername, bool useArConnect);
 
 Future<dynamic> _setARNSImpl(
-    String jwtString, ARNSUndername undername, bool useArConnect) async {
+    String? jwtString, ARNSUndername undername, bool useArConnect) async {
   try {
     debugPrint(
         'undername.record.transactionId: ${undername.record.transactionId}');
