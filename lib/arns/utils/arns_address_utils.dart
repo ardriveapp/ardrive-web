@@ -1,4 +1,4 @@
-import 'package:ardrive/main.dart';
+import 'package:ardrive/services/config/config_service.dart';
 
 /// Generates the HTTP and Arweave addresses for an ArNS name
 ///
@@ -8,8 +8,11 @@ import 'package:ardrive/main.dart';
 /// 2. The Arweave address (ar://<undername>_<domain>)
 ///
 /// If no undername is provided, it constructs the addresses using only the domain.
-(String, String) getAddressesFromArns(
-    {required String domain, String? undername}) {
+(String, String) getAddressesFromArns({
+  required String domain,
+  String? undername,
+  required ConfigService configService,
+}) {
   String address = 'https://';
   String arAddress = 'ar://';
 
