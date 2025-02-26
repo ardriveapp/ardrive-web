@@ -36,7 +36,7 @@ class _AntIconState extends State<AntIcon> {
     final activeARNSRecords = await arnsRepository
         .getActiveARNSRecordsForFile(widget.fileDataTableItem.fileId);
 
-  if (activeARNSRecords.isNotEmpty) {
+    if (activeARNSRecords.isNotEmpty) {
       stillAvailable = true;
       undername = activeARNSRecords.last;
     } else {

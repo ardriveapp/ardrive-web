@@ -1,3 +1,5 @@
+import 'package:ardrive/main.dart';
+
 /// Generates the HTTP and Arweave addresses for an ArNS name
 ///
 /// This function takes a domain and an optional undername to construct
@@ -11,6 +13,8 @@
   String address = 'https://';
   String arAddress = 'ar://';
 
+  final gateway = configService.config.getGatewayDomain();
+
   if (undername != null && undername != '@') {
     address = '$address${undername}_';
     arAddress = '$arAddress${undername}_';
@@ -19,7 +23,8 @@
   address = address + domain;
   arAddress = arAddress + domain;
 
-  address = '$address.ar-io.dev';
+  address = '$address.$gateway';
+  arAddress = '$arAddress.$gateway';
 
   return (address, arAddress);
 }
