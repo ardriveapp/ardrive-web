@@ -1,4 +1,3 @@
-import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/core/arfs/use_cases/upload_file_metadata.dart';
 import 'package:ardrive/core/arfs/use_cases/upload_folder_metadata.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -104,19 +103,16 @@ class BulkImportFiles {
   final UploadFolderMetadata _uploadFolderMetadata;
   final DriveDao _driveDao;
   final ArweaveService _arweaveService;
-  final FileRepository _fileRepository;
 
   BulkImportFiles({
     required UploadFileMetadata uploadFileMetadata,
     required UploadFolderMetadata uploadFolderMetadata,
     required DriveDao driveDao,
     required ArweaveService arweaveService,
-    required FileRepository fileRepository,
   })  : _uploadFileMetadata = uploadFileMetadata,
         _uploadFolderMetadata = uploadFolderMetadata,
         _driveDao = driveDao,
-        _arweaveService = arweaveService,
-        _fileRepository = fileRepository;
+        _arweaveService = arweaveService;
 
   /// Creates a folder hierarchy based on the file path.
   /// Returns the ID of the deepest folder created.
