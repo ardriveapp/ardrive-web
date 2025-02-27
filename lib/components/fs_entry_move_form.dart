@@ -68,8 +68,10 @@ class FsEntryMoveForm extends StatelessWidget {
         return BlocBuilder<DriveDetailCubit, DriveDetailState>(
           builder: (context, driveDetailState) {
             return Builder(builder: (context) {
+              final typography = ArDriveTypographyNew.of(context);
+
               if (state is FsEntryMoveNameConflict) {
-                return ArDriveStandardModal(
+                return ArDriveStandardModalNew(
                   title: appLocalizationsOf(context).nameConflict,
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -78,10 +80,14 @@ class FsEntryMoveForm extends StatelessWidget {
                       Text(
                         appLocalizationsOf(context)
                             .itemMoveNameConflict(state.folderInView.name),
+                        style: typography.paragraphNormal(),
                       ),
                       for (final itemName in state.conflictingFileNames() +
                           state.conflictingFolderNames())
-                        Text(itemName),
+                        Text(
+                          itemName,
+                          style: typography.paragraphNormal(),
+                        ),
                     ],
                   ),
                   actions: [
@@ -151,12 +157,11 @@ class FsEntryMoveForm extends StatelessWidget {
                               Expanded(
                                 child: Text(
                                   f.name,
-                                  style:
-                                      ArDriveTypography.body.inputNormalRegular(
-                                    color: enabled
-                                        ? null
-                                        : _colorDisabled(context),
-                                  ),
+                                  style: typography.paragraphNormal().copyWith(
+                                        color: enabled
+                                            ? null
+                                            : _colorDisabled(context),
+                                      ),
                                 ),
                               ),
                               ArDriveIcons.carretRight(
@@ -185,9 +190,9 @@ class FsEntryMoveForm extends StatelessWidget {
                           Expanded(
                             child: Text(
                               f.name,
-                              style: ArDriveTypography.body.inputNormalRegular(
-                                color: _colorDisabled(context),
-                              ),
+                              style: typography.paragraphNormal().copyWith(
+                                    color: _colorDisabled(context),
+                                  ),
                             ),
                           ),
                         ],
@@ -249,8 +254,9 @@ class FsEntryMoveForm extends StatelessWidget {
                                       : const EdgeInsets.only(left: 0),
                                   child: Text(
                                     appLocalizationsOf(context).moveItems,
-                                    style: ArDriveTypography.headline
-                                        .headline5Bold(),
+                                    style: typography.paragraphXLarge(
+                                      fontWeight: ArFontWeight.bold,
+                                    ),
                                   ),
                                 ),
                                 const Spacer(),
@@ -289,46 +295,42 @@ class FsEntryMoveForm extends StatelessWidget {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                ArDriveButton(
-                                    maxHeight: 36,
-                                    style: ArDriveButtonStyle.secondary,
-                                    backgroundColor: ArDriveTheme.of(context)
-                                        .themeData
-                                        .colors
-                                        .themeFgDefault,
-                                    fontStyle: ArDriveTypography.body
-                                        .buttonNormalRegular(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeFgDefault,
-                                    ),
-                                    icon: ArDriveIcons.iconNewFolder1(),
-                                    text: appLocalizationsOf(context)
-                                        .createFolderEmphasized,
-                                    onPressed: () {
-                                      showArDriveDialog(
-                                        context,
-                                        content: BlocProvider(
-                                          create: (context) =>
-                                              FolderCreateCubit(
-                                            driveId: state
-                                                .viewingFolder.folder.driveId,
-                                            parentFolderId:
-                                                state.viewingFolder.folder.id,
-                                            profileCubit:
-                                                context.read<ProfileCubit>(),
-                                            arweave:
-                                                context.read<ArweaveService>(),
-                                            turboUploadService: context
-                                                .read<TurboUploadService>(),
-                                            driveDao: context.read<DriveDao>(),
-                                          ),
-                                          child: const FolderCreateForm(),
+                                ArDriveButtonNew(
+                                  typography: typography,
+                                  maxHeight: 36,
+                                  variant: ButtonVariant.secondary,
+                                  backgroundColor: ArDriveTheme.of(context)
+                                      .themeData
+                                      .colors
+                                      .themeFgDefault,
+                                  fontStyle: typography.paragraphNormal(),
+                                  icon: ArDriveIcons.iconNewFolder1(),
+                                  text: appLocalizationsOf(context)
+                                      .createFolderEmphasized,
+                                  onPressed: () {
+                                    showArDriveDialog(
+                                      context,
+                                      content: BlocProvider(
+                                        create: (context) => FolderCreateCubit(
+                                          driveId: state
+                                              .viewingFolder.folder.driveId,
+                                          parentFolderId:
+                                              state.viewingFolder.folder.id,
+                                          profileCubit:
+                                              context.read<ProfileCubit>(),
+                                          arweave:
+                                              context.read<ArweaveService>(),
+                                          turboUploadService: context
+                                              .read<TurboUploadService>(),
+                                          driveDao: context.read<DriveDao>(),
                                         ),
-                                      );
-                                    }),
-                                ArDriveButton(
+                                        child: const FolderCreateForm(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                ArDriveButtonNew(
+                                  typography: typography,
                                   maxHeight: 36,
                                   backgroundColor: ArDriveTheme.of(context)
                                       .themeData

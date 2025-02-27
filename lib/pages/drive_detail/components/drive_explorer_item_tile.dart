@@ -24,6 +24,7 @@ import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class DriveExplorerItemTile extends TableRowWidget {
@@ -337,7 +338,7 @@ class _DriveExplorerItemTileTrailingState
   @override
   Widget build(BuildContext context) {
     final item = widget.item;
-
+    final double height = isMobile(context) ? 44 : 48;
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Row(
@@ -380,11 +381,12 @@ class _DriveExplorerItemTileTrailingState
               return Alignment.topRight;
             }
           },
+          height: height,
           anchor: Aligned(
             follower: widget.alignment,
             target: Alignment.topLeft,
           ),
-          items: _getItems(widget.item, context),
+          items: _getItems(widget.item, context, height),
           child: HoverWidget(
             tooltip: appLocalizationsOf(context).showMenu,
             child: ArDriveIcons.kebabMenu(
@@ -399,6 +401,7 @@ class _DriveExplorerItemTileTrailingState
   List<ArDriveDropdownItem> _getItems(
     ArDriveDataTableItem item,
     BuildContext context,
+    double height,
   ) {
     final isOwner = item.isOwner;
 
@@ -424,6 +427,7 @@ class _DriveExplorerItemTileTrailingState
             ArDriveIcons.download(
               size: defaultIconSize,
             ),
+            height: height,
           ),
         ),
         if (isOwner) ...[
@@ -442,6 +446,7 @@ class _DriveExplorerItemTileTrailingState
               ArDriveIcons.move(
                 size: defaultIconSize,
               ),
+              height: height,
             ),
           ),
           ArDriveDropdownItem(
@@ -458,6 +463,7 @@ class _DriveExplorerItemTileTrailingState
               ArDriveIcons.editFilled(
                 size: defaultIconSize,
               ),
+              height: height,
             ),
           ),
           ArDriveDropdownItem(
@@ -475,6 +481,7 @@ class _DriveExplorerItemTileTrailingState
               ArDriveIcons.license(
                 size: defaultIconSize,
               ),
+              height: height,
             ),
           ),
           if (isOwner) hideFileDropdownItem(context, item),
@@ -490,6 +497,7 @@ class _DriveExplorerItemTileTrailingState
             ArDriveIcons.info(
               size: defaultIconSize,
             ),
+            height: height,
           ),
         ),
       ];
@@ -507,6 +515,7 @@ class _DriveExplorerItemTileTrailingState
           ArDriveIcons.download(
             size: defaultIconSize,
           ),
+          height: height,
         ),
       ),
       ArDriveDropdownItem(
@@ -522,6 +531,7 @@ class _DriveExplorerItemTileTrailingState
           ArDriveIcons.share(
             size: defaultIconSize,
           ),
+          height: height,
         ),
       ),
       if (widget.drive.isPublic)
@@ -536,6 +546,7 @@ class _DriveExplorerItemTileTrailingState
             ArDriveIcons.newWindow(
               size: defaultIconSize,
             ),
+            height: height,
           ),
         ),
       if (isOwner) ...[
@@ -553,6 +564,7 @@ class _DriveExplorerItemTileTrailingState
             ArDriveIcons.editFilled(
               size: defaultIconSize,
             ),
+            height: height,
           ),
         ),
         ArDriveDropdownItem(
@@ -568,6 +580,7 @@ class _DriveExplorerItemTileTrailingState
             ArDriveIcons.move(
               size: defaultIconSize,
             ),
+            height: height,
           ),
         ),
         if (item is FileDataTableItem && item.pinnedDataOwnerAddress == null)
@@ -592,6 +605,7 @@ class _DriveExplorerItemTileTrailingState
               ArDriveIcons.license(
                 size: defaultIconSize,
               ),
+              height: height,
             ),
           ),
         if (widget.drive.isPublic)
@@ -608,6 +622,7 @@ class _DriveExplorerItemTileTrailingState
               ArDriveIcons.addArnsName(
                 size: defaultIconSize,
               ),
+              height: height,
             ),
           ),
         hideFileDropdownItem(context, item),
@@ -623,13 +638,18 @@ class _DriveExplorerItemTileTrailingState
           ArDriveIcons.info(
             size: defaultIconSize,
           ),
+          height: height,
         ),
       ),
     ];
   }
 
-  ArDriveDropdownItemTile _buildItem(String name, ArDriveIcon icon) {
-    return ArDriveDropdownItemTile(name: name, icon: icon);
+  ArDriveDropdownItemTile _buildItem(
+    String name,
+    ArDriveIcon icon, {
+    double? height,
+  }) {
+    return ArDriveDropdownItemTile(name: name, icon: icon, height: height);
   }
 }
 
@@ -649,19 +669,26 @@ class EntityActionsMenu extends StatelessWidget {
       target: Alignment.topLeft,
     ),
     this.drive,
+    this.isFileRevision = false,
   });
 
   final ArDriveDataTableItem item;
   final bool withInfo;
   final Anchor alignment;
   final Drive? drive;
+  final bool isFileRevision;
 
   @override
   Widget build(BuildContext context) {
+    final items = _getItems(item, context, withInfo, isFileRevision);
+    final double height = isMobile(context) ? 44 : 48;
     return ArDriveDropdown(
-      height: isMobile(context) ? 44 : 60,
+      height: height,
+      maxHeight: items.length * height,
       anchor: alignment,
-      items: _getItems(item, context, withInfo),
+      items: items,
+      hasBorder: false,
+      hasDivider: false,
       child: HoverWidget(
         tooltip: appLocalizationsOf(context).showMenu,
         child: ArDriveIcons.dots(),
@@ -669,8 +696,8 @@ class EntityActionsMenu extends StatelessWidget {
     );
   }
 
-  List<ArDriveDropdownItem> _getItems(
-      ArDriveDataTableItem item, BuildContext context, bool withInfo) {
+  List<ArDriveDropdownItem> _getItems(ArDriveDataTableItem item,
+      BuildContext context, bool withInfo, bool isFileRevision) {
     final isOwner = item.isOwner;
 
     if (item is FolderDataTableItem) {
@@ -838,21 +865,23 @@ class EntityActionsMenu extends StatelessWidget {
           ),
         ),
       ),
-      ArDriveDropdownItem(
-        onClick: () {
-          promptToShareFile(
-            context: context,
-            driveId: item.driveId,
-            fileId: item.id,
-          );
-        },
-        content: _buildItem(
-          appLocalizationsOf(context).shareFile,
-          ArDriveIcons.share(
-            size: defaultIconSize,
+      if (!isFileRevision) ...[
+        ArDriveDropdownItem(
+          onClick: () {
+            promptToShareFile(
+              context: context,
+              driveId: item.driveId,
+              fileId: item.id,
+            );
+          },
+          content: _buildItem(
+            appLocalizationsOf(context).shareFile,
+            ArDriveIcons.share(
+              size: defaultIconSize,
+            ),
           ),
         ),
-      ),
+      ],
       ArDriveDropdownItem(
         onClick: () {
           final bloc = context.read<DriveDetailCubit>();
@@ -866,7 +895,7 @@ class EntityActionsMenu extends StatelessWidget {
           ),
         ),
       ),
-      if (isOwner) ...[
+      if (isOwner && !isFileRevision) ...[
         ArDriveDropdownItem(
           onClick: () {
             promptToRenameModal(
@@ -900,7 +929,33 @@ class EntityActionsMenu extends StatelessWidget {
         ),
         hideFileDropdownItem(context, item),
       ],
-      if (withInfo) _buildInfoOption(context)
+      if (withInfo) _buildInfoOption(context),
+      if (isFileRevision) ...[
+        ArDriveDropdownItem(
+          onClick: () {
+            Clipboard.setData(
+                ClipboardData(text: (item as FileDataTableItem).dataTxId));
+          },
+          content: _buildItem(
+            appLocalizationsOf(context).copyDataTxID,
+            ArDriveIcons.copy(
+              size: defaultIconSize,
+            ),
+          ),
+        ),
+        if (item is FileDataTableItem && item.metadataTx != null)
+          ArDriveDropdownItem(
+            onClick: () {
+              Clipboard.setData(ClipboardData(text: (item).metadataTx!.id));
+            },
+            content: _buildItem(
+              appLocalizationsOf(context).copyMetadataTxID,
+              ArDriveIcons.copy(
+                size: defaultIconSize,
+              ),
+            ),
+          ),
+      ],
     ];
   }
 
@@ -920,8 +975,12 @@ class EntityActionsMenu extends StatelessWidget {
     );
   }
 
-  ArDriveDropdownItemTile _buildItem(String name, ArDriveIcon icon) {
-    return ArDriveDropdownItemTile(name: name, icon: icon);
+  ArDriveDropdownItemTile _buildItem(
+    String name,
+    ArDriveIcon icon, {
+    double? height,
+  }) {
+    return ArDriveDropdownItemTile(name: name, icon: icon, height: height);
   }
 }
 

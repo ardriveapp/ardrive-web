@@ -68,6 +68,10 @@ class AppPlatform {
             defaultTargetPlatform == TargetPlatform.android);
   }
 
+  static bool isWindows() {
+    return getPlatform() == SystemPlatform.Windows;
+  }
+
   static Future<bool> isFireFox({DeviceInfoPlugin? deviceInfo}) async {
     final info = await (deviceInfo ?? DeviceInfoPlugin()).deviceInfo;
     return info is WebBrowserInfo && info.browserName == BrowserName.firefox;
@@ -106,4 +110,4 @@ class AppPlatform {
 }
 
 // ignore: constant_identifier_names
-enum SystemPlatform { Android, iOS, Web, unknown }
+enum SystemPlatform { Android, iOS, Web, unknown, Windows }

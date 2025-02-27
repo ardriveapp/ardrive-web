@@ -23,7 +23,7 @@ class AppConfig {
   AppConfig({
     this.defaultArweaveGatewayUrl,
     this.defaultArweaveGatewayForDataRequest = const SelectedGateway(
-      label: 'Arweave.net',
+      label: 'arweave.net',
       url: 'https://arweave.net',
     ),
     this.useTurboUpload = false,
@@ -74,6 +74,10 @@ class AppConfig {
       autoSync: autoSync ?? this.autoSync,
       uploadThumbnails: uploadThumbnails ?? this.uploadThumbnails,
     );
+  }
+
+  String getGatewayDomain() {
+    return defaultArweaveGatewayForDataRequest.url.split('://').last;
   }
 
   String diff(AppConfig other) {

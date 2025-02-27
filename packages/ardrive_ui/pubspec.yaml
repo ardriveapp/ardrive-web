@@ -23,9 +23,11 @@ dependencies:
   flutter_portal: ^1.1.2
   flutter_svg: ^2.0.10+1
   percent_indicator: ^4.2.2
-  flutter_svg_image: 
+  flutter_svg_image:
   provider: ^6.0.5
   equatable: ^2.0.5
+  ardrive_utils:
+    path: ../ardrive_utils
 
 dev_dependencies:
   flutter_test:

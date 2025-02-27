@@ -78,11 +78,13 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
             showProgressDialog(
               context,
               title: appLocalizationsOf(context).renamingFolderEmphasized,
+              useNewArDriveUI: true,
             );
           } else if (state is FileEntryRenameInProgress) {
             showProgressDialog(
               context,
               title: appLocalizationsOf(context).renamingFileEmphasized,
+              useNewArDriveUI: true,
             );
           } else if (state is FolderEntryRenameSuccess ||
               state is FileEntryRenameSuccess) {
@@ -98,7 +100,7 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
           } else if (state is EntityAlreadyExists) {
             showArDriveDialog(
               context,
-              content: ArDriveStandardModal(
+              content: ArDriveStandardModalNew(
                 title: appLocalizationsOf(context).error,
                 description: appLocalizationsOf(context).entityAlreadyExists(
                   state.entityName,
@@ -108,7 +110,7 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
           } else if (state is UpdatingEntityExtension) {
             showArDriveDialog(
               context,
-              content: ArDriveStandardModal(
+              content: ArDriveStandardModalNew(
                 title: 'Do you want to change the file extension?',
                 description: 'The file extension will be changed from '
                     '${state.previousExtension} to ${getFileExtension(name: state.entityName, contentType: state.newExtension)}',
@@ -135,14 +137,14 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
           }
         },
         builder: (context, state) {
-          return ArDriveStandardModal(
+          return ArDriveStandardModalNew(
             title: state.isRenamingFolder
                 ? appLocalizationsOf(context).renameFolderEmphasized
                 : appLocalizationsOf(context).renameFileEmphasized,
             content: state is! FsEntryRenameInitializing
                 ? SizedBox(
                     width: kMediumDialogWidth,
-                    child: ArDriveTextField(
+                    child: ArDriveTextFieldNew(
                       controller: _nameController,
                       autofocus: true,
                       onFieldSubmitted: (value) {
