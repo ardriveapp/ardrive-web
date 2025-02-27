@@ -161,13 +161,15 @@ class FileDownloadDialog extends StatelessWidget {
             return _fileDownloadFailedDueToFileAbovePrivateLimit(context);
           } else if (state is FileDownloadWarning) {
             return _warningToWaitDownloadFinishes(context);
+          } else if (state is FileDownloadAborted) {
+            return _fileDownloadAbortedDialog(context);
           } else {
             return const SizedBox();
           }
         },
       );
 
-  ArDriveStandardModal _fileDownloadFailedDialog(BuildContext context) {
+  ArDriveStandardModalNew _fileDownloadFailedDialog(BuildContext context) {
     return _modalWrapper(
       title: appLocalizationsOf(context).fileFailedToDownload,
       description: appLocalizationsOf(context).tryAgainDownloadingFile,
@@ -180,7 +182,7 @@ class FileDownloadDialog extends StatelessWidget {
     );
   }
 
-  ArDriveStandardModal _fileDownloadFailedDueToFileAbovePrivateLimit(
+  ArDriveStandardModalNew _fileDownloadFailedDueToFileAbovePrivateLimit(
       BuildContext context) {
     return _modalWrapper(
       title: appLocalizationsOf(context).warningEmphasized,
@@ -195,7 +197,7 @@ class FileDownloadDialog extends StatelessWidget {
     );
   }
 
-  ArDriveStandardModal _fileDownloadFailedDueToAboveBrowserLimit(
+  ArDriveStandardModalNew _fileDownloadFailedDueToAboveBrowserLimit(
       BuildContext context) {
     return _modalWrapper(
       title: appLocalizationsOf(context).warningEmphasized,
@@ -210,7 +212,7 @@ class FileDownloadDialog extends StatelessWidget {
     );
   }
 
-  ArDriveStandardModal _warningToWaitDownloadFinishes(BuildContext context) {
+  ArDriveStandardModalNew _warningToWaitDownloadFinishes(BuildContext context) {
     return _modalWrapper(
         title: appLocalizationsOf(context).warningEmphasized,
         description: appLocalizationsOf(context).waitForDownload,
@@ -235,24 +237,25 @@ class FileDownloadDialog extends StatelessWidget {
         ]);
   }
 
-  ArDriveStandardModal _downloadStartingDialog(BuildContext context) {
+  ArDriveStandardModalNew _downloadStartingDialog(BuildContext context) {
     return _modalWrapper(
-        title: appLocalizationsOf(context).downloadingFile,
-        child: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Center(child: CircularProgressIndicator()),
-          ],
+      title: appLocalizationsOf(context).downloadingFile,
+      child: const Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Center(child: CircularProgressIndicator()),
+        ],
+      ),
+      actions: [
+        ModalAction(
+          action: () => Navigator.pop(context),
+          title: appLocalizationsOf(context).cancel,
         ),
-        actions: [
-          ModalAction(
-            action: () => Navigator.pop(context),
-            title: appLocalizationsOf(context).cancel,
-          ),
-        ]);
+      ],
+    );
   }
 
-  ArDriveStandardModal _fileDownloadInProgressDialog(
+  ArDriveStandardModalNew _fileDownloadInProgressDialog(
       BuildContext context, FileDownloadInProgress state) {
     return _modalWrapper(
       title: appLocalizationsOf(context).downloadingFile,
@@ -290,7 +293,7 @@ class FileDownloadDialog extends StatelessWidget {
     );
   }
 
-  ArDriveStandardModal downloadFinishedWithSuccessDialog(
+  ArDriveStandardModalNew downloadFinishedWithSuccessDialog(
       BuildContext context, FileDownloadFinishedWithSuccess state) {
     return _modalWrapper(
       title: appLocalizationsOf(context).downloadFinished,
@@ -307,7 +310,7 @@ class FileDownloadDialog extends StatelessWidget {
     );
   }
 
-  ArDriveStandardModal _downloadingFileWithProgressDialog(
+  ArDriveStandardModalNew _downloadingFileWithProgressDialog(
       BuildContext context, FileDownloadWithProgress state) {
     final progressText =
         '${filesize(((state.fileSize) * (state.progress / 100)).ceil())}/${filesize(state.fileSize)}';
@@ -410,17 +413,30 @@ class FileDownloadDialog extends StatelessWidget {
         ]);
   }
 
-  ArDriveStandardModal _modalWrapper({
+  ArDriveStandardModalNew _modalWrapper({
     Widget? child,
     String? description,
     required String title,
     required List<ModalAction> actions,
   }) {
-    return ArDriveStandardModal(
+    return ArDriveStandardModalNew(
       title: title,
       content: child,
       actions: actions,
       description: description,
+    );
+  }
+
+  ArDriveStandardModalNew _fileDownloadAbortedDialog(BuildContext context) {
+    return _modalWrapper(
+      title: 'Download cancelled',
+      description: 'The download was cancelled',
+      actions: [
+        ModalAction(
+          action: () => Navigator.pop(context),
+          title: appLocalizationsOf(context).ok,
+        ),
+      ],
     );
   }
 }

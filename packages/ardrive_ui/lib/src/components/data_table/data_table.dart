@@ -1,5 +1,6 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_ui/src/styles/colors/global_colors.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -306,6 +307,16 @@ class _ArDriveDataTableState<T extends IndexedItem>
 
   bool _handleKeyDownEvent(KeyEvent event) {
     if (mounted && !widget.lockMultiSelect) {
+      if (AppPlatform.isWindows()) {
+        if (event.logicalKey == LogicalKeyboardKey.controlLeft ||
+            event.logicalKey == LogicalKeyboardKey.controlRight) {
+          setState(() {
+            _isCtrlPressed = true;
+            widget.onChangeMultiSelecting!(_isMultiSelecting);
+          });
+        }
+      }
+
       if (widget.onChangeMultiSelecting != null) {
         setState(() {
           _isCtrlPressed = HardwareKeyboard.instance.isMetaPressed;

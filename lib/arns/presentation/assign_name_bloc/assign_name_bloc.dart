@@ -1,6 +1,7 @@
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/arns/utils/arns_address_utils.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/main.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ario_sdk/ario_sdk.dart';
@@ -168,6 +169,7 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
         final (address, arAddress) = getAddressesFromArns(
           domain: _selectedNameModel!.name,
           undername: _selectedUndername?.name,
+          configService: configService,
         );
 
         emit(NameAssignedWithSuccess(
@@ -184,6 +186,7 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
       final (address, arAddress) = getAddressesFromArns(
         domain: event.undername.domain,
         undername: event.undername.name,
+        configService: configService,
       );
 
       emit(NameAssignedWithSuccess(

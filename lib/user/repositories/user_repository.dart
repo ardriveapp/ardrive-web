@@ -49,6 +49,7 @@ class _UserRepository implements UserRepository {
     final profile = await _profileDao.getDefaultProfile();
 
     if (profile == null) {
+      logger.i('No profile found');
       return null;
     }
 

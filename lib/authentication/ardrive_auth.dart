@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/entities/profile_types.dart';
+import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
@@ -9,6 +10,7 @@ import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/constants.dart';
+import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
@@ -123,45 +125,63 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
   @override
   Future<bool> isExistingUser(Wallet wallet) async {
-    final driveTxs = await _arweave.getUniqueUserDriveEntityTxs(
-      await wallet.getAddress(),
-      maxRetries: profileQueryMaxRetries,
-    );
+    try {
+      final driveTxs = await _arweave.getUniqueUserDriveEntityTxs(
+        await wallet.getAddress(),
+        maxRetries: profileQueryMaxRetries,
+      );
 
-    return driveTxs.isNotEmpty;
+      return driveTxs.isNotEmpty;
+    } catch (e) {
+      if (e is GraphQLException) {
+        throw const AuthenticationGatewayException();
+      }
+
+      rethrow;
+    }
   }
 
   /// To have at least a single private drive means the user has set a password.
   @override
   Future<bool> userHasPassword(Wallet wallet) async {
-    final firstDrivePrivateDriveTxId = await _getFirstPrivateDriveTxId(wallet);
+    try {
+      final firstDrivePrivateDriveTxId =
+          await _getFirstPrivateDriveTxId(wallet);
 
-    return firstDrivePrivateDriveTxId != null;
+      return firstDrivePrivateDriveTxId != null;
+    } catch (e) {
+      if (e is GraphQLException) {
+        throw const AuthenticationGatewayException();
+      }
+
+      rethrow;
+    }
   }
 
   @override
   Future<User> login(
       Wallet wallet, String password, ProfileType profileType) async {
-    final isValidPassword = await _validateUser(
-      wallet,
-      password,
-    );
+    try {
+      await _validateUser(wallet, password);
 
-    if (!isValidPassword) {
-      throw AuthenticationFailedException('Incorrect password');
+      if (await _biometricAuthentication.isEnabled()) {
+        logger.i('Saving password in secure storage');
+
+        _savePasswordInSecureStorage(password);
+      }
+
+      currentUser = await _addUser(wallet, password, profileType);
+
+      _userStreamController.add(_currentUser);
+
+      return currentUser;
+    } catch (e) {
+      if (e is GraphQLException) {
+        throw const AuthenticationGatewayException();
+      }
+
+      rethrow;
     }
-
-    if (await _biometricAuthentication.isEnabled()) {
-      logger.i('Saving password in secure storage');
-
-      _savePasswordInSecureStorage(password);
-    }
-
-    currentUser = await _addUser(wallet, password, profileType);
-
-    _userStreamController.add(_currentUser);
-
-    return currentUser;
   }
 
   @override
@@ -185,12 +205,17 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
       return currentUser;
     } catch (e) {
+      if (e is ProfilePasswordIncorrectException) {
+        throw WrongPasswordException('Incorrect password.');
+      }
+
       logger.e(
         'Failed to unlock user with password. The password is wrong or a network error occurred',
         e,
+        StackTrace.current,
       );
-      // TODO: Improve error handling. There's a PR: https://github.com/ardriveapp/ardrive-web/pull/1243
-      throw AuthenticationFailedException('Incorrect password.');
+
+      rethrow;
     }
   }
 
@@ -223,12 +248,12 @@ class ArDriveAuthImpl implements ArDriveAuth {
       }
     }
 
-    throw AuthenticationFailedException('Biometric authentication failed');
+    throw WrongPasswordException('Biometric authentication failed');
   }
 
   @override
   Future<void> logout() async {
-    logger.d('Logging out user');
+    logger.i('Logging out user');
 
     try {
       await _userRepository.deleteUser();
@@ -245,7 +270,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
       _userStreamController.add(null);
     } catch (e, stacktrace) {
       logger.e('Failed to logout user', e, stacktrace);
-      throw AuthenticationFailedException('Failed to logout user');
+      throw AuthenticationUnknownException('Failed to logout user');
     }
   }
 
@@ -269,12 +294,13 @@ class ArDriveAuthImpl implements ArDriveAuth {
     return _biometricAuthentication.isEnabled();
   }
 
-  Future<bool> _validateUser(
+  Future<void> _validateUser(
     Wallet wallet,
     String password,
   ) async {
-    final firstDrivePrivateDriveTxId = await _getFirstPrivateDriveTxId(wallet);
+    String? firstDrivePrivateDriveTxId;
 
+    firstDrivePrivateDriveTxId = await _getFirstPrivateDriveTxId(wallet);
     // Try and decrypt one of the user's private drive entities to check if they are entering the
     // right password.
     if (firstDrivePrivateDriveTxId != null) {
@@ -286,7 +312,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
           password,
         );
       } catch (e) {
-        throw AuthenticationFailedException('Password is incorrect');
+        throw WrongPasswordException('Password is incorrect');
       }
 
       final privateDrive = await _arweave.getLatestDriveEntityWithId(
@@ -296,10 +322,10 @@ class ArDriveAuthImpl implements ArDriveAuth {
         maxRetries: profileQueryMaxRetries,
       );
 
-      return privateDrive != null;
+      if (privateDrive == null) {
+        throw WrongPasswordException('Password is incorrect');
+      }
     }
-
-    return true;
   }
 
   Future<User> _addUser(
@@ -400,13 +426,17 @@ class ArDriveAuthImpl implements ArDriveAuth {
   }
 }
 
-class AuthenticationFailedException implements UntrackedException {
+class AuthenticationGatewayException implements Exception {
+  const AuthenticationGatewayException();
+}
+
+class WrongPasswordException implements UntrackedException {
   final String message;
 
-  AuthenticationFailedException(this.message);
+  WrongPasswordException(this.message);
 
   @override
-  String toString() => message;
+  String toString() => 'WrongPasswordException: $message';
 }
 
 class WalletMismatchException implements UntrackedException {

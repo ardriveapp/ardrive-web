@@ -25,7 +25,7 @@ abstract class ArDriveDownloader {
     String? cipher,
     String? cipherIvString,
   });
-    Future<Uint8List> downloadToMemory({
+  Future<Uint8List> downloadToMemory({
     required TransactionCommonMixin dataTx,
     required int fileSize,
     required String fileName,
@@ -129,6 +129,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
     ]).then((value) => finalize.complete(value));
 
     bool? saveResult;
+    var bytesSaved = 0;
 
     logger.i('Saving file...');
 
@@ -138,6 +139,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
         _ardriveIo.saveFileStream(file, finalize).listen((saveStatus) {
       if (saveStatus.saveResult == null) {
         final progress = saveStatus.bytesSaved / saveStatus.totalBytes;
+        bytesSaved += saveStatus.bytesSaved;
 
         logger.d('Saving file progress: ${progress * 100}%');
 
@@ -149,15 +151,13 @@ class _ArDriveDownloader implements ArDriveDownloader {
 
     subscription.onDone(() async {
       if (_cancelWithReason.isCompleted) {
-        throw Exception(
-            'Download cancelled: ${await _cancelWithReason.future}');
+        progressController.addError(const DownloadCancelledException());
       }
-
-      if (saveResult != true) throw Exception('Failed to save file');
 
       logger.d('File saved with success');
 
       progressController.close();
+      subscription.cancel();
     });
 
     subscription.onError((e, s) {
@@ -166,6 +166,14 @@ class _ArDriveDownloader implements ArDriveDownloader {
         e,
         s,
       );
+      if (saveResult != true) {
+        // verify if the download was aborted before starting the save
+        if (bytesSaved == 0) {
+          progressController.addError(const DownloadCancelledException());
+        }
+
+        progressController.addError(Exception('Failed to save file'));
+      }
       // TODO: we can show a different message for different errors e.g. when `e` is ActionCanceledException
       progressController.addError(e);
       progressController.close();
@@ -311,5 +319,14 @@ class _ArDriveDownloader implements ArDriveDownloader {
     final data = await stream.toList();
 
     return Uint8List.fromList(data.expand((element) => element).toList());
+  }
+}
+
+class DownloadCancelledException implements Exception {
+  const DownloadCancelledException();
+
+  @override
+  String toString() {
+    return 'Download cancelled';
   }
 }

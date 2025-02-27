@@ -1,46 +1,62 @@
 import 'package:ardrive/arns/utils/arns_address_utils.dart';
+import 'package:ardrive/services/config/app_config.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../gar/domain/repository/gar_repository_test.dart';
 
 void main() {
+  final configService = MockConfigService();
+
   group('getAddressesFromArns', () {
+    setUp(() {
+      when(() => configService.config).thenReturn(AppConfig(
+        allowedDataItemSizeForTurbo: 1000,
+        stripePublishableKey: 'test',
+      ));
+    });
+
     test('returns correct addresses with domain and undername', () {
       final (httpAddress, arAddress) = getAddressesFromArns(
-        domain: 'example.com',
+        domain: 'example',
         undername: 'test',
+        configService: configService,
       );
 
-      expect(httpAddress, 'https://test_example.com.ar-io.dev');
-      expect(arAddress, 'ar://test_example.com');
+      expect(httpAddress, 'https://test_example.arweave.net');
+      expect(arAddress, 'ar://test_example.arweave.net');
     });
 
     test('returns correct addresses with domain only', () {
       final (httpAddress, arAddress) = getAddressesFromArns(
-        domain: 'example.com',
+        domain: 'example',
+        configService: configService,
       );
 
-      expect(httpAddress, 'https://example.com.ar-io.dev');
-      expect(arAddress, 'ar://example.com');
+      expect(httpAddress, 'https://example.arweave.net');
+      expect(arAddress, 'ar://example.arweave.net');
     });
 
     test('returns correct addresses with @ undername', () {
       final (httpAddress, arAddress) = getAddressesFromArns(
-        domain: 'example.com',
+        domain: 'example',
         undername: '@',
+        configService: configService,
       );
 
-      expect(httpAddress, 'https://example.com.ar-io.dev');
-      expect(arAddress, 'ar://example.com');
+      expect(httpAddress, 'https://example.arweave.net');
+      expect(arAddress, 'ar://example.arweave.net');
     });
 
     test('handles special characters in domain and undername', () {
       final (httpAddress, arAddress) = getAddressesFromArns(
-        domain: 'example-domain.com',
+        domain: 'example-domain',
         undername: 'test_undername',
+        configService: configService,
       );
 
-      expect(
-          httpAddress, 'https://test_undername_example-domain.com.ar-io.dev');
-      expect(arAddress, 'ar://test_undername_example-domain.com');
+      expect(httpAddress, 'https://test_undername_example-domain.arweave.net');
+      expect(arAddress, 'ar://test_undername_example-domain.arweave.net');
     });
   });
 }

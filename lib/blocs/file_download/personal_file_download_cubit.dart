@@ -210,8 +210,11 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
         _downloadProgress.sink.add(FileDownloadProgress(progress / 100));
       },
       onError: (e) {
-        logger.e('Failed to download personal file', e);
-        addError(e);
+        if (e is DownloadCancelledException) {
+          emit(FileDownloadAborted());
+        } else {
+          addError(e);
+        }
       },
       onDone: () {
         emit(FileDownloadFinishedWithSuccess(fileName: _file.name));

@@ -13,10 +13,9 @@ Future<void> showDetachDriveDialog({
 }) =>
     showArDriveDialog(
       context,
-      content: ArDriveStandardModal(
+      content: ArDriveStandardModalNew(
         title: appLocalizationsOf(context).detachDrive,
-        content:
-            Text(appLocalizationsOf(context).detachDriveQuestion(driveName)),
+        description: appLocalizationsOf(context).detachDriveQuestion(driveName),
         actions: [
           ModalAction(
             action: () => Navigator.of(context).pop(null),

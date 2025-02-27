@@ -146,9 +146,7 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
                               children: [
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    widget.items[index]
-                                  ],
+                                  children: [widget.items[index]],
                                 ),
                               ],
                             ),
