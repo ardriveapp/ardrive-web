@@ -330,11 +330,10 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
       customLoadingText: 'Fetching ArNS names...',
       customNameSelectionTitle: 'Assign ArNS Name to New Manifest',
       onSelectionConfirmed: (selection) {
-        // TODO: RE-ENABLE THIS
-        // context.read<CreateManifestCubit>().selectArns(
-        //       selection.selectedName,
-        //       selection.selectedUndername,
-        //     );
+        context.read<CreateManifestCubit>().selectArns(
+              selection.selectedName,
+              selection.selectedUndername,
+            );
       },
     );
   }
