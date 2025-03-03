@@ -335,6 +335,14 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
               selection.selectedUndername,
             );
       },
+      onEmptySelection: (state) {
+        context.read<CreateManifestCubit>().prepareManifestTx(
+              manifestName: (context.read<CreateManifestCubit>().state
+                      as CreateManifestPreparingManifestWithARNS)
+                  .manifestName,
+            );
+      },
+      canClose: false,
     );
   }
 

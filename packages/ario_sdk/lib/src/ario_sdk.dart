@@ -31,7 +31,7 @@ abstract class ArioSDK {
     required ARNSUndername undername,
     required bool isArConnect,
     required String txId,
-    required String jwtString,
+    String? jwtString,
   });
 
   Future<List<ArNSNameModel>> getArNSNames(String address);

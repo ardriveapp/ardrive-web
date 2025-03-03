@@ -9,11 +9,13 @@ import 'package:ardrive/authentication/login/views/tutorials_view.dart';
 import 'package:ardrive/authentication/login/views/wallet_created_view.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/icon_theme_switcher.dart';
+import 'package:ardrive/components/progress_dialog.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/authentication/biometric_permission_dialog.dart';
+import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
@@ -72,6 +74,7 @@ class _LoginPageState extends State<LoginPage> {
       arDriveAuth: context.read<ArDriveAuth>(),
       userRepository: context.read<UserRepository>(),
       profileCubit: context.read<ProfileCubit>(),
+      configService: context.read<ConfigService>(),
     )..add(
         CheckIfUserIsLoggedIn(
           gettingStarted: widget.gettingStarted,
@@ -91,6 +94,21 @@ class _LoginPageState extends State<LoginPage> {
             setState(() {
               didGettingStartedLoadedAlready = true;
             });
+          }
+
+          if (loginState is LoginLoadingIfUserAlreadyExists) {
+            showProgressDialog(
+              context,
+              title: 'Loading wallet details...',
+              useNewArDriveUI: true,
+            );
+
+            return;
+          }
+
+          if (loginState is LoginLoadingIfUserAlreadyExistsSuccess) {
+            Navigator.of(context).pop();
+            return;
           }
 
           if (loginState is LoginSuccess) {
@@ -152,6 +170,14 @@ class _LoginPageState extends State<LoginPage> {
               title: appLocalizationsOf(context).loginFailed,
               message: appLocalizationsOf(context).pleaseTryAgain,
             );
+          } else if (loginState is LoginUnknownFailure) {
+            showErrorDialog(
+              context: context,
+              title: appLocalizationsOf(context).loginFailed,
+              showShareLogsButton: true,
+              message:
+                  'Oops, something went wrong. Please try again later. If the issue persists, tap the \'Copy Logs\' button to help us diagnose the problem.',
+            );
           } else if (loginState is LoginSuccess) {
             final profileType = loginState.user.profileType;
             logger.d('Login Success, unlocking default profile');
@@ -160,6 +186,13 @@ class _LoginPageState extends State<LoginPage> {
                   loginState.user,
                   profileType,
                 );
+          } else if (loginState is GatewayLoginFailure) {
+            showErrorDialog(
+              context: context,
+              title: appLocalizationsOf(context).loginFailed,
+              message:
+                  'There was a problem communicating with the gateway at ${loginState.gatewayUrl}.\nPlease try again later.',
+            );
           }
         },
         buildWhen: (previous, current) {
@@ -495,12 +528,16 @@ Widget _buildContent(
           current is LoginCloseBlockingDialog;
       final isPasswordChecking =
           current is LoginCheckingPassword || current is LoginPasswordFailed;
+      final isLoadingIfUserAlreadyExists =
+          current is LoginLoadingIfUserAlreadyExists ||
+              current is LoginLoadingIfUserAlreadyExistsSuccess;
 
       return !(isFailure ||
           isSuccess ||
           isOnBoarding ||
           isLoading ||
-          isPasswordChecking);
+          isPasswordChecking ||
+          isLoadingIfUserAlreadyExists);
     },
     builder: (context, loginState) {
       late Widget content;

@@ -72,6 +72,7 @@ class _FileRepository implements FileRepository {
   @override
   Future<void> updateFile<T>(T fileEntry) async {
     if (fileEntry is FileEntry) {
+      await _driveDao.writeToFile(fileEntry);
       await _driveDao.writeFileEntity(fileEntry.asEntity());
     } else if (fileEntry is FileEntity) {
       await _driveDao.writeFileEntity(fileEntry);

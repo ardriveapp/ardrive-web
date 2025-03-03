@@ -22,5 +22,4 @@ final fakeUserArConnect = User(
   cipherKey: SecretKey([1, 2, 3]),
   profileType: ProfileType.arConnect,
   errorFetchingIOTokens: false,
-
 );

@@ -1,11 +1,13 @@
 import 'dart:convert';
 
 import 'package:ardrive/arns/utils/parse_assigned_names_from_string.dart';
+import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/models/license.dart';
 import 'package:ardrive/services/license/license_state.dart';
+import 'package:ardrive/utils/file_revision_base.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 
 abstract class ArDriveDataTableItem extends IndexedItem {
@@ -234,7 +236,8 @@ class DriveDataTableItemMapper {
     );
   }
 
-  static FileDataTableItem fromRevision(FileRevision revision, bool isOwner) {
+  static FileDataTableItem fromRevision(
+      FileRevisionBase revision, bool isOwner) {
     return FileDataTableItem(
       isOwner: isOwner,
       lastModifiedDate: revision.lastModifiedDate,
@@ -248,8 +251,8 @@ class DriveDataTableItemMapper {
       driveId: revision.driveId,
       parentFolderId: revision.parentFolderId,
       dataTxId: revision.dataTxId,
-      bundledIn: revision.bundledIn,
       licenseTxId: revision.licenseTxId,
+      bundledIn: revision.bundledIn,
       metadataTx: null,
       dataTx: null,
       index: 0,
@@ -260,6 +263,35 @@ class DriveDataTableItemMapper {
           ? Thumbnail.fromJson(jsonDecode(revision.thumbnail!))
           : null,
       fallbackTxId: revision.fallbackTxId,
+    );
+  }
+
+  static FileDataTableItem fromEntity(
+    ARFSFileEntity entity,
+    bool isOwner,
+  ) {
+    return FileDataTableItem(
+      isOwner: isOwner,
+      lastModifiedDate: entity.lastModifiedDate,
+      name: entity.name,
+      size: entity.size,
+      lastUpdated: entity.lastModifiedDate,
+      dateCreated: entity.lastModifiedDate,
+      contentType: entity.contentType ?? '',
+      fileStatusFromTransactions: null,
+      fileId: entity.id,
+      driveId: entity.driveId,
+      parentFolderId: entity.parentFolderId,
+      dataTxId: entity.dataTxId!,
+      bundledIn: null,
+      licenseTxId: entity.licenseTxId,
+      metadataTx: null,
+      dataTx: null,
+      index: 0,
+      pinnedDataOwnerAddress: entity.pinnedDataOwnerAddress,
+      isHidden: false,
+      thumbnail: null,
+      fallbackTxId: null,
     );
   }
 }

@@ -13,6 +13,7 @@ import 'package:ardrive/utils/logger.dart';
 import 'package:ario_sdk/ario_sdk.dart' as sdk;
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 
 abstract class ARNSRepository {
   Future<void> setUndernamesToFile({
@@ -39,6 +40,9 @@ abstract class ARNSRepository {
   Future<List<sdk.ArNSNameModel>> getARNSNameModelsForWallet(String address);
   Future<PrimaryNameDetails> getPrimaryName(String address,
       {bool update = false, bool getLogo = true});
+  @visibleForTesting
+  void addToCacheForTesting(
+      sdk.ANTRecord record, List<sdk.ARNSUndername> undernames);
 
   factory ARNSRepository({
     required ArioSDK sdk,
@@ -97,6 +101,15 @@ class _ARNSRepository implements ARNSRepository {
   final Map<String, Map<String, ARNSUndername>> _cachedUndernames = {};
   PrimaryNameDetails? _cachedPrimaryName;
   bool _hasErrorGettingARNSUndernames = false;
+
+  @override
+  void addToCacheForTesting(
+      sdk.ANTRecord record, List<sdk.ARNSUndername> undernames) {
+    _cachedUndernames[record.domain] = {};
+    for (var undername in undernames) {
+      _cachedUndernames[record.domain]![undername.name] = undername;
+    }
+  }
 
   @override
   Future<void> setUndernamesToFile({
@@ -200,13 +213,13 @@ class _ARNSRepository implements ARNSRepository {
       throw UndernameAlreadyExistsException();
     }
 
-    logger.d('Setting undername with ArConnect');
-
     final id = await _sdk.createUndername(
       undername: undername,
       isArConnect: _auth.currentUser.profileType == ProfileType.arConnect,
       txId: undername.record.transactionId,
-      jwtString: _auth.getJWTAsString(),
+      jwtString: _auth.currentUser.profileType == ProfileType.arConnect
+          ? null
+          : _auth.getJWTAsString(),
     );
 
     logger.d('Undername created with ArConnect: $id');

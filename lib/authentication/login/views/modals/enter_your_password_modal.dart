@@ -312,9 +312,11 @@ void showEnterYourPasswordDialog(
             Navigator.of(context).pop();
             return false;
           }
-          return (current is LoginCheckingPassword ||
+          return (current is GatewayLoginFailure ||
+              current is LoginCheckingPassword ||
               current is LoginPasswordFailed ||
-              current is LoginWithPassword);
+              current is LoginWithPassword ||
+              current is LoginUnknownFailure);
         },
         builder: (context, state) {
           final checkingPassword = state is LoginCheckingPassword;

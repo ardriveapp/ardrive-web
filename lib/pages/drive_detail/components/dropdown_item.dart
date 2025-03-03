@@ -12,6 +12,7 @@ class ArDriveDropdownItemTile extends StatelessWidget {
   final bool isDisabled;
   final TextStyle? fontStyle;
   final ArDriveArDriveDropdownItemTileIconAlignment iconAlignment;
+  final double? height;
 
   const ArDriveDropdownItemTile({
     super.key,
@@ -20,14 +21,15 @@ class ArDriveDropdownItemTile extends StatelessWidget {
     this.isDisabled = false,
     this.fontStyle,
     this.iconAlignment = ArDriveArDriveDropdownItemTileIconAlignment.left,
+    this.height,
   });
 
   @override
   Widget build(BuildContext context) {
-  return Padding(
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 18.0),
       child: SizedBox(
-        height: 48,
+        height: height ?? 48,
         child: Row(
           mainAxisSize: MainAxisSize.max,
           mainAxisAlignment: MainAxisAlignment.start,
