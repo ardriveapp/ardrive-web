@@ -27,7 +27,38 @@ abstract class FolderRepository {
     required String driveId,
   });
 
+  /// Checks for folder name conflicts in the target folder
+  ///
+  /// Returns a list of [FolderConflict] objects containing information about any conflicting folders
+  Future<List<FolderConflict>> checkFolderConflicts({
+    required String driveId,
+    required String parentFolderId,
+    required String folderName,
+  });
+
+  /// Checks for folder name conflicts across the entire folder tree
+  ///
+  /// Returns a map of folder paths to their conflicts
+  Future<Map<String, List<FolderConflict>>> checkFolderTreeConflicts({
+    required String driveId,
+    required String rootFolderId,
+    required List<String> folderPaths,
+  });
+
   factory FolderRepository(DriveDao driveDao) => _FolderRepository(driveDao);
+}
+
+/// Represents a folder conflict in the system
+class FolderConflict {
+  final String folderId;
+  final String folderName;
+  final String? parentFolderId;
+
+  FolderConflict({
+    required this.folderId,
+    required this.folderName,
+    this.parentFolderId,
+  });
 }
 
 class _FolderRepository implements FolderRepository {
@@ -146,5 +177,74 @@ class _FolderRepository implements FolderRepository {
   @override
   Future<FolderEntry> getFolderEntryById(String folderId) {
     return _driveDao.folderById(folderId: folderId).getSingle();
+  }
+
+  @override
+  Future<List<FolderConflict>> checkFolderConflicts({
+    required String driveId,
+    required String parentFolderId,
+    required String folderName,
+  }) async {
+    final existingFolders = await _driveDao
+        .foldersInFolderWithName(
+          driveId: driveId,
+          parentFolderId: parentFolderId,
+          name: folderName,
+        )
+        .get();
+
+    return existingFolders
+        .map(
+          (folder) => FolderConflict(
+            folderId: folder.id,
+            folderName: folder.name,
+            parentFolderId: folder.parentFolderId,
+          ),
+        )
+        .toList();
+  }
+
+  @override
+  Future<Map<String, List<FolderConflict>>> checkFolderTreeConflicts({
+    required String driveId,
+    required String rootFolderId,
+    required List<String> folderPaths,
+  }) async {
+    final conflicts = <String, List<FolderConflict>>{};
+
+    for (final path in folderPaths) {
+      final pathComponents = path.split('/');
+      var currentFolderId = rootFolderId;
+
+      for (final component in pathComponents) {
+        if (component.isEmpty) continue;
+
+        final folderConflicts = await checkFolderConflicts(
+          driveId: driveId,
+          parentFolderId: currentFolderId,
+          folderName: component,
+        );
+
+        if (folderConflicts.isNotEmpty) {
+          conflicts[path] = folderConflicts;
+          break;
+        }
+
+        // Get the existing folder ID to continue traversing
+        final existingFolder = await _driveDao
+            .foldersInFolderWithName(
+              driveId: driveId,
+              parentFolderId: currentFolderId,
+              name: component,
+            )
+            .getSingleOrNull();
+
+        if (existingFolder != null) {
+          currentFolderId = existingFolder.id;
+        }
+      }
+    }
+
+    return conflicts;
   }
 }

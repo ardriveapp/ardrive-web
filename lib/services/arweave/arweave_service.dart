@@ -35,7 +35,8 @@ import 'error/gateway_response_handler.dart';
 
 typedef SnapshotEntityTransaction
     = SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
-
+typedef TxInfo
+    = InfoOfTransactionsToBePinned$Query$TransactionConnection$TransactionEdge$Transaction;
 const byteCountPerChunk = 262144; // 256 KiB
 const defaultMaxRetries = 8;
 const kMaxNumberOfTransactionsPerPage = 100;
@@ -1295,6 +1296,45 @@ class ArweaveService {
         (await httpRetry.processRequest(() => client.api.getSandboxedTx(txId)));
     final metadata = data.bodyBytes;
     return metadata;
+  }
+
+  /// Fetches transaction info for multiple transactions in batches.
+  /// Returns a stream of transaction info batches.
+  Stream<Map<String, TxInfo>> getInfoOfTxsToBePinned(
+    List<String> transactionIds, {
+    int batchSize = 5,
+  }) async* {
+    for (var i = 0; i < transactionIds.length; i += batchSize) {
+      final end = (i + batchSize < transactionIds.length)
+          ? i + batchSize
+          : transactionIds.length;
+      final batch = transactionIds.sublist(i, end);
+
+      logger.i('Fetching transaction info for batch ${batch.length}');
+
+      try {
+        final query = await _gql.execute(
+          InfoOfTransactionsToBePinnedQuery(
+            variables: InfoOfTransactionsToBePinnedArguments(
+              transactionIds: batch,
+            ),
+          ),
+        );
+
+        if (query.data != null) {
+          final batchResults = <String, TxInfo>{};
+          for (final edge in query.data!.transactions.edges) {
+            final tx = edge.node;
+            batchResults[tx.id] = tx;
+          }
+          logger.d('Batch results length: ${batchResults.length}');
+          yield batchResults;
+        }
+      } catch (e) {
+        logger.e('Failed to fetch transaction info batch', e);
+        // Continue with next batch even if one fails
+      }
+    }
   }
 }
 
