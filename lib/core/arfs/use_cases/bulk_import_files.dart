@@ -104,6 +104,8 @@ class BulkImportFiles {
   final DriveDao _driveDao;
   final ArweaveService _arweaveService;
 
+  bool _isCancelled = false;
+
   BulkImportFiles({
     required UploadFileMetadata uploadFileMetadata,
     required UploadFolderMetadata uploadFolderMetadata,
@@ -324,20 +326,9 @@ class BulkImportFiles {
 
       onCreateFolderHierarchyEnd?.call();
 
-      logger.d('files: ${files.length}');
-
-      for (var file in files) {
-        logger.d('File name: ${file.name}');
-        logger.d('File path: ${file.path}');
-        logger.d('File id: ${file.id}');
-        logger.d('File dataTxId: ${file.dataTxId}');
-      }
-
       // Phase 3: Import all files
       // First, collect all transaction IDs
       final txIds = files.map((f) => f.dataTxId).toList();
-
-      logger.d('txIds: ${txIds.length}');
 
       logger.i('Fetching transaction info for ${txIds.length} files');
 
@@ -345,6 +336,10 @@ class BulkImportFiles {
       final txDetailsStream = _arweaveService.getInfoOfTxsToBePinned(txIds);
 
       await for (final txDetails in txDetailsStream) {
+        if (_isCancelled) {
+          throw BulkImportException('Bulk import cancelled');
+        }
+
         final List<FileEntity> fileEntries = [];
 
         for (final dataTxId in txDetails.keys) {
@@ -388,21 +383,6 @@ class BulkImportFiles {
               lastModifiedDate: now,
             );
 
-            // final fileEntry = await _importFile(
-            //   driveId: driveId,
-            //   parentFolderId: finalParentId,
-            //   fileId: file.id,
-            //   fileName: fileName,
-            //   dataTxId: file.dataTxId,
-            //   dataContentType: tx.tags
-            //           .firstWhereOrNull((tag) => tag.name == 'Content-Type')
-            //           ?.value ??
-            //       file.contentType,
-            //   dataSize: int.parse(tx.data.size),
-            //   wallet: wallet,
-            //   isPrivate: isPrivate,
-            // );
-
             fileEntries.add(fileEntity);
           } catch (e) {
             final file = fileDataTxIdToFile[dataTxId]!;
@@ -427,6 +407,10 @@ class BulkImportFiles {
             logger.e('Worker error', e);
           },
           execute: (file) async {
+            if (_isCancelled) {
+              throw BulkImportException('Bulk import cancelled');
+            }
+
             onFileProgress?.call(file.name!);
 
             final fileEntry = await _importFile(
@@ -519,6 +503,8 @@ class BulkImportFiles {
         error: 'Failed to upload metadata: ${e.toString()}',
       );
     }
+    fileEntity.txId = metadataUploadResult.metadataTxId;
+
     final isExistingFile =
         await _driveDao.fileById(fileId: fileId).getSingleOrNull();
 
@@ -578,6 +564,14 @@ class BulkImportFiles {
     createdFile = await _driveDao.fileById(fileId: fileId).getSingle();
 
     return createdFile;
+  }
+
+  void cancel() {
+    _isCancelled = true;
+  }
+
+  void reset() {
+    _isCancelled = false;
   }
 }
 

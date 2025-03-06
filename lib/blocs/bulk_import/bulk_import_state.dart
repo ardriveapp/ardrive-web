@@ -139,6 +139,17 @@ class BulkImportCreatingFolders extends BulkImportState {
       [totalFolders, processedFolders, currentFolderPath];
 }
 
+class BulkImportCancelled extends BulkImportState {
+  final int numberOfFilesImported;
+
+  const BulkImportCancelled({
+    required this.numberOfFilesImported,
+  });
+
+  @override
+  List<Object?> get props => [numberOfFilesImported];
+}
+
 class BulkImportFileConflicts extends BulkImportState {
   final String manifestTxId;
   final List<FileTreeConflict> conflicts;

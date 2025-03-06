@@ -68,36 +68,7 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
 
     return BlocConsumer<BulkImportBloc, BulkImportState>(
       listener: (context, state) {
-        if (state is BulkImportSuccess) {
-          showArDriveDialog(
-            context,
-            content: ArDriveStandardModalNew(
-              width: modalStandardMaxWidthSize,
-              title: 'Import Successful',
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Successfully imported ${state.successfulFiles} files.',
-                    style: typography.paragraphNormal(),
-                  ),
-                  if (state.failedFiles != 0)
-                    Text(
-                      'Failed to import ${state.failedFiles} files.',
-                      style: typography.paragraphNormal(),
-                    ),
-                ],
-              ),
-              actions: [
-                ModalAction(
-                  action: () => Navigator.pop(context),
-                  title: 'OK',
-                ),
-              ],
-            ),
-          );
-        } else if (state is BulkImportFileConflicts) {
+        if (state is BulkImportFileConflicts) {
           showArDriveDialog(
             context,
             content: ArDriveStandardModalNew(
@@ -132,13 +103,17 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
                   const SizedBox(height: 16),
                   Text(
                     'Would you like to replace these files?',
-                    style: typography.paragraphNormal(),
+                    style: typography.paragraphLarge(
+                      fontWeight: ArFontWeight.semiBold,
+                    ),
                   ),
                 ],
               ),
               actions: [
                 ModalAction(
-                  action: () => Navigator.pop(context),
+                  action: () {
+                    Navigator.pop(context);
+                  },
                   title: 'Cancel',
                 ),
                 ModalAction(
@@ -183,9 +158,57 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
               ],
             ),
           );
+        } else if (state is BulkImportCancelled) {
+          final numberOfFilesImported = state.numberOfFilesImported;
+
+          showAnimatedDialogWithBuilder(
+            context,
+            builder: (context) => ArDriveStandardModalNew(
+              width: kMediumDialogWidth,
+              title: 'Import Cancelled',
+              description:
+                  'The import process was cancelled.\n$numberOfFilesImported files were imported successfully.',
+              actions: [
+                ModalAction(
+                  action: () => Navigator.pop(context),
+                  title: 'OK',
+                ),
+              ],
+            ),
+          );
         }
       },
       builder: (context, state) {
+        if (state is BulkImportSuccess) {
+          return ArDriveStandardModalNew(
+            width: modalStandardMaxWidthSize,
+            title: 'Import Successful',
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Successfully imported ${state.successfulFiles} files.',
+                  style: typography.paragraphNormal(),
+                ),
+                if (state.failedFiles != 0)
+                  Text(
+                    'Failed to import ${state.failedFiles} files.',
+                    style: typography.paragraphNormal(),
+                  ),
+              ],
+            ),
+            actions: [
+              ModalAction(
+                action: () {
+                  Navigator.pop(context);
+                },
+                title: 'OK',
+              ),
+            ],
+          );
+        }
+
         return ArDriveStandardModalNew(
           width: kLargeDialogWidth,
           title: 'Import from Manifest',
@@ -196,14 +219,18 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (state is BulkImportLoadingManifest)
-                  Column(
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.max,
                     children: [
-                      const CircularProgressIndicator(),
-                      const SizedBox(height: 16),
                       Text(
                         'Loading manifest data...',
-                        style: typography.paragraphNormal(),
+                        style: typography.paragraphLarge(
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
                       ),
+                      const SizedBox(width: 16),
+                      const CircularProgressIndicator(),
                     ],
                   )
                 else if (state is BulkImportResolvingPaths)
@@ -285,7 +312,12 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
           ),
           actions: [
             ModalAction(
-              action: () => Navigator.pop(context),
+              action: () {
+                if (state is BulkImportInProgress) {
+                  context.read<BulkImportBloc>().add(const CancelBulkImport());
+                }
+                Navigator.pop(context);
+              },
               title: 'Cancel',
             ),
             if (state is! BulkImportLoadingManifest &&

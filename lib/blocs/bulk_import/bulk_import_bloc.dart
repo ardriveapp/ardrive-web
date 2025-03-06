@@ -256,8 +256,16 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
     CancelBulkImport event,
     Emitter<BulkImportState> emit,
   ) {
+    _bulkImportFiles.cancel();
     _pendingFiles = null;
-    emit(const BulkImportInitial());
+
+    int numberOfFilesImported = 0;
+
+    if (state is BulkImportInProgress) {
+      numberOfFilesImported = (state as BulkImportInProgress).processedFiles;
+    }
+
+    emit(BulkImportCancelled(numberOfFilesImported: numberOfFilesImported));
   }
 
   void _onResetBulkImport(
@@ -265,6 +273,7 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
     Emitter<BulkImportState> emit,
   ) {
     _pendingFiles = null;
+    _bulkImportFiles.reset();
     emit(const BulkImportInitial());
   }
 }
