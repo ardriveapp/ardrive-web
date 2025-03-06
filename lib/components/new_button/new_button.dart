@@ -577,6 +577,7 @@ class NewButton extends StatelessWidget {
       onClick: () {
         showArDriveDialog(
           context,
+          barrierDismissible: false,
           content: MultiRepositoryProvider(
             providers: setupBulkImportDependencies(context),
             child: BlocProvider(

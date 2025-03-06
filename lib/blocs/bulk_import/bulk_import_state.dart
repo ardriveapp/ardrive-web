@@ -1,3 +1,4 @@
+import 'package:ardrive/core/arfs/use_cases/bulk_import_files.dart';
 import 'package:ardrive/core/arfs/use_cases/check_folder_conflicts.dart';
 import 'package:equatable/equatable.dart';
 
@@ -22,6 +23,19 @@ class BulkImportLoadingManifest extends BulkImportState {
 
   @override
   List<Object> get props => [manifestTxId];
+}
+
+class BulkImportReviewingManifest extends BulkImportState {
+  final String manifestTxId;
+  final List<ManifestFileEntry> files;
+
+  const BulkImportReviewingManifest({
+    required this.manifestTxId,
+    required this.files,
+  });
+
+  @override
+  List<Object> get props => [manifestTxId, files];
 }
 
 /// State when importing files from manifest

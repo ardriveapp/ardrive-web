@@ -1,3 +1,4 @@
+import 'package:ardrive/core/arfs/use_cases/bulk_import_files.dart';
 import 'package:equatable/equatable.dart';
 
 /// Events for the bulk import process.
@@ -22,6 +23,23 @@ class StartManifestBulkImport extends BulkImportEvent {
 
   @override
   List<Object?> get props => [manifestTxId, driveId, parentFolderId];
+}
+
+class ConfirmManifestBulkImport extends BulkImportEvent {
+  final String manifestTxId;
+  final String driveId;
+  final String parentFolderId;
+  final List<ManifestFileEntry> files;
+
+  const ConfirmManifestBulkImport({
+    required this.manifestTxId,
+    required this.driveId,
+    required this.parentFolderId,
+    required this.files,
+  });
+
+  @override
+  List<Object?> get props => [manifestTxId, driveId, parentFolderId, files];
 }
 
 /// Event to replace conflicting files

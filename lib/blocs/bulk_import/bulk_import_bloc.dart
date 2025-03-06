@@ -34,6 +34,7 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
     on<CancelBulkImport>(_onCancelBulkImport);
     on<ResetBulkImport>(_onResetBulkImport);
     on<ReplaceConflictingFiles>(_onReplaceConflictingFiles);
+    on<ConfirmManifestBulkImport>(_onConfirmManifestBulkImport);
   }
 
   Future<void> _onStartManifestBulkImport(
@@ -120,13 +121,12 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
         return;
       }
 
-      await _importFiles(
-        files: files,
-        driveId: event.driveId,
-        parentFolderId: event.parentFolderId,
+      emit(BulkImportReviewingManifest(
         manifestTxId: event.manifestTxId,
-        emit: emit,
-      );
+        files: files,
+      ));
+
+      return;
     } catch (e) {
       logger.e('Error during bulk import', e);
       emit(BulkImportError(
@@ -134,6 +134,19 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
         e,
       ));
     }
+  }
+
+  Future<void> _onConfirmManifestBulkImport(
+    ConfirmManifestBulkImport event,
+    Emitter<BulkImportState> emit,
+  ) async {
+    await _importFiles(
+      files: event.files,
+      driveId: event.driveId,
+      parentFolderId: event.parentFolderId,
+      manifestTxId: event.manifestTxId,
+      emit: emit,
+    );
   }
 
   Future<void> _onReplaceConflictingFiles(
@@ -148,16 +161,10 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
         return;
       }
 
-      await _importFiles(
-        files: _pendingFiles!,
-        driveId: event.driveId,
-        parentFolderId: event.parentFolderId,
+      emit(BulkImportReviewingManifest(
         manifestTxId: event.manifestTxId,
-        emit: emit,
-      );
-
-      // Clear pending files after successful import
-      _pendingFiles = null;
+        files: _pendingFiles!,
+      ));
     } catch (e) {
       logger.e('Error during file replacement', e);
       emit(BulkImportError(
