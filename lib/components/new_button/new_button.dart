@@ -366,7 +366,11 @@ class NewButton extends StatelessWidget {
             name: appLocalizations.newSnapshot,
             icon: ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
           ),
-          // import from manifest
+          if (driveDetailState.currentDrive.privacy == 'public')
+            _getImportFromManifestItem(
+              context,
+              !driveDetailState.hasWritePermissions || !canUpload,
+            ),
         ]
       ];
     }
@@ -415,11 +419,6 @@ class NewButton extends StatelessWidget {
             name: appLocalizations.uploadFolder,
             icon: ArDriveIcons.iconUploadFolder1(size: defaultIconSize),
           ),
-          if (driveDetailState.currentDrive.privacy == 'public')
-            _getImportFromManifestItem(
-              context,
-              !driveDetailState.hasWritePermissions || !canUpload,
-            ),
           const ArDriveNewButtonDivider(),
         ],
         if (drivesState is DrivesLoadSuccess) ...[
