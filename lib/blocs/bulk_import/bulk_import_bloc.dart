@@ -210,6 +210,15 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
         },
         onFileProgress: (fileName) {
           final state = this.state;
+          if (state is BulkImportInProgress) {
+            emit(state.copyWith(
+              currentFileName: fileName,
+              processedFiles: processedFiles,
+            ));
+          }
+        },
+        onFileUploadSuccess: (fileName) {
+          final state = this.state;
           processedFiles++;
           if (state is BulkImportInProgress) {
             emit(state.copyWith(
@@ -227,8 +236,6 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
         wallet: _ardriveAuth.currentUser.wallet,
         userCipherKey: _ardriveAuth.currentUser.cipherKey,
       );
-
-      processedFiles++;
     } catch (e) {
       failedPaths.add(files.first.path);
       logger.e('Failed to import file: ${files.first.path}', e);

@@ -220,6 +220,7 @@ class BulkImportFiles {
     void Function(int total, int processed, String currentPath)?
         onFolderProgress,
     void Function(String fileName)? onFileProgress,
+    void Function(String fileName)? onFileUploadSuccess,
     void Function(String path)? onFileFailure,
     void Function()? onCreateFolderHierarchyStart,
     void Function()? onCreateFolderHierarchyEnd,
@@ -404,7 +405,7 @@ class BulkImportFiles {
           maxTasksPerWorker: 5,
           taskQueue: fileEntries,
           onWorkerError: (e) {
-            logger.e('Worker error', e);
+            logger.e('Bulk import worker error', e, StackTrace.current);
           },
           execute: (file) async {
             if (_isCancelled) {
@@ -424,6 +425,8 @@ class BulkImportFiles {
               wallet: wallet,
               isPrivate: isPrivate,
             );
+
+            onFileUploadSuccess?.call(file.name!);
 
             return fileEntry;
           },
