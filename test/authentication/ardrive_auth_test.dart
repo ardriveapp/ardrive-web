@@ -1,6 +1,7 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/profile_types.dart';
+import 'package:ardrive/models/daos/profile_dao.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/user/user.dart';
@@ -376,7 +377,7 @@ void main() {
 
           expectLater(
               () => arDriveAuth.login(wallet, 'password', ProfileType.json),
-              throwsA(isA<AuthenticationFailedException>()));
+              throwsA(isA<WrongPasswordException>()));
         });
       });
 
@@ -445,7 +446,7 @@ void main() {
 
           expect(
             arDriveAuth.unlockWithBiometrics(localizedReason: localizedReason),
-            throwsA(isA<AuthenticationFailedException>()),
+            throwsA(isA<WrongPasswordException>()),
           );
 
           verifyNever(() => mockBiometricAuthentication.authenticate(
@@ -470,7 +471,7 @@ void main() {
 
           expectLater(
             arDriveAuth.unlockWithBiometrics(localizedReason: localizedReason),
-            throwsA(isA<AuthenticationFailedException>()),
+            throwsA(isA<WrongPasswordException>()),
           );
 
           verifyNever(() => mockSecureKeyValueStore.getString('password'));
@@ -538,10 +539,10 @@ void main() {
 
       test('should throw when password is not correct', () async {
         when(() => mockUserRepository.getUser('password'))
-            .thenThrow(Exception('wrong password'));
+            .thenThrow(ProfilePasswordIncorrectException());
 
         expectLater(() => arDriveAuth.unlockUser(password: 'password'),
-            throwsA(isA<AuthenticationFailedException>()));
+            throwsA(isA<WrongPasswordException>()));
       });
     });
     group('logout method', () {

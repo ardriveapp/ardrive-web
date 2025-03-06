@@ -24,6 +24,10 @@ class LoginInitial extends LoginState {
 
 class LoginLoading extends LoginState {}
 
+class LoginLoadingIfUserAlreadyExists extends LoginState {}
+
+class LoginLoadingIfUserAlreadyExistsSuccess extends LoginState {}
+
 class LoginShowLoader extends LoginState {}
 
 class LoginShowBlockingDialog extends LoginState {
@@ -44,25 +48,34 @@ class LoginTutorials extends LoginState {
 }
 
 class PromptPassword extends LoginState {
-  const PromptPassword(
-      {this.mnemonic,
-      this.wallet,
-      this.derivedEthWallet,
-      this.alreadyLoggedIn = false,
-      this.showWalletCreated = false,
-      this.isPasswordInvalid = false});
+  const PromptPassword({
+    this.mnemonic,
+    this.wallet,
+    this.derivedEthWallet,
+    this.alreadyLoggedIn = false,
+    this.showWalletCreated = false,
+    this.isPasswordInvalid = false,
+    this.hasGraphQLException = false,
+  });
 
   final String? mnemonic;
   final Wallet? wallet;
   final EthereumProviderWallet? derivedEthWallet;
   final bool alreadyLoggedIn;
   final bool isPasswordInvalid;
+  final bool hasGraphQLException;
 
   /// Used to determine next screens to show on password success
   final bool showWalletCreated;
 
   @override
-  List<Object?> get props => [mnemonic, wallet, showWalletCreated];
+  List<Object?> get props => [
+        mnemonic,
+        wallet,
+        showWalletCreated,
+        isPasswordInvalid,
+        hasGraphQLException,
+      ];
 }
 
 class CreateNewPassword extends LoginState {
@@ -88,6 +101,20 @@ class CreateNewPassword extends LoginState {
 
 class LoginFailure extends LoginState {
   const LoginFailure(this.error);
+
+  final Object error;
+}
+
+class LoginUnknownFailure extends LoginState {
+  const LoginUnknownFailure(this.error);
+
+  final Object error;
+}
+
+class GatewayLoginFailure extends LoginState {
+  const GatewayLoginFailure(this.error, this.gatewayUrl);
+
+  final String gatewayUrl;
 
   final Object error;
 }

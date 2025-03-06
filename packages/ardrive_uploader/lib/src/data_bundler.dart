@@ -191,14 +191,21 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
 
         print('Size of the bundled data item: $size bytes');
 
-        final uploadCost = await costCalculator.calculateCost(
-          totalSize: size,
-        );
+        final uploadCost = await costCalculator.calculateCost(totalSize: size);
 
-        final target = await pstService.getWeightedPstHolder();
+        ArweaveAddress? target;
+        BigInt? pstFee;
+
+        try {
+          target = await pstService.getWeightedPstHolder();
+          pstFee = uploadCost.pstFee;
+        } catch (e) {
+          logger.e(
+              'Error getting the weighted PST holder. Proceeding with upload');
+        }
 
         return createTransactionTaskEither(
-          quantity: uploadCost.pstFee,
+          quantity: pstFee,
           wallet: wallet,
           dataStreamGenerator: r.stream,
           dataSize: size,

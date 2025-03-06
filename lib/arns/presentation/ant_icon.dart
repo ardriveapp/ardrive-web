@@ -2,6 +2,7 @@ import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/arns/utils/arns_address_utils.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
+import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ario_sdk/ario_sdk.dart';
@@ -52,6 +53,7 @@ class _AntIconState extends State<AntIcon> {
       final (address, arAddress) = getAddressesFromArns(
         domain: undername!.domain,
         undername: undername!.name,
+        configService: context.read<ConfigService>(),
       );
 
       return GestureDetector(
