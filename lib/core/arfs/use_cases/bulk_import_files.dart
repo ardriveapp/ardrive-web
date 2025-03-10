@@ -391,12 +391,14 @@ class BulkImportFiles {
             final file = fileDataTxIdToFile[dataTxId]!;
             logger.e('Failed to get tx details for file: ${file.name}', e);
             onFileFailure?.call(file.path);
-            failures.add(FileImportFailure(
-              path: file.path,
-              dataTxId: file.dataTxId,
-              error: e.toString(),
-              originalError: e,
-            ));
+            failures.add(
+              FileImportFailure(
+                path: file.path,
+                dataTxId: file.dataTxId,
+                error: e.toString(),
+                originalError: e,
+              ),
+            );
           }
         }
 
@@ -529,10 +531,6 @@ class BulkImportFiles {
 
       _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
           performedAction: RevisionAction.bulkImport));
-
-      // await _fileRepository.updateFile(fileEntity);
-      // await _fileRepository.updateFileRevision(
-      //     fileEntity, RevisionAction.uploadNewVersion);
     } else {
       logger.d('Creating new file entry');
 
