@@ -32,6 +32,7 @@ import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
+import 'package:ardrive/turbo/utils/get_signature_headers_for_turbo.dart';
 import 'package:ardrive/user/name/domain/repository/profile_logo_repository.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
@@ -155,6 +156,9 @@ Future<void> _initializeServices() async {
   _turboPayment = PaymentService(
     turboPaymentUri: Uri.parse(config.defaultTurboPaymentUrl!),
     httpClient: ArDriveHTTP(),
+    turboSignatureHeadersManager: TurboSignatureHeadersManager.getInstance(
+      tabVisibility: TabVisibilitySingleton(),
+    ),
   );
 
   void refreshHTMLPageAtInterval(Duration duration) {
