@@ -28,6 +28,8 @@ extension FileEntryExtensions on FileEntry {
               .toList()
           : null,
       fallbackTxId: fallbackTxId,
+      originalOwner: originalOwner,
+      importSource: importSource,
     );
 
     file.customJsonMetadata = parseCustomJsonMetadata(customJsonMetadata);

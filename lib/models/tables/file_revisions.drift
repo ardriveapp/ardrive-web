@@ -34,6 +34,9 @@ CREATE TABLE file_revisions (
 
     fallbackTxId TEXT,
 
+    originalOwner TEXT,
+    importSource TEXT,
+
     PRIMARY KEY (fileId, driveId, dateCreated),
     FOREIGN KEY (licenseTxId) REFERENCES network_transactions(id),
     FOREIGN KEY (metadataTxId) REFERENCES network_transactions(id),

@@ -171,8 +171,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
               builder: (context, hideState) {
                 return BlocBuilder<DriveDetailCubit, DriveDetailState>(
                   buildWhen: (previous, current) {
-                    return widget.context.read<SyncCubit>().state
-                        is! SyncInProgress;
+                    return !context.read<ActivityTracker>().isBulkImporting &&
+                        widget.context.read<SyncCubit>().state
+                            is! SyncInProgress;
                   },
                   builder: (context, driveDetailState) {
                     if (driveDetailState is DriveDetailLoadEmpty) {

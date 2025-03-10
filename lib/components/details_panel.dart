@@ -13,12 +13,14 @@ import 'package:ardrive/components/fs_entry_license_form.dart';
 import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/license_details_popover.dart';
 import 'package:ardrive/components/pin_indicator.dart';
+import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/sizes.dart';
 import 'package:ardrive/components/truncated_address.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/drive_explorer/thumbnail_creation/page/thumbnail_creation_modal.dart';
+import 'package:ardrive/main.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
@@ -1088,6 +1090,107 @@ class _DetailsPanelState extends State<DetailsPanel> {
       case RevisionAction.unhide:
         title = appLocalizationsOf(context).fileWasUnhidden;
         break;
+      case RevisionAction.bulkImport:
+        if (file.importSource == null && file.originalOwner == null) {
+          title = 'Imported from manifest';
+        } else {
+          final typography = ArDriveTypographyNew.of(context);
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  Expanded(
+                    flex: 4,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Flexible(
+                          flex: 1,
+                          child: RichText(
+                            text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'Imported from manifest ',
+                                  style: typography.paragraphNormal(
+                                    fontWeight: ArFontWeight.semiBold,
+                                  ),
+                                ),
+                                WidgetSpan(
+                                  child: ArDriveClickArea(
+                                    child: _TxIdTextLink(
+                                      txId: file.importSource!,
+                                      customUrl:
+                                          '${configService.config.defaultArweaveGatewayUrl}/raw/${file.importSource}',
+                                      isBold: true,
+                                    ),
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: ' and owner',
+                                  style: typography.paragraphNormal(
+                                    fontWeight: ArFontWeight.semiBold,
+                                  ),
+                                ),
+                                // opens in new tab
+                                WidgetSpan(
+                                  child: ArDriveClickArea(
+                                    tooltip: file.originalOwner,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        openUrl(
+                                            url:
+                                                'https://viewblock.io/arweave/address/${file.originalOwner}');
+                                      },
+                                      child: Text(
+                                        getTruncatedWalletAddress(
+                                            file.name, file.originalOwner!),
+                                        style: typography
+                                            .paragraphNormal(
+                                              fontWeight: ArFontWeight.bold,
+                                            )
+                                            .copyWith(
+                                                decoration:
+                                                    TextDecoration.underline),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            maxLines: 4,
+                          ),
+                        ),
+                        Flexible(
+                          flex: 3,
+                          child: Text(
+                            formatDateToUtcString(file.unixTime),
+                            style: ArDriveTypography.body.xSmallRegular(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(
+                height: 18,
+              ),
+              HorizontalDottedLine(
+                color: ArDriveTheme.of(context)
+                    .themeData
+                    .colors
+                    .themeBorderDefault,
+                width: double.maxFinite,
+              ),
+            ],
+          );
+        }
+
       default:
         title = appLocalizationsOf(context).fileWasModified;
     }
@@ -1103,24 +1206,31 @@ class _DetailsPanelState extends State<DetailsPanel> {
 }
 
 class _TxIdTextLink extends StatelessWidget {
-  const _TxIdTextLink({required this.txId});
+  const _TxIdTextLink({
+    required this.txId,
+    this.isBold = false,
+    this.customUrl,
+  });
 
   final String txId;
+  final bool isBold;
+  final String? customUrl;
 
   @override
   Widget build(BuildContext context) {
     return ArDriveClickArea(
       child: GestureDetector(
         onTap: () {
-          openUrl(url: 'https://viewblock.io/arweave/tx/$txId');
+          openUrl(url: customUrl ?? 'https://viewblock.io/arweave/tx/$txId');
         },
         child: ArDriveTooltip(
           message: txId,
           child: Text(
             '${txId.substring(0, 4)}...',
-            style: ArDriveTypography.body
-                .buttonNormalRegular()
-                .copyWith(decoration: TextDecoration.underline),
+            style: ArDriveTypography.body.buttonNormalRegular().copyWith(
+                  decoration: TextDecoration.underline,
+                  fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+                ),
           ),
         ),
       ),

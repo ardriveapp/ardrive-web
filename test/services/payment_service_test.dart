@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/models/payment_model.dart';
+import 'package:ardrive/turbo/utils/get_signature_headers_for_turbo.dart';
 import 'package:ardrive_http/ardrive_http.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,7 +25,6 @@ void main() async {
   late ArDriveHTTPMock httpClient;
   late Wallet wallet;
   late String walletAddress;
-
   httpClient = ArDriveHTTPMock();
   wallet = getTestWallet();
   walletAddress = await wallet.getAddress();
@@ -33,6 +34,9 @@ void main() async {
       paymentService = PaymentService(
         turboPaymentUri: Uri.parse(fakeUrl),
         httpClient: httpClient,
+        turboSignatureHeadersManager: TurboSignatureHeadersManager.getInstance(
+          tabVisibility: TabVisibilitySingleton(),
+        ),
       );
       when(() => httpClient.get(url: '$fakeUrl/v1/price/bytes/$byteSize'))
           .thenAnswer(

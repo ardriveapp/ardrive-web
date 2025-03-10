@@ -92,6 +92,8 @@ class FileDataTableItem extends ArDriveDataTableItem {
   final Thumbnail? thumbnail;
   final List<String>? assignedNames;
   final String? fallbackTxId;
+  final String? originalOwner;
+  final String? importSource;
   FileDataTableItem(
       {required super.driveId,
       required super.lastUpdated,
@@ -115,7 +117,9 @@ class FileDataTableItem extends ArDriveDataTableItem {
       this.thumbnail,
       super.licenseType,
       this.licenseTxId,
-      this.bundledIn})
+      this.bundledIn,
+      this.originalOwner,
+      this.importSource})
       : super(id: fileId);
 
   @override
@@ -162,6 +166,8 @@ class DriveDataTableItemMapper {
           ? Thumbnail.fromJson(jsonDecode(file.thumbnail!))
           : null,
       fallbackTxId: file.fallbackTxId,
+      originalOwner: file.originalOwner,
+      importSource: file.importSource,
     );
   }
 
@@ -193,6 +199,8 @@ class DriveDataTableItemMapper {
           ? Thumbnail.fromJson(jsonDecode(fileEntry.thumbnail!))
           : null,
       fallbackTxId: fileEntry.fallbackTxId,
+      originalOwner: fileEntry.originalOwner,
+      importSource: fileEntry.importSource,
     );
   }
 
@@ -237,7 +245,9 @@ class DriveDataTableItemMapper {
   }
 
   static FileDataTableItem fromRevision(
-      FileRevisionBase revision, bool isOwner) {
+    FileRevisionBase revision,
+    bool isOwner,
+  ) {
     return FileDataTableItem(
       isOwner: isOwner,
       lastModifiedDate: revision.lastModifiedDate,
@@ -263,6 +273,8 @@ class DriveDataTableItemMapper {
           ? Thumbnail.fromJson(jsonDecode(revision.thumbnail!))
           : null,
       fallbackTxId: revision.fallbackTxId,
+      originalOwner: revision.originalOwner,
+      importSource: revision.importSource,
     );
   }
 
@@ -292,6 +304,8 @@ class DriveDataTableItemMapper {
       isHidden: false,
       thumbnail: null,
       fallbackTxId: null,
+      originalOwner: entity.originalOwner,
+      importSource: entity.importSource,
     );
   }
 }
