@@ -38,6 +38,7 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
     wallet: context.read<ArDriveAuth>().currentUser.wallet,
     paymentService: context.read<PaymentService>(),
     costCalculator: costCalculator,
+    shouldStartOnPriceEstimateChange: true,
   );
 
   final turboPaymentProvider = StripePaymentProvider(
