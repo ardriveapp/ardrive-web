@@ -134,6 +134,7 @@ BulkImportFiles createBulkImportFiles(BuildContext context) {
     arweaveService: context.read<ArweaveService>(),
     uploadFileMetadata: createUploadFileMetadata(context),
     uploadFolderMetadata: createUploadFolderMetadata(context),
+    arDriveAuth: context.read<ArDriveAuth>(),
   );
 }
 

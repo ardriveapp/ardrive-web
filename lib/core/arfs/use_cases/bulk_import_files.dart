@@ -1,6 +1,8 @@
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/core/arfs/use_cases/upload_file_metadata.dart';
 import 'package:ardrive/core/arfs/use_cases/upload_folder_metadata.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -103,6 +105,7 @@ class BulkImportFiles {
   final UploadFolderMetadata _uploadFolderMetadata;
   final DriveDao _driveDao;
   final ArweaveService _arweaveService;
+  final ArDriveAuth _arDriveAuth;
 
   bool _isCancelled = false;
 
@@ -111,10 +114,12 @@ class BulkImportFiles {
     required UploadFolderMetadata uploadFolderMetadata,
     required DriveDao driveDao,
     required ArweaveService arweaveService,
+    required ArDriveAuth arDriveAuth,
   })  : _uploadFileMetadata = uploadFileMetadata,
         _uploadFolderMetadata = uploadFolderMetadata,
         _driveDao = driveDao,
-        _arweaveService = arweaveService;
+        _arweaveService = arweaveService,
+        _arDriveAuth = arDriveAuth;
 
   /// Creates a folder hierarchy based on the file path.
   /// Returns the ID of the deepest folder created.
@@ -406,7 +411,12 @@ class BulkImportFiles {
 
         final worker = WorkerPool<FileEntity>(
           numWorkers: 1,
-          maxTasksPerWorker: 5,
+          maxTasksPerWorker:
+              // to avoid concurrency issues with ArConnect while signing
+              // TODO: investigate if this is the best way to handle this
+              _arDriveAuth.currentUser.profileType == ProfileType.arConnect
+                  ? 1
+                  : 5,
           taskQueue: fileEntries,
           onWorkerError: (e) {
             logger.e('Bulk import worker error', e, StackTrace.current);
