@@ -32,6 +32,9 @@ CREATE TABLE file_entries (
 
     fallbackTxId TEXT,
 
+    originalOwner TEXT,
+    importSource TEXT,
+
     PRIMARY KEY (id, driveId)
 ) AS FileEntry;
 

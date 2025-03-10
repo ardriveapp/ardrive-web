@@ -693,8 +693,9 @@ class ProfileCardHeader extends StatelessWidget {
 
         final primaryName = _getPrimaryName(state, walletAddress);
         final maxWidth = _calculateMaxWidth(primaryName, state);
-        final truncatedWalletAddress =
-            _getTruncatedWalletAddress(primaryName, walletAddress);
+        final truncatedWalletAddress = getTruncatedWalletAddress(
+            primaryName, walletAddress,
+            isExpanded: isExpanded);
         final tooltipMessage = primaryName.length > 20 ? primaryName : null;
         return ArDriveTooltip(
           message: tooltipMessage ?? '',
@@ -728,31 +729,6 @@ class ProfileCardHeader extends StatelessWidget {
     double width = primaryName.length * 20;
 
     return width.clamp(110, 230);
-  }
-
-  String _getTruncatedWalletAddress(String primaryName, String walletAddress) {
-    if (primaryName.length > 20 || isExpanded) {
-      // replace the hyphen with a unicode minus to avoid truncation in the middle of the text
-      return truncateString(walletAddress.replaceAll('-', '−'),
-          offsetStart: 12, offsetEnd: 12);
-    }
-
-    var offsetStart = primaryName.length ~/ 2;
-    var offsetEnd = primaryName.length ~/ 2;
-
-    if (offsetStart < 6) {
-      offsetStart = 3;
-    }
-
-    if (offsetEnd < 6) {
-      offsetEnd = 3;
-    }
-
-    return truncateString(
-      walletAddress,
-      offsetStart: offsetStart,
-      offsetEnd: offsetEnd,
-    );
   }
 
   Widget? _buildProfileIcon(ProfileNameLoaded state) {
@@ -903,4 +879,33 @@ class ProfileCardHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+String getTruncatedWalletAddress(
+  String primaryName,
+  String walletAddress, {
+  bool isExpanded = false,
+}) {
+  if (primaryName.length > 20 || isExpanded) {
+    // replace the hyphen with a unicode minus to avoid truncation in the middle of the text
+    return truncateString(walletAddress.replaceAll('-', '−'),
+        offsetStart: 12, offsetEnd: 12);
+  }
+
+  var offsetStart = primaryName.length ~/ 2;
+  var offsetEnd = primaryName.length ~/ 2;
+
+  if (offsetStart < 6) {
+    offsetStart = 3;
+  }
+
+  if (offsetEnd < 6) {
+    offsetEnd = 3;
+  }
+
+  return truncateString(
+    walletAddress,
+    offsetStart: offsetStart,
+    offsetEnd: offsetEnd,
+  );
 }

@@ -45,7 +45,7 @@ class ManifestRepositoryImpl implements ManifestRepository {
 
         // Create Manifest instance
         final manifest = Manifest.fromJson(manifestJson);
-        return ManifestResult.success(manifest);
+        return ManifestResult.success(manifest, tx.owner.address);
       } catch (e) {
         logger.e('Failed to parse manifest data', e);
         return ManifestResult.failure(

@@ -8,6 +8,7 @@ abstract class RevisionAction {
   static const assertLicense = 'assert-license';
   static const createThumbnail = 'create-thumbnail';
   static const assignName = 'assign-name';
+  static const bulkImport = 'bulk-import';
 }
 
 abstract class TransactionStatus {

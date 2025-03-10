@@ -224,6 +224,8 @@ class BulkImportFiles {
     void Function(String path)? onFileFailure,
     void Function()? onCreateFolderHierarchyStart,
     void Function()? onCreateFolderHierarchyEnd,
+    required String manifestTxId,
+    required String originalOwnerAddress,
   }) async {
     final importedFiles = <FileEntry>[];
     final failures = <FileImportFailure>[];
@@ -424,6 +426,8 @@ class BulkImportFiles {
               dataSize: file.size!,
               wallet: wallet,
               isPrivate: isPrivate,
+              manifestTxId: manifestTxId,
+              originalOwnerAddress: originalOwnerAddress,
             );
 
             onFileUploadSuccess?.call(file.name!);
@@ -457,6 +461,8 @@ class BulkImportFiles {
     required int dataSize,
     required Wallet wallet,
     required bool isPrivate,
+    required String manifestTxId,
+    required String originalOwnerAddress,
   }) async {
     final now = DateTime.now();
 
@@ -472,6 +478,8 @@ class BulkImportFiles {
         dataContentType: Value(dataContentType),
         size: dataSize,
         lastModifiedDate: now,
+        originalOwner: Value(originalOwnerAddress),
+        importSource: Value(manifestTxId),
       );
 
       fileEntity = file.asEntity();
@@ -485,6 +493,8 @@ class BulkImportFiles {
         parentFolderId: parentFolderId,
         dataContentType: dataContentType,
         lastModifiedDate: now,
+        originalOwner: originalOwnerAddress,
+        importSource: manifestTxId,
       );
     }
 
@@ -494,7 +504,10 @@ class BulkImportFiles {
     try {
       metadataUploadResult = await _uploadFileMetadata(
         fileEntity: fileEntity,
-        customTags: [],
+        customTags: [
+          Tag('Import-Source', manifestTxId),
+          Tag('Original-Owner', originalOwnerAddress),
+        ],
         isPrivate: isPrivate,
         wallet: wallet,
       );
@@ -515,7 +528,7 @@ class BulkImportFiles {
       logger.d('Updating existing file entry');
 
       _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
-          performedAction: RevisionAction.uploadNewVersion));
+          performedAction: RevisionAction.bulkImport));
 
       // await _fileRepository.updateFile(fileEntity);
       // await _fileRepository.updateFileRevision(
@@ -536,6 +549,8 @@ class BulkImportFiles {
         dateCreated: Value(now),
         lastUpdated: Value(now),
         path: '',
+        originalOwner: Value(originalOwnerAddress),
+        importSource: Value(manifestTxId),
       );
 
       await _driveDao.transaction(
@@ -547,7 +562,7 @@ class BulkImportFiles {
             fileId: fileId,
             name: fileName,
             parentFolderId: parentFolderId,
-            action: RevisionAction.create,
+            action: RevisionAction.bulkImport,
             dateCreated: Value(now),
             lastModifiedDate: now,
             size: dataSize,
@@ -555,6 +570,8 @@ class BulkImportFiles {
             dataContentType: Value(dataContentType),
             metadataTxId: metadataUploadResult.metadataTxId,
             isHidden: const Value(false),
+            originalOwner: Value(originalOwnerAddress),
+            importSource: Value(manifestTxId),
           );
 
           await _driveDao.insertFileRevision(revision);

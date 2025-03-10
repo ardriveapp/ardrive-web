@@ -23,6 +23,8 @@ abstract class FileRevisionBase {
   final bool isHidden;
   final String? assignedNames;
   final String? fallbackTxId;
+  final String? originalOwner;
+  final String? importSource;
 
   const FileRevisionBase({
     required this.fileId,
@@ -45,6 +47,8 @@ abstract class FileRevisionBase {
     required this.isHidden,
     this.assignedNames,
     this.fallbackTxId,
+    this.originalOwner,
+    this.importSource,
   });
 
   /// Creates a [FileRevisionBase] from a [FileRevision]
@@ -70,6 +74,8 @@ abstract class FileRevisionBase {
       isHidden: revision.isHidden,
       assignedNames: revision.assignedNames,
       fallbackTxId: revision.fallbackTxId,
+      originalOwner: revision.originalOwner,
+      importSource: revision.importSource,
     );
   }
 
@@ -97,6 +103,8 @@ abstract class FileRevisionBase {
       isHidden: revision.isHidden,
       assignedNames: revision.assignedNames,
       fallbackTxId: revision.fallbackTxId,
+      originalOwner: revision.originalOwner,
+      importSource: revision.importSource,
     );
   }
 }
@@ -123,5 +131,7 @@ class _SimpleFileRevision extends FileRevisionBase {
     required super.isHidden,
     super.assignedNames,
     super.fallbackTxId,
+    super.originalOwner,
+    super.importSource,
   });
 }

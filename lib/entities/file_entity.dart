@@ -48,6 +48,12 @@ class FileEntity extends EntityWithCustomMetadata {
   @JsonKey(includeIfNull: false, name: 'fallbackTxId')
   String? fallbackTxId;
 
+  @JsonKey(includeIfNull: false)
+  String? originalOwner;
+
+  @JsonKey(includeIfNull: false)
+  String? importSource;
+
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   List<String> reservedGqlTags = [
@@ -83,6 +89,8 @@ class FileEntity extends EntityWithCustomMetadata {
     this.thumbnail,
     this.assignedNames,
     this.fallbackTxId,
+    this.originalOwner,
+    this.importSource,
   }) : super(ArDriveCrypto());
 
   FileEntity.withUserProvidedDetails({
@@ -123,7 +131,9 @@ class FileEntity extends EntityWithCustomMetadata {
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
         ..bundledIn = transaction.bundledIn?.id
-        ..createdAt = commitTime;
+        ..createdAt = commitTime
+        ..originalOwner = transaction.getTag('Original-Owner')
+        ..importSource = transaction.getTag('Import-Source');
 
       final tags = transaction.tags
           .map(

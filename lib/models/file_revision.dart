@@ -31,6 +31,8 @@ extension FileRevisionsCompanionExtensions on FileRevisionsCompanion {
         thumbnail: Value(thumbnail.value),
         assignedNames: Value(assignedNames.value),
         fallbackTxId: fallbackTxId,
+        originalOwner: originalOwner,
+        importSource: importSource,
       );
 
   /// Returns a list of [NetworkTransactionsCompanion] representing the metadata and data transactions
@@ -83,6 +85,8 @@ extension FileEntityExtensions on FileEntity {
       thumbnail: Value(thumbnailData),
       assignedNames: Value(assignedNamesData),
       fallbackTxId: Value(fallbackTxId),
+      originalOwner: Value(originalOwner),
+      importSource: Value(importSource),
     );
   }
 
@@ -128,6 +132,9 @@ extension FileEntityExtensions on FileEntity {
   String? getPerformedRevisionAction(
       [FileRevisionsCompanion? previousRevision]) {
     if (previousRevision == null) {
+      if (importSource != null) {
+        return RevisionAction.bulkImport;
+      }
       return RevisionAction.create;
     } else if (fallbackTxId != null &&
         fallbackTxId != previousRevision.fallbackTxId.value) {
@@ -156,6 +163,9 @@ extension FileEntityExtensions on FileEntity {
       if (assignedNames!.length > previousAssignedNames.length) {
         return RevisionAction.assignName;
       }
+    } else if (previousRevision.importSource.value == null &&
+        importSource != null) {
+      return RevisionAction.bulkImport;
     }
 
     return null;

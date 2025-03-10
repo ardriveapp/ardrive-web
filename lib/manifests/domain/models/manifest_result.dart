@@ -6,16 +6,20 @@ import 'package:equatable/equatable.dart';
 class ManifestResult extends Equatable {
   final Manifest? manifest;
   final ManifestFailure? failure;
+  final String? ownerAddress;
 
-  const ManifestResult.success(Manifest this.manifest) : failure = null;
+  const ManifestResult.success(Manifest this.manifest, this.ownerAddress)
+      : failure = null;
 
-  const ManifestResult.failure(ManifestFailure this.failure) : manifest = null;
+  const ManifestResult.failure(ManifestFailure this.failure)
+      : manifest = null,
+        ownerAddress = null;
 
   bool get isSuccess => manifest != null;
   bool get isFailure => failure != null;
 
   @override
-  List<Object?> get props => [manifest, failure];
+  List<Object?> get props => [manifest, failure, ownerAddress];
 }
 
 /// Base class for manifest-related failures.

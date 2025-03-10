@@ -37,6 +37,8 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
     on<ConfirmManifestBulkImport>(_onConfirmManifestBulkImport);
   }
 
+  String? _manifestOriginalOwnerAddress;
+
   Future<void> _onStartManifestBulkImport(
     StartManifestBulkImport event,
     Emitter<BulkImportState> emit,
@@ -48,6 +50,7 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
       final manifestResult =
           await _manifestRepository.getManifest(event.manifestTxId);
 
+      _manifestOriginalOwnerAddress = manifestResult.ownerAddress;
       if (manifestResult.failure != null) {
         emit(BulkImportError(
           'Failed to load manifest: ${manifestResult.failure!.message}',
@@ -205,10 +208,19 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
         isCreatingFolderHierarchy: true,
       ));
 
+      if (_manifestOriginalOwnerAddress == null) {
+        emit(const BulkImportError(
+          'Failed to import files. Please try again.',
+        ));
+        return;
+      }
+
       await _bulkImportFiles(
         driveId: driveId,
         parentFolderId: parentFolderId,
         files: files,
+        manifestTxId: manifestTxId,
+        originalOwnerAddress: _manifestOriginalOwnerAddress!,
         onCreateFolderHierarchyStart: () {
           final state = this.state;
           if (state is BulkImportInProgress) {
