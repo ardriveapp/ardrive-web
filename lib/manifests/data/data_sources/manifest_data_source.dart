@@ -17,39 +17,35 @@ class ManifestDataSource {
   /// Throws a [ManifestParseException] if the manifest data is invalid.
   Future<Map<String, dynamic>> downloadAndParseManifest(
       String manifestTxId) async {
+    logger.i('Downloading manifest data for transaction: $manifestTxId');
+
+    // Download the manifest data
+    final Uint8List manifestData = await _downloadService.download(
+      manifestTxId,
+      true, // isManifest = true
+    );
+
+    logger.d(
+        'Successfully downloaded manifest data (${manifestData.length} bytes)');
+
+    // Parse the manifest JSON
+    final Map<String, dynamic> manifestJson;
     try {
-      logger.i('Downloading manifest data for transaction: $manifestTxId');
-
-      // Download the manifest data
-      final Uint8List manifestData = await _downloadService.download(
-        manifestTxId,
-        true, // isManifest = true
+      manifestJson = json.decode(
+        utf8.decode(manifestData),
       );
-
-      logger.d(
-          'Successfully downloaded manifest data (${manifestData.length} bytes)');
-
-      // Parse the manifest JSON
-      try {
-        final Map<String, dynamic> manifestJson = json.decode(
-          utf8.decode(manifestData),
-        );
-
-        // Validate manifest structure
-        if (!_isValidManifest(manifestJson)) {
-          throw ManifestParseException('Invalid manifest structure');
-        }
-
-        logger.d('Successfully parsed manifest data');
-        return manifestJson;
-      } catch (e) {
-        logger.e('Failed to parse manifest data', e);
-        throw ManifestParseException('Failed to parse manifest data: $e');
-      }
     } catch (e) {
-      logger.e('Failed to download manifest data', e);
-      throw ManifestDownloadException('Failed to download manifest data: $e');
+      logger.e('Failed to parse manifest data', e);
+      throw ManifestParseException('Failed to parse manifest data: $e');
     }
+
+    // Validate manifest structure
+    if (!_isValidManifest(manifestJson)) {
+      throw ManifestParseException('Invalid manifest structure');
+    }
+
+    logger.d('Successfully parsed manifest data');
+    return manifestJson;
   }
 
   /// Extracts file IDs from the manifest data.

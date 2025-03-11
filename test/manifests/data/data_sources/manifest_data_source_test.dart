@@ -59,35 +59,36 @@ void main() {
       );
     });
 
-    // test('throws ManifestParseException when manifest is invalid JSON',
-    //     () async {
-    //   // Arrange
-    //   final invalidJson = Uint8List.fromList(utf8.encode('invalid json'));
-    //   when(() => mockDownloadService.download(testManifestTxId, true))
-    //       .thenAnswer((_) async => invalidJson);
+    test('throws ManifestParseException when manifest is invalid JSON',
+        () async {
+      // Arrange
+      final invalidJson = Uint8List.fromList(utf8.encode('invalid json'));
+      when(() => mockDownloadService.download(testManifestTxId, true))
+          .thenAnswer((_) async => invalidJson);
 
-    //   // Act & Assert
-    //   expect(
-    //     () => manifestDataSource.downloadAndParseManifest(testManifestTxId),
-    //     throwsA(isA<ManifestParseException>()),
-    //   );
-    // });
+      // Act & Assert
+      expectLater(
+        () async =>
+            await manifestDataSource.downloadAndParseManifest(testManifestTxId),
+        throwsA(isA<ManifestParseException>()),
+      );
+    });
 
-    // test('throws ManifestParseException when manifest structure is invalid',
-    //     () async {
-    //   // Arrange
-    //   final invalidManifest = {'invalid': 'structure'};
-    //   final manifestBytes =
-    //       Uint8List.fromList(utf8.encode(json.encode(invalidManifest)));
-    //   when(() => mockDownloadService.download(testManifestTxId, true))
-    //       .thenAnswer((_) async => manifestBytes);
+    test('throws ManifestParseException when manifest structure is invalid',
+        () async {
+      // Arrange
+      final invalidManifest = {'invalid': 'structure'};
+      final manifestBytes =
+          Uint8List.fromList(utf8.encode(json.encode(invalidManifest)));
+      when(() => mockDownloadService.download(testManifestTxId, true))
+          .thenAnswer((_) async => manifestBytes);
 
-    //   // Act & Assert
-    //   expect(
-    //     () => manifestDataSource.downloadAndParseManifest(testManifestTxId),
-    //     throwsA(isA<ManifestParseException>()),
-    //   );
-    // });
+      // Act & Assert
+      expect(
+        () => manifestDataSource.downloadAndParseManifest(testManifestTxId),
+        throwsA(isA<ManifestParseException>()),
+      );
+    });
   });
 
   group('extractFileIds', () {
