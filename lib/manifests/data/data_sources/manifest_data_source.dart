@@ -20,10 +20,16 @@ class ManifestDataSource {
     logger.i('Downloading manifest data for transaction: $manifestTxId');
 
     // Download the manifest data
-    final Uint8List manifestData = await _downloadService.download(
-      manifestTxId,
-      true, // isManifest = true
-    );
+    Uint8List manifestData;
+    try {
+      manifestData = await _downloadService.download(
+        manifestTxId,
+        true, // isManifest = true
+      );
+    } catch (e) {
+      logger.e('Failed to download manifest data', e);
+      throw ManifestDownloadException('Failed to download manifest data: $e');
+    }
 
     logger.d(
         'Successfully downloaded manifest data (${manifestData.length} bytes)');
