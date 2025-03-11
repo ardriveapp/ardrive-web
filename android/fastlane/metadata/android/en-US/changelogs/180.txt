@@ -1,0 +1,1 @@
+- 	Resolved issue with displaying outdated metadata and transaction IDs after file replacement.
