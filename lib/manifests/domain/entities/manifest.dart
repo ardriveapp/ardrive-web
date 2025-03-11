@@ -62,6 +62,12 @@ class Manifest extends Equatable {
       }
     }
 
+    if (fallback != null) {
+      if (fallback!.containsKey('id')) {
+        ids.add(fallback!['id'] as String);
+      }
+    }
+
     return ids.toList();
   }
 
