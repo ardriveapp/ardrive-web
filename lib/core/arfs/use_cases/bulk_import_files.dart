@@ -40,7 +40,6 @@ class BulkImportResult {
   bool get hasFailures => failures.isNotEmpty;
   bool get isSuccess => !hasFailures;
   int get totalFiles => importedFiles.length + failures.length;
-  double get successRate => importedFiles.length / totalFiles;
 }
 
 /// Represents a failure to import a specific file.
