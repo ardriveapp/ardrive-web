@@ -1,74 +1,149 @@
-// import 'package:ardrive/manifests/domain/entities/manifest.dart';
-// import 'package:flutter_test/flutter_test.dart';
-
-// void main() {
-//   group('Manifest', () {
-//     final testManifest = Manifest(
-//       manifest: 'arweave/paths',
-//       version: '0.1.0',
-//       index: {'path': 'hello_world.html'},
-//       paths: {
-//         'hello_world.html': {
-//           'id': 'KlwrMWFW9ckVKa8pCGk9a8EjwzYZ7jNVUVHdcE2YkHo'
-//         },
-//         'images/logo.png': {'id': 'AnotherFileId123'},
-//         'empty_file.txt': {'size': '0'}, // No ID
-//       },
-//     );
-
-//     test('fromJson creates correct Manifest instance', () {
-//       final json = {
-//         'manifest': 'arweave/paths',
-//         'version': '0.1.0',
-//         'index': {'path': 'hello_world.html'},
-//         'paths': {
-//           'hello_world.html': {
-//             'id': 'KlwrMWFW9ckVKa8pCGk9a8EjwzYZ7jNVUVHdcE2YkHo'
-//           },
-//         },
-//       };
-
-//       final manifest = Manifest.fromJson(json);
-
-//       expect(manifest.manifest, equals('arweave/paths'));
-//       expect(manifest.version, equals('0.1.0'));
-//       expect(manifest.index, equals({'path': 'hello_world.html'}));
-//       expect(manifest.paths['hello_world.html']?['id'],
-//           equals('KlwrMWFW9ckVKa8pCGk9a8EjwzYZ7jNVUVHdcE2YkHo'));
-//     });
-
-//     test('getFileIds returns all file IDs', () {
-//       final fileIds = testManifest.getFileIds();
-
-//       expect(fileIds, hasLength(2));
-//       expect(fileIds, contains('KlwrMWFW9ckVKa8pCGk9a8EjwzYZ7jNVUVHdcE2YkHo'));
-//       expect(fileIds, contains('AnotherFileId123'));
-//     });
-
-//     test('getFilePathsWithIds returns correct map', () {
-//       final pathsWithIds = testManifest.getFilePathsWithIds();
-
-//       expect(pathsWithIds, hasLength(2));
-//       expect(pathsWithIds['hello_world.html'],
-//           equals('KlwrMWFW9ckVKa8pCGk9a8EjwzYZ7jNVUVHdcE2YkHo'));
-//       expect(pathsWithIds['images/logo.png'], equals('AnotherFileId123'));
-//       expect(pathsWithIds.containsKey('empty_file.txt'), isFalse);
-//     });
-
-//     test('getFileIdByPath returns correct ID', () {
-//       expect(testManifest.getFileIdByPath('hello_world.html'),
-//           equals('KlwrMWFW9ckVKa8pCGk9a8EjwzYZ7jNVUVHdcE2YkHo'));
-//       expect(testManifest.getFileIdByPath('images/logo.png'),
-//           equals('AnotherFileId123'));
-//       expect(testManifest.getFileIdByPath('empty_file.txt'), isNull);
-//       expect(testManifest.getFileIdByPath('non_existent.txt'), isNull);
-//     });
-//   });
-// }
+import 'package:ardrive/manifests/domain/entities/manifest.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('test', () {
-    expect(true, isTrue);
+  group('Manifest', () {
+    test('should create a Manifest instance with the required properties', () {
+      // Arrange
+      const String manifest = 'arweave/paths';
+      const String version = '0.1.0';
+      final Map<String, Map<String, dynamic>> paths = {
+        'file1.txt': {'id': 'tx1'},
+        'file2.txt': {'id': 'tx2'},
+      };
+      const String index = 'index.html';
+      final Map<String, dynamic> fallback = {'path': '404.html'};
+
+      // Act
+      final result = Manifest(
+        manifest: manifest,
+        version: version,
+        paths: paths,
+        index: index,
+        fallback: fallback,
+      );
+
+      // Assert
+      expect(result.manifest, equals(manifest));
+      expect(result.version, equals(version));
+      expect(result.paths, equals(paths));
+      expect(result.index, equals(index));
+      expect(result.fallback, equals(fallback));
+    });
+
+    group('fromJson', () {
+      test('should correctly parse JSON with all fields', () {
+        // Arrange
+        final Map<String, dynamic> json = {
+          'manifest': 'arweave/paths',
+          'version': '0.1.0',
+          'paths': {
+            'file1.txt': {'id': 'tx1'},
+            'file2.txt': {'id': 'tx2'},
+          },
+          'index': 'index.html',
+          'fallback': {'path': '404.html'},
+        };
+
+        // Act
+        final result = Manifest.fromJson(json);
+
+        // Assert
+        expect(result.manifest, equals('arweave/paths'));
+        expect(result.version, equals('0.1.0'));
+        expect(
+            result.paths,
+            equals({
+              'file1.txt': {'id': 'tx1'},
+              'file2.txt': {'id': 'tx2'},
+            }));
+        expect(result.index, equals('index.html'));
+        expect(result.fallback, equals({'path': '404.html'}));
+      });
+
+      test('should correctly parse JSON with index as a map', () {
+        // Arrange
+        final Map<String, dynamic> json = {
+          'manifest': 'arweave/paths',
+          'version': '0.1.0',
+          'paths': {
+            'file1.txt': {'id': 'tx1'},
+          },
+          'index': {'path': 'index.html'},
+          'fallback': null,
+        };
+
+        // Act
+        final result = Manifest.fromJson(json);
+
+        // Assert
+        expect(result.index, equals('index.html'));
+        expect(result.fallback, isNull);
+      });
+
+      test('should correctly parse JSON without optional fields', () {
+        // Arrange
+        final Map<String, dynamic> json = {
+          'manifest': 'arweave/paths',
+          'version': '0.1.0',
+          'paths': {
+            'file1.txt': {'id': 'tx1'},
+          },
+        };
+
+        // Act
+        final result = Manifest.fromJson(json);
+
+        // Assert
+        expect(result.manifest, equals('arweave/paths'));
+        expect(result.version, equals('0.1.0'));
+        expect(
+            result.paths,
+            equals({
+              'file1.txt': {'id': 'tx1'},
+            }));
+        expect(result.index, isNull);
+        expect(result.fallback, isNull);
+      });
+    });
+
+    test('should implement equality correctly', () {
+      // Arrange
+      const manifest1 = Manifest(
+        manifest: 'arweave/paths',
+        version: '0.1.0',
+        paths: {
+          'file1.txt': {'id': 'tx1'},
+        },
+        index: 'index.html',
+        fallback: {'path': '404.html'},
+      );
+
+      const manifest2 = Manifest(
+        manifest: 'arweave/paths',
+        version: '0.1.0',
+        paths: {
+          'file1.txt': {'id': 'tx1'},
+        },
+        index: 'index.html',
+        fallback: {'path': '404.html'},
+      );
+
+      const differentManifest = Manifest(
+        manifest: 'arweave/paths',
+        version: '0.2.0', // Different version
+        paths: {
+          'file1.txt': {'id': 'tx1'},
+        },
+        index: 'index.html',
+        fallback: {'path': '404.html'},
+      );
+
+      // Assert
+      expect(manifest1, equals(manifest2));
+      expect(manifest1, isNot(equals(differentManifest)));
+      expect(manifest1.hashCode, equals(manifest2.hashCode));
+      expect(manifest1.hashCode, isNot(equals(differentManifest.hashCode)));
+    });
   });
 }
