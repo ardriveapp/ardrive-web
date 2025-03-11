@@ -2,7 +2,6 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/core/arfs/repository/file_metadata_repository.dart';
 import 'package:ardrive/core/arfs/repository/file_metadata_repository_impl.dart';
 import 'package:ardrive/core/arfs/use_cases/bulk_import_files.dart';
-import 'package:ardrive/core/arfs/use_cases/get_file_metadata.dart';
 import 'package:ardrive/core/arfs/use_cases/insert_file_metadata.dart';
 import 'package:ardrive/core/arfs/use_cases/upload_file_metadata.dart';
 import 'package:ardrive/core/arfs/use_cases/upload_folder_metadata.dart';
@@ -18,11 +17,6 @@ List<RepositoryProvider> setupBulkImportDependencies(BuildContext context) {
     RepositoryProvider<FileMetadataRepository>(
       create: (context) => FileMetadataRepositoryImpl(
         context.read<ArweaveService>(),
-      ),
-    ),
-    RepositoryProvider<GetFileMetadata>(
-      create: (context) => GetFileMetadata(
-        context.read<FileMetadataRepository>(),
       ),
     ),
     RepositoryProvider<InsertFileMetadata>(

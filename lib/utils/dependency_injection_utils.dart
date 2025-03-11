@@ -1,7 +1,5 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
-import 'package:ardrive/core/arfs/repository/file_metadata_repository.dart';
 import 'package:ardrive/core/arfs/use_cases/bulk_import_files.dart';
-import 'package:ardrive/core/arfs/use_cases/get_file_metadata.dart';
 import 'package:ardrive/core/arfs/use_cases/insert_file_metadata.dart';
 import 'package:ardrive/core/arfs/use_cases/upload_file_metadata.dart';
 import 'package:ardrive/core/arfs/use_cases/upload_folder_metadata.dart';
@@ -107,10 +105,6 @@ UploadRepository createUploadRepository(BuildContext context) {
     auth: context.read<ArDriveAuth>(),
     licenseService: context.read<LicenseService>(),
   );
-}
-
-GetFileMetadata createGetFileMetadata(BuildContext context) {
-  return GetFileMetadata(context.read<FileMetadataRepository>());
 }
 
 VerifyParentFolder createVerifyParentFolder(BuildContext context) {

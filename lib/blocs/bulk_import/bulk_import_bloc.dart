@@ -75,10 +75,6 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
         );
       }).toList();
 
-      for (var file in files) {
-        logger.d('file path: ${file.path}');
-      }
-
       // Check for folder conflicts
       final folderConflicts = await _checkFolderConflicts(
         driveId: event.driveId,
@@ -184,16 +180,6 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
     required String manifestTxId,
     required Emitter<BulkImportState> emit,
   }) async {
-    emit(BulkImportInProgress(
-      manifestTxId: manifestTxId,
-      fileIds: files.map((f) => f.id).toList(),
-      processedFiles: 0,
-      failedFiles: const [],
-      currentFileName: 'Starting import...',
-      failedPaths: const [],
-      isCreatingFolderHierarchy: true,
-    ));
-
     var processedFiles = 0;
     final failedPaths = <String>[];
 
