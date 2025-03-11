@@ -5,6 +5,7 @@ import 'package:ardrive/core/arfs/use_cases/bulk_import_files.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
+import 'package:ardrive/utils/validate_arweave_id.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -58,9 +59,10 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
       return 'Please enter a manifest transaction ID';
     }
     // Arweave transaction IDs are 43 characters long and base64url encoded
-    if (value.length != 43) {
+    if (!isArweaveTransactionID(value)) {
       return 'Invalid manifest transaction ID';
     }
+
     return null;
   }
 
