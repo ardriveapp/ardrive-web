@@ -77,6 +77,8 @@ abstract class ARFSFileEntity extends ARFSEntity {
     this.licenseTxId,
     this.pinnedDataOwnerAddress,
     this.assignedNames,
+    this.originalOwner,
+    this.importSource,
   });
 
   final String id;
@@ -88,6 +90,8 @@ abstract class ARFSFileEntity extends ARFSEntity {
   final String? licenseTxId;
   final String? pinnedDataOwnerAddress;
   final List<String>? assignedNames;
+  final String? originalOwner;
+  final String? importSource;
 }
 
 abstract class ARFSPrivateFileEntity extends ARFSFileEntity
@@ -108,6 +112,8 @@ abstract class ARFSPrivateFileEntity extends ARFSFileEntity
     required super.id,
     super.pinnedDataOwnerAddress,
     super.assignedNames,
+    super.originalOwner,
+    super.importSource,
   });
 }
 
@@ -130,6 +136,8 @@ class _ARFSFileEntity extends ARFSFileEntity {
     super.licenseTxId,
     required super.pinnedDataOwnerAddress,
     super.assignedNames,
+    super.originalOwner,
+    super.importSource,
   });
 }
 

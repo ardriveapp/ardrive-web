@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:ardrive/turbo/topup/models/payment_model.dart';
+import 'package:ardrive/turbo/utils/get_signature_headers_for_turbo.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/turbo_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -13,12 +14,14 @@ import 'package:uuid/uuid.dart';
 class PaymentService {
   final bool useTurboPayment = true;
   final Uri turboPaymentUri;
+  final TurboSignatureHeadersManager turboSignatureHeadersManager;
 
   ArDriveHTTP httpClient;
 
   PaymentService({
     required this.turboPaymentUri,
     required this.httpClient,
+    required this.turboSignatureHeadersManager,
   });
 
   Future<BigInt> getPriceForBytes({
@@ -45,7 +48,9 @@ class PaymentService {
     String? promoCode,
   }) async {
     final Map<String, dynamic> signatureHeaders =
-        await _signatureHeadersForGetPriceForFiat(wallet: wallet);
+        await turboSignatureHeadersManager.getSignatureHeaders(
+      wallet: wallet!,
+    );
     final result = await _requestPriceForFiat(
       httpClient,
       signatureHeaders: signatureHeaders,
@@ -212,27 +217,6 @@ Future<ArDriveHTTPResponse> _requestPriceForFiat(
       'Turbo price fetch failed with exception: $error',
     );
   }
-}
-
-Future<Map<String, dynamic>> _signatureHeadersForGetPriceForFiat({
-  required Wallet? wallet,
-}) async {
-  if (wallet == null) {
-    return {};
-  }
-
-  final nonce = const Uuid().v4();
-  final publicKey = await wallet.getOwner();
-  final signature = await signNonceAndData(
-    nonce: nonce,
-    wallet: wallet,
-  );
-
-  return {
-    'x-nonce': nonce,
-    'x-signature': signature,
-    'x-public-key': publicKey,
-  };
 }
 
 String _urlParamsForGetPriceForFiat({

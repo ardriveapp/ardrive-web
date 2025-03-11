@@ -281,32 +281,37 @@ class FsEntryMoveForm extends StatelessWidget {
                             ),
                           ),
                           const Divider(),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeBgSurface,
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 16,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                ArDriveButtonNew(
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              Flexible(
+                                child: ArDriveButtonNew(
                                   typography: typography,
                                   maxHeight: 36,
+                                  maxWidth: 200,
                                   variant: ButtonVariant.secondary,
-                                  backgroundColor: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeFgDefault,
-                                  fontStyle: typography.paragraphNormal(),
-                                  icon: ArDriveIcons.iconNewFolder1(),
                                   text: appLocalizationsOf(context)
                                       .createFolderEmphasized,
+                                  content: Padding(
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 4),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        ArDriveIcons.iconNewFolder1(),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          appLocalizationsOf(context)
+                                              .createFolderEmphasized,
+                                          style: typography.paragraphNormal(
+                                            fontWeight: ArFontWeight.semiBold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                   onPressed: () {
                                     showArDriveDialog(
                                       context,
@@ -329,20 +334,13 @@ class FsEntryMoveForm extends StatelessWidget {
                                     );
                                   },
                                 ),
-                                ArDriveButtonNew(
+                              ),
+                              Flexible(
+                                child: ArDriveButtonNew(
                                   typography: typography,
                                   maxHeight: 36,
-                                  backgroundColor: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeFgDefault,
-                                  fontStyle: ArDriveTypography.body
-                                      .buttonNormalRegular(
-                                    color: ArDriveTheme.of(context)
-                                        .themeData
-                                        .colors
-                                        .themeAccentSubtle,
-                                  ),
+                                  maxWidth: 150,
+                                  variant: ButtonVariant.primary,
                                   text: appLocalizationsOf(context)
                                       .moveHereEmphasized,
                                   onPressed: () {
@@ -359,9 +357,10 @@ class FsEntryMoveForm extends StatelessWidget {
                                         .forceDisableMultiselect = true;
                                   },
                                 ),
-                              ],
-                            ),
-                          )
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
                         ],
                       ),
                     ),

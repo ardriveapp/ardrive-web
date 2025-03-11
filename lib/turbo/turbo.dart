@@ -310,8 +310,11 @@ class TurboPriceEstimator extends Disposable implements ConvertForUSD<BigInt> {
     required Wallet? wallet,
     required this.paymentService,
     required this.costCalculator,
+    bool shouldStartOnPriceEstimateChange = false,
   }) : _wallet = wallet {
-    _startOnPriceEstimateChange();
+    if (shouldStartOnPriceEstimateChange) {
+      _startOnPriceEstimateChange();
+    }
   }
 
   final Wallet? _wallet;
