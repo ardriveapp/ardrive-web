@@ -62,26 +62,5 @@ void main() {
       expect(result, testMetadata);
       verify(() => repository.getFileMetadata([testFileId])).called(1);
     });
-
-    // test('getMetadataForFile throws FileMetadataFailure when fetch fails',
-    //     () async {
-    //   final failure = FileMetadataFailure(
-    //     fileId: testFileId,
-    //     error: 'Failed to fetch metadata',
-    //   );
-    //   final expectedResult = FileMetadataResult(
-    //     metadata: {},
-    //     failures: [failure],
-    //   );
-
-    //   when(() => repository.getFileMetadata([testFileId]))
-    //       .thenAnswer((_) async => expectedResult);
-
-    //   expect(
-    //     () => useCase.getMetadataForFile(testFileId),
-    //     throwsA(equals(failure)),
-    //   );
-    //   verify(() => repository.getFileMetadata([testFileId])).called(1);
-    // });
   });
 }
