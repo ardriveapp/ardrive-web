@@ -32,8 +32,12 @@ class TurboSignatureHeadersManager {
   ///
   /// [wallet] The wallet to use for signing.
   Future<Map<String, dynamic>> getSignatureHeaders({
-    required Wallet wallet,
+    Wallet? wallet,
   }) async {
+    if (wallet == null) {
+      return {};
+    }
+
     try {
       // Get current wallet address
       final currentAddress = await safeArConnectAction<String>(
