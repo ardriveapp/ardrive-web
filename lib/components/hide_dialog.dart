@@ -6,6 +6,7 @@ import 'package:ardrive/blocs/hide/hide_state.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -55,6 +56,25 @@ Future<void> promptToToggleHideState(
   } else {
     throw UnimplementedError('Unknown item type: ${item.runtimeType}');
   }
+
+  return showAnimatedDialog(
+    context,
+    barrierDismissible: false,
+    content: HideDialog(driveDetailCubit: driveDetailCubit),
+  );
+}
+
+Future<void> hideMultipleItems(
+  BuildContext context, {
+  required DriveID driveId,
+  required List<FileDataTableItem> items,
+}) async {
+  final hideBloc = context.read<HideBloc>();
+  final driveDetailCubit = context.read<DriveDetailCubit>();
+  hideBloc.add(HideMultipleFilesEvent(
+    driveId: driveId,
+    fileIds: items.map((e) => e.id).toList(),
+  ));
 
   return showAnimatedDialog(
     context,

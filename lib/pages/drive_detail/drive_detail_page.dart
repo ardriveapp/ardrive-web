@@ -406,6 +406,23 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                       );
                                     },
                                   ),
+                                  const SizedBox(width: 8),
+                                  ArDriveIconButton(
+                                    tooltip: appLocalizationsOf(context).hide,
+                                    icon: ArDriveIcons.eyeClosed(),
+                                    onPressed: () {
+                                      hideMultipleItems(
+                                        context,
+                                        driveId:
+                                            driveDetailState.currentDrive.id,
+                                        items: context
+                                            .read<DriveDetailCubit>()
+                                            .selectedItems
+                                            .whereType<FileDataTableItem>()
+                                            .toList(),
+                                      );
+                                    },
+                                  ),
                                 ],
                                 const SizedBox(width: 8),
                                 if (canDownloadMultipleFiles) ...[

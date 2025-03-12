@@ -49,9 +49,49 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     on<HideDriveEvent>(_onHideDriveEvent);
     on<UnhideDriveEvent>(_onUnhideDriveEvent);
     on<ErrorEvent>(_onErrorEvent);
+    on<HideMultipleFilesEvent>(_onHideMultipleFilesEvent);
+    on<UnhideMultipleFilesEvent>(_onUnHideMultipleFilesEvent);
   }
 
   bool _useTurboUpload = false;
+
+  Future<void> _onHideMultipleFilesEvent(
+    HideMultipleFilesEvent event,
+    Emitter<HideState> emit,
+  ) async {
+    for (final fileId in event.fileIds) {
+      final FileEntry currentFile = await _driveDao
+          .fileById(
+            fileId: fileId,
+          )
+          .getSingle();
+
+      await _setHideStatus(
+        currentFile,
+        emit,
+        isHidden: true,
+      );
+    }
+  }
+
+  Future<void> _onUnHideMultipleFilesEvent(
+    UnhideMultipleFilesEvent event,
+    Emitter<HideState> emit,
+  ) async {
+    for (final fileId in event.fileIds) {
+      final FileEntry currentFile = await _driveDao
+          .fileById(
+            fileId: fileId,
+          )
+          .getSingle();
+
+      await _setHideStatus(
+        currentFile,
+        emit,
+        isHidden: false,
+      );
+    }
+  }
 
   Future<void> _onHideFileEvent(
     HideFileEvent event,
