@@ -3,10 +3,14 @@ import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/blocs/hide/hide_bloc.dart';
 import 'package:ardrive/blocs/hide/hide_event.dart';
 import 'package:ardrive/blocs/hide/hide_state.dart';
+import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
+import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -108,6 +112,67 @@ class HideDialog extends StatelessWidget {
         }
       },
       builder: (context, state) {
+        if (state is HidingMultipleFilesState) {
+          return ArDriveStandardModalNew(
+            title: 'Hiding ${state.fileEntries.length} files',
+            width: kMediumDialogWidth,
+            content: SizedBox(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemBuilder: (context, index) {
+                  final currentFile = state.fileEntries[index];
+                  final isHidden =
+                      state.hiddenFileEntries.contains(currentFile);
+                  final typography = ArDriveTypographyNew.of(context);
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          getIconForContentType(
+                            currentFile.dataContentType ?? octetStream,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${currentFile.name}... ',
+                            style: typography.paragraphNormal(
+                              fontWeight: ArFontWeight.semiBold,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (state.hiddenFileEntries.firstWhereIndexedOrNull(
+                                  (index, element) =>
+                                      element.id == currentFile.id) ==
+                              null) ...[
+                            const SizedBox(width: 8),
+                            const SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            ),
+                          ],
+                          if (state.hiddenFileEntries.firstWhereIndexedOrNull(
+                                  (index, element) =>
+                                      element.id == currentFile.id) !=
+                              null) ...[
+                            const SizedBox(width: 8),
+                            ArDriveIcons.checkCirle(size: 16),
+                          ],
+                        ],
+                      ),
+                    ],
+                  );
+                },
+                itemCount: state.fileEntries.length,
+              ),
+            ),
+            actions: _buildActions(context, state),
+          );
+        }
+
         return ArDriveStandardModalNew(
           title: _buildTitle(context, state),
           content: _buildContent(context, state),
