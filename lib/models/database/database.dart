@@ -30,7 +30,7 @@ class Database extends _$Database {
   Database([QueryExecutor? e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 25;
+  int get schemaVersion => 26;
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) {
@@ -166,6 +166,15 @@ class Database extends _$Database {
               ''');
 
               logger.d('Search optimization indexes created');
+            }
+            if (from < 26) {
+              logger.d('Migrating schema from v25 to v26');
+
+              await m.addColumn(fileEntries, fileEntries.originalOwner);
+              await m.addColumn(fileRevisions, fileRevisions.originalOwner);
+
+              await m.addColumn(fileEntries, fileEntries.importSource);
+              await m.addColumn(fileRevisions, fileRevisions.importSource);
             }
           } catch (e, stacktrace) {
             logger.e(

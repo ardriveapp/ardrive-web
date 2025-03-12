@@ -1,0 +1,20 @@
+query InfoOfTransactionsToBePinned($transactionIds: [ID!]) {
+  transactions(ids: $transactionIds) {
+    edges {
+      node {
+        id
+        owner {
+          address
+        }
+        tags {
+          name
+          value
+        }
+        data {
+          size
+          type
+        }
+      }
+    }
+  }
+}
