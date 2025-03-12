@@ -1,0 +1,3 @@
+- Added bulk import feature for pinning multiple files from a manifest.
+- Optimized signature handling to reduce multiple Wander Sign requests.
+- Fixed an issue where the move file confirmation button was not visible.
