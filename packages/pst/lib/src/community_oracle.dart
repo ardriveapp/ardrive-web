@@ -14,6 +14,8 @@ class CommunityOracle {
   final ContractOracle _contractOracle;
   CommunityContractData? _communityContractData;
   DateTime? _lastFetchedTime;
+  Object? _lastFetchError;
+  StackTrace? _lastFetchErrorStackTrace;
 
   CommunityOracle(ContractOracle contractOracle)
       : _contractOracle = contractOracle;
@@ -94,18 +96,33 @@ class CommunityOracle {
 
   Future<CommunityContractData> _getCommunityContractData() async {
     final currentTime = DateTime.now();
+    final timeElapsedSinceLastFetch = _lastFetchedTime != null
+        ? currentTime.difference(_lastFetchedTime!).inMinutes
+        : 30; // Default to 30 to trigger fetch on first call
 
-    if (_communityContractData != null &&
-        _lastFetchedTime != null &&
-        currentTime.difference(_lastFetchedTime!).inMinutes < 30) {
+    // If we had an error in the last 30 minutes, rethrow it
+    if (_lastFetchError != null && timeElapsedSinceLastFetch < 30) {
+      Error.throwWithStackTrace(_lastFetchError!, _lastFetchErrorStackTrace!);
+    }
+
+    // If we have valid data and it's less than 30 minutes old, return it
+    if (_communityContractData != null && timeElapsedSinceLastFetch < 30) {
       return _communityContractData!;
     }
 
-    _communityContractData = await _contractOracle.getCommunityContract();
-
+    // Update the timestamp before fetching to prevent concurrent fetches
     _lastFetchedTime = currentTime;
 
-    return _communityContractData!;
+    try {
+      _communityContractData = await _contractOracle.getCommunityContract();
+      _lastFetchError = null;
+      _lastFetchErrorStackTrace = null;
+      return _communityContractData!;
+    } catch (e, stackTrace) {
+      _lastFetchError = e;
+      _lastFetchErrorStackTrace = stackTrace;
+      Error.throwWithStackTrace(e, stackTrace);
+    }
   }
 }
 
