@@ -121,8 +121,6 @@ class HideDialog extends StatelessWidget {
                 shrinkWrap: true,
                 itemBuilder: (context, index) {
                   final currentFile = state.fileEntries[index];
-                  final isHidden =
-                      state.hiddenFileEntries.contains(currentFile);
                   final typography = ArDriveTypographyNew.of(context);
 
                   return Column(
