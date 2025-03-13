@@ -32,9 +32,14 @@ class DownloadWalletBloc
 
             await _ardriveIOUtils.downloadWalletAsJsonFile(
               wallet: wallet,
+              onDownloadComplete: (success) {
+                if (!success) {
+                  emit(DownloadWalletFailure());
+                } else {
+                  emit(const DownloadWalletSuccess());
+                }
+              },
             );
-
-            emit(const DownloadWalletSuccess());
           } catch (e) {
             emit(DownloadWalletFailure());
           }

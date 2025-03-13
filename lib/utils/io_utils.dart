@@ -17,8 +17,14 @@ class ArDriveIOUtils {
 
   /// Download the wallet as a json file
   /// Throws an exception if the wallet is an ArConnect wallet
+  ///
+  /// Returns a Future that completes when the download is finished
+  ///
+  /// If provided, the [onDownloadComplete] callback will be called with a boolean
+  /// indicating whether the download was successful
   Future<void> downloadWalletAsJsonFile({
     required Wallet wallet,
+    void Function(bool success)? onDownloadComplete,
   }) async {
     if (wallet is ArConnectWallet) {
       throw Exception('ArConnect wallet not supported');
@@ -35,6 +41,17 @@ class ArDriveIOUtils {
       lastModifiedDate: DateTime.now(),
     );
 
-    io.saveFile(file);
+    try {
+      final result = await io.saveFile(file);
+      if (onDownloadComplete != null) {
+        onDownloadComplete(true);
+      }
+      return result;
+    } catch (e) {
+      if (onDownloadComplete != null) {
+        onDownloadComplete(false);
+      }
+      rethrow;
+    }
   }
 }

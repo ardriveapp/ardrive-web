@@ -8,7 +8,9 @@ import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/utils/io_utils.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -248,6 +250,26 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
 
               await ioUtils.downloadWalletAsJsonFile(
                 wallet: widget.wallet,
+                onDownloadComplete: (success) {
+                  if (success && AppPlatform.isAndroid) {
+                    showArDriveDialog(
+                      context,
+                      content: ArDriveStandardModalNew(
+                        title: 'Download Successful',
+                        description:
+                            'Your wallet keyfile has been downloaded successfully. You can find it in your Downloads folder.',
+                        actions: [
+                          ModalAction(
+                            title: 'OK',
+                            action: () {
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                },
               );
             },
             rightIcon: IgnorePointer(
