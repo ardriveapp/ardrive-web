@@ -35,12 +35,13 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
   }
 
   Future<void> download() async {
-    try {
-      _downloadFile(revision);
-    } catch (err) {
-      logger.e('Failed to download shared file', err);
+    _downloadFile(revision).catchError((err) {
+      logger.e(
+        'Failed to download shared file ${revision.id} with name ${revision.name} (size: ${revision.size})',
+        err,
+      );
       addError(err);
-    }
+    });
   }
 
   Future<void> _downloadFile(ARFSFileEntity revision) async {
@@ -60,12 +61,13 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
     final dataTx = await _arweave.getTransactionDetails(revision.dataTxId!);
 
     if (dataTx == null) {
-      throw StateError('Data transaction not found');
+      throw StateError(
+          'Data transaction not found for file ${revision.id} with txId ${revision.dataTxId} from gateway ${_arweave.client.api.gatewayUrl.origin}');
     }
 
     if (dataTxId == null) {
-      logger.e('Data transaction id is null');
-      throw StateError('Data transaction id is null');
+      throw StateError(
+          'Data transaction id is null for file ${revision.id} with name ${revision.name}');
     }
 
     if (fileKey != null && !isPinFile) {
@@ -107,8 +109,6 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
         );
       },
       onError: (err) {
-        logger.e('Failed to download shared file', err);
-
         addError(err);
       },
       onDone: () {
@@ -130,6 +130,10 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
     emit(const FileDownloadFailure(FileDownloadFailureReason.unknownError));
     super.onError(error, stackTrace);
 
-    logger.e('Failed to download shared file', error, stackTrace);
+    logger.e(
+      'Failed to download shared file ${revision.id} with txId ${revision.dataTxId} from gateway ${_arweave.client.api.gatewayUrl.origin}. File name: ${revision.name}, size: ${revision.size}',
+      error,
+      stackTrace,
+    );
   }
 }
