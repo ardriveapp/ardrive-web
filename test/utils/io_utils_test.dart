@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/utils/io_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
@@ -8,6 +9,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockWallet extends Mock implements Wallet {}
+
+class MockArConnectWallet extends Mock implements ArConnectWallet {}
 
 class MockArDriveIO extends Mock implements ArDriveIO {}
 
@@ -49,23 +52,23 @@ void main() {
     when(() => mockArDriveIO.saveFile(expectedFile)).thenAnswer((_) async {});
 
     // When
-    await ardriveIOUtils.downloadWalletAsJsonFile(
+    final success = await ardriveIOUtils.downloadWalletAsJsonFile(
       wallet: mockWallet,
     );
 
     // Then
     verify(() => mockArDriveIO.saveFile(expectedFile)).called(1);
+    expect(success, true);
   });
 
-  test('Should call success callback when download is successful', () async {
+  test('Should return false if ArConnect wallet is used', () async {
     // Given
-    final mockWallet = MockWallet();
+    final mockWallet = MockArConnectWallet();
     final mockArDriveIO = MockArDriveIO();
     final mockIOFileAdapter = MockIOFileAdapter();
     final walletJson = {'test': 'value'};
     final jsonString = jsonEncode(walletJson);
     final byteData = Uint8List.fromList(utf8.encode(jsonString));
-    bool? callbackResult;
 
     final ardriveIOUtils = ArDriveIOUtils(
       io: mockArDriveIO,
@@ -93,20 +96,18 @@ void main() {
     when(() => mockArDriveIO.saveFile(expectedFile)).thenAnswer((_) async {});
 
     // When
-    await ardriveIOUtils.downloadWalletAsJsonFile(
-      wallet: mockWallet,
-      onDownloadComplete: (success) {
-        callbackResult = success;
-      },
+    expect(
+      () => ardriveIOUtils.downloadWalletAsJsonFile(
+        wallet: mockWallet,
+      ),
+      throwsA(isA<Exception>()),
     );
 
     // Then
-    verify(() => mockArDriveIO.saveFile(expectedFile)).called(1);
-    expect(callbackResult, true);
+    verifyNever(() => mockArDriveIO.saveFile(expectedFile));
   });
 
-  test('Should call failure callback when download throws an exception',
-      () async {
+  test('Should throw an exception if fromData fails', () async {
     // Given
     final mockWallet = MockWallet();
     final mockArDriveIO = MockArDriveIO();
@@ -114,7 +115,48 @@ void main() {
     final walletJson = {'test': 'value'};
     final jsonString = jsonEncode(walletJson);
     final byteData = Uint8List.fromList(utf8.encode(jsonString));
-    bool? callbackResult;
+
+    final ardriveIOUtils = ArDriveIOUtils(
+      io: mockArDriveIO,
+      fileAdapter: mockIOFileAdapter,
+    );
+
+    final expectedFile = await IOFileAdapter().fromData(
+      byteData,
+      name: 'ardrive-wallet.json',
+      contentType: 'application/json',
+      lastModifiedDate: DateTime(2023),
+    );
+
+    // Setup MockWallet
+    when(() => mockWallet.toJwk()).thenReturn(walletJson);
+
+    // Setup MockIOFileAdapter
+    when(() => mockIOFileAdapter.fromData(
+          byteData,
+          name: 'ardrive-wallet.json',
+          contentType: 'application/json',
+          lastModifiedDate: any(named: 'lastModifiedDate'),
+        )).thenThrow(Exception('Save file failed'));
+
+    when(() => mockArDriveIO.saveFile(expectedFile)).thenAnswer((_) async {});
+
+    final success = await ardriveIOUtils.downloadWalletAsJsonFile(
+      wallet: mockWallet,
+    );
+
+    // When
+    expect(success, false);
+  });
+
+  test('Should throw an exception if saveFile fails', () async {
+    // Given
+    final mockWallet = MockWallet();
+    final mockArDriveIO = MockArDriveIO();
+    final mockIOFileAdapter = MockIOFileAdapter();
+    final walletJson = {'test': 'value'};
+    final jsonString = jsonEncode(walletJson);
+    final byteData = Uint8List.fromList(utf8.encode(jsonString));
 
     final ardriveIOUtils = ArDriveIOUtils(
       io: mockArDriveIO,
@@ -140,23 +182,13 @@ void main() {
         )).thenAnswer((_) async => expectedFile);
 
     when(() => mockArDriveIO.saveFile(expectedFile))
-        .thenThrow(Exception('Failed to save file'));
+        .thenThrow(Exception('Save file failed'));
+
+    final success = await ardriveIOUtils.downloadWalletAsJsonFile(
+      wallet: mockWallet,
+    );
 
     // When
-    try {
-      await ardriveIOUtils.downloadWalletAsJsonFile(
-        wallet: mockWallet,
-        onDownloadComplete: (success) {
-          callbackResult = success;
-        },
-      );
-      fail('Expected an exception');
-    } catch (e) {
-      // Expected exception
-    }
-
-    // Then
-    verify(() => mockArDriveIO.saveFile(expectedFile)).called(1);
-    expect(callbackResult, false);
+    expect(success, false);
   });
 }

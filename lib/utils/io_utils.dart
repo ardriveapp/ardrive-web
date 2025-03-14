@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
 
@@ -23,21 +24,22 @@ class ArDriveIOUtils {
       throw Exception('ArConnect wallet not supported');
     }
 
-    final jsonTxt = jsonEncode(wallet.toJwk());
-
-    final bytes = Uint8List.fromList(utf8.encode(jsonTxt));
-
-    final file = await fileAdapter.fromData(
-      bytes,
-      name: 'ardrive-wallet.json',
-      contentType: 'application/json',
-      lastModifiedDate: DateTime.now(),
-    );
-
     try {
+      final jsonTxt = jsonEncode(wallet.toJwk());
+
+      final bytes = Uint8List.fromList(utf8.encode(jsonTxt));
+
+      final file = await fileAdapter.fromData(
+        bytes,
+        name: 'ardrive-wallet.json',
+        contentType: 'application/json',
+        lastModifiedDate: DateTime.now(),
+      );
+
       await io.saveFile(file);
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      logger.e('Error downloading wallet as json file.', e, stackTrace);
       return false;
     }
   }
