@@ -148,7 +148,8 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     final dataTx = await (_arweave.getTransactionDetails(_file.txId));
 
     if (dataTx == null) {
-      throw StateError('Data transaction not found');
+      throw StateError(
+          'Failed to download: Data transaction not found for file');
     }
 
     if (drive.drivePrivacy == DrivePrivacy.private && !isPinFile) {
@@ -164,7 +165,8 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       }
 
       if (driveKey == null) {
-        throw StateError('Drive Key not found');
+        throw StateError(
+            'Drive Key not found for file ${_file.id} in drive ${_file.driveId}');
       }
 
       fileKey = await _driveDao.getFileKey(_file.id, driveKey);
@@ -250,8 +252,13 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
         FileDownloadFailureReason.unknownError,
       ),
     );
+
     super.onError(error, stackTrace);
 
-    logger.e('Failed to download personal file', error, stackTrace);
+    logger.e(
+      'Failed to download file ${_file.id} with txId ${_file.txId} from gateway ${_arweave.client.api.gatewayUrl.origin}',
+      error,
+      stackTrace,
+    );
   }
 }

@@ -126,7 +126,10 @@ class _ArDriveDownloader implements ArDriveDownloader {
 
     Future.any([
       _cancelWithReason.future.then((_) => false),
-    ]).then((value) => finalize.complete(value));
+    ]).then((value) => finalize.complete(value)).catchError((e) {
+      logger.d('Download aborted');
+      finalize.complete(false);
+    });
 
     bool? saveResult;
     var bytesSaved = 0;
