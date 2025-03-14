@@ -1,0 +1,1 @@
+- Improved retry logic for GraphQL queries to prevent sync failures.
