@@ -30,16 +30,15 @@ class DownloadWalletBloc
           try {
             final wallet = _ardriveAuth.currentUser.wallet;
 
-            await _ardriveIOUtils.downloadWalletAsJsonFile(
+            final success = await _ardriveIOUtils.downloadWalletAsJsonFile(
               wallet: wallet,
-              onDownloadComplete: (success) {
-                if (!success) {
-                  emit(DownloadWalletFailure());
-                } else {
-                  emit(const DownloadWalletSuccess());
-                }
-              },
             );
+
+            if (!success) {
+              emit(DownloadWalletFailure());
+            } else {
+              emit(const DownloadWalletSuccess());
+            }
           } catch (e) {
             emit(DownloadWalletFailure());
           }

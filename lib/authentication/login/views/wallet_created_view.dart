@@ -248,29 +248,28 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
 
               PlausibleEventTracker.trackClickDownloadKeyfileButton();
 
-              await ioUtils.downloadWalletAsJsonFile(
+              final success = await ioUtils.downloadWalletAsJsonFile(
                 wallet: widget.wallet,
-                onDownloadComplete: (success) {
-                  if (success && AppPlatform.isAndroid) {
-                    showArDriveDialog(
-                      context,
-                      content: ArDriveStandardModalNew(
-                        title: 'Download Successful',
-                        description:
-                            'Your wallet keyfile has been downloaded successfully. You can find it in your Downloads folder.',
-                        actions: [
-                          ModalAction(
-                            title: 'OK',
-                            action: () {
-                              Navigator.of(context).pop();
-                            },
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                },
               );
+              if (success && AppPlatform.isAndroid) {
+                showArDriveDialog(
+                  // ignore: use_build_context_synchronously
+                  context,
+                  content: ArDriveStandardModalNew(
+                    title: 'Download Successful',
+                    description:
+                        'Your wallet keyfile has been downloaded successfully. You can find it in your Downloads folder.',
+                    actions: [
+                      ModalAction(
+                        title: 'OK',
+                        action: () {
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              }
             },
             rightIcon: IgnorePointer(
                 child: SvgPicture.asset(
