@@ -608,7 +608,7 @@ class _DriveExplorerItemTileTrailingState
               height: height,
             ),
           ),
-        if (widget.drive.isPublic)
+        if (widget.drive.isPublic && AppPlatform.isWeb())
           ArDriveDropdownItem(
             onClick: () {
               showAssignArNSNameModal(

@@ -1813,32 +1813,37 @@ class _ArnsNameDisplay extends StatelessWidget {
             return Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                ArDriveButton(
-                  text: 'Assign',
-                  icon: ArDriveIcons.arnsName(
-                    size: 16,
-                    color: ArDriveTheme.of(context).themeData.backgroundColor,
+                if (AppPlatform.isWeb())
+                  ArDriveButton(
+                    text: 'Assign',
+                    icon: ArDriveIcons.arnsName(
+                      size: 16,
+                      color: ArDriveTheme.of(context).themeData.backgroundColor,
+                    ),
+                    fontStyle: ArDriveTypography.body.buttonNormalBold(
+                      color: ArDriveTheme.of(context).themeData.backgroundColor,
+                    ),
+                    backgroundColor: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault,
+                    maxHeight: 32,
+                    onPressed: () {
+                      showAssignArNSNameModal(
+                        context,
+                        file: fileItem,
+                        driveDetailCubit: context.read<DriveDetailCubit>(),
+                      ).then((_) {
+                        // Refresh both the verify name bloc and the file info cubit
+                        context
+                            .read<VerifyNameBloc>()
+                            .add(VerifyName(fileId: fileItem.fileId));
+                        context
+                            .read<DriveDetailCubit>()
+                            .refreshDriveDataTable();
+                      });
+                    },
                   ),
-                  fontStyle: ArDriveTypography.body.buttonNormalBold(
-                    color: ArDriveTheme.of(context).themeData.backgroundColor,
-                  ),
-                  backgroundColor:
-                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-                  maxHeight: 32,
-                  onPressed: () {
-                    showAssignArNSNameModal(
-                      context,
-                      file: fileItem,
-                      driveDetailCubit: context.read<DriveDetailCubit>(),
-                    ).then((_) {
-                      // Refresh both the verify name bloc and the file info cubit
-                      context
-                          .read<VerifyNameBloc>()
-                          .add(VerifyName(fileId: fileItem.fileId));
-                      context.read<DriveDetailCubit>().refreshDriveDataTable();
-                    });
-                  },
-                ),
               ],
             );
           }
