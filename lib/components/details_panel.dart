@@ -50,7 +50,7 @@ import 'package:responsive_builder/responsive_builder.dart';
 
 import '../blocs/blocs.dart';
 import '../utils/file_revision_base.dart';
-import '../utils/file_utils.dart';
+import '../utils/has_arns_name.dart';
 
 class DetailsPanel extends StatefulWidget {
   const DetailsPanel({
