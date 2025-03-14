@@ -1,0 +1,1 @@
+- Fixes an issue converting AR to USD

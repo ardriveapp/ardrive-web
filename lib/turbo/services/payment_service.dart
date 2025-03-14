@@ -49,7 +49,7 @@ class PaymentService {
   }) async {
     final Map<String, dynamic> signatureHeaders =
         await turboSignatureHeadersManager.getSignatureHeaders(
-      wallet: wallet!,
+      wallet: wallet,
     );
     final result = await _requestPriceForFiat(
       httpClient,
