@@ -19,7 +19,8 @@ dependencies:
   flutter_email_sender: ^6.0.2
   mocktail: ^1.0.2
   sentry_flutter: ^7.14.0
-  
+  app_settings: ^4.1.8
+
 
 dev_dependencies:
   flutter_test:
