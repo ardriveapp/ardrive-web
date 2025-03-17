@@ -28,7 +28,13 @@ class GraphQLRetry {
   }) async {
     try {
       final queryResponse = await retry(
-        () async => await _client.execute(query),
+        () async {
+          final response = await _client.execute(query);
+          if (response.errors != null && response.errors!.isNotEmpty) {
+            throw GraphQLException(response.errors);
+          }
+          return response;
+        },
         maxAttempts: maxAttempts,
         onRetry: (exception) async {
           if (exception.toString().contains('429')) {
