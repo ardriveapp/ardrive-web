@@ -105,7 +105,7 @@ class ArweaveService {
   Future<int> getCurrentBlockHeight() async {
     //TODO (Javed) Use GQL Query to fetch block height
     final blockHeight = await client.api
-        .get('/')
+        .get('/info')
         .then((res) => json.decode(res.body)['height']);
     if (blockHeight < 0) {
       throw Exception(
