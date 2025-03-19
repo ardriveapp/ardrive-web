@@ -38,7 +38,7 @@ void main() {
       when(() => mockArDriveAuth.currentUser).thenReturn(userJson);
 
       when(() => mockArDriveIOUtils.downloadWalletAsJsonFile(
-          wallet: any(named: 'wallet'))).thenAnswer((_) async => {});
+          wallet: any(named: 'wallet'))).thenAnswer((_) async => true);
 
       return DownloadWalletBloc(
         ardriveAuth: mockArDriveAuth,
