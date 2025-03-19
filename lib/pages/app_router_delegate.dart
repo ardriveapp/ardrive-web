@@ -314,14 +314,23 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   child: BlocListener<SyncCubit, SyncState>(
                     listener: (context, state) {
                       if (state is SyncFailure) {
+                        final typography = ArDriveTypographyNew.of(context);
+                        final colorTokens =
+                            ArDriveTheme.of(context).themeData.colorTokens;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
                               appLocalizationsOf(context).failedToSyncDrive,
+                              style: typography.paragraphNormal(
+                                color: colorTokens.textHigh,
+                              ),
                             ),
+                            backgroundColor: colorTokens.containerL3,
                             action: SnackBarAction(
                               label: appLocalizationsOf(context)
                                   .tryAgainEmphasized,
+                              backgroundColor: colorTokens.containerL3,
+                              textColor: colorTokens.textHigh,
                               onPressed: () =>
                                   context.read<SyncCubit>().startSync(),
                             ),
