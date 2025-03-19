@@ -56,9 +56,8 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
                         context,
                         content: ArDriveStandardModalNew(
                           title: appLocalizationsOf(context).error,
-                          content: Text(
-                            appLocalizationsOf(context).errorDragAndDropFolder,
-                          ),
+                          description: appLocalizationsOf(context)
+                              .errorDragAndDropFolder,
                           actions: [
                             ModalAction(
                               action: () => Navigator.of(context).pop(false),
