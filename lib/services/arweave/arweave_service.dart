@@ -704,7 +704,7 @@ class ArweaveService {
       final fileTx = filteredEdges.first.node;
       final fileDataRes = await client.api.getSandboxedTx(fileTx.id);
 
-      if (fileDataRes.statusCode != 200) {
+      if (fileDataRes.statusCode == 404) {
         throw TransactionNotFound(fileTx.id);
       }
 
