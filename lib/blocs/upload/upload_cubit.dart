@@ -398,8 +398,6 @@ class UploadCubit extends Cubit<UploadState> {
 
       final readyState = state as UploadReady;
 
-      _showArnsNameSelectionCheckBoxValue = false;
-
       emit(readyState.copyWith(
         showArnsNameSelection: false,
         loadingArNSNames: false,

@@ -3,11 +3,14 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:app_settings/app_settings.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_logger/ardrive_logger.dart';
 import 'package:ardrive_logger/src/ardrive_context.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:share_plus/share_plus.dart';
@@ -208,6 +211,7 @@ class Logger {
     bool share = false,
     bool shareAsEmail = false,
     required LogExportInfo info,
+    BuildContext? context,
   }) async {
     final logs = inMemoryLogs.toList();
     await _logExporter.exportLogs(
@@ -215,6 +219,7 @@ class Logger {
       shareAsEmail: shareAsEmail,
       logs: logs,
       info: info,
+      context: context,
     );
   }
 
@@ -233,6 +238,7 @@ abstract class LogExporter {
     bool shareAsEmail = false,
     required Iterable<String> logs,
     required LogExportInfo info,
+    BuildContext? context,
   });
 
   factory LogExporter() {
@@ -247,6 +253,7 @@ class _LogExporter implements LogExporter {
     bool shareAsEmail = false,
     required Iterable<String> logs,
     required LogExportInfo info,
+    BuildContext? context,
   }) async {
     String logString = '';
 
@@ -260,25 +267,69 @@ class _LogExporter implements LogExporter {
     );
 
     /// prompt the user to select a location to save the file
-    if (kIsWeb || (!share && !shareAsEmail)) {
-      ArDriveIO().saveFile(file);
+    if (kIsWeb && (!share && !shareAsEmail)) {
+      try {
+        await ArDriveIO().saveFile(file);
+      } catch (e) {
+        if (e is FileSystemPermissionDeniedException && context != null) {
+          await showStoragePermissionModal(context);
+        }
+        rethrow;
+      }
       return;
     }
 
     final mobileIO = ArDriveIO() as MobileIO;
 
-    // saves the file on the app directory so that it can be shared
-    await mobileIO.saveFile(file, true);
+    try {
+      if (share) {
+        _exportWithNativeShare(file, info);
+        return;
+      }
 
-    if (share) {
-      _exportWithNativeShare(file, info);
-      return;
-    }
+      if (shareAsEmail) {
+        _shareAsEmail(file, info);
+        return;
+      }
 
-    if (shareAsEmail) {
-      _shareAsEmail(file, info);
-      return;
+      // saves the file on the app directory so that it can be shared
+      await mobileIO.saveFile(file, true);
+    } catch (e) {
+      final isPermissionDenied =
+          e is FileSystemPermissionDeniedException || e is PathAccessException;
+
+      if (isPermissionDenied && context != null) {
+        await showStoragePermissionModal(context);
+      }
+      rethrow;
     }
+  }
+
+  Future<void> showStoragePermissionModal(BuildContext context) async {
+    return showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Enable Storage Access'),
+          content: const Text(
+              'Please enable storage access in your device settings to save the logs.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                AppSettings.openAppSettings();
+              },
+              child: const Text('Go to Settings'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _shareAsEmail(IOFile file, LogExportInfo info) async {
