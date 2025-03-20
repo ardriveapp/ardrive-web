@@ -71,8 +71,8 @@ class ArioSDKWeb implements ArioSDK {
   }
 
   @override
-  Future<Map<ArweaveAddress, double>> getAllTokenHolders() {
-    // TODO: implement getAllTokenHolders
+  Future<Map<ArweaveAddress, double>> getArDriveTokenHolders() {
+    // TODO: implement getArDriveTokenHolders
     throw UnimplementedError();
   }
 }

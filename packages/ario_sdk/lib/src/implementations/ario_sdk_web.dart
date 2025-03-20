@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_web_libraries_in_flutter
+// ignore_for_file: avoid_web_libraries_in_flutter, implementation_imports
 
 @JS('ario')
 library ario;
@@ -158,8 +158,8 @@ class ArioSDKWeb implements ArioSDK {
   }
 
   @override
-  Future<Map<ArweaveAddress, double>> getAllTokenHolders() async {
-    return _getAllTokenHoldersImpl();
+  Future<Map<ArweaveAddress, double>> getArDriveTokenHolders() async {
+    return _getArDriveTokenHoldersImpl();
   }
 }
 
@@ -292,24 +292,21 @@ Future<PrimaryNameDetails> _getPrimaryNameImpl(
   );
 }
 
-@JS('getAllTokenHolders')
-external Object _getAllTokenHolders();
+@JS('getArDriveTokenHolders')
+external Object _getArDriveTokenHolders();
 
-Future<Map<ArweaveAddress, double>> _getAllTokenHoldersImpl() async {
-  final promise = _getAllTokenHolders();
+Future<Map<ArweaveAddress, double>> _getArDriveTokenHoldersImpl() async {
+  final promise = _getArDriveTokenHolders();
   final stringified = await promiseToFuture(promise);
+  final jsonParsed = jsonDecode(stringified) as List;
 
-  final json = jsonDecode(stringified);
+  final Map<ArweaveAddress, double> holders = {};
 
-  debugPrint('json: $json');
-
-  final map = <ArweaveAddress, double>{};
-
-  for (var item in json) {
-    if (ArweaveAddress.isValid(item['address'])) {
-      map[ArweaveAddress(item['address'])] = item['balance'] as double;
-    }
+  for (var item in jsonParsed) {
+    final address = ArweaveAddress(item['address']);
+    final balance = double.parse(item['balance'].toString());
+    holders[address] = balance;
   }
 
-  return map;
+  return holders;
 }

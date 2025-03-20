@@ -10,8 +10,7 @@ window.ario = {
   getUndernames,
   getARNSRecordsForWallet,
   getPrimaryNameAndLogo,
-  getAllTokenHolders,
-  getBalance,
+  getArDriveTokenHolders,
 };
 
 const ario = ARIO.init({
@@ -52,7 +51,7 @@ async function getGateways() {
 }
 
 async function getARIOTokens(address) {
-  try{
+  try {
     const balance = await ario
       .getBalance({
         address: address,
@@ -60,11 +59,10 @@ async function getARIOTokens(address) {
       .then((balance) => new mARIOToken(balance).toARIO());
 
     return balance;
-  } catch(e) {
+  } catch (e) {
     console.error(e);
   }
 }
-
 
 async function setAnt(JWKString, processId, txId, undername, useArConnect, ttlSeconds = 900) {
   const signer = useArConnect ? new ArconnectSigner(window.arweaveWallet, Arweave.init({})) : new ArweaveSigner(JSON.parse(JWKString));
@@ -83,8 +81,7 @@ async function setAnt(JWKString, processId, txId, undername, useArConnect, ttlSe
       transactionId: txId,
       ttlSeconds: ttlSeconds
     },
-
-  { tags: [{ name: 'App-Name', value: 'ArDrive-App' }] },
+    { tags: [{ name: 'App-Name', value: 'ArDrive-App' }] }
   );
 
   return id;
@@ -172,32 +169,62 @@ async function getProcesses(address) {
       })
     });
   });
+}
 
+async function getPrimaryNameAndLogo(address, getLogo = true) {
+  const primaryName = await ario.getPrimaryName({ address: address });
+  let info;
+  let record;
+  if (getLogo) {
+    record = await ario.getArNSRecord({ name: primaryName.name }).catch((e) => {
+      console.error('Error fetching ARNS record:', e);
+      return null;
+    });
+    const ant = ANT.init({
+      process: new AOProcess({
+        processId: record.processId,
+        ao: connect({ CU_URL: "https://cu.ardrive.io" })
+      })
+    });
+    info = !record ? null : await ant.getInfo().catch((e) => {
+      console.error('Error fetching ANT info:', e);
+      return null;
+    });
+  }
+  // antInfo can be null
+  // arnsRecord can be null
+  return JSON.stringify({ primaryName: primaryName, antInfo: info, arnsRecord: record });
+}
 
-
-async function getAllTokenHolders() {
+/**
+ * Currently using the ARIO contract to fetch token holders.
+ * This will be updated in the future to use a different contract/process
+ * once the migration is complete.
+ *
+ * Note: This is a temporary implementation and the contract address,
+ * pagination, and response format may change.
+ */
+async function getArDriveTokenHolders() {
   let cursor = null;
   let allBalances = [];
   const limit = 1000;
 
-  const balances = [];
-
   const ardriveProcess = new AOProcess({
+    // TODO: Update this to the new process ID once the migration is complete
     processId: 'qNvAoz0TgcH7DMg8BCVn8jF32QH5L6T29VjHxhHqqGE',
     ao: connect({ CU_URL: "https://cu.ardrive.io" })
   });
 
-  const paginationParams =  [
+  const paginationParams = [
     { name: "Cursor", value: cursor?.toString() },
     { name: "Limit", value: limit?.toString() },
     { name: "Sort-By", value: "balance" },
-    { name: "Sort-Order", value: "desc" },
+    { name: "Sort-Order", value: "desc" }
   ];
 
   while (true) {
     const response = await ardriveProcess.read({
-      tags:
-      [
+      tags: [
         { name: 'Action', value: 'Paginated-Balances' },
         ...pruneTags(paginationParams)
       ]
@@ -208,10 +235,9 @@ async function getAllTokenHolders() {
     // Add the retrieved balances to the array
     allBalances = allBalances.concat(response.items);
 
-
     // TODO: I'm just using so we dont need to wait for all the balances to be fetched
     // it's just a test
-    if(allBalances.length > 1000 ) {
+    if (allBalances.length > 1000) {
       break;
     }
 
@@ -225,24 +251,4 @@ async function getAllTokenHolders() {
   }
 
   return JSON.stringify(allBalances);
-}
-
-async function getPrimaryNameAndLogo(address, getLogo = true) {
-  const primaryName = await ario.getPrimaryName({ address: address });
-  var info;
-  var record;
-  if (getLogo) {
-    record = await ario.getArNSRecord({ name: primaryName.name }).catch((e) => {
-      console.error('Error fetching ARNS record:', e);
-      return null;
-    });
-    const ant = ANT.init({process: new AOProcess({processId: record.processId, ao: connect({ CU_URL: "https://cu.ardrive.io" })})});
-    info = !record ? null : await ant.getInfo().catch((e) => {
-      console.error('Error fetching ANT info:', e);
-      return null;
-    });
-  }
-  // antInfo can be null
-  // arnsRecord can be null
-  return JSON.stringify({primaryName: primaryName, antInfo: info, arnsRecord: record });
 }

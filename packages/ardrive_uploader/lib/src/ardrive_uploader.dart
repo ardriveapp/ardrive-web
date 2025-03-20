@@ -60,8 +60,8 @@ abstract class ArDriveUploader {
   factory ArDriveUploader({
     ARFSUploadMetadataGenerator? metadataGenerator,
     required Uri turboUploadUri,
+    required PstService pstService,
     Arweave? arweave,
-    PstService? pstService,
   }) {
     metadataGenerator ??= ARFSUploadMetadataGenerator(
       tagsGenerator: ARFSTagsGenetator(
@@ -70,19 +70,6 @@ abstract class ArDriveUploader {
     );
 
     arweave ??= Arweave();
-    pstService ??= PstService(
-      communityOracle: CommunityOracle(
-        ArDriveContractOracle([
-          ContractOracle(WarpContractReader()),
-        ]),
-        TokenHolderSelectorFactory(
-          arioSDK: ArioSDKFactory().create(),
-          contractOracle: ContractOracle(
-            ARNSContractReader(),
-          ),
-        ).create(useFallback: true),
-      ),
-    );
 
     final dataBundlerFactory = DataBundlerFactory(
       arweaveService: arweave,

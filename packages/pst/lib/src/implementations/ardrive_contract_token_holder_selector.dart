@@ -2,7 +2,6 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pst/pst.dart';
-import 'package:pst/src/utils.dart';
 
 class ArDriveContractTokenHolderSelector implements TokenHolderSelector {
   final ArioSDK _arioSDK;
@@ -12,9 +11,7 @@ class ArDriveContractTokenHolderSelector implements TokenHolderSelector {
   @override
   Future<ArweaveAddress> selectTokenHolder({double? testingRandom}) async {
     try {
-      final holders = await _arioSDK.getAllTokenHolders();
-
-      debugPrint('Holders: $holders');
+      final holders = await _arioSDK.getArDriveTokenHolders();
 
       final randomHolder =
           weightedRandom(holders, testingRandom: testingRandom);
@@ -23,7 +20,7 @@ class ArDriveContractTokenHolderSelector implements TokenHolderSelector {
         throw CouldNotDetermineTokenHolder();
       }
 
-      debugPrint('Selected token holder: $randomHolder');
+      debugPrint('Selected token holder: $randomHolder from ArDrive contract');
 
       return randomHolder;
     } catch (e) {

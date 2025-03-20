@@ -1,4 +1,5 @@
 import 'package:ario_sdk/ario_sdk.dart';
+import 'package:flutter/foundation.dart';
 import 'package:pst/pst.dart';
 import 'package:pst/src/implementations/contract_token_holder_selector.dart';
 import 'package:pst/src/implementations/fallback_token_holder_selector.dart';
@@ -22,26 +23,16 @@ class TokenHolderSelectorFactory {
   /// is not supported, it will only use the contract-based implementation.
   TokenHolderSelector create({bool useFallback = true}) {
     if (useFallback && isArioSDKSupportedOnPlatform()) {
+      debugPrint('Using fallback token holder selector');
+
       return FallbackTokenHolderSelector.create(
         arioSDK: _arioSDK,
         contractOracle: _contractOracle,
       );
     }
 
-    return ContractTokenHolderSelector(_contractOracle);
-  }
+    debugPrint('Using contract token holder selector');
 
-  /// Creates a [TokenHolderSelector] that only uses ArioSDK for token holder selection.
-  /// This will only work on web platforms where ArioSDK is supported.
-  TokenHolderSelector createArioSDKOnly() {
-    if (!isArioSDKSupportedOnPlatform()) {
-      throw UnsupportedError('ArioSDK is only supported on web platforms');
-    }
-    return ArDriveContractTokenHolderSelector(_arioSDK);
-  }
-
-  /// Creates a [TokenHolderSelector] that only uses contract data for token holder selection.
-  TokenHolderSelector createContractOnly() {
     return ContractTokenHolderSelector(_contractOracle);
   }
 }

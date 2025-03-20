@@ -406,7 +406,10 @@ class AppState extends State<App> {
                 contractOracle: ContractOracle(
                   ARNSContractReader(),
                 ),
-              ).create(useFallback: true),
+              ).create(
+                useFallback: configService
+                    .config.useArDriveContractToGetTokenHoldersForUploadTip,
+              ),
             ),
           ),
         ),
@@ -525,6 +528,7 @@ class AppState extends State<App> {
             arDriveUploader: ArDriveUploader(
               turboUploadUri: Uri.parse(
                   context.read<ConfigService>().config.defaultTurboUploadUrl!),
+              pstService: context.read<PstService>(),
             ),
             turboUploadService: context.read<TurboUploadService>(),
           ),

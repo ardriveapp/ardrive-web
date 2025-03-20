@@ -19,6 +19,7 @@ class AppConfig {
   final String stripePublishableKey;
   final bool autoSync;
   final bool uploadThumbnails;
+  final bool useArDriveContractToGetTokenHoldersForUploadTip;
 
   AppConfig({
     this.defaultArweaveGatewayUrl,
@@ -36,6 +37,7 @@ class AppConfig {
     required this.stripePublishableKey,
     this.autoSync = true,
     this.uploadThumbnails = true,
+    this.useArDriveContractToGetTokenHoldersForUploadTip = true,
   });
 
   AppConfig copyWith({
@@ -51,6 +53,7 @@ class AppConfig {
     String? stripePublishableKey,
     bool? autoSync,
     bool? uploadThumbnails,
+    bool? useArDriveContractToGetTokenHoldersForUploadTip,
   }) {
     return AppConfig(
       defaultArweaveGatewayUrl:
@@ -73,6 +76,9 @@ class AppConfig {
       stripePublishableKey: stripePublishableKey ?? this.stripePublishableKey,
       autoSync: autoSync ?? this.autoSync,
       uploadThumbnails: uploadThumbnails ?? this.uploadThumbnails,
+      useArDriveContractToGetTokenHoldersForUploadTip:
+          useArDriveContractToGetTokenHoldersForUploadTip ??
+              this.useArDriveContractToGetTokenHoldersForUploadTip,
     );
   }
 

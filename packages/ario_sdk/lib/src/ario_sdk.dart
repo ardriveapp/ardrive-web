@@ -45,6 +45,6 @@ abstract class ArioSDK {
     bool getLogo,
   );
 
-  /// Get all token holders for the given address
-  Future<Map<ArweaveAddress, double>> getAllTokenHolders();
+  /// Get all token holders for the ArDrive contract
+  Future<Map<ArweaveAddress, double>> getArDriveTokenHolders();
 }
