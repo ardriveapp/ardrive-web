@@ -1095,6 +1095,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
           title = 'Imported from manifest';
         } else {
           final typography = ArDriveTypographyNew.of(context);
+          final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
           return Column(
             mainAxisSize: MainAxisSize.min,
@@ -1118,6 +1119,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                                   text: 'Imported from manifest ',
                                   style: typography.paragraphNormal(
                                     fontWeight: ArFontWeight.semiBold,
+                                    color: colorTokens.textHigh,
                                   ),
                                 ),
                                 WidgetSpan(
@@ -1131,9 +1133,10 @@ class _DetailsPanelState extends State<DetailsPanel> {
                                   ),
                                 ),
                                 TextSpan(
-                                  text: ' and owner',
+                                  text: ' and owner ',
                                   style: typography.paragraphNormal(
                                     fontWeight: ArFontWeight.semiBold,
+                                    color: colorTokens.textHigh,
                                   ),
                                 ),
                                 // opens in new tab
@@ -1152,6 +1155,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                                         style: typography
                                             .paragraphNormal(
                                               fontWeight: ArFontWeight.bold,
+                                              color: colorTokens.textHigh,
                                             )
                                             .copyWith(
                                                 decoration:
