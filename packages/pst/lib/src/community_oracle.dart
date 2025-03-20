@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:equatable/equatable.dart';
 import 'package:pst/pst.dart';
-import 'package:pst/src/utils.dart';
+import 'package:pst/src/implementations/token_holder_selector.dart';
 
 /// Minimum ArDrive community tip from the Community Improvement Proposal Doc:
 /// https://arweave.net/Yop13NrLwqlm36P_FDCdMaTBwSlj0sdNGAC4FqfRUgo
@@ -12,11 +12,15 @@ final minArDriveCommunityWinstonTip = Winston(BigInt.from(10000000));
 // TODO: implement unit tests
 class CommunityOracle {
   final ContractOracle _contractOracle;
+  final TokenHolderSelector _tokenHolderSelector;
   CommunityContractData? _communityContractData;
   DateTime? _lastFetchedTime;
 
-  CommunityOracle(ContractOracle contractOracle)
-      : _contractOracle = contractOracle;
+  CommunityOracle(
+    ContractOracle contractOracle,
+    TokenHolderSelector tokenHolderSelector,
+  )   : _contractOracle = contractOracle,
+        _tokenHolderSelector = tokenHolderSelector;
 
   Future<Winston> getCommunityWinstonTip(Winston winstonCost) async {
     final contractData = await _getCommunityContractData();
@@ -38,58 +42,7 @@ class CommunityOracle {
   Future<ArweaveAddress> selectTokenHolder({
     double? testingRandom, // for testing purposes only
   }) async {
-    final contract = await _getCommunityContractData();
-
-    final Map<ArweaveAddress, int> balances = Map.from(contract.balances);
-    final vault = contract.vault;
-
-    // Get the total number of token holders
-    int total = 0;
-    for (final addr in balances.keys) {
-      total += balances[addr]!;
-    }
-
-    // Check for how many tokens the user has staked/vaulted
-    for (final addr in vault.keys) {
-      final vaultValue = vault[addr];
-
-      if (vaultValue == null) {
-        // unreachable code: addr is a key of vault; just to have non-null types
-        throw Exception('The key $addr does not exist on vault');
-      }
-
-      if (vaultValue.isEmpty) continue;
-
-      final vaultBalance =
-          vaultValue.map((a) => a.balance).reduce((a, b) => a + b);
-
-      total += vaultBalance;
-
-      if (balances[addr] != null) {
-        balances.update(addr, (value) => value + vaultBalance);
-      } else {
-        balances.update(
-          addr,
-          (value) => vaultBalance,
-          ifAbsent: () => vaultBalance,
-        );
-      }
-    }
-
-    // Create a weighted list of token holders
-    final Map<ArweaveAddress, double> weighted = {};
-    for (final addr in balances.keys) {
-      weighted[addr] = balances[addr]! / total;
-    }
-
-    // Get a random holder based off of the weighted list of holders
-    final randomHolder = weightedRandom(weighted, testingRandom: testingRandom);
-
-    if (randomHolder == null) {
-      throw CouldNotDetermineTokenHolder();
-    }
-
-    return randomHolder;
+    return _tokenHolderSelector.selectTokenHolder(testingRandom: testingRandom);
   }
 
   Future<CommunityContractData> _getCommunityContractData() async {
@@ -102,7 +55,6 @@ class CommunityOracle {
     }
 
     _communityContractData = await _contractOracle.getCommunityContract();
-
     _lastFetchedTime = currentTime;
 
     return _communityContractData!;

@@ -1,5 +1,6 @@
 library ario;
 
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 
 abstract class ArioSDK {
@@ -43,4 +44,7 @@ abstract class ArioSDK {
     String address,
     bool getLogo,
   );
+
+  /// Get all token holders for the given address
+  Future<Map<ArweaveAddress, double>> getAllTokenHolders();
 }

@@ -25,6 +25,8 @@ dependencies:
   equatable: ^2.0.5
   retry: ^3.1.2
   mocktail: ^1.0.2
+  ario_sdk:
+    path: ../ario_sdk
 
 dev_dependencies:
   flutter_test:

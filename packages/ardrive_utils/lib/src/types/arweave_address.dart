@@ -20,6 +20,10 @@ class ArweaveAddress extends Equatable {
   String toString() {
     return _addr;
   }
+
+  static bool isValid(String addr) {
+    return addressRegExp.hasMatch(addr);
+  }
 }
 
 class InvalidAddress implements Exception {

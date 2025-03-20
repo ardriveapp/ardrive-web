@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pst/src/community_oracle.dart';
 import 'package:pst/src/constants.dart';
 import 'package:pst/src/contract_oracle.dart';
+import 'package:pst/src/implementations/token_holder_selector.dart';
 
 import 'constants.dart';
 import 'stubs.dart';
@@ -12,10 +13,13 @@ final aTransactionId = TransactionID(
   '1111111111111111111111111111111111111111111',
 );
 
+class TokenHolderSelectorStub extends Mock implements TokenHolderSelector {}
+
 void main() {
   group('CommunityOracle class', () {
     final myContractReader = ContractReaderStub();
     late ContractOracle myContractOracle;
+    late TokenHolderSelectorStub myTokenHolderSelector;
     late CommunityOracle myCommunityOracle;
 
     setUp(() {
@@ -31,7 +35,9 @@ void main() {
           .thenAnswer((_) => Future.value(rawHealthyContractData));
 
       myContractOracle = ContractOracle(myContractReader);
-      myCommunityOracle = CommunityOracle(myContractOracle);
+      myTokenHolderSelector = TokenHolderSelectorStub();
+      myCommunityOracle =
+          CommunityOracle(myContractOracle, myTokenHolderSelector);
     });
 
     group('getCommunityWinstonTip method', () {
@@ -59,20 +65,35 @@ void main() {
     group('selectTokenHolder method', () {
       const double randomA = .2;
       const double randomB = 1;
+      final expectedAddress =
+          ArweaveAddress('Zznp65qgTIm2QBMjjoEaHKOmQrpTu0tfOcdbkm_qoL4');
 
       test('returns a valid address', () async {
+        when(() =>
+                myTokenHolderSelector.selectTokenHolder(testingRandom: randomA))
+            .thenAnswer((_) => Future.value(expectedAddress));
+
         final addr =
             await myCommunityOracle.selectTokenHolder(testingRandom: randomA);
-        expect(addr,
-            ArweaveAddress('Zznp65qgTIm2QBMjjoEaHKOmQrpTu0tfOcdbkm_qoL4'));
+        expect(addr, expectedAddress);
+        verify(() =>
+                myTokenHolderSelector.selectTokenHolder(testingRandom: randomA))
+            .called(1);
       });
 
       test('throws if the token holder could not be determined', () async {
+        when(() =>
+                myTokenHolderSelector.selectTokenHolder(testingRandom: randomB))
+            .thenThrow(CouldNotDetermineTokenHolder());
+
         expect(
           () async =>
               await myCommunityOracle.selectTokenHolder(testingRandom: randomB),
           throwsA(CouldNotDetermineTokenHolder()),
         );
+        verify(() =>
+                myTokenHolderSelector.selectTokenHolder(testingRandom: randomB))
+            .called(1);
       });
     });
   });

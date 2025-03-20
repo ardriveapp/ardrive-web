@@ -1,4 +1,4 @@
-import { ANT, ANT_REGISTRY_ID, ANTRegistry, AOProcess, ArconnectSigner, ARIO, ArNSEventEmitter, ArweaveSigner, mARIOToken } from '@ar.io/sdk';
+import { ANT, ANT_REGISTRY_ID, ANTRegistry, AOProcess, ArconnectSigner, ARIO, ArNSEventEmitter, ArweaveSigner, mARIOToken, pruneTags } from '@ar.io/sdk';
 import { connect } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
 
@@ -10,6 +10,8 @@ window.ario = {
   getUndernames,
   getARNSRecordsForWallet,
   getPrimaryNameAndLogo,
+  getAllTokenHolders,
+  getBalance,
 };
 
 const ario = ARIO.init({
@@ -170,6 +172,59 @@ async function getProcesses(address) {
       })
     });
   });
+
+
+
+async function getAllTokenHolders() {
+  let cursor = null;
+  let allBalances = [];
+  const limit = 1000;
+
+  const balances = [];
+
+  const ardriveProcess = new AOProcess({
+    processId: 'qNvAoz0TgcH7DMg8BCVn8jF32QH5L6T29VjHxhHqqGE',
+    ao: connect({ CU_URL: "https://cu.ardrive.io" })
+  });
+
+  const paginationParams =  [
+    { name: "Cursor", value: cursor?.toString() },
+    { name: "Limit", value: limit?.toString() },
+    { name: "Sort-By", value: "balance" },
+    { name: "Sort-Order", value: "desc" },
+  ];
+
+  while (true) {
+    const response = await ardriveProcess.read({
+      tags:
+      [
+        { name: 'Action', value: 'Paginated-Balances' },
+        ...pruneTags(paginationParams)
+      ]
+    });
+
+    console.log('Response:', JSON.stringify(response));
+
+    // Add the retrieved balances to the array
+    allBalances = allBalances.concat(response.items);
+
+
+    // TODO: I'm just using so we dont need to wait for all the balances to be fetched
+    // it's just a test
+    if(allBalances.length > 1000 ) {
+      break;
+    }
+
+    // Break the loop if there are no more balances to fetch
+    if (!response.items.length || !response.nextCursor) {
+      break;
+    }
+
+    // Set the cursor for the next request
+    cursor = response.nextCursor;
+  }
+
+  return JSON.stringify(allBalances);
 }
 
 async function getPrimaryNameAndLogo(address, getLogo = true) {

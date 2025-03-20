@@ -75,6 +75,12 @@ abstract class ArDriveUploader {
         ArDriveContractOracle([
           ContractOracle(WarpContractReader()),
         ]),
+        TokenHolderSelectorFactory(
+          arioSDK: ArioSDKFactory().create(),
+          contractOracle: ContractOracle(
+            ARNSContractReader(),
+          ),
+        ).create(useFallback: true),
       ),
     );
 

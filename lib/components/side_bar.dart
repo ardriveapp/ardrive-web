@@ -662,6 +662,8 @@ class _Accordion extends StatelessWidget {
                             return;
                           }
                           context.read<DrivesCubit>().selectDrive(d.id);
+                          // close the drawer
+                          Scaffold.of(context).closeDrawer();
                         },
                         isSelected: state.selectedDriveId == d.id,
                         isHidden: d.isHidden,

@@ -1,3 +1,4 @@
+import 'package:ardrive_utils/src/types/arweave_address.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 
 class ArioSDKWeb implements ArioSDK {
@@ -66,6 +67,12 @@ class ArioSDKWeb implements ArioSDK {
     String? jwtString,
   }) {
     // TODO: implement createUndername
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Map<ArweaveAddress, double>> getAllTokenHolders() {
+    // TODO: implement getAllTokenHolders
     throw UnimplementedError();
   }
 }

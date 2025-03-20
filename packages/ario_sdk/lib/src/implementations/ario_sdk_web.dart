@@ -7,6 +7,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:js_util';
 
+import 'package:ardrive_utils/src/types/arweave_address.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter/foundation.dart';
 import 'package:js/js.dart';
@@ -155,6 +156,11 @@ class ArioSDKWeb implements ArioSDK {
   }) {
     return _setARNSImpl(jwtString, undername, isArConnect);
   }
+
+  @override
+  Future<Map<ArweaveAddress, double>> getAllTokenHolders() async {
+    return _getAllTokenHoldersImpl();
+  }
 }
 
 @JS('setARNS')
@@ -284,4 +290,26 @@ Future<PrimaryNameDetails> _getPrimaryNameImpl(
     logo: json['antInfo']?['Logo'],
     recordId: json['arnsRecord']?['processId'],
   );
+}
+
+@JS('getAllTokenHolders')
+external Object _getAllTokenHolders();
+
+Future<Map<ArweaveAddress, double>> _getAllTokenHoldersImpl() async {
+  final promise = _getAllTokenHolders();
+  final stringified = await promiseToFuture(promise);
+
+  final json = jsonDecode(stringified);
+
+  debugPrint('json: $json');
+
+  final map = <ArweaveAddress, double>{};
+
+  for (var item in json) {
+    if (ArweaveAddress.isValid(item['address'])) {
+      map[ArweaveAddress(item['address'])] = item['balance'] as double;
+    }
+  }
+
+  return map;
 }
