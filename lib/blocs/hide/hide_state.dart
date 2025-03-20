@@ -4,6 +4,8 @@ import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 
+import '../../models/models.dart';
+
 abstract class HideState extends Equatable {
   final HideAction hideAction;
 
@@ -25,6 +27,27 @@ class UploadingHideState extends HideState {
 
 class PreparingAndSigningHideState extends HideState {
   const PreparingAndSigningHideState({required super.hideAction});
+}
+
+class HidingMultipleFilesState extends HideState {
+  const HidingMultipleFilesState({
+    required super.hideAction,
+    required this.fileEntries,
+    required this.hiddenFileEntries,
+    this.currentFile,
+  });
+
+  final List<FileEntry> fileEntries;
+  final List<FileEntry> hiddenFileEntries;
+  final FileEntry? currentFile;
+
+  @override
+  List<Object?> get props => [
+        hideAction,
+        fileEntries,
+        hiddenFileEntries,
+        currentFile,
+      ];
 }
 
 class ConfirmingHideState extends HideState {
