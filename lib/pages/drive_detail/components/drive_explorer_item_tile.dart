@@ -18,6 +18,7 @@ import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/has_arns_name.dart';
 import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/size_constants.dart';
@@ -57,9 +58,8 @@ class DriveExplorerItemTile extends TableRowWidget {
                       softWrap: false,
                     ),
                   ),
-                  if (dataTableItem is FileDataTableItem &&
-                      dataTableItem.assignedNames != null &&
-                      dataTableItem.assignedNames!.isNotEmpty) ...[
+                  if (hasArnsNames(dataTableItem) &&
+                      dataTableItem is FileDataTableItem) ...[
                     const SizedBox(width: 8),
                     Transform(
                         transform: Matrix4.translationValues(0, 2, 0),
@@ -608,7 +608,7 @@ class _DriveExplorerItemTileTrailingState
               height: height,
             ),
           ),
-        if (widget.drive.isPublic)
+        if (widget.drive.isPublic && AppPlatform.isWeb())
           ArDriveDropdownItem(
             onClick: () {
               showAssignArNSNameModal(

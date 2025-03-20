@@ -587,8 +587,43 @@ Future<void> shareLogs({
       ),
       actions: [
         ModalAction(
-          action: () {
-            logger.exportLogs(info: logExportInfo);
+          action: () async {
+            await logger.exportLogs(info: logExportInfo);
+            if (context.mounted) {
+              final typography = ArDriveTypographyNew.of(context);
+
+              showArDriveDialog(
+                context,
+                content: ArDriveStandardModalNew(
+                  hasCloseButton: true,
+                  title: 'Logs Exported',
+                  content: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Logs exported successfully',
+                        style: typography.paragraphNormal(
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Logs can be found in your application directory',
+                        style: typography.paragraphNormal(),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    ModalAction(
+                      action: () {
+                        Navigator.pop(context);
+                      },
+                      title: 'OK',
+                    ),
+                  ],
+                ),
+              );
+            }
           },
           title: appLocalizationsOf(context).download,
         ),

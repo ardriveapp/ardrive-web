@@ -27,6 +27,7 @@ import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.da
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -198,12 +199,16 @@ class _ProfileCardState extends State<ProfileCard> {
                   _ProfileMenuAccordionItem(
                     text: 'Send',
                     onTap: () {
+                      _closeProfileCardMobile();
+
                       openUrl(url: Resources.sendGiftLink);
                     },
                   ),
                   _ProfileMenuAccordionItem(
                     text: 'Reedem',
                     onTap: () {
+                      _closeProfileCardMobile();
+
                       showArDriveDialog(
                         context,
                         content: BlocProvider(
@@ -235,17 +240,21 @@ class _ProfileCardState extends State<ProfileCard> {
                     text: 'Help',
                     onTap: () {
                       openHelp();
+                      _closeProfileCardMobile();
                     },
                   ),
                   _ProfileMenuAccordionItem(
                     text: 'Leave Feedback',
                     onTap: () {
                       openFeedbackSurveyUrl();
+                      _closeProfileCardMobile();
                     },
                   ),
                   _ProfileMenuAccordionItem(
                     text: 'Share Logs',
                     onTap: () {
+                      _closeProfileCardMobile();
+
                       shareLogs(
                         context: context,
                       );
@@ -547,6 +556,14 @@ class _ProfileCardState extends State<ProfileCard> {
         },
       ),
     );
+  }
+
+  void _closeProfileCardMobile() {
+    if (AppPlatform.isMobile) {
+      setState(() {
+        _showProfileCard = false;
+      });
+    }
   }
 
   Widget _buildProfileCardHeader(BuildContext context, String walletAddress) {

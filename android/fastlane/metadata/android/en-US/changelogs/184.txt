@@ -1,0 +1,6 @@
+- Improved visibility of sync error pop-up in both dark and light modes.
+- Fixed log download issue and added success confirmation. Sidebar now closes as expected.
+- Added confirmation message for successful wallet download on Android.
+- Fixed issue preventing re-opening of the ArNS name assignment screen during file upload.
+- ArNS icon now visible in the Drive Explorer on mobile.
+- Updated endpoint to fetch block height for compatibility with all gateways.
