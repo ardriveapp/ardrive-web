@@ -46,6 +46,7 @@ abstract class ArDriveAuth {
     required SecureKeyValueStore secureKeyValueStore,
     required ArConnectService arConnectService,
     required DatabaseHelpers databaseHelpers,
+    required DriveDao driveDao,
     MetadataCache? metadataCache,
   }) =>
       ArDriveAuthImpl(
@@ -57,6 +58,7 @@ abstract class ArDriveAuth {
         secureKeyValueStore: secureKeyValueStore,
         arConnectService: arConnectService,
         metadataCache: metadataCache,
+        driveDao: driveDao,
       );
 }
 
@@ -69,10 +71,12 @@ class ArDriveAuthImpl implements ArDriveAuth {
     required SecureKeyValueStore secureKeyValueStore,
     required ArConnectService arConnectService,
     required DatabaseHelpers databaseHelpers,
+    required DriveDao driveDao,
     MetadataCache? metadataCache,
   })  : _arweave = arweave,
         _crypto = crypto,
         _databaseHelpers = databaseHelpers,
+        _driveDao = driveDao,
         _arConnectService = arConnectService,
         _secureKeyValueStore = secureKeyValueStore,
         _biometricAuthentication = biometricAuthentication,
@@ -86,6 +90,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
   final SecureKeyValueStore _secureKeyValueStore;
   final ArConnectService _arConnectService;
   final DatabaseHelpers _databaseHelpers;
+  final DriveDao _driveDao;
   MetadataCache? _maybeMetadataCache;
 
   User? _currentUser;
@@ -266,6 +271,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
       }
 
       await _databaseHelpers.deleteAllTables();
+      await _driveDao.removeAllDriveKeys();
       currentUser = null;
       _userStreamController.add(null);
     } catch (e, stacktrace) {
