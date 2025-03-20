@@ -13,7 +13,6 @@ import 'package:ardrive/components/fs_entry_license_form.dart';
 import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/license_details_popover.dart';
 import 'package:ardrive/components/pin_indicator.dart';
-import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/sizes.dart';
 import 'package:ardrive/components/truncated_address.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
@@ -38,6 +37,7 @@ import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/size_constants.dart';
+import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -866,7 +866,8 @@ class _DetailsPanelState extends State<DetailsPanel> {
             ],
           ),
         ),
-      if (widget.drivePrivacy == DrivePrivacy.public.name) ...[
+      if (widget.drivePrivacy == DrivePrivacy.public.name &&
+          AppPlatform.isWeb()) ...[
         sizedBoxHeight16px,
         DetailsPanelItem(
           leading: _ArnsNameDisplay(fileItem: item),
@@ -1150,8 +1151,11 @@ class _DetailsPanelState extends State<DetailsPanel> {
                                                 'https://viewblock.io/arweave/address/${file.originalOwner}');
                                       },
                                       child: Text(
-                                        getTruncatedWalletAddress(
-                                            file.name, file.originalOwner!),
+                                        truncateString(
+                                          file.originalOwner!,
+                                          offsetStart: 6,
+                                          offsetEnd: 6,
+                                        ),
                                         style: typography
                                             .paragraphNormal(
                                               fontWeight: ArFontWeight.bold,
