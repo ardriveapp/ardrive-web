@@ -1,11 +1,6 @@
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart'
-    show
-        TargetPlatform,
-        debugPrint,
-        defaultTargetPlatform,
-        kIsWeb,
-        visibleForTesting;
+    show TargetPlatform, defaultTargetPlatform, kIsWeb, visibleForTesting;
 import 'package:platform/platform.dart' as platform;
 
 class AppPlatform {
