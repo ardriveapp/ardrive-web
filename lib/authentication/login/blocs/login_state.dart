@@ -134,4 +134,6 @@ class LoginCheckingPassword extends LoginState {}
 
 class LoginPasswordFailed extends LoginState {}
 
+class LoginPasswordFailedWithPrivateDriveNotFound extends LoginState {}
+
 class LoginCreatePasswordComplete extends LoginState {}
