@@ -1,6 +1,11 @@
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart'
-    show kIsWeb, defaultTargetPlatform, TargetPlatform, visibleForTesting;
+    show
+        TargetPlatform,
+        debugPrint,
+        defaultTargetPlatform,
+        kIsWeb,
+        visibleForTesting;
 import 'package:platform/platform.dart' as platform;
 
 class AppPlatform {
@@ -71,7 +76,10 @@ class AppPlatform {
   }
 
   static bool isWindows() {
-    return getPlatform() == SystemPlatform.Windows;
+    final isWindows = _mockPlatform == SystemPlatform.Windows ||
+        defaultTargetPlatform == TargetPlatform.windows;
+
+    return isWindows;
   }
 
   static Future<bool> isFireFox({DeviceInfoPlugin? deviceInfo}) async {
