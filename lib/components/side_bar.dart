@@ -691,6 +691,8 @@ class _Accordion extends StatelessWidget {
                         hasAlert: state.drivesWithAlerts.contains(d.id),
                         drive: d,
                         onTap: () {
+                          _closeDrawer(context);
+
                           if (state.selectedDriveId == d.id) {
                             // opens the root folder
                             context.read<DriveDetailCubit>().openFolder();
@@ -726,6 +728,8 @@ class _Accordion extends StatelessWidget {
                         hasAlert: state.drivesWithAlerts.contains(d.id),
                         drive: d,
                         onTap: () {
+                          _closeDrawer(context);
+
                           context.read<DrivesCubit>().selectDrive(d.id);
                         },
                         isSelected: state.selectedDriveId == d.id,
@@ -751,6 +755,8 @@ class _Accordion extends StatelessWidget {
                         hasAlert: state.drivesWithAlerts.contains(d.id),
                         drive: d,
                         onTap: () {
+                          _closeDrawer(context);
+
                           context.read<DrivesCubit>().selectDrive(d.id);
                         },
                         isSelected: state.selectedDriveId == d.id,
@@ -763,6 +769,12 @@ class _Accordion extends StatelessWidget {
         );
       },
     );
+  }
+
+  void _closeDrawer(BuildContext context) {
+    if (Scaffold.maybeOf(context) != null) {
+      Scaffold.of(context).closeDrawer();
+    }
   }
 }
 //
