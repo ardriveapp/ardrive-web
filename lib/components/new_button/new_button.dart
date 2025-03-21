@@ -337,15 +337,22 @@ class NewButton extends StatelessWidget {
           if (driveDetailState.currentDrive.privacy == 'public')
             ArDriveNewButtonItem(
               onClick: () {
-                promptToCreateManifest(
-                  context,
-                  drive: drive!,
-                  // TODO: for big drives, this might will be slow
-                  hasPendingFiles: driveDetailState.currentFolderContents.any(
-                    (element) =>
-                        element.fileStatusFromTransactions ==
-                        TransactionStatus.pending,
-                  ),
+                // wait 100 ms before creating manifest
+                Future.delayed(
+                  const Duration(milliseconds: 100),
+                  () {
+                    promptToCreateManifest(
+                      context,
+                      drive: drive!,
+                      // TODO: for big drives, this might will be slow
+                      hasPendingFiles:
+                          driveDetailState.currentFolderContents.any(
+                        (element) =>
+                            element.fileStatusFromTransactions ==
+                            TransactionStatus.pending,
+                      ),
+                    );
+                  },
                 );
               },
               isDisabled: !driveDetailState.hasWritePermissions ||
