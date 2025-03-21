@@ -196,7 +196,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           textStyle: textStyle,
         );
       } else if (state is CreateManifestInitial) {
-        return ProgressDialog(
+        return const ProgressDialog(
           useNewArDriveUI: true,
           title: 'Loading Folders...',
         );
