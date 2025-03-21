@@ -308,20 +308,15 @@ class _ArDriveDataTableState<T extends IndexedItem>
   bool _handleKeyDownEvent(KeyEvent event) {
     if (mounted && !widget.lockMultiSelect) {
       if (AppPlatform.isWindows()) {
-        if (event.logicalKey == LogicalKeyboardKey.controlLeft ||
-            event.logicalKey == LogicalKeyboardKey.controlRight) {
-          setState(() {
-            _isCtrlPressed = true;
-            widget.onChangeMultiSelecting!(_isMultiSelecting);
-          });
-        }
-      } else {
-        if (widget.onChangeMultiSelecting != null) {
-          setState(() {
-            _isCtrlPressed = HardwareKeyboard.instance.isMetaPressed;
-            widget.onChangeMultiSelecting!(_isMultiSelecting);
-          });
-        }
+        setState(() {
+          _isCtrlPressed = HardwareKeyboard.instance.isControlPressed;
+          widget.onChangeMultiSelecting!(_isMultiSelecting);
+        });
+      } else if (widget.onChangeMultiSelecting != null) {
+        setState(() {
+          _isCtrlPressed = HardwareKeyboard.instance.isMetaPressed;
+          widget.onChangeMultiSelecting!(_isMultiSelecting);
+        });
       }
     }
     return false;
