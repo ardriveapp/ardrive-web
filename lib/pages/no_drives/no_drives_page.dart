@@ -1,6 +1,7 @@
 import 'package:ardrive/app_shell.dart';
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
+import 'package:ardrive/components/app_top_bar.dart';
 import 'package:ardrive/components/drive_create_form.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/topbar/help_button.dart';
@@ -64,6 +65,8 @@ class NoDrivesPage extends StatelessWidget {
             const Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                SyncButton(),
+                SizedBox(width: 8),
                 HelpButtonTopBar(),
                 SizedBox(width: 8),
                 ProfileCard(),
