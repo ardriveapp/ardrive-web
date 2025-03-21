@@ -315,13 +315,13 @@ class _ArDriveDataTableState<T extends IndexedItem>
             widget.onChangeMultiSelecting!(_isMultiSelecting);
           });
         }
-      }
-
-      if (widget.onChangeMultiSelecting != null) {
-        setState(() {
-          _isCtrlPressed = HardwareKeyboard.instance.isMetaPressed;
-          widget.onChangeMultiSelecting!(_isMultiSelecting);
-        });
+      } else {
+        if (widget.onChangeMultiSelecting != null) {
+          setState(() {
+            _isCtrlPressed = HardwareKeyboard.instance.isMetaPressed;
+            widget.onChangeMultiSelecting!(_isMultiSelecting);
+          });
+        }
       }
     }
     return false;

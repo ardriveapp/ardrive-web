@@ -31,6 +31,8 @@ class AppPlatform {
         return SystemPlatform.Android;
       case 'ios':
         return SystemPlatform.iOS;
+      case 'windows':
+        return SystemPlatform.Windows;
       default:
         return SystemPlatform.unknown;
     }
