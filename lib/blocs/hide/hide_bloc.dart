@@ -49,9 +49,126 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     on<HideDriveEvent>(_onHideDriveEvent);
     on<UnhideDriveEvent>(_onUnhideDriveEvent);
     on<ErrorEvent>(_onErrorEvent);
+    on<HideMultipleFilesEvent>(_onHideMultipleFilesEvent);
+    on<UnhideMultipleFilesEvent>(_onUnHideMultipleFilesEvent);
   }
 
   bool _useTurboUpload = false;
+
+  Future<void> _onHideMultipleFilesEvent(
+    HideMultipleFilesEvent event,
+    Emitter<HideState> emit,
+  ) async {
+    await _multipleHideOrUnhideFiles(event.fileIds, true, emit);
+  }
+
+  Future<void> _multipleHideOrUnhideFiles(
+    List<String> fileIds,
+    bool isHidden,
+    Emitter<HideState> emit,
+  ) async {
+    final List<FileEntry> hiddenFileEntries = [];
+
+    emit(HidingMultipleFilesState(
+      hideAction: isHidden ? HideAction.hideFile : HideAction.unhideFile,
+      fileEntries: const [],
+      hiddenFileEntries: hiddenFileEntries,
+      currentFile: null,
+    ));
+
+    final List<FileEntry> fileEntries = [];
+
+    for (final fileId in fileIds) {
+      final FileEntry currentFile = await _driveDao
+          .fileById(
+            fileId: fileId,
+          )
+          .getSingle();
+      fileEntries.add(currentFile);
+    }
+
+    for (final fileEntry in fileEntries) {
+      final hideEntitySettings = await _getFileHideEntitySettings(
+        isHidden,
+        fileEntry,
+      );
+
+      emit(HidingMultipleFilesState(
+        hideAction: isHidden ? HideAction.hideFile : HideAction.unhideFile,
+        fileEntries: fileEntries,
+        currentFile: fileEntry,
+        hiddenFileEntries: hiddenFileEntries,
+      ));
+
+      final dataItems = [hideEntitySettings.dataItem];
+
+      final paymentInfo =
+          await _uploadPreparationManager.getUploadPaymentInfoForEntityUpload(
+              dataItem: hideEntitySettings.dataItem);
+
+      _useTurboUpload = paymentInfo.isFreeUploadPossibleUsingTurbo;
+
+      try {
+        final profile = _profileCubit.state as ProfileLoggedIn;
+
+        await _driveDao.transaction(() async {
+          final dataBundle = await DataBundle.fromDataItems(
+            items: dataItems,
+          );
+
+          if (_useTurboUpload) {
+            final hideTx = await _arweave.prepareBundledDataItem(
+              dataBundle,
+              profile.user.wallet,
+            );
+            await _turboUploadService.postDataItem(
+              dataItem: hideTx,
+              wallet: profile.user.wallet,
+            );
+          } else {
+            final hideTx = await _arweave.prepareDataBundleTx(
+              dataBundle,
+              profile.user.wallet,
+            );
+            await _arweave.postTx(hideTx);
+          }
+
+          await _saveNewRevision(hideEntitySettings);
+
+          hiddenFileEntries.add(hideEntitySettings.entry);
+          emit(HidingMultipleFilesState(
+            hideAction: isHidden ? HideAction.hideFile : HideAction.unhideFile,
+            fileEntries: fileEntries,
+            hiddenFileEntries: hiddenFileEntries,
+            currentFile: fileEntry,
+          ));
+        });
+      } catch (e) {
+        logger.e('Error while hiding', e);
+        emit(FailureHideState(hideAction: state.hideAction));
+      }
+    }
+    emit(SuccessHideState(hideAction: state.hideAction));
+  }
+
+  Future<void> _onUnHideMultipleFilesEvent(
+    UnhideMultipleFilesEvent event,
+    Emitter<HideState> emit,
+  ) async {
+    for (final fileId in event.fileIds) {
+      final FileEntry currentFile = await _driveDao
+          .fileById(
+            fileId: fileId,
+          )
+          .getSingle();
+
+      await _setHideStatus(
+        currentFile,
+        emit,
+        isHidden: false,
+      );
+    }
+  }
 
   Future<void> _onHideFileEvent(
     HideFileEvent event,

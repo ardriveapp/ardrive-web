@@ -42,6 +42,32 @@ class UnhideDriveEvent extends HideEvent {
   List<Object> get props => [driveId];
 }
 
+class HideMultipleFilesEvent extends HideEvent {
+  final DriveID driveId;
+  final List<FileID> fileIds;
+
+  const HideMultipleFilesEvent({
+    required this.driveId,
+    required this.fileIds,
+  });
+
+  @override
+  List<Object> get props => [driveId, fileIds];
+}
+
+class UnhideMultipleFilesEvent extends HideEvent {
+  final DriveID driveId;
+  final List<FileID> fileIds;
+
+  const UnhideMultipleFilesEvent({
+    required this.driveId,
+    required this.fileIds,
+  });
+
+  @override
+  List<Object> get props => [driveId, fileIds];
+}
+
 class HideFolderEvent extends HideEvent {
   final DriveID driveId;
   final FolderID folderId;
