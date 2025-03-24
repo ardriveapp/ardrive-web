@@ -25,7 +25,7 @@ void main() {
   late MockSecureKeyValueStore mockSecureKeyValueStore;
   late MockArConnectService mockArConnectService;
   late MockDatabaseHelpers mockDatabaseHelpers;
-
+  late MockDriveDao mockDriveDao;
   final wallet = getTestWallet();
 
   setUp(() async {
@@ -36,6 +36,7 @@ void main() {
     mockSecureKeyValueStore = MockSecureKeyValueStore();
     mockArConnectService = MockArConnectService();
     mockDatabaseHelpers = MockDatabaseHelpers();
+    mockDriveDao = MockDriveDao();
 
     final metadataCache = await MetadataCache.fromCacheStore(
       await newMemoryCacheStore(),
@@ -50,6 +51,7 @@ void main() {
       biometricAuthentication: mockBiometricAuthentication,
       secureKeyValueStore: mockSecureKeyValueStore,
       metadataCache: metadataCache,
+      driveDao: mockDriveDao,
     );
 
     registerFallbackValue(DriveEntity(
@@ -583,6 +585,8 @@ void main() {
             .thenAnswer((invocation) => Future.value(true));
         when(() => mockDatabaseHelpers.deleteAllTables())
             .thenAnswer((invocation) async {});
+        when(() => mockDriveDao.removeAllDriveKeys())
+            .thenAnswer((invocation) async {});
 
         await arDriveAuth.logout();
 
@@ -592,6 +596,7 @@ void main() {
         verify(() => mockSecureKeyValueStore.remove('biometricEnabled'))
             .called(1);
         verify(() => mockDatabaseHelpers.deleteAllTables()).called(1);
+        verify(() => mockDriveDao.removeAllDriveKeys()).called(1);
       });
 
       /// This is for the case when has user is true but the user is not logged in
@@ -605,12 +610,15 @@ void main() {
             .thenAnswer((invocation) async {});
         when(() => mockUserRepository.deleteUser())
             .thenAnswer((invocation) async {});
+        when(() => mockDriveDao.removeAllDriveKeys())
+            .thenAnswer((invocation) async {});
 
         await arDriveAuth.logout();
 
         verifyNever(() => mockSecureKeyValueStore.remove('password'));
         verifyNever(() => mockSecureKeyValueStore.remove('biometricEnabled'));
         verify(() => mockDatabaseHelpers.deleteAllTables()).called(1);
+        verify(() => mockDriveDao.removeAllDriveKeys()).called(1);
         verify(() => mockUserRepository.deleteUser()).called(1);
         expect(() => arDriveAuth.currentUser,
             throwsA(isA<AuthenticationUserIsNotLoggedInException>()));
@@ -674,6 +682,8 @@ void main() {
             .thenAnswer((invocation) => Future.value(true));
         when(() => mockDatabaseHelpers.deleteAllTables())
             .thenAnswer((invocation) async {});
+        when(() => mockDriveDao.removeAllDriveKeys())
+            .thenAnswer((invocation) async {});
 
         await arDriveAuth.login(wallet, 'password', ProfileType.json);
 
@@ -687,6 +697,7 @@ void main() {
         verify(() => mockSecureKeyValueStore.remove('biometricEnabled'))
             .called(1);
         verify(() => mockDatabaseHelpers.deleteAllTables()).called(1);
+        verify(() => mockDriveDao.removeAllDriveKeys()).called(1);
         verify(() => mockUserRepository.deleteUser()).called(1);
       });
     });
@@ -738,7 +749,8 @@ void main() {
         when(() => mockUserRepository.saveUser(
                 'password', ProfileType.json, wallet))
             .thenAnswer((invocation) => Future.value(null));
-
+        when(() => mockDriveDao.removeAllDriveKeys())
+            .thenAnswer((invocation) async {});
         when(() => mockUserRepository.getUser('password'))
             .thenAnswer((invocation) async => loggedUser);
 
