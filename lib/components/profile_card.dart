@@ -735,6 +735,7 @@ class ProfileCardHeader extends StatelessWidget {
     if (state is ProfileNameLoaded) {
       return state.primaryNameDetails.primaryName;
     }
+
     return truncateString(walletAddress, offsetStart: 2, offsetEnd: 2);
   }
 
