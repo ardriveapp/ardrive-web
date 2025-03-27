@@ -296,6 +296,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
             context
                 .read<DriveDetailCubit>()
                 .openFolder(folderId: state.parentFolder.id);
+            context.read<DriveDetailCubit>().refreshDriveDataTable();
             Navigator.pop(context);
           },
           title: 'Close',
