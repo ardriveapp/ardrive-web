@@ -244,6 +244,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         return;
       }
 
+      if (e is PrivateDriveNotFoundException) {
+        emit(LoginPasswordFailedWithPrivateDriveNotFound());
+        return;
+      }
+
       emit(LoginUnknownFailure(e));
     }
   }

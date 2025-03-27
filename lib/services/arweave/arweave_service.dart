@@ -704,6 +704,10 @@ class ArweaveService {
       final fileTx = filteredEdges.first.node;
       final fileDataRes = await client.api.getSandboxedTx(fileTx.id);
 
+      if (fileDataRes.statusCode == 404) {
+        throw TransactionNotFound(fileTx.id);
+      }
+
       try {
         return await DriveEntity.fromTransaction(
             fileTx, _crypto, fileDataRes.bodyBytes, driveKey);
@@ -1363,4 +1367,10 @@ class UploadTransactions {
   Transaction dataTx;
 
   UploadTransactions(this.entityTx, this.dataTx);
+}
+
+class TransactionNotFound implements Exception {
+  final String txId;
+
+  TransactionNotFound(this.txId);
 }

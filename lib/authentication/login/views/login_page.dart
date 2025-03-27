@@ -193,6 +193,14 @@ class _LoginPageState extends State<LoginPage> {
               message:
                   'There was a problem communicating with the gateway at ${loginState.gatewayUrl}.\nPlease try again later.',
             );
+          } else if (loginState
+              is LoginPasswordFailedWithPrivateDriveNotFound) {
+            showErrorDialog(
+              context: context,
+              title: appLocalizationsOf(context).loginFailed,
+              message:
+                  'Your drive is still processing on Arweave. Please wait a few minutes for the transaction to confirm, then try again.',
+            );
           }
         },
         buildWhen: (previous, current) {
