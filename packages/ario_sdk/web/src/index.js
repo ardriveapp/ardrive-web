@@ -173,21 +173,37 @@ async function getProcesses(address) {
 }
 
 async function getPrimaryNameAndLogo(address, getLogo = true) {
-  const primaryName = await ario.getPrimaryName({ address: address });
-  var info;
-  var record;
-  if (getLogo) {
-    record = await ario.getArNSRecord({ name: primaryName.name }).catch((e) => {
-      console.error('Error fetching ARNS record:', e);
-      return null;
-    });
-    const ant = ANT.init({process: new AOProcess({processId: record.processId, ao: connect({ CU_URL: "https://cu.ardrive.io" })})});
-    info = !record ? null : await ant.getInfo().catch((e) => {
-      console.error('Error fetching ANT info:', e);
-      return null;
-    });
+  let primaryName;
+
+  try {
+     primaryName = await ario.getPrimaryName({ address: address });
+  } catch(e) {
+    console.error('Error fetching primary name:', e);
   }
-  // antInfo can be null
-  // arnsRecord can be null
-  return JSON.stringify({primaryName: primaryName, antInfo: info, arnsRecord: record });
+
+  var info = null;
+  var record = null;
+
+  if (getLogo && primaryName && primaryName.name) {
+    try {
+      record = await ario.getArNSRecord({ name: primaryName.name });
+      if (record && record.processId) {
+        const ant = ANT.init({
+          process: new AOProcess({
+            processId: record.processId,
+            ao: connect({ CU_URL: "https://cu.ardrive.io" })
+          })
+        });
+        info = await ant.getInfo();
+      }
+    } catch(e) {
+      console.error('Error fetching logo info:', e);
+    }
+  }
+
+  return JSON.stringify({
+    primaryName: primaryName,
+    antInfo: info,
+    arnsRecord: record
+  });
 }

@@ -25,7 +25,6 @@ final class ProfileNameLoading extends ProfileNameState {
 
 final class ProfileNameLoaded extends ProfileNameState {
   final PrimaryNameDetails primaryNameDetails;
-
   const ProfileNameLoaded(this.primaryNameDetails, this.walletAddress);
 
   @override
