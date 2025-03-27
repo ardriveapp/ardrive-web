@@ -6,8 +6,22 @@ abstract class CreateManifestState extends Equatable {
   List get props => [];
 }
 
-/// Initial state where user begins by selecting a name for the manifest
+/// Initial state where user begins by selecting a folder for the manifest
 class CreateManifestInitial extends CreateManifestState {}
+
+/// Folder has been selected, now user enters a name for the manifest
+class CreateManifestNameInput extends CreateManifestState {
+  final FolderEntry parentFolder;
+  final String? fallbackTxId;
+
+  CreateManifestNameInput({
+    required this.parentFolder,
+    this.fallbackTxId,
+  });
+
+  @override
+  List<Object?> get props => [parentFolder, fallbackTxId];
+}
 
 /// Name has been selected, user is now selecting which folder to create a manifest of
 class CreateManifestFolderLoadSuccess extends CreateManifestState {
@@ -218,8 +232,12 @@ class CreateManifestFailure extends CreateManifestState {}
 /// Manifest transaction has been successfully uploaded
 class CreateManifestSuccess extends CreateManifestState {
   final bool nameAssignedByArNS;
+  final FolderEntry parentFolder;
 
-  CreateManifestSuccess({this.nameAssignedByArNS = false});
+  CreateManifestSuccess({
+    required this.parentFolder,
+    this.nameAssignedByArNS = false,
+  });
 }
 
 enum CreateManifestUploadProgress {

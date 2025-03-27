@@ -63,6 +63,43 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       // Private manifests need more consideration and are currently unavailable
       emit(CreateManifestPrivacyMismatch());
     }
+    // Initialize folder selection immediately in the new workflow
+    _initFolderSelection();
+  }
+
+  /// Initialize folder selection on creation
+  Future<void> _initFolderSelection() async {
+    logger.i('Initializing folder selection for drive: ${_drive.id}');
+    rootFolderNode =
+        await _folderRepository.getFolderNode(_drive.id, _drive.rootFolderId);
+    logger.d('Root folder node loaded with id: ${rootFolderNode.folder.id}');
+
+    _hasPendingFiles = await _hasPendingFilesInFolder(rootFolderNode);
+    logger.d('Folder has pending files: $_hasPendingFiles');
+
+    await loadFolder(_drive.rootFolderId);
+  }
+
+  /// User has selected a folder and is ready to proceed to name input
+  void promptForManifestName() {
+    logger.i('Prompting for manifest name');
+    final state = this.state as CreateManifestFolderLoadSuccess;
+    emit(CreateManifestNameInput(
+      parentFolder: state.viewingFolder.folder,
+      fallbackTxId: state.fallbackTxId,
+    ));
+  }
+
+  /// Process manifest name and check for conflicts
+  Future<void> processManifestName(String name) async {
+    logger.i('Processing manifest name: $name');
+    if (state is CreateManifestNameInput) {
+      final nameInputState = state as CreateManifestNameInput;
+      final parentFolder = nameInputState.parentFolder;
+
+      emit(CreateManifestCheckingForConflicts(parentFolder: parentFolder));
+      await checkNameConflicts(name);
+    }
   }
 
   void selectUploadMethod(
@@ -371,6 +408,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
         emit(CreateManifestSuccess(
           nameAssignedByArNS: _selectedUndername != null,
+          parentFolder: createManifestUploadReview.parentFolder,
         ));
       } catch (e) {
         logger.e('An error occured uploading the manifest.', e);
