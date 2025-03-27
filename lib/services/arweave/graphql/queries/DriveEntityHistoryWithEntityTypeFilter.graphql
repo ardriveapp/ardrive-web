@@ -8,7 +8,7 @@ query DriveEntityHistoryWithoutEntityTypeFilter(
   transactions(
     owners: [$ownerAddress]
     first: 100
-    sort: HEIGHT_ASC
+    sort: HEIGHT_DESC
     tags: [
       { name: "Drive-Id", values: [$driveId] }
     ]
