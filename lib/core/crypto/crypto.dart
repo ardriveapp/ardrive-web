@@ -44,15 +44,35 @@ class ArDriveCrypto {
     Wallet wallet,
     String driveId,
     String password,
+    String signatureType,
   ) async {
     final message =
         Uint8List.fromList(utf8.encode('drive') + Uuid.parse(driveId));
-    final walletSignature = await wallet.sign(message);
-    return hkdf.deriveKey(
+
+    final Uint8List walletSignature;
+
+    if (signatureType == '1') {
+      walletSignature = await wallet.sign(message);
+    } else if (signatureType == '2') {
+      final owner = await wallet.getOwner();
+      final dataItem = DataItem.withBlobData(data: message, owner: owner);
+      dataItem.addTag('Action', 'Generate-Signature-V2');
+      try {
+        walletSignature = await wallet.signDataItem(dataItem);
+      } catch (e) {
+        throw Exception('Failed to sign data item: $e');
+      }
+    } else {
+      throw Exception('Invalid signature type: $signatureType');
+    }
+
+    final key = hkdf.deriveKey(
       secretKey: SecretKey(walletSignature),
       info: utf8.encode(password),
       nonce: Uint8List(1),
     );
+
+    return key;
   }
 
   Future<SecretKey> deriveFileKey(SecretKey driveKey, String fileId) async {

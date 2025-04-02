@@ -176,6 +176,12 @@ class Database extends _$Database {
               await m.addColumn(fileEntries, fileEntries.importSource);
               await m.addColumn(fileRevisions, fileRevisions.importSource);
             }
+
+            if (from < 27) {
+              logger.d('Migrating schema from v26 to v27');
+
+              await m.addColumn(drives, drives.signatureType);
+            }
           } catch (e, stacktrace) {
             logger.e(
               'CRITICAL! Failed to migrate database from $from to $to',

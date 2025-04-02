@@ -51,3 +51,24 @@ async function getSignature(message) {
   var array = Uint8Array.from(Object.values(response));
   return array;
 }
+
+async function signDataItem(data, tags, owner, target, anchor) {
+  const jsTags = tags.map(tag => ({
+    name: atob(tag.name),
+    value: atob(tag.value),
+  }));
+
+  const jsDataItem = {
+    owner: owner,
+    target: target,
+    anchor: anchor,
+    data: data,
+    tags: jsTags,
+  };
+  var signed = await window.arweaveWallet.signDataItem(jsDataItem, { saltLength: 0});
+
+  // Signature stored after first two bytes, and arweave sig length is 512
+  var signature = signed.slice(2, 514);
+
+  return new Uint8Array(signature);
+}

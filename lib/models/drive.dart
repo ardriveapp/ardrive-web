@@ -15,6 +15,7 @@ extension DriveExtensions on Drive {
       rootFolderId: rootFolderId,
       privacy: privacy,
       isHidden: isHidden,
+      signatureType: signatureType,
       authMode: privacy == DrivePrivacyTag.private
           ? DriveAuthModeTag.password
           : DriveAuthModeTag.none,

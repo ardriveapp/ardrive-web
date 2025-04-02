@@ -26,12 +26,16 @@ class DriveEntity extends EntityWithCustomMetadata {
 
   bool? isHidden;
 
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  String? signatureType;
+
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   List<String> reservedGqlTags = [
     ...EntityWithCustomMetadata.sharedReservedGqlTags,
     EntityTag.drivePrivacy,
     EntityTag.driveAuthMode,
+    EntityTag.signatureType
   ];
 
   @override
@@ -41,14 +45,15 @@ class DriveEntity extends EntityWithCustomMetadata {
     'rootFolderId',
   ];
 
-  DriveEntity({
-    this.id,
-    this.name,
-    this.rootFolderId,
-    this.privacy,
-    this.authMode,
-    this.isHidden,
-  }) : super(ArDriveCrypto());
+  DriveEntity(
+      {this.id,
+      this.name,
+      this.rootFolderId,
+      this.privacy,
+      this.authMode,
+      this.isHidden,
+      this.signatureType})
+      : super(ArDriveCrypto());
 
   static Future<DriveEntity> fromTransaction(
     TransactionCommonMixin transaction,
@@ -105,6 +110,7 @@ class DriveEntity extends EntityWithCustomMetadata {
 
     if (privacy == DrivePrivacyTag.private) {
       tx.addTag(EntityTag.driveAuthMode, authMode!);
+      tx.addTag(EntityTag.signatureType, signatureType ?? '1');
     }
   }
 

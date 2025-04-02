@@ -552,7 +552,7 @@ class ArweaveService {
     return drives;
   }
 
-  Future<String?> getFirstPrivateDriveTxId(
+  Future<TransactionCommonMixin?> getFirstPrivateDriveTx(
     Wallet wallet, {
     int maxRetries = defaultMaxRetries,
   }) async {
@@ -564,9 +564,9 @@ class ArweaveService {
     final privateDriveTxs = driveTxs.where(
         (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private);
 
-    return privateDriveTxs.isNotEmpty
-        ? privateDriveTxs.first.getTag(EntityTag.driveId)!
-        : null;
+    final firstTx = privateDriveTxs.isNotEmpty ? privateDriveTxs.first : null;
+
+    return firstTx;
   }
 
   /// Gets the unique drive entities for a particular user.
@@ -603,10 +603,14 @@ class ArweaveService {
           );
 
           if (driveKey == null) {
+            final signatureType =
+                driveTx.getTag(EntityTag.signatureType) ?? '1';
+
             driveKey = await _crypto.deriveDriveKey(
               wallet,
               driveTx.getTag(EntityTag.driveId)!,
               password,
+              signatureType,
             );
 
             _driveDao.putDriveKeyInMemory(
@@ -867,10 +871,13 @@ class ArweaveService {
     }
 
     final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId)!;
+    final signatureType =
+        privateDriveTxs.first.getTag(EntityTag.signatureType) ?? '1';
     final checkDriveKey = await _crypto.deriveDriveKey(
       wallet,
       checkDriveId,
       password,
+      signatureType,
     );
 
     return await getLatestDriveEntityWithId(

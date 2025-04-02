@@ -21,7 +21,7 @@ void main() {
     when(() => mockAppInfo.platform).thenReturn('Android');
     when(() => mockAppInfo.appName).thenReturn('ArDrive-App');
     when(() => mockAppInfoServices.appInfo).thenReturn(mockAppInfo);
-    when(() => mockAppInfo.arfsVersion).thenReturn('0.14');
+    when(() => mockAppInfo.arfsVersion).thenReturn('0.15');
   });
 
   test(

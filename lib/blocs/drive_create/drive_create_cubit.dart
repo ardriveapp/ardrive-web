@@ -73,6 +73,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     try {
       final String drivePrivacy = form.control('privacy').value;
       final walletAddress = await profile.user.wallet.getAddress();
+
       final createRes = await _driveDao.createDrive(
         name: driveName,
         ownerAddress: walletAddress,
@@ -90,6 +91,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         authMode: drivePrivacy == DrivePrivacyTag.private
             ? DriveAuthModeTag.password
             : null,
+        signatureType: drivePrivacy == DrivePrivacyTag.private ? '2' : null,
       );
 
       final driveDataItem = await _arweave.prepareEntityDataItem(

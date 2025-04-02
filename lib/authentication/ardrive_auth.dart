@@ -15,6 +15,7 @@ import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive_logger/ardrive_logger.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
@@ -145,10 +146,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
   @override
   Future<bool> userHasPassword(Wallet wallet) async {
     try {
-      final firstDrivePrivateDriveTxId =
-          await _getFirstPrivateDriveTxId(wallet);
+      final firstDrivePrivateDriveTx = await _getFirstPrivateDriveTx(wallet);
 
-      return firstDrivePrivateDriveTxId != null;
+      return firstDrivePrivateDriveTx != null;
     } catch (e) {
       if (e is GraphQLException) {
         throw const AuthenticationGatewayException();
@@ -298,25 +298,29 @@ class ArDriveAuthImpl implements ArDriveAuth {
     Wallet wallet,
     String password,
   ) async {
-    String? firstDrivePrivateDriveTxId;
+    final firstPrivateDriveTx = await _getFirstPrivateDriveTx(wallet);
 
-    firstDrivePrivateDriveTxId = await _getFirstPrivateDriveTxId(wallet);
     // Try and decrypt one of the user's private drive entities to check if they are entering the
     // right password.
-    if (firstDrivePrivateDriveTxId != null) {
+    if (firstPrivateDriveTx != null) {
+      final driveId = firstPrivateDriveTx.getTag(EntityTag.driveId)!;
+      final sigTypeTag = firstPrivateDriveTx.getTag(EntityTag.signatureType);
+      final sigType = sigTypeTag ?? '1';
+
       late SecretKey checkDriveKey;
       try {
         checkDriveKey = await _crypto.deriveDriveKey(
           wallet,
-          firstDrivePrivateDriveTxId,
+          driveId,
           password,
+          sigType,
         );
       } catch (e) {
         throw WrongPasswordException('Password is incorrect');
       }
 
       final privateDrive = await _arweave.getLatestDriveEntityWithId(
-        firstDrivePrivateDriveTxId,
+        driveId,
         driveKey: checkDriveKey,
         driveOwner: await wallet.getAddress(),
         maxRetries: profileQueryMaxRetries,
@@ -389,8 +393,8 @@ class ArDriveAuthImpl implements ArDriveAuth {
     await _secureKeyValueStore.putString('password', password);
   }
 
-  Future<String?> _getFirstPrivateDriveTxId(Wallet wallet) async {
-    return _arweave.getFirstPrivateDriveTxId(
+  Future<TransactionCommonMixin?> _getFirstPrivateDriveTx(Wallet wallet) async {
+    return _arweave.getFirstPrivateDriveTx(
       wallet,
       maxRetries: profileQueryMaxRetries,
     );
