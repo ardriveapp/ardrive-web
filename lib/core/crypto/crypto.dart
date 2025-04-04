@@ -40,6 +40,15 @@ class ArDriveCrypto {
     return ProfileKeyDerivationResult(profileKey, salt);
   }
 
+  /// Derives Drive Key:
+  ///
+  /// v1 - uses signature()
+  /// v2 - uses signDataItem()
+  ///
+  /// ArFS v15 introduced v2 signature type to deal with deprecation of signature()
+  /// in Wander. If a v1 Drive is found, this will attempt to first find a stored
+  /// v1 drive key on Arweave and decrypt it using v2 drive key. If not found,
+  /// will try to use signature() if available.
   Future<SecretKey> deriveDriveKey(
     Wallet wallet,
     String driveId,

@@ -81,6 +81,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         wallet: profile.user.wallet,
         password: profile.user.password,
         profileKey: profile.user.cipherKey,
+        signatureType: drivePrivacy == DrivePrivacyTag.private ? '2' : null,
       );
 
       final drive = DriveEntity(

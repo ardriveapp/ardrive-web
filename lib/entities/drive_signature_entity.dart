@@ -10,90 +10,66 @@ import 'package:json_annotation/json_annotation.dart';
 
 import 'entities.dart';
 
-part 'drive_entity.g.dart';
+part 'drive_signature_entity.g.dart';
 
 @JsonSerializable()
-class DriveEntity extends EntityWithCustomMetadata {
+class DriveSignatureEntity extends EntityWithCustomMetadata {
   @JsonKey(includeFromJson: false, includeToJson: false)
   String? id;
   @JsonKey(includeFromJson: false, includeToJson: false)
-  String? privacy;
+  String? driveId;
   @JsonKey(includeFromJson: false, includeToJson: false)
-  String? authMode;
-
-  String? name;
-  String? rootFolderId;
-
-  bool? isHidden;
-
+  String? signatureFormat;
   @JsonKey(includeFromJson: false, includeToJson: false)
-  String? signatureType;
+  Uint8List? data;
 
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   List<String> reservedGqlTags = [
     ...EntityWithCustomMetadata.sharedReservedGqlTags,
-    EntityTag.drivePrivacy,
-    EntityTag.driveAuthMode,
-    EntityTag.signatureType
+    EntityTag.signatureFormat,
   ];
 
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   List<String> reservedJsonMetadataKeys = [
     ...EntityWithCustomMetadata.sharedReservedJsonMetadataKeys,
-    'rootFolderId',
   ];
 
-  DriveEntity(
-      {this.id,
-      this.name,
-      this.rootFolderId,
-      this.privacy,
-      this.authMode,
-      this.isHidden,
-      this.signatureType})
-      : super(ArDriveCrypto());
+  DriveSignatureEntity({
+    this.id,
+    this.driveId,
+    this.signatureFormat,
+  }) : super(ArDriveCrypto());
 
-  static Future<DriveEntity> fromTransaction(
+  static Future<DriveSignatureEntity> fromTransaction(
     TransactionCommonMixin transaction,
     ArDriveCrypto crypto,
     Uint8List data, [
     SecretKey? driveKey,
   ]) async {
     try {
-      final drivePrivacy =
-          transaction.getTag(EntityTag.drivePrivacy) ?? DrivePrivacyTag.public;
+      final entityJson = json.decode(utf8.decode(data));
 
-      Map<String, dynamic>? entityJson;
-      if (drivePrivacy == DrivePrivacyTag.public) {
-        entityJson = json.decode(utf8.decode(data));
-      } else if (drivePrivacy == DrivePrivacyTag.private) {
-        entityJson =
-            await crypto.decryptEntityJson(transaction, data, driveKey!);
-      }
-
-      final drive = DriveEntity.fromJson(entityJson!)
+      final driveSignature = DriveSignatureEntity.fromJson(entityJson!)
         ..id = transaction.getTag(EntityTag.driveId)
-        ..privacy = drivePrivacy
-        ..authMode = transaction.getTag(EntityTag.driveAuthMode)
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
         ..bundledIn = transaction.bundledIn?.id
         ..createdAt = transaction.getCommitTime()
-        ..signatureType = transaction.getTag(EntityTag.signatureType);
+        ..data = data;
 
       final tags = transaction.tags
           .map(
             (t) => Tag.fromJson(t.toJson()),
           )
           .toList();
-      drive.customGqlTags = EntityWithCustomMetadata.getCustomGqlTags(
-        drive,
+      driveSignature.customGqlTags = EntityWithCustomMetadata.getCustomGqlTags(
+        driveSignature,
         tags,
       );
 
-      return drive;
+      return driveSignature;
     } catch (_) {
       throw EntityTransactionParseException(transactionId: transaction.id);
     }
@@ -101,22 +77,17 @@ class DriveEntity extends EntityWithCustomMetadata {
 
   @override
   void addEntityTagsToTransaction<T extends TransactionBase>(T tx) {
-    assert(id != null && rootFolderId != null && privacy != null);
+    assert(id != null && driveId != null);
 
     tx
       ..addArFsTag()
-      ..addTag(EntityTag.entityType, EntityTypeTag.drive)
-      ..addTag(EntityTag.driveId, id!)
-      ..addTag(EntityTag.drivePrivacy, privacy!);
-
-    if (privacy == DrivePrivacyTag.private) {
-      tx.addTag(EntityTag.driveAuthMode, authMode!);
-      tx.addTag(EntityTag.signatureType, signatureType ?? '1');
-    }
+      ..addTag(EntityTag.entityType, EntityTypeTag.driveSignature)
+      ..addTag(EntityTag.driveId, driveId!)
+      ..addTag(EntityTag.signatureFormat, signatureFormat!);
   }
 
-  factory DriveEntity.fromJson(Map<String, dynamic> json) {
-    final entity = _$DriveEntityFromJson(json);
+  factory DriveSignatureEntity.fromJson(Map<String, dynamic> json) {
+    final entity = _$DriveSignatureEntityFromJson(json);
     entity.customJsonMetadata = EntityWithCustomMetadata.getCustomJsonMetadata(
       entity,
       json,
@@ -124,7 +95,7 @@ class DriveEntity extends EntityWithCustomMetadata {
     return entity;
   }
   Map<String, dynamic> toJson() {
-    final thisJson = _$DriveEntityToJson(this);
+    final thisJson = _$DriveSignatureEntityToJson(this);
     final custom = customJsonMetadata ?? {};
     final merged = {...thisJson, ...custom};
     return merged;

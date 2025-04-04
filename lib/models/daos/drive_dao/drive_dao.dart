@@ -220,6 +220,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     required String privacy,
     required Wallet wallet,
     required String password,
+    required String? signatureType,
     required SecretKey profileKey,
   }) async {
     // TODO: A DAO object should not be responsible for generating UUIDs.
@@ -232,6 +233,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       ownerAddress: ownerAddress,
       rootFolderId: rootFolderId,
       privacy: privacy,
+      signatureType: Value.absentIfNull(signatureType),
     );
 
     // TODO: A DAO object should not be responsible for deriving keys.
@@ -309,6 +311,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
               dateCreated: Value(entity.createdAt),
               lastUpdated: Value(entity.createdAt),
               isHidden: Value(entity.isHidden ?? false),
+              signatureType: Value.absentIfNull(entity.signatureType),
             );
 
             if (entity.privacy == DrivePrivacyTag.private) {
@@ -340,6 +343,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       privacy: entity.privacy!,
       dateCreated: Value(entity.createdAt),
       lastUpdated: Value(entity.createdAt),
+      signatureType: Value.absentIfNull(entity.signatureType),
     );
 
     if (entity.privacy == DrivePrivacyTag.private) {
