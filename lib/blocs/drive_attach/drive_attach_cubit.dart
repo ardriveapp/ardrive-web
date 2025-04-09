@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
@@ -29,12 +30,12 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
   final driveKeyController = TextEditingController();
   final driveIdController = TextEditingController();
 
-  late SecretKey? _driveKey;
+  late DriveKey? _driveKey;
 
   DriveAttachCubit({
     DriveID? initialDriveId,
     String? initialDriveName,
-    SecretKey? initialDriveKey,
+    DriveKey? initialDriveKey,
     SecretKey? profileKey,
     required ArweaveService arweave,
     required DriveDao driveDao,
@@ -56,7 +57,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
   Future<void> initializeForm({
     String? driveId,
     String? driveName,
-    SecretKey? driveKey,
+    DriveKey? driveKey,
   }) async {
     _driveKey = driveKey;
 
@@ -78,7 +79,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
           }
           if (driveKey != null) {
             driveKeyController.text = base64Encode(
-              await driveKey.extractBytes(),
+              await driveKey.key.extractBytes(),
             );
           }
 
@@ -125,7 +126,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
       final driveEntity = await _arweave.getLatestDriveEntityWithId(
         driveId,
-        driveKey: _driveKey,
+        driveKey: _driveKey?.key,
       );
 
       if (driveEntity == null) {
@@ -159,7 +160,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     }
   }
 
-  Future<SecretKey?> getDriveKey(
+  Future<DriveKey?> getDriveKey(
     String? promptedDriveKey,
   ) async {
     if (promptedDriveKey == null || promptedDriveKey.isEmpty) {
@@ -174,7 +175,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       return null;
     }
 
-    return driveKey;
+    return DriveKey(driveKey, true);
   }
 
   Future<bool> driveNameLoader() async {
@@ -193,8 +194,8 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       }
     }
 
-    final drive =
-        await _arweave.getLatestDriveEntityWithId(driveId, driveKey: _driveKey);
+    final drive = await _arweave.getLatestDriveEntityWithId(driveId,
+        driveKey: _driveKey?.key);
 
     if (drive == null) {
       return false;
@@ -214,8 +215,8 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
     _driveKey = await getDriveKey(promptedDriveKey);
 
-    final drive =
-        await _arweave.getLatestDriveEntityWithId(driveId, driveKey: _driveKey);
+    final drive = await _arweave.getLatestDriveEntityWithId(driveId,
+        driveKey: _driveKey?.key);
 
     if (drive == null) {
       return 'Invalid drive key';

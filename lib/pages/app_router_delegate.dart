@@ -11,6 +11,7 @@ import 'package:ardrive/components/feedback_survey.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/repository/drive_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/drive_explorer/dock/ardrive_dock.dart';
 import 'package:ardrive/drive_explorer/multi_thumbnail_creation/multi_thumbnail_creation_modal.dart';
@@ -18,10 +19,12 @@ import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/shared/blocs/private_drive_migration/private_drive_migration_bloc.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/repositories/sync_repository.dart';
 import 'package:ardrive/theme/theme_switcher_bloc.dart';
 import 'package:ardrive/theme/theme_switcher_state.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -41,7 +44,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   String? driveName;
   String? driveFolderId;
 
-  SecretKey? sharedDriveKey;
+  DriveKey? sharedDriveKey;
   String? sharedRawDriveKey;
 
   String? sharedFileId;
@@ -308,6 +311,15 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                             context.read<PromptToSnapshotBloc>(),
                         userPreferencesRepository:
                             context.read<UserPreferencesRepository>(),
+                      ),
+                    ),
+                    BlocProvider<PrivateDriveMigrationBloc>(
+                      create: (context) => PrivateDriveMigrationBloc(
+                        drivesCubit: context.read<DrivesCubit>(),
+                        driveDao: context.read<DriveDao>(),
+                        ardriveAuth: context.read<ArDriveAuth>(),
+                        crypto: ArDriveCrypto(),
+                        turboUploadService: context.read<TurboUploadService>(),
                       ),
                     ),
                   ],

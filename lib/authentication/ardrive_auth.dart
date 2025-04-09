@@ -18,7 +18,6 @@ import 'package:ardrive_logger/ardrive_logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
-import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
 import 'package:stash_shared_preferences/stash_shared_preferences.dart';
 
@@ -307,7 +306,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
       final sigTypeTag = firstPrivateDriveTx.getTag(EntityTag.signatureType);
       final sigType = sigTypeTag ?? '1';
 
-      late SecretKey checkDriveKey;
+      late DriveKey checkDriveKey;
       try {
         checkDriveKey = await _crypto.deriveDriveKey(
           wallet,
@@ -321,7 +320,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
       final privateDrive = await _arweave.getLatestDriveEntityWithId(
         driveId,
-        driveKey: checkDriveKey,
+        driveKey: checkDriveKey.key,
         driveOwner: await wallet.getAddress(),
         maxRetries: profileQueryMaxRetries,
       );

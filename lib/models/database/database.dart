@@ -181,6 +181,7 @@ class Database extends _$Database {
               logger.d('Migrating schema from v26 to v27');
 
               await m.addColumn(drives, drives.signatureType);
+              await m.addColumn(drives, drives.driveKeyGenerated);
             }
           } catch (e, stacktrace) {
             logger.e(

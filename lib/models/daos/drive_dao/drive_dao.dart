@@ -30,7 +30,7 @@ part 'folder_with_contents.dart';
 class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   final _uuid = const Uuid();
 
-  late Vault<SecretKey> _driveKeyVault;
+  late Vault<DriveKey> _driveKeyVault;
 
   late Vault<Uint8List> _previewVault;
 
@@ -47,7 +47,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     final store = await newMemoryVaultStore();
 
     // Creates a vault from the previously created store
-    _driveKeyVault = await store.vault<SecretKey>(name: 'driveKeyVault');
+    _driveKeyVault = await store.vault<DriveKey>(name: 'driveKeyVault');
     _previewVault = await store.vault<Uint8List>(name: 'previewVault');
   }
 
@@ -82,7 +82,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     }
   }
 
-  Future<SecretKey?> getDriveKeyFromMemory(DriveID driveID) async {
+  Future<DriveKey?> getDriveKeyFromMemory(DriveID driveID) async {
     try {
       return await _driveKeyVault.get(driveID);
     } catch (e) {
@@ -92,7 +92,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   Future<void> putDriveKeyInMemory({
     required DriveID driveID,
-    required SecretKey driveKey,
+    required DriveKey driveKey,
   }) async {
     try {
       return await _driveKeyVault.put(driveID, driveKey);
@@ -237,7 +237,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     );
 
     // TODO: A DAO object should not be responsible for deriving keys.
-    SecretKey? driveKey;
+    DriveKey? driveKey;
     switch (privacy) {
       case DrivePrivacyTag.private:
         driveKey = await _crypto.deriveDriveKey(wallet, driveId, password, '2');
@@ -268,7 +268,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return CreateDriveResult(
       driveId,
       rootFolderId,
-      driveKey,
+      driveKey?.key,
     );
   }
 
@@ -294,7 +294,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   /// Adds or updates the user's drives with the provided drive entities.
   Future<void> updateUserDrives(
-    Map<DriveEntity, SecretKey?> driveEntities,
+    Map<DriveEntity, DriveKey?> driveEntities,
     SecretKey? profileKey,
   ) =>
       db.batch(
@@ -332,7 +332,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<void> writeDriveEntity({
     required String name,
     required DriveEntity entity,
-    SecretKey? driveKey,
+    DriveKey? driveKey,
     SecretKey? profileKey,
   }) async {
     var companion = DrivesCompanion.insert(
@@ -370,15 +370,16 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<DrivesCompanion> _addDriveKeyToDriveCompanion(
     DrivesCompanion drive,
     SecretKey profileKey,
-    SecretKey driveKey,
+    DriveKey driveKey,
   ) async {
     final encryptionRes = await aesGcm.encrypt(
-      await driveKey.extractBytes(),
+      await driveKey.key.extractBytes(),
       secretKey: profileKey,
     );
 
     return drive.copyWith(
       encryptedKey: Value(encryptionRes.concatenation(nonce: false)),
+      driveKeyGenerated: Value(driveKey.generated),
       keyEncryptionIv: Value(encryptionRes.nonce as Uint8List),
     );
   }
@@ -386,7 +387,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   /// Returns the encryption key for the specified drive.
   ///
   /// `null` if the drive is public and unencrypted.
-  Future<SecretKey?> getDriveKey(String driveId, SecretKey profileKey) async {
+  Future<DriveKey?> getDriveKey(String driveId, SecretKey profileKey) async {
     final drive = await driveById(driveId: driveId).getSingle();
 
     if (drive.encryptedKey == null) {
@@ -401,7 +402,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       secretKey: profileKey,
     );
 
-    return SecretKey(driveKeyData);
+    return DriveKey(SecretKey(driveKeyData), drive.driveKeyGenerated!);
   }
 
   /// Returns the encryption key for the specified file.

@@ -1,4 +1,5 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/profile_dao.dart';
@@ -170,7 +171,8 @@ void main() {
 
           when(
             () => mockArDriveCrypto.deriveDriveKey(wallet, any(), any(), '1'),
-          ).thenAnswer((invocation) => Future.value(SecretKey([])));
+          ).thenAnswer(
+              (invocation) => Future.value(DriveKey(SecretKey([]), true)));
 
           when(() => mockUserRepository.hasUser())
               .thenAnswer((invocation) => Future.value(true));
@@ -234,7 +236,8 @@ void main() {
 
           when(
             () => mockArDriveCrypto.deriveDriveKey(wallet, any(), any(), '1'),
-          ).thenAnswer((invocation) => Future.value(SecretKey([])));
+          ).thenAnswer(
+              (invocation) => Future.value(DriveKey(SecretKey([]), true)));
 
           when(() => mockUserRepository.hasUser())
               .thenAnswer((invocation) => Future.value(true));
@@ -648,7 +651,8 @@ void main() {
 
         when(
           () => mockArDriveCrypto.deriveDriveKey(wallet, any(), any(), '1'),
-        ).thenAnswer((invocation) => Future.value(SecretKey([])));
+        ).thenAnswer(
+            (invocation) => Future.value(DriveKey(SecretKey([]), true)));
         when(() => mockUserRepository.hasUser())
             .thenAnswer((invocation) => Future.value(true));
         when(
@@ -713,7 +717,8 @@ void main() {
             .thenAnswer((_) async => fakePrivateDriveV1);
         when(
           () => mockArDriveCrypto.deriveDriveKey(wallet, any(), any(), '1'),
-        ).thenAnswer((invocation) => Future.value(SecretKey([])));
+        ).thenAnswer(
+            (invocation) => Future.value(DriveKey(SecretKey([]), true)));
         when(() => mockUserRepository.hasUser())
             .thenAnswer((invocation) => Future.value(true));
         when(() => mockUserRepository.getARIOTokens(wallet))

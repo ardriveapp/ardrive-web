@@ -219,7 +219,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
         file = file.copyWith(
             parentFolderId: parentFolder.id, lastUpdated: DateTime.now());
         final fileKey = driveKey != null
-            ? await _crypto.deriveFileKey(driveKey, file.id)
+            ? await _crypto.deriveFileKey(driveKey.key, file.id)
             : null;
 
         final fileEntity = file.asEntity();
@@ -253,7 +253,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
         final folderDataItem = await _arweave.prepareEntityDataItem(
           folderEntity,
           profile.user.wallet,
-          key: driveKey,
+          key: driveKey?.key,
         );
 
         moveTxDataItems.add(folderDataItem);

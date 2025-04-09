@@ -570,7 +570,7 @@ class ArweaveService {
   }
 
   /// Gets the unique drive entities for a particular user.
-  Future<Map<DriveEntity, SecretKey?>> getUniqueUserDriveEntities(
+  Future<Map<DriveEntity, DriveKey?>> getUniqueUserDriveEntities(
     Wallet wallet,
     String password,
   ) async {
@@ -586,7 +586,7 @@ class ArweaveService {
       });
 
       final drivesById = <String?, DriveEntity>{};
-      final drivesWithKey = <DriveEntity, SecretKey?>{};
+      final drivesWithKey = <DriveEntity, DriveKey?>{};
       for (var i = 0; i < driveTxs.length; i++) {
         final driveTx = driveTxs[i];
 
@@ -595,7 +595,7 @@ class ArweaveService {
           continue;
         }
 
-        SecretKey? driveKey;
+        DriveKey? driveKey;
 
         if (driveTx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private) {
           driveKey = await _driveDao.getDriveKeyFromMemory(
@@ -624,7 +624,7 @@ class ArweaveService {
             driveTx,
             _crypto,
             driveResponses[i].bodyBytes,
-            driveKey,
+            driveKey?.key,
           );
 
           drivesById[drive.id] = drive;
@@ -883,7 +883,7 @@ class ArweaveService {
     return await getLatestDriveEntityWithId(
       checkDriveId,
       driveOwner: await wallet.getAddress(),
-      driveKey: checkDriveKey,
+      driveKey: checkDriveKey.key,
     );
   }
 

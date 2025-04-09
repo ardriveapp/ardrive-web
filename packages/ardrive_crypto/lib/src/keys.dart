@@ -17,6 +17,7 @@ final pbkdf2 = Pbkdf2(
 final hkdf = Hkdf(hmac: Hmac(sha256), outputLength: keyByteLength);
 final aesGcm = AesGcm.with256bits();
 
+// TODO: Check if this file is necessary as this seems to be unused
 Future<SecretKey> deriveDriveKey(
   Wallet wallet,
   String driveId,

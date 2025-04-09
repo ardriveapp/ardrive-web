@@ -49,7 +49,7 @@ class ArDriveCrypto {
   /// in Wander. If a v1 Drive is found, this will attempt to first find a stored
   /// v1 drive key on Arweave and decrypt it using v2 drive key. If not found,
   /// will try to use signature() if available.
-  Future<SecretKey> deriveDriveKey(
+  Future<DriveKey> deriveDriveKey(
     Wallet wallet,
     String driveId,
     String password,
@@ -75,13 +75,13 @@ class ArDriveCrypto {
       throw Exception('Invalid signature type: $signatureType');
     }
 
-    final key = hkdf.deriveKey(
+    final key = await hkdf.deriveKey(
       secretKey: SecretKey(walletSignature),
       info: utf8.encode(password),
       nonce: Uint8List(1),
     );
 
-    return key;
+    return DriveKey(key, true);
   }
 
   Future<SecretKey> deriveFileKey(SecretKey driveKey, String fileId) async {
@@ -240,7 +240,6 @@ class ArDriveCrypto {
     SecretKey key,
   ) async {
     final encryptionRes = await aesGcm.encrypt(data.toList(), secretKey: key);
-
     return DataItem.withBlobData(
         // The encrypted data should be a concatenation of the cipher text and MAC.
         data: encryptionRes.concatenation(nonce: false))
@@ -251,6 +250,11 @@ class ArDriveCrypto {
         utils.encodeBytesToBase64(encryptionRes.nonce),
       );
   }
+
+  Future<SecretBox> encrypt(Uint8List data, SecretKey key) async {
+    final encryptionRes = await aesGcm.encrypt(data.toList(), secretKey: key);
+    return encryptionRes;
+  }
 }
 
 class ProfileKeyDerivationResult {
@@ -258,4 +262,11 @@ class ProfileKeyDerivationResult {
   final List<int> salt;
 
   ProfileKeyDerivationResult(this.key, this.salt);
+}
+
+class DriveKey {
+  final SecretKey key;
+  final bool generated;
+
+  DriveKey(this.key, this.generated);
 }

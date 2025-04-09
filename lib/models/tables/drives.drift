@@ -12,6 +12,7 @@ CREATE TABLE drives (
     privacy TEXT NOT NULL,
 
     encryptedKey BLOB,
+    driveKeyGenerated BOOLEAN DEFAULT TRUE,
     keyEncryptionIv BLOB,
 
     bundledIn TEXT,

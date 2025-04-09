@@ -135,7 +135,7 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
           final folderDataItem = await _arweave.prepareEntityDataItem(
             folderEntity,
             profile.user.wallet,
-            key: driveKey,
+            key: driveKey?.key,
           );
 
           await _turboUploadService.postDataItem(
@@ -147,7 +147,7 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
           final folderTx = await _arweave.prepareEntityTx(
             folderEntity,
             profile.user.wallet,
-            driveKey,
+            driveKey?.key,
           );
 
           await _arweave.postTx(folderTx);

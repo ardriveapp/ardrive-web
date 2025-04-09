@@ -1,14 +1,14 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
+import 'package:ardrive/components/migrate_private_drives_modal.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/components/topbar/help_button.dart';
-import 'package:ardrive/drive_explorer/multi_thumbnail_creation/multi_thumbnail_creation_warn_modal.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/config/config_service.dart';
-import 'package:ardrive/shared/blocs/banner/app_banner_bloc.dart';
+import 'package:ardrive/shared/blocs/private_drive_migration/private_drive_migration_bloc.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -203,11 +203,12 @@ class AppShellState extends State<AppShell> {
               final typography = ArDriveTypographyNew.of(context);
 
               return buildPage(
-                BlocBuilder<AppBannerBloc, AppBannerState>(
+                BlocBuilder<PrivateDriveMigrationBloc,
+                    PrivateDriveMigrationState>(
                   builder: (context, state) {
                     return Column(
                       children: [
-                        if (state is AppBannerVisible)
+                        if (state is! PrivateDriveMigrationHidden) ...[
                           Container(
                             height: 45,
                             width: double.maxFinite,
@@ -231,18 +232,17 @@ class AppShellState extends State<AppShell> {
                                       children: [
                                         TextSpan(
                                           text:
-                                              'ArDrive now supports thumbnails! You can ',
+                                              'Please migrate your private drives to continue using them in the future: ',
                                           style: typography.paragraphNormal(
                                               fontWeight: ArFontWeight.semiBold,
                                               color: colorTokens.textOnPrimary),
                                         ),
                                         TextSpan(
-                                          text: 'add them now!',
+                                          text: 'Migrate Now!',
                                           recognizer: TapGestureRecognizer()
                                             ..onTap = () {
-                                              showArDriveDialog(context,
-                                                  content:
-                                                      const MultiThumbnailCreationWarningModal());
+                                              showMigratePrivateDrivesModal(
+                                                  context);
                                             },
                                           style: typography
                                               .paragraphNormal(
@@ -264,9 +264,9 @@ class AppShellState extends State<AppShell> {
                                   padding: const EdgeInsets.only(right: 8.0),
                                   child: GestureDetector(
                                     onTap: () {
-                                      context
-                                          .read<AppBannerBloc>()
-                                          .add(const AppBannerCloseEvent());
+                                      // context
+                                      //     .read<AppBannerBloc>()
+                                      //     .add(const AppBannerCloseEvent());
                                     },
                                     child: ArDriveIcons.x(
                                       color: colorTokens.textOnPrimary,
@@ -275,7 +275,8 @@ class AppShellState extends State<AppShell> {
                                 ),
                               ],
                             ),
-                          ),
+                          )
+                        ],
                         Flexible(
                           child: Row(
                             children: [

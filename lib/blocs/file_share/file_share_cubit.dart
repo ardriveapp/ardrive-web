@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/utils/link_generators.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -52,7 +53,7 @@ class FileShareCubit extends Cubit<FileShareState> {
     switch (drive.privacy) {
       case DrivePrivacyTag.private:
         final profile = _profileCubit.state;
-        SecretKey? driveKey;
+        DriveKey? driveKey;
 
         if (profile is ProfileLoggedIn) {
           driveKey =
@@ -65,7 +66,7 @@ class FileShareCubit extends Cubit<FileShareState> {
           throw StateError('Drive Key not found');
         }
 
-        fileKey = await _driveDao.getFileKey(fileId, driveKey);
+        fileKey = await _driveDao.getFileKey(fileId, driveKey.key);
 
         fileShareLink = await generatePrivateFileShareLink(
           fileId: file.id,
