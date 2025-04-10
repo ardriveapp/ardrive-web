@@ -240,7 +240,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     DriveKey? driveKey;
     switch (privacy) {
       case DrivePrivacyTag.private:
-        driveKey = await _crypto.deriveDriveKey(wallet, driveId, password, '2');
+        driveKey =
+            await _crypto.deriveDriveKey(wallet, driveId, password, '2', null);
         insertDriveOp = await _addDriveKeyToDriveCompanion(
             insertDriveOp, profileKey, driveKey);
         break;

@@ -100,7 +100,7 @@ class PrivateDriveMigrationBloc
         final walletSignatureV1 = await wallet.sign(message);
 
         final driveKeyV2 = await crypto.deriveDriveKey(
-            wallet, drive.id, ardriveAuth.currentUser.password, '2');
+            wallet, drive.id, ardriveAuth.currentUser.password, '2', null);
 
         // encrypt walletSignatureV1 with driveKeyV2
         final encryptedWalletSignatureV1 =
@@ -117,10 +117,6 @@ class PrivateDriveMigrationBloc
         final driveSignatureDataItem = await driveSignature.asPreparedDataItem(
             owner: owner, appInfo: appInfo);
 
-        for (final tag in driveSignatureDataItem.tags) {
-          print("Tag ${tag.name}: ${tag.value}");
-        }
-
         await driveSignatureDataItem.sign(ArweaveSigner(wallet));
 
         // upload via turbo
@@ -128,8 +124,6 @@ class PrivateDriveMigrationBloc
           dataItem: driveSignatureDataItem,
           wallet: wallet,
         );
-
-        print('Drive migrated: ${drive.id}');
 
         completed.add(drive);
 

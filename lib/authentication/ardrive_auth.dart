@@ -306,14 +306,14 @@ class ArDriveAuthImpl implements ArDriveAuth {
       final sigTypeTag = firstPrivateDriveTx.getTag(EntityTag.signatureType);
       final sigType = sigTypeTag ?? '1';
 
+      final driveSignature = sigType == '1'
+          ? await _arweave.getDriveSignatureForDrive(wallet, driveId)
+          : null;
+
       late DriveKey checkDriveKey;
       try {
         checkDriveKey = await _crypto.deriveDriveKey(
-          wallet,
-          driveId,
-          password,
-          sigType,
-        );
+            wallet, driveId, password, sigType, driveSignature);
       } catch (e) {
         throw WrongPasswordException('Password is incorrect');
       }

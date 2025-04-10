@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:ardrive/entities/drive_signature.dart';
 import 'package:ardrive/entities/entity.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart';
@@ -54,25 +55,37 @@ class ArDriveCrypto {
     String driveId,
     String password,
     String signatureType,
+    DriveSignatureEntity? driveSignature,
   ) async {
-    final message =
-        Uint8List.fromList(utf8.encode('drive') + Uuid.parse(driveId));
-
     final Uint8List walletSignature;
+    bool generated = true;
 
-    if (signatureType == '1') {
-      walletSignature = await wallet.sign(message);
-    } else if (signatureType == '2') {
-      final owner = await wallet.getOwner();
-      final dataItem = DataItem.withBlobData(data: message, owner: owner);
-      dataItem.addTag('Action', 'Generate-Signature-V2');
-      try {
-        walletSignature = await wallet.signDataItem(dataItem);
-      } catch (e) {
-        throw Exception('Failed to sign data item: $e');
-      }
+    if (signatureType == '1' && driveSignature != null) {
+      // stored v1 drive signatures are encrypted with v2 drive key
+      final driveKeyV2 =
+          await deriveDriveKey(wallet, driveId, password, '2', null);
+
+      walletSignature = await decrypt(driveSignature.data, driveKeyV2.key,
+          utils.decodeBase64ToBytes(driveSignature.cipherIv));
+      generated = false;
     } else {
-      throw Exception('Invalid signature type: $signatureType');
+      final message =
+          Uint8List.fromList(utf8.encode('drive') + Uuid.parse(driveId));
+
+      if (signatureType == '1') {
+        walletSignature = await wallet.sign(message);
+      } else if (signatureType == '2') {
+        final owner = await wallet.getOwner();
+        final dataItem = DataItem.withBlobData(data: message, owner: owner);
+        dataItem.addTag('Action', 'Generate-Signature-V2');
+        try {
+          walletSignature = await wallet.signDataItem(dataItem);
+        } catch (e) {
+          throw Exception('Failed to sign data item: $e');
+        }
+      } else {
+        throw Exception('Invalid signature type: $signatureType');
+      }
     }
 
     final key = await hkdf.deriveKey(
@@ -81,7 +94,7 @@ class ArDriveCrypto {
       nonce: Uint8List(1),
     );
 
-    return DriveKey(key, true);
+    return DriveKey(key, generated);
   }
 
   Future<SecretKey> deriveFileKey(SecretKey driveKey, String fileId) async {
@@ -254,6 +267,21 @@ class ArDriveCrypto {
   Future<SecretBox> encrypt(Uint8List data, SecretKey key) async {
     final encryptionRes = await aesGcm.encrypt(data.toList(), secretKey: key);
     return encryptionRes;
+  }
+
+  Future<Uint8List> decrypt(
+      Uint8List data, SecretKey key, Uint8List cipherIv) async {
+    final secretBox = secretBoxFromDataWithMacConcatenation(
+      data,
+      nonce: cipherIv,
+    );
+
+    final decryptedDataAsListInt = await aesGcm.decrypt(
+      secretBox,
+      secretKey: key,
+    );
+
+    return Uint8List.fromList(decryptedDataAsListInt);
   }
 }
 
