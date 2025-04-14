@@ -11,19 +11,18 @@ final class PrivateDriveMigrationVisible extends PrivateDriveMigrationState {}
 
 final class PrivateDriveMigrationHidden extends PrivateDriveMigrationState {}
 
+final class PrivateDriveMigrationComplete extends PrivateDriveMigrationState {}
+
 final class PrivateDriveMigrationInProgress extends PrivateDriveMigrationState {
-  final List<Drive> drivesRequiringMigration;
-  final Set<Drive> completed;
+  final Drive inProgressDrive;
 
   const PrivateDriveMigrationInProgress({
-    required this.drivesRequiringMigration,
-    required this.completed,
+    required this.inProgressDrive,
   });
 
   @override
   List<Object> get props => [
-        drivesRequiringMigration,
-        completed,
+        inProgressDrive,
       ];
 }
 

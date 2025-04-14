@@ -232,13 +232,13 @@ class AppShellState extends State<AppShell> {
                                       children: [
                                         TextSpan(
                                           text:
-                                              'Please migrate your private drives to continue using them in the future: ',
+                                              'Please update your private drives to continue using them in the future: ',
                                           style: typography.paragraphNormal(
                                               fontWeight: ArFontWeight.semiBold,
                                               color: colorTokens.textOnPrimary),
                                         ),
                                         TextSpan(
-                                          text: 'Migrate Now!',
+                                          text: 'Update Now!',
                                           recognizer: TapGestureRecognizer()
                                             ..onTap = () {
                                               showMigratePrivateDrivesModal(

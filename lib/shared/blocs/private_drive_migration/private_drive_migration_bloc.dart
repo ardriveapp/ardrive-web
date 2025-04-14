@@ -25,10 +25,12 @@ class PrivateDriveMigrationBloc
 
   final DrivesCubit drivesCubit;
   final DriveDao driveDao;
-  bool requiresMigration = false;
   final ArDriveAuth ardriveAuth;
   final ArDriveCrypto crypto;
   final TurboUploadService turboUploadService;
+
+  List<Drive> drivesRequiringMigration = [];
+  Set<Drive> completedMigration = {};
 
   PrivateDriveMigrationBloc({
     required this.drivesCubit,
@@ -38,7 +40,9 @@ class PrivateDriveMigrationBloc
     required this.turboUploadService,
   }) : super(PrivateDriveMigrationHidden()) {
     _drivesSubscription = drivesCubit.stream.listen((state) {
-      add(const PrivateDriveMigrationCheck());
+      if (state is DrivesLoadSuccess) {
+        add(const PrivateDriveMigrationCheck());
+      }
     });
 
     on<PrivateDriveMigrationCloseEvent>((event, emit) {
@@ -56,47 +60,51 @@ class PrivateDriveMigrationBloc
       Emitter<PrivateDriveMigrationState> emit) {
     if (drivesCubit.state is DrivesLoadSuccess) {
       final drives = (drivesCubit.state as DrivesLoadSuccess).userDrives;
-      requiresMigration = drives.any((drive) =>
-          drive.privacy == 'private' &&
-          drive.signatureType == '1' &&
-          drive.driveKeyGenerated == true);
+      drivesRequiringMigration = drives
+          .where((drive) =>
+              drive.privacy == 'private' &&
+              (drive.signatureType == '1' || drive.signatureType == null) &&
+              drive.driveKeyGenerated == true)
+          .toList();
+      completedMigration = {};
 
-      if (requiresMigration) {
+      if (drivesRequiringMigration.isNotEmpty) {
         emit(PrivateDriveMigrationVisible());
+      } else {
+        emit(PrivateDriveMigrationHidden());
       }
     }
   }
 
   Future<void> _performDriveMigration(PrivateDriveMigrationStartEvent event,
       Emitter<PrivateDriveMigrationState> emit) async {
+    // stop listening to drivesCubit stream here
+    // to ensure no more events are processed while performing migration
+    _drivesSubscription?.cancel();
+    _drivesSubscription = null;
+
     if (!(await ardriveAuth.isUserLoggedIn())) {
       emit(const PrivateDriveMigrationFailed(error: 'User is not logged in'));
     }
 
     final wallet = ardriveAuth.currentUser.wallet;
-    final userDrives = (drivesCubit.state as DrivesLoadSuccess).userDrives;
-    final drivesRequiringMigration = userDrives
-        .where((drive) =>
-            drive.privacy == 'private' &&
-            (drive.signatureType == '1' || drive.signatureType == null) &&
-            drive.driveKeyGenerated == true)
-        .toList();
-
-    final Set<Drive> completed = {};
-
-    emit(PrivateDriveMigrationInProgress(
-      drivesRequiringMigration: drivesRequiringMigration,
-      completed: completed,
-    ));
 
     try {
       for (final drive in drivesRequiringMigration) {
+        if (completedMigration.contains(drive)) {
+          continue;
+        }
+        emit(PrivateDriveMigrationInProgress(
+          inProgressDrive: drive,
+        ));
+
         final message =
             Uint8List.fromList(utf8.encode('drive') + Uuid.parse(drive.id));
 
         final owner = await wallet.getOwner();
         final dataItem = DataItem.withBlobData(data: message, owner: owner);
         dataItem.addTag('Action', 'Generate-Signature-V2');
+
         final walletSignatureV1 = await wallet.sign(message);
 
         final driveKeyV2 = await crypto.deriveDriveKey(
@@ -125,7 +133,10 @@ class PrivateDriveMigrationBloc
           wallet: wallet,
         );
 
-        completed.add(drive);
+        // comment upload above and uncomment await below for dev testing
+        // await Future.delayed(const Duration(seconds: 1));
+
+        completedMigration.add(drive);
 
         // updated persisted and in-memory drive key values
         await driveDao.updateDrive(drive.toCompanion(true).copyWith(
@@ -136,18 +147,14 @@ class PrivateDriveMigrationBloc
         final updatedDriveKey = DriveKey(driveKey!.key, false);
         await driveDao.putDriveKeyInMemory(
             driveID: drive.id, driveKey: updatedDriveKey);
-
-        emit(PrivateDriveMigrationInProgress(
-          drivesRequiringMigration: drivesRequiringMigration,
-          completed: completed,
-        ));
       }
+
+      emit(PrivateDriveMigrationComplete());
     } catch (e) {
       emit(const PrivateDriveMigrationFailed(
           error: 'Error migrating drive, please try again.'));
     }
-    requiresMigration = false;
-    emit(PrivateDriveMigrationHidden());
+    // emit(PrivateDriveMigrationHidden());
   }
 
   @override

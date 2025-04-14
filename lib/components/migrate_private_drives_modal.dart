@@ -1,71 +1,168 @@
-import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/shared/blocs/private_drive_migration/private_drive_migration_bloc.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-void showMigratePrivateDrivesModal(BuildContext context) {
-  showArDriveDialog(
-    context,
-    content: BlocBuilder<DrivesCubit, DrivesState>(
+class PrivateDriveMigrationDialog extends StatefulWidget {
+  const PrivateDriveMigrationDialog({super.key});
+
+  @override
+  State<PrivateDriveMigrationDialog> createState() =>
+      _PrivateDriveMigrationDialogState();
+}
+
+class _PrivateDriveMigrationDialogState
+    extends State<PrivateDriveMigrationDialog> {
+  final _scrollController = ScrollController();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<PrivateDriveMigrationBloc, PrivateDriveMigrationState>(
       builder: (context, state) {
-        if (state is! DrivesLoadSuccess) {
+        if (state is PrivateDriveMigrationHidden) {
           return const SizedBox.shrink();
         }
 
-        final privateDriveMigrationBloc =
-            context.read<PrivateDriveMigrationBloc>();
+        final typography = ArDriveTypographyNew.of(context);
+        final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-        final drivesToMigrate = state.userDrives
-            .where((drive) =>
-                drive.privacy == DrivePrivacyTag.private &&
-                (drive.signatureType == '1' || drive.signatureType == null) &&
-                drive.driveKeyGenerated == true)
-            .toList();
+        final migrateBloc = context.read<PrivateDriveMigrationBloc>();
+        final drivesToMigrate = migrateBloc.drivesRequiringMigration;
 
-        if (drivesToMigrate.isEmpty) {
-          Navigator.of(context).pop();
-          return const SizedBox.shrink();
-        }
+        final Set<Drive> completed = migrateBloc.completedMigration;
+
+        final driveInProgress = state is PrivateDriveMigrationInProgress
+            ? state.inProgressDrive
+            : null;
+
+        final errorMessage =
+            state is PrivateDriveMigrationFailed ? state.error : null;
+
+        // if (drivesToMigrate.isEmpty) {
+        //   Navigator.of(context).pop();
+        //   return const SizedBox.shrink();
+        // }
 
         return ArDriveStandardModalNew(
-          title: 'Migrate Private Drives',
+          title: 'Update Private Drives',
+          hasCloseButton: false,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'The following private drives need to be migrated:',
-              ),
+              if (state is PrivateDriveMigrationComplete) ...[
+                const Text(
+                  'Drive updates complete!',
+                ),
+              ] else ...[
+                Text(
+                  'The following private drives need to be updated:',
+                  style: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.semiBold,
+                    color: colorTokens.textMid,
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
-              ...drivesToMigrate.map((drive) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(
-                      drive.name,
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                  )),
+              Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 256),
+                  child: ArDriveScrollBar(
+                      controller: _scrollController,
+                      alwaysVisible: true,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.only(top: 0),
+                        controller: _scrollController,
+                        shrinkWrap: true,
+                        itemCount: drivesToMigrate.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          final drive = drivesToMigrate[index];
+                          final indicator = (completed.contains(drive))
+                              ? const Icon(
+                                  Icons.check,
+                                  size: 12.0,
+                                  color: Colors.green,
+                                )
+                              : (drive == driveInProgress)
+                                  ? const CircularProgressIndicator()
+                                  : const SizedBox.shrink();
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.max,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                const SizedBox(width: 12),
+                                SizedBox(
+                                  width: 12,
+                                  height: 12,
+                                  child: indicator,
+                                ),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    drive.name,
+                                    style: ArDriveTypography.body.smallBold(
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colors
+                                          .themeFgSubtle,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      )),
+                ),
+              ),
+              if (errorMessage != null) ...[
+                const SizedBox(height: 16),
+                Text(
+                  errorMessage,
+                  style: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.semiBold,
+                    color: colorTokens.textRed,
+                  ),
+                ),
+              ]
             ],
           ),
           actions: [
             ModalAction(
-              action: () => Navigator.of(context).pop(),
-              title: 'Close',
-            ),
-            ModalAction(
               action: () {
-                // TODO: Implement migration logic
-                // Navigator.of(context).pop();
-                privateDriveMigrationBloc
-                    .add(const PrivateDriveMigrationStartEvent());
+                context
+                    .read<PrivateDriveMigrationBloc>()
+                    .add(const PrivateDriveMigrationCheck());
+                Navigator.of(context).pop();
               },
-              title: 'Migrate',
+              title: 'Close',
+              isEnable: state is! PrivateDriveMigrationInProgress,
             ),
+            if (state is! PrivateDriveMigrationComplete) ...[
+              ModalAction(
+                action: () {
+                  // Navigator.of(context).pop();
+                  migrateBloc.add(const PrivateDriveMigrationStartEvent());
+                },
+                title: 'Update',
+                isEnable: state is! PrivateDriveMigrationInProgress,
+              ),
+            ],
           ],
         );
       },
-    ),
+    );
+  }
+}
+
+void showMigratePrivateDrivesModal(BuildContext context) {
+  showArDriveDialog(
+    context,
+    content: const PrivateDriveMigrationDialog(),
   );
 }
