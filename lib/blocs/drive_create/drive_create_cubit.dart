@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart'
     show DrivePrivacy;
 import 'package:ardrive/entities/drive_entity.dart';
+import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -92,7 +93,9 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         authMode: drivePrivacy == DrivePrivacyTag.private
             ? DriveAuthModeTag.password
             : null,
-        signatureType: drivePrivacy == DrivePrivacyTag.private ? '2' : null,
+        signatureType: drivePrivacy == DrivePrivacyTag.private
+            ? DriveSignatureType.v2
+            : null,
       );
 
       final driveDataItem = await _arweave.prepareEntityDataItem(

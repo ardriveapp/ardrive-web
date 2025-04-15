@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -27,7 +28,7 @@ class DriveEntity extends EntityWithCustomMetadata {
   bool? isHidden;
 
   @JsonKey(includeFromJson: false, includeToJson: false)
-  String? signatureType;
+  DriveSignatureType? signatureType;
 
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -81,7 +82,8 @@ class DriveEntity extends EntityWithCustomMetadata {
         ..ownerAddress = transaction.owner.address
         ..bundledIn = transaction.bundledIn?.id
         ..createdAt = transaction.getCommitTime()
-        ..signatureType = transaction.getTag(EntityTag.signatureType);
+        ..signatureType = DriveSignatureType.fromString(
+            transaction.getTag(EntityTag.signatureType) ?? '1');
 
       final tags = transaction.tags
           .map(
@@ -111,7 +113,7 @@ class DriveEntity extends EntityWithCustomMetadata {
 
     if (privacy == DrivePrivacyTag.private) {
       tx.addTag(EntityTag.driveAuthMode, authMode!);
-      tx.addTag(EntityTag.signatureType, signatureType ?? '1');
+      tx.addTag(EntityTag.signatureType, signatureType?.value ?? '1');
     }
   }
 

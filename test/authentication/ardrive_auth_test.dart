@@ -1,5 +1,6 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/profile_dao.dart';
@@ -34,7 +35,7 @@ class TransactionCommonMixinFake extends Fake
 final fakePrivateDriveV1 = TransactionCommonMixinFake()
   ..setTag(EntityTag.drivePrivacy, DrivePrivacyTag.private)
   ..setTag(EntityTag.driveId, 'some_drive_id')
-  ..setTag(EntityTag.signatureType, '1');
+  ..setTag(EntityTag.signatureType, DriveSignatureType.v1.toString());
 
 void main() {
   late ArDriveAuthImpl arDriveAuth;
@@ -173,7 +174,7 @@ void main() {
               .thenAnswer((_) async => Future.value(null));
           when(
             () => mockArDriveCrypto.deriveDriveKey(
-                wallet, any(), any(), '1', any()),
+                wallet, any(), any(), DriveSignatureType.v1, any()),
           ).thenAnswer(
               (invocation) => Future.value(DriveKey(SecretKey([]), true)));
 
@@ -241,7 +242,7 @@ void main() {
               .thenAnswer((_) async => Future.value(null));
           when(
             () => mockArDriveCrypto.deriveDriveKey(
-                wallet, any(), any(), '1', any()),
+                wallet, any(), any(), DriveSignatureType.v1, any()),
           ).thenAnswer(
               (invocation) => Future.value(DriveKey(SecretKey([]), true)));
 
@@ -392,7 +393,7 @@ void main() {
               .thenAnswer((_) async => Future.value(null));
           when(
             () => mockArDriveCrypto.deriveDriveKey(
-                wallet, any(), any(), '1', any()),
+                wallet, any(), any(), DriveSignatureType.v1, any()),
           ).thenThrow(Exception('wrong password'));
 
           expectLater(
@@ -662,7 +663,7 @@ void main() {
             .thenAnswer((_) async => Future.value(null));
         when(
           () => mockArDriveCrypto.deriveDriveKey(
-              wallet, any(), any(), '1', any()),
+              wallet, any(), any(), DriveSignatureType.v1, any()),
         ).thenAnswer(
             (invocation) => Future.value(DriveKey(SecretKey([]), true)));
         when(() => mockUserRepository.hasUser())
@@ -729,7 +730,7 @@ void main() {
             .thenAnswer((_) async => fakePrivateDriveV1);
         when(
           () => mockArDriveCrypto.deriveDriveKey(
-              wallet, any(), any(), '1', any()),
+              wallet, any(), any(), DriveSignatureType.v1, any()),
         ).thenAnswer(
             (invocation) => Future.value(DriveKey(SecretKey([]), true)));
         when(() => mockUserRepository.hasUser())

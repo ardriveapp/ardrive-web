@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
@@ -304,9 +305,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
     if (firstPrivateDriveTx != null) {
       final driveId = firstPrivateDriveTx.getTag(EntityTag.driveId)!;
       final sigTypeTag = firstPrivateDriveTx.getTag(EntityTag.signatureType);
-      final sigType = sigTypeTag ?? '1';
+      final sigType = DriveSignatureType.fromString(sigTypeTag ?? '1');
 
-      final driveSignature = sigType == '1'
+      final driveSignature = sigType == DriveSignatureType.v1
           ? await _arweave.getDriveSignatureForDrive(wallet, driveId)
           : null;
 

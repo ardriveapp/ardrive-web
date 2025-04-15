@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_signature.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/services/arweave/arweave_service_exception.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
@@ -623,10 +624,10 @@ class ArweaveService {
           );
 
           if (driveKey == null) {
-            final signatureType =
-                driveTx.getTag(EntityTag.signatureType) ?? '1';
+            final sigTypeTag = driveTx.getTag(EntityTag.signatureType) ?? '1';
+            final signatureType = DriveSignatureType.fromString(sigTypeTag);
 
-            final driveSignature = signatureType == '1'
+            final driveSignature = signatureType == DriveSignatureType.v1
                 ? await getDriveSignatureForDrive(
                     wallet, driveTx.getTag(EntityTag.driveId)!)
                 : null;
@@ -900,10 +901,10 @@ class ArweaveService {
     }
 
     final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId)!;
-    final signatureType =
-        privateDriveTxs.first.getTag(EntityTag.signatureType) ?? '1';
+    final signatureType = DriveSignatureType.fromString(
+        privateDriveTxs.first.getTag(EntityTag.signatureType) ?? '1');
 
-    final driveSignature = signatureType == '1'
+    final driveSignature = signatureType == DriveSignatureType.v1
         ? await getDriveSignatureForDrive(wallet, checkDriveId)
         : null;
 

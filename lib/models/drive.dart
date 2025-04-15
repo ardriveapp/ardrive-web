@@ -1,3 +1,4 @@
+import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/utils/custom_metadata.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -15,7 +16,7 @@ extension DriveExtensions on Drive {
       rootFolderId: rootFolderId,
       privacy: privacy,
       isHidden: isHidden,
-      signatureType: signatureType,
+      signatureType: DriveSignatureType.fromString(signatureType ?? '1'),
       authMode: privacy == DrivePrivacyTag.private
           ? DriveAuthModeTag.password
           : DriveAuthModeTag.none,

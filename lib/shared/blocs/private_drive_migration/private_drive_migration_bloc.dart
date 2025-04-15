@@ -5,6 +5,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_signature.dart';
+import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
@@ -107,8 +108,8 @@ class PrivateDriveMigrationBloc
 
         final walletSignatureV1 = await wallet.sign(message);
 
-        final driveKeyV2 = await crypto.deriveDriveKey(
-            wallet, drive.id, ardriveAuth.currentUser.password, '2', null);
+        final driveKeyV2 = await crypto.deriveDriveKey(wallet, drive.id,
+            ardriveAuth.currentUser.password, DriveSignatureType.v2, null);
 
         // encrypt walletSignatureV1 with driveKeyV2
         final encryptedWalletSignatureV1 =

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/daos/drive_dao/exception.dart';
 import 'package:ardrive/models/license.dart';
@@ -240,8 +241,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     DriveKey? driveKey;
     switch (privacy) {
       case DrivePrivacyTag.private:
-        driveKey =
-            await _crypto.deriveDriveKey(wallet, driveId, password, '2', null);
+        driveKey = await _crypto.deriveDriveKey(
+            wallet, driveId, password, DriveSignatureType.v2, null);
         insertDriveOp = await _addDriveKeyToDriveCompanion(
             insertDriveOp, profileKey, driveKey);
         break;
@@ -312,7 +313,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
               dateCreated: Value(entity.createdAt),
               lastUpdated: Value(entity.createdAt),
               isHidden: Value(entity.isHidden ?? false),
-              signatureType: Value.absentIfNull(entity.signatureType),
+              signatureType: Value.absentIfNull(entity.signatureType?.value),
             );
 
             if (entity.privacy == DrivePrivacyTag.private) {
@@ -344,7 +345,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       privacy: entity.privacy!,
       dateCreated: Value(entity.createdAt),
       lastUpdated: Value(entity.createdAt),
-      signatureType: Value.absentIfNull(entity.signatureType),
+      signatureType: Value.absentIfNull(entity.signatureType?.value),
     );
 
     if (entity.privacy == DrivePrivacyTag.private) {

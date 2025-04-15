@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ardrive/entities/drive_signature.dart';
+import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entity.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart';
@@ -54,16 +55,16 @@ class ArDriveCrypto {
     Wallet wallet,
     String driveId,
     String password,
-    String signatureType,
+    DriveSignatureType signatureType,
     DriveSignatureEntity? driveSignature,
   ) async {
     final Uint8List walletSignature;
     bool generated = true;
 
-    if (signatureType == '1' && driveSignature != null) {
+    if (signatureType == DriveSignatureType.v1 && driveSignature != null) {
       // stored v1 drive signatures are encrypted with v2 drive key
-      final driveKeyV2 =
-          await deriveDriveKey(wallet, driveId, password, '2', null);
+      final driveKeyV2 = await deriveDriveKey(
+          wallet, driveId, password, DriveSignatureType.v2, null);
 
       walletSignature = await decrypt(driveSignature.data, driveKeyV2.key,
           utils.decodeBase64ToBytes(driveSignature.cipherIv));
@@ -72,9 +73,9 @@ class ArDriveCrypto {
       final message =
           Uint8List.fromList(utf8.encode('drive') + Uuid.parse(driveId));
 
-      if (signatureType == '1') {
+      if (signatureType == DriveSignatureType.v1) {
         walletSignature = await wallet.sign(message);
-      } else if (signatureType == '2') {
+      } else if (signatureType == DriveSignatureType.v2) {
         final owner = await wallet.getOwner();
         final dataItem = DataItem.withBlobData(data: message, owner: owner);
         dataItem.addTag('Action', 'Generate-Signature-V2');
