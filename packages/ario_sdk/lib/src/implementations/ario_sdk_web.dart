@@ -139,10 +139,6 @@ class ArioSDKWeb implements ArioSDK {
       String address, bool getLogo) async {
     final primaryName = await _getPrimaryNameImpl(address, getLogo);
 
-    if (primaryName.primaryName.contains('Primary name data not found')) {
-      throw PrimaryNameNotFoundException(primaryName.primaryName);
-    }
-
     return primaryName;
   }
 
@@ -278,6 +274,11 @@ Future<PrimaryNameDetails> _getPrimaryNameImpl(
   final stringified = await promiseToFuture(promise);
 
   final json = jsonDecode(stringified);
+
+  if (json['primaryName'] == null) {
+    throw PrimaryNameNotFoundException(
+        'Primary name not found for address $address');
+  }
 
   return PrimaryNameDetails(
     primaryName: json['primaryName']['name'],

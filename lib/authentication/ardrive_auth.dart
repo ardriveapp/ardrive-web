@@ -318,15 +318,22 @@ class ArDriveAuthImpl implements ArDriveAuth {
         throw WrongPasswordException('Password is incorrect');
       }
 
-      final privateDrive = await _arweave.getLatestDriveEntityWithId(
-        driveId,
-        driveKey: checkDriveKey.key,
-        driveOwner: await wallet.getAddress(),
-        maxRetries: profileQueryMaxRetries,
-      );
+      try {
+        final privateDrive = await _arweave.getLatestDriveEntityWithId(
+          driveId,
+          driveKey: checkDriveKey.key,
+          driveOwner: await wallet.getAddress(),
+          maxRetries: profileQueryMaxRetries,
+        );
 
-      if (privateDrive == null) {
-        throw WrongPasswordException('Password is incorrect');
+        if (privateDrive == null) {
+          throw WrongPasswordException('Password is incorrect');
+        }
+      } catch (e) {
+        if (e is TransactionNotFound) {
+          throw const PrivateDriveNotFoundException();
+        }
+        rethrow;
       }
     }
   }
@@ -450,6 +457,10 @@ class AuthenticationUnknownException implements Exception {
   final String message;
 
   AuthenticationUnknownException(this.message);
+}
+
+class PrivateDriveNotFoundException implements Exception {
+  const PrivateDriveNotFoundException();
 }
 
 class AuthenticationUserIsNotLoggedInException implements UntrackedException {

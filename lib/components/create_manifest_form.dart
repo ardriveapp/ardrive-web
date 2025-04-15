@@ -118,7 +118,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
       },
       autofocus: true,
       onFieldSubmitted: (s) {
-        readCubitContext.chooseTargetFolder();
+        readCubitContext.processManifestName(s);
       },
     );
   }
@@ -196,9 +196,15 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           textStyle: textStyle,
         );
       } else if (state is CreateManifestInitial) {
-        return _createManifestInitial(
+        return const ProgressDialog(
+          useNewArDriveUI: true,
+          title: 'Loading Folders...',
+        );
+      } else if (state is CreateManifestNameInput) {
+        return _createManifestNameInput(
           context: context,
           textStyle: textStyle,
+          state: state,
         );
       }
       if (state is CreateManifestUploadInProgress) {
@@ -287,6 +293,9 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
       actions: [
         ModalAction(
           action: () {
+            context
+                .read<DriveDetailCubit>()
+                .openFolder(folderId: state.parentFolder.id);
             context.read<DriveDetailCubit>().refreshDriveDataTable();
             Navigator.pop(context);
           },
@@ -445,9 +454,10 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
     );
   }
 
-  Widget _createManifestInitial({
+  Widget _createManifestNameInput({
     required BuildContext context,
     required TextStyle textStyle,
+    required CreateManifestNameInput state,
   }) {
     final readCubitContext = context.read<CreateManifestCubit>();
     return ArDriveStandardModalNew(
@@ -460,7 +470,8 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
         ),
         ModalAction(
           isEnable: _isFormValid,
-          action: () => readCubitContext.chooseTargetFolder(),
+          action: () => readCubitContext
+              .processManifestName(_manifestNameController.text),
           title: appLocalizationsOf(context).nextEmphasized,
         ),
       ],
@@ -986,8 +997,8 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
       ),
       action: ModalAction(
         isEnable: state.enableManifestCreationButton,
-        action: () => cubit.checkForConflicts(_manifestNameController.text),
-        title: appLocalizationsOf(context).createHereEmphasized,
+        action: () => cubit.promptForManifestName(),
+        title: appLocalizationsOf(context).nextEmphasized,
       ),
     );
   }

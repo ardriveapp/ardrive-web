@@ -70,6 +70,11 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
         if (state is! DriveAttachPrivate) {
           await driveNameLoader();
+
+          if (isClosed) {
+            return;
+          }
+
           if (driveNameController.text.isNotEmpty) {
             submit();
           }
@@ -106,6 +111,12 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
       if (state is DriveAttachPrivate) {
         if (await driveKeyValidator() != null) {
+          if (isClosed) {
+            logger.i(
+                'Drive attach cubit closed. Not emitting invalid drive key.');
+            return;
+          }
+
           emit(DriveAttachInvalidDriveKey());
           emit(previousState);
           return;
@@ -117,6 +128,11 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       }
 
       if (!await driveNameLoader()) {
+        if (isClosed) {
+          logger.i('Drive attach cubit closed. Not emitting drive not found.');
+          return;
+        }
+
         emit(DriveAttachDriveNotFound());
         emit(previousState);
         return;

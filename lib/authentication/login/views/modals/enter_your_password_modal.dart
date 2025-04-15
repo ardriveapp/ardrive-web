@@ -313,6 +313,7 @@ void showEnterYourPasswordDialog(
             return false;
           }
           return (current is GatewayLoginFailure ||
+              current is LoginPasswordFailedWithPrivateDriveNotFound ||
               current is LoginCheckingPassword ||
               current is LoginPasswordFailed ||
               current is LoginWithPassword ||

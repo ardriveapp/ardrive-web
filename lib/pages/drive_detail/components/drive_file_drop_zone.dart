@@ -54,11 +54,10 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
                     if (e is DropzoneWrongInputException) {
                       await showArDriveDialog(
                         context,
-                        content: ArDriveStandardModal(
+                        content: ArDriveStandardModalNew(
                           title: appLocalizationsOf(context).error,
-                          content: Text(
-                            appLocalizationsOf(context).errorDragAndDropFolder,
-                          ),
+                          description: appLocalizationsOf(context)
+                              .errorDragAndDropFolder,
                           actions: [
                             ModalAction(
                               action: () => Navigator.of(context).pop(false),
