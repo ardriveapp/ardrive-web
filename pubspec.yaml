@@ -166,7 +166,7 @@ dependency_overrides:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v3.9.0
+      ref: 28e8f7f066c86f35412308cd9ebee30528f21985
 
   ardrive_io:
     git:
