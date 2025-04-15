@@ -49,8 +49,10 @@ class CookieConsentModal extends StatelessWidget {
       },
       child: BlocBuilder<CookiePolicyConsentBloc, CookiePolicyConsentState>(
         builder: (context, state) {
+          final typography = ArDriveTypographyNew.of(context);
+          final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
           if (state is CookiePolicyConsentRejected) {
-            return ArDriveStandardModal(
+            return ArDriveStandardModalNew(
               hasCloseButton: true,
               title: appLocalizationsOf(context).cookieConsent,
               content: RichText(
@@ -59,21 +61,16 @@ class CookieConsentModal extends StatelessWidget {
                     TextSpan(
                       text:
                           '${appLocalizationsOf(context).cookieConsentBodyPart1} ',
-                      style: ArDriveTypography.body.buttonLargeBold().copyWith(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgDefault,
-                          ),
+                      style: typography.paragraphLarge(),
                     ),
                     TextSpan(
                       text: appLocalizationsOf(context).learnMore,
-                      style: ArDriveTypography.body.buttonLargeBold().copyWith(
+                      style: typography
+                          .paragraphLarge(
+                            color: colorTokens.textMid,
+                          )
+                          .copyWith(
                             decoration: TextDecoration.underline,
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgDefault,
                           ),
                       recognizer: TapGestureRecognizer()
                         ..onTap = () {
@@ -85,12 +82,7 @@ class CookieConsentModal extends StatelessWidget {
                     TextSpan(
                       text:
                           '\n${appLocalizationsOf(context).cookieConsentBodyPart2}',
-                      style: ArDriveTypography.body.buttonLargeBold().copyWith(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgDefault,
-                          ),
+                      style: typography.paragraphLarge(),
                     ),
                   ],
                 ),
