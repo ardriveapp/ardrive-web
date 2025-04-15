@@ -105,7 +105,7 @@ class _PrivateDriveMigrationDialogState
                                 Flexible(
                                   child: Text(
                                     drive.name,
-                                    style: ArDriveTypography.body.smallBold(
+                                    style: typography.paragraphNormal(
                                       color: ArDriveTheme.of(context)
                                           .themeData
                                           .colors

@@ -260,19 +260,6 @@ class AppShellState extends State<AppShell> {
                                   ),
                                 ),
                                 const Spacer(),
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 8.0),
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      // context
-                                      //     .read<AppBannerBloc>()
-                                      //     .add(const AppBannerCloseEvent());
-                                    },
-                                    child: ArDriveIcons.x(
-                                      color: colorTokens.textOnPrimary,
-                                    ),
-                                  ),
-                                ),
                               ],
                             ),
                           )
