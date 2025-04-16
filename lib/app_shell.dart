@@ -218,7 +218,7 @@ class AppShellState extends State<AppShell> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 const Spacer(),
-                                ArDriveIcons.asc(
+                                ArDriveIcons.privateDrive(
                                   color: colorTokens.textOnPrimary,
                                   size: 18,
                                 ),

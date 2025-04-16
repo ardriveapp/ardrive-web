@@ -40,11 +40,6 @@ class _PrivateDriveMigrationDialogState
         final errorMessage =
             state is PrivateDriveMigrationFailed ? state.error : null;
 
-        // if (drivesToMigrate.isEmpty) {
-        //   Navigator.of(context).pop();
-        //   return const SizedBox.shrink();
-        // }
-
         return ArDriveStandardModalNew(
           title: 'Update Private Drives',
           hasCloseButton: false,
@@ -83,12 +78,19 @@ class _PrivateDriveMigrationDialogState
                           final indicator = (completed.contains(drive))
                               ? const Icon(
                                   Icons.check,
-                                  size: 12.0,
+                                  size: 16.0,
                                   color: Colors.green,
                                 )
                               : (drive == driveInProgress)
-                                  ? const CircularProgressIndicator()
-                                  : const SizedBox.shrink();
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(),
+                                    )
+                                  : ArDriveIcons.privateDrive(
+                                      size: 16.0,
+                                      color: colorTokens.textMid,
+                                    );
                           return Padding(
                             padding: const EdgeInsets.symmetric(vertical: 4),
                             child: Row(
@@ -96,21 +98,13 @@ class _PrivateDriveMigrationDialogState
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 const SizedBox(width: 12),
-                                SizedBox(
-                                  width: 12,
-                                  height: 12,
-                                  child: indicator,
-                                ),
+                                indicator,
                                 const SizedBox(width: 8),
                                 Flexible(
                                   child: Text(
                                     drive.name,
                                     style: typography.paragraphNormal(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeFgSubtle,
-                                    ),
+                                        color: colorTokens.textMid),
                                   ),
                                 ),
                               ],
