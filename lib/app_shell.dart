@@ -198,72 +198,14 @@ class AppShellState extends State<AppShell> {
               );
           return ScreenTypeLayout.builder(
             desktop: (context) {
-              final colorTokens =
-                  ArDriveTheme.of(context).themeData.colorTokens;
-              final typography = ArDriveTypographyNew.of(context);
-
               return buildPage(
                 BlocBuilder<PrivateDriveMigrationBloc,
                     PrivateDriveMigrationState>(
                   builder: (context, state) {
                     return Column(
                       children: [
-                        if (state is! PrivateDriveMigrationHidden) ...[
-                          Container(
-                            height: 45,
-                            width: double.maxFinite,
-                            color: colorTokens.buttonPrimaryDefault,
-                            alignment: Alignment.center,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Spacer(),
-                                ArDriveIcons.privateDrive(
-                                  color: colorTokens.textOnPrimary,
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 8),
-                                // move two pixels above
-                                Transform(
-                                  transform:
-                                      Matrix4.translationValues(0.0, -2.0, 0.0),
-                                  child: RichText(
-                                    text: TextSpan(
-                                      children: [
-                                        TextSpan(
-                                          text:
-                                              'Please update your private drives to continue using them in the future: ',
-                                          style: typography.paragraphNormal(
-                                              fontWeight: ArFontWeight.semiBold,
-                                              color: colorTokens.textOnPrimary),
-                                        ),
-                                        TextSpan(
-                                          text: 'Update Now!',
-                                          recognizer: TapGestureRecognizer()
-                                            ..onTap = () {
-                                              showMigratePrivateDrivesModal(
-                                                  context);
-                                            },
-                                          style: typography
-                                              .paragraphNormal(
-                                                  fontWeight:
-                                                      ArFontWeight.semiBold,
-                                                  color:
-                                                      colorTokens.textOnPrimary)
-                                              .copyWith(
-                                                decoration:
-                                                    TextDecoration.underline,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                const Spacer(),
-                              ],
-                            ),
-                          )
-                        ],
+                        if (state is! PrivateDriveMigrationHidden)
+                          _updatePrivateDrivesBanner(context, true),
                         Flexible(
                           child: Row(
                             children: [
@@ -291,10 +233,104 @@ class AppShellState extends State<AppShell> {
                 ),
               );
             },
-            mobile: (context) => buildPage(widget.page),
+            mobile: (context) => buildPage(
+              BlocBuilder<PrivateDriveMigrationBloc,
+                  PrivateDriveMigrationState>(
+                builder: (context, state) {
+                  return Column(
+                    children: [
+                      if (state is! PrivateDriveMigrationHidden)
+                        _updatePrivateDrivesBanner(context, false),
+                      Flexible(
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .backgroundColor,
+                                child: widget.page,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
           );
         },
       );
+
+  Widget _updatePrivateDrivesBanner(BuildContext context, bool isDesktop) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
+
+    return Container(
+      height: 45,
+      width: double.maxFinite,
+      color: colorTokens.buttonPrimaryDefault,
+      alignment: Alignment.center,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Spacer(),
+          ArDriveIcons.privateDrive(
+            color: colorTokens.textOnPrimary,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          // move two pixels above
+          Transform(
+            transform: Matrix4.translationValues(0.0, -2.0, 0.0),
+            child: isDesktop
+                ? RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text:
+                              'Please update your private drives to continue using them in the future: ',
+                          style: typography.paragraphNormal(
+                              fontWeight: ArFontWeight.semiBold,
+                              color: colorTokens.textOnPrimary),
+                        ),
+                        TextSpan(
+                          text: 'Update Now!',
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () {
+                              showMigratePrivateDrivesModal(context);
+                            },
+                          style: typography
+                              .paragraphNormal(
+                                  fontWeight: ArFontWeight.semiBold,
+                                  color: colorTokens.textOnPrimary)
+                              .copyWith(
+                                decoration: TextDecoration.underline,
+                              ),
+                        ),
+                      ],
+                    ),
+                  )
+                : GestureDetector(
+                    onTap: () => showMigratePrivateDrivesModal(context),
+                    child: Text(
+                      'Please update your Private Drives',
+                      style: typography
+                          .paragraphNormal(
+                            color: colorTokens.textOnPrimary,
+                            fontWeight: ArFontWeight.semiBold,
+                          )
+                          .copyWith(decoration: TextDecoration.underline),
+                    ),
+                  ),
+          ),
+          const Spacer(),
+        ],
+      ),
+    );
+  }
 
   Widget _syncStreamBuilder({
     required Widget Function(SyncProgress s) builderWithData,
