@@ -308,7 +308,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
         profileState.user.cipherKey,
       );
       final fileKey = driveKey != null
-          ? await _crypto.deriveFileKey(driveKey, newFileEntity.id!)
+          ? await _crypto.deriveFileKey(driveKey.key, newFileEntity.id!)
           : null;
 
       final isAPublicPin = fileKey == null;

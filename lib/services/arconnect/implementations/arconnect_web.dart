@@ -1,9 +1,10 @@
 @JS()
 library arconnect;
 
+import 'package:arweave/arweave.dart';
+import 'package:drift/drift.dart';
 import 'package:js/js.dart';
 import 'package:js/js_util.dart';
-import 'package:drift/drift.dart';
 
 @JS('isExtensionPresent')
 external bool isExtensionPresent();
@@ -28,6 +29,10 @@ external String _getPublicKey();
 
 @JS('getSignature')
 external Uint8List _getSignature(Uint8List message);
+
+@JS('signDataItem')
+external Uint8List _signDataItem(
+    Uint8List data, List<Tag> tags, String owner, String target, String anchor);
 
 Future<void> connect() {
   return promiseToFuture(_connect());
@@ -55,4 +60,9 @@ Future<String> getPublicKey() async {
 
 Future<Uint8List> getSignature(Uint8List message) async {
   return await promiseToFuture<Uint8List>(_getSignature(message));
+}
+
+Future<Uint8List> signDataItem(DataItem dataItem) async {
+  return await promiseToFuture<Uint8List>(_signDataItem(dataItem.data,
+      dataItem.tags, dataItem.owner, dataItem.target, dataItem.nonce));
 }

@@ -198,7 +198,7 @@ class HideBloc extends Bloc<HideEvent, HideState> {
 
     final driveKey = await _driveDao.getDriveKey(
         currentEntry.driveId, profile.user.cipherKey);
-    SecretKey? entityKey;
+    DriveKey? entityKey;
 
     if (driveKey != null) {
       entityKey = driveKey;
@@ -207,7 +207,7 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     final dataItem = await _arweave.prepareEntityDataItem(
       newFolderEntry.asEntity(),
       profile.user.wallet,
-      key: entityKey,
+      key: entityKey?.key,
     );
 
     final newEntryEntity = newFolderEntry.asEntity();
@@ -241,7 +241,7 @@ class HideBloc extends Bloc<HideEvent, HideState> {
 
     if (driveKey != null) {
       entityKey = await _crypto.deriveFileKey(
-        driveKey,
+        driveKey.key,
         currentEntry.id,
       );
     }
@@ -285,7 +285,7 @@ class HideBloc extends Bloc<HideEvent, HideState> {
     final SecretKey? entityKey;
 
     if (driveKey != null) {
-      entityKey = driveKey;
+      entityKey = driveKey.key;
     } else {
       entityKey = null;
     }

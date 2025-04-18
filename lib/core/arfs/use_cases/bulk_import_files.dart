@@ -1,6 +1,7 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/core/arfs/use_cases/upload_file_metadata.dart';
 import 'package:ardrive/core/arfs/use_cases/upload_folder_metadata.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
@@ -249,7 +250,7 @@ class BulkImportFiles {
       final isPrivate = targetDrive.isPrivate;
 
       // Get drive key if private
-      SecretKey? driveKey;
+      DriveKey? driveKey;
       if (isPrivate) {
         driveKey = await _driveDao.getDriveKey(driveId, userCipherKey);
       }
@@ -314,7 +315,7 @@ class BulkImportFiles {
               [pathParts.last],
               wallet,
               isPrivate,
-              driveKey,
+              driveKey?.key,
             );
             folderPathToId[path] = folderId;
             processedFolders++;

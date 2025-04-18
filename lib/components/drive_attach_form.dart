@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/services.dart';
@@ -9,7 +10,6 @@ import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/validate_folder_name.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -20,7 +20,7 @@ Future<void> attachDrive({
   required BuildContext context,
   DriveID? driveId,
   String? driveName,
-  SecretKey? driveKey,
+  DriveKey? driveKey,
 }) {
   final profileState = context.read<ProfileCubit>().state;
   final profileKey =

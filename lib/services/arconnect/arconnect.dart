@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:arweave/arweave.dart';
+
 import 'implementations/arconnect_web.dart'
     if (dart.library.io) 'implementations/arconnect_stub.dart'
     as implementation;
@@ -31,4 +33,8 @@ class ArConnectService {
   /// Takes a message and returns the signature
   Future<Uint8List> getSignature(Uint8List message) async =>
       await implementation.getSignature(message);
+
+  /// Takes a DataItem and returns the signature bytes
+  Future<Uint8List> signDataItem(DataItem dataItem) async =>
+      await implementation.signDataItem(dataItem);
 }

@@ -95,7 +95,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
             final folderDataItem = await _arweave.prepareEntityDataItem(
               folderEntity,
               profile.user.wallet,
-              key: driveKey,
+              key: driveKey?.key,
             );
 
             await _turboUploadService.postDataItem(
@@ -105,7 +105,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
             folderEntity.txId = folderDataItem.id;
           } else {
             final folderTx = await _arweave.prepareEntityTx(
-                folderEntity, profile.user.wallet, driveKey);
+                folderEntity, profile.user.wallet, driveKey?.key);
 
             await _arweave.postTx(folderTx);
             folderEntity.txId = folderTx.id;
@@ -161,7 +161,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
           }
 
           final fileKey = driveKey != null
-              ? await _crypto.deriveFileKey(driveKey, file.id)
+              ? await _crypto.deriveFileKey(driveKey.key, file.id)
               : null;
 
           final fileEntity = file.asEntity();

@@ -12,6 +12,7 @@ CREATE TABLE drives (
     privacy TEXT NOT NULL,
 
     encryptedKey BLOB,
+    driveKeyGenerated BOOLEAN DEFAULT TRUE,
     keyEncryptionIv BLOB,
 
     bundledIn TEXT,
@@ -20,6 +21,7 @@ CREATE TABLE drives (
     customGQLTags TEXT,
 
     isHidden BOOLEAN NOT NULL DEFAULT FALSE,
+    signatureType TEXT,
 
     dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
     lastUpdated DATETIME NOT NULL DEFAULT (strftime('%s','now'))

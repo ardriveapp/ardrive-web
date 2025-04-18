@@ -145,7 +145,7 @@ class _UploadRepositoryImpl implements UploadRepository {
     final uploadController = await _ardriveUploader.uploadFiles(
       files: uploadFiles,
       wallet: _auth.currentUser.wallet,
-      driveKey: driveKey,
+      driveKey: driveKey?.key,
       uploadThumbnail: uploadThumbnail,
       type: uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo,
     );
@@ -230,7 +230,7 @@ class _UploadRepositoryImpl implements UploadRepository {
       wallet: _auth.currentUser.wallet,
       uploadThumbnail: uploadThumbnail,
       type: uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo,
-      driveKey: driveKey,
+      driveKey: driveKey?.key,
     );
 
     uploadController.onCompleteTask((task) {

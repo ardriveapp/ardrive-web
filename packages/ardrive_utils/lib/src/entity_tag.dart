@@ -40,6 +40,9 @@ class EntityTag {
   static const tipType = 'Tip-Type';
 
   static const arnsName = 'ArNS-Name';
+
+  static const signatureType = 'Signature-Type';
+  static const signatureFormat = 'Signature-Format';
 }
 
 class ContentTypeTag {
@@ -53,6 +56,7 @@ class EntityTypeTag {
   static const folder = 'folder';
   static const file = 'file';
   static const snapshot = 'snapshot';
+  static const driveSignature = 'drive-signature';
 }
 
 class CipherTag {
