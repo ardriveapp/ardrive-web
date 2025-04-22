@@ -2,8 +2,10 @@ import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/shared/blocs/private_drive_migration/private_drive_migration_bloc.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PrivateDriveMigrationDialog extends StatefulWidget {
   const PrivateDriveMigrationDialog({super.key});
@@ -52,13 +54,36 @@ class _PrivateDriveMigrationDialogState
                   'Drive updates complete!',
                 ),
               ] else ...[
-                Text(
-                  'The following private drives need to be updated:',
-                  style: typography.paragraphNormal(
-                    fontWeight: ArFontWeight.semiBold,
-                    color: colorTokens.textMid,
+                RichText(
+                  text: TextSpan(
+                    style: typography.paragraphNormal(
+                      fontWeight: ArFontWeight.semiBold,
+                      color: colorTokens.textMid,
+                    ),
+                    children: [
+                      const TextSpan(
+                        text:
+                            'The following private drives need to be updated to continue using them in the future. Learn more ',
+                      ),
+                      TextSpan(
+                        text: 'here',
+                        style: typography
+                            .paragraphNormal(
+                                fontWeight: ArFontWeight.semiBold,
+                                color: colorTokens.textOnPrimary)
+                            .copyWith(
+                              decoration: TextDecoration.underline,
+                            ),
+                        recognizer: TapGestureRecognizer()
+                          ..onTap = () {
+                            launchUrl(Uri.parse('https://docs.ardrive.io'),
+                                mode: LaunchMode.externalApplication);
+                          },
+                      ),
+                      const TextSpan(text: '.'),
+                    ],
                   ),
-                ),
+                )
               ],
               const SizedBox(height: 16),
               Align(
