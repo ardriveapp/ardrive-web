@@ -74,7 +74,7 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
               context: context,
               title: appLocalizationsOf(context).error,
               message:
-                  'There was a creating this drive.\nPlease try again later.',
+                  'There was a problem creating this drive.\nPlease try again later.',
             );
           }
         },
