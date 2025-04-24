@@ -155,6 +155,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       _drivesCubit.selectDrive(drive.id!);
     } catch (err) {
       addError(err);
+      return;
     }
 
     emit(DriveCreateSuccess(privacy: state.privacy));
