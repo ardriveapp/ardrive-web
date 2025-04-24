@@ -153,12 +153,11 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       await _driveDao.insertDriveRevision(
           drive.toRevisionCompanion(performedAction: RevisionAction.create));
       _drivesCubit.selectDrive(drive.id!);
+
+      emit(DriveCreateSuccess(privacy: state.privacy));
     } catch (err) {
       addError(err);
-      return;
     }
-
-    emit(DriveCreateSuccess(privacy: state.privacy));
   }
 
   @override
