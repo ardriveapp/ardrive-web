@@ -70,6 +70,8 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
 
     emit(DriveCreateInProgress(privacy: state.privacy));
 
+    String? driveId;
+
     try {
       final String drivePrivacy = form.control('privacy').value;
       final walletAddress = await profile.user.wallet.getAddress();
@@ -81,6 +83,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         password: profile.user.password,
         profileKey: profile.user.cipherKey,
       );
+      driveId = createRes.driveId;
 
       final drive = DriveEntity(
         id: createRes.driveId,
@@ -156,6 +159,14 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
 
       emit(DriveCreateSuccess(privacy: state.privacy));
     } catch (err) {
+      // Clean up new drive from DB if necessary...
+      if (driveId != null) {
+        try {
+          await _driveDao.detachDrive(driveId);
+        } catch (e) {
+          logger.e('Failed to detach drive with ID $driveId', e);
+        }
+      }
       addError(err);
     }
   }

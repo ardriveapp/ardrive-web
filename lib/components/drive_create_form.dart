@@ -1,3 +1,4 @@
+import 'package:ardrive/authentication/login/views/modals/common.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/l11n/l11n.dart';
@@ -67,6 +68,14 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
             );
           } else if (state is DriveCreateWalletMismatch) {
             Navigator.pop(context);
+          } else if (state is DriveCreateFailure) {
+            Navigator.pop(context);
+            showErrorDialog(
+              context: context,
+              title: appLocalizationsOf(context).error,
+              message:
+                  'There was a creating this drive.\nPlease try again later.',
+            );
           }
         },
         builder: (context, state) {
