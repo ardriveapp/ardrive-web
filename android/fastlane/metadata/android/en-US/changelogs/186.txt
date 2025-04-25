@@ -1,0 +1,13 @@
+- Improve sync err pop-up vis
+- Log download & sidebar fix w/ success conf.
+- Successful wallet download conf.
+- ArNS name assignment fix
+- Mobile ArNS icon vis fix
+- Block height fetch improvement
+- Better err msg for drive creation over bad password
+- Multiselect w/ Ctrl key on Windows
+- Drag & drop folder err msg styling update
+- Empty Drives manual sync btn
+- Auto-close sidebar on drive switch on mobile
+- Default manifest creation to curr folder
+- Select folder before naming manifest
