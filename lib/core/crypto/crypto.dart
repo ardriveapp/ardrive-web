@@ -78,7 +78,7 @@ class ArDriveCrypto {
       } else if (signatureType == DriveSignatureType.v2) {
         final owner = await wallet.getOwner();
         final dataItem = DataItem.withBlobData(data: message, owner: owner);
-        dataItem.addTag('Action', 'Generate-Signature-V2');
+        dataItem.addTag('Action', 'Drive-Signature-V2');
         try {
           walletSignature = await wallet.signDataItem(dataItem);
         } catch (e) {
