@@ -454,6 +454,10 @@ class WalletMismatchException implements UntrackedException {
   const WalletMismatchException();
 }
 
+class ArConnectVersionNotSupportedException implements UntrackedException {
+  const ArConnectVersionNotSupportedException();
+}
+
 class AuthenticationUnknownException implements Exception {
   final String message;
 

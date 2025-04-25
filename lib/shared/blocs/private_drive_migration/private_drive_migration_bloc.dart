@@ -153,7 +153,7 @@ class PrivateDriveMigrationBloc
       emit(PrivateDriveMigrationComplete());
     } catch (e) {
       emit(const PrivateDriveMigrationFailed(
-          error: 'Error migrating drive, please try again.'));
+          error: 'Error updating drive, please try again.'));
     }
     // emit(PrivateDriveMigrationHidden());
   }

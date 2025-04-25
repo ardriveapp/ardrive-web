@@ -142,6 +142,7 @@ dependencies:
   carousel_slider: ^4.2.1
   dots_indicator: ^3.0.0
   markdown_editor_plus: ^0.2.15
+  pub_semver: ^2.1.4
 
 dependency_overrides:
   stripe_js:

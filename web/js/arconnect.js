@@ -72,3 +72,7 @@ async function signDataItem(data, tags, owner, target, anchor) {
 
   return new Uint8Array(signature);
 }
+
+async function getWalletVersion() {
+  return await window.arweaveWallet.walletVersion;
+}

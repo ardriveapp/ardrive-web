@@ -34,6 +34,9 @@ external Uint8List _getSignature(Uint8List message);
 external Uint8List _signDataItem(
     Uint8List data, List<Tag> tags, String owner, String target, String anchor);
 
+@JS('getWalletVersion')
+external String _getWalletVersion();
+
 Future<void> connect() {
   return promiseToFuture(_connect());
 }
@@ -65,4 +68,8 @@ Future<Uint8List> getSignature(Uint8List message) async {
 Future<Uint8List> signDataItem(DataItem dataItem) async {
   return await promiseToFuture<Uint8List>(_signDataItem(dataItem.data,
       dataItem.tags, dataItem.owner, dataItem.target, dataItem.nonce));
+}
+
+Future<String> getWalletVersion() async {
+  return await promiseToFuture<String>(_getWalletVersion());
 }

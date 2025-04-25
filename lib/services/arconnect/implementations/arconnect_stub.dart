@@ -35,3 +35,7 @@ Future<Uint8List> getSignature(Uint8List message) async {
 Future<Uint8List> signDataItem(DataItem dataItem) async {
   throw UnimplementedError();
 }
+
+Future<String?> getWalletVersion() async {
+  throw UnimplementedError();
+}

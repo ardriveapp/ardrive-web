@@ -1,12 +1,15 @@
 import 'dart:typed_data';
 
 import 'package:arweave/arweave.dart';
+import 'package:pub_semver/pub_semver.dart';
 
 import 'implementations/arconnect_web.dart'
     if (dart.library.io) 'implementations/arconnect_stub.dart'
     as implementation;
 
 class ArConnectService {
+  Future<bool>? _walletVersionSupportedFuture;
+
   /// Returns true is the ArConnect browser extension is installed and available
   bool isExtensionPresent() => implementation.isExtensionPresent();
 
@@ -37,4 +40,27 @@ class ArConnectService {
   /// Takes a DataItem and returns the signature bytes
   Future<Uint8List> signDataItem(DataItem dataItem) async =>
       await implementation.signDataItem(dataItem);
+
+  Future<bool> isWalletVersionSupported() {
+    if (_walletVersionSupportedFuture != null) {
+      return _walletVersionSupportedFuture!;
+    }
+
+    _walletVersionSupportedFuture = _checkWalletVersion();
+    return _walletVersionSupportedFuture!;
+  }
+
+  Future<bool> _checkWalletVersion() async {
+    final versionString = await implementation.getWalletVersion();
+    try {
+      final version = Version.parse(versionString);
+
+      // TODO: replace with actual version of Wander release that supports saltLength
+      final constraint = VersionConstraint.parse('>= 1.24.9');
+
+      return constraint.allows(version);
+    } catch (e) {
+      return false;
+    }
+  }
 }
