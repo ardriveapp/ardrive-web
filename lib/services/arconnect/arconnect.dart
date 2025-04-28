@@ -56,7 +56,7 @@ class ArConnectService {
       final version = Version.parse(versionString);
 
       // TODO: replace with actual version of Wander release that supports saltLength
-      final constraint = VersionConstraint.parse('>= 1.24.9');
+      final constraint = VersionConstraint.parse('>= 1.26.0');
 
       return constraint.allows(version);
     } catch (e) {
