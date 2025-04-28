@@ -5,6 +5,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/validate_folder_name.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -77,6 +78,10 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
   }
 
   void _onDriveNameChange() {
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
       _isFormValid =
           context.read<DriveAttachCubit>().driveNameController.text.isNotEmpty;
@@ -133,6 +138,12 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
                     if (context.read<DriveAttachCubit>().state
                         is! DriveAttachPrivate) {
                       debounce(() {
+                        if (!mounted) {
+                          logger.i(
+                              'Drive attach form closed. Not loading drive name.');
+                          return;
+                        }
+
                         context.read<DriveAttachCubit>().driveNameLoader();
                       });
                     }
@@ -151,6 +162,12 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
                       final cubit = context.read<DriveAttachCubit>();
 
                       final validation = await cubit.driveKeyValidator();
+
+                      if (!mounted) {
+                        logger.i(
+                            'Drive attach form closed. Not validating drive key.');
+                        return null;
+                      }
 
                       return validation;
                     },
