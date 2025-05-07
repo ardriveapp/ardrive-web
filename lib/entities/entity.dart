@@ -233,7 +233,7 @@ extension TransactionUtils on TransactionBase {
 
   /// Tags this transaction with the ArFS version currently in use.
   void addArFsTag() {
-    addTag(EntityTag.arFs, '0.14');
+    addTag(EntityTag.arFs, '0.15');
   }
 
   void addBundleTags() {

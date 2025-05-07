@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/blocs/constants.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/drive_entity.dart';
 import 'package:ardrive/entities/file_entity.dart';
@@ -553,7 +554,7 @@ class _SyncRepository implements SyncRepository {
 
     logger.i('Syncing drive: ${drive.id}');
 
-    SecretKey? driveKey;
+    DriveKey? driveKey;
 
     if (drive.isPrivate) {
       // Only sync private drives when the user is logged in.
@@ -706,7 +707,7 @@ class _SyncRepository implements SyncRepository {
       yield* _parseDriveTransactionsIntoDatabaseEntities(
         transactions: transactions,
         drive: drive,
-        driveKey: driveKey,
+        driveKey: driveKey?.key,
         currentBlockHeight: currentBlockHeight,
         lastBlockHeight: lastBlockHeight,
         batchSize: transactionParseBatchSize,

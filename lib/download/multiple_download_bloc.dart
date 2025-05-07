@@ -37,7 +37,7 @@ class MultipleDownloadBloc
   bool _canceled = false;
   int _currentFileIndex = 0;
   final List<MultiDownloadItem> _skippedFiles = [];
-  SecretKey? _driveKey;
+  DriveKey? _driveKey;
 
   ARFSDriveEntity? _drive;
   late ZipEncoder _zipEncoder;
@@ -190,7 +190,8 @@ class MultipleDownloadBloc
           Uint8List outputBytes;
 
           if (file.pinnedDataOwnerAddress == null && _driveKey != null) {
-            final fileKey = await _driveDao.getFileKey(file.fileId, _driveKey!);
+            final fileKey =
+                await _driveDao.getFileKey(file.fileId, _driveKey!.key);
             final dataTx = await (_arweave.getTransactionDetails(file.txId));
 
             try {

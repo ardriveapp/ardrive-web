@@ -1,7 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/utils/link_generators.dart';
-import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -30,7 +30,7 @@ class DriveShareCubit extends Cubit<DriveShareState> {
     emit(DriveShareLoadInProgress());
 
     if (drive.isPrivate) {
-      SecretKey? driveKey;
+      DriveKey? driveKey;
       if (_profileCubit.state is ProfileLoggedIn) {
         final profileKey =
             (_profileCubit.state as ProfileLoggedIn).user.cipherKey;
@@ -42,7 +42,7 @@ class DriveShareCubit extends Cubit<DriveShareState> {
         driveShareLink = await generatePrivateDriveShareLink(
           driveId: drive.id,
           driveName: drive.name,
-          driveKey: driveKey,
+          driveKey: driveKey.key,
         );
       } else {
         throw StateError('Drive key not found');

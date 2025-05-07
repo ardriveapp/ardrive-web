@@ -66,7 +66,7 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
           final driveDataItem = await _arweave.prepareEntityDataItem(
             driveEntity,
             profile.user.wallet,
-            key: driveKey,
+            key: driveKey?.key,
           );
           await _turboUploadService.postDataItem(
             dataItem: driveDataItem,
@@ -77,7 +77,7 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
           final driveTx = await _arweave.prepareEntityTx(
             driveEntity,
             profile.user.wallet,
-            driveKey,
+            driveKey?.key,
           );
           await _arweave.postTx(driveTx);
           driveEntity.txId = driveTx.id;

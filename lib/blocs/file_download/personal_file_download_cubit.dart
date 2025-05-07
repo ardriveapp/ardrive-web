@@ -153,7 +153,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     }
 
     if (drive.drivePrivacy == DrivePrivacy.private && !isPinFile) {
-      SecretKey? driveKey;
+      DriveKey? driveKey;
 
       if (cipherKey != null) {
         driveKey = await _driveDao.getDriveKey(
@@ -169,7 +169,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
             'Drive Key not found for file ${_file.id} in drive ${_file.driveId}');
       }
 
-      fileKey = await _driveDao.getFileKey(_file.id, driveKey);
+      fileKey = await _driveDao.getFileKey(_file.id, driveKey.key);
 
       cipher = dataTx.getTag(EntityTag.cipher);
       cipherIvTag = dataTx.getTag(EntityTag.cipherIv);
