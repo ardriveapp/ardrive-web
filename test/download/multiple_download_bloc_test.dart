@@ -74,7 +74,7 @@ void main() async {
     when(() => mockARFSRepositoryPrivate.getDriveById(any()))
         .thenAnswer((_) async => mockDrivePrivate);
     when(() => mockDriveDao.getDriveKey(any(), any()))
-        .thenAnswer((_) async => SecretKey([]));
+        .thenAnswer((_) async => DriveKey(SecretKey([]), true));
     when(() => mockDriveDao.getFileKey(any(), any()))
         .thenAnswer((_) async => SecretKey([]));
     when(() => mockDownloadService.download(any(), any()))

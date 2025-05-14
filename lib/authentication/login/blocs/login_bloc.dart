@@ -438,6 +438,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     UnlockUserWithPassword event,
     Emitter<LoginState> emit,
   ) async {
+    final arconnectVersionSupported =
+        await _arConnectService.isWalletVersionSupported();
+    if (!arconnectVersionSupported) {
+      emit(const LoginFailure(ArConnectVersionNotSupportedException()));
+      return;
+    }
+
     emit(LoginCheckingPassword());
 
     try {
@@ -578,6 +585,14 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   ) async {
     final previousState = state;
     usingSeedphrase = false;
+
+    final arconnectVersionSupported =
+        await _arConnectService.isWalletVersionSupported();
+    if (!arconnectVersionSupported) {
+      emit(const LoginFailure(ArConnectVersionNotSupportedException()));
+      emit(previousState);
+      return;
+    }
 
     try {
       emit(LoginLoadingIfUserAlreadyExists());

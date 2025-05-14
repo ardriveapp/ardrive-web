@@ -22,6 +22,7 @@ abstract class ArDriveDataTableItem extends IndexedItem {
   final String driveId;
   final bool isOwner;
   final bool isHidden;
+  final String? signatureType;
 
   ArDriveDataTableItem({
     required this.id,
@@ -36,6 +37,7 @@ abstract class ArDriveDataTableItem extends IndexedItem {
     required int index,
     required this.isOwner,
     this.isHidden = false,
+    this.signatureType,
   }) : super(index);
 }
 
@@ -50,10 +52,11 @@ class DriveDataItem extends ArDriveDataTableItem {
     required super.index,
     required super.isOwner,
     super.isHidden,
+    super.signatureType,
   });
 
   @override
-  List<Object?> get props => [id, name];
+  List<Object?> get props => [id, name, signatureType];
 }
 
 class FolderDataTableItem extends ArDriveDataTableItem {
@@ -241,6 +244,7 @@ class DriveDataTableItemMapper {
       contentType: 'drive',
       id: drive.id,
       isHidden: drive.isHidden,
+      signatureType: drive.signatureType ?? '1',
     );
   }
 

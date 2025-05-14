@@ -99,6 +99,7 @@ void main() {
           wallet: testWallet,
           password: '123',
           profileKey: SecretKey([1, 2, 3, 4, 5]),
+          signatureType: '1',
         );
         driveId = drive.driveId;
 
