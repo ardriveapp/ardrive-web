@@ -11,12 +11,14 @@ import 'entities.dart';
 class DriveSignatureEntity with TransactionPropertiesMixin {
   String driveId;
   String signatureFormat;
+  String cipher;
   String cipherIv;
   Uint8List data;
 
   DriveSignatureEntity({
     required this.driveId,
     required this.signatureFormat,
+    required this.cipher,
     required this.cipherIv,
     required this.data,
   });
@@ -29,10 +31,12 @@ class DriveSignatureEntity with TransactionPropertiesMixin {
       final driveId = transaction.getTag(EntityTag.driveId)!;
       final signatureFormat = transaction.getTag(EntityTag.signatureFormat)!;
       final cipherIv = transaction.getTag(EntityTag.cipherIv)!;
+      final cipher = transaction.getTag(EntityTag.cipher) ?? 'AES-GCM';
 
       final driveSignatureEntity = DriveSignatureEntity(
         driveId: driveId,
         signatureFormat: signatureFormat,
+        cipher: cipher,
         cipherIv: cipherIv,
         data: data!,
       );
@@ -60,6 +64,7 @@ class DriveSignatureEntity with TransactionPropertiesMixin {
       ..addTag(EntityTag.entityType, EntityTypeTag.driveSignature)
       ..addTag(EntityTag.driveId, driveId)
       ..addTag(EntityTag.signatureFormat, signatureFormat)
+      ..addTag(EntityTag.cipher, cipher)
       ..addTag(EntityTag.cipherIv, cipherIv);
 
     return driveSignatureDataItem;

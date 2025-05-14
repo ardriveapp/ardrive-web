@@ -9,6 +9,7 @@ import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive_crypto/ardrive_crypto.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
@@ -118,6 +119,7 @@ class PrivateDriveMigrationBloc
         final driveSignature = DriveSignatureEntity(
           driveId: drive.id,
           signatureFormat: '1',
+          cipher: Cipher.aes256gcm,
           cipherIv: utils.encodeBytesToBase64(encryptedWalletSignatureV1.nonce),
           data: encryptedWalletSignatureV1.concatenation(nonce: false),
         );
