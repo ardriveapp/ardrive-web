@@ -76,7 +76,9 @@ class _PrivateDriveMigrationDialogState
                             ),
                         recognizer: TapGestureRecognizer()
                           ..onTap = () {
-                            launchUrl(Uri.parse('https://docs.ardrive.io'),
+                            launchUrl(
+                                Uri.parse(
+                                    'https://docs.ardrive.io/docs/arfs/upgrading-private-drives.html'),
                                 mode: LaunchMode.externalApplication);
                           },
                       ),
