@@ -26,7 +26,7 @@ platform :ios do
     # Download and install adhoc certificate and profile
     match(
       type: type,
-      app_identifier: "io.ardrive.app",
+      app_identifier: ["io.ardrive.app", "io.ardrive.app.test2", "io.ardrive.app.test2.Share-Extension"]
       force_for_new_devices: true
     )
 
