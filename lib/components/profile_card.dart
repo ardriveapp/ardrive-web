@@ -528,7 +528,7 @@ class _ProfileCardState extends State<ProfileCard> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Error fetching tIO balance',
+                          'Error fetching ARIO balance',
                           style: typography.paragraphNormal(
                             fontWeight: ArFontWeight.semiBold,
                             color: ArDriveTheme.of(context)

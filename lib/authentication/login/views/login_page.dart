@@ -163,6 +163,15 @@ class _LoginPageState extends State<LoginPage> {
               showBiometricExceptionDialogForException(
                   context, loginState.error as BiometricException, () {});
               return;
+            } else if (loginState.error
+                is ArConnectVersionNotSupportedException) {
+              showErrorDialog(
+                context: context,
+                title: appLocalizationsOf(context).loginFailed,
+                message:
+                    'This version of Wander is not supported. Please upgrade and try again.',
+              );
+              return;
             }
 
             showErrorDialog(

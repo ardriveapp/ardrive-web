@@ -711,6 +711,17 @@ class _DetailsPanelState extends State<DetailsPanel> {
         ),
         itemTitle: appLocalizationsOf(context).metadataTxID,
       ),
+      if (state.drive.isPrivate) ...[
+        sizedBoxHeight16px,
+        DetailsPanelItem(
+          leading: Text(
+            widget.item.signatureType ?? '?',
+            textAlign: TextAlign.right,
+          ),
+          // TODO: Localize
+          itemTitle: 'Signature Type',
+        ),
+      ],
     ];
   }
 

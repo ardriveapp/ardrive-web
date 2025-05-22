@@ -60,6 +60,7 @@ jobs:
           branch: gh-pages
           folder: build/web
           clean: true
+          single-commit: true
 
   build-ios:
     # skipped for now

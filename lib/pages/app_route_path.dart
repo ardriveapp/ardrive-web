@@ -1,3 +1,4 @@
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
 
@@ -12,7 +13,7 @@ class AppRoutePath {
   final String? driveName;
   final String? driveFolderId;
 
-  final SecretKey? sharedDriveKey;
+  final DriveKey? sharedDriveKey;
   final String? sharedRawDriveKey;
 
   final String? sharedFileId;
@@ -45,7 +46,7 @@ class AppRoutePath {
   factory AppRoutePath.driveDetail({
     required String driveId,
     String? driveName,
-    SecretKey? sharedDrivePk,
+    DriveKey? sharedDrivePk,
     String? sharedRawDriveKey,
   }) =>
       AppRoutePath(

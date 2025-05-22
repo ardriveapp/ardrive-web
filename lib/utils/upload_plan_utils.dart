@@ -75,7 +75,7 @@ class UploadPlanUtils {
       }
 
       final fileKey = private
-          ? await crypto.deriveFileKey(driveKey!, fileEntity.id!)
+          ? await crypto.deriveFileKey(driveKey!.key, fileEntity.id!)
           : null;
 
       final revisionAction = conflictingFiles.containsKey(file.getIdentifier())
@@ -88,7 +88,7 @@ class UploadPlanUtils {
         fileDataItemUploadHandles[fileEntity.id!] = FileDataItemUploadHandle(
           entity: fileEntity,
           file: file,
-          driveKey: driveKey,
+          driveKey: driveKey?.key,
           fileKey: fileKey,
           arweave: arweave,
           wallet: wallet,
@@ -99,7 +99,7 @@ class UploadPlanUtils {
         fileV2UploadHandles[fileEntity.id!] = FileV2UploadHandle(
           entity: fileEntity,
           file: file,
-          driveKey: driveKey,
+          driveKey: driveKey?.key,
           fileKey: fileKey,
           revisionAction: revisionAction,
           crypto: crypto,
@@ -114,7 +114,7 @@ class UploadPlanUtils {
           arweave: arweave,
           wallet: wallet,
           targetDriveId: targetDrive.id,
-          driveKey: driveKey,
+          driveKey: driveKey?.key,
         ),
       );
     });

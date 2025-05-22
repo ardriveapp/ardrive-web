@@ -295,7 +295,7 @@ class FsEntryLicenseBloc
 
         final fileEntity = file.asEntity();
         final fileKey = driveKey != null
-            ? await _crypto.deriveFileKey(driveKey, file.id)
+            ? await _crypto.deriveFileKey(driveKey.key, file.id)
             : null;
         final fileDataItem = await _arweave.prepareEntityDataItem(
           fileEntity,

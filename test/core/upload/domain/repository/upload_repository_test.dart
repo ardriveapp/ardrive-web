@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/upload/domain/repository/upload_repository.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
@@ -139,8 +140,8 @@ void main() {
         when(() => mockDrive.privacy).thenReturn('private');
         when(() => mockDrive.id).thenReturn('drive-id');
         when(() => mockFolderEntry.id).thenReturn('folder-id');
-        when(() => mockDriveDao.getDriveKey(any(), any()))
-            .thenAnswer((_) async => SecretKey([1, 2, 3, 4, 5]));
+        when(() => mockDriveDao.getDriveKey(any(), any())).thenAnswer(
+            (_) async => DriveKey(SecretKey([1, 2, 3, 4, 5]), true));
         when(() => mockArDriveUploader.uploadFiles(
               files: [(metadataArgs, file)],
               wallet: any(named: 'wallet'),
@@ -253,8 +254,8 @@ void main() {
         when(() => mockDrive.privacy).thenReturn('private');
         when(() => mockDrive.id).thenReturn('drive-id');
         when(() => mockFolderEntry.id).thenReturn('folder-id');
-        when(() => mockDriveDao.getDriveKey(any(), any()))
-            .thenAnswer((_) async => SecretKey([1, 2, 3, 4, 5]));
+        when(() => mockDriveDao.getDriveKey(any(), any())).thenAnswer(
+            (_) async => DriveKey(SecretKey([1, 2, 3, 4, 5]), true));
         when(() => mockArDriveUploader.uploadFiles(
               files: [(metadataArgs, file)],
               wallet: any(named: 'wallet'),
@@ -402,8 +403,8 @@ void main() {
         when(() => mockDrive.privacy).thenReturn('private');
         when(() => mockDrive.id).thenReturn('drive-id');
         when(() => mockFolderEntry.id).thenReturn('folder-id');
-        when(() => mockDriveDao.getDriveKey(any(), any()))
-            .thenAnswer((_) async => SecretKey([1, 2, 3, 4, 5]));
+        when(() => mockDriveDao.getDriveKey(any(), any())).thenAnswer(
+            (_) async => DriveKey(SecretKey([1, 2, 3, 4, 5]), true));
         when(() => mockArDriveUploader.uploadFiles(
               files: [(metadataArgs, file)],
               wallet: any(named: 'wallet'),

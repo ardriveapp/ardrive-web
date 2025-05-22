@@ -79,7 +79,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
           final folderDataItem = await _arweave.prepareEntityDataItem(
             folderEntity,
             profile.user.wallet,
-            key: driveKey,
+            key: driveKey?.key,
           );
 
           await _turboUploadService.postDataItem(
@@ -91,7 +91,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
           final folderTx = await _arweave.prepareEntityTx(
             folderEntity,
             profile.user.wallet,
-            driveKey,
+            driveKey?.key,
           );
 
           await _arweave.postTx(folderTx);

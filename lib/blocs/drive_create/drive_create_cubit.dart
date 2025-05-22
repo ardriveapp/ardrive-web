@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart'
     show DrivePrivacy;
 import 'package:ardrive/entities/drive_entity.dart';
+import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -75,6 +76,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     try {
       final String drivePrivacy = form.control('privacy').value;
       final walletAddress = await profile.user.wallet.getAddress();
+
       final createRes = await _driveDao.createDrive(
         name: driveName,
         ownerAddress: walletAddress,
@@ -82,6 +84,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         wallet: profile.user.wallet,
         password: profile.user.password,
         profileKey: profile.user.cipherKey,
+        signatureType: drivePrivacy == DrivePrivacyTag.private ? '2' : null,
       );
       driveId = createRes.driveId;
 
@@ -92,6 +95,9 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         privacy: drivePrivacy,
         authMode: drivePrivacy == DrivePrivacyTag.private
             ? DriveAuthModeTag.password
+            : null,
+        signatureType: drivePrivacy == DrivePrivacyTag.private
+            ? DriveSignatureType.v2
             : null,
       );
 

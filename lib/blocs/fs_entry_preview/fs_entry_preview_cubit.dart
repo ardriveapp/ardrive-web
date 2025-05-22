@@ -324,7 +324,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     }
 
     final profile = _profileCubit.state;
-    late SecretKey? driveKey;
+    late DriveKey? driveKey;
 
     if (profile is ProfileLoggedIn) {
       driveKey = await _driveDao.getDriveKey(
@@ -339,7 +339,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       return null;
     }
 
-    final fileKey = await _driveDao.getFileKey(fileId, driveKey);
+    final fileKey = await _driveDao.getFileKey(fileId, driveKey.key);
     return fileKey;
   }
 
