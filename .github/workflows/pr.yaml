@@ -58,8 +58,6 @@ jobs:
           expires: 7d
 
   build-ios:
-    # skipped for now
-    if: false
     needs: pre-build
     runs-on: macos-latest
     steps:
@@ -91,6 +89,11 @@ jobs:
       - name: Install fastlane and Cocoapods
         working-directory: ./ios
         run: bundle install
+
+      - name: Debug MATCH_PASSWORD hash
+        env:
+          MATCH_PASSWORD: ${{ secrets.FASTLANE_MATCH_PASSWORD }}
+        run: echo -n "$MATCH_PASSWORD" | shasum -a 256
 
       - name: Build iOS with fastlane
         env:
