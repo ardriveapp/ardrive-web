@@ -52,7 +52,7 @@ class ArConnectService {
   }
 
   Future<bool> _checkWalletVersion() async {
-    if (AppPlatform.isMobile) {
+    if (AppPlatform.isMobileWeb()) {
       return false;
     }
 
