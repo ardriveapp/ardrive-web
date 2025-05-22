@@ -49,6 +49,13 @@ platform :ios do
       export_method: export_method,
       clean: true,
       include_bitcode: false,
+      export_options: {
+        provisioningProfiles: {
+          "io.ardrive.app" => "match AdHoc io.ardrive.app",
+          "io.ardrive.app.test2" => "match AdHoc io.ardrive.app.test2",
+          "io.ardrive.app.test2.Share-Extension" => "match AdHoc io.ardrive.app.test2.Share-Extension",
+        },
+      },
     )
   end
 
