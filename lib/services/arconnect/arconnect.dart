@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:pub_semver/pub_semver.dart';
 
@@ -51,6 +52,10 @@ class ArConnectService {
   }
 
   Future<bool> _checkWalletVersion() async {
+    if (AppPlatform.isMobile) {
+      return false;
+    }
+
     final versionString = await implementation.getWalletVersion();
     try {
       final version = Version.parse(versionString);
