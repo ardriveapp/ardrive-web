@@ -63,7 +63,7 @@ jobs:
       - run: |
           scr deploy-to-arweave
         env:
-          DEPLOY_ANT_PROCESS_ID: ${{ secrets.DEPLOY_ANT_PROCESS_ID }}
+          ARNS_NAME: ${{ secrets.ARNS_NAME }}
           DEPLOY_ANT_UNDERNAME: ${{ secrets.DEPLOY_ANT_UNDERNAME }}
           DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
 
