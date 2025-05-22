@@ -30,7 +30,7 @@ class Database extends _$Database {
   Database([QueryExecutor? e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 26;
+  int get schemaVersion => 27;
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) {
