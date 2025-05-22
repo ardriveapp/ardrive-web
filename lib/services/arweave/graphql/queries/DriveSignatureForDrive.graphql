@@ -1,0 +1,17 @@
+query DriveSignatureForDrive($owner: String!, $driveId: String!) {
+  transactions(
+    owners: [$owner]
+    sort: HEIGHT_DESC
+    first: 1
+    tags: [
+      { name: "Entity-Type", values: ["drive-signature"] }
+      { name: "Drive-Id", values: [$driveId] }
+    ]
+  ) {
+    edges {
+      node {
+        ...TransactionCommon
+      }
+    }
+  }
+}

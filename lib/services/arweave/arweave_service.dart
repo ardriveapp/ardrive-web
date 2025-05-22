@@ -3,7 +3,9 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/entities/drive_signature.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/services/arweave/arweave_service_exception.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
@@ -552,7 +554,7 @@ class ArweaveService {
     return drives;
   }
 
-  Future<String?> getFirstPrivateDriveTxId(
+  Future<TransactionCommonMixin?> getFirstPrivateDriveTx(
     Wallet wallet, {
     int maxRetries = defaultMaxRetries,
   }) async {
@@ -564,13 +566,32 @@ class ArweaveService {
     final privateDriveTxs = driveTxs.where(
         (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private);
 
-    return privateDriveTxs.isNotEmpty
-        ? privateDriveTxs.first.getTag(EntityTag.driveId)!
+    final firstTx = privateDriveTxs.isNotEmpty ? privateDriveTxs.first : null;
+
+    return firstTx;
+  }
+
+  Future<DriveSignatureEntity?> getDriveSignatureForDrive(
+    Wallet wallet,
+    String driveId,
+  ) async {
+    final driveSignatureTx = await getDriveSignatureTxForDrive(wallet, driveId);
+
+    final driveSignatureData = driveSignatureTx != null
+        ? (await httpRetry.processRequest(
+            () => client.api.getSandboxedTx(driveSignatureTx.id)))
         : null;
+
+    final driveSignature =
+        driveSignatureTx != null && driveSignatureData != null
+            ? DriveSignatureEntity.fromTransaction(
+                driveSignatureTx, driveSignatureData.bodyBytes)
+            : null;
+    return driveSignature;
   }
 
   /// Gets the unique drive entities for a particular user.
-  Future<Map<DriveEntity, SecretKey?>> getUniqueUserDriveEntities(
+  Future<Map<DriveEntity, DriveKey?>> getUniqueUserDriveEntities(
     Wallet wallet,
     String password,
   ) async {
@@ -586,7 +607,7 @@ class ArweaveService {
       });
 
       final drivesById = <String?, DriveEntity>{};
-      final drivesWithKey = <DriveEntity, SecretKey?>{};
+      final drivesWithKey = <DriveEntity, DriveKey?>{};
       for (var i = 0; i < driveTxs.length; i++) {
         final driveTx = driveTxs[i];
 
@@ -595,7 +616,7 @@ class ArweaveService {
           continue;
         }
 
-        SecretKey? driveKey;
+        DriveKey? driveKey;
 
         if (driveTx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private) {
           driveKey = await _driveDao.getDriveKeyFromMemory(
@@ -603,11 +624,20 @@ class ArweaveService {
           );
 
           if (driveKey == null) {
+            final sigTypeTag = driveTx.getTag(EntityTag.signatureType) ?? '1';
+            final signatureType = DriveSignatureType.fromString(sigTypeTag);
+
+            final driveSignature = signatureType == DriveSignatureType.v1
+                ? await getDriveSignatureForDrive(
+                    wallet, driveTx.getTag(EntityTag.driveId)!)
+                : null;
+
             driveKey = await _crypto.deriveDriveKey(
-              wallet,
-              driveTx.getTag(EntityTag.driveId)!,
-              password,
-            );
+                wallet,
+                driveTx.getTag(EntityTag.driveId)!,
+                password,
+                signatureType,
+                driveSignature);
 
             _driveDao.putDriveKeyInMemory(
               driveID: driveTx.getTag(EntityTag.driveId)!,
@@ -620,7 +650,7 @@ class ArweaveService {
             driveTx,
             _crypto,
             driveResponses[i].bodyBytes,
-            driveKey,
+            driveKey?.key,
           );
 
           drivesById[drive.id] = drive;
@@ -871,16 +901,20 @@ class ArweaveService {
     }
 
     final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId)!;
+    final signatureType = DriveSignatureType.fromString(
+        privateDriveTxs.first.getTag(EntityTag.signatureType) ?? '1');
+
+    final driveSignature = signatureType == DriveSignatureType.v1
+        ? await getDriveSignatureForDrive(wallet, checkDriveId)
+        : null;
+
     final checkDriveKey = await _crypto.deriveDriveKey(
-      wallet,
-      checkDriveId,
-      password,
-    );
+        wallet, checkDriveId, password, signatureType, driveSignature);
 
     return await getLatestDriveEntityWithId(
       checkDriveId,
       driveOwner: await wallet.getAddress(),
-      driveKey: checkDriveKey,
+      driveKey: checkDriveKey.key,
     );
   }
 
@@ -1124,6 +1158,27 @@ class ArweaveService {
     }
 
     return firstTxForWalletQuery.data!.transactions.edges.first.node.id;
+  }
+
+  Future<TransactionCommonMixin?> getDriveSignatureTxForDrive(
+    Wallet wallet,
+    String driveId, {
+    int maxRetries = defaultMaxRetries,
+  }) async {
+    final driveSignatureTxs = await graphQLRetry.execute(
+      DriveSignatureForDriveQuery(
+        variables: DriveSignatureForDriveArguments(
+          owner: await wallet.getAddress(),
+          driveId: driveId,
+        ),
+      ),
+    );
+
+    if (driveSignatureTxs.data!.transactions.edges.isEmpty) {
+      return null;
+    }
+
+    return driveSignatureTxs.data!.transactions.edges.first.node;
   }
 
   Future<List<(String, int)>?> getTransactionsAtHeight(

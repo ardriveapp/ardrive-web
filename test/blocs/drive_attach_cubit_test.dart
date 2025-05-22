@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -29,9 +30,8 @@ void main() {
     const validPrivateDriveId = 'valid-private-drive-id';
     const validPrivateDriveKeyBase64 =
         'a6U1qYiJNNNfX6RqhCUGpwOfRN3ZdAiQl7LHywqIJTk';
-    final validPrivateDriveKey = SecretKey(
-      decodeBase64ToBytes(validPrivateDriveKeyBase64),
-    );
+    final validPrivateDriveKey = DriveKey(
+        SecretKey(decodeBase64ToBytes(validPrivateDriveKeyBase64)), true);
 
     final keyBytes = Uint8List(32);
     fillBytesWithSecureRandom(keyBytes);
@@ -68,7 +68,7 @@ void main() {
 
       when(() => arweave.getLatestDriveEntityWithId(
             validPrivateDriveId,
-            driveKey: validPrivateDriveKey,
+            driveKey: validPrivateDriveKey.key,
           )).thenAnswer(
         (_) => Future.value(
           DriveEntity(

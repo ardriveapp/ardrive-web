@@ -93,7 +93,7 @@ class ThumbnailRepository {
       isManifest: false,
       cipher: dataTx.getTag(EntityTag.cipher),
       cipherIvString: dataTx.getTag(EntityTag.cipherIv),
-      fileKey: await _driveDao.getFileKey(fileDataTableItem.id, driveKey!),
+      fileKey: await _driveDao.getFileKey(fileDataTableItem.id, driveKey!.key),
     );
   }
 
@@ -120,7 +120,7 @@ class ThumbnailRepository {
       );
 
       fileKey = await ArDriveCrypto().deriveFileKey(
-        driveKey!,
+        driveKey!.key,
         fileEntry.id,
       );
     }

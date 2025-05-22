@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 2.67.5
+version: 2.68.0
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -55,7 +55,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v3.9.0
+      ref: 28e8f7f066c86f35412308cd9ebee30528f21985
   ario_sdk:
     path: ./packages/ario_sdk
   cryptography: ^2.0.5
@@ -142,6 +142,7 @@ dependencies:
   carousel_slider: ^4.2.1
   dots_indicator: ^3.0.0
   markdown_editor_plus: ^0.2.15
+  pub_semver: ^2.1.4
 
 dependency_overrides:
   stripe_js:
@@ -166,7 +167,7 @@ dependency_overrides:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v3.9.0
+      ref: 28e8f7f066c86f35412308cd9ebee30528f21985
 
   ardrive_io:
     git:

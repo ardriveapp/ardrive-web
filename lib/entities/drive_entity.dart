@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -26,12 +27,16 @@ class DriveEntity extends EntityWithCustomMetadata {
 
   bool? isHidden;
 
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  DriveSignatureType? signatureType;
+
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   List<String> reservedGqlTags = [
     ...EntityWithCustomMetadata.sharedReservedGqlTags,
     EntityTag.drivePrivacy,
     EntityTag.driveAuthMode,
+    EntityTag.signatureType
   ];
 
   @override
@@ -41,14 +46,15 @@ class DriveEntity extends EntityWithCustomMetadata {
     'rootFolderId',
   ];
 
-  DriveEntity({
-    this.id,
-    this.name,
-    this.rootFolderId,
-    this.privacy,
-    this.authMode,
-    this.isHidden,
-  }) : super(ArDriveCrypto());
+  DriveEntity(
+      {this.id,
+      this.name,
+      this.rootFolderId,
+      this.privacy,
+      this.authMode,
+      this.isHidden,
+      this.signatureType})
+      : super(ArDriveCrypto());
 
   static Future<DriveEntity> fromTransaction(
     TransactionCommonMixin transaction,
@@ -75,7 +81,9 @@ class DriveEntity extends EntityWithCustomMetadata {
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
         ..bundledIn = transaction.bundledIn?.id
-        ..createdAt = transaction.getCommitTime();
+        ..createdAt = transaction.getCommitTime()
+        ..signatureType = DriveSignatureType.fromString(
+            transaction.getTag(EntityTag.signatureType) ?? '1');
 
       final tags = transaction.tags
           .map(
@@ -105,6 +113,7 @@ class DriveEntity extends EntityWithCustomMetadata {
 
     if (privacy == DrivePrivacyTag.private) {
       tx.addTag(EntityTag.driveAuthMode, authMode!);
+      tx.addTag(EntityTag.signatureType, signatureType?.value ?? '1');
     }
   }
 

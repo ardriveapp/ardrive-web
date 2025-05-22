@@ -1,3 +1,4 @@
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
@@ -36,7 +37,7 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
             return AppRoutePath.driveDetail(
               driveId: driveId,
               driveName: name,
-              sharedDrivePk: SecretKey(sharedDrivePkBytes),
+              sharedDrivePk: DriveKey(SecretKey(sharedDrivePkBytes), true),
               sharedRawDriveKey: driveKeyBase64,
             );
           } else if (uri.pathSegments.length == 2) {

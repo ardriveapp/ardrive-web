@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:arweave/arweave.dart';
+
 bool isExtensionPresent() => false;
 
 Future<void> connect() {
@@ -27,5 +29,13 @@ Future<String> getPublicKey() async {
 }
 
 Future<Uint8List> getSignature(Uint8List message) async {
+  throw UnimplementedError();
+}
+
+Future<Uint8List> signDataItem(DataItem dataItem) async {
+  throw UnimplementedError();
+}
+
+Future<String> getWalletVersion() async {
   throw UnimplementedError();
 }

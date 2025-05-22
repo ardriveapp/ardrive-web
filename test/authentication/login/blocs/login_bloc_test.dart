@@ -185,6 +185,8 @@ void main() {
     setUp(() {
       when(() => mockArConnectService.isExtensionPresent())
           .thenAnswer((_) => false);
+      when(() => mockArConnectService.isWalletVersionSupported())
+          .thenAnswer((_) => Future.value(true));
     });
 
     final loggedUser = User(
@@ -424,6 +426,8 @@ void main() {
     setUp(() {
       when(() => mockArConnectService.isExtensionPresent())
           .thenAnswer((_) => false);
+      when(() => mockArConnectService.isWalletVersionSupported())
+          .thenAnswer((_) => Future.value(true));
     });
 
     final loggedUser = User(
@@ -635,6 +639,8 @@ void main() {
     setUp(() {
       when(() => mockArConnectService.isExtensionPresent())
           .thenAnswer((_) => false);
+      when(() => mockArConnectService.isWalletVersionSupported())
+          .thenAnswer((_) => Future.value(true));
     });
 
     blocTest(
