@@ -1,0 +1,7 @@
+- Improved login error messaging during drive creation to reflect pending Arweave confirmation instead of incorrect password.
+- Updated multi-selection behavior to use the standard Ctrl key instead of the Windows key.
+- Refined drag-and-drop folder error message styling for improved clarity and consistency.
+- Added manual sync button to empty state of Drives page for easier content refresh.
+- Sidebar now auto-closes on drive switch in mobile app for a cleaner navigation experience.
+- Manifest creation now defaults to the currently viewed folder for improved usability and accuracy.
+- Reordered manifest creation flow to select folder before naming for improved clarity and consistency.
