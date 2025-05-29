@@ -74,5 +74,5 @@ async function signDataItem(data, tags, owner, target, anchor) {
 }
 
 async function getWalletVersion() {
-  return await window.arweaveWallet.walletVersion;
+  return await window?.arweaveWallet?.walletVersion ?? null;
 }

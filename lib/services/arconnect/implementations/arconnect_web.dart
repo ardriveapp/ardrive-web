@@ -70,6 +70,6 @@ Future<Uint8List> signDataItem(DataItem dataItem) async {
       dataItem.tags, dataItem.owner, dataItem.target, dataItem.nonce));
 }
 
-Future<String> getWalletVersion() async {
-  return await promiseToFuture<String>(_getWalletVersion());
+Future<String?> getWalletVersion() async {
+  return await promiseToFuture<String?>(_getWalletVersion());
 }

@@ -58,6 +58,10 @@ class ArConnectService {
 
     final versionString = await implementation.getWalletVersion();
     try {
+      if (versionString == null) {
+        return false;
+      }
+
       final version = Version.parse(versionString);
 
       // TODO: replace with actual version of Wander release that supports saltLength
