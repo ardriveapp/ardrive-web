@@ -7,8 +7,7 @@
   "scripts": {
     "deploy": "rm -f ../build/web-* && permaweb-deploy --arns-name ${ARNS_NAME} --deploy-folder=../build/web --undername=${DEPLOY_ANT_UNDERNAME}"
   },
-
   "dependencies": {
-    "permaweb-deploy": "2.0.0"
+    "permaweb-deploy": "^2.1.0"
   }
 }
