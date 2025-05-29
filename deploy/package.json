@@ -9,5 +9,8 @@
   },
   "dependencies": {
     "permaweb-deploy": "^2.1.0"
+  },
+  "resolutions": {
+    "@permaweb/aoconnect": "0.0.57"
   }
 }
