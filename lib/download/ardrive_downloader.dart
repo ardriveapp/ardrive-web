@@ -76,44 +76,17 @@ class _ArDriveDownloader implements ArDriveDownloader {
     String? cipher,
     String? cipherIvString,
   }) async {
-    if (AppPlatform.isMobile) {
-      final isPrivateFile =
-          fileKey != null && cipher != null && cipherIvString != null;
-
-      if (isPrivateFile && cipher == Cipher.aes256gcm) {
-        return _getDartVMGCMDecryptStream(
-          cipher,
-          cipherIvString,
-          (await arweave.download(
-            txId: dataTx.id,
-            onProgress: (progress, speed) => logger.d(progress.toString()),
-          ))
-              .$1,
-          fileSize,
-          fileName,
-          lastModifiedDate,
-          contentType,
-          fileKey,
-        );
-      }
-    }
-
-    Stream<Uint8List> saveStream;
-
-    if (isManifest) {
-      saveStream = await _getManifestStream(dataTx.id);
-    } else {
-      saveStream = await _getFileStream(
-        dataTx: dataTx,
-        fileSize: fileSize,
-        fileName: fileName,
-        lastModifiedDate: lastModifiedDate,
-        contentType: contentType,
-        fileKey: fileKey,
-        cipher: cipher,
-        cipherIvString: cipherIvString,
-      );
-    }
+    final saveStream = await _getDecryptedStream(
+      dataTx: dataTx,
+      fileSize: fileSize,
+      fileName: fileName,
+      lastModifiedDate: lastModifiedDate,
+      contentType: contentType,
+      isManifest: isManifest,
+      fileKey: fileKey,
+      cipher: cipher,
+      cipherIvString: cipherIvString,
+    );
 
     final file = await _ioFileAdapter.fromReadStreamGenerator(
       ([s, e]) => saveStream,
@@ -261,38 +234,54 @@ class _ArDriveDownloader implements ArDriveDownloader {
     return streamDownload.transform(listIntToUint8ListTransformer);
   }
 
-  Stream<double> _getDartVMGCMDecryptStream(
-    String cipher,
-    String cipherIvString,
-    Stream<List<int>> streamDownload,
-    int fileSize,
-    String fileName,
-    DateTime lastModifiedDate,
-    String contentType,
-    SecretKey fileKey,
-  ) async* {
-    List<int> bytes = [];
+  Future<Stream<Uint8List>> _getDecryptedStream({
+    required TransactionCommonMixin dataTx,
+    required int fileSize,
+    required String fileName,
+    required DateTime lastModifiedDate,
+    required String contentType,
+    required bool isManifest,
+    SecretKey? fileKey,
+    String? cipher,
+    String? cipherIvString,
+  }) async {
+    if (AppPlatform.isMobile) {
+      final isPrivateFile =
+          fileKey != null && cipher != null && cipherIvString != null;
 
-    await for (var chunk in streamDownload) {
-      bytes.addAll(chunk);
-      yield bytes.length / fileSize * 100;
+      if (isPrivateFile && cipher == Cipher.aes256gcm) {
+        final streamDownload = (await arweave.download(
+          txId: dataTx.id,
+          onProgress: (progress, speed) => logger.d(progress.toString()),
+        ))
+            .$1;
+
+        final decryptedData = await decryptTransactionData(
+          cipher,
+          cipherIvString,
+          await streamDownload.toList().then((chunks) =>
+              Uint8List.fromList(chunks.expand((chunk) => chunk).toList())),
+          fileKey,
+        );
+
+        return Stream.value(decryptedData);
+      }
     }
 
-    final encryptedData = await decryptTransactionData(
-      cipher,
-      cipherIvString,
-      Uint8List.fromList(bytes),
-      fileKey,
-    );
+    if (isManifest) {
+      return _getManifestStream(dataTx.id);
+    }
 
-    _ardriveIo.saveFile(
-      await IOFile.fromData(encryptedData,
-          name: fileName,
-          lastModifiedDate: lastModifiedDate,
-          contentType: contentType),
+    return _getFileStream(
+      dataTx: dataTx,
+      fileSize: fileSize,
+      fileName: fileName,
+      lastModifiedDate: lastModifiedDate,
+      contentType: contentType,
+      fileKey: fileKey,
+      cipher: cipher,
+      cipherIvString: cipherIvString,
     );
-
-    return;
   }
 
   @override
@@ -308,19 +297,19 @@ class _ArDriveDownloader implements ArDriveDownloader {
     String? cipher,
     String? cipherIvString,
   }) async {
-    final stream = await _getFileStream(
+    final stream = await _getDecryptedStream(
       dataTx: dataTx,
       fileSize: fileSize,
       fileName: fileName,
       lastModifiedDate: lastModifiedDate,
       contentType: contentType,
+      isManifest: isManifest,
       fileKey: fileKey,
       cipher: cipher,
       cipherIvString: cipherIvString,
     );
 
     final data = await stream.toList();
-
     return Uint8List.fromList(data.expand((element) => element).toList());
   }
 }
