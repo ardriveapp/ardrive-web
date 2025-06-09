@@ -52,16 +52,17 @@ class ArConnectService {
   }
 
   Future<bool> _checkWalletVersion() async {
-    if (AppPlatform.isMobileWeb()) {
-      return false;
-    }
-
     final versionString = await implementation.getWalletVersion();
     try {
       final version = Version.parse(versionString);
 
-      // TODO: replace with actual version of Wander release that supports saltLength
-      final constraint = VersionConstraint.parse('>= 1.26.0');
+      const minMobileAppVersion = '2.5.0';
+      const minBrowserExtensionVersion = '1.26.0';
+
+      final minVersion = AppPlatform.isMobileWeb()
+          ? minMobileAppVersion
+          : minBrowserExtensionVersion;
+      final constraint = VersionConstraint.parse('>= $minVersion');
 
       return constraint.allows(version);
     } catch (e) {
