@@ -140,8 +140,7 @@ class Logger {
     await SentryFlutter.init(
       (options) {
         // TODO: add back
-        // options.beforeSend = _beforeSendEvent as FutureOr<SentryEvent?>
-        //     Function(SentryEvent, {Hint? hint})?;
+        options.beforeSend = _beforeSendEvent;
         options.beforeSendTransaction = _beforeSendTransaction;
         options.tracesSampleRate = 1.0;
         options.dsn = dsn;
