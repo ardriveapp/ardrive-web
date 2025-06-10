@@ -148,9 +148,7 @@ class TutorialsViewState extends State<TutorialsView> {
     final height = MediaQuery.of(context).size.height;
     final phoneLayout = width < TABLET;
 
-    final minHeight = phoneLayout ? 700.0 : 800.0;
-    final containerHeight =
-        (height < minHeight ? minHeight : min(height, 924.0)) - 6;
+    final containerHeight = height - 6;
 
     final isDarkMode = ArDriveTheme.of(context).themeData.name == 'dark';
     final List<Color> radialColors = isDarkMode
@@ -198,7 +196,7 @@ class TutorialsViewState extends State<TutorialsView> {
                   child: SingleChildScrollView(
                       child: Center(
                 child: Container(
-                    height: containerHeight,
+                    height: containerHeight - 64,
                     constraints: const BoxConstraints(maxWidth: 1164),
                     child: Container(
                       padding: phoneLayout
