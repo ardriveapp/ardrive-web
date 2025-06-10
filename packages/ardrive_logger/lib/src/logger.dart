@@ -139,7 +139,6 @@ class Logger {
 
     await SentryFlutter.init(
       (options) {
-        // TODO: add back
         options.beforeSend = _beforeSendEvent;
         options.beforeSendTransaction = _beforeSendTransaction;
         options.tracesSampleRate = 1.0;
