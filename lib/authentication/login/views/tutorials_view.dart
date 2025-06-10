@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
 import 'package:ardrive/authentication/components/dot_pattern_painter.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
@@ -193,10 +191,8 @@ class TutorialsViewState extends State<TutorialsView> {
                     )),
               ),
               Center(
-                  child: SingleChildScrollView(
-                      child: Center(
                 child: Container(
-                    height: containerHeight - 64,
+                    height: containerHeight,
                     constraints: const BoxConstraints(maxWidth: 1164),
                     child: Container(
                       padding: phoneLayout
@@ -204,7 +200,7 @@ class TutorialsViewState extends State<TutorialsView> {
                           : const EdgeInsets.fromLTRB(32, 20, 32, 20),
                       child: _buildOnBoardingContent(phoneLayout),
                     )),
-              ))),
+              ),
             ]),
           )),
     );
