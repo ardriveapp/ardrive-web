@@ -11,6 +11,22 @@ import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
+
+class TurboBalanceInterface {
+  final BigInt balance;
+  final List<String> paidBy;
+
+  TurboBalanceInterface({
+    required this.balance,
+    required this.paidBy,
+  });
+
+  @override
+  String toString() {
+    return 'TurboBalanceInterface{balance: $balance, paidBy: $paidBy}';
+  }
+}
+
 class PaymentService {
   final bool useTurboPayment = true;
   final Uri turboPaymentUri;
@@ -63,7 +79,8 @@ class PaymentService {
     return _parseHttpResponseForPriceForFiat(result);
   }
 
-  Future<BigInt> getBalance({
+/// Get effective balance and paidBy array ;; return { balance: BigInt, paidBy: List<String> }
+  Future<TurboBalance> getBalanceAndPaidBy({
     required Wallet wallet,
   }) async {
     try {
@@ -72,9 +89,20 @@ class PaymentService {
             '$turboPaymentUri/v1/account/balance/arweave?address=${await wallet.getAddress()}',
       );
 
-      final price = BigInt.parse((json.decode(result.data)['winc']));
+      final data = json.decode(result.data);
+      final balance = BigInt.parse(data['effectiveBalance']);
+      final receivedApprovals = data['receivedApprovals'] as List<dynamic>;
+      if (receivedApprovals.isEmpty) {
+        logger.w('No received approvals found for the user');
+      }
+      final paidBy = receivedApprovals
+          .map((approval) => approval['payingAddress'] as String)
+          .toList();
 
-      return price;
+      return TurboBalance(
+        balance: balance,
+        paidBy: paidBy,
+      );
     } catch (error, stackTrace) {
       if (error is ArDriveHTTPException) {
         if (error.statusCode == 404) {
@@ -85,6 +113,16 @@ class PaymentService {
       logger.e('error getting balance', error, stackTrace);
       rethrow;
     }
+  }
+
+
+  Future<BigInt> getBalance({
+    required Wallet wallet,
+  }) async {
+
+    final turboBalance = await this.getBalanceAndPaidBy(wallet: wallet);
+    return turboBalance.balance;
+
   }
 
   Future<PaymentModel> getPaymentIntent({

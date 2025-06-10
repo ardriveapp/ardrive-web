@@ -53,7 +53,7 @@ class UploadPaymentMethodBloc
       final paymentInfo = uploadPreparation.uploadPaymentInfo;
 
       final literalTurboBalance = convertWinstonToLiteralString(
-          uploadPreparation.uploadPaymentInfo.turboBalance);
+          uploadPreparation.uploadPaymentInfo.turboBalance.balance);
       final literalARBalance =
           convertWinstonToLiteralString(_auth.currentUser.walletBalance);
 

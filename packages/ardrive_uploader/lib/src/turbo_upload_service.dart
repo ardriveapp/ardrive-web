@@ -2,14 +2,12 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:arconnect/arconnect.dart';
 import 'package:ardrive_uploader/src/exceptions.dart';
 import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:dio/dio.dart';
 import 'package:retry/retry.dart';
-import 'package:uuid/uuid.dart';
 
 abstract class TurboUploadService {
   Future<Response> post({
@@ -151,6 +149,7 @@ abstract class TurboUploadServiceChunkUploadsBase
         uploadId: uploadId,
         dataItemSize: dataItem.dataItemSize,
         dataItemId: dataItem.id,
+        headers: headers ?? const {},
       );
       onSendProgressTimer?.cancel();
       return finalizeResponse;
@@ -164,6 +163,7 @@ abstract class TurboUploadServiceChunkUploadsBase
     required String uploadId,
     required int dataItemSize,
     required TxID dataItemId,
+    required Map<String, dynamic> headers,
   });
 
   Future<Response> _uploadChunkRequest({
@@ -260,6 +260,7 @@ class TurboUploadServiceMultipart extends TurboUploadServiceChunkUploadsBase {
     required String uploadId,
     required int dataItemSize,
     required TxID dataItemId,
+    required Map<String, dynamic> headers,
   }) async {
     try {
       // POST /finalize
@@ -408,41 +409,17 @@ class TurboUploadServiceNonChunked extends TurboUploadService {
     try {
       final acceptedStatusCodes = [200, 202, 204];
 
-      final nonce = const Uuid().v4();
-      final publicKey = await safeArConnectAction<String>(
-        _tabVisibility,
-        (_) async {
-          logger.d('Getting public key with safe ArConnect action');
-          return wallet.getOwner();
-        },
-      );
-      final signature = await safeArConnectAction<String>(
-        _tabVisibility,
-        (_) async {
-          logger.d('Signing with safe ArConnect action');
-          return signNonceAndData(
-            nonce: nonce,
-            wallet: wallet,
-          );
-        },
-      );
-
-      final headers = {
-        'x-nonce': nonce,
-        'x-signature': signature,
-        'x-public-key': publicKey,
-      };
-
       final url = '$turboUploadUri/v1/tx';
       const receiveTimeout = Duration(days: 365);
       const sendTimeout = Duration(days: 365);
 
+      print('Posting data item to $url with headers: $headers');
       final response = await dio.post(
         url,
         onSendProgress: (sent, total) => onSendProgress?.call(sent / total),
         data: dataItem.streamGenerator(),
         options: Options(
-          headers: headers,
+          headers: headers ?? const {},
           receiveTimeout: receiveTimeout,
           sendTimeout: sendTimeout,
         ),

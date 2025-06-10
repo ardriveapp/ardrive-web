@@ -171,7 +171,10 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata with ARFSUploadData {
     required super.isPrivate,
     this.assignedName,
     this.fallbackTxId,
+    this.paidBy = const [],
   });
+
+  final List<String> paidBy;
 
   /// The size of the file in bytes.
   final int size;

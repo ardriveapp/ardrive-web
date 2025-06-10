@@ -22,6 +22,8 @@ import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:tuple/tuple.dart';
 
+import '../../turbo/services/payment_service.dart';
+
 class ArDriveUploaderFromHandles {
   final BundleUploader _bundleUploader;
   final FileV2Uploader _fileV2Uploader;
@@ -356,6 +358,7 @@ class UploadPaymentEvaluator {
     BigInt turboBalance;
 
     turboBalance = await _getTurboBalance(canUseTurbo: _canUseTurbo);
+    print('Turbo balance: $turboBalance');
 
     final turboCostEstimate = await _turboUploadCostCalculator.calculateCost(
       totalSize: dataItemSize,
@@ -373,7 +376,7 @@ class UploadPaymentEvaluator {
         dataItem.getSize() <= allowedDataItemSizeForTurbo;
 
     uploadMethod = await _determineUploadMethod(
-      turboBalance,
+      turboBalance.balance,
       dataItemSize,
       dataItemSize,
       _isTurboAvailableToUploadAllFiles,
@@ -484,16 +487,20 @@ class UploadPaymentEvaluator {
     );
   }
 
-  Future<BigInt> _getTurboBalance({
+  Future<TurboBalanceInterface> _getTurboBalance({
     required bool canUseTurbo,
   }) async {
     if (!canUseTurbo) {
       _isTurboAvailableToUploadAllFiles = false;
-      return BigInt.zero;
+      return TurboBalanceInterface(
+        balance: BigInt.zero,
+        paidBy: [],
+      );
     }
 
     try {
-      return await _turboBalanceRetriever.getBalance(_auth.currentUser.wallet);
+      return await _turboBalanceRetriever
+          .getBalanceAndPaidBy(_auth.currentUser.wallet);
     } catch (e, stacktrace) {
       logger.e(
         'An error occurred while getting the turbo balance',
@@ -501,7 +508,10 @@ class UploadPaymentEvaluator {
         stacktrace,
       );
       _isTurboAvailableToUploadAllFiles = false;
-      return BigInt.zero;
+      return TurboBalanceInterface(
+        balance: BigInt.zero,
+        paidBy: [],
+      );
     }
   }
 
@@ -556,7 +566,7 @@ class UploadPaymentInfo {
   final UploadCostEstimate arCostEstimate;
   final UploadCostEstimate turboCostEstimate;
   final int totalSize;
-  final BigInt turboBalance;
+  final TurboBalanceInterface turboBalance;
 
   UploadPaymentInfo({
     required this.defaultPaymentMethod,

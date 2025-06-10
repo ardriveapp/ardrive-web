@@ -99,6 +99,7 @@ class ARFSUploadMetadataGenerator
         licenseAdditionalTags: arguments.licenseAdditionalTags,
         assignedName: arguments.assignedName,
         fallbackTxId: arguments.fallbackTxId,
+        paidBy: arguments.paidBy ?? [],
       )
         ..setDataTags(tags['data-item']!)
         ..setEntityMetadataTags(tags['entity']!);

@@ -388,6 +388,7 @@ DataItemFile _generateDataDataItem({
     dataSize: fileLength,
     streamGenerator: dataStream,
     tags: tags.map((e) => createTag(e.name, e.value)).toList(),
+    paidBy: metadata.paidBy,
   );
 
   return dataItemFile;
