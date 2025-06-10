@@ -1,0 +1,1 @@
+- Re-enables Wander login for Wander Mobile versions >= v2.5.0
