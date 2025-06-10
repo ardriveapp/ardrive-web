@@ -468,6 +468,7 @@ Future<DataItemFile> _generateMetadataDataItem({
         .getEntityMetadataTags()
         .map((e) => createTag(e.name, e.value))
         .toList(),
+    paidBy: metadata.paidBy,
   );
 }
 
@@ -548,6 +549,7 @@ Future<DataItemFile> _generateFileMetadataDataItem({
         .getEntityMetadataTags()
         .map((e) => createTag(e.name, e.value))
         .toList(),
+    paidBy: metadata.paidBy,
   );
 }
 

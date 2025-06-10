@@ -198,7 +198,7 @@ class BundleUploader extends Uploader<BundleUploadHandle> {
 
       _uploader = _turbo;
     } else {
-      logger.i('Using ArweaveBunldeUploader');
+      logger.i('Using ArweaveBundleUploader');
 
       _uploader = _arweave;
     }
@@ -355,7 +355,7 @@ class UploadPaymentEvaluator {
 
     int totalSize = 0;
 
-    BigInt turboBalance;
+    TurboBalanceInterface turboBalance;
 
     turboBalance = await _getTurboBalance(canUseTurbo: _canUseTurbo);
     print('Turbo balance: $turboBalance');
@@ -402,7 +402,7 @@ class UploadPaymentEvaluator {
 
     int totalSize = 0;
 
-    BigInt turboBalance;
+    TurboBalanceInterface turboBalance;
 
     /// Check the balance of the user
     /// If we can't get the balance, turbo won't be available
@@ -463,7 +463,7 @@ class UploadPaymentEvaluator {
     uploadMethod = isFreeUploadPossibleUsingTurbo
         ? UploadMethod.turbo
         : await _determineUploadMethod(
-            turboBalance,
+            turboBalance.balance,
             turboBundleSizes,
             _appConfig.allowedDataItemSizeForTurbo,
             _isTurboAvailableToUploadAllFiles,

@@ -11,7 +11,6 @@ import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 
-
 class TurboBalanceInterface {
   final BigInt balance;
   final List<String> paidBy;
@@ -79,8 +78,8 @@ class PaymentService {
     return _parseHttpResponseForPriceForFiat(result);
   }
 
-/// Get effective balance and paidBy array ;; return { balance: BigInt, paidBy: List<String> }
-  Future<TurboBalance> getBalanceAndPaidBy({
+  /// Get effective balance and paidBy array ;; return { balance: BigInt, paidBy: List<String> }
+  Future<TurboBalanceInterface> getBalanceAndPaidBy({
     required Wallet wallet,
   }) async {
     try {
@@ -99,7 +98,7 @@ class PaymentService {
           .map((approval) => approval['payingAddress'] as String)
           .toList();
 
-      return TurboBalance(
+      return TurboBalanceInterface(
         balance: balance,
         paidBy: paidBy,
       );
@@ -115,14 +114,11 @@ class PaymentService {
     }
   }
 
-
   Future<BigInt> getBalance({
     required Wallet wallet,
   }) async {
-
-    final turboBalance = await this.getBalanceAndPaidBy(wallet: wallet);
+    final turboBalance = await getBalanceAndPaidBy(wallet: wallet);
     return turboBalance.balance;
-
   }
 
   Future<PaymentModel> getPaymentIntent({

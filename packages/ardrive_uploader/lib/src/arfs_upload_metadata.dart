@@ -12,6 +12,7 @@ class ThumbnailUploadMetadata extends UploadMetadata {
     required this.name,
     required this.contentType,
     required this.originalFileId,
+    this.paidBy = const [],
   });
 
   List<Tag> thumbnailTags() {
@@ -38,6 +39,7 @@ class ThumbnailUploadMetadata extends UploadMetadata {
   String? _txId;
   String? _cipherTag;
   String? _cipherIvTag;
+  final List<String> paidBy;
 
   set setTxId(String txId) => _txId = txId;
 
@@ -174,6 +176,8 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata with ARFSUploadData {
     this.paidBy = const [],
   });
 
+  /// The list of entities that will pay for the upload.
+  @override
   final List<String> paidBy;
 
   /// The size of the file in bytes.
@@ -258,7 +262,11 @@ abstract class ARFSUploadMetadata extends UploadMetadata {
     required this.name,
     required this.id,
     required this.isPrivate,
+    this.paidBy = const [],
   });
+
+  /// The list of entities that will pay for the upload.
+  final List<String> paidBy;
 
   /// The unique identifier for the entity.
   final String id;

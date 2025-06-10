@@ -113,7 +113,7 @@ class UploadPaymentMethodBloc
         profile.user.walletBalance >= paymentInfo.arCostEstimate.totalCost;
     bool sufficientBalanceToPayWithTurbo =
         paymentInfo.turboCostEstimate.totalCost <=
-            uploadPreparation.uploadPaymentInfo.turboBalance;
+            uploadPreparation.uploadPaymentInfo.turboBalance.balance;
 
     if (method == UploadMethod.ar && sufficientBalanceToPayWithAR) {
       logger.d('Enabling button for AR payment method');
