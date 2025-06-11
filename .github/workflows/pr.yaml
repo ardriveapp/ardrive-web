@@ -164,7 +164,7 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
         working-directory: ./android
-        run: bundle exec fastlane deploy type:branch
+        run: bundle exec fastlane deploy type:development
 
       - name: Update PR description and Jira
         env:
