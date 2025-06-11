@@ -18,13 +18,7 @@ script_runner:
     linux: /bin/sh
   line_length: 80
   scripts:
-    - setup: |
-        # Clean only build and .dart_tool directories
-        rm -rf build/ .dart_tool/
-        # Get dependencies for main project and ario_sdk in parallel
-        flutter pub get & cd packages/ario_sdk && flutter pub get && cd ../../
-        # Run build_runner for both projects in parallel
-        flutter pub run build_runner build --delete-conflicting-outputs & cd packages/ario_sdk && flutter pub run build_runner build --delete-conflicting-outputs && cd ../../
+    - setup: flutter clean && flutter pub get && cd packages/ario_sdk && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs && cd ../../ && flutter pub run build_runner build --delete-conflicting-outputs
     - test: scripts/run_tests.sh
     - check-db: lefthook/database_checker.sh
     - check-flutter: lefthook/version_checker.sh
