@@ -475,6 +475,8 @@ class UploadPaymentEvaluator {
       totalSize = arBundleSizes + arFileSizes;
     }
 
+    logger.i('Upload payment info prepared with method: $uploadMethod, '
+        'total size: $totalSize, turbo balance: $turboBalance');
     return UploadPaymentInfo(
       isTurboAvailable: _isTurboAvailableToUploadAllFiles,
       defaultPaymentMethod: uploadMethod,
@@ -638,6 +640,7 @@ class UploadParams {
   final Map<String, WebFolder> foldersByPath;
   final bool containsSupportedImageTypeForThumbnailGeneration;
   final ARNSUndername? arnsUnderName;
+  final List<String>? paidBy;
 
   UploadParams({
     required this.user,
@@ -647,11 +650,13 @@ class UploadParams {
     required this.conflictingFiles,
     required this.foldersByPath,
     required this.containsSupportedImageTypeForThumbnailGeneration,
+    this.paidBy,
     this.arnsUnderName,
   });
 
   UploadParams copyWith({
     ARNSUndername? arnsUnderName,
+    List<String>? paidBy,
   }) {
     return UploadParams(
       user: user,
@@ -663,6 +668,7 @@ class UploadParams {
       containsSupportedImageTypeForThumbnailGeneration:
           containsSupportedImageTypeForThumbnailGeneration,
       arnsUnderName: arnsUnderName,
+      paidBy: paidBy,
     );
   }
 }

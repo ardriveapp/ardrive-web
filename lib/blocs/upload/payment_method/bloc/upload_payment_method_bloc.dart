@@ -58,12 +58,15 @@ class UploadPaymentMethodBloc
           convertWinstonToLiteralString(_auth.currentUser.walletBalance);
 
       bool isTurboZeroBalance =
-          uploadPreparation.uploadPaymentInfo.turboBalance == BigInt.zero;
+          uploadPreparation.uploadPaymentInfo.turboBalance.balance ==
+              BigInt.zero;
 
+      logger.d('Balance ${paymentInfo.turboBalance}');
       emit(
         UploadPaymentMethodLoaded(
           canUpload: _canUploadWithMethod(paymentInfo.defaultPaymentMethod),
-          params: event.params,
+          params:
+              event.params.copyWith(paidBy: paymentInfo.turboBalance.paidBy),
           paymentMethodInfo: UploadPaymentMethodInfo(
             totalSize: uploadPreparation.uploadPaymentInfo.totalSize,
             uploadPlanForAR:
@@ -82,6 +85,7 @@ class UploadPaymentMethodBloc
             sufficientArBalance: _canUploadWithMethod(UploadMethod.ar),
             turboCredits: literalTurboBalance,
             uploadMethod: paymentInfo.defaultPaymentMethod,
+            paidBy: paymentInfo.turboBalance.paidBy,
           ),
         ),
       );

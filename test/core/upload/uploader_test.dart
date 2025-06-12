@@ -9,6 +9,7 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/config/selected_gateway.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/user/user.dart';
@@ -775,14 +776,14 @@ void main() {
     setUpAll(() {
       registerFallbackValue(SecretKey([]));
       registerFallbackValue(UploadParams(
-        user: getFakeUser(),
-        files: [],
-        targetFolder: getFakeFolder(),
-        targetDrive: getFakeDrive(),
-        conflictingFiles: {},
-        foldersByPath: {},
-        containsSupportedImageTypeForThumbnailGeneration: false,
-      ));
+          user: getFakeUser(),
+          files: [],
+          targetFolder: getFakeFolder(),
+          targetDrive: getFakeDrive(),
+          conflictingFiles: {},
+          foldersByPath: {},
+          containsSupportedImageTypeForThumbnailGeneration: false,
+          paidBy: []));
       registerFallbackValue(getFakeFolder());
       registerFallbackValue(getFakeDrive());
       registerFallbackValue(getFakeUser());
@@ -792,14 +793,14 @@ void main() {
     setUp(() {
       uploadPlanUtils = MockUploadPlanUtils();
       uploadParams = UploadParams(
-        user: getFakeUser(),
-        files: [],
-        targetFolder: getFakeFolder(),
-        targetDrive: getFakeDrive(),
-        conflictingFiles: {},
-        foldersByPath: {},
-        containsSupportedImageTypeForThumbnailGeneration: false,
-      );
+          user: getFakeUser(),
+          files: [],
+          targetFolder: getFakeFolder(),
+          targetDrive: getFakeDrive(),
+          conflictingFiles: {},
+          foldersByPath: {},
+          containsSupportedImageTypeForThumbnailGeneration: false,
+          paidBy: []);
       uploadPreparer = UploadPreparer(uploadPlanUtils: uploadPlanUtils);
     });
 
@@ -893,14 +894,14 @@ void main() {
       registerFallbackValue(MockUploadPlan());
 
       registerFallbackValue(UploadParams(
-        user: getFakeUser(),
-        files: [],
-        targetFolder: getFakeFolder(),
-        targetDrive: getFakeDrive(),
-        conflictingFiles: {},
-        foldersByPath: {},
-        containsSupportedImageTypeForThumbnailGeneration: false,
-      ));
+          user: getFakeUser(),
+          files: [],
+          targetFolder: getFakeFolder(),
+          targetDrive: getFakeDrive(),
+          conflictingFiles: {},
+          foldersByPath: {},
+          containsSupportedImageTypeForThumbnailGeneration: false,
+          paidBy: []));
     });
 
     group('prepareUpload', () {
@@ -919,7 +920,8 @@ void main() {
           isFreeUploadPossibleUsingTurbo: true,
           totalSize: 100,
           isTurboAvailable: true,
-          turboBalance: BigInt.from(100),
+          turboBalance:
+              TurboBalanceInterface(balance: BigInt.from(500), paidBy: []),
         );
 
         when(() => uploadPreparer.prepareFileUpload(uploadParams))

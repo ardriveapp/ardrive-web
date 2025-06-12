@@ -265,7 +265,12 @@ class TurboUploadServiceMultipart extends TurboUploadServiceChunkUploadsBase {
     try {
       // POST /finalize
       final finalizeResponse = await r.retry(
-        () => dio.post('$turboUploadUri/chunks/arweave/$uploadId/finalize'),
+        () => dio.post(
+          '$turboUploadUri/chunks/arweave/$uploadId/finalize',
+          options: Options(
+            headers: headers,
+          ),
+        ),
       );
 
       // If the server returns 202 (still assembling/finalizing), you could poll
