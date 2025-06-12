@@ -79,12 +79,14 @@ abstract class ARFSUploadMetadata extends UploadMetadata {
   final List<Tag> tags;
   final String id;
   final bool isPrivate;
+  final List<String> paidBy;
 
   ARFSUploadMetadata({
     required this.name,
     required this.tags,
     required this.id,
     required this.isPrivate,
+    this.paidBy = const [],
   });
 
   Map<String, dynamic> toJson();

@@ -79,13 +79,18 @@ class UploadDispatcher {
 
             final thumbnailMetadata = fileMetadata.thumbnailInfo?.first;
 
+            final headersMap = <String, String>{
+              'x-paid-by': fileMetadata.paidBy.join(', '),
+            };
+
             final thumbnailTask = ThumbnailUploadTask(
               file: uploadPreparation.thumbnailFile!,
               metadata: thumbnailMetadata!,
               type: UploadType.turbo,
               uploadItem: DataItemUploadItem(
                   size: uploadPreparation.thumbnailDataItem!.dataSize,
-                  data: uploadPreparation.thumbnailDataItem!),
+                  data: uploadPreparation.thumbnailDataItem!,
+                  headers: headersMap),
               id: Uuid().v4(),
 
               /// same encryption key as the file

@@ -99,6 +99,7 @@ class ARFSUploadMetadataGenerator
         licenseAdditionalTags: arguments.licenseAdditionalTags,
         assignedName: arguments.assignedName,
         fallbackTxId: arguments.fallbackTxId,
+        paidBy: arguments.paidBy ?? [],
       )
         ..setDataTags(tags['data-item']!)
         ..setEntityMetadataTags(tags['entity']!);
@@ -176,6 +177,7 @@ class ARFSUploadMetadataArgs extends Equatable {
   final Map<String, String>? licenseAdditionalTags;
   final String? assignedName;
   final String? fallbackTxId;
+  final List<String>? paidBy;
 
   factory ARFSUploadMetadataArgs.file({
     required String driveId,
@@ -186,6 +188,7 @@ class ARFSUploadMetadataArgs extends Equatable {
     Map<String, String>? customBundleTags,
     String? assignedName,
     String? fallbackTxId,
+    List<String>? paidBy,
   }) {
     return ARFSUploadMetadataArgs(
       driveId: driveId,
@@ -195,6 +198,7 @@ class ARFSUploadMetadataArgs extends Equatable {
       type: type,
       assignedName: assignedName,
       fallbackTxId: fallbackTxId,
+      paidBy: paidBy,
     );
   }
 
@@ -205,6 +209,7 @@ class ARFSUploadMetadataArgs extends Equatable {
     required String path,
     String? parentFolderId,
     String? entityId,
+    List<String>? paidBy,
   }) {
     return ARFSUploadMetadataArgs(
       driveId: driveId,
@@ -212,6 +217,7 @@ class ARFSUploadMetadataArgs extends Equatable {
       entityId: entityId,
       parentFolderId: parentFolderId,
       type: type,
+      paidBy: paidBy,
     );
   }
 
@@ -236,6 +242,7 @@ class ARFSUploadMetadataArgs extends Equatable {
     this.licenseAdditionalTags,
     this.assignedName,
     this.fallbackTxId,
+    this.paidBy,
   });
 
   @override

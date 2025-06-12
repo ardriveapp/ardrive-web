@@ -31,6 +31,7 @@ abstract class UploadRepository {
     required UploadMethod uploadMethod,
     String? assignedName,
     required bool uploadThumbnail,
+    List<String>? paidBy,
   });
 
   Future<UploadController> uploadFolders({
@@ -45,6 +46,7 @@ abstract class UploadRepository {
     required bool uploadThumbnail,
     // IMPORTANT: This must only apply when uploading a single file inside a folder
     String? assignedName,
+    List<String>? paidBy,
   });
 
   /// Picks files from the file system.
@@ -106,6 +108,7 @@ class _UploadRepositoryImpl implements UploadRepository {
     required UploadMethod uploadMethod,
     String? assignedName,
     required bool uploadThumbnail,
+    List<String>? paidBy = const [],
   }) async {
     final private = targetDrive.isPrivate;
     final driveKey = private
@@ -136,6 +139,7 @@ class _UploadRepositoryImpl implements UploadRepository {
         licenseDefinitionTxId: licenseStateResolved?.meta.licenseDefinitionTxId,
         licenseAdditionalTags: licenseStateResolved?.params?.toAdditionalTags(),
         assignedName: assignedName,
+        paidBy: paidBy,
       );
 
       uploadFiles.add((args, file.ioFile));
@@ -169,6 +173,7 @@ class _UploadRepositoryImpl implements UploadRepository {
     required Map<String, WebFolder> foldersByPath,
     required bool uploadThumbnail,
     String? assignedName,
+    List<String>? paidBy = const [],
   }) async {
     final private = targetDrive.isPrivate;
     final driveKey = private
@@ -180,14 +185,15 @@ class _UploadRepositoryImpl implements UploadRepository {
 
     for (var folder in foldersByPath.values) {
       final folderMetadata = ARFSUploadMetadataArgs(
-        isPrivate: targetDrive.isPrivate,
-        driveId: targetDrive.id,
-        parentFolderId: folder.parentFolderId,
-        privacy: targetDrive.isPrivate ? 'private' : 'public',
-        entityId: folder.id,
-        type:
-            uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo,
-      );
+          isPrivate: targetDrive.isPrivate,
+          driveId: targetDrive.id,
+          parentFolderId: folder.parentFolderId,
+          privacy: targetDrive.isPrivate ? 'private' : 'public',
+          entityId: folder.id,
+          type: uploadMethod == UploadMethod.ar
+              ? UploadType.d2n
+              : UploadType.turbo,
+          paidBy: paidBy);
 
       entities.add((
         folderMetadata,
@@ -210,17 +216,20 @@ class _UploadRepositoryImpl implements UploadRepository {
           await _licenseStateForFileId(fileId, targetDrive.id);
 
       final fileMetadata = ARFSUploadMetadataArgs(
-        isPrivate: targetDrive.isPrivate,
-        driveId: targetDrive.id,
-        parentFolderId: file.parentFolderId,
-        privacy: targetDrive.isPrivate ? 'private' : 'public',
-        entityId: fileId,
-        type:
-            uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo,
-        licenseDefinitionTxId: licenseStateResolved?.meta.licenseDefinitionTxId,
-        licenseAdditionalTags: licenseStateResolved?.params?.toAdditionalTags(),
-        assignedName: assignedName,
-      );
+          isPrivate: targetDrive.isPrivate,
+          driveId: targetDrive.id,
+          parentFolderId: file.parentFolderId,
+          privacy: targetDrive.isPrivate ? 'private' : 'public',
+          entityId: fileId,
+          type: uploadMethod == UploadMethod.ar
+              ? UploadType.d2n
+              : UploadType.turbo,
+          licenseDefinitionTxId:
+              licenseStateResolved?.meta.licenseDefinitionTxId,
+          licenseAdditionalTags:
+              licenseStateResolved?.params?.toAdditionalTags(),
+          assignedName: assignedName,
+          paidBy: paidBy);
 
       entities.add((fileMetadata, file.ioFile));
     }

@@ -32,7 +32,9 @@ class TurboStreamedUpload implements StreamedUpload<UploadItem> {
             dataItem: uploadItem.data,
             onSendProgress: (progress) {
               onProgress?.call(progress);
-            })
+            },
+            headers:  uploadItem.headers,
+            )
         .then((value) async {
       _result = StreamedUploadResult(success: true);
     }).onError((e, s) {

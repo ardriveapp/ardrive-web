@@ -88,10 +88,15 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
       final metadataStreamedUpload =
           await _streamedUploadFactory.fromUploadType(task);
 
+      final headersMap = <String, String>{
+        'x-paid-by': dataItems[0].paidBy.join(', '),
+      };
+
       final uploadResult = await metadataStreamedUpload.send(
           DataItemUploadItem(
             size: metadataItem.dataItemSize,
             data: metadataItem,
+            headers: headersMap,
           ),
           wallet, (progress) {
         // we don't need to update the progress of the metadata item
@@ -131,9 +136,11 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
     /// sends the data item
     var dataItemTask = task.copyWith(
       uploadItem: DataItemUploadItem(
-        size: dataItem.dataItemSize,
-        data: dataItem,
-      ),
+          size: dataItem.dataItemSize,
+          data: dataItem,
+          headers: <String, String>{
+            'x-paid-by': task.metadata.paidBy.join(', '),
+          }),
     );
 
     controller.updateProgress(
@@ -141,6 +148,9 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
         uploadItem: DataItemUploadItem(
           size: dataItem.dataItemSize,
           data: dataItem,
+          headers: <String, String>{
+            'x-paid-by': task.metadata.paidBy.join(', '),
+          },
         ),
       ),
     );
@@ -243,6 +253,9 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
         uploadItem: DataItemUploadItem(
           size: bundle.dataItemSize,
           data: bundle,
+          headers: <String, String>{
+            'x-paid-by': task.metadata.paidBy.join(', '),
+          },
         ),
       );
 
@@ -338,6 +351,9 @@ class UploadFolderStructureAsBundleStrategy
         uploadItem: DataItemUploadItem(
           size: folderBundle.dataSize,
           data: folderBundle,
+          //  headers: <String, String>{
+          //   'x-paid-by': task.metadata.paidBy.join(', '),
+          // },
         ),
       );
       controller.updateProgress(task: folderTask);
@@ -402,7 +418,12 @@ class _UploadThumbnailStrategy implements UploadThumbnailStrategy {
 
       task = task.copyWith(
           uploadItem: DataItemUploadItem(
-              size: thumbnailDataItem.dataItemSize, data: thumbnailDataItem));
+        size: thumbnailDataItem.dataItemSize,
+        data: thumbnailDataItem,
+        headers: <String, String>{
+          'x-paid-by': task.metadata.paidBy.join(', '),
+        },
+      ));
     }
 
     /// It will always use the Turbo for now

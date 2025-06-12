@@ -18,6 +18,7 @@ import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/config/selected_gateway.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/user/user.dart';
@@ -267,7 +268,8 @@ void main() {
             isFreeUploadPossibleUsingTurbo: false,
             totalSize: 100,
             isTurboAvailable: true,
-            turboBalance: BigInt.from(100),
+            turboBalance:
+                TurboBalanceInterface(balance: BigInt.from(100), paidBy: []),
           ),
         ),
       ),

@@ -315,6 +315,7 @@ class UploadCubit extends Cubit<UploadState> {
   bool _uploadThumbnail;
   bool _showArnsNameSelectionCheckBoxValue = false;
   bool? _containsLargeTurboUpload;
+  List<String> _paidBy = [];
 
   /// Map of conflicting file ids keyed by their file names.
   final Map<String, String> _conflictingFiles = {};
@@ -424,8 +425,11 @@ class UploadCubit extends Cubit<UploadState> {
   ) async {
     bool showSettings = _manifestFiles.isNotEmpty;
 
-    logger.d('Upload method set to $method');
     _uploadMethod = method;
+    _paidBy = paymentInfo.paidBy ?? [];
+
+    logger
+        .d('Setting upload method to $method with payment info: $paymentInfo');
 
     if (state is UploadReady) {
       final uploadReady = state as UploadReady;
@@ -444,7 +448,9 @@ class UploadCubit extends Cubit<UploadState> {
 
         emit(
           UploadReady(
-            params: (state as UploadReadyToPrepare).params,
+            params: (state as UploadReadyToPrepare)
+                .params
+                .copyWith(paidBy: paymentInfo.paidBy),
             paymentInfo: paymentInfo,
             numberOfFiles: _files.length,
             uploadIsPublic: !_targetDrive.isPrivate,
@@ -493,7 +499,9 @@ class UploadCubit extends Cubit<UploadState> {
       } else {
         emit(
           UploadReady(
-            params: (state as UploadReadyToPrepare).params,
+            params: (state as UploadReadyToPrepare)
+                .params
+                .copyWith(paidBy: paymentInfo.paidBy),
             paymentInfo: paymentInfo,
             numberOfFiles: _files.length,
             uploadIsPublic: !_targetDrive.isPrivate,
@@ -1125,6 +1133,7 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     logger.d('Max files per bundle: ${uploadPlan.maxDataItemCount}');
+    logger.d('Upload plan: $uploadPlan');
 
     logger.i('Starting upload...');
 
@@ -1248,6 +1257,7 @@ class UploadCubit extends Cubit<UploadState> {
       assignedName: _files.length == 1 && _getSelectedUndername() != null
           ? getLiteralARNSRecordName(_getSelectedUndername()!)
           : null,
+      paidBy: _paidBy,
     );
 
     uploadController.onError((tasks) {
@@ -1312,6 +1322,7 @@ class UploadCubit extends Cubit<UploadState> {
       targetFolder: _targetFolder,
       uploadMethod: _uploadMethod!,
       uploadThumbnail: _uploadThumbnail,
+      paidBy: _paidBy,
       assignedName: _getSelectedUndername() != null
           ? getLiteralARNSRecordName(_getSelectedUndername()!)
           : null,

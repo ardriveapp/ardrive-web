@@ -388,6 +388,7 @@ DataItemFile _generateDataDataItem({
     dataSize: fileLength,
     streamGenerator: dataStream,
     tags: tags.map((e) => createTag(e.name, e.value)).toList(),
+    paidBy: metadata.paidBy,
   );
 
   return dataItemFile;
@@ -467,6 +468,7 @@ Future<DataItemFile> _generateMetadataDataItem({
         .getEntityMetadataTags()
         .map((e) => createTag(e.name, e.value))
         .toList(),
+    paidBy: metadata.paidBy,
   );
 }
 
@@ -547,6 +549,7 @@ Future<DataItemFile> _generateFileMetadataDataItem({
         .getEntityMetadataTags()
         .map((e) => createTag(e.name, e.value))
         .toList(),
+    paidBy: metadata.paidBy,
   );
 }
 
