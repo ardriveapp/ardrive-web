@@ -52,6 +52,15 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     _previewVault = await store.vault<Uint8List>(name: 'previewVault');
   }
 
+  Future<void> removeAllDriveKeys() async {
+    try {
+      logger.i('Removing all drive keys');
+      await _driveKeyVault.clear();
+    } catch (e) {
+      throw _handleError('Error removing all drive keys', e);
+    }
+  }
+
   Future<void> deleteSharedPrivateDrives(String? owner) async {
     try {
       final drives = (await allDrives().get()).where(
