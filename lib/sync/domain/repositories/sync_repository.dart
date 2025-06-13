@@ -27,7 +27,6 @@ import 'package:ardrive/sync/data/snapshot_validation_service.dart';
 import 'package:ardrive/sync/domain/ghost_folder.dart';
 import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
-import 'package:ardrive/sync/utils/batch_processor.dart';
 import 'package:ardrive/sync/utils/network_transaction_utils.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -93,7 +92,6 @@ abstract class SyncRepository {
     required DriveDao driveDao,
     required ConfigService configService,
     required LicenseService licenseService,
-    required BatchProcessor batchProcessor,
     required SnapshotValidationService snapshotValidationService,
     required ARNSRepository arnsRepository,
     required UserPreferencesRepository userPreferencesRepository,
@@ -103,7 +101,6 @@ abstract class SyncRepository {
       driveDao: driveDao,
       configService: configService,
       licenseService: licenseService,
-      batchProcessor: batchProcessor,
       snapshotValidationService: snapshotValidationService,
       arnsRepository: arnsRepository,
       userPreferencesRepository: userPreferencesRepository,
@@ -116,7 +113,6 @@ class _SyncRepository implements SyncRepository {
   final DriveDao _driveDao;
   final ConfigService _configService;
   final LicenseService _licenseService;
-  final BatchProcessor _batchProcessor;
   final SnapshotValidationService _snapshotValidationService;
   final ARNSRepository _arnsRepository;
   final UserPreferencesRepository _userPreferencesRepository;
@@ -131,7 +127,6 @@ class _SyncRepository implements SyncRepository {
     required DriveDao driveDao,
     required ConfigService configService,
     required LicenseService licenseService,
-    required BatchProcessor batchProcessor,
     required SnapshotValidationService snapshotValidationService,
     required ARNSRepository arnsRepository,
     required UserPreferencesRepository userPreferencesRepository,
@@ -140,7 +135,6 @@ class _SyncRepository implements SyncRepository {
         _configService = configService,
         _licenseService = licenseService,
         _snapshotValidationService = snapshotValidationService,
-        _batchProcessor = batchProcessor,
         _userPreferencesRepository = userPreferencesRepository,
         _arnsRepository = arnsRepository;
 
@@ -771,7 +765,7 @@ class _SyncRepository implements SyncRepository {
           final block = t.transactionCommonMixin.block;
           if (block != null) {
             firstBlockHeight = block.height;
-            totalBlockHeightDifference = currentBlockHeight - firstBlockHeight!;
+            totalBlockHeightDifference = currentBlockHeight - firstBlockHeight;
           }
         }
 
