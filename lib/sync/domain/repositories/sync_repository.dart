@@ -568,11 +568,7 @@ class _SyncRepository implements SyncRepository {
         }
       }
     }
-    final fetchPhaseStartDT = DateTime.now();
-
     logger.d('Fetching all transactions for drive ${drive.id}');
-
-    final transactions = <DriveEntityHistoryTransactionModel>[];
 
     List<SnapshotItem> snapshotItems = [];
 
@@ -633,79 +629,9 @@ class _SyncRepository implements SyncRepository {
 
     final transactionsStream = driveHistory.getNextStream();
 
-    /// The first block height of this drive.
-    int? firstBlockHeight;
-
-    /// In order to measure the sync progress by the block height, we use the difference
-    /// between the first block and the `currentBlockHeight`
-    late int totalBlockHeightDifference;
-
-    /// This percentage is based on block heights.
-    var fetchPhasePercentage = 0.0;
-
-    /// First phase of the sync
-    /// Here we get all transactions from its drive.
-    await for (DriveEntityHistoryTransactionModel t in transactionsStream) {
-      double calculatePercentageBasedOnBlockHeights() {
-        final block = t.transactionCommonMixin.block;
-
-        if (block != null) {
-          return (1 -
-              ((currentBlockHeight - block.height) /
-                  totalBlockHeightDifference));
-        }
-
-        /// if the block is null, we don't calculate and keep the same percentage
-        return fetchPhasePercentage;
-      }
-
-      /// Initialize only once `firstBlockHeight` and `totalBlockHeightDifference`
-      if (firstBlockHeight == null) {
-        final block = t.transactionCommonMixin.block;
-
-        if (block != null) {
-          firstBlockHeight = block.height;
-          totalBlockHeightDifference = currentBlockHeight - firstBlockHeight;
-          logger.d(
-            'First height: $firstBlockHeight, totalHeightDiff: $totalBlockHeightDifference',
-          );
-        } else {
-          logger.d(
-            'The transaction block is null. Transaction node id: ${t.transactionCommonMixin.id}',
-          );
-        }
-      }
-
-      transactions.add(t);
-
-      /// We can only calculate the fetch percentage if we have the `firstBlockHeight`
-      if (firstBlockHeight != null) {
-        if (totalBlockHeightDifference > 0) {
-          fetchPhasePercentage = calculatePercentageBasedOnBlockHeights();
-        } else {
-          // If the difference is zero means that the first phase was concluded.
-          logger.d('The syncs first phase just finished!');
-          fetchPhasePercentage = 1;
-        }
-        final percentage =
-            calculatePercentageBasedOnBlockHeights() * fetchPhaseWeight;
-        yield percentage;
-      }
-    }
-
-    logger.d('Done fetching data - ${gqlDriveHistory.driveId}');
-
-    txFechedCallback?.call(drive.id, gqlDriveHistory.txCount);
-
-    final fetchPhaseTotalTime =
-        DateTime.now().difference(fetchPhaseStartDT).inMilliseconds;
-
-    logger.d(
-        'Duration of fetch phase for ${drive.name}: $fetchPhaseTotalTime ms. Progress by block height: $fetchPhasePercentage%. Starting parse phase');
-
     try {
       yield* _parseDriveTransactionsIntoDatabaseEntities(
-        transactions: transactions,
+        transactions: transactionsStream,
         drive: drive,
         driveKey: driveKey?.key,
         currentBlockHeight: currentBlockHeight,
@@ -713,8 +639,6 @@ class _SyncRepository implements SyncRepository {
         batchSize: transactionParseBatchSize,
         snapshotDriveHistory: snapshotDriveHistory,
         ownerAddress: ownerAddress,
-      ).map(
-        (parseProgress) => parseProgress * 0.9,
       );
     } catch (e) {
       logger.e('[Sync Drive] Error while parsing transactions', e);
@@ -726,10 +650,7 @@ class _SyncRepository implements SyncRepository {
     final syncDriveTotalTime =
         DateTime.now().difference(startSyncDT).inMilliseconds;
 
-    final averageBetweenFetchAndGet = fetchPhaseTotalTime / syncDriveTotalTime;
-
-    logger.i(
-        'Drive ${drive.name} completed parse phase. Progress by block height: $fetchPhasePercentage%. Starting parse phase. Sync duration: $syncDriveTotalTime ms. Fetching used ${(averageBetweenFetchAndGet * 100).toStringAsFixed(2)}% of drive sync process');
+    logger.i('Drive ${drive.name} sync completed in $syncDriveTotalTime ms');
   }
 
   Future<void> _updateLicenses({
@@ -809,148 +730,205 @@ class _SyncRepository implements SyncRepository {
   /// Process the transactions from the first phase into database entities.
   /// This is done in batches to improve performance and provide more granular progress
   Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
-    required List<DriveEntityHistoryTransactionModel> transactions,
+    required Stream<DriveEntityHistoryTransactionModel> transactions,
     required Drive drive,
     required SecretKey? driveKey,
     required int lastBlockHeight,
     required int currentBlockHeight,
     required int batchSize,
     required SnapshotDriveHistory snapshotDriveHistory,
-    // required Map<FolderID, GhostFolder> ghostFolders,
     required String ownerAddress,
-  }) async* {
-    final numberOfDriveEntitiesToParse = transactions.length;
-    var numberOfDriveEntitiesParsed = 0;
+  }) {
+    final controller = StreamController<double>();
 
-    double driveEntityParseProgress() =>
-        numberOfDriveEntitiesParsed / numberOfDriveEntitiesToParse;
+    () async {
+      var numberOfDriveEntitiesToParse = 0;
+      var numberOfDriveEntitiesParsed = 0;
 
-    if (transactions.isEmpty) {
-      await _driveDao.writeToDrive(
-        DrivesCompanion(
-          id: Value(drive.id),
-          lastBlockHeight: Value(currentBlockHeight),
-          syncCursor: const Value(null),
-        ),
-      );
+      double driveEntityParseProgress() => numberOfDriveEntitiesToParse == 0
+          ? 0
+          : numberOfDriveEntitiesParsed / numberOfDriveEntitiesToParse;
 
-      /// If there's nothing to sync, we assume that all were synced
+      final batch = <DriveEntityHistoryTransactionModel>[];
 
-      yield 1;
-      return;
-    }
+      int? firstBlockHeight;
+      late int totalBlockHeightDifference;
+      var fetchPhasePercentage = 0.0;
 
-    logger.d(
-      'no. of entities in drive with id ${drive.id} to be parsed are: $numberOfDriveEntitiesToParse\n',
-    );
+      double calculatePercentageBasedOnBlockHeights(
+          DriveEntityHistoryTransactionModel t) {
+        final block = t.transactionCommonMixin.block;
+        if (block != null) {
+          return (1 -
+              ((currentBlockHeight - block.height) /
+                  totalBlockHeightDifference));
+        }
+        return fetchPhasePercentage;
+      }
 
-    yield* _batchProcessor.batchProcess<DriveEntityHistoryTransactionModel>(
-        list: transactions,
-        batchSize: batchSize,
-        endOfBatchCallback: (items) async* {
-          final entityHistory =
-              await _arweave.createDriveEntityHistoryFromTransactions(
-            items,
+      await for (final t in transactions) {
+        if (firstBlockHeight == null) {
+          final block = t.transactionCommonMixin.block;
+          if (block != null) {
+            firstBlockHeight = block.height;
+            totalBlockHeightDifference = currentBlockHeight - firstBlockHeight!;
+          }
+        }
+
+        batch.add(t);
+        numberOfDriveEntitiesToParse++;
+
+        if (firstBlockHeight != null) {
+          if (totalBlockHeightDifference > 0) {
+            fetchPhasePercentage = calculatePercentageBasedOnBlockHeights(t);
+          } else {
+            fetchPhasePercentage = 1;
+          }
+          controller.add(fetchPhasePercentage * fetchPhaseWeight);
+        }
+
+        if (batch.length >= batchSize) {
+          await _processTransactionBatch(
+            batch,
+            drive,
             driveKey,
             lastBlockHeight,
-            driveId: drive.id,
-            ownerAddress: ownerAddress,
+            currentBlockHeight,
+            batchSize,
+            ownerAddress,
           );
+          numberOfDriveEntitiesParsed += batch.length;
+          controller.add(fetchPhaseWeight +
+              driveEntityParseProgress() * parsePhaseWeight);
+          batch.clear();
+        }
+      }
 
-          // Create entries for all the new revisions of file and folders in this drive.
-          final newEntities = entityHistory.blockHistory
-              .map((b) => b.entities)
-              .expand((entities) => entities);
+      if (batch.isNotEmpty) {
+        await _processTransactionBatch(
+          batch,
+          drive,
+          driveKey,
+          lastBlockHeight,
+          currentBlockHeight,
+          batchSize,
+          ownerAddress,
+        );
+        numberOfDriveEntitiesParsed += batch.length;
+        controller.add(fetchPhaseWeight +
+            driveEntityParseProgress() * parsePhaseWeight);
+        batch.clear();
+      }
 
-          numberOfDriveEntitiesParsed += items.length - newEntities.length;
+      if (numberOfDriveEntitiesToParse == 0) {
+        await _driveDao.writeToDrive(
+          DrivesCompanion(
+            id: Value(drive.id),
+            lastBlockHeight: Value(currentBlockHeight),
+            syncCursor: const Value(null),
+          ),
+        );
+        controller.add(1);
+      } else {
+        controller.add(fetchPhaseWeight + parsePhaseWeight);
+      }
 
-          yield driveEntityParseProgress();
+      controller.close();
 
-          // Handle the last page of newEntities, i.e; There's nothing more to sync
-          if (newEntities.length < batchSize) {
-            // Reset the sync cursor after every sync to pick up files from other instances of the app.
-            // (Different tab, different window, mobile, desktop etc)
-            await _driveDao.writeToDrive(DrivesCompanion(
-              id: Value(drive.id),
-              lastBlockHeight: Value(currentBlockHeight),
-              syncCursor: const Value(null),
-              isHidden: Value(drive.isHidden),
-            ));
-          }
+      logger.i(
+          'drive: ${drive.id} sync completed. no. of transactions to be parsed into entities: $numberOfDriveEntitiesToParse. no. of parsed entities: $numberOfDriveEntitiesParsed');
+    }();
 
-          await _driveDao.runTransaction(() async {
-            final latestDriveRevision = await _addNewDriveEntityRevisions(
-              newEntities: newEntities.whereType<DriveEntity>(),
-            );
-            final latestFolderRevisions = await _addNewFolderEntityRevisions(
+    return controller.stream;
+  }
+
+  Future<void> _processTransactionBatch(
+    List<DriveEntityHistoryTransactionModel> items,
+    Drive drive,
+    SecretKey? driveKey,
+    int lastBlockHeight,
+    int currentBlockHeight,
+    int batchSize,
+    String ownerAddress,
+  ) async {
+    final entityHistory = await _arweave.createDriveEntityHistoryFromTransactions(
+      items,
+      driveKey,
+      lastBlockHeight,
+      driveId: drive.id,
+      ownerAddress: ownerAddress,
+    );
+
+    final newEntities = entityHistory.blockHistory
+        .map((b) => b.entities)
+        .expand((entities) => entities);
+
+    if (newEntities.length < batchSize) {
+      await _driveDao.writeToDrive(DrivesCompanion(
+        id: Value(drive.id),
+        lastBlockHeight: Value(currentBlockHeight),
+        syncCursor: const Value(null),
+        isHidden: Value(drive.isHidden),
+      ));
+    }
+
+    await _driveDao.runTransaction(() async {
+      final latestDriveRevision = await _addNewDriveEntityRevisions(
+        newEntities: newEntities.whereType<DriveEntity>(),
+      );
+      final latestFolderRevisions = await _addNewFolderEntityRevisions(
+        driveId: drive.id,
+        newEntities: newEntities.whereType<FolderEntity>(),
+      );
+      final latestFileRevisions = await _addNewFileEntityRevisions(
+        driveId: drive.id,
+        newEntities: newEntities.whereType<FileEntity>(),
+      );
+
+      for (final entity in latestFileRevisions) {
+        if (!_folderIds.contains(entity.parentFolderId.value)) {
+          _ghostFolders.putIfAbsent(
+            entity.parentFolderId.value,
+            () => GhostFolder(
               driveId: drive.id,
-              newEntities: newEntities.whereType<FolderEntity>(),
-            );
-            final latestFileRevisions = await _addNewFileEntityRevisions(
-              driveId: drive.id,
-              newEntities: newEntities.whereType<FileEntity>(),
-            );
+              folderId: entity.parentFolderId.value,
+              isHidden: false,
+            ),
+          );
+        }
+      }
 
-            for (final entity in latestFileRevisions) {
-              if (!_folderIds.contains(entity.parentFolderId.value)) {
-                _ghostFolders.putIfAbsent(
-                  entity.parentFolderId.value,
-                  () => GhostFolder(
-                    driveId: drive.id,
-                    folderId: entity.parentFolderId.value,
-                    isHidden: false,
-                  ),
-                );
-              }
-            }
-
-            // Check and handle cases where there's no more revisions
-            final updatedDrive = latestDriveRevision != null
-                ? await _computeRefreshedDriveFromRevision(
-                    driveDao: _driveDao,
-                    latestRevision: latestDriveRevision,
-                  )
-                : null;
-
-            final updatedFoldersById =
-                await _computeRefreshedFolderEntriesFromRevisions(
+      final updatedDrive = latestDriveRevision != null
+          ? await _computeRefreshedDriveFromRevision(
               driveDao: _driveDao,
-              driveId: drive.id,
-              revisionsByFolderId: latestFolderRevisions,
-            );
-            final updatedFilesById =
-                await _computeRefreshedFileEntriesFromRevisions(
-              driveDao: _driveDao,
-              driveId: drive.id,
-              revisionsByFileId: latestFileRevisions,
-            );
+              latestRevision: latestDriveRevision,
+            )
+          : null;
 
-            numberOfDriveEntitiesParsed += newEntities.length;
+      final updatedFoldersById =
+          await _computeRefreshedFolderEntriesFromRevisions(
+        driveDao: _driveDao,
+        driveId: drive.id,
+        revisionsByFolderId: latestFolderRevisions,
+      );
+      final updatedFilesById = await _computeRefreshedFileEntriesFromRevisions(
+        driveDao: _driveDao,
+        driveId: drive.id,
+        revisionsByFileId: latestFileRevisions,
+      );
 
-            numberOfDriveEntitiesParsed -=
-                updatedFoldersById.length + updatedFilesById.length;
+      if (updatedDrive != null) {
+        await _driveDao.updateDrive(updatedDrive);
+      }
 
-            // Update the drive model, making sure to not overwrite the existing keys defined on the drive.
-            if (updatedDrive != null) {
-              await _driveDao.updateDrive(updatedDrive);
-            }
+      await _driveDao.updateFolderEntries(updatedFoldersById.values.toList());
+      await _driveDao.updateFileEntries(updatedFilesById.values.toList());
 
-            // Update the folder and file entries before generating their new paths.
-            await _driveDao
-                .updateFolderEntries(updatedFoldersById.values.toList());
-            await _driveDao.updateFileEntries(updatedFilesById.values.toList());
+      latestFolderRevisions.clear();
+      latestFileRevisions.clear();
+    });
 
-            numberOfDriveEntitiesParsed +=
-                updatedFoldersById.length + updatedFilesById.length;
-
-            latestFolderRevisions.clear();
-            latestFileRevisions.clear();
-          });
-          yield driveEntityParseProgress();
-        });
-
-    logger.i(
-        'drive: ${drive.id} sync completed. no. of transactions to be parsed into entities: $numberOfDriveEntitiesToParse. no. of parsed entities: $numberOfDriveEntitiesParsed');
+    return;
   }
 
   /// Computes the new drive revisions from the provided entities, inserts them into the database,
