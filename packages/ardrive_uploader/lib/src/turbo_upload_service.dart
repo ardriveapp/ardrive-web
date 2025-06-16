@@ -392,7 +392,6 @@ class TurboUploadServiceNonChunked extends TurboUploadService {
   final dio = Dio();
   Timer? onSendProgressTimer;
   final cancelToken = CancelToken();
-  final TabVisibilitySingleton _tabVisibility = TabVisibilitySingleton();
 
   @override
   Future<void> cancel() {
