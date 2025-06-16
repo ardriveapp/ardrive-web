@@ -89,7 +89,7 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
           await _streamedUploadFactory.fromUploadType(task);
 
       final headersMap = <String, String>{
-        'x-paid-by': dataItems[0].paidBy.join(', '),
+        'x-paid-by': task.metadata.paidBy.join(', '),
       };
 
       final uploadResult = await metadataStreamedUpload.send(

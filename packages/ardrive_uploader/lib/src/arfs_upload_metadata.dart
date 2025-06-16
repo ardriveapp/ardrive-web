@@ -268,11 +268,7 @@ abstract class ARFSUploadMetadata extends UploadMetadata {
     required this.name,
     required this.id,
     required this.isPrivate,
-    this.paidBy = const [],
   });
-
-  /// The list of entities that will pay for the upload.
-  final List<String> paidBy;
 
   /// The unique identifier for the entity.
   final String id;
