@@ -90,9 +90,6 @@ class PaymentService {
       final data = json.decode(result.data);
       final balance = BigInt.parse(data['effectiveBalance']);
       final receivedApprovals = data['receivedApprovals'] as List<dynamic>;
-      if (receivedApprovals.isEmpty) {
-        logger.w('No received approvals found for the user');
-      }
       final paidBy = receivedApprovals
           .map((approval) => approval['payingAddress'] as String)
           .toList();
