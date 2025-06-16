@@ -1,7 +1,10 @@
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 
-abstract class UploadMetadata {}
+abstract class UploadMetadata {
+  const UploadMetadata({this.paidBy = const []});
+  final List<String> paidBy;
+}
 
 class ThumbnailUploadMetadata extends UploadMetadata {
   ThumbnailUploadMetadata({
@@ -12,7 +15,7 @@ class ThumbnailUploadMetadata extends UploadMetadata {
     required this.name,
     required this.contentType,
     required this.originalFileId,
-    this.paidBy = const [],
+    super.paidBy = const [],
   });
 
   List<Tag> thumbnailTags() {
@@ -39,7 +42,6 @@ class ThumbnailUploadMetadata extends UploadMetadata {
   String? _txId;
   String? _cipherTag;
   String? _cipherIvTag;
-  final List<String> paidBy;
 
   set setTxId(String txId) => _txId = txId;
 
@@ -259,11 +261,8 @@ abstract class ARFSUploadMetadata extends UploadMetadata {
     required this.name,
     required this.id,
     required this.isPrivate,
-    this.paidBy = const [],
+    super.paidBy = const [],
   });
-
-  /// The list of entities that will pay for the upload.
-  final List<String> paidBy;
 
   /// The unique identifier for the entity.
   final String id;
