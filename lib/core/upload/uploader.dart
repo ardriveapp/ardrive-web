@@ -475,7 +475,7 @@ class UploadPaymentEvaluator {
       totalSize = arBundleSizes + arFileSizes;
     }
 
-    logger.i('Upload payment info prepared with method: $uploadMethod, '
+    logger.d('Upload payment info prepared with method: $uploadMethod, '
         'total size: $totalSize, turbo balance: $turboBalance');
     return UploadPaymentInfo(
       isTurboAvailable: _isTurboAvailableToUploadAllFiles,
