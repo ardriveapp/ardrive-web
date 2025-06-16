@@ -358,8 +358,6 @@ class UploadPaymentEvaluator {
     TurboBalanceInterface turboBalance;
 
     turboBalance = await _getTurboBalance(canUseTurbo: _canUseTurbo);
-    print('Turbo balance: $turboBalance');
-
     final turboCostEstimate = await _turboUploadCostCalculator.calculateCost(
       totalSize: dataItemSize,
     );
