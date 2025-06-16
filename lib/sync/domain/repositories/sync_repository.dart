@@ -845,19 +845,52 @@ class _SyncRepository implements SyncRepository {
     int batchSize,
     String ownerAddress,
   ) async {
-    final entityHistory = await _arweave.createDriveEntityHistoryFromTransactions(
+    final driveEntities = <DriveEntity>[];
+    final folderEntities = <FolderEntity>[];
+    final fileEntities = <FileEntity>[];
+    var processed = 0;
+
+    await for (final entity in _arweave.streamEntitiesFromTransactions(
       items,
       driveKey,
-      lastBlockHeight,
       driveId: drive.id,
       ownerAddress: ownerAddress,
-    );
+    )) {
+      if (entity is DriveEntity) {
+        driveEntities.add(entity);
+      } else if (entity is FolderEntity) {
+        folderEntities.add(entity);
+      } else if (entity is FileEntity) {
+        fileEntities.add(entity);
+      }
 
-    final newEntities = entityHistory.blockHistory
-        .map((b) => b.entities)
-        .expand((entities) => entities);
+      processed++;
+      if (processed >= batchSize) {
+        await _insertEntities(
+          drive,
+          driveEntities,
+          folderEntities,
+          fileEntities,
+        );
+        driveEntities.clear();
+        folderEntities.clear();
+        fileEntities.clear();
+        processed = 0;
+      }
+    }
 
-    if (newEntities.length < batchSize) {
+    if (driveEntities.isNotEmpty ||
+        folderEntities.isNotEmpty ||
+        fileEntities.isNotEmpty) {
+      await _insertEntities(
+        drive,
+        driveEntities,
+        folderEntities,
+        fileEntities,
+      );
+    }
+
+    if (items.length < batchSize) {
       await _driveDao.writeToDrive(DrivesCompanion(
         id: Value(drive.id),
         lastBlockHeight: Value(currentBlockHeight),
@@ -865,18 +898,25 @@ class _SyncRepository implements SyncRepository {
         isHidden: Value(drive.isHidden),
       ));
     }
+  }
 
+  Future<void> _insertEntities(
+    Drive drive,
+    List<DriveEntity> driveEntities,
+    List<FolderEntity> folderEntities,
+    List<FileEntity> fileEntities,
+  ) async {
     await _driveDao.runTransaction(() async {
       final latestDriveRevision = await _addNewDriveEntityRevisions(
-        newEntities: newEntities.whereType<DriveEntity>(),
+        newEntities: driveEntities,
       );
       final latestFolderRevisions = await _addNewFolderEntityRevisions(
         driveId: drive.id,
-        newEntities: newEntities.whereType<FolderEntity>(),
+        newEntities: folderEntities,
       );
       final latestFileRevisions = await _addNewFileEntityRevisions(
         driveId: drive.id,
-        newEntities: newEntities.whereType<FileEntity>(),
+        newEntities: fileEntities,
       );
 
       for (final entity in latestFileRevisions) {
@@ -921,8 +961,6 @@ class _SyncRepository implements SyncRepository {
       latestFolderRevisions.clear();
       latestFileRevisions.clear();
     });
-
-    return;
   }
 
   /// Computes the new drive revisions from the provided entities, inserts them into the database,
