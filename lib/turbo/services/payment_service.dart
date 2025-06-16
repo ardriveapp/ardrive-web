@@ -78,7 +78,6 @@ class PaymentService {
     return _parseHttpResponseForPriceForFiat(result);
   }
 
-  /// Get effective balance and paidBy array ;; return { balance: BigInt, paidBy: List<String> }
   Future<TurboBalanceInterface> getBalanceAndPaidBy({
     required Wallet wallet,
   }) async {
