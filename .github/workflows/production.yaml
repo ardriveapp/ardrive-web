@@ -108,7 +108,7 @@ jobs:
           MATCH_GIT_PRIVATE_KEY: ${{ secrets.FASTLANE_SSH_KEY }}
           MATCH_PASSWORD: ${{ secrets.FASTLANE_MATCH_PASSWORD }}
         working-directory: ./ios
-        run: bundle exec fastlane deploy type:staging
+        run: bundle exec fastlane deploy type:production
 
   build-android:
     needs: pre-build

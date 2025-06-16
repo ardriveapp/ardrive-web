@@ -147,8 +147,7 @@ class Logger {
     );
   }
 
-  FutureOr<SentryEvent?> _beforeSendEvent(SentryEvent event,
-      {Hint? hint}) async {
+  FutureOr<SentryEvent?> _beforeSendEvent(SentryEvent event, Hint hint) async {
     if (_shouldLogError(event.throwable)) {
       event = event.copyWith(
         user: SentryUser(

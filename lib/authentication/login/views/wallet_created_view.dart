@@ -251,7 +251,7 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
               final success = await ioUtils.downloadWalletAsJsonFile(
                 wallet: widget.wallet,
               );
-              if (success && AppPlatform.isAndroid) {
+              if (success && AppPlatform.isMobile) {
                 showArDriveDialog(
                   // ignore: use_build_context_synchronously
                   context,
