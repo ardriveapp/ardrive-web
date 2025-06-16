@@ -351,9 +351,9 @@ class UploadFolderStructureAsBundleStrategy
         uploadItem: DataItemUploadItem(
           size: folderBundle.dataSize,
           data: folderBundle,
-          //  headers: <String, String>{
-          //   'x-paid-by': task.metadata.paidBy.join(', '),
-          // },
+          headers: <String, String>{
+            'x-paid-by': task.folders.first.$1.paidBy.join(', '),
+          },
         ),
       );
       controller.updateProgress(task: folderTask);

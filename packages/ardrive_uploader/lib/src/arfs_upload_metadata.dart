@@ -88,12 +88,18 @@ class ARFSFolderUploadMetatadata extends ARFSUploadMetadata {
   /// The ID of the parent folder where the folder will be uploaded.
   final String? parentFolderId;
 
+  /// The list of entities that will pay for the upload.
+  /// This is used to determine the payment for the upload.
+  /// If empty, the uploader will pay for the upload.
+  final List<String> paidBy;
+
   ARFSFolderUploadMetatadata({
     required this.driveId,
     this.parentFolderId,
     required super.name,
     required super.id,
     required super.isPrivate,
+    this.paidBy = const [],
   });
 
   /// Converts the metadata into a JSON object used on the metadata transaction.

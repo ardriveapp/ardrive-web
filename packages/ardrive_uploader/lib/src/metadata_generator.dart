@@ -124,7 +124,8 @@ class ARFSUploadMetadataGenerator
           isPrivate: arguments.isPrivate,
           driveId: arguments.driveId!,
           parentFolderId: arguments.parentFolderId,
-          name: folder.name)
+          name: folder.name,
+          paidBy: arguments.paidBy ?? [])
         ..setEntityMetadataTags(tags['entity']!);
     }
 
