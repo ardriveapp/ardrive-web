@@ -418,7 +418,6 @@ class TurboUploadServiceNonChunked extends TurboUploadService {
       const receiveTimeout = Duration(days: 365);
       const sendTimeout = Duration(days: 365);
 
-      print('Posting data item to $url with headers: $headers');
       final response = await dio.post(
         url,
         onSendProgress: (sent, total) => onSendProgress?.call(sent / total),
