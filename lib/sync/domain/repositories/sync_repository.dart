@@ -187,8 +187,6 @@ class _SyncRepository implements SyncRepository {
             ? 0
             : _calculateSyncLastBlockHeight(drive.lastBlockHeight!),
         currentBlockHeight: currentBlockHeight,
-        transactionParseBatchSize:
-            200 ~/ (syncProgress.drivesCount - syncProgress.drivesSynced),
         ownerAddress: drive.ownerAddress,
         txFechedCallback: txFechedCallback,
       );
@@ -301,7 +299,6 @@ class _SyncRepository implements SyncRepository {
       ownerAddress: ownerAddress,
       lastBlockHeight: 0,
       currentBlockHeight: 0,
-      transactionParseBatchSize: 200,
       txFechedCallback: txFechedCallback,
     );
   }
@@ -538,7 +535,6 @@ class _SyncRepository implements SyncRepository {
     SecretKey? cipherKey,
     required int currentBlockHeight,
     required int lastBlockHeight,
-    required int transactionParseBatchSize,
     required String ownerAddress,
     Function(String driveId, int txCount)? txFechedCallback,
   }) async* {
@@ -629,9 +625,6 @@ class _SyncRepository implements SyncRepository {
         drive: drive,
         driveKey: driveKey?.key,
         currentBlockHeight: currentBlockHeight,
-        lastBlockHeight: lastBlockHeight,
-        batchSize: transactionParseBatchSize,
-        snapshotDriveHistory: snapshotDriveHistory,
         ownerAddress: ownerAddress,
       );
     } catch (e) {
@@ -727,10 +720,7 @@ class _SyncRepository implements SyncRepository {
     required Stream<DriveEntityHistoryTransactionModel> transactions,
     required Drive drive,
     required SecretKey? driveKey,
-    required int lastBlockHeight,
     required int currentBlockHeight,
-    required int batchSize,
-    required SnapshotDriveHistory snapshotDriveHistory,
     required String ownerAddress,
   }) {
     final controller = StreamController<double>();
@@ -742,8 +732,6 @@ class _SyncRepository implements SyncRepository {
       double driveEntityParseProgress() => numberOfDriveEntitiesToParse == 0
           ? 0
           : numberOfDriveEntitiesParsed / numberOfDriveEntitiesToParse;
-
-      final batch = <DriveEntityHistoryTransactionModel>[];
 
       int? firstBlockHeight;
       late int totalBlockHeightDifference;
@@ -769,7 +757,6 @@ class _SyncRepository implements SyncRepository {
           }
         }
 
-        batch.add(t);
         numberOfDriveEntitiesToParse++;
 
         if (firstBlockHeight != null) {
@@ -781,37 +768,15 @@ class _SyncRepository implements SyncRepository {
           controller.add(fetchPhasePercentage * fetchPhaseWeight);
         }
 
-        if (batch.length >= batchSize) {
-          await _processTransactionBatch(
-            batch,
-            drive,
-            driveKey,
-            lastBlockHeight,
-            currentBlockHeight,
-            batchSize,
-            ownerAddress,
-          );
-          numberOfDriveEntitiesParsed += batch.length;
-          controller.add(fetchPhaseWeight +
-              driveEntityParseProgress() * parsePhaseWeight);
-          batch.clear();
-        }
-      }
-
-      if (batch.isNotEmpty) {
-        await _processTransactionBatch(
-          batch,
+        await _processTransaction(
+          t,
           drive,
           driveKey,
-          lastBlockHeight,
-          currentBlockHeight,
-          batchSize,
           ownerAddress,
         );
-        numberOfDriveEntitiesParsed += batch.length;
+        numberOfDriveEntitiesParsed++;
         controller.add(fetchPhaseWeight +
             driveEntityParseProgress() * parsePhaseWeight);
-        batch.clear();
       }
 
       if (numberOfDriveEntitiesToParse == 0) {
@@ -836,22 +801,18 @@ class _SyncRepository implements SyncRepository {
     return controller.stream;
   }
 
-  Future<void> _processTransactionBatch(
-    List<DriveEntityHistoryTransactionModel> items,
+  Future<void> _processTransaction(
+    DriveEntityHistoryTransactionModel item,
     Drive drive,
     SecretKey? driveKey,
-    int lastBlockHeight,
-    int currentBlockHeight,
-    int batchSize,
     String ownerAddress,
   ) async {
     final driveEntities = <DriveEntity>[];
     final folderEntities = <FolderEntity>[];
     final fileEntities = <FileEntity>[];
-    var processed = 0;
 
     await for (final entity in _arweave.streamEntitiesFromTransactions(
-      items,
+      [item],
       driveKey,
       driveId: drive.id,
       ownerAddress: ownerAddress,
@@ -863,41 +824,20 @@ class _SyncRepository implements SyncRepository {
       } else if (entity is FileEntity) {
         fileEntities.add(entity);
       }
-
-      processed++;
-      if (processed >= batchSize) {
-        await _insertEntities(
-          drive,
-          driveEntities,
-          folderEntities,
-          fileEntities,
-        );
-        driveEntities.clear();
-        folderEntities.clear();
-        fileEntities.clear();
-        processed = 0;
-      }
     }
 
-    if (driveEntities.isNotEmpty ||
-        folderEntities.isNotEmpty ||
-        fileEntities.isNotEmpty) {
-      await _insertEntities(
-        drive,
-        driveEntities,
-        folderEntities,
-        fileEntities,
-      );
+    if (driveEntities.isEmpty &&
+        folderEntities.isEmpty &&
+        fileEntities.isEmpty) {
+      return;
     }
 
-    if (items.length < batchSize) {
-      await _driveDao.writeToDrive(DrivesCompanion(
-        id: Value(drive.id),
-        lastBlockHeight: Value(currentBlockHeight),
-        syncCursor: const Value(null),
-        isHidden: Value(drive.isHidden),
-      ));
-    }
+    await _insertEntities(
+      drive,
+      driveEntities,
+      folderEntities,
+      fileEntities,
+    );
   }
 
   Future<void> _insertEntities(

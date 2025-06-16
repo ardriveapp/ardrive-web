@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:ardrive/sync/utils/batch_processor.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -17,44 +15,6 @@ void main() {
       // Set up mock callback behavior
       when(() => mockCallback(any())).thenAnswer((invocation) async* {
         yield 1.0; // Simulate processing the batch
-      });
-    });
-
-    group('batchProcessStream', () {
-      test('should produce no output for an empty stream', () {
-        final processor = BatchProcessor();
-        final controller = StreamController<int>();
-        controller.close();
-
-        expect(
-            processor.batchProcessStream<int>(
-                stream: controller.stream,
-                endOfBatchCallback: mockCallback.call,
-                batchSize: 5),
-            emitsDone);
-      });
-
-      test('should split stream into batches', () {
-        final processor = BatchProcessor();
-        final controller = StreamController<int>();
-
-        when(() => mockCallback(any())).thenAnswer((_) async* {
-          yield 1.0;
-        });
-
-        final stream = processor.batchProcessStream<int>(
-          stream: controller.stream,
-          endOfBatchCallback: mockCallback.call,
-          batchSize: 3,
-        );
-
-        controller.add(1);
-        controller.add(2);
-        controller.add(3);
-        controller.add(4);
-        controller.close();
-
-        expect(stream, emitsInOrder([1.0, 1.0, emitsDone]));
       });
     });
 

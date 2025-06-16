@@ -29,27 +29,4 @@ class BatchProcessor {
 
     list.clear();
   }
-
-  Stream<double> batchProcessStream<T>({
-    required Stream<T> stream,
-    required Stream<double> Function(List<T> items) endOfBatchCallback,
-    required int batchSize,
-  }) async* {
-    if (batchSize <= 0) {
-      throw ArgumentError('Batch size cannot be 0');
-    }
-
-    final buffer = <T>[];
-    await for (final item in stream) {
-      buffer.add(item);
-      if (buffer.length >= batchSize) {
-        yield* endOfBatchCallback(List<T>.from(buffer));
-        buffer.clear();
-      }
-    }
-
-    if (buffer.isNotEmpty) {
-      yield* endOfBatchCallback(List<T>.from(buffer));
-    }
-  }
 }
