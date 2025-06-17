@@ -69,7 +69,8 @@ void main() async {
       ).thenAnswer(
         (_) async => ArDriveHTTPResponse(
           statusCode: HttpStatus.ok,
-          data: '{"winc": "1000000000000"}',
+          data:
+              '{"winc": "1000000000000", "effectiveBalance": "1000000000000"}',
           retryAttempts: 0,
         ),
       );

@@ -257,6 +257,9 @@ void main() {
       /// 500 balance
       when(() => turboBalanceRetriever.getBalance(any()))
           .thenAnswer((_) async => BigInt.from(500));
+      when(() => turboBalanceRetriever.getBalanceAndPaidBy(any())).thenAnswer(
+          (_) async =>
+              TurboBalanceInterface(paidBy: [], balance: BigInt.from(500)));
       when(() => sizeUtils.getSizeOfAllBundles(any()))
           .thenAnswer((_) async => 200);
       when(() => sizeUtils.getSizeOfAllV2Files(any()))
