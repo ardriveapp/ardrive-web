@@ -303,6 +303,19 @@ class TurboBalanceRetriever {
       rethrow;
     }
   }
+
+  Future<TurboBalanceInterface> getBalanceAndPaidBy(Wallet wallet) async {
+    try {
+      final balance = await paymentService.getBalanceAndPaidBy(wallet: wallet);
+      return balance;
+    } catch (e) {
+      if (e is TurboUserNotFound) {
+        logger.e('Error getting balance', e);
+        return TurboBalanceInterface(balance: BigInt.zero, paidBy: []);
+      }
+      rethrow;
+    }
+  }
 }
 
 class TurboPriceEstimator extends Disposable implements ConvertForUSD<BigInt> {

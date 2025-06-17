@@ -17,6 +17,7 @@ class UploadPaymentMethodInfo extends Equatable {
   final UploadPlan? uploadPlanForAR;
   final UploadPlan? uploadPlanForTurbo;
   final int totalSize;
+  final List<String>? paidBy;
 
   const UploadPaymentMethodInfo({
     required this.uploadMethod,
@@ -32,6 +33,7 @@ class UploadPaymentMethodInfo extends Equatable {
     this.uploadPlanForAR,
     this.uploadPlanForTurbo,
     required this.totalSize,
+    this.paidBy,
   });
 
   // copy with
@@ -49,6 +51,7 @@ class UploadPaymentMethodInfo extends Equatable {
     UploadPlan? uploadPlanForAR,
     UploadPlan? uploadPlanForTurbo,
     int? totalSize,
+    List<String>? paidBy,
   }) {
     return UploadPaymentMethodInfo(
       totalSize: totalSize ?? this.totalSize,
@@ -66,6 +69,7 @@ class UploadPaymentMethodInfo extends Equatable {
       sufficentCreditsBalance:
           sufficentCreditsBalance ?? this.sufficentCreditsBalance,
       isFreeThanksToTurbo: isFreeThanksToTurbo ?? this.isFreeThanksToTurbo,
+      paidBy: paidBy ?? this.paidBy,
     );
   }
 
@@ -81,5 +85,6 @@ class UploadPaymentMethodInfo extends Equatable {
         turboCredits,
         sufficentCreditsBalance,
         isFreeThanksToTurbo,
+        paidBy,
       ];
 }
