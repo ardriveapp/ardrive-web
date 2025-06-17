@@ -7,9 +7,8 @@ import '../tables/file_revisions.drift';
 import '../tables/network_transactions.drift';
 import '../tables/licenses.drift';
 
-allDrives ($order = ''):
-    SELECT * FROM drives
-    ORDER BY $order;
+allDrives:
+    SELECT * FROM drives;
 driveById: SELECT * FROM drives WHERE id = :driveId;
 
 oldestDriveRevisionByDriveId:
@@ -32,10 +31,9 @@ folderById:
     SELECT * FROM folder_entries
     WHERE id = :folderId;
 
-foldersInFolder ($order = ''):
+foldersInFolder:
     SELECT * FROM folder_entries
-    WHERE driveId = :driveId AND parentFolderId = :parentFolderId
-    ORDER BY $order;
+    WHERE driveId = :driveId AND parentFolderId = :parentFolderId;
 
 ghostFolders:
     SELECT * FROM folder_entries
@@ -85,10 +83,9 @@ licenseByTxId:
     SELECT * FROM licenses
     WHERE licenseTxId = :tx;
 
-filesInFolder ($order = ''):
+filesInFolder:
     SELECT * FROM file_entries
-    WHERE driveId = :driveId AND parentFolderId = :parentFolderId
-    ORDER BY $order;
+    WHERE driveId = :driveId AND parentFolderId = :parentFolderId;
 filesInFolderWithName:
     SELECT * FROM file_entries
     WHERE driveId = :driveId AND parentFolderId = :parentFolderId AND name = :name;
@@ -96,7 +93,7 @@ manifestInFolder:
     SELECT * FROM file_entries
     WHERE parentFolderId = :parentFolderId AND dataContentType = 'application/x.arweave-manifest+json';
 
-filesInFolderWithLicenseAndRevisionTransactions ($order = '') AS FileWithLicenseAndLatestRevisionTransactions:
+filesInFolderWithLicenseAndRevisionTransactions AS FileWithLicenseAndLatestRevisionTransactions:
     SELECT file_entries.*, license.**, metadataTx.**, dataTx.** FROM file_entries
     LEFT JOIN licenses AS license ON license.licenseTxId = (
         SELECT licenseTxId FROM file_revisions AS rev
@@ -113,9 +110,8 @@ filesInFolderWithLicenseAndRevisionTransactions ($order = '') AS FileWithLicense
         WHERE driveId = :driveId AND fileId = file_entries.id
         ORDER BY rev.dateCreated DESC
         LIMIT 1)
-    WHERE file_entries.driveId = :driveId AND file_entries.parentFolderId = :parentFolderId
-    ORDER BY $order;
-filesInDriveWithRevisionTransactions ($order = '') AS FileWithLatestRevisionTransactions:
+    WHERE file_entries.driveId = :driveId AND file_entries.parentFolderId = :parentFolderId;
+filesInDriveWithRevisionTransactions AS FileWithLatestRevisionTransactions:
 SELECT file_entries.*, metadataTx.**, dataTx.** FROM file_entries
 JOIN network_transactions AS metadataTx ON metadataTx.id = (
     SELECT metadataTxId FROM file_revisions AS rev
@@ -127,8 +123,7 @@ JOIN network_transactions AS dataTx ON dataTx.id = (
     WHERE driveId = :driveId AND fileId = file_entries.id
     ORDER BY rev.dateCreated DESC
     LIMIT 1)
-WHERE driveId = :driveId
-ORDER BY $order;
+WHERE driveId = :driveId;
 
 oldestFileRevisionsByFileId:
     SELECT * FROM file_revisions

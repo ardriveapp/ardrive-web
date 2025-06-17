@@ -101,6 +101,30 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     }
   }
 
+  Future<bool> _checkForSnapshots(String driveId) async {
+    try {
+      final snapshotsStream = _arweave.getAllSnapshotsOfDrive(
+        driveId,
+        null, // No lastBlockHeight filter for checking
+        ownerAddress: null, // Allow snapshots from any owner
+      );
+      
+      final snapshots = await snapshotsStream.take(1).toList();
+      final hasSnapshots = snapshots.isNotEmpty;
+      
+      if (hasSnapshots) {
+        logger.i('Drive $driveId has snapshots - will enable performance optimization');
+      } else {
+        logger.d('Drive $driveId has no snapshots - will use standard sync');
+      }
+      
+      return hasSnapshots;
+    } catch (e) {
+      logger.w('Error checking for snapshots on drive $driveId: $e');
+      return false;
+    }
+  }
+
   void submit() async {
     final driveId = driveIdController.text;
     final driveName = driveNameController.text;
@@ -158,15 +182,37 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         profileKey: _profileKey,
       );
 
-      emit(DriveAttachSuccess());
-
+      // Check for snapshots to provide better user feedback
+      final hasSnapshots = await _checkForSnapshots(driveId);
+      
+      // Don't emit success yet - go straight to syncing state
+      
       /// Wait for the sync to finish before syncing the newly attached drive.
       await _syncBloc.waitCurrentSync();
 
-      /// Then, sync and select the newly attached drive.
-      unawaited(_syncBloc
-          .startSync()
-          .then((value) => _drivesBloc.selectDrive(driveId)));
+      /// Show syncing state while the drive syncs
+      emit(DriveAttachSyncing(hasSnapshots: hasSnapshots));
+
+      /// Start the sync in the background
+      /// Don't await it so the user can close the modal if they want
+      _syncBloc.syncSingleDrive(driveId).then((_) {
+        if (!isClosed) {
+          /// Select the drive after sync completes
+          _drivesBloc.selectDrive(driveId);
+        }
+      }).catchError((err) {
+        logger.e('Error during background sync of attached drive', err);
+      });
+      
+      // Give the UI time to show the syncing state before allowing the user to close
+      await Future.delayed(const Duration(seconds: 2));
+      
+      // Check if still in syncing state (user hasn't closed the modal)
+      if (!isClosed && state is DriveAttachSyncing) {
+        /// Emit success to indicate the attach is complete
+        /// The sync continues in the background
+        emit(DriveAttachSuccess());
+      }
 
       PlausibleEventTracker.trackAttachDrive(
         drivePrivacy: drivePrivacy,
