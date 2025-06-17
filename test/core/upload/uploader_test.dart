@@ -558,7 +558,7 @@ void main() {
           when(() => mockBundle.computeBundleSize())
               .thenAnswer((invocation) => Future.value(501));
           when(() => uploadPlan.bundleUploadHandles).thenReturn([mockBundle]);
-          when(() => turboBalanceRetriever.getBalance(any()))
+          when(() => turboBalanceRetriever.getBalanceAndPaidBy(any()))
               .thenThrow(Exception('error'));
 
           final result =
