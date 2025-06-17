@@ -751,16 +751,21 @@ class WorkerPool {
 abstract class UploadItem<T> {
   final int size;
   final T data;
+  final Map<String, String>? headers;
 
-  UploadItem({required this.size, required this.data});
+  UploadItem({
+    required this.size,
+    required this.data,
+    this.headers,
+  });
 }
 
 class DataItemUploadItem extends UploadItem<DataItemResult> {
-  DataItemUploadItem({required super.size, required super.data});
+  DataItemUploadItem({required super.size, required super.data, super.headers});
 
   @override
   String toString() {
-    return 'DataItemUploadItem(id: ${data.id}, size: $size)';
+    return 'DataItemUploadItem(id: ${data.id}, size: $size, headers: $headers)';
   }
 }
 

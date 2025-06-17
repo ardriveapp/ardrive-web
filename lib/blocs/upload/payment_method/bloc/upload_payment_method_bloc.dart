@@ -53,17 +53,20 @@ class UploadPaymentMethodBloc
       final paymentInfo = uploadPreparation.uploadPaymentInfo;
 
       final literalTurboBalance = convertWinstonToLiteralString(
-          uploadPreparation.uploadPaymentInfo.turboBalance);
+          uploadPreparation.uploadPaymentInfo.turboBalance.balance);
       final literalARBalance =
           convertWinstonToLiteralString(_auth.currentUser.walletBalance);
 
       bool isTurboZeroBalance =
-          uploadPreparation.uploadPaymentInfo.turboBalance == BigInt.zero;
+          uploadPreparation.uploadPaymentInfo.turboBalance.balance ==
+              BigInt.zero;
 
+      logger.d('Balance ${paymentInfo.turboBalance}');
       emit(
         UploadPaymentMethodLoaded(
           canUpload: _canUploadWithMethod(paymentInfo.defaultPaymentMethod),
-          params: event.params,
+          params:
+              event.params.copyWith(paidBy: paymentInfo.turboBalance.paidBy),
           paymentMethodInfo: UploadPaymentMethodInfo(
             totalSize: uploadPreparation.uploadPaymentInfo.totalSize,
             uploadPlanForAR:
@@ -82,6 +85,7 @@ class UploadPaymentMethodBloc
             sufficientArBalance: _canUploadWithMethod(UploadMethod.ar),
             turboCredits: literalTurboBalance,
             uploadMethod: paymentInfo.defaultPaymentMethod,
+            paidBy: paymentInfo.turboBalance.paidBy,
           ),
         ),
       );
@@ -113,7 +117,7 @@ class UploadPaymentMethodBloc
         profile.user.walletBalance >= paymentInfo.arCostEstimate.totalCost;
     bool sufficientBalanceToPayWithTurbo =
         paymentInfo.turboCostEstimate.totalCost <=
-            uploadPreparation.uploadPaymentInfo.turboBalance;
+            uploadPreparation.uploadPaymentInfo.turboBalance.balance;
 
     if (method == UploadMethod.ar && sufficientBalanceToPayWithAR) {
       logger.d('Enabling button for AR payment method');

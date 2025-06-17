@@ -1,7 +1,10 @@
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 
-abstract class UploadMetadata {}
+abstract class UploadMetadata {
+  const UploadMetadata({this.paidBy = const []});
+  final List<String> paidBy;
+}
 
 class ThumbnailUploadMetadata extends UploadMetadata {
   ThumbnailUploadMetadata({
@@ -12,6 +15,7 @@ class ThumbnailUploadMetadata extends UploadMetadata {
     required this.name,
     required this.contentType,
     required this.originalFileId,
+    super.paidBy = const [],
   });
 
   List<Tag> thumbnailTags() {
@@ -92,6 +96,7 @@ class ARFSFolderUploadMetatadata extends ARFSUploadMetadata {
     required super.name,
     required super.id,
     required super.isPrivate,
+    super.paidBy = const [],
   });
 
   /// Converts the metadata into a JSON object used on the metadata transaction.
@@ -171,6 +176,7 @@ class ARFSFileUploadMetadata extends ARFSUploadMetadata with ARFSUploadData {
     required super.isPrivate,
     this.assignedName,
     this.fallbackTxId,
+    super.paidBy = const [],
   });
 
   /// The size of the file in bytes.
@@ -255,6 +261,7 @@ abstract class ARFSUploadMetadata extends UploadMetadata {
     required this.name,
     required this.id,
     required this.isPrivate,
+    super.paidBy = const [],
   });
 
   /// The unique identifier for the entity.

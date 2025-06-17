@@ -9,6 +9,7 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/config/selected_gateway.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/user/user.dart';
@@ -256,6 +257,9 @@ void main() {
       /// 500 balance
       when(() => turboBalanceRetriever.getBalance(any()))
           .thenAnswer((_) async => BigInt.from(500));
+      when(() => turboBalanceRetriever.getBalanceAndPaidBy(any())).thenAnswer(
+          (_) async =>
+              TurboBalanceInterface(paidBy: [], balance: BigInt.from(500)));
       when(() => sizeUtils.getSizeOfAllBundles(any()))
           .thenAnswer((_) async => 200);
       when(() => sizeUtils.getSizeOfAllV2Files(any()))
@@ -554,7 +558,7 @@ void main() {
           when(() => mockBundle.computeBundleSize())
               .thenAnswer((invocation) => Future.value(501));
           when(() => uploadPlan.bundleUploadHandles).thenReturn([mockBundle]);
-          when(() => turboBalanceRetriever.getBalance(any()))
+          when(() => turboBalanceRetriever.getBalanceAndPaidBy(any()))
               .thenThrow(Exception('error'));
 
           final result =
@@ -775,14 +779,14 @@ void main() {
     setUpAll(() {
       registerFallbackValue(SecretKey([]));
       registerFallbackValue(UploadParams(
-        user: getFakeUser(),
-        files: [],
-        targetFolder: getFakeFolder(),
-        targetDrive: getFakeDrive(),
-        conflictingFiles: {},
-        foldersByPath: {},
-        containsSupportedImageTypeForThumbnailGeneration: false,
-      ));
+          user: getFakeUser(),
+          files: [],
+          targetFolder: getFakeFolder(),
+          targetDrive: getFakeDrive(),
+          conflictingFiles: {},
+          foldersByPath: {},
+          containsSupportedImageTypeForThumbnailGeneration: false,
+          paidBy: []));
       registerFallbackValue(getFakeFolder());
       registerFallbackValue(getFakeDrive());
       registerFallbackValue(getFakeUser());
@@ -792,14 +796,14 @@ void main() {
     setUp(() {
       uploadPlanUtils = MockUploadPlanUtils();
       uploadParams = UploadParams(
-        user: getFakeUser(),
-        files: [],
-        targetFolder: getFakeFolder(),
-        targetDrive: getFakeDrive(),
-        conflictingFiles: {},
-        foldersByPath: {},
-        containsSupportedImageTypeForThumbnailGeneration: false,
-      );
+          user: getFakeUser(),
+          files: [],
+          targetFolder: getFakeFolder(),
+          targetDrive: getFakeDrive(),
+          conflictingFiles: {},
+          foldersByPath: {},
+          containsSupportedImageTypeForThumbnailGeneration: false,
+          paidBy: []);
       uploadPreparer = UploadPreparer(uploadPlanUtils: uploadPlanUtils);
     });
 
@@ -893,14 +897,14 @@ void main() {
       registerFallbackValue(MockUploadPlan());
 
       registerFallbackValue(UploadParams(
-        user: getFakeUser(),
-        files: [],
-        targetFolder: getFakeFolder(),
-        targetDrive: getFakeDrive(),
-        conflictingFiles: {},
-        foldersByPath: {},
-        containsSupportedImageTypeForThumbnailGeneration: false,
-      ));
+          user: getFakeUser(),
+          files: [],
+          targetFolder: getFakeFolder(),
+          targetDrive: getFakeDrive(),
+          conflictingFiles: {},
+          foldersByPath: {},
+          containsSupportedImageTypeForThumbnailGeneration: false,
+          paidBy: []));
     });
 
     group('prepareUpload', () {
@@ -919,7 +923,8 @@ void main() {
           isFreeUploadPossibleUsingTurbo: true,
           totalSize: 100,
           isTurboAvailable: true,
-          turboBalance: BigInt.from(100),
+          turboBalance:
+              TurboBalanceInterface(balance: BigInt.from(500), paidBy: []),
         );
 
         when(() => uploadPreparer.prepareFileUpload(uploadParams))
