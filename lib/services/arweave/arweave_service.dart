@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_signature.dart';
@@ -425,6 +426,82 @@ class ArweaveService {
       blockHistory.isNotEmpty ? blockHistory.last.blockHeight : lastBlockHeight,
       blockHistory,
     );
+  }
+
+  /// Streams entities parsed from the provided transactions one by one.
+  Stream<Entity?> streamEntitiesFromTransactions(
+    List<DriveEntityHistoryTransactionModel> entityTxs,
+    SecretKey? driveKey, {
+    required String ownerAddress,
+    required DriveID driveId,
+  }) async* {
+    final metadataCache = await MetadataCache.fromCacheStore(
+      await newSharedPreferencesCacheStore(),
+    );
+
+    for (final model in entityTxs) {
+      final transaction = model.transactionCommonMixin;
+      final tags = HashMap.fromIterable(
+        transaction.tags,
+        key: (tag) => tag.name,
+        value: (tag) => tag.value,
+      );
+
+      if (driveKey != null && tags[EntityTag.cipherIv] == null) {
+        logger.d('skipping unnecessary request for a broken entity');
+        continue;
+      }
+
+      if (transaction.block == null) {
+        break;
+      }
+
+      final entityType = tags[EntityTag.entityType];
+      final isSnapshot = entityType == EntityTypeTag.snapshot;
+
+      Uint8List rawEntityData = Uint8List(0);
+      if (!isSnapshot) {
+        rawEntityData = await _getEntityData(
+          entityId: transaction.id,
+          driveId: driveId,
+          isPrivate: driveKey != null,
+        );
+        await metadataCache.put(transaction.id, rawEntityData);
+      }
+
+      try {
+        Entity? entity;
+        if (entityType == EntityTypeTag.drive) {
+          entity = await DriveEntity.fromTransaction(
+              transaction, _crypto, rawEntityData, driveKey);
+        } else if (entityType == EntityTypeTag.folder) {
+          entity = await FolderEntity.fromTransaction(
+              transaction, _crypto, rawEntityData, driveKey);
+        } else if (entityType == EntityTypeTag.file) {
+          entity = await FileEntity.fromTransaction(
+            transaction,
+            rawEntityData,
+            driveKey: driveKey,
+            crypto: _crypto,
+          );
+        }
+
+        if (entity != null && entity.ownerAddress == ownerAddress) {
+          yield entity;
+        }
+      } on EntityTransactionParseException catch (parseException) {
+        logger.w(
+          'Failed to parse transaction with id ${parseException.transactionId}',
+        );
+      } on GatewayError catch (fetchException) {
+        logger.e(
+          'Failed to fetch entity data with the exception ${fetchException.runtimeType}'
+          ' for transaction ${transaction.id}, '
+          ' with status ${fetchException.statusCode} '
+          ' and reason ${fetchException.reasonPhrase}',
+        );
+      }
+    }
   }
 
   Future<bool> hasUserPrivateDrives(
