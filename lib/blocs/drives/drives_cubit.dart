@@ -9,7 +9,6 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rxdart/rxdart.dart';
