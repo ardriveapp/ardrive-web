@@ -160,9 +160,6 @@ class DontUseUploadService implements TurboUploadService {
   }
 
   @override
-  TabVisibilitySingleton get _tabVisibility => throw UnimplementedError();
-
-  @override
   Exception _handleException(Object error) {
     // TODO: implement _handleException
     throw UnimplementedError();

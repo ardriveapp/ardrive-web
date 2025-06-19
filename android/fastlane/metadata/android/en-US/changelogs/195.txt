@@ -1,0 +1,1 @@
+- Excise redundant signatures on metadata uploads
