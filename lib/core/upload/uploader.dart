@@ -22,6 +22,8 @@ import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:tuple/tuple.dart';
 
+import '../../turbo/services/payment_service.dart';
+
 class ArDriveUploaderFromHandles {
   final BundleUploader _bundleUploader;
   final FileV2Uploader _fileV2Uploader;
@@ -196,7 +198,7 @@ class BundleUploader extends Uploader<BundleUploadHandle> {
 
       _uploader = _turbo;
     } else {
-      logger.i('Using ArweaveBunldeUploader');
+      logger.i('Using ArweaveBundleUploader');
 
       _uploader = _arweave;
     }
@@ -353,10 +355,9 @@ class UploadPaymentEvaluator {
 
     int totalSize = 0;
 
-    BigInt turboBalance;
+    TurboBalanceInterface turboBalance;
 
     turboBalance = await _getTurboBalance(canUseTurbo: _canUseTurbo);
-
     final turboCostEstimate = await _turboUploadCostCalculator.calculateCost(
       totalSize: dataItemSize,
     );
@@ -373,7 +374,7 @@ class UploadPaymentEvaluator {
         dataItem.getSize() <= allowedDataItemSizeForTurbo;
 
     uploadMethod = await _determineUploadMethod(
-      turboBalance,
+      turboBalance.balance,
       dataItemSize,
       dataItemSize,
       _isTurboAvailableToUploadAllFiles,
@@ -399,7 +400,7 @@ class UploadPaymentEvaluator {
 
     int totalSize = 0;
 
-    BigInt turboBalance;
+    TurboBalanceInterface turboBalance;
 
     /// Check the balance of the user
     /// If we can't get the balance, turbo won't be available
@@ -460,7 +461,7 @@ class UploadPaymentEvaluator {
     uploadMethod = isFreeUploadPossibleUsingTurbo
         ? UploadMethod.turbo
         : await _determineUploadMethod(
-            turboBalance,
+            turboBalance.balance,
             turboBundleSizes,
             _appConfig.allowedDataItemSizeForTurbo,
             _isTurboAvailableToUploadAllFiles,
@@ -472,6 +473,8 @@ class UploadPaymentEvaluator {
       totalSize = arBundleSizes + arFileSizes;
     }
 
+    logger.d('Upload payment info prepared with method: $uploadMethod, '
+        'total size: $totalSize, turbo balance: $turboBalance');
     return UploadPaymentInfo(
       isTurboAvailable: _isTurboAvailableToUploadAllFiles,
       defaultPaymentMethod: uploadMethod,
@@ -484,16 +487,20 @@ class UploadPaymentEvaluator {
     );
   }
 
-  Future<BigInt> _getTurboBalance({
+  Future<TurboBalanceInterface> _getTurboBalance({
     required bool canUseTurbo,
   }) async {
     if (!canUseTurbo) {
       _isTurboAvailableToUploadAllFiles = false;
-      return BigInt.zero;
+      return TurboBalanceInterface(
+        balance: BigInt.zero,
+        paidBy: [],
+      );
     }
 
     try {
-      return await _turboBalanceRetriever.getBalance(_auth.currentUser.wallet);
+      return await _turboBalanceRetriever
+          .getBalanceAndPaidBy(_auth.currentUser.wallet);
     } catch (e, stacktrace) {
       logger.e(
         'An error occurred while getting the turbo balance',
@@ -501,7 +508,10 @@ class UploadPaymentEvaluator {
         stacktrace,
       );
       _isTurboAvailableToUploadAllFiles = false;
-      return BigInt.zero;
+      return TurboBalanceInterface(
+        balance: BigInt.zero,
+        paidBy: [],
+      );
     }
   }
 
@@ -556,7 +566,7 @@ class UploadPaymentInfo {
   final UploadCostEstimate arCostEstimate;
   final UploadCostEstimate turboCostEstimate;
   final int totalSize;
-  final BigInt turboBalance;
+  final TurboBalanceInterface turboBalance;
 
   UploadPaymentInfo({
     required this.defaultPaymentMethod,
@@ -628,6 +638,7 @@ class UploadParams {
   final Map<String, WebFolder> foldersByPath;
   final bool containsSupportedImageTypeForThumbnailGeneration;
   final ARNSUndername? arnsUnderName;
+  final List<String>? paidBy;
 
   UploadParams({
     required this.user,
@@ -637,11 +648,13 @@ class UploadParams {
     required this.conflictingFiles,
     required this.foldersByPath,
     required this.containsSupportedImageTypeForThumbnailGeneration,
+    this.paidBy,
     this.arnsUnderName,
   });
 
   UploadParams copyWith({
     ARNSUndername? arnsUnderName,
+    List<String>? paidBy,
   }) {
     return UploadParams(
       user: user,
@@ -653,6 +666,7 @@ class UploadParams {
       containsSupportedImageTypeForThumbnailGeneration:
           containsSupportedImageTypeForThumbnailGeneration,
       arnsUnderName: arnsUnderName,
+      paidBy: paidBy,
     );
   }
 }
