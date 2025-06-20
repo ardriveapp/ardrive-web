@@ -16,6 +16,15 @@ class DriveAttachInProgress extends DriveAttachState {}
 
 class DriveAttachSuccess extends DriveAttachState {}
 
+class DriveAttachSyncing extends DriveAttachState {
+  final bool hasSnapshots;
+  
+  DriveAttachSyncing({this.hasSnapshots = false});
+  
+  @override
+  List<Object> get props => [hasSnapshots];
+}
+
 class DriveAttachFailure extends DriveAttachState {}
 
 class DriveAttachInvalidDriveKey extends DriveAttachState {}

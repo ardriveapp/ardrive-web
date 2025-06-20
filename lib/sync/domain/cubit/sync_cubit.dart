@@ -171,6 +171,64 @@ class SyncCubit extends Cubit<SyncState> {
 
   var ghostFolders = <FolderID, GhostFolder>{};
 
+  Future<void> syncSingleDrive(String driveId) async {
+    logger.i('Starting sync for single drive: $driveId');
+
+    if (state is SyncInProgress) {
+      logger.d('Sync state is SyncInProgress, aborting sync...');
+      return;
+    }
+
+    try {
+      // Don't emit SyncInProgress for single drive sync to avoid modal conflicts
+      // The drive attach process will handle user feedback
+      
+      // Notify prompt to snapshot bloc that sync is starting
+      _promptToSnapshotBloc.add(const SyncRunning(isRunning: true));
+      
+      await for (var progress in _syncRepository.syncDriveById(
+        driveId: driveId,
+        ownerAddress: '', // Will be fetched from the drive in the repository
+        txFechedCallback: (driveId, txCount) {
+          _promptToSnapshotBloc.add(
+            CountSyncedTxs(
+              driveId: driveId,
+              txsSyncedWithGqlCount: txCount,
+              wasDeepSync: false,
+            ),
+          );
+        },
+      )) {
+        // Progress is a double from 0.0 to 1.0
+        logger.d('Sync progress for drive $driveId: ${(progress * 100).toStringAsFixed(2)}%');
+        
+        // Don't emit to syncProgressController to avoid modal conflicts
+        // Single drive sync runs in background without blocking UI
+      }
+
+      logger.i('Single drive sync completed for: $driveId');
+
+      // Refresh balance if user is logged in
+      final profile = _profileCubit.state;
+      if (profile is ProfileLoggedIn) {
+        _profileCubit.refreshBalance();
+      }
+
+      // Notify prompt to snapshot bloc that sync is finished
+      _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
+
+      _lastSync = DateTime.now();
+      // Don't emit SyncIdle since we never emitted SyncInProgress
+    } catch (err, stackTrace) {
+      logger.e('Error syncing single drive', err, stackTrace);
+      
+      // Notify prompt to snapshot bloc that sync is finished (even on error)
+      _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
+      
+      addError(err);
+    }
+  }
+
   Future<void> startSync({bool deepSync = false}) async {
     logger.i('Starting Sync');
 

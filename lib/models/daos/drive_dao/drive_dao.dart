@@ -125,9 +125,23 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     List<DriveRevisionsCompanion> revisions,
   ) async {
     try {
-      await db.batch((b) async {
-        b.insertAllOnConflictUpdate(db.driveRevisions, revisions);
-      });
+      // Process in chunks to avoid memory issues with large datasets
+      const chunkSize = 100;
+      for (var i = 0; i < revisions.length; i += chunkSize) {
+        final end = (i + chunkSize < revisions.length) 
+            ? i + chunkSize 
+            : revisions.length;
+        final chunk = revisions.sublist(i, end);
+        
+        await db.batch((b) async {
+          b.insertAllOnConflictUpdate(db.driveRevisions, chunk);
+        });
+        
+        // Yield control back to the event loop to prevent UI blocking
+        if (i + chunkSize < revisions.length) {
+          await Future.delayed(Duration.zero);
+        }
+      }
     } catch (e) {
       throw _handleError('Error inserting new drive revisions', e);
     }
@@ -137,9 +151,23 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     List<FileRevisionsCompanion> revisions,
   ) async {
     try {
-      await db.batch((b) async {
-        b.insertAllOnConflictUpdate(db.fileRevisions, revisions);
-      });
+      // Process in chunks to avoid memory issues with large datasets
+      const chunkSize = 100;
+      for (var i = 0; i < revisions.length; i += chunkSize) {
+        final end = (i + chunkSize < revisions.length) 
+            ? i + chunkSize 
+            : revisions.length;
+        final chunk = revisions.sublist(i, end);
+        
+        await db.batch((b) async {
+          b.insertAllOnConflictUpdate(db.fileRevisions, chunk);
+        });
+        
+        // Yield control back to the event loop to prevent UI blocking
+        if (i + chunkSize < revisions.length) {
+          await Future.delayed(Duration.zero);
+        }
+      }
     } catch (e) {
       throw _handleError('Error inserting new file revisions', e);
     }
@@ -149,9 +177,23 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     List<FolderRevisionsCompanion> revisions,
   ) async {
     try {
-      await db.batch((b) async {
-        b.insertAllOnConflictUpdate(db.folderRevisions, revisions);
-      });
+      // Process in chunks to avoid memory issues with large datasets
+      const chunkSize = 100;
+      for (var i = 0; i < revisions.length; i += chunkSize) {
+        final end = (i + chunkSize < revisions.length) 
+            ? i + chunkSize 
+            : revisions.length;
+        final chunk = revisions.sublist(i, end);
+        
+        await db.batch((b) async {
+          b.insertAllOnConflictUpdate(db.folderRevisions, chunk);
+        });
+        
+        // Yield control back to the event loop to prevent UI blocking
+        if (i + chunkSize < revisions.length) {
+          await Future.delayed(Duration.zero);
+        }
+      }
     } catch (e) {
       throw _handleError('Error inserting new folder revisions', e);
     }
@@ -161,9 +203,23 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     List<NetworkTransactionsCompanion> transactions,
   ) async {
     try {
-      await db.batch((b) async {
-        b.insertAllOnConflictUpdate(db.networkTransactions, transactions);
-      });
+      // Process in chunks to avoid memory issues with large datasets
+      const chunkSize = 100;
+      for (var i = 0; i < transactions.length; i += chunkSize) {
+        final end = (i + chunkSize < transactions.length) 
+            ? i + chunkSize 
+            : transactions.length;
+        final chunk = transactions.sublist(i, end);
+        
+        await db.batch((b) async {
+          b.insertAllOnConflictUpdate(db.networkTransactions, chunk);
+        });
+        
+        // Yield control back to the event loop to prevent UI blocking
+        if (i + chunkSize < transactions.length) {
+          await Future.delayed(Duration.zero);
+        }
+      }
     } catch (e) {
       throw _handleError('Error inserting new network transactions', e);
     }
@@ -453,25 +509,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     final subfolderQuery = foldersInFolder(
       driveId: driveId,
       parentFolderId: folderId,
-      order: (folderEntries) {
-        return enumToFolderOrderByClause(
-          folderEntries,
-          orderBy,
-          orderingMode,
-        );
-      },
     );
 
     final filesQuery = filesInFolderWithLicenseAndRevisionTransactions(
       driveId: driveId,
       parentFolderId: folderId,
-      order: (fileEntries, _, __, ___) {
-        return enumToFileOrderByClause(
-          fileEntries,
-          orderBy,
-          orderingMode,
-        );
-      },
     );
 
     return Rx.combineLatest3(
