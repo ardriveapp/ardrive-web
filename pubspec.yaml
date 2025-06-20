@@ -69,7 +69,8 @@ dependencies:
   reactive_forms: ^14.1.0
   rxdart: ^0.27.1
   timeago: ^3.1.0
-  url_launcher: ^6.0.6
+  url_launcher: ^6.3.1
+  url_launcher_ios: ^6.3.1
   uuid: ^4.4.0
   flutter_dropzone:
     git:
@@ -94,8 +95,6 @@ dependencies:
   flutter_svg: ^2.0.10+1
   sqlite3_flutter_libs: ^0.5.9
   app_settings: ^4.1.8
-  firebase_crashlytics: ^3.0.4
-  firebase_core: ^2.1.1
   bloc_concurrency: ^0.2.0
   universal_html: ^2.0.8
   local_auth: ^2.1.2
@@ -133,11 +132,8 @@ dependencies:
   loading_animation_widget: ^1.2.0+4
   synchronized: ^3.1.0
   confetti: ^0.7.0
-  flutter_sharing_intent:
-    git:
-      url: https://github.com/bhagat-techind/flutter_sharing_intent
-      ref: 5f4f2e66c02580105ba89b3fec5a7be907d5466f
-  sentry_flutter: ^7.14.0
+  # flutter_sharing_intent: ^1.1.1 // TODO: add back when we have a working share extension
+  sentry_flutter: ^8.14.2
   webthree: ^2.5.7+2
   carousel_slider: ^4.2.1
   dots_indicator: ^3.0.0
