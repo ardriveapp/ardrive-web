@@ -3,13 +3,11 @@ import 'dart:convert';
 import 'package:ardrive/turbo/topup/models/payment_model.dart';
 import 'package:ardrive/turbo/utils/get_signature_headers_for_turbo.dart';
 import 'package:ardrive/utils/logger.dart';
-import 'package:ardrive/utils/turbo_utils.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_logger/ardrive_logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
-import 'package:uuid/uuid.dart';
 
 class TurboBalanceInterface {
   final BigInt balance;
@@ -62,13 +60,8 @@ class PaymentService {
     required String currency,
     String? promoCode,
   }) async {
-    final Map<String, dynamic> signatureHeaders =
-        await turboSignatureHeadersManager.getSignatureHeaders(
-      wallet: wallet,
-    );
     final result = await _requestPriceForFiat(
       httpClient,
-      signatureHeaders: signatureHeaders,
       amount: amount,
       currency: currency,
       turboPaymentUri: turboPaymentUri,
@@ -123,13 +116,7 @@ class PaymentService {
     String currency = 'usd',
     String? promoCode,
   }) async {
-    final nonce = const Uuid().v4();
     final walletAddress = await wallet.getAddress();
-    final publicKey = await wallet.getOwner();
-    final signature = await signNonceAndData(
-      nonce: nonce,
-      wallet: wallet,
-    );
 
     final urlParams = promoCode != null && promoCode.isNotEmpty
         ? '?promoCode=$promoCode'
@@ -138,11 +125,6 @@ class PaymentService {
     final result = await httpClient.get(
       url:
           '$turboPaymentUri/v1/top-up/payment-intent/$walletAddress/$currency/$amount$urlParams',
-      headers: {
-        'x-nonce': nonce,
-        'x-signature': signature,
-        'x-public-key': publicKey,
-      },
     );
 
     return PaymentModel.fromJson(jsonDecode(result.data));
@@ -213,7 +195,6 @@ PriceForFiat _parseHttpResponseForPriceForFiat(
 
 Future<ArDriveHTTPResponse> _requestPriceForFiat(
   ArDriveHTTP httpClient, {
-  required Map<String, dynamic> signatureHeaders,
   required double amount,
   required String currency,
   required Uri turboPaymentUri,
@@ -225,7 +206,6 @@ Future<ArDriveHTTPResponse> _requestPriceForFiat(
   try {
     final result = await httpClient.get(
       url: '$turboPaymentUri/v1/price/$currency/$amount$urlParams',
-      headers: signatureHeaders,
     );
 
     if (!acceptedStatusCodes.contains(result.statusCode)) {
