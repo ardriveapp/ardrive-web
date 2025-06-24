@@ -95,6 +95,12 @@ void main() {
 
       when(() => syncBloc.waitCurrentSync())
           .thenAnswer((_) => Future.value(null));
+      
+      when(() => syncBloc.syncSingleDrive(any()))
+          .thenAnswer((_) => Future.value(null));
+      
+      when(() => arweave.getAllSnapshotsOfDrive(any(), any(), ownerAddress: any(named: 'ownerAddress')))
+          .thenAnswer((_) => Stream.empty());
 
       driveAttachCubit = DriveAttachCubit(
         arweave: arweave,
@@ -117,10 +123,12 @@ void main() {
       },
       expect: () => [
         DriveAttachInProgress(),
+        DriveAttachSyncing(hasSnapshots: false),
         DriveAttachSuccess(),
       ],
+      wait: const Duration(seconds: 3),
       verify: (_) {
-        verify(() => syncBloc.startSync()).called(1);
+        verify(() => syncBloc.syncSingleDrive(validDriveId)).called(1);
         verify(() => drivesBloc.selectDrive(validDriveId)).called(1);
       },
     );
@@ -197,11 +205,12 @@ void main() {
         expect: () => [
           DriveAttachPrivate(),
           DriveAttachInProgress(),
+          DriveAttachSyncing(hasSnapshots: false),
           DriveAttachSuccess(),
         ],
-        wait: const Duration(milliseconds: 1200),
+        wait: const Duration(seconds: 3),
         verify: (_) async {
-          verify(() => syncBloc.startSync()).called(1);
+          verify(() => syncBloc.syncSingleDrive(validPrivateDriveId)).called(1);
           verify(() => drivesBloc.selectDrive(validPrivateDriveId)).called(1);
         },
       );
