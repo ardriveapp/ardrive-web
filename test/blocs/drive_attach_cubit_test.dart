@@ -20,7 +20,6 @@ import '../test_utils/utils.dart';
 
 void main() {
   group('DriveAttachCubit', () {
-    late Database db;
     late ArweaveService arweave;
     late DriveDao driveDao;
     late SyncCubit syncBloc;
@@ -42,14 +41,16 @@ void main() {
     const ownerAddress = 'owner-address';
     const validRootFolderId = 'valid-root-folder-id';
     const notFoundDriveId = 'not-found-drive-id';
-    db = getTestDb();
 
     setUp(() {
       registerFallbackValue(SyncStateFake());
       registerFallbackValue(ProfileStateFake());
       registerFallbackValue(DrivesStateFake());
+      registerFallbackValue(FakeDriveEntity());
+      registerFallbackValue(FakeDriveKey());
+      registerFallbackValue(FakeSecretKey());
 
-      driveDao = db.driveDao;
+      driveDao = MockDriveDao();
 
       arweave = MockArweaveService();
       syncBloc = MockSyncBloc();
@@ -100,7 +101,14 @@ void main() {
           .thenAnswer((_) => Future.value(null));
       
       when(() => arweave.getAllSnapshotsOfDrive(any(), any(), ownerAddress: any(named: 'ownerAddress')))
-          .thenAnswer((_) => Stream.empty());
+          .thenAnswer((_) => const Stream.empty());
+      
+      when(() => driveDao.writeDriveEntity(
+        name: any(named: 'name'),
+        entity: any(named: 'entity'),
+        driveKey: any(named: 'driveKey'),
+        profileKey: any(named: 'profileKey'),
+      )).thenAnswer((_) => Future.value());
 
       driveAttachCubit = DriveAttachCubit(
         arweave: arweave,
