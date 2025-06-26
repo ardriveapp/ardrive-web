@@ -49,7 +49,8 @@ void main() async {
 
       when(
         () => httpClient.get(
-          url: '$fakeUrl/v1/price/$currency/$amount',
+          url:
+              '$fakeUrl/v1/price/$currency/$amount?destinationAddress=$walletAddress',
           headers: any(named: 'headers'),
         ),
       ).thenAnswer(
@@ -91,7 +92,7 @@ void main() async {
       when(
         () => httpClient.get(
           url:
-              '$fakeUrl/v1/top-up/payment-intent/$walletAddress/$currency/$amount',
+              '$fakeUrl/v1/top-up/payment-intent/$walletAddress/$currency/$amount?destinationAddress=$walletAddress',
           headers: any(named: 'headers'),
         ),
       ).thenAnswer(
@@ -106,7 +107,7 @@ void main() async {
       when(
         () => httpClient.get(
           url:
-              '$fakeUrl/v1/top-up/payment-intent/$walletAddress/$currency/$amount?promoCode=$fakePromoCode',
+              '$fakeUrl/v1/top-up/payment-intent/$walletAddress/$currency/$amount?promoCode=$fakePromoCode&destinationAddress=$walletAddress',
           headers: any(named: 'headers'),
         ),
       ).thenAnswer(
@@ -195,7 +196,8 @@ void main() async {
           () async {
         when(
           () => httpClient.get(
-            url: '$fakeUrl/v1/price/$currency/$amount?promoCode=$fakePromoCode',
+            url:
+                '$fakeUrl/v1/price/$currency/$amount?promoCode=$fakePromoCode&destinationAddress=$walletAddress',
             headers: any(named: 'headers'),
           ),
         ).thenThrow(
@@ -384,7 +386,7 @@ void main() async {
         when(
           () => httpClient.get(
             url:
-                '$fakeUrl/v1/top-up/payment-intent/$walletAddress/$currency/$amount?promoCode=$fakePromoCode',
+                '$fakeUrl/v1/top-up/payment-intent/$walletAddress/$currency/$amount?promoCode=$fakePromoCode&destinationAddress=$walletAddress',
             headers: any(named: 'headers'),
           ),
         ).thenThrow(
