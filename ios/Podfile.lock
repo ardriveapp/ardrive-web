@@ -5,38 +5,38 @@ PODS:
     - Flutter
   - connectivity_plus (0.0.1):
     - Flutter
-    - ReachabilitySwift
+    - FlutterMacOS
   - device_info_plus (0.0.1):
     - Flutter
-  - DKImagePickerController/Core (4.3.4):
+  - DKImagePickerController/Core (4.3.9):
     - DKImagePickerController/ImageDataManager
     - DKImagePickerController/Resource
-  - DKImagePickerController/ImageDataManager (4.3.4)
-  - DKImagePickerController/PhotoGallery (4.3.4):
+  - DKImagePickerController/ImageDataManager (4.3.9)
+  - DKImagePickerController/PhotoGallery (4.3.9):
     - DKImagePickerController/Core
     - DKPhotoGallery
-  - DKImagePickerController/Resource (4.3.4)
-  - DKPhotoGallery (0.0.17):
-    - DKPhotoGallery/Core (= 0.0.17)
-    - DKPhotoGallery/Model (= 0.0.17)
-    - DKPhotoGallery/Preview (= 0.0.17)
-    - DKPhotoGallery/Resource (= 0.0.17)
+  - DKImagePickerController/Resource (4.3.9)
+  - DKPhotoGallery (0.0.19):
+    - DKPhotoGallery/Core (= 0.0.19)
+    - DKPhotoGallery/Model (= 0.0.19)
+    - DKPhotoGallery/Preview (= 0.0.19)
+    - DKPhotoGallery/Resource (= 0.0.19)
     - SDWebImage
     - SwiftyGif
-  - DKPhotoGallery/Core (0.0.17):
+  - DKPhotoGallery/Core (0.0.19):
     - DKPhotoGallery/Model
     - DKPhotoGallery/Preview
     - SDWebImage
     - SwiftyGif
-  - DKPhotoGallery/Model (0.0.17):
+  - DKPhotoGallery/Model (0.0.19):
     - SDWebImage
     - SwiftyGif
-  - DKPhotoGallery/Preview (0.0.17):
+  - DKPhotoGallery/Preview (0.0.19):
     - DKPhotoGallery/Model
     - DKPhotoGallery/Resource
     - SDWebImage
     - SwiftyGif
-  - DKPhotoGallery/Resource (0.0.17):
+  - DKPhotoGallery/Resource (0.0.19):
     - SDWebImage
     - SwiftyGif
   - file_picker (0.0.1):
@@ -46,99 +46,133 @@ PODS:
     - Flutter
   - file_selector_ios (0.0.1):
     - Flutter
-  - Firebase/CoreOnly (10.15.0):
-    - FirebaseCore (= 10.15.0)
-  - Firebase/Crashlytics (10.15.0):
+  - Firebase/CoreOnly (10.24.0):
+    - FirebaseCore (= 10.24.0)
+  - Firebase/Crashlytics (10.24.0):
     - Firebase/CoreOnly
-    - FirebaseCrashlytics (~> 10.15.0)
-  - firebase_core (2.17.0):
-    - Firebase/CoreOnly (= 10.15.0)
+    - FirebaseCrashlytics (~> 10.24.0)
+  - firebase_core (2.30.0):
+    - Firebase/CoreOnly (= 10.24.0)
     - Flutter
-  - firebase_crashlytics (3.3.7):
-    - Firebase/Crashlytics (= 10.15.0)
+  - firebase_crashlytics (3.5.2):
+    - Firebase/Crashlytics (= 10.24.0)
     - firebase_core
     - Flutter
-  - FirebaseCore (10.15.0):
+  - FirebaseCore (10.24.0):
     - FirebaseCoreInternal (~> 10.0)
-    - GoogleUtilities/Environment (~> 7.8)
-    - GoogleUtilities/Logger (~> 7.8)
-  - FirebaseCoreExtension (10.19.0):
+    - GoogleUtilities/Environment (~> 7.12)
+    - GoogleUtilities/Logger (~> 7.12)
+  - FirebaseCoreExtension (10.29.0):
     - FirebaseCore (~> 10.0)
-  - FirebaseCoreInternal (10.19.0):
+  - FirebaseCoreInternal (10.29.0):
     - "GoogleUtilities/NSData+zlib (~> 7.8)"
-  - FirebaseCrashlytics (10.15.0):
+  - FirebaseCrashlytics (10.24.0):
     - FirebaseCore (~> 10.5)
     - FirebaseInstallations (~> 10.0)
+    - FirebaseRemoteConfigInterop (~> 10.23)
     - FirebaseSessions (~> 10.5)
     - GoogleDataTransport (~> 9.2)
     - GoogleUtilities/Environment (~> 7.8)
-    - nanopb (< 2.30910.0, >= 2.30908.0)
+    - nanopb (< 2.30911.0, >= 2.30908.0)
     - PromisesObjC (~> 2.1)
-  - FirebaseInstallations (10.19.0):
+  - FirebaseInstallations (10.29.0):
     - FirebaseCore (~> 10.0)
     - GoogleUtilities/Environment (~> 7.8)
     - GoogleUtilities/UserDefaults (~> 7.8)
     - PromisesObjC (~> 2.1)
-  - FirebaseSessions (10.19.0):
+  - FirebaseRemoteConfigInterop (10.29.0)
+  - FirebaseSessions (10.29.0):
     - FirebaseCore (~> 10.5)
     - FirebaseCoreExtension (~> 10.0)
     - FirebaseInstallations (~> 10.0)
     - GoogleDataTransport (~> 9.2)
-    - GoogleUtilities/Environment (~> 7.10)
-    - nanopb (< 2.30910.0, >= 2.30908.0)
+    - GoogleUtilities/Environment (~> 7.13)
+    - GoogleUtilities/UserDefaults (~> 7.13)
+    - nanopb (< 2.30911.0, >= 2.30908.0)
     - PromisesSwift (~> 2.1)
   - Flutter (1.0.0)
   - flutter_downloader (0.0.1):
     - Flutter
   - flutter_email_sender (0.0.1):
     - Flutter
+  - flutter_image_compress_common (1.0.0):
+    - Flutter
+    - Mantle
+    - SDWebImage
+    - SDWebImageWebPCoder
   - flutter_secure_storage (6.0.0):
     - Flutter
   - flutter_sharing_intent (0.0.1):
     - Flutter
-  - FMDB (2.7.5):
-    - FMDB/standard (= 2.7.5)
-  - FMDB/standard (2.7.5)
-  - GoogleDataTransport (9.3.0):
+  - GoogleDataTransport (9.4.1):
     - GoogleUtilities/Environment (~> 7.7)
-    - nanopb (< 2.30910.0, >= 2.30908.0)
+    - nanopb (< 2.30911.0, >= 2.30908.0)
     - PromisesObjC (< 3.0, >= 1.2)
-  - GoogleUtilities/Environment (7.12.0):
+  - GoogleUtilities/Environment (7.13.3):
+    - GoogleUtilities/Privacy
     - PromisesObjC (< 3.0, >= 1.2)
-  - GoogleUtilities/Logger (7.12.0):
+  - GoogleUtilities/Logger (7.13.3):
     - GoogleUtilities/Environment
-  - "GoogleUtilities/NSData+zlib (7.12.0)"
-  - GoogleUtilities/UserDefaults (7.12.0):
+    - GoogleUtilities/Privacy
+  - "GoogleUtilities/NSData+zlib (7.13.3)":
+    - GoogleUtilities/Privacy
+  - GoogleUtilities/Privacy (7.13.3)
+  - GoogleUtilities/UserDefaults (7.13.3):
     - GoogleUtilities/Logger
+    - GoogleUtilities/Privacy
   - image_picker_ios (0.0.1):
     - Flutter
   - integration_test (0.0.1):
     - Flutter
   - just_audio (0.0.1):
     - Flutter
-  - local_auth_ios (0.0.1):
+  - libwebp (1.5.0):
+    - libwebp/demux (= 1.5.0)
+    - libwebp/mux (= 1.5.0)
+    - libwebp/sharpyuv (= 1.5.0)
+    - libwebp/webp (= 1.5.0)
+  - libwebp/demux (1.5.0):
+    - libwebp/webp
+  - libwebp/mux (1.5.0):
+    - libwebp/demux
+  - libwebp/sharpyuv (1.5.0)
+  - libwebp/webp (1.5.0):
+    - libwebp/sharpyuv
+  - local_auth_darwin (0.0.1):
     - Flutter
-  - nanopb (2.30909.1):
-    - nanopb/decode (= 2.30909.1)
-    - nanopb/encode (= 2.30909.1)
-  - nanopb/decode (2.30909.1)
-  - nanopb/encode (2.30909.1)
+  - Mantle (2.2.0):
+    - Mantle/extobjc (= 2.2.0)
+  - Mantle/extobjc (2.2.0)
+  - nanopb (2.30910.0):
+    - nanopb/decode (= 2.30910.0)
+    - nanopb/encode (= 2.30910.0)
+  - nanopb/decode (2.30910.0)
+  - nanopb/encode (2.30910.0)
   - package_info_plus (0.4.5):
     - Flutter
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
-  - permission_handler_apple (9.1.1):
+  - permission_handler_apple (9.3.0):
     - Flutter
-  - PromisesObjC (2.3.1)
-  - PromisesSwift (2.3.1):
-    - PromisesObjC (= 2.3.1)
-  - ReachabilitySwift (5.0.0)
-  - SDWebImage (5.18.7):
-    - SDWebImage/Core (= 5.18.7)
-  - SDWebImage/Core (5.18.7)
+  - PromisesObjC (2.4.0)
+  - PromisesSwift (2.4.0):
+    - PromisesObjC (= 2.4.0)
+  - SDWebImage (5.21.0):
+    - SDWebImage/Core (= 5.21.0)
+  - SDWebImage/Core (5.21.0)
+  - SDWebImageWebPCoder (0.14.6):
+    - libwebp (~> 1.0)
+    - SDWebImage/Core (~> 5.17)
   - security_scoped_resource (0.0.1):
     - Flutter
+  - Sentry/HybridSDK (8.21.0):
+    - SentryPrivate (= 8.21.0)
+  - sentry_flutter (7.19.0):
+    - Flutter
+    - FlutterMacOS
+    - Sentry/HybridSDK (= 8.21.0)
+  - SentryPrivate (8.21.0)
   - share_plus (0.0.1):
     - Flutter
   - shared_preferences_foundation (0.0.1):
@@ -146,61 +180,62 @@ PODS:
     - FlutterMacOS
   - sqflite (0.0.3):
     - Flutter
-    - FMDB (>= 2.7.5)
-  - sqlite3 (3.43.1):
-    - sqlite3/common (= 3.43.1)
-  - sqlite3/common (3.43.1)
-  - sqlite3/fts5 (3.43.1):
+    - FlutterMacOS
+  - sqlite3 (3.39.4):
+    - sqlite3/common (= 3.39.4)
+  - sqlite3/common (3.39.4)
+  - sqlite3/fts5 (3.39.4):
     - sqlite3/common
-  - sqlite3/perf-threadsafe (3.43.1):
+  - sqlite3/json1 (3.39.4):
     - sqlite3/common
-  - sqlite3/rtree (3.43.1):
+  - sqlite3/perf-threadsafe (3.39.4):
+    - sqlite3/common
+  - sqlite3/rtree (3.39.4):
     - sqlite3/common
   - sqlite3_flutter_libs (0.0.1):
     - Flutter
-    - sqlite3 (~> 3.43.1)
+    - sqlite3 (~> 3.39.2)
     - sqlite3/fts5
+    - sqlite3/json1
     - sqlite3/perf-threadsafe
     - sqlite3/rtree
-  - Stripe (23.12.0):
-    - StripeApplePay (= 23.12.0)
-    - StripeCore (= 23.12.0)
-    - StripePayments (= 23.12.0)
-    - StripePaymentsUI (= 23.12.0)
-    - StripeUICore (= 23.12.0)
+  - Stripe (23.18.3):
+    - StripeApplePay (= 23.18.3)
+    - StripeCore (= 23.18.3)
+    - StripePayments (= 23.18.3)
+    - StripePaymentsUI (= 23.18.3)
+    - StripeUICore (= 23.18.3)
   - stripe_ios (0.0.1):
     - Flutter
-    - Stripe (~> 23.12.0)
-    - StripeApplePay (~> 23.12.0)
-    - StripeFinancialConnections (~> 23.12.0)
-    - StripePayments (~> 23.12.0)
-    - StripePaymentSheet (~> 23.12.0)
-    - StripePaymentsUI (~> 23.12.0)
-  - StripeApplePay (23.12.0):
-    - StripeCore (= 23.12.0)
-  - StripeCore (23.12.0)
-  - StripeFinancialConnections (23.12.0):
-    - StripeCore (= 23.12.0)
-    - StripeUICore (= 23.12.0)
-  - StripePayments (23.12.0):
-    - StripeCore (= 23.12.0)
-    - StripePayments/Stripe3DS2 (= 23.12.0)
-  - StripePayments/Stripe3DS2 (23.12.0):
-    - StripeCore (= 23.12.0)
-  - StripePaymentSheet (23.12.0):
-    - StripeApplePay (= 23.12.0)
-    - StripeCore (= 23.12.0)
-    - StripePayments (= 23.12.0)
-    - StripePaymentsUI (= 23.12.0)
-  - StripePaymentsUI (23.12.0):
-    - StripeCore (= 23.12.0)
-    - StripePayments (= 23.12.0)
-    - StripeUICore (= 23.12.0)
-  - StripeUICore (23.12.0):
-    - StripeCore (= 23.12.0)
-  - SwiftyGif (5.4.4)
-  - system_info_plus (0.0.1):
-    - Flutter
+    - Stripe (~> 23.18.0)
+    - StripeApplePay (~> 23.18.0)
+    - StripeFinancialConnections (~> 23.18.0)
+    - StripePayments (~> 23.18.0)
+    - StripePaymentSheet (~> 23.18.0)
+    - StripePaymentsUI (~> 23.18.0)
+  - StripeApplePay (23.18.3):
+    - StripeCore (= 23.18.3)
+  - StripeCore (23.18.3)
+  - StripeFinancialConnections (23.18.3):
+    - StripeCore (= 23.18.3)
+    - StripeUICore (= 23.18.3)
+  - StripePayments (23.18.3):
+    - StripeCore (= 23.18.3)
+    - StripePayments/Stripe3DS2 (= 23.18.3)
+  - StripePayments/Stripe3DS2 (23.18.3):
+    - StripeCore (= 23.18.3)
+  - StripePaymentSheet (23.18.3):
+    - StripeApplePay (= 23.18.3)
+    - StripeCore (= 23.18.3)
+    - StripePayments (= 23.18.3)
+    - StripePaymentsUI (= 23.18.3)
+  - StripePaymentsUI (23.18.3):
+    - StripeCore (= 23.18.3)
+    - StripePayments (= 23.18.3)
+    - StripeUICore (= 23.18.3)
+  - StripeUICore (23.18.3):
+    - StripeCore (= 23.18.3)
+  - SwiftyGif (5.4.5)
   - url_launcher_ios (0.0.1):
     - Flutter
   - video_player_avfoundation (0.0.1):
@@ -208,11 +243,12 @@ PODS:
     - FlutterMacOS
   - webcrypto (0.1.1):
     - Flutter
+    - FlutterMacOS
 
 DEPENDENCIES:
   - app_settings (from `.symlinks/plugins/app_settings/ios`)
   - audio_session (from `.symlinks/plugins/audio_session/ios`)
-  - connectivity_plus (from `.symlinks/plugins/connectivity_plus/ios`)
+  - connectivity_plus (from `.symlinks/plugins/connectivity_plus/darwin`)
   - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - file_picker (from `.symlinks/plugins/file_picker/ios`)
   - file_saver (from `.symlinks/plugins/file_saver/ios`)
@@ -222,25 +258,26 @@ DEPENDENCIES:
   - Flutter (from `Flutter`)
   - flutter_downloader (from `.symlinks/plugins/flutter_downloader/ios`)
   - flutter_email_sender (from `.symlinks/plugins/flutter_email_sender/ios`)
+  - flutter_image_compress_common (from `.symlinks/plugins/flutter_image_compress_common/ios`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
   - flutter_sharing_intent (from `.symlinks/plugins/flutter_sharing_intent/ios`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
   - just_audio (from `.symlinks/plugins/just_audio/ios`)
-  - local_auth_ios (from `.symlinks/plugins/local_auth_ios/ios`)
+  - local_auth_darwin (from `.symlinks/plugins/local_auth_darwin/darwin`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - security_scoped_resource (from `.symlinks/plugins/security_scoped_resource/ios`)
+  - sentry_flutter (from `.symlinks/plugins/sentry_flutter/ios`)
   - share_plus (from `.symlinks/plugins/share_plus/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
-  - sqflite (from `.symlinks/plugins/sqflite/ios`)
+  - sqflite (from `.symlinks/plugins/sqflite/darwin`)
   - sqlite3_flutter_libs (from `.symlinks/plugins/sqlite3_flutter_libs/ios`)
   - stripe_ios (from `.symlinks/plugins/stripe_ios/ios`)
-  - system_info_plus (from `.symlinks/plugins/system_info_plus/ios`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
   - video_player_avfoundation (from `.symlinks/plugins/video_player_avfoundation/darwin`)
-  - webcrypto (from `.symlinks/plugins/webcrypto/ios`)
+  - webcrypto (from `.symlinks/plugins/webcrypto/darwin`)
 
 SPEC REPOS:
   trunk:
@@ -252,15 +289,19 @@ SPEC REPOS:
     - FirebaseCoreInternal
     - FirebaseCrashlytics
     - FirebaseInstallations
+    - FirebaseRemoteConfigInterop
     - FirebaseSessions
-    - FMDB
     - GoogleDataTransport
     - GoogleUtilities
+    - libwebp
+    - Mantle
     - nanopb
     - PromisesObjC
     - PromisesSwift
-    - ReachabilitySwift
     - SDWebImage
+    - SDWebImageWebPCoder
+    - Sentry
+    - SentryPrivate
     - sqlite3
     - Stripe
     - StripeApplePay
@@ -278,7 +319,7 @@ EXTERNAL SOURCES:
   audio_session:
     :path: ".symlinks/plugins/audio_session/ios"
   connectivity_plus:
-    :path: ".symlinks/plugins/connectivity_plus/ios"
+    :path: ".symlinks/plugins/connectivity_plus/darwin"
   device_info_plus:
     :path: ".symlinks/plugins/device_info_plus/ios"
   file_picker:
@@ -297,6 +338,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_downloader/ios"
   flutter_email_sender:
     :path: ".symlinks/plugins/flutter_email_sender/ios"
+  flutter_image_compress_common:
+    :path: ".symlinks/plugins/flutter_image_compress_common/ios"
   flutter_secure_storage:
     :path: ".symlinks/plugins/flutter_secure_storage/ios"
   flutter_sharing_intent:
@@ -307,8 +350,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/integration_test/ios"
   just_audio:
     :path: ".symlinks/plugins/just_audio/ios"
-  local_auth_ios:
-    :path: ".symlinks/plugins/local_auth_ios/ios"
+  local_auth_darwin:
+    :path: ".symlinks/plugins/local_auth_darwin/darwin"
   package_info_plus:
     :path: ".symlinks/plugins/package_info_plus/ios"
   path_provider_foundation:
@@ -317,85 +360,90 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
   security_scoped_resource:
     :path: ".symlinks/plugins/security_scoped_resource/ios"
+  sentry_flutter:
+    :path: ".symlinks/plugins/sentry_flutter/ios"
   share_plus:
     :path: ".symlinks/plugins/share_plus/ios"
   shared_preferences_foundation:
     :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
   sqflite:
-    :path: ".symlinks/plugins/sqflite/ios"
+    :path: ".symlinks/plugins/sqflite/darwin"
   sqlite3_flutter_libs:
     :path: ".symlinks/plugins/sqlite3_flutter_libs/ios"
   stripe_ios:
     :path: ".symlinks/plugins/stripe_ios/ios"
-  system_info_plus:
-    :path: ".symlinks/plugins/system_info_plus/ios"
   url_launcher_ios:
     :path: ".symlinks/plugins/url_launcher_ios/ios"
   video_player_avfoundation:
     :path: ".symlinks/plugins/video_player_avfoundation/darwin"
   webcrypto:
-    :path: ".symlinks/plugins/webcrypto/ios"
+    :path: ".symlinks/plugins/webcrypto/darwin"
 
 SPEC CHECKSUMS:
-  app_settings: 54b8813f690b34f757c0bf97a46637bed5acc76c
-  audio_session: 4f3e461722055d21515cf3261b64c973c062f345
-  connectivity_plus: 07c49e96d7fc92bc9920617b83238c4d178b446a
-  device_info_plus: 7545d84d8d1b896cb16a4ff98c19f07ec4b298ea
-  DKImagePickerController: b512c28220a2b8ac7419f21c491fc8534b7601ac
-  DKPhotoGallery: fdfad5125a9fdda9cc57df834d49df790dbb4179
-  file_picker: ce3938a0df3cc1ef404671531facef740d03f920
-  file_saver: 503e386464dbe118f630e17b4c2e1190fa0cf808
-  file_selector_ios: 8c25d700d625e1dcdd6599f2d927072f2254647b
-  Firebase: 66043bd4579e5b73811f96829c694c7af8d67435
-  firebase_core: 28e84c2a4fcf6a50ef83f47b145ded8c1fa331e4
-  firebase_crashlytics: 36b8a72e23437dbb69bd97102661ce31b6721be5
-  FirebaseCore: 2cec518b43635f96afe7ac3a9c513e47558abd2e
-  FirebaseCoreExtension: c08d14c7b22e07994e876d837e6f58642f340087
-  FirebaseCoreInternal: b444828ea7cfd594fca83046b95db98a2be4f290
-  FirebaseCrashlytics: a83f26fb922a3fe181eb738fb4dcf0c92bba6455
-  FirebaseInstallations: 033d199474164db20c8350736842a94fe717b960
-  FirebaseSessions: e5f4caa188dc8bc6142abc974355be75b042215e
-  Flutter: f04841e97a9d0b0a8025694d0796dd46242b2854
-  flutter_downloader: b7301ae057deadd4b1650dc7c05375f10ff12c39
-  flutter_email_sender: 02d7443217d8c41483223627972bfdc09f74276b
-  flutter_secure_storage: 23fc622d89d073675f2eaa109381aefbcf5a49be
-  flutter_sharing_intent: e35380d0e1501d7111dbb7e46d5ac6339da6da98
-  FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
-  GoogleDataTransport: 57c22343ab29bc686febbf7cbb13bad167c2d8fe
-  GoogleUtilities: 0759d1a57ebb953965c2dfe0ba4c82e95ccc2e34
-  image_picker_ios: 4a8aadfbb6dc30ad5141a2ce3832af9214a705b5
-  integration_test: 13825b8a9334a850581300559b8839134b124670
-  just_audio: baa7252489dbcf47a4c7cc9ca663e9661c99aafa
-  local_auth_ios: c6cf091ded637a88f24f86a8875d8b0f526e2605
-  nanopb: d4d75c12cd1316f4a64e3c6963f879ecd4b5e0d5
-  package_info_plus: fd030dabf36271f146f1f3beacd48f564b0f17f7
-  path_provider_foundation: 29f094ae23ebbca9d3d0cec13889cd9060c0e943
-  permission_handler_apple: e76247795d700c14ea09e3a2d8855d41ee80a2e6
-  PromisesObjC: c50d2056b5253dadbd6c2bea79b0674bd5a52fa4
-  PromisesSwift: 28dca69a9c40779916ac2d6985a0192a5cb4a265
-  ReachabilitySwift: 985039c6f7b23a1da463388634119492ff86c825
-  SDWebImage: f9258c58221ed854cfa0e2b80ee4033710b1c6d3
-  security_scoped_resource: ff26d31a9c6de0e45e5e8e0d7f43f3da0a1c6444
-  share_plus: 599aa54e4ea31d4b4c0e9c911bcc26c55e791028
-  shared_preferences_foundation: 5b919d13b803cadd15ed2dc053125c68730e5126
-  sqflite: 31f7eba61e3074736dff8807a9b41581e4f7f15a
-  sqlite3: e0a0623a33a20a47cb5921552aebc6e9e437dc91
-  sqlite3_flutter_libs: 0d61e18fab1bed977dbd2d2fc76a726044ca00e7
-  Stripe: 15fad81ffb8d553d77ff504a6d50d47b9028bed0
-  stripe_ios: 872ce75ce051b4070d061a185c8b7b67323c9f30
-  StripeApplePay: 871274acfa7a96650ea8a697c288c54b8288fb6e
-  StripeCore: 7b08fd286e8f8f5336eb725bc7ed1d2a4705cdc4
-  StripeFinancialConnections: 561831507db3d383be3933a3979f1b9d287a15e7
-  StripePayments: 081e01e73762852ccf3e662202d5dd4107634058
-  StripePaymentSheet: ec04397e9223c86a87be8b348cdbcf2075dd7a16
-  StripePaymentsUI: 3dae7fed9b148b2749dff622ece45f9b441b88ce
-  StripeUICore: 4a76fa59cab679e1b2fe1ad37d6b08c5bf2ada54
-  SwiftyGif: 93a1cc87bf3a51916001cf8f3d63835fb64c819f
-  system_info_plus: 5393c8da281d899950d751713575fbf91c7709aa
-  url_launcher_ios: 08a3dfac5fb39e8759aeb0abbd5d9480f30fc8b4
-  video_player_avfoundation: 8563f13d8fc8b2c29dc2d09e60b660e4e8128837
-  webcrypto: 58dac29c85327d3d72a47d19d44128f10905f58e
+  app_settings: d6964a0a14c3a12f8e9378885c6aca5aa1d60927
+  audio_session: f08db0697111ac84ba46191b55488c0563bb29c6
+  connectivity_plus: 3f6c9057f4cd64198dc826edfb0542892f825343
+  device_info_plus: 335f3ce08d2e174b9fdc3db3db0f4e3b1f66bd89
+  DKImagePickerController: 946cec48c7873164274ecc4624d19e3da4c1ef3c
+  DKPhotoGallery: b3834fecb755ee09a593d7c9e389d8b5d6deed60
+  file_picker: 5f42b9d5580e30b57b4863f9d94b448016b702e5
+  file_saver: 6cdbcddd690cb02b0c1a0c225b37cd805c2bf8b6
+  file_selector_ios: f92e583d43608aebc2e4a18daac30b8902845502
+  Firebase: 91fefd38712feb9186ea8996af6cbdef41473442
+  firebase_core: 0559c0a77072c773b7da2ef3fcc38f328dc60fea
+  firebase_crashlytics: 671c281d4ba302d219c193d2a04e003176506120
+  FirebaseCore: 11dc8a16dfb7c5e3c3f45ba0e191a33ac4f50894
+  FirebaseCoreExtension: 705ca5b14bf71d2564a0ddc677df1fc86ffa600f
+  FirebaseCoreInternal: df84dd300b561c27d5571684f389bf60b0a5c934
+  FirebaseCrashlytics: af38ea4adfa606f6e63fcc22091b61e7938fcf66
+  FirebaseInstallations: 913cf60d0400ebd5d6b63a28b290372ab44590dd
+  FirebaseRemoteConfigInterop: 6efda51fb5e2f15b16585197e26eaa09574e8a4d
+  FirebaseSessions: dbd14adac65ce996228652c1fc3a3f576bdf3ecc
+  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  flutter_downloader: 78da0da1084e709cbfd3b723c7ea349c71681f09
+  flutter_email_sender: 2397f5e84aaacfb61af569637a963e7c687858d8
+  flutter_image_compress_common: 1697a328fd72bfb335507c6bca1a65fa5ad87df1
+  flutter_secure_storage: 2c2ff13db9e0a5647389bff88b0ecac56e3f3418
+  flutter_sharing_intent: afdc98985814d2c01d8c0956a177d6b6dfbdc373
+  GoogleDataTransport: 6c09b596d841063d76d4288cc2d2f42cc36e1e2a
+  GoogleUtilities: ea963c370a38a8069cc5f7ba4ca849a60b6d7d15
+  image_picker_ios: 7fe1ff8e34c1790d6fff70a32484959f563a928a
+  integration_test: d5929033778cc4991a187e4e1a85396fa4f59b3a
+  just_audio: 6c031bb61297cf218b4462be616638e81c058e97
+  libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
+  local_auth_darwin: e352bf1b2ffd69411cbf96c113744c9a59a30f32
+  Mantle: c5aa8794a29a022dfbbfc9799af95f477a69b62d
+  nanopb: 438bc412db1928dac798aa6fd75726007be04262
+  package_info_plus: 566e1b7a2f3900e4b0020914ad3fc051dcc95596
+  path_provider_foundation: 608fcb11be570ce83519b076ab6a1fffe2474f05
+  permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
+  PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
+  PromisesSwift: 9d77319bbe72ebf6d872900551f7eeba9bce2851
+  SDWebImage: f84b0feeb08d2d11e6a9b843cb06d75ebf5b8868
+  SDWebImageWebPCoder: e38c0a70396191361d60c092933e22c20d5b1380
+  security_scoped_resource: 8b95b9c0e93ae4e03b60e9b6be9c2d61e3751ec1
+  Sentry: ebc12276bd17613a114ab359074096b6b3725203
+  sentry_flutter: a5e7204f202fba366ebc342ce6fc00f93d887a81
+  SentryPrivate: d651efb234cf385ec9a1cdd3eff94b5e78a0e0fe
+  share_plus: de6030e33b4e106470e09322d87cf2a4258d2d1d
+  shared_preferences_foundation: 0b09b969fb36da5551c0bc4a2dbd9d0ff9387478
+  sqflite: c35dad70033b8862124f8337cc994a809fcd9fa3
+  sqlite3: 401936402fe5aa242c07f87fccfee5fc2b606f45
+  sqlite3_flutter_libs: 0968395f0ba2010e3888f93dc18eb22fc14213a9
+  Stripe: e046335ab6e3f25d39f1a55bd98620a85269cffa
+  stripe_ios: 5d662b18a55cb206e057eb19d04d562f401a865f
+  StripeApplePay: 1aa77f8ec7a6d9463fa8f49ae0672fe59dbf4c73
+  StripeCore: fe10c34fb3c9ae18b986913f7e4460e7c653ce93
+  StripeFinancialConnections: 6022426894046f26fe21d348da02d83d8a637fb0
+  StripePayments: 7084fed30c5f03f15ae23c5dce63715ba0b53e15
+  StripePaymentSheet: c8d25d4133476c6238d3cc932fb8219bb5ea49c0
+  StripePaymentsUI: c12de264eda974d91e43a769f53a6c6afc9a1715
+  StripeUICore: 090c4fe916d039616ce8f8de30392f4aeb33dd16
+  SwiftyGif: 706c60cf65fa2bc5ee0313beece843c8eb8194d4
+  url_launcher_ios: c14c42eb16c26cfb6c43c2e40ce35a4085431791
+  video_player_avfoundation: d8a6ee3315d903ee946db5087da809f3f73b3f48
+  webcrypto: 76733811dbc9795c24c7fa63bd38d4c6bee67350
 
-PODFILE CHECKSUM: a53104172c70845ea00f443ee40dc85202454329
+PODFILE CHECKSUM: d7f9700811bf1fac44776c51722e6a358befd864
 
-COCOAPODS: 1.13.0
+COCOAPODS: 1.12.1

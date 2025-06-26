@@ -63,8 +63,6 @@ jobs:
           single-commit: true
 
   build-ios:
-    # skipped for now
-    if: false
     needs: pre-build
     runs-on: macos-latest
     steps:
