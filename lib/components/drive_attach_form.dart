@@ -120,6 +120,42 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
           );
         }
 
+        if (state is DriveAttachSyncing) {
+          return ArDriveStandardModalNew(
+            hasCloseButton: true,
+            title: 'Syncing drive...',
+            content: SizedBox(
+              width: kMediumDialogWidth,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 16),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 24),
+                  Text(
+                    state.hasSnapshots
+                        ? 'Snapshots detected! Using optimized sync...\n\nThis should be quick!'
+                        : 'Please wait while we sync the drive contents.\n\nThis may take a moment for large drives.',
+                    textAlign: TextAlign.center,
+                    style: ArDriveTypography.body.bodyRegular(),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'You can close this modal and continue using ArDrive.\nThe sync will continue in the background.',
+                    textAlign: TextAlign.center,
+                    style: ArDriveTypography.body.smallRegular(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgSubtle,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
         return ArDriveStandardModalNew(
           title: appLocalizationsOf(context).attachDriveEmphasized,
           content: SizedBox(

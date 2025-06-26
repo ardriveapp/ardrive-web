@@ -20,7 +20,6 @@ import '../test_utils/utils.dart';
 
 void main() {
   group('DriveAttachCubit', () {
-    late Database db;
     late ArweaveService arweave;
     late DriveDao driveDao;
     late SyncCubit syncBloc;
@@ -42,14 +41,16 @@ void main() {
     const ownerAddress = 'owner-address';
     const validRootFolderId = 'valid-root-folder-id';
     const notFoundDriveId = 'not-found-drive-id';
-    db = getTestDb();
 
     setUp(() {
       registerFallbackValue(SyncStateFake());
       registerFallbackValue(ProfileStateFake());
       registerFallbackValue(DrivesStateFake());
+      registerFallbackValue(FakeDriveEntity());
+      registerFallbackValue(FakeDriveKey());
+      registerFallbackValue(FakeSecretKey());
 
-      driveDao = db.driveDao;
+      driveDao = MockDriveDao();
 
       arweave = MockArweaveService();
       syncBloc = MockSyncBloc();
@@ -95,6 +96,19 @@ void main() {
 
       when(() => syncBloc.waitCurrentSync())
           .thenAnswer((_) => Future.value(null));
+      
+      when(() => syncBloc.syncSingleDrive(any()))
+          .thenAnswer((_) => Future.value(null));
+      
+      when(() => arweave.getAllSnapshotsOfDrive(any(), any(), ownerAddress: any(named: 'ownerAddress')))
+          .thenAnswer((_) => const Stream.empty());
+      
+      when(() => driveDao.writeDriveEntity(
+        name: any(named: 'name'),
+        entity: any(named: 'entity'),
+        driveKey: any(named: 'driveKey'),
+        profileKey: any(named: 'profileKey'),
+      )).thenAnswer((_) => Future.value());
 
       driveAttachCubit = DriveAttachCubit(
         arweave: arweave,
@@ -117,10 +131,12 @@ void main() {
       },
       expect: () => [
         DriveAttachInProgress(),
+        DriveAttachSyncing(hasSnapshots: false),
         DriveAttachSuccess(),
       ],
+      wait: const Duration(seconds: 3),
       verify: (_) {
-        verify(() => syncBloc.startSync()).called(1);
+        verify(() => syncBloc.syncSingleDrive(validDriveId)).called(1);
         verify(() => drivesBloc.selectDrive(validDriveId)).called(1);
       },
     );
@@ -197,11 +213,12 @@ void main() {
         expect: () => [
           DriveAttachPrivate(),
           DriveAttachInProgress(),
+          DriveAttachSyncing(hasSnapshots: false),
           DriveAttachSuccess(),
         ],
-        wait: const Duration(milliseconds: 1200),
+        wait: const Duration(seconds: 3),
         verify: (_) async {
-          verify(() => syncBloc.startSync()).called(1);
+          verify(() => syncBloc.syncSingleDrive(validPrivateDriveId)).called(1);
           verify(() => drivesBloc.selectDrive(validPrivateDriveId)).called(1);
         },
       );

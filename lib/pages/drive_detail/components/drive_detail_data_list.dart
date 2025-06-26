@@ -119,8 +119,8 @@ Widget _buildDataListContent(
           key: ValueKey(
               '${folder.id}-${forceRebuildKey.toString()}${columns.length}-${hideState.toString()}'),
           initialPage: selectedPage,
-          lockMultiSelect: context.watch<SyncCubit>().state is SyncInProgress ||
-              !context.watch<ActivityTracker>().isMultiSelectEnabled,
+          lockMultiSelect: context.read<SyncCubit>().state is SyncInProgress ||
+              !context.read<ActivityTracker>().isMultiSelectEnabled,
           rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
           maxItemsPerPage: 100,
           pageItemsDivisorFactor: 25,
@@ -305,3 +305,4 @@ class ColumnIndexes {
   static const int dateCreated = 3;
   static const int licenseType = 4;
 }
+
