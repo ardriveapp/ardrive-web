@@ -121,8 +121,7 @@ class PaymentService {
   }) async {
     final walletAddress = await wallet.getAddress();
 
-    final urlParams = _urlParamsForGetPriceForFiat(
-        promoCode: promoCode, walletAddress: walletAddress);
+    final urlParams = _urlParamsForGetPriceForFiat(promoCode: promoCode);
 
     final result = await httpClient.get(
       url:
@@ -235,7 +234,7 @@ Future<ArDriveHTTPResponse> _requestPriceForFiat(
 
 String _urlParamsForGetPriceForFiat({
   required String? promoCode,
-  required String? walletAddress,
+  String? walletAddress,
 }) {
   final params = <String, String>{};
 
