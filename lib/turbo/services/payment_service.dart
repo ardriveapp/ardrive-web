@@ -60,12 +60,15 @@ class PaymentService {
     required String currency,
     String? promoCode,
   }) async {
+    final walletAddress = await wallet?.getAddress();
+
     final result = await _requestPriceForFiat(
       httpClient,
       amount: amount,
       currency: currency,
       turboPaymentUri: turboPaymentUri,
       promoCode: promoCode,
+      walletAddress: walletAddress,
     );
 
     return _parseHttpResponseForPriceForFiat(result);
@@ -118,9 +121,7 @@ class PaymentService {
   }) async {
     final walletAddress = await wallet.getAddress();
 
-    final urlParams = promoCode != null && promoCode.isNotEmpty
-        ? '?promoCode=$promoCode'
-        : '';
+    final urlParams = _urlParamsForGetPriceForFiat(promoCode: promoCode);
 
     final result = await httpClient.get(
       url:
@@ -198,10 +199,12 @@ Future<ArDriveHTTPResponse> _requestPriceForFiat(
   required double amount,
   required String currency,
   required Uri turboPaymentUri,
+  required String? walletAddress,
   required String? promoCode,
 }) async {
   final acceptedStatusCodes = [200, 202, 204];
-  final String urlParams = _urlParamsForGetPriceForFiat(promoCode: promoCode);
+  final String urlParams = _urlParamsForGetPriceForFiat(
+      promoCode: promoCode, walletAddress: walletAddress);
 
   try {
     final result = await httpClient.get(
@@ -231,11 +234,21 @@ Future<ArDriveHTTPResponse> _requestPriceForFiat(
 
 String _urlParamsForGetPriceForFiat({
   required String? promoCode,
+  String? walletAddress,
 }) {
-  final urlParams =
-      promoCode != null && promoCode.isNotEmpty ? '?promoCode=$promoCode' : '';
+  final params = <String, String>{};
 
-  return urlParams;
+  if (promoCode != null && promoCode.isNotEmpty) {
+    params['promoCode'] = promoCode;
+  }
+
+  if (walletAddress != null) {
+    params['destinationAddress'] = walletAddress;
+  }
+
+  if (params.isEmpty) return '';
+
+  return '?${params.entries.map((e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}').join('&')}';
 }
 
 class TurboUserNotFound implements UntrackedException {
