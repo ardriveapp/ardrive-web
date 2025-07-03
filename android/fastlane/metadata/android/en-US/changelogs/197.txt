@@ -1,0 +1,1 @@
+- Updated ar.io SDK for Web build to optimize primary name requests
