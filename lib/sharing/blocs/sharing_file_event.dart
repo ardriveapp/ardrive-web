@@ -8,12 +8,12 @@ sealed class SharingFileEvent extends Equatable {
 }
 
 class SharingFileReceived extends SharingFileEvent {
-  final List<SharedFile> files;
+  // final List<SharedFile> files;
 
-  const SharingFileReceived(this.files);
+  const SharingFileReceived();
 
   @override
-  List<Object> get props => [files];
+  List<Object> get props => [];
 }
 
 class ResubmitSharingFile extends SharingFileEvent {}
