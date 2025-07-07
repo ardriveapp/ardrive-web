@@ -1,6 +1,5 @@
 import { ANT, ANT_REGISTRY_ID, ANTRegistry, AOProcess, ArconnectSigner, ARIO, ArNSEventEmitter, ArweaveSigner, mARIOToken } from '@ar.io/sdk';
 import { connect } from '@permaweb/aoconnect';
-import Arweave from 'arweave';
 
 window.ario = {
   getGateways,
@@ -65,7 +64,7 @@ async function getARIOTokens(address) {
 
 
 async function setAnt(JWKString, processId, txId, undername, useArConnect, ttlSeconds = 900) {
-  const signer = useArConnect ? new ArconnectSigner(window.arweaveWallet, Arweave.init({})) : new ArweaveSigner(JSON.parse(JWKString));
+  const signer = useArConnect ? new ArconnectSigner(window.arweaveWallet) : new ArweaveSigner(JSON.parse(JWKString));
 
   const ant = ANT.init({
     signer: signer,
