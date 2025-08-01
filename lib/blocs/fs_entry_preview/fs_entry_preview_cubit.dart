@@ -415,7 +415,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
     try {
       // Fetch the document content
-      final dataRes = await ArDriveHTTP().getAsBytes(previewUrl);
+      final dataRes = await const ArDriveHTTP().getAsBytes(previewUrl);
       final dataBytes = dataRes.data;
 
       if (dataBytes == null) {

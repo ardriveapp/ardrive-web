@@ -2,10 +2,8 @@ import 'dart:async';
 
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/theme/theme.dart';
-import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -331,37 +329,5 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
         ],
       ),
     );
-  }
-
-  String _getFileTypeDescription() {
-    switch (widget.contentType) {
-      case 'application/json':
-        return 'JSON Document';
-      case 'text/plain':
-        return 'Plain Text';
-      case 'text/csv':
-        return 'CSV File';
-      case 'text/markdown':
-        return 'Markdown Document';
-      case 'text/xml':
-      case 'application/xml':
-        return 'XML Document';
-      case 'text/javascript':
-      case 'application/javascript':
-        return 'JavaScript Code';
-      case 'text/css':
-        return 'CSS Stylesheet';
-      case 'text/html':
-        return 'HTML Document';
-      case 'text/x-yaml':
-      case 'application/x-yaml':
-        return 'YAML Configuration';
-      default:
-        if (widget.contentType.startsWith('text/x-')) {
-          final language = widget.contentType.substring(7).toUpperCase();
-          return '$language Code';
-        }
-        return 'Text Document';
-    }
   }
 }
