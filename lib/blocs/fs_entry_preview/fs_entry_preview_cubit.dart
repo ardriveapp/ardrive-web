@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:ardrive/blocs/fs_entry_preview/image_preview_notification.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
@@ -110,6 +111,19 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             previewUrl,
           );
           break;
+        case 'text':
+        case 'application':
+          // Check file size for document preview
+          if (file.size! > documentPreviewMaxFileSize) {
+            emit(FsEntryPreviewUnavailable());
+            return;
+          }
+          _previewDocument(
+            fileKey != null,
+            selectedItem,
+            previewUrl,
+          );
+          break;
 
         default:
           emit(FsEntryPreviewUnavailable());
@@ -124,6 +138,10 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     FileDataTableItem selectedItem,
     String previewUrl,
   ) {
+    // TODO: Implement PDF preview support
+    // - For web: Could use iframe for public PDFs
+    // - For mobile: Need PDF viewer package
+    // - For private PDFs: Need to decrypt first
     emit(FsEntryPreviewUnavailable());
   }
 
@@ -171,6 +189,19 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
                 break;
               case 'video':
                 _previewVideo(
+                  drive.isPrivate,
+                  selectedItem as FileDataTableItem,
+                  previewUrl,
+                );
+                break;
+              case 'text':
+              case 'application':
+                // Check file size for document preview
+                if (file.size > documentPreviewMaxFileSize) {
+                  emit(FsEntryPreviewUnavailable());
+                  return;
+                }
+                _previewDocument(
                   drive.isPrivate,
                   selectedItem as FileDataTableItem,
                   previewUrl,
@@ -369,6 +400,44 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     return;
   }
 
+  Future<void> _previewDocument(
+    bool isPrivate,
+    FileDataTableItem selectedItem,
+    String previewUrl,
+  ) async {
+    // For now, private documents are not supported
+    if (isPrivate) {
+      emit(FsEntryPreviewUnavailable());
+      return;
+    }
+
+    emit(FsEntryPreviewLoading());
+
+    try {
+      // Fetch the document content
+      final dataRes = await ArDriveHTTP().getAsBytes(previewUrl);
+      final dataBytes = dataRes.data;
+
+      if (dataBytes == null) {
+        emit(FsEntryPreviewUnavailable());
+        return;
+      }
+
+      // Convert bytes to string
+      final content = utf8.decode(dataBytes, allowMalformed: true);
+
+      emit(FsEntryPreviewText(
+        previewUrl: previewUrl,
+        filename: selectedItem.name,
+        content: content,
+        contentType: selectedItem.contentType,
+      ));
+    } catch (e) {
+      logger.e('Error loading document preview', e);
+      emit(FsEntryPreviewUnavailable());
+    }
+  }
+
   Future<Uint8List?> _getBytesFromCache({
     required String dataTxId,
     required String dataUrl,
@@ -468,6 +537,11 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             .any((element) => element.contains(fileExtension));
       case 'video':
         return true;
+      case 'text':
+      case 'application':
+        // Check if it's a document type we support
+        final fullContentType = '$previewType/$fileExtension';
+        return documentContentTypes.contains(fullContentType);
       default:
         return false;
     }
