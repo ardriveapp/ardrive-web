@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
-import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
