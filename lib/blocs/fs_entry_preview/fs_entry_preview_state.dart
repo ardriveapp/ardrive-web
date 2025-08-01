@@ -69,10 +69,17 @@ class FsEntryPreviewMemory extends FsEntryPreviewSuccess {
 }
 
 class FsEntryPreviewText extends FsEntryPreviewSuccess {
+  final String filename;
+  final String content;
+  final String contentType;
+
   const FsEntryPreviewText({
     required super.previewUrl,
+    required this.filename,
+    required this.content,
+    required this.contentType,
   });
 
   @override
-  List<Object> get props => [previewUrl];
+  List<Object> get props => [previewUrl, filename, content, contentType];
 }

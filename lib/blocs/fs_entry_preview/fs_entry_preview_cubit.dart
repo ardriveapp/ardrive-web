@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:ardrive/blocs/fs_entry_preview/image_preview_notification.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
@@ -110,6 +111,20 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             previewUrl,
           );
           break;
+        case 'text':
+        case 'application':
+          // Check file size for document preview
+          if (file.size! > documentPreviewMaxFileSize) {
+            emit(FsEntryPreviewUnavailable());
+            return;
+          }
+          _previewDocument(
+            fileKey != null,
+            selectedItem,
+            previewUrl,
+            fileKey: fileKey,
+          );
+          break;
 
         default:
           emit(FsEntryPreviewUnavailable());
@@ -124,6 +139,10 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     FileDataTableItem selectedItem,
     String previewUrl,
   ) {
+    // TODO: Implement PDF preview support
+    // - For web: Could use iframe for public PDFs
+    // - For mobile: Need PDF viewer package
+    // - For private PDFs: Need to decrypt first
     emit(FsEntryPreviewUnavailable());
   }
 
@@ -171,6 +190,19 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
                 break;
               case 'video':
                 _previewVideo(
+                  drive.isPrivate,
+                  selectedItem as FileDataTableItem,
+                  previewUrl,
+                );
+                break;
+              case 'text':
+              case 'application':
+                // Check file size for document preview
+                if (file.size > documentPreviewMaxFileSize) {
+                  emit(FsEntryPreviewUnavailable());
+                  return;
+                }
+                _previewDocument(
                   drive.isPrivate,
                   selectedItem as FileDataTableItem,
                   previewUrl,
@@ -369,6 +401,75 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     return;
   }
 
+  Future<void> _previewDocument(
+    bool isPrivate,
+    FileDataTableItem selectedItem,
+    String previewUrl, {
+    SecretKey? fileKey,
+  }) async {
+
+    emit(const FsEntryPreviewLoading());
+
+    try {
+      // Fetch the document content using cache
+      final Uint8List? dataBytes = await _getBytesFromCache(
+        dataTxId: selectedItem.dataTxId,
+        dataUrl: previewUrl,
+      );
+
+      if (dataBytes == null) {
+        emit(FsEntryPreviewUnavailable());
+        return;
+      }
+
+      // Handle decryption for private files
+      Uint8List? bytesToDecode = dataBytes;
+      final isPinFile = selectedItem.pinnedDataOwnerAddress != null;
+
+      if (isPrivate && !isPinFile) {
+        // Get file key if not provided
+        final SecretKey? decryptionKey = fileKey ?? await _getFileKey(
+          fileId: selectedItem.id,
+          driveId: driveId,
+          isPrivate: true,
+          isPin: isPinFile,
+        );
+
+        if (decryptionKey == null) {
+          emit(FsEntryPreviewUnavailable());
+          return;
+        }
+
+        // Decrypt the data
+        final decryptedBytes = await _decodePrivateData(
+          dataBytes,
+          decryptionKey,
+          selectedItem.dataTxId,
+        );
+
+        if (decryptedBytes == null) {
+          emit(FsEntryPreviewUnavailable());
+          return;
+        }
+
+        bytesToDecode = decryptedBytes;
+      }
+
+      // Convert bytes to string
+      final content = utf8.decode(bytesToDecode, allowMalformed: true);
+
+      emit(FsEntryPreviewText(
+        previewUrl: previewUrl,
+        filename: selectedItem.name,
+        content: content,
+        contentType: selectedItem.contentType,
+      ));
+    } catch (e) {
+      logger.e('Error loading document preview', e);
+      emit(FsEntryPreviewUnavailable());
+    }
+  }
+
   Future<Uint8List?> _getBytesFromCache({
     required String dataTxId,
     required String dataUrl,
@@ -468,6 +569,11 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             .any((element) => element.contains(fileExtension));
       case 'video':
         return true;
+      case 'text':
+      case 'application':
+        // Check if it's a document type we support
+        final fullContentType = '$previewType/$fileExtension';
+        return documentContentTypes.contains(fullContentType);
       default:
         return false;
     }

@@ -61,6 +61,14 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
           isSharePage: widget.isSharePage,
         );
 
+      case const (FsEntryPreviewText):
+        return DocumentPreviewWidget(
+          filename: (widget.state as FsEntryPreviewText).filename,
+          content: (widget.state as FsEntryPreviewText).content,
+          contentType: (widget.state as FsEntryPreviewText).contentType,
+          isSharePage: widget.isSharePage,
+        );
+
       default:
         return VideoPlayerWidget(
           filename: (widget.state as FsEntryPreviewVideo).filename,
