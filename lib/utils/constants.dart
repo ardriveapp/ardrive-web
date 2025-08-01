@@ -46,8 +46,8 @@ const List<String> pdfContentTypes = [
   'application/pdf',
 ];
 
-// Maximum file size for document preview (10MB for text files)
-const int documentPreviewMaxFileSize = 1024 * 1024 * 10;
+// Maximum file size for document preview (25MB for text files)
+const int documentPreviewMaxFileSize = 1024 * 1024 * 25;
 
 const profileQueryMaxRetries = 6;
 
