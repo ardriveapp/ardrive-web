@@ -122,6 +122,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             fileKey != null,
             selectedItem,
             previewUrl,
+            fileKey: fileKey,
           );
           break;
 
@@ -403,28 +404,59 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   Future<void> _previewDocument(
     bool isPrivate,
     FileDataTableItem selectedItem,
-    String previewUrl,
-  ) async {
-    // For now, private documents are not supported
-    if (isPrivate) {
-      emit(FsEntryPreviewUnavailable());
-      return;
-    }
+    String previewUrl, {
+    SecretKey? fileKey,
+  }) async {
 
     emit(const FsEntryPreviewLoading());
 
     try {
-      // Fetch the document content
-      final dataRes = await ArDriveHTTP().getAsBytes(previewUrl);
-      final dataBytes = dataRes.data;
+      // Fetch the document content using cache
+      final Uint8List? dataBytes = await _getBytesFromCache(
+        dataTxId: selectedItem.dataTxId,
+        dataUrl: previewUrl,
+      );
 
       if (dataBytes == null) {
         emit(FsEntryPreviewUnavailable());
         return;
       }
 
+      // Handle decryption for private files
+      Uint8List? bytesToDecode = dataBytes;
+      final isPinFile = selectedItem.pinnedDataOwnerAddress != null;
+
+      if (isPrivate && !isPinFile) {
+        // Get file key if not provided
+        final SecretKey? decryptionKey = fileKey ?? await _getFileKey(
+          fileId: selectedItem.id,
+          driveId: driveId,
+          isPrivate: true,
+          isPin: isPinFile,
+        );
+
+        if (decryptionKey == null) {
+          emit(FsEntryPreviewUnavailable());
+          return;
+        }
+
+        // Decrypt the data
+        final decryptedBytes = await _decodePrivateData(
+          dataBytes,
+          decryptionKey,
+          selectedItem.dataTxId,
+        );
+
+        if (decryptedBytes == null) {
+          emit(FsEntryPreviewUnavailable());
+          return;
+        }
+
+        bytesToDecode = decryptedBytes;
+      }
+
       // Convert bytes to string
-      final content = utf8.decode(dataBytes, allowMalformed: true);
+      final content = utf8.decode(bytesToDecode, allowMalformed: true);
 
       emit(FsEntryPreviewText(
         previewUrl: previewUrl,
