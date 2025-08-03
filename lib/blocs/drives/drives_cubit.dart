@@ -111,6 +111,31 @@ class DrivesCubit extends Cubit<DrivesState> {
 
       _promptToSnapshotBloc.add(SelectedDrive(driveId: selectedDriveId));
 
+      // Identify locked drives (private drives without keys in memory)
+      final lockedDrives = <String>{};
+      if (profileState is ProfileLoggedIn && profileState.user.password.isEmpty) {
+        for (final drive in [...userDrives, ...sharedDrives]) {
+          // Check if this is a private drive
+          if (drive.privacy == DrivePrivacyTag.private) {
+            // Check if we have the key in memory
+            final driveKey = await _driveDao.getDriveKeyFromMemory(drive.id);
+            if (driveKey == null) {
+              lockedDrives.add(drive.id);
+            }
+          }
+        }
+      }
+
+      // If the selected drive is locked, select a different drive
+      if (selectedDriveId != null && lockedDrives.contains(selectedDriveId)) {
+        // Find the first available unlocked drive
+        final availableDrives = [...userDrives, ...sharedDrives]
+            .where((d) => !lockedDrives.contains(d.id))
+            .toList();
+        
+        selectedDriveId = availableDrives.isNotEmpty ? availableDrives.first.id : null;
+      }
+
       emit(
         DrivesLoadSuccess(
           selectedDriveId: selectedDriveId,
@@ -119,6 +144,7 @@ class DrivesCubit extends Cubit<DrivesState> {
           sharedDrives: sharedDrives,
           drivesWithAlerts: ghostFolders.map((e) => e.driveId).toList(),
           canCreateNewDrive: _profileCubit.state is ProfileLoggedIn,
+          lockedDrives: lockedDrives,
         ),
       );
     });
@@ -154,13 +180,24 @@ class DrivesCubit extends Cubit<DrivesState> {
         userDrives: const [],
         sharedDrives: const [],
         drivesWithAlerts: const [],
-        canCreateNewDrive: false);
+        canCreateNewDrive: false,
+        lockedDrives: const {});
 
     if (isClosed) {
       return;
     }
 
     emit(state);
+  }
+
+  Future<void> refreshDrives() async {
+    // Force a refresh by re-emitting the current state
+    // This will trigger the stream listener to re-evaluate locked drives
+    final currentState = state;
+    if (currentState is DrivesLoadSuccess) {
+      emit(DrivesLoadInProgress());
+      // The stream subscription will automatically handle the rest
+    }
   }
 
   void _resetDriveSelection(DriveID detachedDriveId) {

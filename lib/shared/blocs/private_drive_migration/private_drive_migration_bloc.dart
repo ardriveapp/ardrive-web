@@ -66,7 +66,10 @@ class PrivateDriveMigrationBloc
           .where((drive) =>
               drive.privacy == 'private' &&
               (drive.signatureType == '1' || drive.signatureType == null) &&
-              drive.driveKeyGenerated == true)
+              drive.driveKeyGenerated == true &&
+              // Exclude placeholder drives that haven't been unlocked yet
+              // We can't determine their migration status until they're decrypted
+              !drive.rootFolderId.startsWith('placeholder-root-'))
           .toList();
       completedMigration = {};
 

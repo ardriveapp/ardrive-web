@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/app_version_widget.dart';
+import 'package:ardrive/components/drive_unlock_dialog.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/main.dart';
@@ -437,6 +438,7 @@ class DriveListTile extends StatelessWidget {
   final bool hasAlert;
   final bool isSelected;
   final bool isHidden;
+  final bool isLocked;
   final VoidCallback onTap;
 
   const DriveListTile({
@@ -446,6 +448,7 @@ class DriveListTile extends StatelessWidget {
     required this.onTap,
     required this.isHidden,
     this.hasAlert = false,
+    this.isLocked = false,
   });
 
   @override
@@ -493,6 +496,14 @@ class DriveListTile extends StatelessWidget {
                       const SizedBox(width: 8),
                       ArDriveIcons.eyeClosed(
                           size: 16, color: colorTokens.textLow),
+                    },
+                    if (isLocked) ...{
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.lock_outline,
+                        size: 16, 
+                        color: colorTokens.textMid,
+                      ),
                     },
                   ],
                 ),
@@ -728,10 +739,16 @@ class _Accordion extends StatelessWidget {
                       (d) => DriveListTile(
                         hasAlert: state.drivesWithAlerts.contains(d.id),
                         drive: d,
+                        isLocked: state.isDriveLocked(d.id),
                         onTap: () {
                           _closeDrawer(context);
 
-                          context.read<DrivesCubit>().selectDrive(d.id);
+                          if (state.isDriveLocked(d.id)) {
+                            // Show unlock dialog for locked drives
+                            promptToUnlockDrive(context, drive: d);
+                          } else {
+                            context.read<DrivesCubit>().selectDrive(d.id);
+                          }
                         },
                         isSelected: state.selectedDriveId == d.id,
                         isHidden: d.isHidden,

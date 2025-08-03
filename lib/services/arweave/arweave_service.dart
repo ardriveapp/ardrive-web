@@ -571,6 +571,57 @@ class ArweaveService {
     return firstTx;
   }
 
+  /// Tries to decrypt a drive with the given password
+  /// Returns the drive key if successful, null otherwise
+  Future<DriveKey?> tryDecryptDrive({
+    required String driveId,
+    required Wallet wallet,
+    required String password,
+  }) async {
+    try {
+      // Find the drive transaction
+      final driveTxs = await getUniqueUserDriveEntityTxs(await wallet.getAddress());
+      final driveTx = driveTxs.firstWhere(
+        (tx) => tx.getTag(EntityTag.driveId) == driveId,
+        orElse: () => throw Exception('Drive not found'),
+      );
+
+      // Only process private drives
+      if (driveTx.getTag(EntityTag.drivePrivacy) != DrivePrivacyTag.private) {
+        return null;
+      }
+
+      final sigTypeTag = driveTx.getTag(EntityTag.signatureType) ?? '1';
+      final signatureType = DriveSignatureType.fromString(sigTypeTag);
+
+      final driveSignature = signatureType == DriveSignatureType.v1
+          ? await getDriveSignatureForDrive(wallet, driveId)
+          : null;
+
+      final driveKey = await _crypto.deriveDriveKey(
+        wallet,
+        driveId,
+        password,
+        signatureType,
+        driveSignature,
+      );
+
+      // Try to decrypt the drive entity to verify the password is correct
+      final driveResponse = await client.api.getSandboxedTx(driveTx.id);
+      await DriveEntity.fromTransaction(
+        driveTx,
+        _crypto,
+        driveResponse.bodyBytes,
+        driveKey.key,
+      );
+
+      return driveKey;
+    } catch (e) {
+      logger.e('Failed to decrypt drive', e);
+      return null;
+    }
+  }
+
   Future<DriveSignatureEntity?> getDriveSignatureForDrive(
     Wallet wallet,
     String driveId,
@@ -617,8 +668,45 @@ class ArweaveService {
         }
 
         DriveKey? driveKey;
+        
+        // For private drives with empty passwords, check if we have a key in memory first
+        if (driveTx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private && 
+            password.isEmpty) {
+          
+          final driveId = driveTx.getTag(EntityTag.driveId);
+          if (driveId == null) continue;
+          
+          final driveKeyFromMemory = await _driveDao.getDriveKeyFromMemory(driveId);
+          
+          // If we don't have the key in memory, create placeholder entry
+          if (driveKeyFromMemory == null) {
+            logger.i('Creating placeholder for locked private drive $driveId');
+            
+            // Create a minimal drive entity with just the metadata we can read from tags
+            final sigTypeTag = driveTx.getTag(EntityTag.signatureType) ?? '1';
+            final drive = DriveEntity()
+              ..id = driveId
+              ..privacy = DrivePrivacyTag.private
+              ..ownerAddress = driveTx.owner.address
+              ..txId = driveTx.id
+              ..createdAt = driveTx.getCommitTime()
+              ..signatureType = DriveSignatureType.fromString(sigTypeTag)
+              // Use placeholder values for encrypted fields
+              ..name = 'Private Drive'
+              ..rootFolderId = 'placeholder-root-$driveId';
+              
+            drivesById[drive.id] = drive;
+            drivesWithKey[drive] = null;
+            continue;
+          }
+          
+          // If we have the key in memory, use it to decrypt the drive
+          logger.i('Found key in memory for private drive $driveId, decrypting...');
+          driveKey = driveKeyFromMemory;
+        }
 
-        if (driveTx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private) {
+        // Handle remaining private drive cases (when password is provided)
+        if (driveTx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private && driveKey == null) {
           driveKey = await _driveDao.getDriveKeyFromMemory(
             driveTx.getTag(EntityTag.driveId)!,
           );

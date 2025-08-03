@@ -18,15 +18,18 @@ class DrivesLoadSuccess extends DrivesState {
 
   final List<String> drivesWithAlerts;
   final bool canCreateNewDrive;
+  final Set<String> lockedDrives;
 
   bool get hasNoDrives => userDrives.isEmpty && sharedDrives.isEmpty;
-
+  bool isDriveLocked(String driveId) => lockedDrives.contains(driveId);
+  
   DrivesLoadSuccess({
     required this.selectedDriveId,
     required this.userDrives,
     required this.sharedDrives,
     required this.drivesWithAlerts,
     required this.canCreateNewDrive,
+    this.lockedDrives = const {},
   });
 
   DrivesLoadSuccess copyWith({
@@ -35,6 +38,7 @@ class DrivesLoadSuccess extends DrivesState {
     List<Drive>? sharedDrives,
     List<String>? drivesWithAlerts,
     bool? canCreateNewDrive,
+    Set<String>? lockedDrives,
   }) =>
       DrivesLoadSuccess(
         selectedDriveId: selectedDriveId ?? this.selectedDriveId,
@@ -42,6 +46,7 @@ class DrivesLoadSuccess extends DrivesState {
         sharedDrives: sharedDrives ?? this.sharedDrives,
         drivesWithAlerts: drivesWithAlerts ?? this.drivesWithAlerts,
         canCreateNewDrive: canCreateNewDrive ?? this.canCreateNewDrive,
+        lockedDrives: lockedDrives ?? this.lockedDrives,
       );
 
   @override
@@ -51,6 +56,7 @@ class DrivesLoadSuccess extends DrivesState {
         sharedDrives,
         drivesWithAlerts,
         canCreateNewDrive,
+        lockedDrives,
       ];
 }
 

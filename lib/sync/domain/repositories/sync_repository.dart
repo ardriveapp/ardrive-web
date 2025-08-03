@@ -6,6 +6,7 @@ import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/drive_entity.dart';
+import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/entities/license_assertion.dart';
@@ -72,6 +73,13 @@ abstract class SyncRepository {
   });
 
   Future<void> updateUserDrives({
+    required Wallet wallet,
+    required String password,
+    required SecretKey cipherKey,
+  });
+
+  Future<void> updateSingleDrive({
+    required String driveId,
     required Wallet wallet,
     required String password,
     required SecretKey cipherKey,
@@ -383,6 +391,63 @@ class _SyncRepository implements SyncRepository {
   }
 
   @override
+  Future<void> updateSingleDrive({
+    required String driveId,
+    required Wallet wallet,
+    required String password,
+    required SecretKey cipherKey,
+  }) async {
+    // Get the drive transaction for this specific drive
+    final userAddress = await wallet.getAddress();
+    final driveTxs = await _arweave.getUniqueUserDriveEntityTxs(userAddress);
+    
+    final driveTx = driveTxs.firstWhere(
+      (tx) => tx.getTag(EntityTag.driveId) == driveId,
+      orElse: () => throw Exception('Drive not found'),
+    );
+
+    // Get the drive entity with the correct password
+    final driveResponse = await _arweave.client.api.getSandboxedTx(driveTx.id);
+    
+    DriveKey? driveKey;
+    DriveEntity driveEntity;
+
+    if (driveTx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private) {
+      final sigTypeTag = driveTx.getTag(EntityTag.signatureType) ?? '1';
+      final signatureType = DriveSignatureType.fromString(sigTypeTag);
+
+      final driveSignature = signatureType == DriveSignatureType.v1
+          ? await _arweave.getDriveSignatureForDrive(wallet, driveId)
+          : null;
+
+      driveKey = await ArDriveCrypto().deriveDriveKey(
+        wallet,
+        driveId,
+        password,
+        signatureType,
+        driveSignature,
+      );
+
+      driveEntity = await DriveEntity.fromTransaction(
+        driveTx,
+        ArDriveCrypto(),
+        driveResponse.bodyBytes,
+        driveKey.key,
+      );
+    } else {
+      driveEntity = await DriveEntity.fromTransaction(
+        driveTx,
+        ArDriveCrypto(),
+        driveResponse.bodyBytes,
+      );
+    }
+
+    // Update just this drive in the database
+    final driveEntities = {driveEntity: driveKey};
+    await _driveDao.updateUserDrives(driveEntities, cipherKey);
+  }
+
+  @override
   Future<int> getCurrentBlockHeight() {
     return retry(
       () async => await _arweave.getCurrentBlockHeight(),
@@ -550,6 +615,19 @@ class _SyncRepository implements SyncRepository {
   }) async* {
     /// Variables to count the current drive's progress information
     final drive = await _driveDao.driveById(driveId: driveId).getSingle();
+    
+    // Skip placeholder drives that haven't been unlocked yet
+    if (drive.rootFolderId.startsWith('placeholder-root-')) {
+      // Check if we have the drive key in memory (meaning it's been unlocked)
+      final driveKey = await _driveDao.getDriveKeyFromMemory(drive.id);
+      if (driveKey == null) {
+        logger.i('Skipping sync for locked placeholder drive: ${drive.id}');
+        yield 1.0;
+        return;
+      }
+      // If we have the key, continue with sync
+      logger.i('Syncing unlocked placeholder drive: ${drive.id}');
+    }
     final startSyncDT = DateTime.now();
 
     logger.i('Syncing drive: ${drive.id}');
@@ -557,15 +635,18 @@ class _SyncRepository implements SyncRepository {
     DriveKey? driveKey;
 
     if (drive.isPrivate) {
-      // Only sync private drives when the user is logged in.
+      // Try to get the drive key
       if (cipherKey != null) {
         driveKey = await _driveDao.getDriveKey(drive.id, cipherKey);
       } else {
         driveKey = await _driveDao.getDriveKeyFromMemory(drive.id);
+      }
 
-        if (driveKey == null) {
-          throw StateError('Drive key not found');
-        }
+      // If we don't have a key for a private drive, skip syncing its contents
+      if (driveKey == null) {
+        logger.i('Skipping sync for locked private drive: ${drive.id}');
+        yield 1.0; // Return complete progress for this drive
+        return;
       }
     }
     final fetchPhaseStartDT = DateTime.now();

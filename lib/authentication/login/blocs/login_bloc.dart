@@ -412,6 +412,21 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     if (await _arDriveAuth.isUserLoggedIn()) {
       logger.d('User is logged in');
 
+      // Check the stored profile type to determine if this is an ArConnect/Wander user
+      try {
+        final isArConnectUser = await _profileCubit.isCurrentProfileArConnect();
+        
+        if (isArConnectUser) {
+          logger.d('ArConnect/Wander user detected - reconnecting wallet');
+          // For ArConnect/Wander users, we need to reconnect the wallet
+          // instead of prompting for password
+          add(const AddWalletFromArConnect());
+          return;
+        }
+      } catch (e) {
+        logger.e('Failed to check if user is ArConnect', e);
+      }
+
       if (await _arDriveAuth.isBiometricsEnabled()) {
         logger.d('Biometrics is enabled');
 
@@ -622,20 +637,16 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       lastKnownWalletAddress = await wallet.getAddress();
 
-      if (await _arDriveAuth.userHasPassword(wallet)) {
-        emit(LoginLoadingIfUserAlreadyExistsSuccess());
-        emit(PromptPassword(wallet: wallet, showWalletCreated: false));
-      } else {
-        emit(LoginLoadingIfUserAlreadyExistsSuccess());
-        final hasDrives = await _arDriveAuth.isExistingUser(wallet);
-        emit(
-          CreateNewPassword(
-            wallet: wallet,
-            showTutorials: !hasDrives,
-            showWalletCreated: false,
-          ),
-        );
-      }
+      // For ArConnect/Wander wallets, skip password prompt entirely
+      emit(LoginLoadingIfUserAlreadyExistsSuccess());
+      
+      // Login without password for ArConnect/Wander users
+      final user = await _arDriveAuth.loginWithoutPassword(
+        wallet,
+        profileType ?? ProfileType.arConnect,
+      );
+      
+      emit(LoginSuccess(user));
     } catch (e) {
       emit(LoginLoadingIfUserAlreadyExistsSuccess());
       emit(previousState);

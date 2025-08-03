@@ -219,11 +219,16 @@ class SyncCubit extends Cubit<SyncState> {
           return;
         }
 
-        await _syncRepository.updateUserDrives(
-          wallet: wallet,
-          password: password,
-          cipherKey: profile.user.cipherKey,
-        );
+        try {
+          await _syncRepository.updateUserDrives(
+            wallet: wallet,
+            password: password,
+            cipherKey: profile.user.cipherKey,
+          );
+        } catch (e) {
+          logger.i('Failed to update user drives - this is expected for Wander users with private drives');
+          // Don't fail the entire sync if updateUserDrives fails
+        }
       }
 
       _promptToSnapshotBloc.add(const SyncRunning(isRunning: true));

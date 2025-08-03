@@ -29,8 +29,10 @@ abstract class ArDriveAuth {
   Future<bool> isExistingUser(Wallet wallet);
   Future<bool> userHasPassword(Wallet wallet);
   Future<User> login(Wallet wallet, String password, ProfileType profileType);
+  Future<User> loginWithoutPassword(Wallet wallet, ProfileType profileType);
   Future<User> unlockWithBiometrics({required String localizedReason});
   Future<User> unlockUser({required String password});
+  Future<void> updateUserPassword(String newPassword);
   Future<void> logout();
   User get currentUser;
   Stream<User?> onAuthStateChanged();
@@ -185,6 +187,35 @@ class ArDriveAuthImpl implements ArDriveAuth {
   }
 
   @override
+  Future<User> loginWithoutPassword(
+      Wallet wallet, ProfileType profileType) async {
+    try {
+      logger.i('Logging in without password for profile type: $profileType');
+      
+      // For ArConnect/Wander users, we use a placeholder password
+      // The actual password will be set when they create/unlock their first private drive
+      const placeholderPassword = '';
+      
+      // Save user with empty password - this won't be used for encryption
+      await _saveUser(placeholderPassword, profileType, wallet);
+      
+      currentUser = await _userRepository.getUser(placeholderPassword);
+      
+      _updateBalance();
+      
+      _userStreamController.add(_currentUser);
+
+      return currentUser;
+    } catch (e) {
+      if (e is GraphQLException) {
+        throw const AuthenticationGatewayException();
+      }
+
+      rethrow;
+    }
+  }
+
+  @override
   Future<User> unlockUser({required String password}) async {
     try {
       logger.d('Unlocking user with password');
@@ -249,6 +280,29 @@ class ArDriveAuthImpl implements ArDriveAuth {
     }
 
     throw WrongPasswordException('Biometric authentication failed');
+  }
+
+  @override
+  Future<void> updateUserPassword(String newPassword) async {
+    if (_currentUser == null) {
+      throw Exception('No user logged in');
+    }
+    
+    final wallet = _currentUser!.wallet;
+    final profileType = _currentUser!.profileType;
+    
+    // Save user with new password
+    await _saveUser(newPassword, profileType, wallet);
+    
+    // Reload user with new password
+    currentUser = await _userRepository.getUser(newPassword);
+    
+    // Save password in secure storage if biometrics is enabled
+    if (await isBiometricsEnabled()) {
+      await _savePasswordInSecureStorage(newPassword);
+    }
+    
+    _userStreamController.add(_currentUser);
   }
 
   @override
