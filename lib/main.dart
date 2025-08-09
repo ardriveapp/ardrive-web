@@ -26,7 +26,6 @@ import 'package:ardrive/shared/blocs/banner/app_banner_bloc.dart';
 import 'package:ardrive/sharing/blocs/sharing_file_bloc.dart';
 import 'package:ardrive/sync/data/snapshot_validation_service.dart';
 import 'package:ardrive/sync/domain/repositories/sync_repository.dart';
-import 'package:ardrive/sync/utils/batch_processor.dart';
 import 'package:ardrive/theme/theme_switcher_bloc.dart';
 import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
@@ -476,7 +475,6 @@ class AppState extends State<App> {
             configService: configService,
             driveDao: _.read<DriveDao>(),
             licenseService: _.read<LicenseService>(),
-            batchProcessor: BatchProcessor(),
             snapshotValidationService: SnapshotValidationService(
               configService: configService,
             ),
