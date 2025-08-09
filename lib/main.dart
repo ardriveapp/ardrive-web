@@ -426,6 +426,7 @@ class AppState extends State<App> {
         ),
         RepositoryProvider(
           create: (context) => ArDriveAuth(
+            driveDao: context.read<DriveDao>(),
             databaseHelpers: DatabaseHelpers(
               context.read<Database>(),
             ),
