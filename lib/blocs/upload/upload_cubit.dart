@@ -900,6 +900,11 @@ class UploadCubit extends Cubit<UploadState> {
     _arnsRepository.getAntRecordsForWallet(walletAddress!).then((value) {
       _ants = value;
       if (state is UploadReady) {
+        if (isClosed) {
+          logger.i('Upload cubit closed. Not emitting ant records.');
+          return;
+        }
+
         emit((state as UploadReady).copyWith(arnsRecords: value));
       }
     }).catchError((e) {
