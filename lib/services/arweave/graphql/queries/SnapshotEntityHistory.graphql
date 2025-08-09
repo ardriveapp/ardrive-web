@@ -2,10 +2,10 @@ query SnapshotEntityHistory(
   $driveId: String!
   $after: String
   $lastBlockHeight: Int
-  $ownerAddress: String!
+  $ownerAddress: [String!]
 ) {
   transactions(
-    owners: [$ownerAddress]
+    owners: $ownerAddress
     first: 100
     sort: HEIGHT_DESC
     tags: [

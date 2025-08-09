@@ -194,7 +194,7 @@ class _SyncRepository implements SyncRepository {
             : _calculateSyncLastBlockHeight(drive.lastBlockHeight!),
         currentBlockHeight: currentBlockHeight,
         transactionParseBatchSize:
-            200 ~/ (syncProgress.drivesCount - syncProgress.drivesSynced),
+            50 ~/ max(1, (syncProgress.drivesCount - syncProgress.drivesSynced)),
         ownerAddress: drive.ownerAddress,
         txFechedCallback: txFechedCallback,
       );
@@ -300,14 +300,28 @@ class _SyncRepository implements SyncRepository {
     required String driveId,
     required String ownerAddress,
     Function(String driveId, int txCount)? txFechedCallback,
-  }) {
+  }) async* {
     _lastSync = DateTime.now();
-    return _syncDrive(
+    
+    // If ownerAddress is empty, fetch it from the drive
+    String actualOwnerAddress = ownerAddress;
+    if (ownerAddress.isEmpty) {
+      final drive = await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+      if (drive == null) {
+        throw Exception('Drive not found: $driveId');
+      }
+      actualOwnerAddress = drive.ownerAddress;
+    }
+    
+    // Get current block height
+    final currentBlockHeight = await _arweave.getCurrentBlockHeight();
+    
+    yield* _syncDrive(
       driveId,
-      ownerAddress: ownerAddress,
+      ownerAddress: actualOwnerAddress,
       lastBlockHeight: 0,
-      currentBlockHeight: 0,
-      transactionParseBatchSize: 200,
+      currentBlockHeight: currentBlockHeight,
+      transactionParseBatchSize: 50,
       txFechedCallback: txFechedCallback,
     );
   }
@@ -571,6 +585,9 @@ class _SyncRepository implements SyncRepository {
     final fetchPhaseStartDT = DateTime.now();
 
     logger.d('Fetching all transactions for drive ${drive.id}');
+    
+    // Yield initial progress for fetching phase
+    yield 0.1;
 
     final transactions = <DriveEntityHistoryTransactionModel>[];
 
@@ -579,21 +596,46 @@ class _SyncRepository implements SyncRepository {
     if (_configService.config.enableSyncFromSnapshot) {
       logger.i('Syncing from snapshot: ${drive.id}');
 
+      // First try to get snapshots without owner restriction (for attached drives)
       final snapshotsStream = _arweave.getAllSnapshotsOfDrive(
         driveId,
         lastBlockHeight,
-        ownerAddress: ownerAddress,
+        ownerAddress: null, // Allow snapshots from any owner
       );
 
       snapshotItems = await SnapshotItem.instantiateAll(
         snapshotsStream,
         arweave: _arweave,
       ).toList();
+      
+      // Yield progress after snapshot discovery
+      yield 0.2;
+
+      // If no snapshots found and we have an owner address, try owner-specific search
+      if (snapshotItems.isEmpty && ownerAddress.isNotEmpty) {
+        logger.d('No general snapshots found, trying owner-specific for ${drive.id}');
+        final ownerSnapshotsStream = _arweave.getAllSnapshotsOfDrive(
+          driveId,
+          lastBlockHeight,
+          ownerAddress: ownerAddress,
+        );
+
+        snapshotItems = await SnapshotItem.instantiateAll(
+          ownerSnapshotsStream,
+          arweave: _arweave,
+        ).toList();
+      }
 
       List<SnapshotItem> snapshotsVerified =
           await _snapshotValidationService.validateSnapshotItems(snapshotItems);
 
       snapshotItems = snapshotsVerified;
+      
+      if (snapshotItems.isNotEmpty) {
+        logger.i('Found ${snapshotItems.length} validated snapshots for drive ${drive.id}');
+      } else {
+        logger.d('No validated snapshots found for drive ${drive.id}');
+      }
     }
 
     final SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
@@ -642,10 +684,12 @@ class _SyncRepository implements SyncRepository {
 
     /// This percentage is based on block heights.
     var fetchPhasePercentage = 0.0;
+    var transactionCount = 0;
 
     /// First phase of the sync
     /// Here we get all transactions from its drive.
     await for (DriveEntityHistoryTransactionModel t in transactionsStream) {
+      transactionCount++;
       double calculatePercentageBasedOnBlockHeights() {
         final block = t.transactionCommonMixin.block;
 
@@ -689,7 +733,15 @@ class _SyncRepository implements SyncRepository {
         }
         final percentage =
             calculatePercentageBasedOnBlockHeights() * fetchPhaseWeight;
-        yield percentage;
+        
+        // Yield progress more frequently during fetch phase for better UI responsiveness
+        // Also yield control to prevent UI blocking
+        if (transactionCount % 25 == 0 || percentage > fetchPhasePercentage + 0.01) {
+          yield percentage;
+          fetchPhasePercentage = percentage;
+          // Allow UI to update
+          await Future.delayed(const Duration(milliseconds: 5));
+        }
       }
     }
 
@@ -703,6 +755,9 @@ class _SyncRepository implements SyncRepository {
     logger.d(
         'Duration of fetch phase for ${drive.name}: $fetchPhaseTotalTime ms. Progress by block height: $fetchPhasePercentage%. Starting parse phase');
 
+    // Yield progress at the end of fetch phase / start of parse phase
+    yield fetchPhaseWeight;
+
     try {
       yield* _parseDriveTransactionsIntoDatabaseEntities(
         transactions: transactions,
@@ -714,7 +769,7 @@ class _SyncRepository implements SyncRepository {
         snapshotDriveHistory: snapshotDriveHistory,
         ownerAddress: ownerAddress,
       ).map(
-        (parseProgress) => parseProgress * 0.9,
+        (parseProgress) => fetchPhaseWeight + (parseProgress * parsePhaseWeight),
       );
     } catch (e) {
       logger.e('[Sync Drive] Error while parsing transactions', e);
@@ -848,6 +903,10 @@ class _SyncRepository implements SyncRepository {
         list: transactions,
         batchSize: batchSize,
         endOfBatchCallback: (items) async* {
+          // Yield progress at the start of processing this batch
+          final currentProgress = driveEntityParseProgress();
+          yield currentProgress;
+          
           final entityHistory =
               await _arweave.createDriveEntityHistoryFromTransactions(
             items,
@@ -864,7 +923,12 @@ class _SyncRepository implements SyncRepository {
 
           numberOfDriveEntitiesParsed += items.length - newEntities.length;
 
-          yield driveEntityParseProgress();
+          // Yield progress after processing this batch
+          final updatedProgress = driveEntityParseProgress();
+          yield updatedProgress;
+          
+          // Yield control to prevent UI blocking during heavy processing
+          await Future.delayed(const Duration(milliseconds: 10));
 
           // Handle the last page of newEntities, i.e; There's nothing more to sync
           if (newEntities.length < batchSize) {

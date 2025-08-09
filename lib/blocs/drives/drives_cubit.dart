@@ -9,7 +9,6 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rxdart/rxdart.dart';
@@ -50,14 +49,10 @@ class DrivesCubit extends Cubit<DrivesState> {
 
     _drivesSubscription =
         Rx.combineLatest3<List<Drive>, List<FolderEntry>, void, List<Drive>>(
-      _driveDao.allDrives(
-        order: (drives) {
-          return OrderBy([OrderingTerm.asc(drives.name)]);
-        },
-      ).watch(),
+      _driveDao.allDrives().watch(),
       _driveDao.ghostFolders().watch(),
       _profileCubit.stream.startWith(ProfileCheckingAvailability()),
-      (drives, _, __) => drives,
+      (drives, _, __) => drives..sort((a, b) => a.name.compareTo(b.name)),
     ).listen((drives) async {
       final state = this.state;
 

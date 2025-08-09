@@ -173,7 +173,7 @@ class ArweaveService {
   Stream<SnapshotEntityTransaction> getAllSnapshotsOfDrive(
     String driveId,
     int? lastBlockHeight, {
-    required String ownerAddress,
+    String? ownerAddress,
   }) async* {
     String cursor = '';
 
@@ -186,7 +186,7 @@ class ArweaveService {
               driveId: driveId,
               lastBlockHeight: lastBlockHeight,
               after: cursor,
-              ownerAddress: ownerAddress,
+              ownerAddress: ownerAddress != null ? [ownerAddress] : null,
             ),
           ),
         );
@@ -290,11 +290,16 @@ class ArweaveService {
     /// rate-limited (TODO: check the latter), many requests will be retrying.
     /// We shall find another way to fail faster.
 
-    // MAYBE FIX: set a narrow concurrency limit
-
-    final List<Uint8List> entityDatas = await Future.wait(
-      entityTxs.map(
-        (model) async {
+    // FIXED: Limit concurrency to prevent browser overwhelm
+    // Reduced concurrency limit for better UI responsiveness
+    const concurrencyLimit = 5;
+    final List<Uint8List> entityDatas = [];
+    
+    for (var i = 0; i < entityTxs.length; i += concurrencyLimit) {
+      final batch = entityTxs.skip(i).take(concurrencyLimit);
+      final batchResults = await Future.wait(
+        batch.map(
+          (model) async {
           final entity = model.transactionCommonMixin;
 
           final tags = HashMap.fromIterable(
@@ -323,8 +328,16 @@ class ArweaveService {
             isPrivate: driveKey != null,
           );
         },
-      ),
-    );
+      ));
+      
+      entityDatas.addAll(batchResults);
+      
+      // Yield control between batches to prevent UI blocking
+      // Use a longer delay for better UI responsiveness
+      if (i + concurrencyLimit < entityTxs.length) {
+        await Future.delayed(const Duration(milliseconds: 10));
+      }
+    }
 
     final metadataCache = await MetadataCache.fromCacheStore(
       await newSharedPreferencesCacheStore(),
