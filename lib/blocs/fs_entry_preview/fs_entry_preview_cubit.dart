@@ -154,6 +154,18 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
     if (selectedItem != null) {
       if (selectedItem.runtimeType == FileDataTableItem) {
+        final fileItem = selectedItem as FileDataTableItem;
+        
+        // Try to preview immediately if we have a dataTxId
+        if (fileItem.dataTxId.isNotEmpty) {
+          final drive = await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+          if (drive != null) {
+            // Attempt immediate preview with available data
+            await _attemptImmediatePreview(fileItem, drive);
+          }
+        }
+        
+        // Still watch for updates in case the file data changes
         _entrySubscription = _driveDao
             .fileById(fileId: selectedItem.id)
             .watchSingle()
@@ -181,17 +193,17 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
               case 'audio':
                 _previewAudio(
-                  (selectedItem as FileDataTableItem).pinnedDataOwnerAddress ==
+                  fileItem.pinnedDataOwnerAddress ==
                           null &&
                       drive.isPrivate,
-                  selectedItem,
+                  fileItem,
                   previewUrl,
                 );
                 break;
               case 'video':
                 _previewVideo(
                   drive.isPrivate,
-                  selectedItem as FileDataTableItem,
+                  fileItem,
                   previewUrl,
                 );
                 break;
@@ -204,7 +216,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
                 }
                 _previewDocument(
                   drive.isPrivate,
-                  selectedItem as FileDataTableItem,
+                  fileItem,
                   previewUrl,
                 );
                 break;
@@ -220,6 +232,67 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       }
     } else {
       emit(FsEntryPreviewUnavailable());
+    }
+  }
+  
+  Future<void> _attemptImmediatePreview(FileDataTableItem fileItem, Drive drive) async {
+    // Check size limits
+    if (drive.isPrivate && fileItem.size != null && fileItem.size! > previewMaxFileSize) {
+      return; // Wait for database sync for large private files
+    }
+    
+    final contentType = fileItem.contentType;
+    final fileExtension = contentType.split('/').last;
+    final previewType = contentType.split('/').first;
+    final previewUrl = '${_configService.config.defaultArweaveGatewayUrl}/${fileItem.dataTxId}';
+
+    if (!_supportedExtension(previewType, fileExtension)) {
+      return; // Will be handled by the subscription
+    }
+
+    // Attempt immediate preview based on type
+    switch (previewType) {
+      case 'text':
+      case 'application':
+        // Check file size for document preview
+        if (fileItem.size != null && fileItem.size! > documentPreviewMaxFileSize) {
+          return;
+        }
+        _previewDocument(
+          drive.isPrivate,
+          fileItem,
+          previewUrl,
+        );
+        break;
+      case 'image':
+        // For images, we can emit the preview URL immediately
+        // The actual loading will happen in the widget
+        emit(FsEntryPreviewImage(previewUrl: previewUrl));
+        
+        // Still trigger the image preview for private decryption if needed
+        if (drive.isPrivate && fileItem.pinnedDataOwnerAddress == null) {
+          // We need to wait for the database sync to get the full FileEntry
+          // for proper image decryption
+          return;
+        }
+        break;
+      case 'audio':
+        _previewAudio(
+          fileItem.pinnedDataOwnerAddress == null && drive.isPrivate,
+          fileItem,
+          previewUrl,
+        );
+        break;
+      case 'video':
+        _previewVideo(
+          drive.isPrivate,
+          fileItem,
+          previewUrl,
+        );
+        break;
+      default:
+        // Other types will be handled by the subscription
+        break;
     }
   }
 
@@ -411,10 +484,16 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     emit(const FsEntryPreviewLoading());
 
     try {
+      // For manifest files, use the /raw/ endpoint to get the actual JSON content
+      String dataUrl = previewUrl;
+      if (selectedItem.contentType == 'application/x.arweave-manifest+json') {
+        dataUrl = '${_configService.config.defaultArweaveGatewayUrl}/raw/${selectedItem.dataTxId}';
+      }
+      
       // Fetch the document content using cache
       final Uint8List? dataBytes = await _getBytesFromCache(
         dataTxId: selectedItem.dataTxId,
-        dataUrl: previewUrl,
+        dataUrl: dataUrl,
       );
 
       if (dataBytes == null) {
@@ -456,7 +535,19 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       }
 
       // Convert bytes to string
-      final content = utf8.decode(bytesToDecode, allowMalformed: true);
+      String content = utf8.decode(bytesToDecode, allowMalformed: true);
+      
+      // Pretty-print JSON files for better readability
+      if (selectedItem.contentType == 'application/json' || 
+          selectedItem.contentType == 'application/x.arweave-manifest+json') {
+        try {
+          final dynamic jsonData = json.decode(content);
+          content = const JsonEncoder.withIndent('  ').convert(jsonData);
+        } catch (e) {
+          // If JSON parsing fails, use the original content
+          logger.d('Failed to format JSON: $e');
+        }
+      }
 
       emit(FsEntryPreviewText(
         previewUrl: previewUrl,
