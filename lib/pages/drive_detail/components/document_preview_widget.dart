@@ -171,14 +171,15 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
             children: [
               Container(
                 color: colors.themeBgSurface,
-                child: Scrollbar(
+                child: ArDriveScrollBar(
                   controller: _scrollController,
+                  alwaysVisible: true,
                   child: SingleChildScrollView(
                     controller: _scrollController,
                     padding: const EdgeInsets.all(16),
                     child: Align(
                       alignment: Alignment.topLeft,
-                      child: SelectableText(
+                      child: Text(
                         widget.content,
                         style: typography.paragraphSmall(
                           fontWeight: ArFontWeight.book,
@@ -227,8 +228,9 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
               padding: EdgeInsets.only(
                 bottom: _controlsVisible ? 100 : 0,
               ),
-              child: Scrollbar(
+              child: ArDriveScrollBar(
                 controller: _scrollController,
+                alwaysVisible: true,
                 child: SingleChildScrollView(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(24),
@@ -236,7 +238,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                     alignment: Alignment.topLeft,
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 1200),
-                      child: SelectableText(
+                      child: Text(
                         widget.content,
                         style: typography.paragraphNormal(
                           fontWeight: ArFontWeight.book,
