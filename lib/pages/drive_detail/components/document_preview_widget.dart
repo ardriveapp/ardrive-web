@@ -135,7 +135,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
           pageBuilder: (context, _, __) => Scaffold(
-            backgroundColor: Colors.black,
+            backgroundColor: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
             body: DocumentPreviewWidget(
               filename: widget.filename,
               content: widget.content,
@@ -224,7 +224,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
           children: [
             // Content
             Container(
-              color: Colors.black,
+              color: colors.themeBgSurface,
               padding: EdgeInsets.only(
                 bottom: _controlsVisible ? 100 : 0,
               ),
@@ -242,7 +242,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                         widget.content,
                         style: typography.paragraphNormal(
                           fontWeight: ArFontWeight.book,
-                          color: Colors.white,
+                          color: colors.themeFgDefault,
                         ).copyWith(
                           fontFamily: 'Courier New',
                           height: 1.8,
@@ -273,7 +273,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                 bottom: 120,
                 right: 16,
                 child: ArDriveIconButton(
-                  icon: ArDriveIcons.chevronUp(size: 20, color: Colors.white),
+                  icon: ArDriveIcons.chevronUp(size: 20),
                   tooltip: 'Scroll to top',
                   onPressed: _scrollToTop,
                 ),
