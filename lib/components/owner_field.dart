@@ -8,7 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class OwnerField extends StatefulWidget {
   final String? ownerAddress;
-  
+
   const OwnerField({
     super.key,
     required this.ownerAddress,
@@ -33,7 +33,7 @@ class _OwnerFieldState extends State<OwnerField> {
 
   Future<void> _loadArnsName() async {
     if (!mounted || widget.ownerAddress == null) return;
-    
+
     setState(() {
       _isLoading = true;
     });
@@ -44,11 +44,14 @@ class _OwnerFieldState extends State<OwnerField> {
         widget.ownerAddress!,
         getLogo: true,
       );
-      
+
       if (mounted) {
         setState(() {
           _arnsName = primaryName.primaryName;
-          _arnsLogo = primaryName.logo;
+          // Check for both null and "null" string
+          _arnsLogo = (primaryName.logo != null && primaryName.logo != 'null')
+              ? primaryName.logo
+              : null;
           _isLoading = false;
         });
       }
@@ -65,17 +68,18 @@ class _OwnerFieldState extends State<OwnerField> {
   void _openArnsLink() {
     if (_arnsName != null) {
       final configService = context.read<ConfigService>();
-      String gateway = configService.config.defaultArweaveGatewayUrl ?? 'arweave.net';
-      gateway = gateway
-          .replaceFirst('https://', '')
-          .replaceFirst('http://', '');
+      String gateway =
+          configService.config.defaultArweaveGatewayUrl ?? 'arweave.net';
+      gateway =
+          gateway.replaceFirst('https://', '').replaceFirst('http://', '');
       openUrl(url: 'https://$_arnsName.$gateway');
     }
   }
 
   void _openViewBlockLink() {
     if (widget.ownerAddress != null) {
-      openUrl(url: 'https://viewblock.io/arweave/address/${widget.ownerAddress}');
+      openUrl(
+          url: 'https://viewblock.io/arweave/address/${widget.ownerAddress}');
     }
   }
 
@@ -86,62 +90,82 @@ class _OwnerFieldState extends State<OwnerField> {
     }
 
     final colors = ArDriveTheme.of(context).themeData.colors;
-    
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         // Logo if available
-        if (_arnsLogo != null && _arnsLogo!.isNotEmpty) ...[
+        if (_arnsLogo != null &&
+            _arnsLogo!.isNotEmpty &&
+            _arnsLogo != 'null') ...[
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: Image.network(
-              _arnsLogo!.startsWith('http') 
-                  ? _arnsLogo! 
+              _arnsLogo!.startsWith('http')
+                  ? _arnsLogo!
                   : 'https://arweave.net/$_arnsLogo',
               width: 28,
               height: 28,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+              errorBuilder: (context, error, stackTrace) =>
+                  const SizedBox.shrink(),
             ),
           ),
           const SizedBox(width: 8),
         ],
-        
+
         // Name or address - styled like transaction IDs
-        ArDriveClickArea(
-          child: GestureDetector(
-            onTap: _arnsName != null ? _openArnsLink : _openViewBlockLink,
-            child: _isLoading
-                ? SizedBox(
-                    width: 60,
-                    height: 16,
-                    child: LinearProgressIndicator(
-                      backgroundColor: colors.themeBgSurface,
-                      valueColor: AlwaysStoppedAnimation<Color>(colors.themeAccentBrand),
-                    ),
-                  )
-                : ArDriveTooltip(
-                    message: _arnsName != null 
-                        ? 'ar://$_arnsName' 
-                        : widget.ownerAddress!,
-                    child: Text(
-                      _arnsName != null 
+        Flexible(
+          child: ArDriveClickArea(
+            child: GestureDetector(
+              onTap: _arnsName != null ? _openArnsLink : _openViewBlockLink,
+              child: _isLoading
+                  ? SizedBox(
+                      width: 60,
+                      height: 16,
+                      child: LinearProgressIndicator(
+                        backgroundColor: colors.themeBgSurface,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            colors.themeAccentBrand),
+                      ),
+                    )
+                  : ArDriveTooltip(
+                      message: _arnsName != null
                           ? 'ar://$_arnsName'
-                          : '${widget.ownerAddress!.substring(0, 4)}...',
-                      style: ArDriveTypography.body.buttonNormalRegular().copyWith(
-                        decoration: TextDecoration.underline,
+                          : widget.ownerAddress!,
+                      child: Text(
+                        _arnsName != null
+                            ? () {
+                                // Show more characters when no logo is present
+                                final maxChars = (_arnsLogo == null ||
+                                        _arnsLogo!.isEmpty ||
+                                        _arnsLogo == 'null')
+                                    ? 16 // More space available without logo
+                                    : 8; // With logo, show 8 chars
+                                return _arnsName!.length > maxChars
+                                    ? 'ar://${_arnsName!.substring(0, maxChars)}...'
+                                    : 'ar://$_arnsName';
+                              }()
+                            : '${widget.ownerAddress!.substring(0, 4)}...',
+                        style: ArDriveTypography.body
+                            .buttonNormalRegular()
+                            .copyWith(
+                              decoration: TextDecoration.underline,
+                            ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
-                  ),
+            ),
           ),
         ),
-        
+
         // Copy button - always copies wallet address
         const SizedBox(width: 12),
         CopyButton(
           text: widget.ownerAddress!,
         ),
-        
+
         // External link icon for ViewBlock (only when ArNS name is shown)
         if (_arnsName != null) ...[
           const SizedBox(width: 8),
