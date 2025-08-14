@@ -12,6 +12,7 @@ import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/fs_entry_license_form.dart';
 import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/license_details_popover.dart';
+import 'package:ardrive/components/owner_field.dart';
 import 'package:ardrive/components/pin_indicator.dart';
 import 'package:ardrive/components/sizes.dart';
 import 'package:ardrive/components/truncated_address.dart';
@@ -44,7 +45,6 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -65,6 +65,7 @@ class DetailsPanel extends StatefulWidget {
     this.onPreviousImageNavigation,
     this.onNextImageNavigation,
     required this.canNavigateThroughImages,
+    this.ownerAddress,
   });
 
   final ArDriveDataTableItem item;
@@ -77,6 +78,7 @@ class DetailsPanel extends StatefulWidget {
   final Function()? onPreviousImageNavigation;
   final Function()? onNextImageNavigation;
   final bool canNavigateThroughImages;
+  final String? ownerAddress;
 
   @override
   State<DetailsPanel> createState() => _DetailsPanelState();
@@ -99,6 +101,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
             isSharedFile: widget.isSharePage,
             maybeRevisions: widget.revisions,
             maybeLicenseState: widget.licenseState,
+            ownerAddress: widget.ownerAddress,
             driveDao: context.read<DriveDao>(),
             licenseService: context.read<LicenseService>(),
           ),
@@ -731,8 +734,22 @@ class _DetailsPanelState extends State<DetailsPanel> {
     String? pinnedDataOwnerAddress = item.pinnedDataOwnerAddress;
 
     final typography = ArDriveTypographyNew.of(context);
+    
+    // Get owner address from state if available
+    String? ownerAddress;
+    if (state is FsEntryFileInfoSuccess) {
+      ownerAddress = state.ownerAddress;
+    }
 
     return [
+      // Only show owner field on share pages
+      if (widget.isSharePage && ownerAddress != null) ...[
+        DetailsPanelItem(
+          leading: OwnerField(ownerAddress: ownerAddress),
+          itemTitle: 'Uploaded By',
+        ),
+        sizedBoxHeight16px,
+      ],
       DetailsPanelItem(
         leading: CopyButton(text: item.id),
         itemTitle: appLocalizationsOf(context).fileID,
@@ -874,8 +891,10 @@ class _DetailsPanelState extends State<DetailsPanel> {
             ],
           ),
         ),
+      // Only show ArNS Name field for assigning names to files when not on share page
       if (widget.drivePrivacy == DrivePrivacy.public.name &&
-          AppPlatform.isWeb()) ...[
+          AppPlatform.isWeb() &&
+          !widget.isSharePage) ...[
         sizedBoxHeight16px,
         DetailsPanelItem(
           leading: _ArnsNameDisplay(fileItem: item),
@@ -1343,130 +1362,6 @@ class DetailsPanelItem extends StatelessWidget {
   }
 }
 
-class CopyButton extends StatefulWidget {
-  final String text;
-  final double size;
-  final bool showCopyText;
-  final Widget? child;
-  final int positionY;
-  final int positionX;
-  final Color? copyMessageColor;
-
-  const CopyButton({
-    super.key,
-    required this.text,
-    this.size = 20,
-    this.showCopyText = true,
-    this.child,
-    this.positionY = 40,
-    this.positionX = 20,
-    this.copyMessageColor,
-  });
-
-  @override
-  // ignore: library_private_types_in_public_api
-  _CopyButtonState createState() => _CopyButtonState();
-}
-
-class _CopyButtonState extends State<CopyButton> {
-  bool _showCheck = false;
-  OverlayEntry? _overlayEntry;
-
-  @override
-  dispose() {
-    if (_overlayEntry != null && _overlayEntry!.mounted) {
-      _overlayEntry?.remove();
-    }
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (widget.child != null) {
-      return GestureDetector(
-        onTap: _copy,
-        child: HoverWidget(
-          hoverScale: 1,
-          child: widget.child!,
-        ),
-      );
-    }
-
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 200),
-      child: ArDriveIconButton(
-        tooltip: _showCheck ? '' : appLocalizationsOf(context).copyTooltip,
-        onPressed: _copy,
-        icon: _showCheck
-            ? ArDriveIcons.checkCirle(
-                size: widget.size,
-                color: ArDriveTheme.of(context)
-                    .themeData
-                    .colors
-                    .themeSuccessDefault,
-              )
-            : ArDriveIcons.copy(size: widget.size),
-      ),
-    );
-  }
-
-  void _copy() {
-    Clipboard.setData(ClipboardData(text: widget.text));
-    if (mounted) {
-      if (_showCheck) {
-        return;
-      }
-
-      setState(() {
-        _showCheck = true;
-        if (widget.showCopyText) {
-          _overlayEntry = _createOverlayEntry(context);
-          Overlay.of(context).insert(_overlayEntry!);
-        }
-
-        Future.delayed(const Duration(seconds: 2), () {
-          if (!mounted) {
-            return;
-          }
-
-          setState(() {
-            _showCheck = false;
-            if (_overlayEntry != null && _overlayEntry!.mounted) {
-              _overlayEntry?.remove();
-            }
-          });
-        });
-      });
-    }
-  }
-
-  OverlayEntry _createOverlayEntry(BuildContext parentContext) {
-    final RenderBox button = context.findRenderObject() as RenderBox;
-    final Offset buttonPosition = button.localToGlobal(Offset.zero);
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-    return OverlayEntry(
-      builder: (context) => Positioned(
-        left: buttonPosition.dx - widget.positionX,
-        top: buttonPosition.dy - widget.positionY,
-        child: Material(
-          color: widget.copyMessageColor ?? colorTokens.containerL1,
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Center(
-              child: Text(
-                'Copied!',
-                style: typography.paragraphNormal(),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _DownloadOrPreview extends StatelessWidget {
   const _DownloadOrPreview({

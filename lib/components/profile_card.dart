@@ -1,6 +1,6 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
-import 'package:ardrive/components/details_panel.dart';
+import 'package:ardrive/components/copy_button.dart';
 import 'package:ardrive/components/icon_theme_switcher.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/components/truncated_address.dart';
