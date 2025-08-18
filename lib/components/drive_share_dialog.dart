@@ -1,6 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
-import 'package:ardrive/components/details_panel.dart';
+import 'package:ardrive/components/copy_button.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
