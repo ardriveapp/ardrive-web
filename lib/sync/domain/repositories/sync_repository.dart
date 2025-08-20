@@ -284,6 +284,9 @@ class _SyncRepository implements SyncRepository {
         // If sync was cancelled during drive sync, add error to stream
         if (wasCancelled) {
           logger.d('Sync was cancelled during drive sync, adding error to stream');
+          // Clear the maps on cancellation to prevent state issues
+          _ghostFolders.clear();
+          _folderIds.clear();
           syncProgressController.addError(SyncCancelledException());
           await syncProgressController.close();
           return; // Exit early
@@ -433,17 +436,26 @@ class _SyncRepository implements SyncRepository {
         // Handle cancellation during post-sync operations
         if (e is SyncCancelledException) {
           logger.i('Sync cancelled during post-sync operations');
+          // Clear the maps on cancellation to prevent state issues
+          _ghostFolders.clear();
+          _folderIds.clear();
           syncProgressController.addError(e); // Add error to stream so cubit sees it
           await syncProgressController.close();
           return; // Don't rethrow - error is in stream
         }
         // Other errors - log and add to stream
         logger.e('Error during post-sync operations', e);
+        // Clear the maps on any error to prevent state issues
+        _ghostFolders.clear();
+        _folderIds.clear();
         syncProgressController.addError(e);
         await syncProgressController.close();
         return;
       }
     }).catchError((error) async {
+      // Clear the maps on any error to prevent state issues
+      _ghostFolders.clear();
+      _folderIds.clear();
       // Add error to stream and close
       logger.d('Sync failed with error, closing controller: $error');
       if (!syncProgressController.isClosed) {
@@ -505,6 +517,10 @@ class _SyncRepository implements SyncRepository {
   }) async {
     final ghostFoldersByDrive =
         <DriveID, Map<FolderID, FolderEntriesCompanion>>{};
+    
+    // Collect all ghost folders to be created
+    final ghostFoldersToCreate = <FolderEntry>[];
+    
     //Finalize missing parent list
     for (final ghostFolder in ghostFolders.values) {
       final folder = await driveDao
@@ -540,11 +556,20 @@ class _SyncRepository implements SyncRepository {
         isHidden: ghostFolder.isHidden,
         path: '',
       );
-      await driveDao.into(driveDao.folderEntries).insert(folderEntry);
+      ghostFoldersToCreate.add(folderEntry);
       ghostFoldersByDrive.putIfAbsent(
         drive.id,
         () => {folderEntry.id: folderEntry.toCompanion(false)},
       );
+    }
+    
+    // Insert all ghost folders in a single transaction
+    if (ghostFoldersToCreate.isNotEmpty) {
+      await driveDao.transaction(() async {
+        for (final folderEntry in ghostFoldersToCreate) {
+          await driveDao.into(driveDao.folderEntries).insert(folderEntry);
+        }
+      });
     }
   }
 
