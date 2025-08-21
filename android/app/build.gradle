@@ -32,13 +32,19 @@ apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 android {
     compileSdkVersion 35
 
+    kotlin {
+        jvmToolchain(17)
+    }
+
+    compileOptions {
+        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_17
+    }
+
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
     }
 
-    lintOptions {
-        disable 'InvalidPackage'
-    }
 
     defaultConfig {
         applicationId "io.ardrive.app"
@@ -65,6 +71,10 @@ android {
         production {
             dimension "app"
         }
+    }
+    namespace 'io.ardrive.app'
+    lint {
+        disable 'InvalidPackage'
     }
 }
 
