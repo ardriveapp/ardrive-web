@@ -1,7 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_rename/drive_rename_cubit.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -20,29 +19,26 @@ Future<void> promptToRenameDrive(
   required String driveId,
   required String driveName,
 }) =>
-    showCongestionDependentModalDialog(
+    showArDriveDialog(
       context,
-      () => showArDriveDialog(
-        context,
-        content: MultiBlocProvider(
-          providers: [
-            BlocProvider(
-              create: (context) => DriveRenameCubit(
-                driveId: driveId,
-                arweave: context.read<ArweaveService>(),
-                turboUploadService: context.read<TurboUploadService>(),
-                driveDao: context.read<DriveDao>(),
-                profileCubit: context.read<ProfileCubit>(),
-                syncCubit: context.read<SyncCubit>(),
-              ),
+      content: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) => DriveRenameCubit(
+              driveId: driveId,
+              arweave: context.read<ArweaveService>(),
+              turboUploadService: context.read<TurboUploadService>(),
+              driveDao: context.read<DriveDao>(),
+              profileCubit: context.read<ProfileCubit>(),
+              syncCubit: context.read<SyncCubit>(),
             ),
-            BlocProvider.value(
-              value: context.read<DriveDetailCubit>(),
-            ),
-          ],
-          child: DriveRenameForm(
-            driveName: driveName,
           ),
+          BlocProvider.value(
+            value: context.read<DriveDetailCubit>(),
+          ),
+        ],
+        child: DriveRenameForm(
+          driveName: driveName,
         ),
       ),
     );

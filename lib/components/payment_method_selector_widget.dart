@@ -1,10 +1,10 @@
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/turbo/topup/views/topup_modal.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/utils.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 class PaymentMethodSelector extends StatefulWidget {
   final UploadPaymentMethodInfo uploadMethodInfo;
@@ -13,6 +13,7 @@ class PaymentMethodSelector extends StatefulWidget {
   final void Function() onTurboSelect;
   final bool useNewArDriveUI;
   final bool useDropdown;
+  final bool showCongestionWarning;
 
   const PaymentMethodSelector({
     super.key,
@@ -22,6 +23,7 @@ class PaymentMethodSelector extends StatefulWidget {
     required this.onTurboSelect,
     this.useNewArDriveUI = false,
     this.useDropdown = false,
+    this.showCongestionWarning = false,
   });
 
   @override
@@ -43,6 +45,11 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
       children: [
         if (widget.useDropdown) _buildDropdown(context),
         if (!widget.useDropdown) _buildContent(context),
+        if (widget.showCongestionWarning && _selectedMethod == UploadMethod.ar)
+          Padding(
+            padding: const EdgeInsets.only(top: 12.0),
+            child: _buildCongestionWarning(context),
+          ),
         _getInsufficientBalanceMessage(context: context),
       ],
     );
@@ -303,22 +310,32 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
               radioButton,
               Padding(
                 padding: const EdgeInsets.only(left: 24.0),
-                child: Text(
-                  index == 0
-                      // TODO: localize
-                      ? 'Wallet Balance: ${widget.uploadMethodInfo.arBalance} AR'
-                      : 'Turbo Balance: ${widget.uploadMethodInfo.turboCredits} Credits',
-                  style: widget.useNewArDriveUI
-                      ? typography.paragraphNormal(
-                          color: colorTokens.textLow,
-                          fontWeight: ArFontWeight.semiBold,
-                        )
-                      : ArDriveTypography.body.buttonNormalBold(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeFgMuted,
-                        ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      index == 0
+                          // TODO: localize
+                          ? 'Wallet Balance: ${widget.uploadMethodInfo.arBalance} AR'
+                          : 'Turbo Balance: ${widget.uploadMethodInfo.turboCredits} Credits',
+                      style: widget.useNewArDriveUI
+                          ? typography.paragraphNormal(
+                              color: colorTokens.textLow,
+                              fontWeight: ArFontWeight.semiBold,
+                            )
+                          : ArDriveTypography.body.buttonNormalBold(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgMuted,
+                            ),
+                    ),
+                    if (index == 0 && widget.showCongestionWarning)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: _buildCongestionWarning(context),
+                      ),
+                  ],
                 ),
               ),
             ],
@@ -433,5 +450,45 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
       );
     }
     return const SizedBox();
+  }
+
+  Widget _buildCongestionWarning(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: ArDriveTheme.of(context).themeData.colors.themeWarningSubtle,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: ArDriveTheme.of(context).themeData.colors.themeWarningEmphasis,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.warning_amber_rounded,
+            size: 16,
+            color: ArDriveTheme.of(context).themeData.colors.themeWarningEmphasis,
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              appLocalizationsOf(context).congestionWarningShort,
+              style: widget.useNewArDriveUI
+                  ? typography.paragraphSmall(
+                      color: ArDriveTheme.of(context).themeData.colors.themeWarningFg,
+                      fontWeight: ArFontWeight.semiBold,
+                    )
+                  : ArDriveTypography.body.smallBold(
+                      color: ArDriveTheme.of(context).themeData.colors.themeWarningFg,
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
