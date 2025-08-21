@@ -199,10 +199,10 @@ class _SyncRepository implements SyncRepository {
     if (SyncFailureSimulator.instance.isEnabled) {
       SyncFailureSimulator.instance.resetFirstDrive();
     }
-    
+
     // Track if sync was cancelled
     bool wasCancelled = false;
-    
+
     // Start the async work but don't wait for it yet
     // Using Future.wait with eagerError: false to continue even if some drives fail
     Future.wait(
@@ -210,10 +210,10 @@ class _SyncRepository implements SyncRepository {
         try {
           // Check for cancellation before starting each drive
           token.checkCancellation();
-          
+
           // Inject simulated failure if enabled (for testing)
           await SyncFailureSimulator.instance.maybeInjectFailure(drive.id);
-          
+
           final driveSyncProgress = _syncDrive(
             drive.id,
             cipherKey: cipherKey,
@@ -227,12 +227,12 @@ class _SyncRepository implements SyncRepository {
             txFechedCallback: txFechedCallback,
             cancellationToken: token,
           );
-          
+
           double currentDriveProgress = 0;
           await for (var driveProgress in driveSyncProgress) {
             // Check for cancellation during sync
             token.checkCancellation();
-            
+
             // Reserve 10% for post-sync operations (cap drive sync at 90%)
             currentDriveProgress =
                 (totalProgress + driveProgress) / numberOfDrivesToSync * 0.9;
@@ -257,15 +257,16 @@ class _SyncRepository implements SyncRepository {
             // Don't count as failure, just stop processing this drive
             return;
           }
-          
+
           // Track the failure but continue with other drives
           logger.e('Failed to sync drive ${drive.id}', e);
-          
-          final updatedFailedDrives = List<String>.from(syncProgress.failedDriveIds)
-            ..add(drive.id);
-          final updatedErrorMessages = Map<String, String>.from(syncProgress.errorMessages)
-            ..putIfAbsent(drive.id, () => _extractErrorMessage(e));
-            
+
+          final updatedFailedDrives =
+              List<String>.from(syncProgress.failedDriveIds)..add(drive.id);
+          final updatedErrorMessages =
+              Map<String, String>.from(syncProgress.errorMessages)
+                ..putIfAbsent(drive.id, () => _extractErrorMessage(e));
+
           // Still increment progress but mark as failed (cap at 90%)
           totalProgress += 1;
           syncProgress = syncProgress.copyWith(
@@ -283,7 +284,8 @@ class _SyncRepository implements SyncRepository {
       try {
         // If sync was cancelled during drive sync, add error to stream
         if (wasCancelled) {
-          logger.d('Sync was cancelled during drive sync, adding error to stream');
+          logger.d(
+              'Sync was cancelled during drive sync, adding error to stream');
           // Clear the maps on cancellation to prevent state issues
           _ghostFolders.clear();
           _folderIds.clear();
@@ -291,147 +293,150 @@ class _SyncRepository implements SyncRepository {
           await syncProgressController.close();
           return; // Exit early
         }
-        
+
         // Check if we should skip post-sync operations due to failures
-        final successfulSyncs = syncProgress.drivesSynced - syncProgress.failedQueries;
+        final successfulSyncs =
+            syncProgress.drivesSynced - syncProgress.failedQueries;
         if (successfulSyncs == 0) {
           logger.w('All drives failed to sync. Skipping post-sync operations.');
           logger.d('Closing sync progress controller due to all failures');
           await syncProgressController.close();
           return; // Exit early if all drives failed
         }
-        
+
         // Continue with post-sync operations only if at least some drives succeeded
-      logger.i('Creating ghosts...');
-      
-      // Check for cancellation before ghost creation
-      token.checkCancellation();
-      
-      // Update progress to 92% for ghost creation
-      syncProgress = syncProgress.copyWith(
-        progress: 0.92,
-        statusMessage: 'Creating ghost folders...',
-      );
-      syncProgressController.add(syncProgress);
+        logger.i('Creating ghosts...');
 
-      await createGhosts(
-        driveDao: _driveDao,
-        ownerAddress: await wallet?.getAddress(),
-        ghostFolders: _ghostFolders,
-      );
+        // Check for cancellation before ghost creation
+        token.checkCancellation();
 
-      /// Clear the ghost folders after they are created
-      _ghostFolders.clear();
-
-      /// Clear the folder ids after they are created
-      _folderIds.clear();
-
-      logger.i('Ghosts created...');
-
-      logger.i('Syncing licenses...');
-      
-      // Check for cancellation before license sync
-      token.checkCancellation();
-      
-      // Update progress to 94% for license sync
-      syncProgress = syncProgress.copyWith(
-        progress: 0.94,
-        statusMessage: 'Syncing licenses...',
-      );
-      syncProgressController.add(syncProgress);
-
-      try {
-        final licenseTxIds = <String>{};
-        final revisionsToSyncLicense = (await _driveDao
-            .allFileRevisionsWithLicenseReferencedButNotSynced()
-            .get())
-          ..retainWhere((rev) => licenseTxIds.add(rev.licenseTxId!));
-        logger.d('Found ${revisionsToSyncLicense.length} licenses to sync');
-
-        await _updateLicenses(
-          revisionsToSyncLicense: revisionsToSyncLicense,
+        // Update progress to 92% for ghost creation
+        syncProgress = syncProgress.copyWith(
+          progress: 0.92,
+          statusMessage: 'Creating ghost folders...',
         );
-      } catch (e) {
-        // Re-throw cancellation exceptions
-        if (e is SyncCancelledException) {
-          rethrow;
-        }
-        logger.e('Error syncing licenses. Proceeding.', e);
-      }
+        syncProgressController.add(syncProgress);
 
-      logger.i('Licenses synced');
-
-      logger.i('Updating transaction statuses...');
-      
-      // Check for cancellation before transaction status updates
-      token.checkCancellation();
-      
-      // Update progress to 96% for transaction status updates
-      syncProgress = syncProgress.copyWith(
-        progress: 0.96,
-        statusMessage: 'Updating transaction statuses...',
-      );
-      syncProgressController.add(syncProgress);
-
-      final allFileRevisions = await _getAllFileEntities(driveDao: _driveDao);
-      final metadataTxsFromSnapshots =
-          await SnapshotItemOnChain.getAllCachedTransactionIds();
-      final confirmedFileTxIds = allFileRevisions
-          .where((file) => metadataTxsFromSnapshots.contains(file.metadataTxId))
-          .map((file) => file.dataTxId)
-          .toList();
-      _arnsRepository
-          .waitForARNSRecordsToUpdate()
-          .then((value) => _arnsRepository.saveAllFilesWithAssignedNames());
-      final hasHiddenItems = await _driveDao.hasHiddenItems().getSingle();
-      await _userPreferencesRepository.saveUserHasHiddenItem(hasHiddenItems);
-      await _userPreferencesRepository.load();
-      // Wrap transaction status update with cancellation check and timeout
-      try {
-        await Future.wait(
-          [
-            _updateTransactionStatuses(
-              driveDao: _driveDao,
-              arweave: _arweave,
-              txsIdsToSkip: confirmedFileTxIds,
-              cancellationToken: token,
-            ).timeout(
-              const Duration(seconds: 10),
-              onTimeout: () {
-                // Check if cancelled before timing out
-                token.checkCancellation();
-                logger.w('Transaction status update timed out after 10 seconds');
-                // Update status message to indicate timeout but don't treat as error
-                syncProgress = syncProgress.copyWith(
-                  statusMessage: 'Completing sync...',
-                );
-                syncProgressController.add(syncProgress);
-                // Continue without updating transaction statuses
-              },
-            ),
-          ],
+        await createGhosts(
+          driveDao: _driveDao,
+          ownerAddress: await wallet?.getAddress(),
+          ghostFolders: _ghostFolders,
         );
-      } catch (e) {
-        // Re-throw cancellation exceptions
-        if (e is SyncCancelledException) {
-          rethrow;
-        }
-        logger.w('Failed to update transaction statuses, continuing: $e');
-        // Don't fail the entire sync if transaction status update fails
-      }
 
-      _lastSync = DateTime.now();
-      
-      // Update progress to 100% when truly complete
-      syncProgress = syncProgress.copyWith(
-        progress: 1.0,
-        statusMessage: 'Sync complete',
-      );
-      syncProgressController.add(syncProgress);
-      
-      // Close the controller when everything is done
-      logger.d('Sync completed successfully, closing controller');
-      await syncProgressController.close();
+        /// Clear the ghost folders after they are created
+        _ghostFolders.clear();
+
+        /// Clear the folder ids after they are created
+        _folderIds.clear();
+
+        logger.i('Ghosts created...');
+
+        logger.i('Syncing licenses...');
+
+        // Check for cancellation before license sync
+        token.checkCancellation();
+
+        // Update progress to 94% for license sync
+        syncProgress = syncProgress.copyWith(
+          progress: 0.94,
+          statusMessage: 'Syncing licenses...',
+        );
+        syncProgressController.add(syncProgress);
+
+        try {
+          final licenseTxIds = <String>{};
+          final revisionsToSyncLicense = (await _driveDao
+              .allFileRevisionsWithLicenseReferencedButNotSynced()
+              .get())
+            ..retainWhere((rev) => licenseTxIds.add(rev.licenseTxId!));
+          logger.d('Found ${revisionsToSyncLicense.length} licenses to sync');
+
+          await _updateLicenses(
+            revisionsToSyncLicense: revisionsToSyncLicense,
+          );
+        } catch (e) {
+          // Re-throw cancellation exceptions
+          if (e is SyncCancelledException) {
+            rethrow;
+          }
+          logger.e('Error syncing licenses. Proceeding.', e);
+        }
+
+        logger.i('Licenses synced');
+
+        logger.i('Updating transaction statuses...');
+
+        // Check for cancellation before transaction status updates
+        token.checkCancellation();
+
+        // Update progress to 96% for transaction status updates
+        syncProgress = syncProgress.copyWith(
+          progress: 0.96,
+          statusMessage: 'Updating transaction statuses...',
+        );
+        syncProgressController.add(syncProgress);
+
+        final allFileRevisions = await _getAllFileEntities(driveDao: _driveDao);
+        final metadataTxsFromSnapshots =
+            await SnapshotItemOnChain.getAllCachedTransactionIds();
+        final confirmedFileTxIds = allFileRevisions
+            .where(
+                (file) => metadataTxsFromSnapshots.contains(file.metadataTxId))
+            .map((file) => file.dataTxId)
+            .toList();
+        _arnsRepository
+            .waitForARNSRecordsToUpdate()
+            .then((value) => _arnsRepository.saveAllFilesWithAssignedNames());
+        final hasHiddenItems = await _driveDao.hasHiddenItems().getSingle();
+        await _userPreferencesRepository.saveUserHasHiddenItem(hasHiddenItems);
+        await _userPreferencesRepository.load();
+        // Wrap transaction status update with cancellation check and timeout
+        try {
+          await Future.wait(
+            [
+              _updateTransactionStatuses(
+                driveDao: _driveDao,
+                arweave: _arweave,
+                txsIdsToSkip: confirmedFileTxIds,
+                cancellationToken: token,
+              ).timeout(
+                const Duration(seconds: 10),
+                onTimeout: () {
+                  // Check if cancelled before timing out
+                  token.checkCancellation();
+                  logger.w(
+                      'Transaction status update timed out after 10 seconds');
+                  // Update status message to indicate timeout but don't treat as error
+                  syncProgress = syncProgress.copyWith(
+                    statusMessage: 'Completing sync...',
+                  );
+                  syncProgressController.add(syncProgress);
+                  // Continue without updating transaction statuses
+                },
+              ),
+            ],
+          );
+        } catch (e) {
+          // Re-throw cancellation exceptions
+          if (e is SyncCancelledException) {
+            rethrow;
+          }
+          logger.w('Failed to update transaction statuses, continuing: $e');
+          // Don't fail the entire sync if transaction status update fails
+        }
+
+        _lastSync = DateTime.now();
+
+        // Update progress to 100% when truly complete
+        syncProgress = syncProgress.copyWith(
+          progress: 1.0,
+          statusMessage: 'Sync complete',
+        );
+        syncProgressController.add(syncProgress);
+
+        // Close the controller when everything is done
+        logger.d('Sync completed successfully, closing controller');
+        await syncProgressController.close();
       } catch (e) {
         // Handle cancellation during post-sync operations
         if (e is SyncCancelledException) {
@@ -439,7 +444,8 @@ class _SyncRepository implements SyncRepository {
           // Clear the maps on cancellation to prevent state issues
           _ghostFolders.clear();
           _folderIds.clear();
-          syncProgressController.addError(e); // Add error to stream so cubit sees it
+          syncProgressController
+              .addError(e); // Add error to stream so cubit sees it
           await syncProgressController.close();
           return; // Don't rethrow - error is in stream
         }
@@ -467,12 +473,12 @@ class _SyncRepository implements SyncRepository {
     // Yield from the stream while the sync is happening
     yield* syncProgressController.stream;
   }
-  
+
   String _extractErrorMessage(dynamic error) {
     if (error == null) return 'Unknown error';
-    
+
     final errorStr = error.toString();
-    
+
     // Check for common error patterns
     if (errorStr.contains('504')) {
       return 'Gateway timeout (504)';
@@ -487,9 +493,11 @@ class _SyncRepository implements SyncRepository {
     } else if (errorStr.contains('network')) {
       return 'Network error';
     }
-    
+
     // Return a truncated version of the error message
-    return errorStr.length > 100 ? '${errorStr.substring(0, 100)}...' : errorStr;
+    return errorStr.length > 100
+        ? '${errorStr.substring(0, 100)}...'
+        : errorStr;
   }
 
   @override
@@ -517,10 +525,10 @@ class _SyncRepository implements SyncRepository {
   }) async {
     final ghostFoldersByDrive =
         <DriveID, Map<FolderID, FolderEntriesCompanion>>{};
-    
+
     // Collect all ghost folders to be created
     final ghostFoldersToCreate = <FolderEntry>[];
-    
+
     //Finalize missing parent list
     for (final ghostFolder in ghostFolders.values) {
       final folder = await driveDao
@@ -562,7 +570,7 @@ class _SyncRepository implements SyncRepository {
         () => {folderEntry.id: folderEntry.toCompanion(false)},
       );
     }
-    
+
     // Insert all ghost folders in a single transaction
     if (ghostFoldersToCreate.isNotEmpty) {
       await driveDao.transaction(() async {
@@ -644,7 +652,7 @@ class _SyncRepository implements SyncRepository {
     for (var i = 0; i < length / page; i++) {
       // Check for cancellation before each batch
       cancellationToken?.checkCancellation();
-      
+
       final confirmations = <String?, int>{};
       final currentPage = <String>[];
 
@@ -658,17 +666,18 @@ class _SyncRepository implements SyncRepository {
 
       // Check cancellation before making the GraphQL call
       cancellationToken?.checkCancellation();
-      
+
       // Use a shorter timeout for individual GraphQL calls
-      final map = await arweave.getTransactionConfirmations(currentPage.toList())
+      final map = await arweave
+          .getTransactionConfirmations(currentPage.toList())
           .timeout(
-            const Duration(seconds: 5),
-            onTimeout: () {
-              logger.w('Individual transaction confirmation timeout');
-              // Return empty map on timeout to continue with other transactions
-              return <String, int>{};
-            },
-          );
+        const Duration(seconds: 5),
+        onTimeout: () {
+          logger.w('Individual transaction confirmation timeout');
+          // Return empty map on timeout to continue with other transactions
+          return <String, int>{};
+        },
+      );
 
       map.forEach((key, value) {
         confirmations.putIfAbsent(key, () => value);
@@ -779,6 +788,7 @@ class _SyncRepository implements SyncRepository {
     SyncCancellationToken? cancellationToken,
   }) async* {
     final token = cancellationToken ?? SyncCancellationToken();
+
     /// Variables to count the current drive's progress information
     final drive = await _driveDao.driveById(driveId: driveId).getSingle();
     final startSyncDT = DateTime.now();
