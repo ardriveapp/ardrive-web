@@ -33,7 +33,7 @@ dependencies:
   ardrive_uploader:
     path: ../
   ardrive_io:
-    path: ../ardrive_io
+    path: ../../ardrive_io
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git

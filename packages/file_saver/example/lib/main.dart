@@ -1,6 +1,5 @@
 import 'dart:developer';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter/foundation.dart';
@@ -94,14 +93,12 @@ class _MyAppState extends State<MyApp> {
                     List<int> sheets = workbook.saveAsStream();
                     workbook.dispose();
                     Uint8List data = Uint8List.fromList(sheets);
-                    MimeType type = MimeType.OTHER;
                     String path = await FileSaver.instance.saveAs(
-                        textEditingController.text == ""
+                        name: textEditingController.text.isEmpty
                             ? "File"
                             : textEditingController.text,
-                        data,
-                        "custome123",
-                        type);
+                        bytes: data,
+                        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
                     log(path);
                   },
                   child: const Text("Generate Excel and Open Save As Dialog"),

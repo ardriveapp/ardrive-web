@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names
+
 import 'dart:ffi';
 import 'dart:isolate';
 import 'dart:math';
@@ -5,11 +7,15 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:file_picker/src/utils.dart';
 import 'package:file_picker/src/exceptions.dart';
+import 'package:file_picker/src/utils.dart';
 import 'package:file_picker/src/windows/file_picker_windows_ffi_types.dart';
 import 'package:path/path.dart';
 import 'package:win32/win32.dart';
+
+// COINIT constants for COM initialization
+const int COINIT_APARTMENTTHREADED = 0x2;
+const int COINIT_DISABLE_OLE1DDE = 0x4;
 
 FilePicker filePickerWithFFI() => FilePickerWindows();
 
@@ -133,7 +139,7 @@ class FilePickerWindows extends FilePicker {
     if (!SUCCEEDED(hr)) {
       CoUninitialize();
 
-      if (hr == HRESULT_FROM_WIN32(ERROR_CANCELLED)) {
+      if (hr == HRESULT_FROM_WIN32(WIN32_ERROR.ERROR_CANCELLED)) {
         return Future.value(null);
       }
       throw WindowsException(hr);
@@ -261,7 +267,7 @@ class FilePickerWindows extends FilePicker {
     bool lastCharWasNull = false;
     // ignore: literal_only_boolean_expressions
     while (true) {
-      final char = openFileNameW.lpstrFile.cast<Uint16>().elementAt(i).value;
+      final char = (openFileNameW.lpstrFile.cast<Uint16>() + i).value;
       final currentCharIsNull = char == 0;
       if (currentCharIsNull && lastCharWasNull) {
         break;

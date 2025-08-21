@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 final MethodChannel _channel = MethodChannel(
@@ -73,7 +72,7 @@ class FilePickerIO extends FilePicker {
     bool? withData,
     bool? withReadStream,
   ) async {
-    final String type = describeEnum(fileType);
+    final String type = fileType.name;
     if (type != 'custom' && (allowedExtensions?.isNotEmpty ?? false)) {
       throw Exception(
           'You are setting a type [$fileType]. Custom extension filters are only allowed with FileType.custom, please change it or remove filters.');
@@ -107,7 +106,9 @@ class FilePickerIO extends FilePicker {
           PlatformFile.fromMap(
             platformFileMap,
             readStream: withReadStream!
-                ? ([int? s = 0, int? e]) => File(platformFileMap['path']).openRead(s, e).map((c) => c as Uint8List)
+                ? ([int? s = 0, int? e]) => File(platformFileMap['path'])
+                    .openRead(s, e)
+                    .map((c) => c as Uint8List)
                 : null,
           ),
         );

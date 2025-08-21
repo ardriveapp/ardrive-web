@@ -5,7 +5,6 @@ import 'dart:convert';
 // package as the core of your plugin.
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html';
-import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
