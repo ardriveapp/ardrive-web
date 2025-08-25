@@ -40,22 +40,22 @@ abstract class TurboUploadServiceChunkUploadsBase
   }) async {
     logger.d('[${dataItem.id}] Starting upload...');
 
-    // 1) Fetch basic upload info
-    final uploadInfo = await r.retry(
-      () => dio.get('$turboUploadUri/chunks/arweave/-1/-1'),
-    );
-    final uploadId = uploadInfo.data['id'] as String;
-    final minChunkSize = uploadInfo.data['min'] as int;
-    final maxChunkSize = uploadInfo.data['max'] as int;
-
-    // 2) Calculate chunk size + concurrency
+    // 1) Calculate chunk size + concurrency
     final chunkSize = _calculateChunkSize(
       dataSize: dataItem.dataItemSize,
-      minChunkSize: minChunkSize,
-      maxChunkSize: maxChunkSize,
+      minChunkSize: MiB(5).size,
+      maxChunkSize: MiB(500).size,
     );
+
     final maxInFlightData = MiB(100).size;
     final maxUploadsInParallel = maxInFlightData ~/ chunkSize;
+
+    // 2) Fetch basic upload info and tell server chunkSize (server will assert)
+    final uploadInfo = await r.retry(
+      () =>
+          dio.get('$turboUploadUri/chunks/arweave/-1/-1?chunkSize=$chunkSize'),
+    );
+    final uploadId = uploadInfo.data['id'] as String;
 
     logger.d(
       '[${dataItem.id}] UploadID=$uploadId, chunkSize=$chunkSize, parallel=$maxUploadsInParallel',
