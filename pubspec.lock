@@ -53,10 +53,10 @@ packages:
     dependency: "direct main"
     description:
       name: app_settings
-      sha256: e6a34735d4ddb24ca9c5fd7e965ec65c8b611cbd3a329152c294f9e9f4bacb33
+      sha256: "3e46c561441e5820d3a25339bf8b51b9e45a5f686873851a20c257a530917795"
       url: "https://pub.dev"
     source: hosted
-    version: "4.3.1"
+    version: "6.1.1"
   archive:
     dependency: "direct main"
     description:
@@ -91,11 +91,9 @@ packages:
   ardrive_io:
     dependency: "direct main"
     description:
-      path: "."
-      ref: "v1.4.7"
-      resolved-ref: "07983a8ae7f3fc529e044f5509d8a0be70b765c0"
-      url: "https://github.com/ar-io/ardrive_io.git"
-    source: git
+      path: "packages/ardrive_io"
+      relative: true
+    source: path
     version: "1.4.7"
   ardrive_logger:
     dependency: "direct main"
@@ -649,20 +647,16 @@ packages:
   file_picker:
     dependency: transitive
     description:
-      path: "."
-      ref: master
-      resolved-ref: "688300aaeae4dce397252d403800c92ee9523e95"
-      url: "https://github.com/ardriveapp/flutter_file_picker"
-    source: git
+      path: "packages/flutter_file_picker"
+      relative: true
+    source: path
     version: "5.5.0"
   file_saver:
     dependency: transitive
     description:
-      path: "."
-      ref: fix-extension
-      resolved-ref: "8f54519083145cdded6554c37e4050b71fac681e"
-      url: "https://github.com/ardriveapp/file_saver"
-    source: git
+      path: "packages/file_saver"
+      relative: true
+    source: path
     version: "0.1.1"
   file_selector:
     dependency: transitive
@@ -2113,10 +2107,10 @@ packages:
     dependency: "direct main"
     description:
       name: sqlite3_flutter_libs
-      sha256: "240a4b01b06bd1894f3675c843f1d6bc379625f0c2257a0838f321ed34d7591c"
+      sha256: "2b03273e71867a8a4d030861fc21706200debe5c5858a4b9e58f4a1c129586a4"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.9"
+    version: "0.5.39"
   sqlparser:
     dependency: transitive
     description:
@@ -2507,10 +2501,10 @@ packages:
     dependency: transitive
     description:
       name: webcrypto
-      sha256: "8484a1ae7a9c6a14eef729261ff4e8d4b7e61b5f4d0c5dbed839043cc945ed28"
+      sha256: e393b3d0b01694a8f81efecf278ed7392877130e6e7b29f578863e4f2d0b2ebd
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.6"
+    version: "0.5.8"
   webdriver:
     dependency: transitive
     description:

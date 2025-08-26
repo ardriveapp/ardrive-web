@@ -17,7 +17,7 @@ dependencies:
   ardrive_utils:
     path: ../ardrive_utils
   uuid: ^4.4.0
-  webcrypto: ^0.5.3
+  webcrypto: ^0.5.8
   async: ^2.11.0
   cryptography: ^2.5.0
   convert: ^3.1.1

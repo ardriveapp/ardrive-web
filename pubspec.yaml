@@ -34,9 +34,7 @@ dependencies:
       url: https://github.com/ardriveapp/ardrive_http.git
       ref: v1.3.2
   ardrive_io:
-    git:
-      url: https://github.com/ardriveapp/ardrive_io.git
-      ref: v1.4.5
+    path: ./packages/ardrive_io
   ardrive_ui:
     path: ./packages/ardrive_ui
   ardrive_utils:
@@ -92,8 +90,8 @@ dependencies:
   stash: ^5.1.0
   path: ^1.8.1
   flutter_svg: ^2.0.10+1
-  sqlite3_flutter_libs: ^0.5.9
-  app_settings: ^4.1.8
+  sqlite3_flutter_libs: ^0.5.39
+  app_settings: ^6.1.1
   firebase_crashlytics: ^3.0.4
   firebase_core: ^2.1.1
   bloc_concurrency: ^0.2.0
@@ -170,9 +168,7 @@ dependency_overrides:
       ref: 28e8f7f066c86f35412308cd9ebee30528f21985
 
   ardrive_io:
-    git:
-      url: https://github.com/ar-io/ardrive_io.git
-      ref: v1.4.7
+    path: ./packages/ardrive_io
   ardrive_ui:
     path: ./packages/ardrive_ui
 
