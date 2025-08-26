@@ -54,25 +54,33 @@ platform :ios do
 
   lane :deploy do |options|
     if options[:type].nil? then
-      return
+      UI.user_error!("Build type is required. Please specify :type parameter")
     end
 
     isProd = options[:type] == 'production'
 
-    build(type: options[:type]);
+    # Validate environment variables
+    if isProd
+      UI.user_error!("RELEASE_NOTES environment variable is required for production builds") unless ENV['RELEASE_NOTES']
+      UI.user_error!("FIREBASE_JSON environment variable is required for production builds") unless ENV['FIREBASE_JSON']
+      UI.user_error!("BUILD_NUMBER environment variable is required for production builds") unless ENV['BUILD_NUMBER']
+    end
+
+    # Build the app
+    build(type: options[:type])
 
     # Distribute to Firebase
     firebase_app_distribution(
       app: ios_firebase_app_id,
       release_notes: ENV['RELEASE_NOTES'],
       service_credentials_file: ENV['FIREBASE_JSON'],
-      groups: "Testers"
+      groups: isProd ? "Production" : "Testers"
     )
 
-    # if isProd then
-    #   # Send to App Store
-    #   upload_to_app_store
-    # end
+    if isProd
+      # Deploy to App Store
+      deploy_to_app_store
+    end
   end
 
   lane :update_release_url do
@@ -85,5 +93,37 @@ platform :ios do
     release_url = get_firebase_release_url(release_name, ios_firebase_app_id)
 
     update_pr_and_jira(release_url: release_url, ios: true)
+  end
+
+  lane :deploy_to_app_store do
+    # Ensure we're on the main branch for production
+    ensure_git_branch(branch: 'main')
+
+    # Ensure we have a clean git status
+    ensure_git_status_clean
+
+    # Ensure we have the latest changes
+    sh("git", "pull", "origin", "main")
+
+    # Upload to App Store
+    upload_to_app_store(
+      force: true, # Skip verification of HTML preview
+      skip_metadata: false,
+      skip_screenshots: false,
+      precheck_include_in_app_purchases: false,
+      submission_information: {
+        add_id_info_uses_idfa: false,
+        export_compliance_uses_encryption: false,
+        export_compliance_platform: 'ios'
+      },
+      reject_if_possible: true, # Automatically reject the binary if it's not ready for review
+      automatic_release: false, # Don't automatically release the build
+      phased_release: true, # Enable phased release
+      submission_information: {
+        add_id_info_uses_idfa: false,
+        export_compliance_uses_encryption: false,
+        export_compliance_platform: 'ios'
+      }
+    )
   end
 end

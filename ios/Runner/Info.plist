@@ -83,5 +83,7 @@
 	<true/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>ArDrive requires access to the microphone in order to facilitate audio file uploads to your drives.</string>
 </dict>
 </plist>

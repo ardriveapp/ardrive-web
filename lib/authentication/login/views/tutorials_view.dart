@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
 import 'package:ardrive/authentication/components/dot_pattern_painter.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
@@ -148,9 +146,7 @@ class TutorialsViewState extends State<TutorialsView> {
     final height = MediaQuery.of(context).size.height;
     final phoneLayout = width < TABLET;
 
-    final minHeight = phoneLayout ? 700.0 : 800.0;
-    final containerHeight =
-        (height < minHeight ? minHeight : min(height, 924.0)) - 6;
+    final containerHeight = height - 6;
 
     final isDarkMode = ArDriveTheme.of(context).themeData.name == 'dark';
     final List<Color> radialColors = isDarkMode
@@ -195,8 +191,6 @@ class TutorialsViewState extends State<TutorialsView> {
                     )),
               ),
               Center(
-                  child: SingleChildScrollView(
-                      child: Center(
                 child: Container(
                     height: containerHeight,
                     constraints: const BoxConstraints(maxWidth: 1164),
@@ -206,7 +200,7 @@ class TutorialsViewState extends State<TutorialsView> {
                           : const EdgeInsets.fromLTRB(32, 20, 32, 20),
                       child: _buildOnBoardingContent(phoneLayout),
                     )),
-              ))),
+              ),
             ]),
           )),
     );

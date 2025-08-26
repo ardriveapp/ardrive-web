@@ -1,7 +1,7 @@
 import UIKit
 import Flutter
 import flutter_downloader
-import flutter_sharing_intent
+// import flutter_sharing_intent
 
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {
@@ -11,9 +11,9 @@ import flutter_sharing_intent
   ) -> Bool {
     GeneratedPluginRegistrant.register(with: self)
     FlutterDownloaderPlugin.setPluginRegistrantCallback(registerPlugins)
-    
+
     let controller = window.rootViewController as! FlutterViewController
-    
+
     let flavorChannel = FlutterMethodChannel(
         name: "flavor",
         binaryMessenger: controller.binaryMessenger)
@@ -23,12 +23,12 @@ import flutter_sharing_intent
         let flavor = Bundle.main.infoDictionary?["AppFlavor"]
         result(flavor)
     })
-
-    let sharingIntent = SwiftFlutterSharingIntentPlugin.instance
-     /// if the url is made from SwiftFlutterSharingIntentPlugin then handle it with plugin [SwiftFlutterSharingIntentPlugin]
-     if sharingIntent.hasSameSchemePrefix(url: url) {
-         return sharingIntent.application(app, open: url, options: options)
-     }
+// TODO: add back when we have a working share extension
+//    let sharingIntent = SwiftFlutterSharingIntentPlugin.instance
+//     /// if the url is made from SwiftFlutterSharingIntentPlugin then handle it with plugin [SwiftFlutterSharingIntentPlugin]
+//     if sharingIntent.hasSameSchemePrefix(url: url) {
+//         return sharingIntent.application(app, open: url, options: options)
+//     }
 
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
