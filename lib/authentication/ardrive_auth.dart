@@ -373,6 +373,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
     _userRepository.getBalance(currentUser.wallet).then((value) {
       _currentUser = _currentUser!.copyWith(walletBalance: value);
       _userStreamController.add(_currentUser);
+    }).catchError((e) {
+      logger.e('Error fetching wallet balance', e);
+      // Don't update balance on error - keep previous value
     });
   }
 
