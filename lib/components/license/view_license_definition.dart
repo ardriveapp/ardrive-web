@@ -18,7 +18,7 @@ viewLicenseDefinitionTextSpan(
           ),
       recognizer: TapGestureRecognizer()
         ..onTap = () async {
-          final url = 'https://arweave.net/$licenseDefinitionTxId';
+          final url = 'https://ardrive.net/$licenseDefinitionTxId';
           await openUrl(url: url);
         },
     );

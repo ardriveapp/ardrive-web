@@ -69,7 +69,7 @@ class _OwnerFieldState extends State<OwnerField> {
     if (_arnsName != null) {
       final configService = context.read<ConfigService>();
       String gateway =
-          configService.config.defaultArweaveGatewayUrl ?? 'arweave.net';
+          configService.config.defaultArweaveGatewayUrl ?? 'ardrive.net';
       gateway =
           gateway.replaceFirst('https://', '').replaceFirst('http://', '');
       openUrl(url: 'https://$_arnsName.$gateway');
@@ -103,7 +103,7 @@ class _OwnerFieldState extends State<OwnerField> {
             child: Image.network(
               _arnsLogo!.startsWith('http')
                   ? _arnsLogo!
-                  : 'https://arweave.net/$_arnsLogo',
+                  : 'https://ardrive.net/$_arnsLogo',
               width: 28,
               height: 28,
               fit: BoxFit.cover,

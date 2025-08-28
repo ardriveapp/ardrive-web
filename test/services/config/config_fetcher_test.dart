@@ -93,7 +93,7 @@ void main() {
       final result = await configFetcher.fetchConfig(Flavor.development);
 
       expect(result, isInstanceOf<AppConfig>());
-      expect(result.defaultArweaveGatewayUrl, equals('https://arweave.net'));
+      expect(result.defaultArweaveGatewayUrl, equals('https://ardrive.net'));
       expect(
           result.defaultArweaveGatewayForDataRequest,
           equals(const SelectedGateway(

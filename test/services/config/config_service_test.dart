@@ -29,8 +29,8 @@ void main() {
           stripePublishableKey: '',
           allowedDataItemSizeForTurbo: 100,
           defaultArweaveGatewayForDataRequest: const SelectedGateway(
-            label: 'Arweave.net',
-            url: 'https://arweave.net',
+            label: 'ArDrive Turbo Gateway',
+            url: 'https://ardrive.net',
           ),
         ),
       );
@@ -75,8 +75,8 @@ void main() {
         stripePublishableKey: '',
         allowedDataItemSizeForTurbo: 100,
         defaultArweaveGatewayForDataRequest: const SelectedGateway(
-          label: 'Arweave.net',
-          url: 'https://arweave.net',
+          label: 'ArDrive Turbo Gateway',
+          url: 'https://ardrive.net',
         ),
       );
 
@@ -98,8 +98,8 @@ void main() {
                 stripePublishableKey: '',
                 allowedDataItemSizeForTurbo: 100,
                 defaultArweaveGatewayForDataRequest: const SelectedGateway(
-                  label: 'Arweave.net',
-                  url: 'https://arweave.net',
+                  label: 'ArDrive Turbo Gateway',
+                  url: 'https://ardrive.net',
                 ),
               ));
 
@@ -123,8 +123,8 @@ void main() {
                 stripePublishableKey: '',
                 allowedDataItemSizeForTurbo: 100,
                 defaultArweaveGatewayForDataRequest: const SelectedGateway(
-                  label: 'Arweave.net',
-                  url: 'https://arweave.net',
+                  label: 'ArDrive Turbo Gateway',
+                  url: 'https://ardrive.net',
                 ),
               ));
 
@@ -146,8 +146,8 @@ void main() {
                 allowedDataItemSizeForTurbo: 100,
                 stripePublishableKey: '',
                 defaultArweaveGatewayForDataRequest: const SelectedGateway(
-                  label: 'Arweave.net',
-                  url: 'https://arweave.net',
+                  label: 'ArDrive Turbo Gateway',
+                  url: 'https://ardrive.net',
                 ),
               ));
 

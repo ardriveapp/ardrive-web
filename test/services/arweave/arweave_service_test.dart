@@ -7,7 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../test_utils/mocks.dart';
 import '../../utils/snapshot_test_helpers.dart';
 
-const gatewayUrl = 'https://arweave.net';
+const gatewayUrl = 'https://ardrive.net';
 void main() {
   // TODO: Fix this test after implementing the fakeNodesStream emiting DriveEntityHistoryTransactionModel
   group('ArweaveService class', () {

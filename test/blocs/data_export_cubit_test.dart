@@ -26,7 +26,7 @@ void main() {
 
     const folderName = 'folder-name';
 
-    const testGatewayURL = 'https://arweave.net';
+    const testGatewayURL = 'https://ardrive.net';
     setUp(() async {
       db = getTestDb();
       driveDao = db.driveDao;
