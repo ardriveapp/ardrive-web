@@ -23,8 +23,8 @@ class AppConfig {
   AppConfig({
     this.defaultArweaveGatewayUrl,
     this.defaultArweaveGatewayForDataRequest = const SelectedGateway(
-      label: 'arweave.net',
-      url: 'https://arweave.net',
+      label: 'ArDrive Turbo Gateway',
+      url: 'https://ardrive.net',
     ),
     this.useTurboUpload = false,
     this.useTurboPayment = false,
