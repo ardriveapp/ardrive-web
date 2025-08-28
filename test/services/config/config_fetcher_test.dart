@@ -32,8 +32,8 @@ void main() {
     stripePublishableKey: 'stripeKey',
     defaultArweaveGatewayUrl: 'devGatewayUrl',
     defaultArweaveGatewayForDataRequest: const SelectedGateway(
-      label: 'ArDrive Turbo Gateway',
-      url: 'https://ardrive.net',
+      label: 'Arweave.net',
+      url: 'https://arweave.net',
     ),
   )..toJson());
 
@@ -48,8 +48,8 @@ void main() {
       expect(
           result.defaultArweaveGatewayForDataRequest,
           equals(const SelectedGateway(
-            label: 'ArDrive Turbo Gateway',
-            url: 'https://ardrive.net',
+            label: 'Arweave.net',
+            url: 'https://arweave.net',
           )));
     });
 
@@ -59,8 +59,8 @@ void main() {
         stripePublishableKey: 'stripeKey',
         defaultArweaveGatewayUrl: 'stagingGatewayUrl',
         defaultArweaveGatewayForDataRequest: const SelectedGateway(
-          label: 'ArDrive Turbo Gateway',
-          url: 'https://ardrive.net',
+          label: 'Arweave.net',
+          url: 'https://arweave.net',
         ),
       )..toJson());
 
@@ -74,8 +74,8 @@ void main() {
       expect(
           result.defaultArweaveGatewayForDataRequest,
           equals(const SelectedGateway(
-            label: 'ArDrive Turbo Gateway',
-            url: 'https://ardrive.net',
+            label: 'Arweave.net',
+            url: 'https://arweave.net',
           )));
     });
     test(
@@ -97,8 +97,8 @@ void main() {
       expect(
           result.defaultArweaveGatewayForDataRequest,
           equals(const SelectedGateway(
-            label: 'ArDrive Turbo Gateway',
-            url: 'https://ardrive.net',
+            label: 'Arweave.net',
+            url: 'https://arweave.net',
           )));
     });
   });
@@ -163,8 +163,8 @@ void main() {
         defaultArweaveGatewayUrl: '',
         allowedDataItemSizeForTurbo: 100,
         defaultArweaveGatewayForDataRequest: const SelectedGateway(
-          label: 'ArDrive Turbo Gateway',
-          url: 'https://ardrive.net',
+          label: 'Arweave.net',
+          url: 'https://arweave.net',
         ),
       );
 
