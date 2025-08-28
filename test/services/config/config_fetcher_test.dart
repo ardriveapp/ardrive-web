@@ -32,8 +32,8 @@ void main() {
     stripePublishableKey: 'stripeKey',
     defaultArweaveGatewayUrl: 'devGatewayUrl',
     defaultArweaveGatewayForDataRequest: const SelectedGateway(
-      label: 'Arweave.net',
-      url: 'https://arweave.net',
+      label: 'ArDrive Turbo Gateway',
+      url: 'https://ardrive.net',
     ),
   )..toJson());
 
@@ -48,8 +48,8 @@ void main() {
       expect(
           result.defaultArweaveGatewayForDataRequest,
           equals(const SelectedGateway(
-            label: 'Arweave.net',
-            url: 'https://arweave.net',
+            label: 'ArDrive Turbo Gateway',
+            url: 'https://ardrive.net',
           )));
     });
 
@@ -59,8 +59,8 @@ void main() {
         stripePublishableKey: 'stripeKey',
         defaultArweaveGatewayUrl: 'stagingGatewayUrl',
         defaultArweaveGatewayForDataRequest: const SelectedGateway(
-          label: 'Arweave.net',
-          url: 'https://arweave.net',
+          label: 'ArDrive Turbo Gateway',
+          url: 'https://ardrive.net',
         ),
       )..toJson());
 
@@ -74,8 +74,8 @@ void main() {
       expect(
           result.defaultArweaveGatewayForDataRequest,
           equals(const SelectedGateway(
-            label: 'Arweave.net',
-            url: 'https://arweave.net',
+            label: 'ArDrive Turbo Gateway',
+            url: 'https://ardrive.net',
           )));
     });
     test(
@@ -93,12 +93,12 @@ void main() {
       final result = await configFetcher.fetchConfig(Flavor.development);
 
       expect(result, isInstanceOf<AppConfig>());
-      expect(result.defaultArweaveGatewayUrl, equals('https://arweave.net'));
+      expect(result.defaultArweaveGatewayUrl, equals('https://ardrive.net'));
       expect(
           result.defaultArweaveGatewayForDataRequest,
           equals(const SelectedGateway(
-            label: 'Arweave.net',
-            url: 'https://arweave.net',
+            label: 'ArDrive Turbo Gateway',
+            url: 'https://ardrive.net',
           )));
     });
   });
@@ -163,8 +163,8 @@ void main() {
         defaultArweaveGatewayUrl: '',
         allowedDataItemSizeForTurbo: 100,
         defaultArweaveGatewayForDataRequest: const SelectedGateway(
-          label: 'Arweave.net',
-          url: 'https://arweave.net',
+          label: 'ArDrive Turbo Gateway',
+          url: 'https://ardrive.net',
         ),
       );
 

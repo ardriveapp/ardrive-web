@@ -47,8 +47,8 @@ void main() {
       allowedDataItemSizeForTurbo: 1,
       stripePublishableKey: '',
       defaultArweaveGatewayForDataRequest: const SelectedGateway(
-        label: 'Arweave.net',
-        url: 'https://arweave.net',
+        label: 'ArDrive Turbo Gateway',
+        url: 'https://ardrive.net',
       ),
     ));
   });
@@ -132,8 +132,8 @@ void main() {
             allowedDataItemSizeForTurbo: 1,
             stripePublishableKey: '',
             defaultArweaveGatewayForDataRequest: const SelectedGateway(
-              label: 'Arweave.net',
-              url: 'https://current.gateway.com',
+              label: 'ArDrive Turbo Gateway',
+              url: 'https://ardrive.net',
             ),
           ));
           when(() => arioSDK.getGateways()).thenAnswer((_) async => gateways);
@@ -166,7 +166,7 @@ void main() {
             allowedDataItemSizeForTurbo: 1,
             stripePublishableKey: '',
             defaultArweaveGatewayForDataRequest: const SelectedGateway(
-              label: 'Arweave.net',
+              label: 'ArDrive Turbo Gateway',
               url: 'https://not.in.list.com',
             ),
           ));
@@ -201,8 +201,8 @@ void main() {
               allowedDataItemSizeForTurbo: 1,
               stripePublishableKey: '',
               defaultArweaveGatewayForDataRequest: const SelectedGateway(
-                label: 'Arweave.net',
-                url: 'https://arweave.net',
+                label: 'ArDrive Turbo Gateway',
+                url: 'https://ardrive.net',
               ),
             ));
             when(() => gateway.settings).thenReturn(settings);
