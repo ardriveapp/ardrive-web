@@ -1,8 +1,8 @@
 {
   "defaultArweaveGatewayUrl": "https://ardrive.net",
   "defaultArweaveGatewayForDataRequest": {
-    "label": "ArDrive Turbo Gateway",
-    "url": "https://ardrive.net"
+    "label": "Arweave.net",
+    "url": "https://arweave.net"
   },
   "useTurboUpload": true,
   "useTurboPayment": true,
