@@ -1860,6 +1860,56 @@
   "@syncingPleaseWait": {
     "description": "Syncing drives"
   },
+  "syncCancelled": "Sync Cancelled",
+  "@syncCancelled": {
+    "description": "Sync operation was cancelled"
+  },
+  "syncProgressSaved": "Sync was interrupted. Your drives may not show the latest files and folders.",
+  "@syncProgressSaved": {
+    "description": "Message shown when sync is cancelled"
+  },
+  "syncCancelledDetails": "Completed {completed} of {total} drives. Uploading files before a full sync may cause conflicts.",
+  "@syncCancelledDetails": {
+    "description": "Details about what was synced before cancellation",
+    "placeholders": {
+      "completed": {
+        "type": "int",
+        "example": "5"
+      },
+      "total": {
+        "type": "int",
+        "example": "10"
+      }
+    }
+  },
+  "syncErrorsDetected": "{count, plural, =1{1 error detected} other{{count} errors detected}}",
+  "@syncErrorsDetected": {
+    "description": "Number of sync errors detected",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "syncCompleteWithErrors": "Sync Incomplete - Errors Detected",
+  "@syncCompleteWithErrors": {
+    "description": "Title when sync completes but some drives failed"
+  },
+  "syncPartialSuccessMessage": "{failed} of {total} drives failed to sync. Your drives may not show the latest content. Uploading files now may cause conflicts.",
+  "@syncPartialSuccessMessage": {
+    "description": "Message explaining partial sync success and warning about uploads",
+    "placeholders": {
+      "failed": {
+        "type": "int",
+        "example": "2"
+      },
+      "total": {
+        "type": "int", 
+        "example": "5"
+      }
+    }
+  },
   "syncProgressPercentage": "{percentage}% complete",
   "@syncProgressPercentage": {
     "description": "The sync progress percentage",
