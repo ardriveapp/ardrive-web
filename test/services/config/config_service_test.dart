@@ -70,7 +70,8 @@ void main() {
   });
 
   group('updateAppConfig', () {
-    test('saves the config to ConfigFetcher and updates local config', () {
+    test('saves the config to ConfigFetcher and updates local config',
+        () async {
       final config = AppConfig(
         stripePublishableKey: '',
         allowedDataItemSizeForTurbo: 100,
@@ -79,8 +80,10 @@ void main() {
           url: 'https://ardrive.net',
         ),
       );
+      when(() => mockConfigFetcher.saveConfigOnDevToolsPrefs(config))
+          .thenAnswer((_) async {});
 
-      configService.updateAppConfig(config);
+      await configService.updateAppConfig(config);
 
       verify(() => mockConfigFetcher.saveConfigOnDevToolsPrefs(config))
           .called(1);
@@ -102,6 +105,8 @@ void main() {
                   url: 'https://ardrive.net',
                 ),
               ));
+      when(() => mockConfigFetcher.resetDevToolsPrefs())
+          .thenAnswer((_) async {});
 
       await configService.resetDevToolsPrefs();
 

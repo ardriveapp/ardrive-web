@@ -1,4 +1,5 @@
 {
+  "configVersion": 2,
   "defaultArweaveGatewayUrl": "https://ardrive.net",
   "defaultArweaveGatewayForDataRequest": {
     "label": "Arweave.net",

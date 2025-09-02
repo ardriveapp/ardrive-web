@@ -19,6 +19,7 @@ class AppConfig {
   final String stripePublishableKey;
   final bool autoSync;
   final bool uploadThumbnails;
+  final int? configVersion;
 
   AppConfig({
     this.defaultArweaveGatewayUrl,
@@ -36,6 +37,7 @@ class AppConfig {
     required this.stripePublishableKey,
     this.autoSync = true,
     this.uploadThumbnails = true,
+    this.configVersion,
   });
 
   AppConfig copyWith({
@@ -51,6 +53,7 @@ class AppConfig {
     String? stripePublishableKey,
     bool? autoSync,
     bool? uploadThumbnails,
+    int? configVersion,
   }) {
     return AppConfig(
       defaultArweaveGatewayUrl:
@@ -73,6 +76,7 @@ class AppConfig {
       stripePublishableKey: stripePublishableKey ?? this.stripePublishableKey,
       autoSync: autoSync ?? this.autoSync,
       uploadThumbnails: uploadThumbnails ?? this.uploadThumbnails,
+      configVersion: configVersion ?? this.configVersion,
     );
   }
 

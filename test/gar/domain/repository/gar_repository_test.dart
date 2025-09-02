@@ -40,6 +40,7 @@ void main() {
       arweave: arweaveService,
       http: http,
     );
+    when(() => configService.updateAppConfig(any())).thenAnswer((_) async {});
   });
 
   setUpAll(() {
@@ -143,9 +144,9 @@ void main() {
           when(() => settings.fqdn).thenReturn('current.gateway.com');
 
           // Manually populate the _gateways list for this test
-          await repository.getGateways();
+          await repository.getGateways(); // This populates _gateways
 
-          final selectedGateway = repository.getSelectedGateway();
+          final selectedGateway = await repository.getSelectedGateway();
 
           expect(selectedGateway, equals(gateway));
         },
@@ -181,7 +182,7 @@ void main() {
           // Manually populate the _gateways list for this test
           await repository.getGateways();
 
-          final selectedGateway = repository.getSelectedGateway();
+          final selectedGateway = await repository.getSelectedGateway();
 
           expect(selectedGateway, equals(gateway1));
 
@@ -194,7 +195,7 @@ void main() {
       group('updateGateway', () {
         test(
           'updates the config and sets the gateway in ArweaveService',
-          () {
+          () async {
             final gateway = MockGateway();
             final settings = MockSettings();
             when(() => configService.config).thenReturn(AppConfig(
@@ -209,7 +210,7 @@ void main() {
             when(() => settings.label).thenReturn('New Gateway');
             when(() => settings.fqdn).thenReturn('new.gateway.com');
 
-            repository.updateGateway(gateway);
+            await repository.updateGateway(gateway);
 
             verify(() => configService.updateAppConfig(any())).called(1);
             verify(() => arweaveService.setGateway(gateway)).called(1);

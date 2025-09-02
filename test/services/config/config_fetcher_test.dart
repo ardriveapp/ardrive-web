@@ -25,142 +25,156 @@ void main() {
     configFetcher = ConfigFetcher(localStore: localStore);
 
     TestWidgetsFlutterBinding.ensureInitialized();
-  });
 
-  final configStringDev = json.encode(AppConfig(
-    allowedDataItemSizeForTurbo: 100,
-    stripePublishableKey: 'stripeKey',
-    defaultArweaveGatewayUrl: 'devGatewayUrl',
-    defaultArweaveGatewayForDataRequest: const SelectedGateway(
-      label: 'Arweave.net',
-      url: 'https://arweave.net',
-    ),
-  )..toJson());
+    // Inject mock asset bundle for all tests
+    configFetcher.assetBundle = assetBundle;
+  });
 
   group('fetchConfig', () {
-    test('returns the dev config when flavor is dev', () async {
-      when(() => localStore.getString('config')).thenReturn(configStringDev);
+    final newConfig = AppConfig(
+      configVersion: 2,
+      stripePublishableKey: 'new-key',
+      allowedDataItemSizeForTurbo: 200,
+      defaultArweaveGatewayUrl: 'new-gateway',
+      defaultArweaveGatewayForDataRequest: const SelectedGateway(
+        label: 'new',
+        url: 'new',
+      ),
+    );
+    final newConfigString = json.encode(newConfig.toJson());
 
-      final result = await configFetcher.fetchConfig(Flavor.development);
-
-      expect(result, isInstanceOf<AppConfig>());
-      expect(result.defaultArweaveGatewayUrl, equals('devGatewayUrl'));
-      expect(
-          result.defaultArweaveGatewayForDataRequest,
-          equals(const SelectedGateway(
-            label: 'Arweave.net',
-            url: 'https://arweave.net',
-          )));
-    });
-
-    test('returns the staging config when flavor is staging', () async {
-      final configStringStaging = json.encode(AppConfig(
+    test('returns config from local storage if present and up-to-date',
+        () async {
+      // Arrange
+      final storedConfig = AppConfig(
+        configVersion: 2,
+        stripePublishableKey: 'stored-key',
         allowedDataItemSizeForTurbo: 100,
-        stripePublishableKey: 'stripeKey',
-        defaultArweaveGatewayUrl: 'stagingGatewayUrl',
+        defaultArweaveGatewayUrl: 'stored-gateway',
         defaultArweaveGatewayForDataRequest: const SelectedGateway(
-          label: 'Arweave.net',
-          url: 'https://arweave.net',
+          label: 'stored',
+          url: 'stored',
         ),
-      )..toJson());
+      );
+      final storedConfigString = json.encode(storedConfig.toJson());
 
-      when(() => localStore.getString('config'))
-          .thenReturn(configStringStaging);
+      when(() => localStore.getString('config')).thenReturn(storedConfigString);
+      when(() => assetBundle.loadString(any()))
+          .thenAnswer((_) async => newConfigString);
 
-      final result = await configFetcher.fetchConfig(Flavor.staging);
-
-      expect(result, isInstanceOf<AppConfig>());
-      expect(result.defaultArweaveGatewayUrl, equals('stagingGatewayUrl'));
-      expect(
-          result.defaultArweaveGatewayForDataRequest,
-          equals(const SelectedGateway(
-            label: 'Arweave.net',
-            url: 'https://arweave.net',
-          )));
-    });
-    test(
-        'returns the dev config when flavor is dev from env when there is no previous dev config saved on dev tools',
-        () async {
-      when(() => localStore.getString('config')).thenReturn(null);
-
-      // loads the real file
-      when(() => assetBundle.loadString('assets/config/dev.json'))
-          .thenAnswer((_) async => '');
-
-      when(() => localStore.putString('config', any()))
-          .thenAnswer((i) => Future.value(true));
-
+      // Act
       final result = await configFetcher.fetchConfig(Flavor.development);
 
-      expect(result, isInstanceOf<AppConfig>());
-      expect(result.defaultArweaveGatewayUrl, equals('https://ardrive.net'));
-      expect(
-          result.defaultArweaveGatewayForDataRequest,
-          equals(const SelectedGateway(
-            label: 'Arweave.net',
-            url: 'https://arweave.net',
-          )));
-    });
-  });
-
-  group('loadFromDevToolsPrefs', () {
-    test('returns config from local storage if present', () async {
-      when(() => localStore.getString('config')).thenReturn(configStringDev);
-
-      final result =
-          await configFetcher.loadFromLocalSettings(Flavor.development);
-
-      expect(result, isInstanceOf<AppConfig>());
-      expect(result.defaultArweaveGatewayUrl, equals('devGatewayUrl'));
+      // Assert
+      expect(result.configVersion, 2);
+      expect(result.stripePublishableKey, 'stored-key');
+      verifyNever(() => localStore.putString(any(), any()));
     });
 
-    test('loads config from env and saves to local storage if not present',
+    test('loads config from assets and saves to local storage if not present',
         () async {
+      // Arrange
       when(() => localStore.getString('config')).thenReturn(null);
-      when(() => localStore.getString('arweaveGatewayUrl'))
-          .thenReturn('gatewayUrl');
-      when(() => localStore.getBool('enableQuickSyncAuthoring'))
-          .thenReturn(true);
-      when(() => assetBundle.loadString('assets/config/dev.json'))
-          .thenAnswer((_) async => '{}');
+      when(() => assetBundle.loadString(any()))
+          .thenAnswer((_) async => newConfigString);
       when(() => localStore.putString('config', any()))
-          .thenAnswer((i) => Future.value(true));
+          .thenAnswer((_) async => true);
 
-      final result =
-          await configFetcher.loadFromLocalSettings(Flavor.development);
+      // Act
+      final result = await configFetcher.fetchConfig(Flavor.development);
 
-      expect(result, isInstanceOf<AppConfig>());
-      expect(result.defaultArweaveGatewayUrl, equals('gatewayUrl'));
-      verify(() => localStore.putString('config', any())).called(1);
+      // Assert
+      expect(result.configVersion, 2);
+      expect(result.stripePublishableKey, 'new-key');
+      verify(() => localStore.putString('config', newConfigString)).called(1);
+    });
+
+    test('replaces local config with asset config if local version is older',
+        () async {
+      // Arrange
+      final oldConfig = AppConfig(
+        configVersion: 1,
+        stripePublishableKey: 'old-key',
+        allowedDataItemSizeForTurbo: 100,
+        defaultArweaveGatewayUrl: 'old-gateway',
+        defaultArweaveGatewayForDataRequest: const SelectedGateway(
+          label: 'old',
+          url: 'old',
+        ),
+      );
+      final oldConfigString = json.encode(oldConfig.toJson());
+
+      when(() => localStore.getString('config')).thenReturn(oldConfigString);
+      when(() => assetBundle.loadString(any()))
+          .thenAnswer((_) async => newConfigString);
+      when(() => localStore.putString('config', any()))
+          .thenAnswer((_) async => true);
+
+      // Act
+      final result = await configFetcher.fetchConfig(Flavor.development);
+
+      // Assert
+      expect(result.configVersion, 2);
+      expect(result.stripePublishableKey, 'new-key');
+      verify(() => localStore.putString('config', newConfigString)).called(1);
     });
 
     test(
-        'loads config from env and saves to local storage if loading from dev tools throws',
+        'replaces local config with asset config if local config has no version',
         () async {
-      when(() => localStore.getString('config')).thenThrow(Exception());
-      when(() => localStore.getString('arweaveGatewayUrl'))
-          .thenReturn('gatewayUrl');
-      when(() => localStore.getBool('enableQuickSyncAuthoring'))
-          .thenReturn(true);
-      when(() => assetBundle.loadString('assets/config/dev.json'))
-          .thenAnswer((_) async => '{}');
+      // Arrange
+      final oldConfig = AppConfig(
+        // No configVersion
+        stripePublishableKey: 'old-key',
+        allowedDataItemSizeForTurbo: 100,
+        defaultArweaveGatewayUrl: 'old-gateway',
+        defaultArweaveGatewayForDataRequest: const SelectedGateway(
+          label: 'old',
+          url: 'old',
+        ),
+      );
+      final oldConfigString = json.encode(oldConfig.toJson());
+
+      when(() => localStore.getString('config')).thenReturn(oldConfigString);
+      when(() => assetBundle.loadString(any()))
+          .thenAnswer((_) async => newConfigString);
       when(() => localStore.putString('config', any()))
-          .thenAnswer((i) => Future.value(true));
+          .thenAnswer((_) async => true);
 
-      final result =
-          await configFetcher.loadFromLocalSettings(Flavor.development);
+      // Act
+      final result = await configFetcher.fetchConfig(Flavor.development);
 
-      expect(result, isInstanceOf<AppConfig>());
-      expect(result.defaultArweaveGatewayUrl, equals('gatewayUrl'));
-      verify(() => localStore.putString('config', any())).called(1);
+      // Assert
+      expect(result.configVersion, 2);
+      expect(result.stripePublishableKey, 'new-key');
+      verify(() => localStore.putString('config', newConfigString)).called(1);
+    });
+
+    test('replaces local config with asset config if local config is malformed',
+        () async {
+      // Arrange
+      when(() => localStore.getString('config')).thenReturn('{invalid-json');
+      when(() => assetBundle.loadString(any()))
+          .thenAnswer((_) async => newConfigString);
+      when(() => localStore.putString('config', any()))
+          .thenAnswer((_) async => true);
+
+      // Act
+      final result = await configFetcher.fetchConfig(Flavor.development);
+
+      // Assert
+      expect(result.configVersion, 2);
+      expect(result.stripePublishableKey, 'new-key');
+      verify(() => localStore.putString('config', newConfigString)).called(1);
     });
   });
 
   group('saveConfigOnDevToolsPrefs', () {
-    test('saves the config to local storage', () {
+    test('saves the config to local storage', () async {
       final config = AppConfig(
-        stripePublishableKey: '',
-        defaultArweaveGatewayUrl: '',
+        configVersion: 2,
+        stripePublishableKey: 'key',
+        defaultArweaveGatewayUrl: 'url',
         allowedDataItemSizeForTurbo: 100,
         defaultArweaveGatewayForDataRequest: const SelectedGateway(
           label: 'Arweave.net',
@@ -171,7 +185,7 @@ void main() {
       when(() => localStore.putString('config', any()))
           .thenAnswer((i) => Future.value(true));
 
-      configFetcher.saveConfigOnDevToolsPrefs(config);
+      await configFetcher.saveConfigOnDevToolsPrefs(config);
 
       verify(() => localStore.putString('config', json.encode(config.toJson())))
           .called(1);
@@ -179,11 +193,11 @@ void main() {
   });
 
   group('resetDevToolsPrefs', () {
-    test('removes the config from local storage', () {
+    test('removes the config from local storage', () async {
       when(() => localStore.remove('config'))
           .thenAnswer((i) => Future.value(true));
 
-      configFetcher.resetDevToolsPrefs();
+      await configFetcher.resetDevToolsPrefs();
 
       verify(() => localStore.remove('config')).called(1);
     });
