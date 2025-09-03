@@ -759,7 +759,7 @@ class ProfileCardHeader extends StatelessWidget {
       child: ClipOval(
         child: ArDriveImage(
           image: NetworkImage(
-            'https://arweave.net/${state.primaryNameDetails.logo}',
+            'https://ardrive.net/${state.primaryNameDetails.logo}',
           ),
           width: 34,
           height: 34,
