@@ -64,7 +64,8 @@ void main() {
     build: () {
       final gateways = [MockGateway()];
       when(() => garRepository.getGateways()).thenAnswer((_) async => gateways);
-      when(() => garRepository.getSelectedGateway()).thenReturn(MockGateway());
+      when(() => garRepository.getSelectedGateway())
+          .thenAnswer((_) async => MockGateway());
       return garBloc;
     },
     act: (bloc) => bloc.add(GetGateways()),
@@ -97,7 +98,8 @@ void main() {
   blocTest<GarBloc, GarState>(
     'emits [VerifyingGateway, GatewayActive] when SelectGateway is added and gateway is active',
     build: () {
-      when(() => garRepository.updateGateway(gateway)).thenReturn(null);
+      when(() => garRepository.updateGateway(gateway))
+          .thenAnswer((_) async => {});
       when(() => garRepository.isGatewayActive(gateway))
           .thenAnswer((_) async => true);
       return garBloc;
@@ -132,6 +134,8 @@ void main() {
   blocTest<GarBloc, GarState>(
     'emits [GatewayChanged] when ConfirmGatewayChange is added',
     build: () {
+      when(() => garRepository.updateGateway(gateway))
+          .thenAnswer((_) async => {});
       return garBloc;
     },
     act: (bloc) => bloc.add(ConfirmGatewayChange(gateway: gateway)),

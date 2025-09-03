@@ -10,6 +10,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/constants.dart';
 import 'package:ardrive/sync/domain/ghost_folder.dart';
 import 'package:ardrive/sync/domain/repositories/sync_repository.dart';
+import 'package:ardrive/sync/domain/sync_cancellation_token.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -44,6 +45,7 @@ class SyncCubit extends Cubit<SyncState> {
   DateTime? _lastSync;
   late DateTime _initSync;
   late SyncProgress _syncProgress;
+  SyncCancellationToken? _currentSyncToken;
 
   SyncCubit({
     required ProfileCubit profileCubit,
@@ -180,6 +182,10 @@ class SyncCubit extends Cubit<SyncState> {
     }
 
     _syncProgress = SyncProgress.initial();
+    
+    // Create a new cancellation token for this sync
+    _currentSyncToken?.dispose(); // Clean up any previous token
+    _currentSyncToken = SyncCancellationToken();
 
     try {
       final profile = _profileCubit.state;
@@ -233,6 +239,7 @@ class SyncCubit extends Cubit<SyncState> {
           password: password,
           cipherKey: cipherKey,
           syncDeep: deepSync,
+          cancellationToken: _currentSyncToken,
           txFechedCallback: (driveId, txCount) {
             _promptToSnapshotBloc.add(
               CountSyncedTxs(
@@ -252,8 +259,28 @@ class SyncCubit extends Cubit<SyncState> {
 
       logger.i('Transaction statuses updated');
     } catch (err, stackTrace) {
+      if (err is SyncCancelledException) {
+        logger.i('Sync cancelled by user');
+        // Clean up the cancellation token
+        _currentSyncToken?.dispose();
+        _currentSyncToken = null;
+        
+        emit(SyncCancelled(
+          drivesCompleted: _syncProgress.drivesSynced,
+          totalDrives: _syncProgress.drivesCount,
+          cancelledAt: DateTime.now(),
+        ));
+        _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
+        return; // Exit early for cancellation
+      }
       logger.e('Error syncing drives', err, stackTrace);
       addError(err);
+    } finally {
+      // Clean up the cancellation token (for non-cancellation cases)
+      if (_currentSyncToken != null) {
+        _currentSyncToken?.dispose();
+        _currentSyncToken = null;
+      }
     }
     _lastSync = DateTime.now();
 
@@ -269,7 +296,18 @@ class SyncCubit extends Cubit<SyncState> {
 
     unawaited(_updateContext());
 
-    emit(SyncIdle());
+    // Check if sync completed with errors (only for non-cancelled syncs)
+    if (_syncProgress.hasErrors) {
+      logger.w('Sync completed with ${_syncProgress.failedQueries} errors');
+      emit(SyncCompleteWithErrors(
+        failedDrives: _syncProgress.failedQueries,
+        totalDrives: _syncProgress.drivesCount,
+        failedDriveIds: _syncProgress.failedDriveIds,
+        errorMessages: _syncProgress.errorMessages,
+      ));
+    } else {
+      emit(SyncIdle());
+    }
   }
 
   Future<void> _updateContext() async {
@@ -298,6 +336,31 @@ class SyncCubit extends Cubit<SyncState> {
       return max(lastBlockHeight - kBlockHeightLookBack, 0);
     }
   }
+
+  /// Cancel the current sync operation
+  void cancelSync() {
+    if (state is SyncInProgress && _currentSyncToken != null) {
+      logger.i('Requesting sync cancellation');
+      _currentSyncToken!.cancel();
+    }
+  }
+  
+  /// Clear the cancelled state and return to idle
+  void clearCancelledState() {
+    if (state is SyncCancelled) {
+      emit(SyncIdle());
+    }
+  }
+  
+  /// Clear the error state and return to idle
+  void clearErrorState() {
+    if (state is SyncCompleteWithErrors) {
+      emit(SyncIdle());
+    }
+  }
+  
+  /// Get the current sync progress
+  SyncProgress get syncProgress => _syncProgress;
 
   @override
   void onError(Object error, StackTrace stackTrace) {

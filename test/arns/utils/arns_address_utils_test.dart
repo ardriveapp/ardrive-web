@@ -23,8 +23,8 @@ void main() {
         configService: configService,
       );
 
-      expect(httpAddress, 'https://test_example.arweave.net');
-      expect(arAddress, 'ar://test_example.arweave.net');
+      expect(httpAddress, 'https://test_example.ardrive.net');
+      expect(arAddress, 'ar://test_example.ardrive.net');
     });
 
     test('returns correct addresses with domain only', () {
@@ -33,8 +33,8 @@ void main() {
         configService: configService,
       );
 
-      expect(httpAddress, 'https://example.arweave.net');
-      expect(arAddress, 'ar://example.arweave.net');
+      expect(httpAddress, 'https://example.ardrive.net');
+      expect(arAddress, 'ar://example.ardrive.net');
     });
 
     test('returns correct addresses with @ undername', () {
@@ -44,8 +44,8 @@ void main() {
         configService: configService,
       );
 
-      expect(httpAddress, 'https://example.arweave.net');
-      expect(arAddress, 'ar://example.arweave.net');
+      expect(httpAddress, 'https://example.ardrive.net');
+      expect(arAddress, 'ar://example.ardrive.net');
     });
 
     test('handles special characters in domain and undername', () {
@@ -55,8 +55,8 @@ void main() {
         configService: configService,
       );
 
-      expect(httpAddress, 'https://test_undername_example-domain.arweave.net');
-      expect(arAddress, 'ar://test_undername_example-domain.arweave.net');
+      expect(httpAddress, 'https://test_undername_example-domain.ardrive.net');
+      expect(arAddress, 'ar://test_undername_example-domain.ardrive.net');
     });
   });
 }

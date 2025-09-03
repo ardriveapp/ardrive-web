@@ -2,11 +2,13 @@ import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/payment_method/bloc/upload_payment_method_bloc.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/components/payment_method_selector_widget.dart';
+import 'package:ardrive/misc/misc.dart';
+import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class UploadPaymentMethodView extends StatelessWidget {
+class UploadPaymentMethodView extends StatefulWidget {
   const UploadPaymentMethodView({
     super.key,
     required this.onUploadMethodChanged,
@@ -26,27 +28,72 @@ class UploadPaymentMethodView extends StatelessWidget {
   final bool useDropdown;
 
   @override
+  State<UploadPaymentMethodView> createState() => _UploadPaymentMethodViewState();
+}
+
+class _UploadPaymentMethodViewState extends State<UploadPaymentMethodView> {
+  bool _showCongestionWarning = false;
+  
+  // Debug flag - set to true to test congestion warning
+  static const bool _debugForceCongestionWarning = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkCongestion();
+  }
+
+  Future<void> _checkCongestion() async {
+    // Debug mode - force show warning for testing
+    if (_debugForceCongestionWarning) {
+      if (mounted) {
+        setState(() {
+          _showCongestionWarning = true;
+        });
+      }
+      return;
+    }
+    
+    try {
+      final mempoolSize = await context.read<ArweaveService>().getMempoolSizeFromArweave();
+      if (mounted) {
+        setState(() {
+          _showCongestionWarning = mempoolSize > mempoolWarningSizeLimit;
+        });
+      }
+    } catch (e) {
+      logger.d('Failed to check mempool congestion: $e');
+      if (mounted) {
+        setState(() {
+          _showCongestionWarning = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocConsumer<UploadPaymentMethodBloc, UploadPaymentMethodState>(
       listener: (context, state) {
         if (state is UploadPaymentMethodLoaded) {
           logger.d(
               'UploadPaymentMethodLoaded: ${state.paymentMethodInfo.uploadMethod}');
-          onUploadMethodChanged(
+          widget.onUploadMethodChanged(
             state.paymentMethodInfo.uploadMethod,
             state.paymentMethodInfo,
             state.canUpload,
           );
         } else if (state is UploadPaymentMethodError) {
-          onError();
+          widget.onError();
         }
       },
       builder: (context, state) {
         if (state is UploadPaymentMethodLoaded) {
           return PaymentMethodSelector(
-            useNewArDriveUI: useNewArDriveUI,
+            useNewArDriveUI: widget.useNewArDriveUI,
             uploadMethodInfo: state.paymentMethodInfo,
-            useDropdown: useDropdown,
+            useDropdown: widget.useDropdown,
+            showCongestionWarning: _showCongestionWarning,
             onArSelect: () {
               context.read<UploadPaymentMethodBloc>().add(
                     const ChangeUploadPaymentMethod(
@@ -62,12 +109,12 @@ class UploadPaymentMethodView extends StatelessWidget {
                   );
             },
             onTurboTopupSucess: () {
-              onTurboTopupSucess?.call();
+              widget.onTurboTopupSucess?.call();
             },
           );
         }
-        if (loadingIndicator != null) {
-          return loadingIndicator!;
+        if (widget.loadingIndicator != null) {
+          return widget.loadingIndicator!;
         }
 
         return const SizedBox.shrink();

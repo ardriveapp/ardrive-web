@@ -8,8 +8,8 @@ import 'package:collection/collection.dart';
 abstract class GarRepository {
   Future<List<Gateway>> getGateways();
   List<Gateway> searchGateways(String query);
-  Gateway getSelectedGateway();
-  void updateGateway(Gateway gateway);
+  Future<Gateway> getSelectedGateway();
+  Future<void> updateGateway(Gateway gateway);
   Future<bool> isGatewayActive(Gateway gateway);
 }
 
@@ -37,7 +37,7 @@ class GarRepositoryImpl implements GarRepository {
   }
 
   @override
-  Gateway getSelectedGateway() {
+  Future<Gateway> getSelectedGateway() async {
     final currentGatewayUrl =
         configService.config.defaultArweaveGatewayForDataRequest;
     final currentGatewayDomain = Uri.parse(currentGatewayUrl.url).host;
@@ -55,7 +55,7 @@ class GarRepositoryImpl implements GarRepository {
     /// but the gateway is not available anymore.
     if (currentGateway == null) {
       /// Update the gateway in the config and the arweave gateway
-      updateGateway(_gateways.first);
+      await updateGateway(_gateways.first);
 
       return _gateways.first;
     }
@@ -64,8 +64,8 @@ class GarRepositoryImpl implements GarRepository {
   }
 
   @override
-  void updateGateway(Gateway gateway) {
-    configService.updateAppConfig(
+  Future<void> updateGateway(Gateway gateway) async {
+    await configService.updateAppConfig(
       configService.config.copyWith(
         defaultArweaveGatewayForDataRequest: SelectedGateway(
           label: gateway.settings.label,
