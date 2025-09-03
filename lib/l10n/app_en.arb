@@ -258,6 +258,10 @@
   "@congestionWarning": {
     "description": "Congestion warning"
   },
+  "congestionWarningShort": "Network congestion detected - uploads may be slower or fail",
+  "@congestionWarningShort": {
+    "description": "Concise message shown inline when network is congested"
+  },
   "continueEmphasized": "CONTINUE",
   "@continueEmphasized": {
     "description": "To go ahead. Emphasized with upper case"

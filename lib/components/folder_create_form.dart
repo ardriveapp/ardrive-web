@@ -1,6 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
@@ -18,21 +17,18 @@ Future<void> promptToCreateFolder(
   required String driveId,
   required String parentFolderId,
 }) =>
-    showCongestionDependentModalDialog(
+    showArDriveDialog(
       context,
-      () => showArDriveDialog(
-        context,
-        content: BlocProvider(
-          create: (context) => FolderCreateCubit(
-            driveId: driveId,
-            parentFolderId: parentFolderId,
-            profileCubit: context.read<ProfileCubit>(),
-            arweave: context.read<ArweaveService>(),
-            turboUploadService: context.read<TurboUploadService>(),
-            driveDao: context.read<DriveDao>(),
-          ),
-          child: const FolderCreateForm(),
+      content: BlocProvider(
+        create: (context) => FolderCreateCubit(
+          driveId: driveId,
+          parentFolderId: parentFolderId,
+          profileCubit: context.read<ProfileCubit>(),
+          arweave: context.read<ArweaveService>(),
+          turboUploadService: context.read<TurboUploadService>(),
+          driveDao: context.read<DriveDao>(),
         ),
+        child: const FolderCreateForm(),
       ),
     );
 
