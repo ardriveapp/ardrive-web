@@ -1,0 +1,16 @@
+{
+  "configVersion": 2,
+  "defaultArweaveGatewayUrl": "https://ardrive.net",
+  "defaultArweaveGatewayForDataRequest": {
+    "label": "Arweave.net",
+    "url": "https://arweave.net"
+  },
+  "useTurboUpload": true,
+  "useTurboPayment": true,
+  "defaultTurboUploadUrl": "https://upload.ardrive.dev",
+  "defaultTurboPaymentUrl": "https://payment.ardrive.dev",
+  "allowedDataItemSizeForTurbo": 100000,
+  "stripePublishableKey": "pk_test_51JUAtwC8apPOWkDLh2FPZkQkiKZEkTo6wqgLCtQoClL6S4l2jlbbc5MgOdwOUdU9Tn93NNvqAGbu115lkJChMikG00XUfTmo2z",
+  "uploadThumbnails": true,
+  "autoSync": false
+}

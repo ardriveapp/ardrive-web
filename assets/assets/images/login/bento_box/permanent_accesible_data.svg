@@ -1,0 +1,34 @@
+<svg width="142" height="108" viewBox="0 0 142 108" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="paint0_linear_1563_7134" x1="15.75" y1="22.75" x2="5.25" y2="50.5" gradientUnits="userSpaceOnUse">
+<stop stop-color="#F4BE8C"/>
+<stop offset="0.375247" stop-color="#D31721"/>
+<stop offset="0.605839" stop-color="#561417"/>
+<stop offset="1" stop-color="#121212" stop-opacity="0"/>
+</linearGradient>
+<linearGradient id="paint1_linear_1563_7134" x1="140" y1="70" x2="131" y2="89" gradientUnits="userSpaceOnUse">
+<stop stop-color="#F4BE8C"/>
+<stop offset="0.375247" stop-color="#D31721"/>
+<stop offset="0.605839" stop-color="#561417"/>
+<stop offset="1" stop-color="#121212" stop-opacity="0"/>
+</linearGradient>
+<linearGradient id="paint2_linear_1563_7134" x1="78" y1="28" x2="78" y2="124.5" gradientUnits="userSpaceOnUse">
+<stop stop-color="#F4BE8C"/>
+<stop offset="0.0989583" stop-color="#D31721"/>
+<stop offset="0.493189" stop-color="#561417"/>
+<stop offset="1" stop-color="#121212" stop-opacity="0"/>
+</linearGradient>
+<clipPath id="clip0_1563_7134">
+<rect width="80" height="80" fill="white" transform="translate(38 28)"/>
+</clipPath>
+</defs>
+  <path opacity="0.7" d="M12 19C11.5926 25.4512 6.4512 30.5926 0 31C6.4512 31.4074 11.5926 36.5488 12 43C12.4074 36.5488 17.5488 31.4074 24 31C17.5488 30.5926 12.4074 25.4512 12 19Z" fill="url(#paint0_linear_1563_7134)"/>
+<path opacity="0.5" d="M136.5 70C136.313 72.9568 133.957 75.3133 131 75.5C133.957 75.6867 136.313 78.0432 136.5 81C136.687 78.0432 139.043 75.6867 142 75.5C139.043 75.3133 136.687 72.9568 136.5 70Z" fill="url(#paint1_linear_1563_7134)"/>
+<circle opacity="0.4" cx="23" cy="55" r="2" fill="#93161D"/>
+<circle opacity="0.3" cx="48" cy="75" r="3" fill="#93161D"/>
+<circle opacity="0.3" cx="113.5" cy="3.5" r="3.5" fill="#93161D"/>
+<circle opacity="0.2" cx="16" cy="87" r="2" fill="#93161D"/>
+<g clip-path="url(#clip0_1563_7134)">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M51.2974 77.0732L47.3383 48.198C45.7736 36.7856 44.9912 31.0793 48.3776 28.7939C51.764 26.5085 56.8133 29.3352 66.9119 34.9884L88.7116 47.1921C103.496 55.4684 110.888 59.6065 109.915 64.2985C108.942 68.9904 100.506 69.8876 83.6336 71.6824L82.0772 71.848L102.408 99.3696C104.136 101.71 103.703 104.988 101.425 106.806C99.0032 108.738 95.4492 108.274 93.6112 105.786L73.5598 78.6424C68.7294 95.524 66.3142 103.964 62.9081 105.023C61.3182 105.517 59.5992 105.396 58.0954 104.684C54.8738 103.158 53.6816 94.4632 51.2974 77.0732Z" fill="url(#paint2_linear_1563_7134)"/>
+</g>
+</svg>
