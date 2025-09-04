@@ -21,6 +21,7 @@ part 'create_manifest_state.dart';
 
 // TODO: Add tests for CreateManifestCubit
 class CreateManifestCubit extends Cubit<CreateManifestState> {
+  late FolderNode targetFolderNode;
   late FolderNode rootFolderNode;
 
   final ProfileCubit _profileCubit;
@@ -119,16 +120,26 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   }
 
   /// Validate form before User begins choosing a target folder
-  Future<void> chooseTargetFolder() async {
-    logger.i('Choosing target folder for drive: ${_drive.id}');
-    rootFolderNode =
-        await _folderRepository.getFolderNode(_drive.id, _drive.rootFolderId);
-    logger.d('Root folder node loaded with id: ${rootFolderNode.folder.id}');
+  Future<void> chooseTargetFolder({String? currentFolderId}) async {
+    rootFolderNode = await _folderRepository.getFolderNode(
+      _drive.id,
+      _drive.rootFolderId,
+    );
 
-    _hasPendingFiles = await _hasPendingFilesInFolder(rootFolderNode);
+    logger.i('Choosing target folder for drive: ${_drive.id}');
+    logger.d('Current folder id: $currentFolderId');
+    targetFolderNode = await _folderRepository.getFolderNode(
+      _drive.id,
+      currentFolderId ?? _drive.rootFolderId,
+    );
+
+    logger.d('Root folder node loaded with id: ${targetFolderNode.folder.id}');
+
+    _hasPendingFiles = await _hasPendingFilesInFolder(targetFolderNode);
+
     logger.d('Folder has pending files: $_hasPendingFiles');
 
-    await loadFolder(_drive.rootFolderId);
+    await loadFolder(currentFolderId ?? _drive.rootFolderId);
   }
 
   /// User has confirmed that they would like to submit a manifest revision transaction
@@ -305,9 +316,9 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         'Existing manifest file ID: $existingManifestFileId, Target folder ID: $folderId');
     FolderEntry parentFolder;
     if (folderId != null) {
-      rootFolderNode =
+      targetFolderNode =
           await _folderRepository.getFolderNode(_drive.id, folderId);
-      parentFolder = rootFolderNode.folder;
+      parentFolder = targetFolderNode.folder;
     } else {
       switch (state) {
         case CreateManifestPreparingManifestWithARNS s:
@@ -324,7 +335,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       final manifestFile = await _manifestRepository.getManifestFile(
         parentFolder: parentFolder,
         manifestName: manifestName,
-        rootFolderNode: rootFolderNode,
+        rootFolderNode: targetFolderNode,
         driveId: _drive.id,
         fallbackTxId: _getFallbackTxId(),
       );
