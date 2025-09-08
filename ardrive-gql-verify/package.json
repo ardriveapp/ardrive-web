@@ -1,0 +1,27 @@
+{
+  "name": "ardrive-gql-verify",
+  "version": "1.0.0",
+  "description": "Test script to verify ardrive GQL requests against reference and target gateway",
+  "author": "stevenyi@gmail.com",
+  "license": "MIT",
+  "private": true,
+  "main": "dist/index.js",
+  "bin": {
+    "ardrive-gql-verify": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "yarn build && node dist/index.js",
+    "verify": "yarn build && node dist/index.js"
+  },
+  "dependencies": {
+    "commander": "^11.0.0",
+    "diff": "^8.0.2",
+    "graphql": "^16.8.1",
+    "graphql-request": "^7.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
