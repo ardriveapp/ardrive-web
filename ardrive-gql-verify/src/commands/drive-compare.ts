@@ -3,6 +3,7 @@ import Arweave from 'arweave';
 import { Command } from 'commander';
 import { createPatch } from 'diff';
 import fs from 'fs';
+import path from 'path';
 
 export const createDriveCompareCommand = () => {
   const command = new Command('drive-compare');
@@ -13,13 +14,21 @@ export const createDriveCompareCommand = () => {
     .requiredOption('--reference-gateway <url>', 'Reference gateway URL', 'https://arweave.net')
     .requiredOption('--target-gateway <url>', 'Target gateway URL')
     .option('--debug', 'Always show reference and target responses')
+    .option('--out-dir <dir>', 'Output directory for JSON files', 'output')
     .action(async (options) => {
-      const { driveId, referenceGateway, targetGateway, debug } = options;
+      const { driveId, referenceGateway, targetGateway, debug, outDir } = options;
 
       console.log('Drive Compare Command');
       console.log(`Drive ID: ${driveId}`);
       console.log(`Reference Gateway: ${referenceGateway}`);
       console.log(`Target Gateway: ${targetGateway}`);
+      console.log(`Output Directory: ${outDir}`);
+
+      // Ensure output directory exists
+      if (!fs.existsSync(outDir)) {
+        fs.mkdirSync(outDir, { recursive: true });
+        console.log(`Created output directory: ${outDir}`);
+      }
 
       try {
         const parseGateway = (url: string) => {
@@ -86,10 +95,10 @@ export const createDriveCompareCommand = () => {
         const missingIds = new Set([...refIds].filter((id) => !targetIds.has(id)));
         const extraIds = new Set([...targetIds].filter((id) => !refIds.has(id)));
 
-        fs.writeFileSync('missing-ids.json', JSON.stringify([...missingIds], null, 2));
-        fs.writeFileSync('extra-ids.json', JSON.stringify([...extraIds], null, 2));
-        fs.writeFileSync('duplicate-ids.json', JSON.stringify([...duplicates], null, 2));
-        fs.writeFileSync('target-duplicate-ids.json', JSON.stringify([...targetDupes], null, 2));
+        fs.writeFileSync(path.join(outDir, 'missing-ids.json'), JSON.stringify([...missingIds], null, 2));
+        fs.writeFileSync(path.join(outDir, 'extra-ids.json'), JSON.stringify([...extraIds], null, 2));
+        fs.writeFileSync(path.join(outDir, 'duplicate-ids.json'), JSON.stringify([...duplicates], null, 2));
+        fs.writeFileSync(path.join(outDir, 'target-duplicate-ids.json'), JSON.stringify([...targetDupes], null, 2));
 
         // console.log('Missing IDs:', missingIds);
         // console.log('Extra IDs:', extraIds);
@@ -104,8 +113,8 @@ export const createDriveCompareCommand = () => {
         console.log(`Target JSON length: ${targetJson.length}`);
 
         // write reference.json and target.json files
-        fs.writeFileSync('reference.json', refJson);
-        fs.writeFileSync('target.json', targetJson);
+        fs.writeFileSync(path.join(outDir, 'reference.json'), refJson);
+        fs.writeFileSync(path.join(outDir, 'target.json'), targetJson);
 
         const MAX_DIFF_SIZE = 1000000; // 1MB limit for diff computation
 
