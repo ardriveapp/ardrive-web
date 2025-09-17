@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/copy_button.dart';
@@ -12,7 +15,9 @@ import 'package:ardrive/main.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
+import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config.dart';
+import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/components/turbo_balance_widget.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
@@ -27,11 +32,215 @@ import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.da
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:http/http.dart' as http;
 import 'package:responsive_builder/responsive_builder.dart';
+
+class _GraphQLEndpointDialog extends StatefulWidget {
+  final String initialEndpoint;
+  final Function(String) onSave;
+
+  const _GraphQLEndpointDialog({
+    required this.initialEndpoint,
+    required this.onSave,
+  });
+
+  @override
+  _GraphQLEndpointDialogState createState() => _GraphQLEndpointDialogState();
+}
+
+class _GraphQLEndpointDialogState extends State<_GraphQLEndpointDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _endpointController;
+  bool _isLoading = false;
+  bool? _isValid;
+  Timer? _debounce;
+  String _lastValidatedText = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _endpointController = TextEditingController(text: widget.initialEndpoint);
+    _lastValidatedText = widget.initialEndpoint;
+    _endpointController.addListener(_onTextChanged);
+  }
+
+  @override
+  void dispose() {
+    _endpointController.removeListener(_onTextChanged);
+    _endpointController.dispose();
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  void _onTextChanged() {
+    final currentText = _endpointController.text.trim();
+    if (currentText != _lastValidatedText) {
+      _validateEndpoint();
+    }
+  }
+
+  Future<void> _validateEndpoint() async {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+    _debounce = Timer(const Duration(milliseconds: 500), () async {
+      final endpoint = _endpointController.text.trim();
+
+      if (endpoint == _lastValidatedText) return;
+
+      _lastValidatedText =
+          endpoint; // Update last validated text before starting validation
+
+      if (endpoint.isEmpty) {
+        setState(() {
+          _isValid = false;
+          _isLoading = false;
+        });
+        return;
+      }
+
+      setState(() => _isLoading = true);
+
+      try {
+        final isValid = await _isValidGraphQLEndpoint(endpoint);
+
+        if (mounted) {
+          setState(() {
+            _isValid = isValid;
+            _isLoading = false;
+          });
+        }
+      } catch (e) {
+        setState(() {
+          _isValid = false;
+          _isLoading = false;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
+
+    return ArDriveStandardModalNew(
+      width: 500,
+      title: 'Switch GraphQL Server',
+      content: Form(
+        key: _formKey,
+        child: SizedBox(
+          width: 500,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Enter the URL of the GraphQL server you want to use',
+                style: typography.paragraphNormal(
+                  color: colorTokens.textMid,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ArDriveTextFieldNew(
+                controller: _endpointController,
+                hintText: 'Enter host name (e.g. https://ardrive.net)',
+                label: 'GraphQL Server URL',
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a URL';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 8),
+              _isLoading
+                  ? Row(
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              colorTokens.buttonPrimaryDefault,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Validating endpoint...',
+                          style: typography.paragraphSmall(
+                            color: colorTokens.textMid,
+                          ),
+                        ),
+                      ],
+                    )
+                  : _endpointController.text.isNotEmpty && _isValid == false
+                      ? Row(
+                          children: [
+                            Icon(
+                              Icons.error,
+                              size: 16,
+                              color: colorTokens.buttonPrimaryPress,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Invalid GraphQL endpoint',
+                              style: typography.paragraphSmall(
+                                color: colorTokens.buttonPrimaryPress,
+                              ),
+                            ),
+                          ],
+                        )
+                      : const SizedBox.shrink(),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        ModalAction(
+          title: 'Cancel',
+          action: () => Navigator.of(context).pop(),
+        ),
+        ModalAction(
+          title: 'Save',
+          isEnable: _isValid == true && !_isLoading,
+          action: () {
+            if (_formKey.currentState!.validate()) {
+              widget.onSave(_endpointController.text.trim());
+              Navigator.of(context).pop();
+            }
+          },
+        ),
+      ],
+    );
+  }
+
+  Future<bool> _isValidGraphQLEndpoint(String endpoint) async {
+    const query = '''
+      query {
+        __typename
+      }
+    ''';
+
+    final response = await http
+        .post(
+          Uri.parse('$endpoint/graphql'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'query': query}),
+        )
+        .timeout(const Duration(seconds: 5));
+
+    if (response.statusCode == 200) {
+      final jsonResponse = jsonDecode(response.body);
+      return jsonResponse['data'] != null &&
+          jsonResponse['data']['__typename'] == 'Query';
+    }
+    return false;
+  }
+}
 
 class ProfileCard extends StatefulWidget {
   const ProfileCard({
@@ -361,8 +570,41 @@ class _ProfileCardState extends State<ProfileCard> {
                             ),
                           ),
                           Text(
-                            configService.config
-                                .defaultArweaveGatewayForDataRequest.label,
+                            configService
+                                .config.defaultArweaveGatewayForDataRequest.url,
+                            style: typography.paragraphNormal(
+                              fontWeight: ArFontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _ProfileMenuAccordionItem(
+                      text: 'Switch GraphQL Server',
+                      onTap: () {
+                        setState(() {
+                          _showProfileCard = false;
+                        });
+                        // TODO: Show GraphQL endpoint switcher modal
+                        _showGQLServerDialog(context);
+                      },
+                    ),
+                    Padding(
+                      padding:
+                          const EdgeInsets.only(left: 16.0, right: 16, top: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Current GraphQL Server:',
+                            style: typography.paragraphNormal(
+                              fontWeight: ArFontWeight.semiBold,
+                            ),
+                          ),
+                          Text(
+                            configService.config.defaultArweaveGatewayUrl ??
+                                'Not set',
                             style: typography.paragraphNormal(
                               fontWeight: ArFontWeight.bold,
                             ),
@@ -559,11 +801,33 @@ class _ProfileCardState extends State<ProfileCard> {
   }
 
   void _closeProfileCardMobile() {
-    if (AppPlatform.isMobile) {
-      setState(() {
-        _showProfileCard = false;
-      });
-    }
+    Navigator.of(context).pop();
+  }
+
+  Future<void> _showGQLServerDialog(BuildContext context) async {
+    await showAnimatedDialogWithBuilder(
+      context,
+      builder: (context) => _GraphQLEndpointDialog(
+        initialEndpoint:
+            context.read<ConfigService>().config.defaultArweaveGatewayUrl ?? '',
+        onSave: (newEndpoint) {
+          const graphqlSuffix = '/graphql';
+          final normalizedEndpoint = newEndpoint.endsWith(graphqlSuffix)
+              ? newEndpoint.substring(
+                  0, newEndpoint.length - graphqlSuffix.length)
+              : newEndpoint;
+          final configService = context.read<ConfigService>();
+          configService.updateAppConfig(
+            configService.config.copyWith(
+              defaultArweaveGatewayUrl: normalizedEndpoint,
+            ),
+          );
+          context
+              .read<ArweaveService>()
+              .updateGraphQLEndpoint(normalizedEndpoint);
+        },
+      ),
+    );
   }
 
   Widget _buildProfileCardHeader(BuildContext context, String walletAddress) {
