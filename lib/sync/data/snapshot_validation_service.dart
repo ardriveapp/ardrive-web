@@ -21,7 +21,7 @@ class SnapshotValidationService {
       try {
         final snapshotValidation = await http.head(
           Uri.parse(
-              '${appConfig.defaultArweaveGatewayUrl}/${snapshotItem.txId}'),
+              '${appConfig.defaultArweaveGatewayForDataRequest.url}/${snapshotItem.txId}'),
         );
 
         logger.d('Validating snapshot ${snapshotItem.txId}');
@@ -37,7 +37,7 @@ class SnapshotValidationService {
 
             final validationRequest = await http.get(
               Uri.parse(
-                  '${appConfig.defaultArweaveGatewayUrl}${snapshotItem.txId}'),
+                  '${appConfig.defaultArweaveGatewayForDataRequest.url}/${snapshotItem.txId}'),
               headers: headers,
             );
 
