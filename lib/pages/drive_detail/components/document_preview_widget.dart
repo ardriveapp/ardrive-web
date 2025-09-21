@@ -76,10 +76,15 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
 
   void _copyToClipboard() {
     Clipboard.setData(ClipboardData(text: widget.content));
+    final theme = ArDriveTheme.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Copied to clipboard'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        backgroundColor: theme.themeData.colors.themeBgSurface,
+        content: Text(
+          'Copied to clipboard',
+          style: TextStyle(color: theme.themeData.colors.themeFgDefault),
+        ),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -130,7 +135,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
           pageBuilder: (context, _, __) => Scaffold(
-            backgroundColor: Colors.black,
+            backgroundColor: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
             body: DocumentPreviewWidget(
               filename: widget.filename,
               content: widget.content,
@@ -166,18 +171,22 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
             children: [
               Container(
                 color: colors.themeBgSurface,
-                child: Scrollbar(
+                child: ArDriveScrollBar(
                   controller: _scrollController,
+                  alwaysVisible: true,
                   child: SingleChildScrollView(
                     controller: _scrollController,
                     padding: const EdgeInsets.all(16),
-                    child: SelectableText(
-                      widget.content,
-                      style: typography.paragraphSmall(
-                        fontWeight: ArFontWeight.book,
-                      ).copyWith(
-                        fontFamily: 'monospace',
-                        height: 1.5,
+                    child: Align(
+                      alignment: Alignment.topLeft,
+                      child: Text(
+                        widget.content,
+                        style: typography.paragraphSmall(
+                          fontWeight: ArFontWeight.book,
+                        ).copyWith(
+                          fontFamily: 'Courier New',
+                          height: 1.5,
+                        ),
                       ),
                     ),
                   ),
@@ -215,25 +224,27 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
           children: [
             // Content
             Container(
-              color: Colors.black,
+              color: colors.themeBgSurface,
               padding: EdgeInsets.only(
                 bottom: _controlsVisible ? 100 : 0,
               ),
-              child: Scrollbar(
+              child: ArDriveScrollBar(
                 controller: _scrollController,
+                alwaysVisible: true,
                 child: SingleChildScrollView(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(24),
-                  child: Center(
+                  child: Align(
+                    alignment: Alignment.topLeft,
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 1200),
-                      child: SelectableText(
+                      child: Text(
                         widget.content,
                         style: typography.paragraphNormal(
                           fontWeight: ArFontWeight.book,
-                          color: Colors.white,
+                          color: colors.themeFgDefault,
                         ).copyWith(
-                          fontFamily: 'monospace',
+                          fontFamily: 'Courier New',
                           height: 1.8,
                         ),
                       ),
@@ -262,7 +273,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                 bottom: 120,
                 right: 16,
                 child: ArDriveIconButton(
-                  icon: ArDriveIcons.chevronUp(size: 20, color: Colors.white),
+                  icon: ArDriveIcons.chevronUp(size: 20),
                   tooltip: 'Scroll to top',
                   onPressed: _scrollToTop,
                 ),

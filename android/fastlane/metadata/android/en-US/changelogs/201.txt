@@ -1,0 +1,2 @@
+- Improved Sync Process: better error handling and sync cancellation
+- Updated GQL queries to use ardrive.net

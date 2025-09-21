@@ -144,7 +144,7 @@ class BiometricAuthentication {
 /// Open the Platform specific settings where biometrics option can be enabled
 Future<void> openSettingsToEnableBiometrics() async {
   if (Platform.isAndroid) {
-    await AppSettings.openDeviceSettings();
+    await AppSettings.openAppSettings(type: AppSettingsType.device);
     return;
   }
   await AppSettings.openAppSettings();

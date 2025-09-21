@@ -1,0 +1,1 @@
+- Updated build and dependencies for Android target SDK 35

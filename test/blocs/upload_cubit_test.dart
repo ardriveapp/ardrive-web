@@ -122,8 +122,8 @@ void main() {
       stripePublishableKey: 'stripePublishableKey',
       defaultTurboUploadUrl: 'defaultTurboUploadUrl',
       defaultArweaveGatewayForDataRequest: const SelectedGateway(
-        label: 'Arweave.net',
-        url: 'https://arweave.net',
+        label: 'ArDrive Turbo Gateway',
+        url: 'https://ardrive.net',
       ),
     ));
     when(() => mockManifestRepository.getManifestFilesInFolder(

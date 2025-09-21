@@ -1,0 +1,1 @@
+- Fix issue with price calculation when using D2N

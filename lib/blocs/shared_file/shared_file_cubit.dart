@@ -132,16 +132,27 @@ class SharedFileCubit extends Cubit<SharedFileState> {
       fileKey,
     );
     if (allEntities != null) {
+      // Get owner address from the oldest FileEntity (original uploader)
+      // We need to get this before converting to revisions since FileRevision doesn't have ownerAddress
+      String? ownerAddress;
+      if (allEntities.isNotEmpty) {
+        // Sort entities by creation date to find the original
+        allEntities.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+        // Get the owner address from the oldest entity (original uploader)
+        ownerAddress = allEntities.first.ownerAddress;
+      }
+      
       final revisions = await computeRevisionsFromEntities(allEntities);
       // revisions are in reverse chronological order, so first is most recent
       final latestLicense = revisions.first.licenseTxId != null
           ? await fetchLicenseForRevision(revisions.first)
           : null;
-
+      
       emit(SharedFileLoadSuccess(
         fileRevisions: revisions,
         fileKey: fileKey,
         latestLicense: latestLicense,
+        ownerAddress: ownerAddress,
       ));
       return;
     }

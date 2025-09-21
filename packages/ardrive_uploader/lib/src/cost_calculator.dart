@@ -64,7 +64,7 @@ class UploadCostEstimateCalculatorForAR extends ArDriveUploadCostCalculator {
     required int totalSize,
   }) async {
     final costInAR = await _arweave.api
-        .get('/price/$totalSize')
+        .get('price/$totalSize')
         .then((res) => BigInt.parse(res.body));
 
     late final Winston pstFee;

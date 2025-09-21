@@ -60,8 +60,8 @@ void main() {
         stripePublishableKey: 'stripePublishableKey',
         allowedDataItemSizeForTurbo: 100,
         defaultArweaveGatewayForDataRequest: const SelectedGateway(
-          label: 'Arweave.net',
-          url: 'https://arweave.net',
+          label: 'ArDrive Turbo Gateway',
+          url: 'https://ardrive.net',
         ),
       ));
 
@@ -76,24 +76,24 @@ void main() {
         stripePublishableKey: 'stripePublishableKey',
         allowedDataItemSizeForTurbo: 100,
         defaultArweaveGatewayForDataRequest: const SelectedGateway(
-          label: 'Arweave.net',
-          url: 'https://arweave.net',
+          label: 'ArDrive Turbo Gateway',
+          url: 'https://ardrive.net',
         ),
       ));
       initializeStripe(AppConfig(
         stripePublishableKey: 'stripePublishableKey1',
         allowedDataItemSizeForTurbo: 100,
         defaultArweaveGatewayForDataRequest: const SelectedGateway(
-          label: 'Arweave.net',
-          url: 'https://arweave.net',
+          label: 'ArDrive Turbo Gateway',
+          url: 'https://ardrive.net',
         ),
       ));
       initializeStripe(AppConfig(
         stripePublishableKey: 'stripePublishableKey2',
         allowedDataItemSizeForTurbo: 100,
         defaultArweaveGatewayForDataRequest: const SelectedGateway(
-          label: 'Arweave.net',
-          url: 'https://arweave.net',
+          label: 'ArDrive Turbo Gateway',
+          url: 'https://ardrive.net',
         ),
       ));
 

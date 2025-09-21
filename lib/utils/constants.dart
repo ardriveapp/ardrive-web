@@ -16,6 +16,7 @@ const List<String> audioContentTypes = [
 
 const List<String> documentContentTypes = [
   'application/json',
+  'application/x.arweave-manifest+json',
   'text/plain',
   'text/csv',
   'text/markdown',

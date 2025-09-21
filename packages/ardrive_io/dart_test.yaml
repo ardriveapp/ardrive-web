@@ -1,0 +1,22 @@
+# Save io results on JSON in a specific folder
+file_reporters:
+  json: reports/tests.json
+
+# Global base configuration. Every other only expands/overrides it and should include this file.
+
+# Pattern that the test runner uses to find test files in directories
+filename: "test_*.dart"
+
+# Set the default timeout. 1x is the default 30s
+timeout: 1x
+
+# Default platform. Flutter tests would always be vm. Other platforms might be added in a per-package basis
+platforms: [vm]
+
+#Default reporter
+reporter: expanded
+
+# Any test file tagged as broken would be skipped.
+tags:
+  broken:
+    skip: "This tests do not work as expected. Please re-implement them and tag them accordingly"

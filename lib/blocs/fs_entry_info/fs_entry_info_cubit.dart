@@ -15,6 +15,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
 
   final DriveDao _driveDao;
   final LicenseService _licenseService;
+  final String? _ownerAddress;
 
   StreamSubscription? _entrySubscription;
 
@@ -27,8 +28,10 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
     // Supplied in the case isSharedFile == true
     List<FileRevision>? maybeRevisions,
     LicenseState? maybeLicenseState,
+    String? ownerAddress,
   })  : _driveDao = driveDao,
         _licenseService = licenseService,
+        _ownerAddress = ownerAddress,
         super(FsEntryInfoInitial()) {
     final selectedItem = maybeSelectedItem;
     if (selectedItem != null) {
@@ -98,12 +101,19 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
               }
             }
 
+            // For shared files, use the provided owner address
+            // For regular files, try to get it from the revision
+            final ownerAddress = _ownerAddress ?? 
+                latestRevision.originalOwner ?? 
+                latestRevision.pinnedDataOwnerAddress;
+            
             emit(FsEntryFileInfoSuccess(
               name: name,
               lastUpdated: lastUpdated,
               dateCreated: dateCreated,
               metadataTxId: latestRevision.metadataTxId,
               licenseState: licenseState,
+              ownerAddress: ownerAddress,
             ));
           }
           if (isSharedFile) {

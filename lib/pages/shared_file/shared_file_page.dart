@@ -56,6 +56,7 @@ class SharedFilePage extends StatelessWidget {
               fileKey: state.fileKey,
               revisions: state.fileRevisions,
               licenseState: state.latestLicense,
+              ownerAddress: state.ownerAddress,
               drivePrivacy: state.fileKey != null ? 'private' : 'public',
               canNavigateThroughImages: false,
             );

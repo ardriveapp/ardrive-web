@@ -8,44 +8,54 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class ConfigFetcher {
-  final LocalKeyValueStore localStore;
-
   ConfigFetcher({required this.localStore});
 
+  final LocalKeyValueStore localStore;
+
+  @visibleForTesting
+  AssetBundle assetBundle = rootBundle;
+
   Future<AppConfig> fetchConfig(Flavor flavor) async {
-    return loadFromLocalSettings(flavor);
-  }
+    // 1. Load default config from assets.
+    final flavorName = _parseFlavorToEnv(flavor);
+    final defaultConfigString =
+        await assetBundle.loadString('assets/config/$flavorName.json');
+    final defaultConfig = AppConfig.fromJson(
+        json.decode(defaultConfigString) as Map<String, dynamic>);
 
-  @visibleForTesting
-  Future<AppConfig> loadFromEnv(String environment) async {
-    final configContent = await rootBundle.loadString(
-      'assets/config/$environment.json',
-    );
-
-    AppConfig configFromEnv = AppConfig.fromJson(json.decode(configContent));
-
-    final gatewayUrl = localStore.getString('arweaveGatewayUrl');
-
-    return configFromEnv.copyWith(defaultArweaveGatewayUrl: gatewayUrl);
-  }
-
-  @visibleForTesting
-  Future<AppConfig> loadFromLocalSettings(Flavor flavor) async {
-    try {
-      final config = localStore.getString('config');
-
-      if (config != null) {
-        return AppConfig.fromJson(json.decode(config));
-      }
-    } catch (e) {
-      logger.e('Error when loading config from dev tools prefs', e);
+    // 2. Load stored config from local storage.
+    final storedConfigString = localStore.getString('config');
+    if (storedConfigString == null) {
+      // New user or no stored config: save and return the default.
+      await saveConfigOnDevToolsPrefs(defaultConfig);
+      return defaultConfig;
     }
 
-    final configFromEnv = await loadFromEnv(_parseFlavorToEnv(flavor));
+    AppConfig storedConfig;
+    try {
+      storedConfig = AppConfig.fromJson(
+          json.decode(storedConfigString) as Map<String, dynamic>);
+    } catch (e) {
+      logger.e('Error decoding stored config, falling back to default', e);
+      // The stored config is malformed. Overwrite it with the default.
+      await saveConfigOnDevToolsPrefs(defaultConfig);
+      return defaultConfig;
+    }
 
-    saveConfigOnDevToolsPrefs(configFromEnv);
+    // 3. Compare versions and replace the stored config if it's outdated.
+    // We use `?? 1` to handle old configs that don't have a version number.
+    final storedVersion = storedConfig.configVersion ?? 1;
+    final defaultVersion = defaultConfig.configVersion ?? 1;
 
-    return configFromEnv;
+    if (storedVersion < defaultVersion) {
+      // The stored config is from a previous release. Replace it.
+      // Any developer-specific customizations will be reset, which is acceptable.
+      await saveConfigOnDevToolsPrefs(defaultConfig);
+      return defaultConfig;
+    }
+
+    // The stored config is up-to-date.
+    return storedConfig;
   }
 
   String _parseFlavorToEnv(Flavor flavor) {
@@ -59,11 +69,11 @@ class ConfigFetcher {
     }
   }
 
-  void saveConfigOnDevToolsPrefs(AppConfig config) {
-    localStore.putString('config', json.encode(config.toJson()));
+  Future<void> saveConfigOnDevToolsPrefs(AppConfig config) async {
+    await localStore.putString('config', json.encode(config.toJson()));
   }
 
-  void resetDevToolsPrefs() {
-    localStore.remove('config');
+  Future<void> resetDevToolsPrefs() async {
+    await localStore.remove('config');
   }
 }

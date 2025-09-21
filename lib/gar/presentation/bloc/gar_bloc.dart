@@ -17,7 +17,7 @@ class GarBloc extends Bloc<GarEvent, GarState> {
         emit(LoadingGateways());
 
         final gateways = await garRepository.getGateways();
-        final currentGateway = garRepository.getSelectedGateway();
+        final currentGateway = await garRepository.getSelectedGateway();
 
         emit(
           GatewaysLoaded(

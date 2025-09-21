@@ -45,7 +45,28 @@ class _ArDriveDropZoneState extends State<ArDriveDropZone> {
               throw DropzoneWrongInputException();
             }
 
-            return IOFileAdapter().fromXFile(e);
+            // Convert XFile to IOFile with proper MIME type detection
+            final ioFile = await IOFileAdapter().fromXFile(e);
+            
+            // If the content type is the generic octet-stream,
+            // try to detect it from the file extension
+            if (ioFile.contentType == 'application/octet-stream') {
+              // Use the existing lookupMimeTypeWithDefaultType from ardrive_io
+              final detectedMimeType = lookupMimeTypeWithDefaultType(ioFile.name);
+              
+              if (detectedMimeType != 'application/octet-stream') {
+                // Create a new IOFile with the correct content type
+                final bytes = await ioFile.readAsBytes();
+                return IOFileAdapter().fromData(
+                  bytes,
+                  name: ioFile.name,
+                  contentType: detectedMimeType,
+                  lastModifiedDate: ioFile.lastModifiedDate,
+                );
+              }
+            }
+            
+            return ioFile;
           }));
 
           widget.onDragDone?.call(files);

@@ -55,13 +55,13 @@ class ConfigService {
     }
   }
 
-  void updateAppConfig(AppConfig newConfig) {
-    _configFetcher.saveConfigOnDevToolsPrefs(newConfig);
+  Future<void> updateAppConfig(AppConfig newConfig) async {
+    await _configFetcher.saveConfigOnDevToolsPrefs(newConfig);
     _config = newConfig;
   }
 
   Future<void> resetDevToolsPrefs() async {
-    _configFetcher.resetDevToolsPrefs();
+    await _configFetcher.resetDevToolsPrefs();
 
     await loadConfig();
   }

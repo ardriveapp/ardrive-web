@@ -10,9 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   ardrive_io:
-    git:
-      url: https://github.com/ardriveapp/ardrive_io.git
-      ref: v1.4.5
+    path: ../ardrive_io
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git

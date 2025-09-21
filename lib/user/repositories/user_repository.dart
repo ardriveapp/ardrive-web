@@ -130,12 +130,29 @@ class _UserRepository implements UserRepository {
   Future<BigInt> getBalance(Wallet wallet) async {
     final walletAddress = await wallet.getAddress();
 
-    final walletBalance = await Future.wait([
-      _arweave.getWalletBalance(walletAddress),
-      _arweave.getPendingTxFees(walletAddress),
-    ]).then((res) => res[0] - res[1]);
+    // Start both requests in parallel.
+    final balanceFuture = _arweave.getWalletBalance(walletAddress);
+    final pendingFeesFuture = _arweave.getPendingTxFees(walletAddress);
 
-    return walletBalance;
+    // Always await the balance; if it fails, propagate the error.
+    BigInt balance;
+    try {
+      balance = await balanceFuture;
+    } catch (e) {
+      logger.e('Failed to get wallet balance', e);
+
+      // We can't do much without the wallet balance so rethrow
+      rethrow;
+    }
+
+    // Try to subtract pending fees. On failure, fall back to balance only.
+    try {
+      final pending = await pendingFeesFuture;
+      return balance - pending;
+    } catch (e) {
+      logger.w('Failed to get pending tx fees, using wallet balance only: $e');
+      return balance;
+    }
   }
 }
 

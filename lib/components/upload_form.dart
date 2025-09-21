@@ -33,7 +33,6 @@ import 'package:ardrive/main.dart';
 import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
@@ -153,26 +152,21 @@ Future<void> _showUploadForm(
     ),
   );
 
-  await showCongestionDependentModalDialog(
+  if (!context.mounted) {
+    return;
+  }
+  await showArDriveDialog(
     context,
-    () {
-      if (!context.mounted) {
-        return;
-      }
-      showArDriveDialog(
-        context,
-        content: MultiBlocProvider(
-          providers: [
-            uploadCubit,
-            uploadPaymentMethodBloc,
-          ],
-          child: UploadForm(
-            driveDetailCubit: driveDetailCubit,
-          ),
-        ),
-        barrierDismissible: false,
-      );
-    },
+    content: MultiBlocProvider(
+      providers: [
+        uploadCubit,
+        uploadPaymentMethodBloc,
+      ],
+      child: UploadForm(
+        driveDetailCubit: driveDetailCubit,
+      ),
+    ),
+    barrierDismissible: false,
   );
 }
 
@@ -1254,24 +1248,33 @@ class _UploadReadyModalState extends State<UploadReadyModal> {
                     children: [
                       RepositoryProvider.value(
                         value: context.read<ArDriveUploadPreparationManager>(),
-                        child: UploadPaymentMethodView(
-                          useDropdown: true,
-                          onError: () {
-                            context
-                                .read<UploadCubit>()
-                                .emitErrorFromPreparation();
-                          },
-                          onTurboTopupSucess: () {
-                            context.read<UploadCubit>().startUploadPreparation(
-                                  isRetryingToPayWithTurbo: true,
-                                );
-                          },
-                          useNewArDriveUI: true,
-                          onUploadMethodChanged: (method, info, canUpload) {
-                            context
-                                .read<UploadCubit>()
-                                .setUploadMethod(method, info, canUpload);
-                          },
+                        child: BlocProvider(
+                          create: (context) => UploadPaymentMethodBloc(
+                            context.read<ProfileCubit>(),
+                            context.read<ArDriveUploadPreparationManager>(),
+                            context.read<ArDriveAuth>(),
+                          )..add(PrepareUploadPaymentMethod(
+                            params: state.params,
+                          )),
+                          child: UploadPaymentMethodView(
+                            useDropdown: true,
+                            onError: () {
+                              context
+                                  .read<UploadCubit>()
+                                  .emitErrorFromPreparation();
+                            },
+                            onTurboTopupSucess: () {
+                              context.read<UploadCubit>().startUploadPreparation(
+                                    isRetryingToPayWithTurbo: true,
+                                  );
+                            },
+                            useNewArDriveUI: true,
+                            onUploadMethodChanged: (method, info, canUpload) {
+                              context
+                                  .read<UploadCubit>()
+                                  .setUploadMethod(method, info, canUpload);
+                            },
+                          ),
                         ),
                       ),
                     ],

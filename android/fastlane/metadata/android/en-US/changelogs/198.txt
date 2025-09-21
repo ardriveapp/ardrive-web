@@ -1,0 +1,4 @@
+- Adds document preview support for text and code files
+- Adds owner field with ArNS names to the share page
+- Fixes file content-type detection for drag-and-drop
+- Improves UX for network congestion warnings

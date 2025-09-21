@@ -3,7 +3,6 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
@@ -22,21 +21,18 @@ Future<void> promptToCreateDrive(
   BuildContext context, {
   DrivePrivacy? privacy,
 }) =>
-    showCongestionDependentModalDialog(
+    showArDriveDialog(
       context,
-      () => showArDriveDialog(
-        context,
-        content: BlocProvider(
-          create: (_) => DriveCreateCubit(
-            privacy: privacy ?? DrivePrivacy.private,
-            arweave: context.read<ArweaveService>(),
-            turboUploadService: context.read<TurboUploadService>(),
-            driveDao: context.read<DriveDao>(),
-            profileCubit: context.read<ProfileCubit>(),
-            drivesCubit: context.read<DrivesCubit>(),
-          ),
-          child: const DriveCreateForm(),
+      content: BlocProvider(
+        create: (_) => DriveCreateCubit(
+          privacy: privacy ?? DrivePrivacy.private,
+          arweave: context.read<ArweaveService>(),
+          turboUploadService: context.read<TurboUploadService>(),
+          driveDao: context.read<DriveDao>(),
+          profileCubit: context.read<ProfileCubit>(),
+          drivesCubit: context.read<DrivesCubit>(),
         ),
+        child: const DriveCreateForm(),
       ),
     );
 

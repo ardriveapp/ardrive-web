@@ -93,13 +93,17 @@ class _ARNSRepository implements ARNSRepository {
     auth.onAuthStateChanged().listen((user) {
       if (user == null) {
         _cachedUndernames.clear();
-        _cachedPrimaryName = null;
+        _cachedPrimaryNames.clear();
+        _addressesWithoutPrimaryName.clear();
       }
     });
   }
 
   final Map<String, Map<String, ARNSUndername>> _cachedUndernames = {};
-  PrimaryNameDetails? _cachedPrimaryName;
+  // Cache primary names by address
+  final Map<String, PrimaryNameDetails> _cachedPrimaryNames = {};
+  // Cache addresses that don't have primary names to avoid repeated lookups
+  final Map<String, bool> _addressesWithoutPrimaryName = {};
   bool _hasErrorGettingARNSUndernames = false;
 
   @override
@@ -471,17 +475,38 @@ class _ARNSRepository implements ARNSRepository {
       {bool update = false, bool getLogo = true}) async {
     logger.d('Getting primary name for address: $address');
 
-    if (!update && _cachedPrimaryName != null) {
-      return _cachedPrimaryName!;
+    // Check if we already know this address doesn't have a primary name
+    if (!update && _addressesWithoutPrimaryName.containsKey(address)) {
+      logger.d('Address $address is cached as having no primary name');
+      throw PrimaryNameNotFoundException(
+          'No primary name found for address: $address');
     }
 
-    final primaryName = await _sdk.getPrimaryNameDetails(address, getLogo);
+    // Check if we have a cached primary name for this specific address
+    if (!update && _cachedPrimaryNames.containsKey(address)) {
+      logger.d('Returning cached primary name for address: $address');
+      return _cachedPrimaryNames[address]!;
+    }
 
-    logger.d('Primary name: $primaryName');
+    try {
+      final primaryName = await _sdk.getPrimaryNameDetails(address, getLogo);
 
-    _cachedPrimaryName = primaryName;
+      logger.d('Primary name: $primaryName');
 
-    return primaryName;
+      // Cache the primary name for this specific address
+      _cachedPrimaryNames[address] = primaryName;
+      // Remove from the no-name cache if it was there
+      _addressesWithoutPrimaryName.remove(address);
+
+      return primaryName;
+    } catch (e) {
+      // Cache this address as not having a primary name
+      if (!update) {
+        _addressesWithoutPrimaryName[address] = true;
+        logger.d('Cached address $address as having no primary name');
+      }
+      rethrow;
+    }
   }
 }
 

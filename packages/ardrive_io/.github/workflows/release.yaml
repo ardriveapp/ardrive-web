@@ -1,0 +1,35 @@
+name: 'Draft release'
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [closed]
+
+env:
+  TITLE: ${{ github.event.pull_request.title }}
+  BODY: ${{ github.event.pull_request.body }}
+
+jobs:
+  release:
+    if: ${{ github.event.pull_request.merged }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Create draft release'
+        uses: 'actions/github-script@v6'
+        with:
+          github-token: '${{ secrets.GITHUB_TOKEN }}'
+          script: |
+            try {
+              await github.rest.repos.createRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: process.env.TITLE,
+                name: process.env.TITLE,
+                body: process.env.BODY,
+                target_commitish: 'main',
+                draft: true
+              });
+            } catch (error) {
+              core.setFailed(error.message);
+            }

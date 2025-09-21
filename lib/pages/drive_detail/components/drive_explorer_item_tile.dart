@@ -13,7 +13,6 @@ import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository
 import 'package:ardrive/drive_explorer/thumbnail/thumbnail_bloc.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
@@ -352,12 +351,9 @@ class _DriveExplorerItemTileTrailingState
           ArDriveButton(
             maxHeight: 36,
             style: ArDriveButtonStyle.primary,
-            onPressed: () => showCongestionDependentModalDialog(
+            onPressed: () => promptToReCreateFolder(
               context,
-              () => promptToReCreateFolder(
-                context,
-                ghostFolder: item,
-              ),
+              ghostFolder: item,
             ),
             fontStyle: ArDriveTypography.body.smallRegular(),
             text: appLocalizationsOf(context).fix,
