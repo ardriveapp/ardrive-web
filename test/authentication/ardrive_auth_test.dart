@@ -14,6 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:stash_memory/stash_memory.dart';
 
+import '../test_utils/mocks.dart';
 import '../test_utils/utils.dart';
 
 class TransactionCommonMixinFake extends Fake
@@ -46,6 +47,7 @@ void main() {
   late MockSecureKeyValueStore mockSecureKeyValueStore;
   late MockArConnectService mockArConnectService;
   late MockDatabaseHelpers mockDatabaseHelpers;
+  late MockDriveDao mockDriveDao;
 
   final wallet = getTestWallet();
 
@@ -57,6 +59,11 @@ void main() {
     mockSecureKeyValueStore = MockSecureKeyValueStore();
     mockArConnectService = MockArConnectService();
     mockDatabaseHelpers = MockDatabaseHelpers();
+    mockDriveDao = MockDriveDao();
+
+    // Setup default stub for clearAllDriveKeys
+    when(() => mockDriveDao.clearAllDriveKeys())
+        .thenAnswer((_) async => {});
 
     final metadataCache = await MetadataCache.fromCacheStore(
       await newMemoryCacheStore(),
@@ -70,6 +77,7 @@ void main() {
       arConnectService: mockArConnectService,
       biometricAuthentication: mockBiometricAuthentication,
       secureKeyValueStore: mockSecureKeyValueStore,
+      driveDao: mockDriveDao,
       metadataCache: metadataCache,
     );
 
@@ -127,9 +135,9 @@ void main() {
     group('userHasPassword method', () {
       // test
       test('Should return true when user has a private drive', () async {
-        when(() => mockArweaveService.getFirstPrivateDriveTx(wallet,
+        when(() => mockArweaveService.getAllPrivateDriveTxs(wallet,
                 maxRetries: any(named: 'maxRetries')))
-            .thenAnswer((_) async => fakePrivateDriveV1);
+            .thenAnswer((_) async => [fakePrivateDriveV1]);
         final hasPassword = await arDriveAuth.userHasPassword(wallet);
 
         expect(hasPassword, true);
@@ -138,9 +146,9 @@ void main() {
       test(
           'Should return false when user does not created a password yet when they dont have any ',
           () async {
-        when(() => mockArweaveService.getFirstPrivateDriveTx(wallet,
+        when(() => mockArweaveService.getAllPrivateDriveTxs(wallet,
                 maxRetries: any(named: 'maxRetries')))
-            .thenAnswer((_) async => null);
+            .thenAnswer((_) async => []);
         final hasPassword = await arDriveAuth.userHasPassword(wallet);
 
         expect(hasPassword, false);
@@ -160,9 +168,9 @@ void main() {
         test(
             'should return the user when has private drives and login with sucess. ',
             () async {
-          when(() => mockArweaveService.getFirstPrivateDriveTx(wallet,
+          when(() => mockArweaveService.getAllPrivateDriveTxs(wallet,
                   maxRetries: any(named: 'maxRetries')))
-              .thenAnswer((_) async => fakePrivateDriveV1);
+              .thenAnswer((_) async => [fakePrivateDriveV1]);
           when(() => mockUserRepository.getARIOTokens(wallet))
               .thenAnswer((_) async => '0.4');
           when(() => mockUserRepository.getBalance(wallet))
@@ -224,11 +232,11 @@ void main() {
             'should return the user, and save the password on secure storage when has private drives and login with sucess.',
             () async {
           when(
-            () => mockArweaveService.getFirstPrivateDriveTx(
+            () => mockArweaveService.getAllPrivateDriveTxs(
               wallet,
               maxRetries: any(named: 'maxRetries'),
             ),
-          ).thenAnswer((_) async => fakePrivateDriveV1);
+          ).thenAnswer((_) async => [fakePrivateDriveV1]);
 
           when(() => mockBiometricAuthentication.isEnabled())
               .thenAnswer((_) async => true);
@@ -297,9 +305,9 @@ void main() {
 
         test('should return the user when there\'s no private drives',
             () async {
-          when(() => mockArweaveService.getFirstPrivateDriveTx(wallet,
+          when(() => mockArweaveService.getAllPrivateDriveTxs(wallet,
                   maxRetries: any(named: 'maxRetries')))
-              .thenAnswer((_) async => null);
+              .thenAnswer((_) async => []);
 
           when(() => mockBiometricAuthentication.isEnabled())
               .thenAnswer((_) async => false);
@@ -338,9 +346,9 @@ void main() {
         test(
             'should return the user, and save the password on secure storage when there\'s no private drives',
             () async {
-          when(() => mockArweaveService.getFirstPrivateDriveTx(wallet,
+          when(() => mockArweaveService.getAllPrivateDriveTxs(wallet,
                   maxRetries: any(named: 'maxRetries')))
-              .thenAnswer((_) async => null);
+              .thenAnswer((_) async => []);
 
           when(() => mockUserRepository.hasUser())
               .thenAnswer((invocation) => Future.value(true));
@@ -385,9 +393,9 @@ void main() {
         });
 
         test('should return false when password is wrong', () async {
-          when(() => mockArweaveService.getFirstPrivateDriveTx(wallet,
+          when(() => mockArweaveService.getAllPrivateDriveTxs(wallet,
                   maxRetries: any(named: 'maxRetries')))
-              .thenAnswer((_) async => fakePrivateDriveV1);
+              .thenAnswer((_) async => [fakePrivateDriveV1]);
           when(() =>
                   mockArweaveService.getDriveSignatureForDrive(wallet, any()))
               .thenAnswer((_) async => Future.value(null));
@@ -648,11 +656,11 @@ void main() {
           errorFetchingIOTokens: false,
         );
         when(
-          () => mockArweaveService.getFirstPrivateDriveTx(
+          () => mockArweaveService.getAllPrivateDriveTxs(
             wallet,
             maxRetries: any(named: 'maxRetries'),
           ),
-        ).thenAnswer((_) async => fakePrivateDriveV1);
+        ).thenAnswer((_) async => [fakePrivateDriveV1]);
         when(() => mockBiometricAuthentication.isEnabled())
             .thenAnswer((_) async => false);
         when(() => mockUserRepository.getARIOTokens(wallet))
@@ -725,9 +733,9 @@ void main() {
         );
         when(() => mockBiometricAuthentication.isEnabled())
             .thenAnswer((_) async => false);
-        when(() => mockArweaveService.getFirstPrivateDriveTx(wallet,
+        when(() => mockArweaveService.getAllPrivateDriveTxs(wallet,
                 maxRetries: any(named: 'maxRetries')))
-            .thenAnswer((_) async => fakePrivateDriveV1);
+            .thenAnswer((_) async => [fakePrivateDriveV1]);
         when(
           () => mockArDriveCrypto.deriveDriveKey(
               wallet, any(), any(), DriveSignatureType.v1, any()),
