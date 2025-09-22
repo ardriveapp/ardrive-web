@@ -102,6 +102,15 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     }
   }
 
+  Future<void> clearAllDriveKeys() async {
+    try {
+      await _driveKeyVault.clear();
+      await _previewVault.clear();
+    } catch (e) {
+      throw _handleError('Error clearing drive keys from memory', e);
+    }
+  }
+
   Future<Uint8List?> getPreviewDataFromMemory(TxID dataTxId) async {
     try {
       return await _previewVault.get(dataTxId);

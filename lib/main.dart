@@ -429,6 +429,7 @@ class AppState extends State<App> {
             databaseHelpers: DatabaseHelpers(
               context.read<Database>(),
             ),
+            driveDao: context.read<DriveDao>(),
             arConnectService: ArConnectService(),
             biometricAuthentication: context.read<BiometricAuthentication>(),
             secureKeyValueStore: SecureKeyValueStore(

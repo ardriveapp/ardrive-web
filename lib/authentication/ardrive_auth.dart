@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/daos.dart';
+import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
@@ -49,6 +50,7 @@ abstract class ArDriveAuth {
     required SecureKeyValueStore secureKeyValueStore,
     required ArConnectService arConnectService,
     required DatabaseHelpers databaseHelpers,
+    required DriveDao driveDao,
     MetadataCache? metadataCache,
   }) =>
       ArDriveAuthImpl(
@@ -59,6 +61,7 @@ abstract class ArDriveAuth {
         biometricAuthentication: biometricAuthentication,
         secureKeyValueStore: secureKeyValueStore,
         arConnectService: arConnectService,
+        driveDao: driveDao,
         metadataCache: metadataCache,
       );
 }
@@ -72,6 +75,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
     required SecureKeyValueStore secureKeyValueStore,
     required ArConnectService arConnectService,
     required DatabaseHelpers databaseHelpers,
+    required DriveDao driveDao,
     MetadataCache? metadataCache,
   })  : _arweave = arweave,
         _crypto = crypto,
@@ -80,6 +84,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
         _secureKeyValueStore = secureKeyValueStore,
         _biometricAuthentication = biometricAuthentication,
         _userRepository = userRepository,
+        _driveDao = driveDao,
         _maybeMetadataCache = metadataCache;
 
   final UserRepository _userRepository;
@@ -89,6 +94,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
   final SecureKeyValueStore _secureKeyValueStore;
   final ArConnectService _arConnectService;
   final DatabaseHelpers _databaseHelpers;
+  final DriveDao _driveDao;
   MetadataCache? _maybeMetadataCache;
 
   User? _currentUser;
@@ -318,6 +324,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
         await _secureKeyValueStore.remove('password');
         await _secureKeyValueStore.remove('biometricEnabled');
       }
+
+      // Clear all drive keys from memory
+      await _driveDao.clearAllDriveKeys();
 
       await _databaseHelpers.deleteAllTables();
       currentUser = null;
