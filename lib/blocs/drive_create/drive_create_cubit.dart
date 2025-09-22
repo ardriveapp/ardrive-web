@@ -89,7 +89,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         passwordToUse = drivePassword;
       } else {
         // Public drives don't need a password
-        passwordToUse = profile.user.password.isNotEmpty ? profile.user.password : '';
+        passwordToUse = '';
       }
 
       final createRes = await _driveDao.createDrive(
