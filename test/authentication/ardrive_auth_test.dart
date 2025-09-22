@@ -14,7 +14,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:stash_memory/stash_memory.dart';
 
-import '../test_utils/mocks.dart';
 import '../test_utils/utils.dart';
 
 class TransactionCommonMixinFake extends Fake
