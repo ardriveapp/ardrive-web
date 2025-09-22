@@ -97,7 +97,7 @@ UploadRepository createUploadRepository(BuildContext context) {
       ),
       arweave: Arweave(
         gatewayUrl: Uri.parse(
-            context.read<ConfigService>().config.defaultArweaveGatewayUrl!),
+            context.read<ConfigService>().config.defaultArweaveGatewayForDataRequest.url),
       ),
       pstService: context.read<PstService>(),
     ),

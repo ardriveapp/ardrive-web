@@ -99,8 +99,8 @@ class AppShellState extends State<AppShell> {
                   builder: (context, syncState) {
                     return Stack(children: [
                       scaffold,
-                      if (syncState is SyncInProgress || 
-                          syncState is SyncCancelled || 
+                      if (syncState is SyncInProgress ||
+                          syncState is SyncCancelled ||
                           syncState is SyncCompleteWithErrors)
                         Stack(
                           children: [
@@ -121,35 +121,43 @@ class AppShellState extends State<AppShell> {
                                       AsyncSnapshot snapshot) {
                                     final isCurrentProfileArConnect =
                                         snapshot.data == true;
-                                    
+
                                     if (syncState is SyncCancelled) {
                                       return Align(
                                         alignment: Alignment.center,
                                         child: Material(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                           child: ArDriveStandardModalNew(
                                             title: appLocalizationsOf(context)
                                                 .syncCancelled,
                                             content: Column(
                                               mainAxisSize: MainAxisSize.min,
-                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
                                               children: [
                                                 Text(
                                                   appLocalizationsOf(context)
                                                       .syncProgressSaved,
-                                                  style: typography.paragraphNormal(),
+                                                  style: typography
+                                                      .paragraphNormal(),
                                                 ),
                                                 const SizedBox(height: 12),
                                                 Container(
-                                                  padding: const EdgeInsets.all(12),
+                                                  padding:
+                                                      const EdgeInsets.all(12),
                                                   decoration: BoxDecoration(
-                                                    color: ArDriveTheme.of(context)
-                                                        .themeData
-                                                        .colors
-                                                        .themeWarningSubtle,
-                                                    borderRadius: BorderRadius.circular(6),
+                                                    color:
+                                                        ArDriveTheme.of(context)
+                                                            .themeData
+                                                            .colors
+                                                            .themeWarningSubtle,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            6),
                                                     border: Border.all(
-                                                      color: ArDriveTheme.of(context)
+                                                      color: ArDriveTheme.of(
+                                                              context)
                                                           .themeData
                                                           .colors
                                                           .themeWarningEmphasis,
@@ -159,9 +167,11 @@ class AppShellState extends State<AppShell> {
                                                   child: Row(
                                                     children: [
                                                       Icon(
-                                                        Icons.warning_amber_rounded,
+                                                        Icons
+                                                            .warning_amber_rounded,
                                                         size: 16,
-                                                        color: ArDriveTheme.of(context)
+                                                        color: ArDriveTheme.of(
+                                                                context)
                                                             .themeData
                                                             .colors
                                                             .themeWarningEmphasis,
@@ -169,17 +179,24 @@ class AppShellState extends State<AppShell> {
                                                       const SizedBox(width: 8),
                                                       Expanded(
                                                         child: Text(
-                                                          appLocalizationsOf(context)
+                                                          appLocalizationsOf(
+                                                                  context)
                                                               .syncCancelledDetails(
-                                                            syncState.drivesCompleted,
-                                                            syncState.totalDrives,
+                                                            syncState
+                                                                .drivesCompleted,
+                                                            syncState
+                                                                .totalDrives,
                                                           ),
-                                                          style: typography.paragraphSmall(
-                                                            color: ArDriveTheme.of(context)
+                                                          style: typography
+                                                              .paragraphSmall(
+                                                            color: ArDriveTheme
+                                                                    .of(context)
                                                                 .themeData
                                                                 .colors
                                                                 .themeWarningEmphasis,
-                                                            fontWeight: ArFontWeight.semiBold,
+                                                            fontWeight:
+                                                                ArFontWeight
+                                                                    .semiBold,
                                                           ),
                                                         ),
                                                       ),
@@ -195,65 +212,88 @@ class AppShellState extends State<AppShell> {
                                                       .read<SyncCubit>()
                                                       .clearCancelledState();
                                                 },
-                                                title: appLocalizationsOf(context)
-                                                    .ok,
+                                                title:
+                                                    appLocalizationsOf(context)
+                                                        .ok,
                                               ),
                                             ],
                                           ),
                                         ),
                                       );
                                     }
-                                    
+
                                     if (syncState is SyncCompleteWithErrors) {
                                       return Align(
                                         alignment: Alignment.center,
                                         child: Material(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                           child: ArDriveStandardModalNew(
                                             title: appLocalizationsOf(context)
                                                 .syncCompleteWithErrors,
                                             content: Column(
                                               mainAxisSize: MainAxisSize.min,
-                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
                                               children: [
                                                 Text(
                                                   appLocalizationsOf(context)
                                                       .syncPartialSuccessMessage(
-                                                        syncState.failedDrives,
-                                                        syncState.totalDrives,
-                                                      ),
-                                                  style: typography.paragraphNormal(),
+                                                    syncState.failedDrives,
+                                                    syncState.totalDrives,
+                                                  ),
+                                                  style: typography
+                                                      .paragraphNormal(),
                                                 ),
-                                                if (syncState.errorMessages.isNotEmpty) ...[
+                                                if (syncState.errorMessages
+                                                    .isNotEmpty) ...[
                                                   const SizedBox(height: 16),
                                                   Container(
-                                                    padding: const EdgeInsets.all(12),
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                            12),
                                                     decoration: BoxDecoration(
-                                                      color: ArDriveTheme.of(context)
+                                                      color: ArDriveTheme.of(
+                                                              context)
                                                           .themeData
                                                           .colors
                                                           .themeBgSubtle,
-                                                      borderRadius: BorderRadius.circular(8),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
                                                       border: Border.all(
-                                                        color: ArDriveTheme.of(context)
+                                                        color: ArDriveTheme.of(
+                                                                context)
                                                             .themeData
                                                             .colors
                                                             .themeErrorDefault,
                                                         width: 1,
                                                       ),
                                                     ),
-                                                    constraints: const BoxConstraints(
+                                                    constraints:
+                                                        const BoxConstraints(
                                                       maxHeight: 200,
                                                     ),
-                                                    child: SingleChildScrollView(
+                                                    child:
+                                                        SingleChildScrollView(
                                                       child: Column(
-                                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                                        children: syncState.errorMessages.entries
-                                                            .map((entry) => Padding(
-                                                                  padding: const EdgeInsets.only(bottom: 4),
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: syncState
+                                                            .errorMessages
+                                                            .entries
+                                                            .map((entry) =>
+                                                                Padding(
+                                                                  padding:
+                                                                      const EdgeInsets
+                                                                          .only(
+                                                                          bottom:
+                                                                              4),
                                                                   child: Text(
                                                                     '• ${entry.value}',
-                                                                    style: typography.paragraphSmall(),
+                                                                    style: typography
+                                                                        .paragraphSmall(),
                                                                   ),
                                                                 ))
                                                             .toList(),
@@ -270,15 +310,16 @@ class AppShellState extends State<AppShell> {
                                                       .read<SyncCubit>()
                                                       .clearErrorState();
                                                 },
-                                                title: appLocalizationsOf(context)
-                                                    .close,
+                                                title:
+                                                    appLocalizationsOf(context)
+                                                        .close,
                                               ),
                                             ],
                                           ),
                                         ),
                                       );
                                     }
-                                    
+
                                     return Align(
                                       alignment: Alignment.center,
                                       child: Material(
@@ -296,23 +337,30 @@ class AppShellState extends State<AppShell> {
                                                 Column(
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
-                                                if (syncProgress.statusMessage != null)
+                                                if (syncProgress
+                                                        .statusMessage !=
+                                                    null)
                                                   Text(
                                                     syncProgress.statusMessage!,
-                                                    style: typography.paragraphNormal(
-                                                      fontWeight: ArFontWeight.semiBold,
+                                                    style: typography
+                                                        .paragraphNormal(
+                                                      fontWeight:
+                                                          ArFontWeight.semiBold,
                                                     ),
                                                   )
                                                 else
                                                   Text(
                                                     appLocalizationsOf(context)
                                                         .syncProgressPercentage(
-                                                      (syncProgress.progress * 100)
+                                                      (syncProgress.progress *
+                                                              100)
                                                           .roundToDouble()
                                                           .toString(),
                                                     ),
-                                                    style: typography.paragraphNormal(
-                                                      fontWeight: ArFontWeight.bold,
+                                                    style: typography
+                                                        .paragraphNormal(
+                                                      fontWeight:
+                                                          ArFontWeight.bold,
                                                     ),
                                                   ),
                                               ],
@@ -327,7 +375,9 @@ class AppShellState extends State<AppShell> {
                                                 Text(
                                                   syncProgress.drivesCount == 0
                                                       ? ''
-                                                      : syncProgress.drivesCount > 1
+                                                      : syncProgress
+                                                                  .drivesCount >
+                                                              1
                                                           ? appLocalizationsOf(
                                                                   context)
                                                               .driveSyncedOfDrivesCount(
@@ -338,39 +388,53 @@ class AppShellState extends State<AppShell> {
                                                           : appLocalizationsOf(
                                                                   context)
                                                               .syncingOnlyOneDrive,
-                                                  style: typography.paragraphNormal(
-                                                    fontWeight: ArFontWeight.bold,
+                                                  style: typography
+                                                      .paragraphNormal(
+                                                    fontWeight:
+                                                        ArFontWeight.bold,
                                                   ),
                                                 ),
                                                 if (syncProgress.hasErrors) ...[
                                                   const SizedBox(height: 8),
                                                   Container(
-                                                    padding: const EdgeInsets.all(8),
+                                                    padding:
+                                                        const EdgeInsets.all(8),
                                                     decoration: BoxDecoration(
-                                                      color: ArDriveTheme.of(context)
+                                                      color: ArDriveTheme.of(
+                                                              context)
                                                           .themeData
                                                           .colors
                                                           .themeWarningSubtle,
-                                                      borderRadius: BorderRadius.circular(4),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              4),
                                                     ),
                                                     child: Row(
-                                                      mainAxisSize: MainAxisSize.min,
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
                                                       children: [
                                                         Icon(
-                                                          Icons.warning_amber_rounded,
+                                                          Icons
+                                                              .warning_amber_rounded,
                                                           size: 16,
-                                                          color: ArDriveTheme.of(context)
+                                                          color: ArDriveTheme
+                                                                  .of(context)
                                                               .themeData
                                                               .colors
                                                               .themeWarningEmphasis,
                                                         ),
-                                                        const SizedBox(width: 4),
+                                                        const SizedBox(
+                                                            width: 4),
                                                         Text(
-                                                          appLocalizationsOf(context)
+                                                          appLocalizationsOf(
+                                                                  context)
                                                               .syncErrorsDetected(
-                                                                  syncProgress.failedQueries),
-                                                          style: typography.paragraphSmall(
-                                                            color: ArDriveTheme.of(context)
+                                                                  syncProgress
+                                                                      .failedQueries),
+                                                          style: typography
+                                                              .paragraphSmall(
+                                                            color: ArDriveTheme
+                                                                    .of(context)
                                                                 .themeData
                                                                 .colors
                                                                 .themeWarningEmphasis,
@@ -412,7 +476,7 @@ class AppShellState extends State<AppShell> {
                                 bottom: 0,
                                 right: 20,
                                 child: Text(
-                                  'Using gateway: ${context.read<ConfigService>().config.defaultArweaveGatewayUrl}',
+                                  'Using gateway: ${context.read<ConfigService>().config.defaultArweaveGatewayForDataRequest.url}',
                                   style: ArDriveTypographyNew.of(context)
                                       .paragraphLarge(
                                     fontWeight: ArFontWeight.semiBold,
