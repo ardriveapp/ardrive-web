@@ -1,5 +1,5 @@
 import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
-import 'package:ardrive/gar/presentation/widgets/gar_modal.dart';
+import 'package:ardrive/components/settings_popover.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
@@ -84,10 +84,7 @@ class ArDriveLoginModal extends StatelessWidget {
                 if (!hasCloseButton && hasSettingsButton)
                   Padding(
                     padding: const EdgeInsets.only(top: 22.0, right: 22.0),
-                    child: GestureDetector(
-                      onTap: () {
-                        showGatewaySwitcherModal(context);
-                      },
+                    child: SettingsSubmenu(
                       child: ArDriveClickArea(
                         tooltip: 'Advanced Settings',
                         child: Icon(
