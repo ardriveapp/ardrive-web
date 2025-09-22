@@ -10,6 +10,7 @@ import 'package:ardrive/authentication/login/views/wallet_created_view.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/icon_theme_switcher.dart';
 import 'package:ardrive/components/progress_dialog.dart';
+import 'package:ardrive/components/settings_popover.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
@@ -339,10 +340,28 @@ class _LargeDesktopView extends StatelessWidget {
                               globalKey: globalKey,
                             ),
                           ),
-                          const Positioned(
+                          Positioned(
                             right: 24,
                             top: 24,
-                            child: IconThemeSwitcher(),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SettingsSubmenu(
+                                  child: ArDriveClickArea(
+                                    tooltip: 'Advanced Settings',
+                                    child: Icon(
+                                      Icons.settings,
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colorTokens
+                                          .iconLow,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                const IconThemeSwitcher(),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -400,10 +419,28 @@ class _SmallDesktopView extends StatelessWidget {
                               globalKey: globalKey,
                             ),
                           ),
-                          const Positioned(
+                          Positioned(
                             right: 24,
                             top: 24,
-                            child: IconThemeSwitcher(),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SettingsSubmenu(
+                                  child: ArDriveClickArea(
+                                    tooltip: 'Advanced Settings',
+                                    child: Icon(
+                                      Icons.settings,
+                                      color: ArDriveTheme.of(context)
+                                          .themeData
+                                          .colorTokens
+                                          .iconLow,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                const IconThemeSwitcher(),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -463,10 +500,28 @@ class _TabletView extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const Positioned(
+                    Positioned(
                       right: 24,
                       top: 24,
-                      child: IconThemeSwitcher(),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SettingsSubmenu(
+                            child: ArDriveClickArea(
+                              tooltip: 'Advanced Settings',
+                              child: Icon(
+                                Icons.settings,
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colorTokens
+                                    .iconLow,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          const IconThemeSwitcher(),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -513,10 +568,28 @@ class _PhoneView extends StatelessWidget {
                         globalKey: globalKey,
                       ),
                     ),
-                    const Positioned(
+                    Positioned(
                       right: 0,
                       top: 0,
-                      child: IconThemeSwitcher(),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SettingsSubmenu(
+                            child: ArDriveClickArea(
+                              tooltip: 'Advanced Settings',
+                              child: Icon(
+                                Icons.settings,
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colorTokens
+                                    .iconLow,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          const IconThemeSwitcher(),
+                        ],
+                      ),
                     ),
                   ],
                 ),
