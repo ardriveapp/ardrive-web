@@ -16,6 +16,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 import 'components.dart';
+import 'drive_password_form_field.dart';
 
 Future<void> promptToCreateDrive(
   BuildContext context, {
@@ -46,6 +47,22 @@ class DriveCreateForm extends StatefulWidget {
 class _DriveCreateFormState extends State<DriveCreateForm> {
   final _driveNameController = TextEditingController();
   bool _isDriveNameValid = false;
+  String? _drivePassword;
+
+  bool _isFormValid() {
+    if (!_isDriveNameValid) return false;
+
+    // Check if we need a password for this drive
+    final state = context.read<DriveCreateCubit>().state;
+    if (state.privacy == DrivePrivacy.private) {
+      // All users need a password for private drives
+      if (_drivePassword == null || _drivePassword!.isEmpty) {
+        return false;
+      }
+    }
+
+    return true;
+  }
 
   @override
   Widget build(BuildContext context) =>
@@ -193,6 +210,15 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
                             )
                         ],
                       ),
+                      // Show password field for all users creating private drives
+                      DrivePasswordFormField(
+                        isVisible: privacy == DrivePrivacy.private,
+                        onPasswordChanged: (password) {
+                          setState(() {
+                            _drivePassword = password;
+                          });
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -203,9 +229,10 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
                   title: appLocalizationsOf(context).cancelEmphasized,
                 ),
                 ModalAction(
-                  isEnable: _isDriveNameValid,
+                  isEnable: _isFormValid(),
                   action: () => context.read<DriveCreateCubit>().submit(
                         _driveNameController.text,
+                        drivePassword: _drivePassword,
                       ),
                   title: appLocalizationsOf(context).createEmphasized,
                 ),

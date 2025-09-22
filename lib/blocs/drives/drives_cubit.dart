@@ -111,15 +111,38 @@ class DrivesCubit extends Cubit<DrivesState> {
 
       _promptToSnapshotBloc.add(SelectedDrive(driveId: selectedDriveId));
 
-      // Identify locked drives (private drives without keys in memory)
+      // Identify locked drives (private drives without accessible keys)
       final lockedDrives = <String>{};
-      if (profileState is ProfileLoggedIn && profileState.user.password.isEmpty) {
+      if (profileState is ProfileLoggedIn) {
         for (final drive in [...userDrives, ...sharedDrives]) {
           // Check if this is a private drive
           if (drive.privacy == DrivePrivacyTag.private) {
-            // Check if we have the key in memory
-            final driveKey = await _driveDao.getDriveKeyFromMemory(drive.id);
-            if (driveKey == null) {
+            try {
+              // For users with a session password, try to get the drive key
+              // This will attempt to decrypt it with the session password
+              if (profileState.user.password.isNotEmpty) {
+                final driveKey = await _driveDao.getDriveKey(
+                  drive.id,
+                  profileState.user.cipherKey,
+                );
+                if (driveKey == null) {
+                  lockedDrives.add(drive.id);
+                } else {
+                  // Store the key in memory for faster access
+                  await _driveDao.putDriveKeyInMemory(
+                    driveID: drive.id,
+                    driveKey: driveKey,
+                  );
+                }
+              } else {
+                // For Wander users, check if we have the key in memory
+                final driveKey = await _driveDao.getDriveKeyFromMemory(drive.id);
+                if (driveKey == null) {
+                  lockedDrives.add(drive.id);
+                }
+              }
+            } catch (e) {
+              // If decryption fails (wrong password), mark as locked
               lockedDrives.add(drive.id);
             }
           }

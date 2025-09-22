@@ -189,13 +189,19 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
           ),
           showDerivedWalletAlreadyCreated
               ? Text(
-                  'We found a wallet already created for this Ethereum address, please enter your password to continue.',
+                  'We found a wallet already created for this Ethereum address. Enter the password you used to derive this wallet to continue.',
                   textAlign: TextAlign.center,
                   style: typography.paragraphNormal(
                       color: colorTokens.textLow,
                       fontWeight: ArFontWeight.semiBold),
                 )
-              : const SizedBox(),
+              : Text(
+                  'Enter the password you used to start this session.\nThis is the password for the private drive you initially logged in with.',
+                  textAlign: TextAlign.center,
+                  style: typography.paragraphNormal(
+                      color: colorTokens.textLow,
+                      fontWeight: ArFontWeight.semiBold),
+                ),
           const SizedBox(height: 40),
           Text('Password',
               style: typography.paragraphNormal(

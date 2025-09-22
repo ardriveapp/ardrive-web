@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/daos.dart';
-import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
@@ -154,9 +153,13 @@ class ArDriveAuthImpl implements ArDriveAuth {
   @override
   Future<bool> userHasPassword(Wallet wallet) async {
     try {
-      final firstDrivePrivateDriveTx = await _getFirstPrivateDriveTx(wallet);
+      // Check if the user has any private drives (which would require a password)
+      final privateDriveTxs = await _arweave.getAllPrivateDriveTxs(
+        wallet,
+        maxRetries: profileQueryMaxRetries,
+      );
 
-      return firstDrivePrivateDriveTx != null;
+      return privateDriveTxs.isNotEmpty;
     } catch (e) {
       if (e is GraphQLException) {
         throw const AuthenticationGatewayException();
@@ -361,28 +364,35 @@ class ArDriveAuthImpl implements ArDriveAuth {
     Wallet wallet,
     String password,
   ) async {
-    final firstPrivateDriveTx = await _getFirstPrivateDriveTx(wallet);
+    // Get all private drive transactions for this wallet
+    final privateDriveTxs = await _arweave.getAllPrivateDriveTxs(
+      wallet,
+      maxRetries: profileQueryMaxRetries,
+    );
 
-    // Try and decrypt one of the user's private drive entities to check if they are entering the
-    // right password.
-    if (firstPrivateDriveTx != null) {
-      final driveId = firstPrivateDriveTx.getTag(EntityTag.driveId)!;
-      final sigTypeTag = firstPrivateDriveTx.getTag(EntityTag.signatureType);
+    // If there are no private drives, validation passes
+    if (privateDriveTxs.isEmpty) {
+      return;
+    }
+
+    // Try the password against each private drive until one succeeds
+    bool passwordValidForAtLeastOneDrive = false;
+    Exception? lastException;
+
+    for (final driveTx in privateDriveTxs) {
+      final driveId = driveTx.getTag(EntityTag.driveId)!;
+      final sigTypeTag = driveTx.getTag(EntityTag.signatureType);
       final sigType = DriveSignatureType.fromString(sigTypeTag ?? '1');
 
-      final driveSignature = sigType == DriveSignatureType.v1
-          ? await _arweave.getDriveSignatureForDrive(wallet, driveId)
-          : null;
-
-      late DriveKey checkDriveKey;
       try {
-        checkDriveKey = await _crypto.deriveDriveKey(
+        final driveSignature = sigType == DriveSignatureType.v1
+            ? await _arweave.getDriveSignatureForDrive(wallet, driveId)
+            : null;
+
+        final checkDriveKey = await _crypto.deriveDriveKey(
             wallet, driveId, password, sigType, driveSignature);
-      } catch (e) {
-        throw WrongPasswordException('Password is incorrect');
-      }
 
-      try {
+        // Try to decrypt the drive entity to verify the password works
         final privateDrive = await _arweave.getLatestDriveEntityWithId(
           driveId,
           driveKey: checkDriveKey.key,
@@ -390,15 +400,24 @@ class ArDriveAuthImpl implements ArDriveAuth {
           maxRetries: profileQueryMaxRetries,
         );
 
-        if (privateDrive == null) {
-          throw WrongPasswordException('Password is incorrect');
+        if (privateDrive != null) {
+          // Password is valid for at least one drive
+          passwordValidForAtLeastOneDrive = true;
+          break;
         }
       } catch (e) {
-        if (e is TransactionNotFound) {
-          throw const PrivateDriveNotFoundException();
-        }
-        rethrow;
+        // Password didn't work for this drive, try the next one
+        lastException = e as Exception;
+        continue;
       }
+    }
+
+    // If the password didn't work for any drive, throw an error
+    if (!passwordValidForAtLeastOneDrive) {
+      if (lastException is TransactionNotFound) {
+        throw const PrivateDriveNotFoundException();
+      }
+      throw WrongPasswordException('Password is incorrect');
     }
   }
 
@@ -466,12 +485,6 @@ class ArDriveAuthImpl implements ArDriveAuth {
     await _secureKeyValueStore.putString('password', password);
   }
 
-  Future<TransactionCommonMixin?> _getFirstPrivateDriveTx(Wallet wallet) async {
-    return _arweave.getFirstPrivateDriveTx(
-      wallet,
-      maxRetries: profileQueryMaxRetries,
-    );
-  }
 
   @override
   Future<String?> getWalletAddress() async {

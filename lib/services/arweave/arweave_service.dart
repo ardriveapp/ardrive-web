@@ -571,6 +571,23 @@ class ArweaveService {
     return firstTx;
   }
 
+  Future<List<TransactionCommonMixin>> getAllPrivateDriveTxs(
+    Wallet wallet, {
+    int maxRetries = defaultMaxRetries,
+  }) async {
+    final driveTxs = await getUniqueUserDriveEntityTxs(
+      await wallet.getAddress(),
+      maxRetries: maxRetries,
+    );
+
+    final privateDriveTxs = driveTxs
+        .where(
+            (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private)
+        .toList();
+
+    return privateDriveTxs;
+  }
+
   /// Tries to decrypt a drive with the given password
   /// Returns the drive key if successful, null otherwise
   Future<DriveKey?> tryDecryptDrive({
@@ -751,6 +768,30 @@ class ArweaveService {
             'with id ${parseException.transactionId}',
             parseException,
           );
+
+          // For private drives that fail to decrypt, create a placeholder entry
+          // so they show up as locked in the UI
+          if (driveTx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private) {
+            final driveId = driveTx.getTag(EntityTag.driveId);
+            if (driveId != null && !drivesById.containsKey(driveId)) {
+              logger.i('Creating placeholder for locked private drive $driveId (wrong password)');
+
+              final sigTypeTag = driveTx.getTag(EntityTag.signatureType) ?? '1';
+              final drive = DriveEntity()
+                ..id = driveId
+                ..privacy = DrivePrivacyTag.private
+                ..ownerAddress = driveTx.owner.address
+                ..txId = driveTx.id
+                ..createdAt = driveTx.getCommitTime()
+                ..signatureType = DriveSignatureType.fromString(sigTypeTag)
+                // Use placeholder values for encrypted fields
+                ..name = 'Private Drive'
+                ..rootFolderId = 'placeholder-root-$driveId';
+
+              drivesById[drive.id] = drive;
+              drivesWithKey[drive] = null; // null key indicates it's locked
+            }
+          }
         }
       }
       return drivesWithKey;

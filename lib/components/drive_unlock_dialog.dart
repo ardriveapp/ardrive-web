@@ -1,4 +1,3 @@
-import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -25,7 +24,6 @@ Future<void> promptToUnlockDrive(
         profileCubit: context.read<ProfileCubit>(),
         driveDao: context.read<DriveDao>(),
         arweave: context.read<ArweaveService>(),
-        auth: context.read<ArDriveAuth>(),
         syncCubit: context.read<SyncCubit>(),
         drivesCubit: context.read<DrivesCubit>(),
       ),
@@ -44,6 +42,7 @@ class DriveUnlockDialog extends StatefulWidget {
 class _DriveUnlockDialogState extends State<DriveUnlockDialog> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isPasswordValid = false;
+  bool _unlockAllDrives = false;
 
   @override
   void dispose() {
@@ -88,10 +87,11 @@ class _DriveUnlockDialogState extends State<DriveUnlockDialog> {
                   controller: _passwordController,
                   autofocus: true,
                   obscureText: true,
+                  showObfuscationToggle: true,
                   hintText: appLocalizationsOf(context).password,
                   onFieldSubmitted: (value) {
                     if (_isPasswordValid && state is! DriveUnlockInProgress) {
-                      cubit.submitWithPassword(value);
+                      cubit.submitWithPassword(value, unlockAllDrives: _unlockAllDrives);
                     }
                   },
                   validator: (value) {
@@ -102,6 +102,34 @@ class _DriveUnlockDialogState extends State<DriveUnlockDialog> {
                     setState(() => _isPasswordValid = true);
                     return null;
                   },
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _unlockAllDrives,
+                      onChanged: (value) {
+                        setState(() {
+                          _unlockAllDrives = value ?? false;
+                        });
+                      },
+                      activeColor: ArDriveTheme.of(context).themeData.colorTokens.buttonPrimaryDefault,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _unlockAllDrives = !_unlockAllDrives;
+                          });
+                        },
+                        child: Text(
+                          'Try to unlock all private drives with this password',
+                          style: ArDriveTypographyNew.of(context).paragraphNormal(),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 if (state is DriveUnlockFailure) ...[
                   const SizedBox(height: 8),
@@ -134,7 +162,10 @@ class _DriveUnlockDialogState extends State<DriveUnlockDialog> {
               title: appLocalizationsOf(context).cancelEmphasized,
             ),
             ModalAction(
-              action: () => cubit.submitWithPassword(_passwordController.text),
+              action: () => cubit.submitWithPassword(
+                _passwordController.text,
+                unlockAllDrives: _unlockAllDrives,
+              ),
               title: 'UNLOCK',
               isEnable: _isPasswordValid && state is! DriveUnlockInProgress,
             ),
@@ -151,7 +182,6 @@ class DriveUnlockCubit extends Cubit<DriveUnlockState> {
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
   final ArweaveService _arweave;
-  final ArDriveAuth _auth;
   final SyncCubit _syncCubit;
   final DrivesCubit _drivesCubit;
 
@@ -160,19 +190,17 @@ class DriveUnlockCubit extends Cubit<DriveUnlockState> {
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
     required ArweaveService arweave,
-    required ArDriveAuth auth,
     required SyncCubit syncCubit,
     required DrivesCubit drivesCubit,
   })  : _drive = drive,
         _profileCubit = profileCubit,
         _driveDao = driveDao,
         _arweave = arweave,
-        _auth = auth,
         _syncCubit = syncCubit,
         _drivesCubit = drivesCubit,
         super(DriveUnlockInitial());
 
-  Future<void> submitWithPassword(String password) async {
+  Future<void> submitWithPassword(String password, {bool unlockAllDrives = false}) async {
     if (password.isEmpty) return;
 
     emit(DriveUnlockInProgress());
@@ -193,6 +221,11 @@ class DriveUnlockCubit extends Cubit<DriveUnlockState> {
           driveID: _drive.id,
           driveKey: driveKey,
         );
+
+        // If unlockAllDrives is true, try to unlock other locked drives
+        if (unlockAllDrives) {
+          await _tryUnlockAllDrivesWithPassword(password);
+        }
 
         // Fetch and decrypt the drive entity to get the real data
         final driveTxs = await _arweave.getUniqueUserDriveEntityTxs(
@@ -241,6 +274,48 @@ class DriveUnlockCubit extends Cubit<DriveUnlockState> {
       }
       
       emit(DriveUnlockFailure(errorMessage: errorMessage));
+    }
+  }
+
+  Future<void> _tryUnlockAllDrivesWithPassword(String password) async {
+    try {
+      final profile = _profileCubit.state as ProfileLoggedIn;
+      final drives = await _driveDao.allDrives().get();
+
+      // Get currently locked drives from DrivesCubit
+      final drivesState = _drivesCubit.state;
+      if (drivesState is! DrivesLoadSuccess) return;
+
+      final lockedDrives = drivesState.lockedDrives;
+
+      // Try to unlock each locked drive
+      for (final drive in drives) {
+        if (lockedDrives.contains(drive.id) && drive.id != _drive.id) {
+          try {
+            // Try to decrypt this drive with the provided password
+            final driveKey = await _arweave.tryDecryptDrive(
+              driveId: drive.id,
+              wallet: profile.user.wallet,
+              password: password,
+            );
+
+            if (driveKey != null) {
+              // Store the drive key in memory
+              await _driveDao.putDriveKeyInMemory(
+                driveID: drive.id,
+                driveKey: driveKey,
+              );
+            }
+          } catch (e) {
+            // Silently skip drives that can't be unlocked with this password
+          }
+        }
+      }
+
+      // Refresh the drives list to update lock status
+      await _drivesCubit.refreshDrives();
+    } catch (e) {
+      // Don't fail the main unlock if batch unlock fails
     }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart'
     show DrivePrivacy;
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_entity.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/folder_entity.dart';
@@ -54,8 +55,9 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
   }
 
   Future<void> submit(
-    String driveName,
-  ) async {
+    String driveName, {
+    String? drivePassword,
+  }) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
     if (await _profileCubit.logoutIfWalletMismatch()) {
       emit(DriveCreateWalletMismatch(privacy: state.privacy));
@@ -77,16 +79,37 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       final String drivePrivacy = form.control('privacy').value;
       final walletAddress = await profile.user.wallet.getAddress();
 
+      // Determine which password to use
+      String passwordToUse;
+      if (drivePrivacy == DrivePrivacyTag.private) {
+        // All users creating a private drive must provide a password
+        if (drivePassword == null || drivePassword.isEmpty) {
+          throw Exception('Password is required for private drives');
+        }
+        passwordToUse = drivePassword;
+      } else {
+        // Public drives don't need a password
+        passwordToUse = profile.user.password.isNotEmpty ? profile.user.password : '';
+      }
+
       final createRes = await _driveDao.createDrive(
         name: driveName,
         ownerAddress: walletAddress,
         privacy: drivePrivacy,
         wallet: profile.user.wallet,
-        password: profile.user.password,
+        password: passwordToUse,
         profileKey: profile.user.cipherKey,
         signatureType: drivePrivacy == DrivePrivacyTag.private ? '2' : null,
       );
       driveId = createRes.driveId;
+
+      // For all users with private drives, store the drive key in memory
+      if (drivePrivacy == DrivePrivacyTag.private && createRes.driveKey != null) {
+        await _driveDao.putDriveKeyInMemory(
+          driveID: driveId,
+          driveKey: DriveKey(createRes.driveKey!, false),
+        );
+      }
 
       final drive = DriveEntity(
         id: createRes.driveId,
