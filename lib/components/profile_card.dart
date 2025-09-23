@@ -6,7 +6,9 @@ import 'package:ardrive/components/icon_theme_switcher.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/components/truncated_address.dart';
 import 'package:ardrive/entities/profile_types.dart';
-import 'package:ardrive/gar/presentation/widgets/gar_modal.dart';
+import 'package:ardrive/gar/domain/repositories/gar_repository.dart';
+import 'package:ardrive/gar/presentation/widgets/gateway_input_modal.dart';
+import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive/gift/bloc/redeem_gift_bloc.dart';
 import 'package:ardrive/gift/redeem_gift_modal.dart';
 import 'package:ardrive/main.dart';
@@ -348,7 +350,22 @@ class _ProfileCardState extends State<ProfileCard> {
                         setState(() {
                           _showProfileCard = false;
                         });
-                        showGatewaySwitcherModal(context);
+                        _showGatewayInputDialog(
+                          context,
+                          onSave: (newGatewayUrl) async {
+                            final configService = context.read<ConfigService>();
+                            // Create a repository instance to handle the gateway update
+                            final garRepository = GarRepositoryImpl(
+                              configService: configService,
+                              arweave: context.read<ArweaveService>(),
+                              arioSDK: ArioSDKFactory().create(),
+                              http: ArDriveHTTP(),
+                            );
+
+                            // Use the repository to update the custom gateway
+                            await garRepository.updateCustomGateway(newGatewayUrl);
+                          },
+                        );
                       },
                     ),
                     Padding(
@@ -600,6 +617,17 @@ class _ProfileCardState extends State<ProfileCard> {
         _showProfileCard = false;
       });
     }
+  }
+
+  void _showGatewayInputDialog(BuildContext context, {required Function(String) onSave}) {
+    final configService = context.read<ConfigService>();
+    final currentGateway = configService.config.defaultArweaveGatewayForDataRequest.url;
+
+    showGatewayInputModal(
+      context,
+      initialGateway: currentGateway,
+      onSave: onSave,
+    );
   }
 
   Future<void> _showGQLServerDialog(BuildContext context) async {
