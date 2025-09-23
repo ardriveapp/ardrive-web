@@ -1,6 +1,7 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/copy_button.dart';
+import 'package:ardrive/components/graphql_endpoint_dialog.dart';
 import 'package:ardrive/components/icon_theme_switcher.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/components/truncated_address.dart';
@@ -12,7 +13,9 @@ import 'package:ardrive/main.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
+import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config.dart';
+import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/components/turbo_balance_widget.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
@@ -361,8 +364,41 @@ class _ProfileCardState extends State<ProfileCard> {
                             ),
                           ),
                           Text(
-                            configService.config
-                                .defaultArweaveGatewayForDataRequest.label,
+                            configService
+                                .config.defaultArweaveGatewayForDataRequest.url,
+                            style: typography.paragraphNormal(
+                              fontWeight: ArFontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _ProfileMenuAccordionItem(
+                      text: 'Switch GraphQL Server',
+                      onTap: () {
+                        setState(() {
+                          _showProfileCard = false;
+                        });
+                        // TODO: Show GraphQL endpoint switcher modal
+                        _showGQLServerDialog(context);
+                      },
+                    ),
+                    Padding(
+                      padding:
+                          const EdgeInsets.only(left: 16.0, right: 16, top: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Current GraphQL Server:',
+                            style: typography.paragraphNormal(
+                              fontWeight: ArFontWeight.semiBold,
+                            ),
+                          ),
+                          Text(
+                            configService.config.defaultArweaveGatewayUrl ??
+                                'Not set',
                             style: typography.paragraphNormal(
                               fontWeight: ArFontWeight.bold,
                             ),
@@ -564,6 +600,32 @@ class _ProfileCardState extends State<ProfileCard> {
         _showProfileCard = false;
       });
     }
+  }
+
+  Future<void> _showGQLServerDialog(BuildContext context) async {
+    await showAnimatedDialogWithBuilder(
+      context,
+      builder: (context) => GraphQLEndpointDialog(
+        initialEndpoint:
+            context.read<ConfigService>().config.defaultArweaveGatewayUrl ?? '',
+        onSave: (newEndpoint) {
+          const graphqlSuffix = '/graphql';
+          final normalizedEndpoint = newEndpoint.endsWith(graphqlSuffix)
+              ? newEndpoint.substring(
+                  0, newEndpoint.length - graphqlSuffix.length)
+              : newEndpoint;
+          final configService = context.read<ConfigService>();
+          configService.updateAppConfig(
+            configService.config.copyWith(
+              defaultArweaveGatewayUrl: normalizedEndpoint,
+            ),
+          );
+          context
+              .read<ArweaveService>()
+              .updateGraphQLEndpoint(normalizedEndpoint);
+        },
+      ),
+    );
   }
 
   Widget _buildProfileCardHeader(BuildContext context, String walletAddress) {

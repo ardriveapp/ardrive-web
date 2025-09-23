@@ -1,0 +1,2 @@
+- New GQL endpoint advanced configuration setting
+- Fixed Arweave data requests to use correct gateway configuration value

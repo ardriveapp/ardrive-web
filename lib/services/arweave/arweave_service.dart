@@ -4,8 +4,8 @@ import 'dart:convert';
 
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_signature.dart';
-import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
+import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/services/arweave/arweave_service_exception.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
@@ -47,7 +47,7 @@ class ArweaveService {
   Arweave client;
   final ArDriveCrypto _crypto;
   final DriveDao _driveDao;
-  final ArtemisClient _gql;
+  late ArtemisClient _gql;
 
   ArweaveService(
     this.client,
@@ -90,6 +90,20 @@ class ArweaveService {
   /// Sets the gateway to use for all Data requests. No GraphQL requests are made with the new gateway.
   void setGateway(Gateway gateway) {
     client = Arweave(gatewayUrl: getGatewayUri(gateway));
+  }
+
+  /// Updates the GraphQL endpoint used by the Artemis client and retry helper.
+  void updateGraphQLEndpoint(String gatewayUrl) {
+    final previousClient = _gql;
+    _gql = ArtemisClient('$gatewayUrl/graphql');
+    graphQLRetry = GraphQLRetry(
+      _gql,
+      internetChecker: InternetChecker(
+        connectivity: Connectivity(),
+      ),
+      arioSDK: ArioSDKFactory().create(),
+    );
+    previousClient.dispose();
   }
 
   int bytesToChunks(int bytes) {

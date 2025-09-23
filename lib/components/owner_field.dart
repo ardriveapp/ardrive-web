@@ -69,7 +69,7 @@ class _OwnerFieldState extends State<OwnerField> {
     if (_arnsName != null) {
       final configService = context.read<ConfigService>();
       String gateway =
-          configService.config.defaultArweaveGatewayUrl ?? 'ardrive.net';
+          configService.config.defaultArweaveGatewayForDataRequest.url;
       gateway =
           gateway.replaceFirst('https://', '').replaceFirst('http://', '');
       openUrl(url: 'https://$_arnsName.$gateway');

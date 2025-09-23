@@ -4,7 +4,9 @@
   },
   "bloc.newBlocTemplate": "equatable",
   "bloc.newCubitTemplate": "equatable",
-  "dart.additionalAnalyzerFileExtensions": ["drift"],
+  "dart.additionalAnalyzerFileExtensions": [
+    "drift"
+  ],
   "files.insertFinalNewline": true,
   "cSpell.words": [
     "ario",

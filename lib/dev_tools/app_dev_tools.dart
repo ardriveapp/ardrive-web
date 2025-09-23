@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:ardrive/dev_tools/drives_health_check.dart';
 import 'package:ardrive/main.dart';
+import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
@@ -100,15 +101,25 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
     final ConfigService configService = context.read<ConfigService>();
     final AppConfig config = configService.config;
 
+    const graphqlSuffix = '/graphql';
+
     final ArDriveDevToolOption defaultArweaveGatewayUrlOption =
         ArDriveDevToolOption(
       name: 'defaultArweaveGatewayUrl',
       value: config.defaultArweaveGatewayUrl,
       onChange: (value) {
         setState(() {
+          final normalizedValue = value != null && value.endsWith(graphqlSuffix)
+              ? value.substring(0, value.length - graphqlSuffix.length)
+              : value;
           configService.updateAppConfig(
-            config.copyWith(defaultArweaveGatewayUrl: value),
+            config.copyWith(defaultArweaveGatewayUrl: normalizedValue),
           );
+          if (normalizedValue != null && normalizedValue.isNotEmpty) {
+            context
+                .read<ArweaveService>()
+                .updateGraphQLEndpoint(normalizedValue);
+          }
         });
       },
       type: ArDriveDevToolOptionType.text,

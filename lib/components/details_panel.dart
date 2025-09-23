@@ -1155,7 +1155,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                                     child: _TxIdTextLink(
                                       txId: file.importSource!,
                                       customUrl:
-                                          '${configService.config.defaultArweaveGatewayUrl}/raw/${file.importSource}',
+                                          '${configService.config.defaultArweaveGatewayForDataRequest.url}/raw/${file.importSource}',
                                       isBold: true,
                                     ),
                                   ),
