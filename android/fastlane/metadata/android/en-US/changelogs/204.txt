@@ -1,0 +1,3 @@
+- Added gateway configuration to login screen
+- Updated gateway configuration to allow for text entry of gateway URL
+- Default data gateway set to host when app is served from an AR.IO Gateway

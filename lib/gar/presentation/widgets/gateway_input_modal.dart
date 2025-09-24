@@ -4,6 +4,7 @@ import 'package:ardrive/gar/presentation/widgets/gar_modal.dart';
 import 'package:ardrive/gar/utils/gateway_validator.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter/material.dart';
 
 class GatewayInputModal extends StatefulWidget {
@@ -165,14 +166,16 @@ class _GatewayInputModalState extends State<GatewayInputModal> {
               _buildValidationMessage(),
             ],
             const SizedBox(height: 24),
-            Center(
-              child: ArDriveButtonNew(
-                typography: typography,
-                text: 'Select AR.IO Gateway',
-                variant: ButtonVariant.primary,
-                onPressed: _selectFromArIOGateways,
+            if (isArioSDKSupportedOnPlatform()) ...[
+              Center(
+                child: ArDriveButtonNew(
+                  typography: typography,
+                  text: 'Select AR.IO Gateway',
+                  variant: ButtonVariant.primary,
+                  onPressed: _selectFromArIOGateways,
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),

@@ -8,7 +8,6 @@ import 'package:ardrive/components/truncated_address.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/gar/domain/repositories/gar_repository.dart';
 import 'package:ardrive/gar/presentation/widgets/gateway_input_modal.dart';
-import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive/gift/bloc/redeem_gift_bloc.dart';
 import 'package:ardrive/gift/redeem_gift_modal.dart';
 import 'package:ardrive/main.dart';
@@ -31,6 +30,7 @@ import 'package:ardrive/utils/open_urls.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/truncate_string.dart';
+import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:ario_sdk/ario_sdk.dart';
@@ -342,88 +342,87 @@ class _ProfileCardState extends State<ProfileCard> {
                       },
                     ),
                   ),
-                  if (isArioSDKSupportedOnPlatform()) ...[
-                    const SizedBox(height: 8),
-                    _ProfileMenuAccordionItem(
-                      text: 'Switch Gateway',
-                      onTap: () {
-                        setState(() {
-                          _showProfileCard = false;
-                        });
-                        _showGatewayInputDialog(
-                          context,
-                          onSave: (newGatewayUrl) async {
-                            final configService = context.read<ConfigService>();
-                            // Create a repository instance to handle the gateway update
-                            final garRepository = GarRepositoryImpl(
-                              configService: configService,
-                              arweave: context.read<ArweaveService>(),
-                              arioSDK: ArioSDKFactory().create(),
-                              http: ArDriveHTTP(),
-                            );
+                  const SizedBox(height: 8),
+                  _ProfileMenuAccordionItem(
+                    text: 'Switch Gateway',
+                    onTap: () {
+                      setState(() {
+                        _showProfileCard = false;
+                      });
+                      _showGatewayInputDialog(
+                        context,
+                        onSave: (newGatewayUrl) async {
+                          final configService = context.read<ConfigService>();
+                          // Create a repository instance to handle the gateway update
+                          final garRepository = GarRepositoryImpl(
+                            configService: configService,
+                            arweave: context.read<ArweaveService>(),
+                            arioSDK: ArioSDKFactory().create(),
+                            http: ArDriveHTTP(),
+                          );
 
-                            // Use the repository to update the custom gateway
-                            await garRepository.updateCustomGateway(newGatewayUrl);
-                          },
-                        );
-                      },
+                          // Use the repository to update the custom gateway
+                          await garRepository
+                              .updateCustomGateway(newGatewayUrl);
+                        },
+                      );
+                    },
+                  ),
+                  Padding(
+                    padding:
+                        const EdgeInsets.only(left: 16.0, right: 16, top: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Current Gateway:',
+                          style: typography.paragraphNormal(
+                            fontWeight: ArFontWeight.semiBold,
+                          ),
+                        ),
+                        Text(
+                          configService
+                              .config.defaultArweaveGatewayForDataRequest.url,
+                          style: typography.paragraphNormal(
+                            fontWeight: ArFontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
-                    Padding(
-                      padding:
-                          const EdgeInsets.only(left: 16.0, right: 16, top: 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Current Gateway:',
-                            style: typography.paragraphNormal(
-                              fontWeight: ArFontWeight.semiBold,
-                            ),
+                  ),
+                  const SizedBox(height: 8),
+                  _ProfileMenuAccordionItem(
+                    text: 'Switch GraphQL Server',
+                    onTap: () {
+                      setState(() {
+                        _showProfileCard = false;
+                      });
+                      // TODO: Show GraphQL endpoint switcher modal
+                      _showGQLServerDialog(context);
+                    },
+                  ),
+                  Padding(
+                    padding:
+                        const EdgeInsets.only(left: 16.0, right: 16, top: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Current GraphQL Server:',
+                          style: typography.paragraphNormal(
+                            fontWeight: ArFontWeight.semiBold,
                           ),
-                          Text(
-                            configService
-                                .config.defaultArweaveGatewayForDataRequest.url,
-                            style: typography.paragraphNormal(
-                              fontWeight: ArFontWeight.bold,
-                            ),
+                        ),
+                        Text(
+                          configService.config.defaultArweaveGatewayUrl ??
+                              'Not set',
+                          style: typography.paragraphNormal(
+                            fontWeight: ArFontWeight.bold,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    _ProfileMenuAccordionItem(
-                      text: 'Switch GraphQL Server',
-                      onTap: () {
-                        setState(() {
-                          _showProfileCard = false;
-                        });
-                        // TODO: Show GraphQL endpoint switcher modal
-                        _showGQLServerDialog(context);
-                      },
-                    ),
-                    Padding(
-                      padding:
-                          const EdgeInsets.only(left: 16.0, right: 16, top: 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Current GraphQL Server:',
-                            style: typography.paragraphNormal(
-                              fontWeight: ArFontWeight.semiBold,
-                            ),
-                          ),
-                          Text(
-                            configService.config.defaultArweaveGatewayUrl ??
-                                'Not set',
-                            style: typography.paragraphNormal(
-                              fontWeight: ArFontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  ],
+                  )
                 ],
               ),
             ],
@@ -619,9 +618,11 @@ class _ProfileCardState extends State<ProfileCard> {
     }
   }
 
-  void _showGatewayInputDialog(BuildContext context, {required Function(String) onSave}) {
+  void _showGatewayInputDialog(BuildContext context,
+      {required Function(String) onSave}) {
     final configService = context.read<ConfigService>();
-    final currentGateway = configService.config.defaultArweaveGatewayForDataRequest.url;
+    final currentGateway =
+        configService.config.defaultArweaveGatewayForDataRequest.url;
 
     showGatewayInputModal(
       context,
