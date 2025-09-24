@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:ardrive/services/config/app_config.dart';
+import 'package:ardrive/services/config/ario_gateway_detector.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -26,9 +27,20 @@ class ConfigFetcher {
     // 2. Load stored config from local storage.
     final storedConfigString = localStore.getString('config');
     if (storedConfigString == null) {
-      // New user or no stored config: save and return the default.
-      await saveConfigOnDevToolsPrefs(defaultConfig);
-      return defaultConfig;
+      // New user or no stored config: try to detect AR.IO gateway
+      final detectedGateway = await ArIOGatewayDetector.detectArIOGateway();
+      
+      AppConfig configToUse = defaultConfig;
+      if (detectedGateway != null) {
+        // Use detected AR.IO gateway for data requests
+        configToUse = defaultConfig.copyWith(
+          defaultArweaveGatewayForDataRequest: detectedGateway,
+        );
+        logger.i('Using detected AR.IO gateway: ${detectedGateway.url}');
+      }
+      
+      await saveConfigOnDevToolsPrefs(configToUse);
+      return configToUse;
     }
 
     AppConfig storedConfig;
