@@ -40,3 +40,38 @@ final class SearchGateways extends GarEvent {
 }
 
 final class CleanSearchResults extends GarEvent {}
+
+final class ValidateCustomGateway extends GarEvent {
+  final String gatewayUrl;
+
+  const ValidateCustomGateway({
+    required this.gatewayUrl,
+  });
+
+  @override
+  List<Object> get props => [gatewayUrl];
+}
+
+final class SelectCustomGateway extends GarEvent {
+  final String gatewayUrl;
+
+  const SelectCustomGateway({
+    required this.gatewayUrl,
+  });
+
+  @override
+  List<Object> get props => [gatewayUrl];
+}
+
+final class ClearCustomGatewayValidation extends GarEvent {}
+
+final class ConfirmCustomGatewayChange extends GarEvent {
+  final String gatewayUrl;
+
+  const ConfirmCustomGatewayChange({
+    required this.gatewayUrl,
+  });
+
+  @override
+  List<Object> get props => [gatewayUrl];
+}
