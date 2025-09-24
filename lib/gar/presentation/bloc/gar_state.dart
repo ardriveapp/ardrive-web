@@ -62,3 +62,34 @@ class GatewayActive extends GarState {
 class GatewayIsInactive extends GarState {
   const GatewayIsInactive();
 }
+
+class ValidatingCustomGateway extends GarState {
+  final String gatewayUrl;
+
+  const ValidatingCustomGateway(this.gatewayUrl);
+
+  @override
+  List<Object> get props => [gatewayUrl];
+}
+
+class CustomGatewayValidated extends GarState {
+  final String gatewayUrl;
+  final GatewayValidationResult validationResult;
+
+  const CustomGatewayValidated({
+    required this.gatewayUrl,
+    required this.validationResult,
+  });
+
+  @override
+  List<Object> get props => [gatewayUrl, validationResult];
+}
+
+class CustomGatewaySelected extends GarState {
+  final String gatewayUrl;
+
+  const CustomGatewaySelected(this.gatewayUrl);
+
+  @override
+  List<Object> get props => [gatewayUrl];
+}
