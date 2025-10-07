@@ -361,7 +361,12 @@ class AppState extends State<App> {
             context.read<ActivityTracker>(),
           ),
         ),
-        BlocProvider<AppBannerBloc>(create: (context) => AppBannerBloc()),
+        BlocProvider<AppBannerBloc>(
+          create: (context) => AppBannerBloc(
+            keyValueStore: localKeyValueStore,
+            auth: context.read<ArDriveAuth>(),
+          )..add(const AppBannerRequested(banner: AppBannerType.androidSunset)),
+        ),
         BlocProvider(
           create: (context) => ProfileNameBloc(
             context.read<ARNSRepository>(),

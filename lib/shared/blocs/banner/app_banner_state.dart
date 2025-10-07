@@ -7,6 +7,15 @@ sealed class AppBannerState extends Equatable {
   List<Object> get props => [];
 }
 
-final class AppBannerVisible extends AppBannerState {}
+final class AppBannerVisible extends AppBannerState {
+  const AppBannerVisible({required this.banner});
 
-final class AppBannerHidden extends AppBannerState {}
+  final AppBannerType banner;
+
+  @override
+  List<Object> get props => [banner];
+}
+
+final class AppBannerHidden extends AppBannerState {
+  const AppBannerHidden();
+}
