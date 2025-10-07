@@ -34,42 +34,50 @@ class AndroidSunsetBanner extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          ArDriveIcons.info(
-            size: 20,
-            color: colors.themeWarningEmphasis,
-          ),
-          const SizedBox(width: 12),
           Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: typography.paragraphNormal(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                ArDriveIcons.info(
+                  size: 20,
                   color: colors.themeWarningEmphasis,
-                  fontWeight: ArFontWeight.semiBold,
                 ),
-                children: [
-                  const TextSpan(
-                    text:
-                        'Android Mobile is being sunset. Please be sure to backup any wallets generated in your Android app. For more information, see ',
-                  ),
-                  TextSpan(
-                    text: _learnMoreUrl,
-                    style: typography
-                        .paragraphNormal(
-                          color: colors.themeWarningEmphasis,
-                          fontWeight: ArFontWeight.semiBold,
-                        )
-                        .copyWith(
-                          decoration: TextDecoration.underline,
+                const SizedBox(width: 12),
+                Flexible(
+                  child: RichText(
+                    textAlign: TextAlign.center,
+                    text: TextSpan(
+                      style: typography.paragraphNormal(
+                        color: colors.themeWarningEmphasis,
+                        fontWeight: ArFontWeight.semiBold,
+                      ),
+                      children: [
+                        const TextSpan(
+                          text:
+                              'The ArDrive Android app is being sunset. Make sure to back up any wallets generated in the Android app. ',
                         ),
-                    recognizer: TapGestureRecognizer()
-                      ..onTap = () => openUrl(
-                            url: _learnMoreUrl,
-                            webOnlyWindowName: '_blank',
-                          ),
+                        TextSpan(
+                          text: 'Learn more',
+                          style: typography
+                              .paragraphNormal(
+                                color: colors.themeWarningEmphasis,
+                                fontWeight: ArFontWeight.semiBold,
+                              )
+                              .copyWith(
+                                decoration: TextDecoration.underline,
+                              ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () => openUrl(
+                                  url: _learnMoreUrl,
+                                  webOnlyWindowName: '_blank',
+                                ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const TextSpan(text: '.'),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 12),
