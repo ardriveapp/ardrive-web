@@ -19,14 +19,14 @@ void main() {
 
     expect(
       find.textContaining(
-        'Android Mobile is being sunset.',
+        'The ArDrive Android app is being sunset.',
         findRichText: true,
       ),
       findsOneWidget,
     );
     expect(
       find.textContaining(
-        'https://ardrive.io/mobile',
+        'Learn more',
         findRichText: true,
       ),
       findsOneWidget,
