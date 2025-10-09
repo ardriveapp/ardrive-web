@@ -1,1 +1,2 @@
 - Added Android sunset notification banner
+- Fixed login failure message to show correct gateway URL

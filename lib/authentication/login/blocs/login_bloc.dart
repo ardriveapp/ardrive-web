@@ -925,6 +925,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   String _getGatewayUrl() {
-    return _configService.config.defaultArweaveGatewayForDataRequest.url;
+    return _configService.config.defaultArweaveGatewayUrl ?? 'undefined';
   }
 }
