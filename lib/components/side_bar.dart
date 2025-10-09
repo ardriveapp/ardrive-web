@@ -12,7 +12,6 @@ import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/config/config_service.dart';
-import 'package:ardrive/shared/blocs/private_drive_migration/private_drive_migration_bloc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
@@ -155,21 +154,14 @@ class _AppSideBarState extends State<AppSideBar> {
   }
 
   Widget _desktopView() {
-    return ArDriveScrollBar(
-      controller: _scrollController,
-      child: SingleChildScrollView(
-        controller: _scrollController,
-        child:
-            BlocBuilder<PrivateDriveMigrationBloc, PrivateDriveMigrationState>(
-          builder: (context, state) {
-            double height = MediaQuery.of(context).size.height;
-
-            if (state is PrivateDriveMigrationVisible) {
-              height -= 45;
-            }
-
-            return Container(
-              height: height,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return ArDriveScrollBar(
+          controller: _scrollController,
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            child: Container(
+              height: constraints.maxHeight,
               decoration: BoxDecoration(
                 border: Border(
                   right: BorderSide(
@@ -238,10 +230,10 @@ class _AppSideBarState extends State<AppSideBar> {
                   ),
                 ),
               ),
-            );
-          },
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 
