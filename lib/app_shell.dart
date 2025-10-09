@@ -9,6 +9,7 @@ import 'package:ardrive/components/topbar/help_button.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/config/config_service.dart';
+import 'package:ardrive/shared/blocs/banner/app_banner_bloc.dart';
 import 'package:ardrive/shared/blocs/private_drive_migration/private_drive_migration_bloc.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
@@ -25,6 +26,7 @@ import 'package:responsive_builder/responsive_builder.dart';
 
 import 'blocs/blocs.dart';
 import 'components/app_top_bar.dart';
+import 'components/banners/android_sunset_banner.dart';
 import 'components/components.dart';
 import 'components/progress_bar.dart';
 import 'components/wallet_switch_dialog.dart';
@@ -499,6 +501,7 @@ class AppShellState extends State<AppShell> {
                   builder: (context, state) {
                     return Column(
                       children: [
+                        _buildAndroidSunsetBanner(context),
                         if (state is! PrivateDriveMigrationHidden)
                           _updatePrivateDrivesBanner(context, true),
                         Flexible(
@@ -534,6 +537,7 @@ class AppShellState extends State<AppShell> {
                 builder: (context, state) {
                   return Column(
                     children: [
+                      _buildAndroidSunsetBanner(context),
                       if (state is! PrivateDriveMigrationHidden)
                         _updatePrivateDrivesBanner(context, false),
                       Flexible(
@@ -558,6 +562,25 @@ class AppShellState extends State<AppShell> {
           );
         },
       );
+
+  Widget _buildAndroidSunsetBanner(BuildContext context) {
+    return BlocBuilder<AppBannerBloc, AppBannerState>(
+      builder: (context, state) {
+        if (state is AppBannerVisible &&
+            state.banner == AppBannerType.androidSunset) {
+          return AndroidSunsetBanner(
+            onDismiss: () => context.read<AppBannerBloc>().add(
+                  const AppBannerDismissed(
+                    banner: AppBannerType.androidSunset,
+                  ),
+                ),
+          );
+        }
+
+        return const SizedBox.shrink();
+      },
+    );
+  }
 
   Widget _updatePrivateDrivesBanner(BuildContext context, bool isDesktop) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
