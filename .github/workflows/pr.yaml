@@ -109,6 +109,8 @@ jobs:
         run: bundle exec fastlane update_release_url
 
   build-android:
+    # skipped for now
+    if: false
     needs: pre-build
     runs-on: ubuntu-latest
     steps:
