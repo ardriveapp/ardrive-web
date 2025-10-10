@@ -105,6 +105,8 @@ jobs:
         run: bundle exec fastlane deploy type:staging
 
   build-android:
+    # skipped for now
+    if: false
     needs: pre-build
     runs-on: ubuntu-latest
     steps:
