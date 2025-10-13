@@ -7,7 +7,7 @@ void main() {
     group('getCommitTime', () {
       test('parses Unix-Time in seconds for ArFS != 0.10', () {
         // Unix timestamp for 2024-01-01 00:00:00 UTC
-        final timestamp = 1704067200;
+        const timestamp = 1704067200;
         final transaction = _MockTransaction(
           arfsVersion: '0.15',
           unixTime: timestamp.toString(),
@@ -23,7 +23,7 @@ void main() {
 
       test('parses Unix-Time in milliseconds for ArFS 0.10', () {
         // Unix timestamp in milliseconds for 2024-01-01 00:00:00 UTC
-        final timestampMs = 1704067200000;
+        const timestampMs = 1704067200000;
         final transaction = _MockTransaction(
           arfsVersion: '0.10',
           unixTime: timestampMs.toString(),
@@ -41,7 +41,7 @@ void main() {
           () {
         // Buggy case: Unix-Time was written as milliseconds instead of seconds
         // Unix timestamp in milliseconds for 2024-01-01 00:00:00 UTC
-        final timestampMs = 1704067200000;
+        const timestampMs = 1704067200000;
         final transaction = _MockTransaction(
           arfsVersion: '0.15',
           unixTime: timestampMs.toString(),
@@ -58,7 +58,7 @@ void main() {
 
       test('correctly handles normal seconds timestamp (not too large)', () {
         // Normal timestamp in seconds for 2024-01-01 00:00:00 UTC
-        final timestamp = 1704067200;
+        const timestamp = 1704067200;
         final transaction = _MockTransaction(
           arfsVersion: '0.15',
           unixTime: timestamp.toString(),
@@ -75,7 +75,7 @@ void main() {
 
       test('threshold detection works correctly', () {
         // Test value just below threshold (should be treated as seconds)
-        final justBelowThreshold = 9999999999; // ~Nov 2286 in seconds
+        const justBelowThreshold = 9999999999; // ~Nov 2286 in seconds
         final transaction1 = _MockTransaction(
           arfsVersion: '0.15',
           unixTime: justBelowThreshold.toString(),
@@ -84,11 +84,12 @@ void main() {
         final result1 = transaction1.getCommitTime();
         expect(
           result1,
-          equals(DateTime.fromMillisecondsSinceEpoch(justBelowThreshold * 1000)),
+          equals(
+              DateTime.fromMillisecondsSinceEpoch(justBelowThreshold * 1000)),
         );
 
         // Test value just above threshold (should be treated as milliseconds)
-        final justAboveThreshold = 10000000001; // Already in milliseconds
+        const justAboveThreshold = 10000000001; // Already in milliseconds
         final transaction2 = _MockTransaction(
           arfsVersion: '0.15',
           unixTime: justAboveThreshold.toString(),
@@ -103,7 +104,7 @@ void main() {
 
       test('handles realistic current timestamps correctly', () {
         // Current timestamp in seconds (2024)
-        final currentTimestamp = 1728777600;
+        const currentTimestamp = 1728777600;
         final transaction = _MockTransaction(
           arfsVersion: '0.15',
           unixTime: currentTimestamp.toString(),
