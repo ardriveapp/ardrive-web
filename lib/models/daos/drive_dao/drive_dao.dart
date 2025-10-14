@@ -96,9 +96,18 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     required DriveKey driveKey,
   }) async {
     try {
-      return await _driveKeyVault.put(driveID, driveKey);
+      await _driveKeyVault.put(driveID, driveKey);
     } catch (e) {
       throw _handleError('Error putting drive key in memory', e);
+    }
+  }
+
+  Future<void> clearAllDriveKeys() async {
+    try {
+      await _driveKeyVault.clear();
+      await _previewVault.clear();
+    } catch (e) {
+      throw _handleError('Error clearing drive keys from memory', e);
     }
   }
 
@@ -316,7 +325,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
               signatureType: Value.absentIfNull(entity.signatureType?.value),
             );
 
-            if (entity.privacy == DrivePrivacyTag.private) {
+            if (entity.privacy == DrivePrivacyTag.private && entry.value != null) {
               driveCompanion = await _addDriveKeyToDriveCompanion(
                   driveCompanion, profileKey!, entry.value!);
             }

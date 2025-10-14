@@ -31,6 +31,8 @@ void main() {
 
   registerFallbackValue(wallet);
   registerFallbackValue(Uint8List(10));
+  registerFallbackValue(ProfileType.json);
+  registerFallbackValue(ProfileCheckingAvailability());
 
   LoginBloc createBloc() {
     return LoginBloc(
@@ -56,6 +58,10 @@ void main() {
     mockArweaveService = MockArweaveService();
     mockProfileCubit = MockProfileCubit();
     mockConfigService = MockConfigService();
+    
+    // Setup default ProfileCubit mocks
+    when(() => mockProfileCubit.isCurrentProfileArConnect())
+        .thenAnswer((_) async => false);
   });
 
   group('AddWalletFile', () {
@@ -643,20 +649,34 @@ void main() {
           .thenAnswer((_) => Future.value(true));
     });
 
+    final loggedUser = User(
+      password: 'password',
+      wallet: wallet,
+      walletAddress: 'walletAddress',
+      walletBalance: BigInt.one,
+      cipherKey: SecretKey([]),
+      profileType: ProfileType.arConnect,
+      errorFetchingIOTokens: false,
+    );
+
     blocTest(
-      'should get the wallet from arconnect and emit prompt password',
+      'should get the wallet from arconnect and login directly without password',
       build: () {
         return createBloc();
       },
       setUp: () {
         when(() => mockArConnectService.connect())
             .thenAnswer((invocation) => Future.value(null));
+        when(() => mockArConnectService.disconnect())
+            .thenAnswer((invocation) => Future.value(null));
         when(() => mockArConnectService.checkPermissions())
             .thenAnswer((invocation) => Future.value(true));
         when(() => mockArConnectService.getWalletAddress())
             .thenAnswer((invocation) => Future.value('walletAddress'));
-        when(() => mockArDriveAuth.userHasPassword(any()))
-            .thenAnswer((invocation) => Future.value(true));
+        when(() => mockArConnectService.getPublicKey())
+            .thenAnswer((invocation) => Future.value('publicKey'));
+        when(() => mockArDriveAuth.loginWithoutPassword(any(), ProfileType.arConnect))
+            .thenAnswer((invocation) => Future.value(loggedUser));
       },
       act: (bloc) async {
         bloc.add(const AddWalletFromArConnect());
@@ -664,27 +684,28 @@ void main() {
       expect: () => [
         LoginLoadingIfUserAlreadyExists(),
         LoginLoadingIfUserAlreadyExistsSuccess(),
-        const TypeMatcher<PromptPassword>()
+        const TypeMatcher<LoginSuccess>()
       ],
     );
 
     blocTest(
-      'should emit a state to create new password when user never logged on ardrive',
+      'should login directly without password for ArConnect users',
       build: () {
         return createBloc();
       },
       setUp: () {
         when(() => mockArConnectService.connect())
             .thenAnswer((invocation) => Future.value(null));
+        when(() => mockArConnectService.disconnect())
+            .thenAnswer((invocation) => Future.value(null));
         when(() => mockArConnectService.checkPermissions())
             .thenAnswer((invocation) => Future.value(true));
         when(() => mockArConnectService.getWalletAddress())
             .thenAnswer((invocation) => Future.value('walletAddress'));
-        // new user but has public drives
-        when(() => mockArDriveAuth.isExistingUser(any()))
-            .thenAnswer((invocation) => Future.value(true));
-        when(() => mockArDriveAuth.userHasPassword(any()))
-            .thenAnswer((invocation) => Future.value(false));
+        when(() => mockArConnectService.getPublicKey())
+            .thenAnswer((invocation) => Future.value('publicKey'));
+        when(() => mockArDriveAuth.loginWithoutPassword(any(), ProfileType.arConnect))
+            .thenAnswer((invocation) => Future.value(loggedUser));
       },
       act: (bloc) async {
         bloc.add(const AddWalletFromArConnect());
@@ -692,31 +713,28 @@ void main() {
       expect: () => [
         LoginLoadingIfUserAlreadyExists(),
         LoginLoadingIfUserAlreadyExistsSuccess(),
-        predicate<CreateNewPassword>((cnp) {
-          return cnp.showWalletCreated == false &&
-              cnp.mnemonic == null &&
-              cnp.showTutorials == false;
-        })
+        const TypeMatcher<LoginSuccess>()
       ],
     );
 
     blocTest(
-      'should emit a state to create new password when user never logged on ardrive and show tutorials if user has no drives',
+      'should login directly without password regardless of user status',
       build: () {
         return createBloc();
       },
       setUp: () {
         when(() => mockArConnectService.connect())
             .thenAnswer((invocation) => Future.value(null));
+        when(() => mockArConnectService.disconnect())
+            .thenAnswer((invocation) => Future.value(null));
         when(() => mockArConnectService.checkPermissions())
             .thenAnswer((invocation) => Future.value(true));
         when(() => mockArConnectService.getWalletAddress())
             .thenAnswer((invocation) => Future.value('walletAddress'));
-        // new user and no drives
-        when(() => mockArDriveAuth.isExistingUser(any()))
-            .thenAnswer((invocation) => Future.value(false));
-        when(() => mockArDriveAuth.userHasPassword(any()))
-            .thenAnswer((invocation) => Future.value(false));
+        when(() => mockArConnectService.getPublicKey())
+            .thenAnswer((invocation) => Future.value('publicKey'));
+        when(() => mockArDriveAuth.loginWithoutPassword(any(), ProfileType.arConnect))
+            .thenAnswer((invocation) => Future.value(loggedUser));
       },
       act: (bloc) async {
         bloc.add(const AddWalletFromArConnect());
@@ -724,11 +742,7 @@ void main() {
       expect: () => [
         LoginLoadingIfUserAlreadyExists(),
         LoginLoadingIfUserAlreadyExistsSuccess(),
-        predicate<CreateNewPassword>((cnp) {
-          return cnp.showWalletCreated == false &&
-              cnp.mnemonic == null &&
-              cnp.showTutorials == true;
-        })
+        const TypeMatcher<LoginSuccess>()
       ],
     );
 

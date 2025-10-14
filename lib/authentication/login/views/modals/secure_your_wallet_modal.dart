@@ -70,6 +70,9 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
     final showDerivedWalletNotYetCreated =
         widget.derivedEthWallet != null && widget.loginBloc.existingUserFlow;
 
+    final isEthereumWallet = widget.derivedEthWallet != null;
+    final isExistingUser = widget.loginBloc.existingUserFlow;
+
     return SingleChildScrollView(
       child: ArDriveLoginModal(
         width: 450,
@@ -102,9 +105,11 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
               ),
               const SizedBox(height: 12),
               Text(
-                  showDerivedWalletNotYetCreated
-                      ? 'We could not find a wallet for that Ethereum address, but you can create one now by entering a password to secure the new wallet.'
-                      : 'Please enter and confirm a password to secure your wallet.\nThis password is used to encrypt your private files, and can never be changed, reset, or recovered!\nBe sure to store it somewhere safe.',
+                  _getPasswordDescription(
+                    showDerivedWalletNotYetCreated: showDerivedWalletNotYetCreated,
+                    isEthereumWallet: isEthereumWallet,
+                    isExistingUser: isExistingUser,
+                  ),
                   textAlign: TextAlign.center,
                   style: typography.paragraphNormal(
                       color: colorTokens.textLow,
@@ -237,6 +242,50 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
         ),
       ),
     );
+  }
+
+  String _getPasswordDescription({
+    required bool showDerivedWalletNotYetCreated,
+    required bool isEthereumWallet,
+    required bool isExistingUser,
+  }) {
+    // EthAReum wallet - user not found (need to create new wallet)
+    if (showDerivedWalletNotYetCreated) {
+      return 'We could not find a wallet for that Ethereum address. Create a password to derive a new Arweave wallet.\n'
+          'This password will be used to generate your wallet and access your account. '
+          'When you create private drives, you\'ll set separate passwords for each drive.\n'
+          'Neither this password nor drive passwords can be recovered if lost.';
+    }
+
+    // EthAReum wallet scenarios
+    if (isEthereumWallet) {
+      if (isExistingUser) {
+        // Existing EthAReum user
+        return 'Enter the password you used to derive this wallet from your Ethereum address.\n'
+            'This password unlocks your existing private drives. If you have multiple drives with different passwords, '
+            'you can unlock them individually after logging in.\n'
+            'This password cannot be recovered if lost.';
+      } else {
+        // New EthAReum user
+        return 'Create a password to derive your Arweave wallet from your Ethereum address.\n'
+            'This password will be used to generate your wallet and access your account. '
+            'When you create private drives, you\'ll set separate passwords for each drive.\n'
+            'Neither this password nor drive passwords can be recovered if lost.';
+      }
+    }
+
+    // JSON wallet scenarios
+    if (isExistingUser) {
+      // Existing JSON wallet user
+      return 'Enter the password for any of your private drives to access your account.\n'
+          'If you have multiple drives with different passwords, you can unlock them individually after logging in.\n'
+          'Drive passwords cannot be recovered if lost.';
+    } else {
+      // New JSON wallet user
+      return 'Create a password to secure your wallet and access your ArDrive account.\n'
+          'When you create private drives, you\'ll set separate passwords for each drive to encrypt your files.\n'
+          'Neither wallet passwords nor drive passwords can be recovered if lost.';
+    }
   }
 
   void _onSubmit() {
