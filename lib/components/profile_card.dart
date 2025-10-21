@@ -3,7 +3,6 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/copy_button.dart';
 import 'package:ardrive/components/graphql_endpoint_dialog.dart';
 import 'package:ardrive/components/icon_theme_switcher.dart';
-import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/components/truncated_address.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/gar/domain/repositories/gar_repository.dart';
@@ -25,8 +24,6 @@ import 'package:ardrive/user/download_wallet/download_wallet_modal.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
-import 'package:ardrive/utils/open_url_utils.dart';
-import 'package:ardrive/utils/open_urls.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/truncate_string.dart';
@@ -222,46 +219,6 @@ class _ProfileCardState extends State<ProfileCard> {
                               auth: context.read<ArDriveAuth>()),
                           child: const RedeemGiftModal(),
                         ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-              ArDriveAccordionItem(
-                Text(
-                  'Support',
-                  style: typography.paragraphNormal(
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                ),
-                [
-                  _ProfileMenuAccordionItem(
-                    text: 'Docs',
-                    onTap: () {
-                      openDocs();
-                    },
-                  ),
-                  _ProfileMenuAccordionItem(
-                    text: 'Help',
-                    onTap: () {
-                      openHelp();
-                      _closeProfileCardMobile();
-                    },
-                  ),
-                  _ProfileMenuAccordionItem(
-                    text: 'Leave Feedback',
-                    onTap: () {
-                      openFeedbackSurveyUrl();
-                      _closeProfileCardMobile();
-                    },
-                  ),
-                  _ProfileMenuAccordionItem(
-                    text: 'Share Logs',
-                    onTap: () {
-                      _closeProfileCardMobile();
-
-                      shareLogs(
-                        context: context,
                       );
                     },
                   ),
