@@ -6,5 +6,5 @@ Future<void> openDocs() {
 }
 
 Future<void> openHelp() {
-  return openUrl(url: Resources.helpLink);
+  return openUrl(url: Resources.helpCenterLink);
 }

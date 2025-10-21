@@ -1,36 +1,31 @@
 class Resources {
   static const images = Images();
-  static const arHelpLink =
-      'https://ardrive.zendesk.com/hc/en-us/articles/5258520347419-Fund-Your-Wallet';
-  static const manifestLearnMoreLink =
-      'https://ardrive.zendesk.com/hc/en-us/articles/5300353421467-Arweave-Manifests';
-  static const surveyFeedbackFormUrl =
-      'https://pds-inc.typeform.com/UserSurvey';
+  static const surveyFeedbackFormUrl = 'https://pds-inc.typeform.com/ardrive';
 
-  static const helpLink = 'https://ardrive.zendesk.com/hc/en-us';
   static const ardrivePublicSiteLink = 'https://ardrive.io/';
   static const agreementLink = 'https://ardrive.io/tos-and-privacy/';
-  static const getWalletLink = 'https://www.arconnect.io/';
-  static const sendGiftLink = 'http://gift.ardrive.io/';
+  static const getWalletLink = 'https://www.wander.app/';
+  static const sendGiftLink = 'https://turbo.ar.io/gift';
   static const licenseHelpLink =
       'https://help.ardrive.io/hc/en-us/articles/23162949343131-Licensing-Your-Data';
+  static const manifestLearnMoreLink =
+      'https://docs.ar.io/build/upload/manifests';
 
   static const howDoesKeyFileLoginWork =
       'https://help.ardrive.io/hc/en-us/articles/15412384724251-How-Do-Keyfile-and-Seed-Phrase-Login-Work-';
   static const howAreConversionsDetermined =
-      'https://help.ardrive.io/hc/en-us/articles/17043397992731';
+      'https://docs.ar.io/build/upload/turbo-credits';
   static const cookiePolicy = 'https://stripe.com/legal/cookies-policy';
   static const emailSupport = 'support@ardrive.io';
-  static const helpCenterLink =
-      'https://help.ardrive.io/hc/en-us/articles/9350732157723-Contact-Us';
+  static const helpCenterLink = 'https://ardrive.io/contact';
   static const discordLink = 'https://discord.gg/KkTqDe4GAF';
 
   static const ardriveAppLimits =
       'https://help.ardrive.io/hc/en-us/articles/5300389777179-ArDrive-App-';
   static const priceCalculatorLink = 'https://prices.ardrive.io/';
-  static const docsLink = 'https://docs.ardrive.io/';
-  static const arnsLink = 'https://arns.app/';
-  static const arnsArcssLink = 'https://docs.ar.io/arcss/';
+  static const docsLink = 'https://docs.ar.io/build/advanced/arfs';
+  static const arnsLink = 'https://arns.ar.io/';
+  static const arnsArcssLink = 'https://docs.ar.io/learn/wayfinder';
 }
 
 class Images {
