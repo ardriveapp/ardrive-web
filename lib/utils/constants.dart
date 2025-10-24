@@ -41,6 +41,8 @@ const List<String> documentContentTypes = [
   'application/x-yaml',
   'text/x-toml',
   'application/toml',
+  'message/rfc822',
+  'application/vnd.ms-outlook',
 ];
 
 const List<String> pdfContentTypes = [

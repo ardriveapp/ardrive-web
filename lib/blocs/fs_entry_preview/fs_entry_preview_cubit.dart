@@ -6,6 +6,8 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
+import 'package:ardrive/services/eml_parser/eml_parser_service.dart';
+import 'package:ardrive/services/eml_parser/models/parsed_email.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -69,7 +71,18 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   ) async {
     if (selectedItem is FileDataTableItem) {
       final file = selectedItem;
-      final contentType = file.contentType;
+      // For private files, dataContentType comes from the decrypted metadata JSON
+      // For public files, dataContentType comes from the data transaction tags
+      // Fall back to filename-based MIME type lookup when not yet available
+      String contentType = file.contentType;
+      if (contentType.isEmpty || contentType == 'application/octet-stream') {
+        // Check for .eml extension explicitly before falling back to lookupMimeType
+        if (file.name.toLowerCase().endsWith('.eml')) {
+          contentType = 'message/rfc822';
+        } else {
+          contentType = lookupMimeType(file.name) ?? contentType;
+        }
+      }
       final fileExtension = contentType.split('/').last;
       final previewType = contentType.split('/').first;
       final previewUrl =
@@ -113,17 +126,29 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           break;
         case 'text':
         case 'application':
+        case 'message':
           // Check file size for document preview
           if (file.size! > documentPreviewMaxFileSize) {
             emit(FsEntryPreviewUnavailable());
             return;
           }
-          _previewDocument(
-            fileKey != null,
-            selectedItem,
-            previewUrl,
-            fileKey: fileKey,
-          );
+          // Check if it's an email file (use resolved contentType for private files)
+          if (contentType == 'message/rfc822' ||
+              contentType == 'application/vnd.ms-outlook') {
+            _previewEmail(
+              fileKey != null,
+              selectedItem,
+              previewUrl,
+              fileKey: fileKey,
+            );
+          } else {
+            _previewDocument(
+              fileKey != null,
+              selectedItem,
+              previewUrl,
+              fileKey: fileKey,
+            );
+          }
           break;
 
         default:
@@ -174,10 +199,20 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
           if ((drive.isPrivate && file.size <= previewMaxFileSize) ||
               drive.isPublic) {
-            final contentType =
-                file.dataContentType ?? lookupMimeType(file.name);
-            final fileExtension = contentType?.split('/').last;
-            final previewType = contentType?.split('/').first;
+            // For private files, dataContentType comes from the decrypted metadata JSON
+            // For public files, dataContentType comes from the data transaction tags
+            // Fall back to filename-based MIME type lookup when not yet available
+            String? contentType = file.dataContentType;
+            if (contentType == null || contentType == 'application/octet-stream') {
+              // Check for .eml extension explicitly before falling back to lookupMimeType
+              if (file.name.toLowerCase().endsWith('.eml')) {
+                contentType = 'message/rfc822';
+              } else {
+                contentType = lookupMimeType(file.name) ?? contentType ?? 'application/octet-stream';
+              }
+            }
+            final fileExtension = contentType.split('/').last;
+            final previewType = contentType.split('/').first;
             final previewUrl =
                 '${_configService.config.defaultArweaveGatewayForDataRequest.url}/${file.dataTxId}';
 
@@ -209,16 +244,27 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
                 break;
               case 'text':
               case 'application':
+              case 'message':
                 // Check file size for document preview
                 if (file.size > documentPreviewMaxFileSize) {
                   emit(FsEntryPreviewUnavailable());
                   return;
                 }
-                _previewDocument(
-                  drive.isPrivate,
-                  fileItem,
-                  previewUrl,
-                );
+                // Check if it's an email file
+                if (contentType == 'message/rfc822' ||
+                    contentType == 'application/vnd.ms-outlook') {
+                  _previewEmail(
+                    drive.isPrivate,
+                    fileItem,
+                    previewUrl,
+                  );
+                } else {
+                  _previewDocument(
+                    drive.isPrivate,
+                    fileItem,
+                    previewUrl,
+                  );
+                }
                 break;
               default:
                 emit(FsEntryPreviewUnavailable());
@@ -240,8 +286,19 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     if (drive.isPrivate && fileItem.size != null && fileItem.size! > previewMaxFileSize) {
       return; // Wait for database sync for large private files
     }
-    
-    final contentType = fileItem.contentType;
+
+    // For private files, dataContentType comes from the decrypted metadata JSON
+    // For public files, dataContentType comes from the data transaction tags
+    // Fall back to filename-based MIME type lookup when not yet available
+    String contentType = fileItem.contentType;
+    if (contentType.isEmpty || contentType == 'application/octet-stream') {
+      // Check for .eml extension explicitly before falling back to lookupMimeType
+      if (fileItem.name.toLowerCase().endsWith('.eml')) {
+        contentType = 'message/rfc822';
+      } else {
+        contentType = lookupMimeType(fileItem.name) ?? contentType;
+      }
+    }
     final fileExtension = contentType.split('/').last;
     final previewType = contentType.split('/').first;
     final previewUrl = '${_configService.config.defaultArweaveGatewayForDataRequest.url}/${fileItem.dataTxId}';
@@ -254,15 +311,26 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     switch (previewType) {
       case 'text':
       case 'application':
+      case 'message':
         // Check file size for document preview
         if (fileItem.size != null && fileItem.size! > documentPreviewMaxFileSize) {
           return;
         }
-        _previewDocument(
-          drive.isPrivate,
-          fileItem,
-          previewUrl,
-        );
+        // Check if it's an email file (use resolved contentType for private files)
+        if (contentType == 'message/rfc822' ||
+            contentType == 'application/vnd.ms-outlook') {
+          _previewEmail(
+            drive.isPrivate,
+            fileItem,
+            previewUrl,
+          );
+        } else {
+          _previewDocument(
+            drive.isPrivate,
+            fileItem,
+            previewUrl,
+          );
+        }
         break;
       case 'image':
         // For images, we can emit the preview URL immediately
@@ -561,6 +629,77 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     }
   }
 
+  Future<void> _previewEmail(
+    bool isPrivate,
+    FileDataTableItem selectedItem,
+    String previewUrl, {
+    SecretKey? fileKey,
+  }) async {
+    emit(const FsEntryPreviewLoading());
+
+    try {
+      // Fetch the email file using cache
+      final Uint8List? dataBytes = await _getBytesFromCache(
+        dataTxId: selectedItem.dataTxId,
+        dataUrl: previewUrl,
+      );
+
+      if (dataBytes == null) {
+        emit(FsEntryPreviewUnavailable());
+        return;
+      }
+
+      // Handle decryption for private files
+      Uint8List? bytesToDecode = dataBytes;
+      final isPinFile = selectedItem.pinnedDataOwnerAddress != null;
+
+      if (isPrivate && !isPinFile) {
+        // Get file key if not provided
+        final SecretKey? decryptionKey = fileKey ??
+            await _getFileKey(
+              fileId: selectedItem.id,
+              driveId: driveId,
+              isPrivate: true,
+              isPin: isPinFile,
+            );
+
+        if (decryptionKey == null) {
+          emit(FsEntryPreviewUnavailable());
+          return;
+        }
+
+        // Decrypt the data
+        final decryptedBytes = await _decodePrivateData(
+          dataBytes,
+          decryptionKey,
+          selectedItem.dataTxId,
+        );
+
+        if (decryptedBytes == null) {
+          emit(FsEntryPreviewUnavailable());
+          return;
+        }
+
+        bytesToDecode = decryptedBytes;
+      }
+
+      // Convert bytes to string
+      final String emlContent = utf8.decode(bytesToDecode, allowMalformed: true);
+
+      // Parse using JS interop
+      final ParsedEmail parsedEmail = await EmlParserService.parseEml(emlContent);
+
+      emit(FsEntryPreviewEmail(
+        previewUrl: previewUrl,
+        filename: selectedItem.name,
+        email: parsedEmail,
+      ));
+    } catch (e) {
+      logger.e('Error loading email preview', e);
+      emit(FsEntryPreviewUnavailable());
+    }
+  }
+
   Future<Uint8List?> _getBytesFromCache({
     required String dataTxId,
     required String dataUrl,
@@ -662,6 +801,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         return true;
       case 'text':
       case 'application':
+      case 'message':
         // Check if it's a document type we support
         final fullContentType = '$previewType/$fileExtension';
         return documentContentTypes.contains(fullContentType);
