@@ -1,15 +1,13 @@
-// ignore_for_file: avoid_web_libraries_in_flutter
-
 import 'dart:convert';
-import 'dart:html' as html;
-import 'dart:math' as math;
 
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/eml_parser/models/email_attachment.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
-import 'dart:ui' as ui;
+
+import 'email_attachment_preview_stub.dart'
+    if (dart.library.html) 'email_attachment_preview_web.dart';
 
 class EmailAttachmentList extends StatelessWidget {
   final List<EmailAttachment> attachments;
@@ -243,137 +241,14 @@ class EmailAttachmentList extends StatelessWidget {
   }
 
   void _previewAudio(BuildContext context, EmailAttachment attachment) {
-    if (attachment.data == null) return;
-
     final colors = ArDriveTheme.of(context).themeData.colors;
     final typography = ArDriveTypographyNew.of(context);
 
-    // Create a blob URL from the attachment
-    final blob = html.Blob([attachment.data!], attachment.mimeType);
-    final blobUrl = html.Url.createObjectUrlFromBlob(blob);
-
-    // Use unique viewType to avoid registration conflicts on repeated previews
-    final viewType = 'audio-preview-${attachment.id}-${math.Random().nextInt(999999)}';
-
-    try {
-      // ignore: undefined_prefixed_name
-      ui.platformViewRegistry.registerViewFactory(viewType, (int viewId) {
-        final audioElement = html.AudioElement()
-          ..src = blobUrl
-          ..controls = true
-          ..style.width = '100%'
-          ..autoplay = true;
-        return audioElement;
-      });
-    } catch (e) {
-      // View factory already registered, clean up and return
-      html.Url.revokeObjectUrl(blobUrl);
-      return;
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 600),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildPreviewHeader(context, attachment),
-              // Audio player
-              Padding(
-                padding: const EdgeInsets.all(32),
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ArDriveIcons.music(size: 64, color: colors.themeFgDefault),
-                      const SizedBox(height: 16),
-                      Text(
-                        attachment.filename,
-                        style: typography.paragraphNormal(
-                          fontWeight: ArFontWeight.semiBold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      // HTML5 audio player
-                      SizedBox(
-                        width: 300,
-                        height: 54,
-                        child: HtmlElementView(viewType: viewType),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ).then((_) {
-      // Cleanup blob URL when dialog closes
-      html.Url.revokeObjectUrl(blobUrl);
-    });
+    showAudioPreview(context, attachment, colors, typography);
   }
 
   void _previewVideo(BuildContext context, EmailAttachment attachment) {
-    if (attachment.data == null) return;
-
-    // Create a blob URL from the attachment
-    final blob = html.Blob([attachment.data!], attachment.mimeType);
-    final blobUrl = html.Url.createObjectUrlFromBlob(blob);
-
-    // Use unique viewType to avoid registration conflicts on repeated previews
-    final viewType = 'video-preview-${attachment.id}-${math.Random().nextInt(999999)}';
-
-    try {
-      // ignore: undefined_prefixed_name
-      ui.platformViewRegistry.registerViewFactory(viewType, (int viewId) {
-        final videoElement = html.VideoElement()
-          ..src = blobUrl
-          ..controls = true
-          ..style.maxWidth = '100%'
-          ..style.maxHeight = '100%'
-          ..autoplay = true;
-        return videoElement;
-      });
-    } catch (e) {
-      // View factory already registered, clean up and return
-      html.Url.revokeObjectUrl(blobUrl);
-      return;
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 800, maxHeight: 600),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildPreviewHeader(context, attachment),
-              // Video player
-              Flexible(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Center(
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 500,
-                      child: HtmlElementView(viewType: viewType),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ).then((_) {
-      // Cleanup blob URL when dialog closes
-      html.Url.revokeObjectUrl(blobUrl);
-    });
+    showVideoPreview(context, attachment);
   }
 
   Widget _buildPreviewHeader(BuildContext context, EmailAttachment attachment) {
