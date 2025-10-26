@@ -1,7 +1,6 @@
 // ignore_for_file: avoid_web_libraries_in_flutter
 
 import 'dart:html' as html;
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:ardrive/services/eml_parser/models/email_attachment.dart';
@@ -22,7 +21,7 @@ void showAudioPreview(
   final blobUrl = html.Url.createObjectUrlFromBlob(blob);
 
   // Use unique viewType to avoid registration conflicts on repeated previews
-  final viewType = 'audio-preview-${attachment.id}-${math.Random().nextInt(999999)}';
+  final viewType = 'audio-preview-${attachment.id}-${DateTime.now().microsecondsSinceEpoch}';
 
   try {
     // ignore: undefined_prefixed_name
@@ -98,7 +97,7 @@ void showVideoPreview(
   final blobUrl = html.Url.createObjectUrlFromBlob(blob);
 
   // Use unique viewType to avoid registration conflicts on repeated previews
-  final viewType = 'video-preview-${attachment.id}-${math.Random().nextInt(999999)}';
+  final viewType = 'video-preview-${attachment.id}-${DateTime.now().microsecondsSinceEpoch}';
 
   try {
     // ignore: undefined_prefixed_name
