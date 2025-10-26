@@ -4,6 +4,7 @@ import 'dart:html' as html;
 import 'dart:ui' as ui;
 
 import 'package:ardrive/services/eml_parser/models/email_attachment.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
@@ -34,7 +35,22 @@ void showAudioPreview(
       return audioElement;
     });
   } catch (e) {
-    // View factory already registered, clean up and return
+    // Log error and notify user
+    logger.e('Failed to register audio preview view factory', e);
+
+    final theme = ArDriveTheme.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: theme.themeData.colors.themeBgSurface,
+        content: Text(
+          'Failed to preview audio attachment. Please try downloading the file.',
+          style: TextStyle(color: theme.themeData.colors.themeFgDefault),
+        ),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+
+    // Clean up blob URL
     html.Url.revokeObjectUrl(blobUrl);
     return;
   }
@@ -111,7 +127,22 @@ void showVideoPreview(
       return videoElement;
     });
   } catch (e) {
-    // View factory already registered, clean up and return
+    // Log error and notify user
+    logger.e('Failed to register video preview view factory', e);
+
+    final theme = ArDriveTheme.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: theme.themeData.colors.themeBgSurface,
+        content: Text(
+          'Failed to preview video attachment. Please try downloading the file.',
+          style: TextStyle(color: theme.themeData.colors.themeFgDefault),
+        ),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+
+    // Clean up blob URL
     html.Url.revokeObjectUrl(blobUrl);
     return;
   }
