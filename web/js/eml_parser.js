@@ -27,65 +27,65 @@ window.ArDriveEmlParser.waitForLibrary = function(maxAttempts = 50, delayMs = 10
 };
 
 window.ArDriveEmlParser.parseEml = function(emlContent) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      // Wait for library to be loaded if not already available
-      await window.ArDriveEmlParser.waitForLibrary();
-
-      // Parse using eml-parse-js library
-      EmlParseJs.readEml(emlContent, function(error, parsed) {
-        if (error) {
-          resolve({
-            success: false,
-            error: error.message || 'Failed to parse EML file',
-          });
-          return;
-        }
-
-        try {
-          // Extract and structure data for Flutter
-          // Convert Date objects to ISO strings for Dart compatibility
-          let dateString = '';
-          if (parsed.date) {
-            if (parsed.date instanceof Date) {
-              dateString = parsed.date.toISOString();
-            } else if (typeof parsed.date === 'string') {
-              dateString = parsed.date;
-            } else {
-              dateString = String(parsed.date);
-            }
+  return new Promise((resolve, reject) => {
+    // Wait for library to be loaded if not already available
+    window.ArDriveEmlParser.waitForLibrary()
+      .then(() => {
+        // Parse using eml-parse-js library
+        EmlParseJs.readEml(emlContent, function(error, parsed) {
+          if (error) {
+            resolve({
+              success: false,
+              error: error.message || 'Failed to parse EML file',
+            });
+            return;
           }
 
-          const result = {
-            success: true,
-            headers: {
-              from: window.ArDriveEmlParser.extractEmailAddress(parsed.from),
-              to: window.ArDriveEmlParser.extractEmailAddress(parsed.to),
-              cc: window.ArDriveEmlParser.extractEmailAddress(parsed.cc),
-              subject: parsed.subject || '',
-              date: dateString,
-            },
-            body: {
-              text: parsed.text || '',
-              html: parsed.html || '',
-            },
-            attachments: window.ArDriveEmlParser.extractAttachments(parsed.attachments || []),
-          };
+          try {
+            // Extract and structure data for Flutter
+            // Convert Date objects to ISO strings for Dart compatibility
+            let dateString = '';
+            if (parsed.date) {
+              if (parsed.date instanceof Date) {
+                dateString = parsed.date.toISOString();
+              } else if (typeof parsed.date === 'string') {
+                dateString = parsed.date;
+              } else {
+                dateString = String(parsed.date);
+              }
+            }
 
-          resolve(result);
-        } catch (extractError) {
-          resolve({
-            success: false,
-            error: extractError.message || 'Failed to extract email data',
-          });
-        }
+            const result = {
+              success: true,
+              headers: {
+                from: window.ArDriveEmlParser.extractEmailAddress(parsed.from),
+                to: window.ArDriveEmlParser.extractEmailAddress(parsed.to),
+                cc: window.ArDriveEmlParser.extractEmailAddress(parsed.cc),
+                subject: parsed.subject || '',
+                date: dateString,
+              },
+              body: {
+                text: parsed.text || '',
+                html: parsed.html || '',
+              },
+              attachments: window.ArDriveEmlParser.extractAttachments(parsed.attachments || []),
+            };
+
+            resolve(result);
+          } catch (extractError) {
+            resolve({
+              success: false,
+              error: extractError.message || 'Failed to extract email data',
+            });
+          }
+        });
+      })
+      .catch((error) => {
+        resolve({
+          success: false,
+          error: error.message || 'Failed to wait for library',
+        });
       });
-    } catch (error) {
-      resolve({
-        success: false,
-        error: error.message || 'Failed to parse EML file',
-      });
-    }
   });
 };
 
