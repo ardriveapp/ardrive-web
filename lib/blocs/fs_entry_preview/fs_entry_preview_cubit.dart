@@ -133,8 +133,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             return;
           }
           // Check if it's an email file (use resolved contentType for private files)
-          if (contentType == 'message/rfc822' ||
-              contentType == 'application/vnd.ms-outlook') {
+          if (contentType == 'message/rfc822') {
             _previewEmail(
               fileKey != null,
               selectedItem,
@@ -251,8 +250,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
                   return;
                 }
                 // Check if it's an email file
-                if (contentType == 'message/rfc822' ||
-                    contentType == 'application/vnd.ms-outlook') {
+                if (contentType == 'message/rfc822') {
                   _previewEmail(
                     drive.isPrivate,
                     fileItem,
@@ -317,8 +315,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           return;
         }
         // Check if it's an email file (use resolved contentType for private files)
-        if (contentType == 'message/rfc822' ||
-            contentType == 'application/vnd.ms-outlook') {
+        if (contentType == 'message/rfc822') {
           _previewEmail(
             drive.isPrivate,
             fileItem,
