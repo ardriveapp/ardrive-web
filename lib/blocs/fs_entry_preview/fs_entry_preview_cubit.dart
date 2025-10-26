@@ -128,7 +128,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         case 'application':
         case 'message':
           // Check file size for document preview
-          if (file.size! > documentPreviewMaxFileSize) {
+          if (file.size != null && file.size! > documentPreviewMaxFileSize) {
             emit(FsEntryPreviewUnavailable());
             return;
           }
@@ -451,7 +451,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     }
 
     if (isPrivate && !isPinFile) {
-      if (file.size! >= previewMaxFileSize) {
+      if (file.size != null && file.size! >= previewMaxFileSize) {
         emit(FsEntryPreviewUnavailable());
       }
 
