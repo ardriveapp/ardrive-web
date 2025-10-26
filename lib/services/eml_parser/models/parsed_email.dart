@@ -36,7 +36,8 @@ class ParsedEmail extends Equatable {
       textBody: body['text']?.toString() ?? '',
       htmlBody: body['html']?.toString() ?? '',
       attachments: attachmentsList
-          .map((att) => EmailAttachment.fromJS(att as Map<String, dynamic>))
+          .whereType<Map<String, dynamic>>()
+          .map((att) => EmailAttachment.fromJS(att))
           .toList(),
     );
   }
