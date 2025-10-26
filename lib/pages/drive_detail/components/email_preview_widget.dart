@@ -78,7 +78,12 @@ class _EmailPreviewWidgetState extends State<EmailPreviewWidget> {
     buffer.writeln('Subject: ${widget.state.email.subject}');
     buffer.writeln('Date: ${widget.state.email.date}');
     buffer.writeln();
-    buffer.writeln(widget.state.email.textBody);
+
+    // Use textBody if available, otherwise fall back to stripped HTML body
+    final bodyContent = widget.state.email.textBody.isNotEmpty
+        ? widget.state.email.textBody
+        : _stripHtmlTags(widget.state.email.htmlBody);
+    buffer.writeln(bodyContent);
 
     Clipboard.setData(ClipboardData(text: buffer.toString()));
 
@@ -115,6 +120,29 @@ class _EmailPreviewWidgetState extends State<EmailPreviewWidget> {
         ),
       );
     }
+  }
+
+  /// Strip HTML tags and decode common HTML entities to plain text
+  String _stripHtmlTags(String html) {
+    if (html.isEmpty) return '';
+
+    // Remove HTML tags
+    String text = html.replaceAll(RegExp(r'<[^>]*>'), ' ');
+
+    // Decode common HTML entities
+    text = text
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#39;', "'")
+        .replaceAll('&apos;', "'");
+
+    // Collapse multiple whitespace/newlines into single spaces
+    text = text.replaceAll(RegExp(r'\s+'), ' ');
+
+    return text.trim();
   }
 
   @override
