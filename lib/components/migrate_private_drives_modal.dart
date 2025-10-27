@@ -78,7 +78,7 @@ class _PrivateDriveMigrationDialogState
                           ..onTap = () {
                             launchUrl(
                                 Uri.parse(
-                                    'https://docs.ardrive.io/docs/arfs/upgrading-private-drives.html'),
+                                    'https://docs.ar.io/build/advanced/arfs/upgrading-drives'),
                                 mode: LaunchMode.externalApplication);
                           },
                       ),
