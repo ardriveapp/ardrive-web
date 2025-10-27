@@ -537,7 +537,7 @@ Future<void> showSupportModal({
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Need help? Reach out to us:',
+              appLocalizationsOf(context).needHelpReachOut,
               style: typography.paragraphLarge(
                 fontWeight: ArFontWeight.semiBold,
                 color: colorTokens.textHigh,
@@ -545,7 +545,7 @@ Future<void> showSupportModal({
             ),
             const SizedBox(height: 24),
             Text(
-              'Email',
+              appLocalizationsOf(context).email,
               style: typography.paragraphNormal(
                 fontWeight: ArFontWeight.bold,
                 color: colorTokens.textHigh,
@@ -571,7 +571,7 @@ Future<void> showSupportModal({
             ),
             const SizedBox(height: 24),
             Text(
-              'Resources',
+              appLocalizationsOf(context).resources,
               style: typography.paragraphNormal(
                 fontWeight: ArFontWeight.bold,
                 color: colorTokens.textHigh,
@@ -587,7 +587,7 @@ Future<void> showSupportModal({
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      discord,
+                      appLocalizationsOf(context).discord,
                       style: typography.paragraphNormal(
                         color: colorTokens.textLink,
                         fontWeight: ArFontWeight.semiBold,
@@ -612,7 +612,7 @@ Future<void> showSupportModal({
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Developer Docs',
+                      appLocalizationsOf(context).developerDocs,
                       style: typography.paragraphNormal(
                         color: colorTokens.textLink,
                         fontWeight: ArFontWeight.semiBold,
@@ -637,7 +637,7 @@ Future<void> showSupportModal({
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Leave Feedback',
+                      appLocalizationsOf(context).leaveFeedback,
                       style: typography.paragraphNormal(
                         color: colorTokens.textLink,
                         fontWeight: ArFontWeight.semiBold,
@@ -654,7 +654,7 @@ Future<void> showSupportModal({
             ),
             const SizedBox(height: 24),
             Text(
-              'Troubleshooting',
+              appLocalizationsOf(context).troubleshooting,
               style: typography.paragraphNormal(
                 fontWeight: ArFontWeight.bold,
                 color: colorTokens.textHigh,
@@ -662,7 +662,7 @@ Future<void> showSupportModal({
             ),
             const SizedBox(height: 8),
             Text(
-              'Download diagnostic logs to share with our support team. Logs contain app activity data but no passwords or private keys.',
+              appLocalizationsOf(context).troubleshootingDescription,
               style: typography.paragraphSmall(
                 color: colorTokens.textMid,
               ),
