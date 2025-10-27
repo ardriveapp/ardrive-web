@@ -6,13 +6,9 @@ class Resources {
   static const agreementLink = 'https://ardrive.io/tos-and-privacy/';
   static const getWalletLink = 'https://www.wander.app/';
   static const sendGiftLink = 'https://turbo.ar.io/gift';
-  static const licenseHelpLink =
-      'https://help.ardrive.io/hc/en-us/articles/23162949343131-Licensing-Your-Data';
   static const manifestLearnMoreLink =
       'https://docs.ar.io/build/upload/manifests';
 
-  static const howDoesKeyFileLoginWork =
-      'https://help.ardrive.io/hc/en-us/articles/15412384724251-How-Do-Keyfile-and-Seed-Phrase-Login-Work-';
   static const howAreConversionsDetermined =
       'https://docs.ar.io/build/upload/turbo-credits';
   static const cookiePolicy = 'https://stripe.com/legal/cookies-policy';
@@ -20,8 +16,6 @@ class Resources {
   static const helpCenterLink = 'https://ardrive.io/contact';
   static const discordLink = 'https://discord.gg/KkTqDe4GAF';
 
-  static const ardriveAppLimits =
-      'https://help.ardrive.io/hc/en-us/articles/5300389777179-ArDrive-App-';
   static const priceCalculatorLink = 'https://prices.ardrive.io/';
   static const docsLink = 'https://docs.ar.io/build/advanced/arfs';
   static const arnsLink = 'https://arns.ar.io/';
