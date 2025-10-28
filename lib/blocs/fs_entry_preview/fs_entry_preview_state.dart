@@ -83,3 +83,17 @@ class FsEntryPreviewText extends FsEntryPreviewSuccess {
   @override
   List<Object> get props => [previewUrl, filename, content, contentType];
 }
+
+class FsEntryPreviewEmail extends FsEntryPreviewSuccess {
+  final String filename;
+  final ParsedEmail email;
+
+  const FsEntryPreviewEmail({
+    required super.previewUrl,
+    required this.filename,
+    required this.email,
+  });
+
+  @override
+  List<Object> get props => [previewUrl, filename, email];
+}

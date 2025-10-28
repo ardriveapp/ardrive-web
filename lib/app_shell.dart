@@ -724,9 +724,7 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
             const SizedBox(width: 8),
             const SyncButton(),
             const SizedBox(width: 8),
-            if (AppPlatform.isMobileWeb()) ...[
-              const HelpButtonTopBar(),
-            ],
+            const HelpButtonTopBar(),
             const SizedBox(
               width: 24,
             ),

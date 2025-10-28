@@ -1744,7 +1744,7 @@
   "@shareFileWithOthers": {
     "description": "To share a file link"
   },
-  "shareLogsDescription": "You can share your logs with the ArDrive team to help us improve the app. The logs can be downloaded to your device and shared with us via email, Discord, or added to a support ticket.",
+  "shareLogsDescription": "You can share your logs with the ArDrive team to help us improve the app. The logs can be downloaded to your device and shared with us via Discord or email to support@ardrive.io.",
   "@shareLogsDescription": {},
   "shareLogsEmailBody": "ArDrive user logs are attached.",
   "@shareLogsEmailBody": {},
@@ -1909,7 +1909,7 @@
         "example": "2"
       },
       "total": {
-        "type": "int", 
+        "type": "int",
         "example": "5"
       }
     }
