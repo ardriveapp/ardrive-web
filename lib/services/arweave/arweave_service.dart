@@ -360,16 +360,14 @@ class ArweaveService {
         continue;
       }
 
-      // If we encounter a transaction that has yet to be mined, we stop moving through history.
-      // We can continue once the transaction is mined.
-      if (transaction.block == null) {
-        // TODO: Revisit
-        break;
-      }
+      // Process unmined transactions (block == null) with block height 0
+      // They will be marked as pending and cleaned up by _updateTransactionStatuses
+      // if they remain unmined beyond the timeout thresholds (8-24 hours)
+      final blockHeight = transaction.block?.height ?? 0;
 
       if (blockHistory.isEmpty ||
-          transaction.block!.height != blockHistory.last.blockHeight) {
-        blockHistory.add(BlockEntities(transaction.block!.height));
+          blockHistory.last.blockHeight != blockHeight) {
+        blockHistory.add(BlockEntities(blockHeight));
       }
 
       try {
@@ -403,10 +401,10 @@ class ArweaveService {
           // TODO: instantiate entity and add to blockHistory
         }
 
-        // TODO: Revisit
+        // Ensure unmined transactions are grouped in block 0
         if (blockHistory.isEmpty ||
-            transaction.block!.height != blockHistory.last.blockHeight) {
-          blockHistory.add(BlockEntities(transaction.block!.height));
+            blockHistory.last.blockHeight != blockHeight) {
+          blockHistory.add(BlockEntities(blockHeight));
         }
 
         blockHistory.last.entities.add(entity);
