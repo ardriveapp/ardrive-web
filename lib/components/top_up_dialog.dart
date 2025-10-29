@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/components/help_info_modals.dart';
 import 'package:ardrive/components/turbo_logo.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
@@ -410,9 +411,7 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
                 decoration: TextDecoration.underline,
               ),
               recognizer: TapGestureRecognizer()
-                ..onTap = () => openUrl(
-                      url: Resources.ardriveAppLimits,
-                    ),
+                ..onTap = () => showAppLimitsInfoModal(context: context),
             )
       },
     );
