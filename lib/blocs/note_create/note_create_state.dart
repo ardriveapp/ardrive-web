@@ -1,3 +1,4 @@
+import 'package:ardrive/blocs/note_create/note_create_cubit.dart';
 import 'package:equatable/equatable.dart';
 
 /// Represents the view mode for the markdown editor
@@ -34,7 +35,7 @@ class NoteCreateEditing extends NoteCreateState {
   final String content;
   final bool isValidName;
   final NoteViewMode viewMode;
-  final String? nameError;
+  final NoteNameValidationError? nameError;
 
   const NoteCreateEditing({
     required this.noteName,
@@ -49,7 +50,7 @@ class NoteCreateEditing extends NoteCreateState {
     String? content,
     bool? isValidName,
     NoteViewMode? viewMode,
-    String? nameError,
+    NoteNameValidationError? nameError,
     bool clearNameError = false,
   }) {
     return NoteCreateEditing(

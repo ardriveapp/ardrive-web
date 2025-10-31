@@ -1404,6 +1404,14 @@
   "@enterNoteName": {
     "description": "Placeholder text for note name input"
   },
+  "noteNameEmptyError": "Note name cannot be empty",
+  "@noteNameEmptyError": {
+    "description": "Error message when note name is empty"
+  },
+  "noteNameInvalidCharactersError": "Invalid name. Cannot contain: / \\ *",
+  "@noteNameInvalidCharactersError": {
+    "description": "Error message when note name contains invalid characters"
+  },
   "view": "View",
   "@view": {
     "description": "Label for view mode options"

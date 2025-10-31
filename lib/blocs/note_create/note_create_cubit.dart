@@ -6,6 +6,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'note_create_state.dart';
 
+/// Error keys for note name validation
+enum NoteNameValidationError {
+  empty,
+  invalidCharacters,
+}
+
 /// Cubit for managing note creation state
 class NoteCreateCubit extends Cubit<NoteCreateState> {
   final String driveId;
@@ -34,7 +40,7 @@ class NoteCreateCubit extends Cubit<NoteCreateState> {
     emit(currentState.copyWith(
       noteName: name,
       isValidName: validation.isValid,
-      nameError: validation.errorMessage,
+      nameError: validation.errorKey,
       clearNameError: validation.isValid, // Clear error when valid
     ));
   }
@@ -114,7 +120,7 @@ class NoteCreateCubit extends Cubit<NoteCreateState> {
     if (trimmedName.isEmpty) {
       return const _ValidationResult(
         isValid: false,
-        errorMessage: 'Note name cannot be empty',
+        errorKey: NoteNameValidationError.empty,
       );
     }
 
@@ -129,7 +135,7 @@ class NoteCreateCubit extends Cubit<NoteCreateState> {
     if (!fileNameRegex.hasMatch(nameWithoutExtension)) {
       return const _ValidationResult(
         isValid: false,
-        errorMessage: 'Invalid name. Cannot contain: / \\ *',
+        errorKey: NoteNameValidationError.invalidCharacters,
       );
     }
 
@@ -140,7 +146,7 @@ class NoteCreateCubit extends Cubit<NoteCreateState> {
 /// Internal validation result class
 class _ValidationResult {
   final bool isValid;
-  final String? errorMessage;
+  final NoteNameValidationError? errorKey;
 
-  const _ValidationResult({required this.isValid, this.errorMessage});
+  const _ValidationResult({required this.isValid, this.errorKey});
 }

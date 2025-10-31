@@ -237,7 +237,7 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(
-                state.nameError!,
+                _getErrorMessage(context, state.nameError!),
                 style: ArDriveTypographyNew.of(context).paragraphSmall(
                       color: ArDriveTheme.of(context)
                           .themeData
@@ -269,5 +269,15 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
         ],
       ),
     );
+  }
+
+  /// Resolves error key to localized error message
+  String _getErrorMessage(BuildContext context, NoteNameValidationError errorKey) {
+    switch (errorKey) {
+      case NoteNameValidationError.empty:
+        return appLocalizationsOf(context).noteNameEmptyError;
+      case NoteNameValidationError.invalidCharacters:
+        return appLocalizationsOf(context).noteNameInvalidCharactersError;
+    }
   }
 }
