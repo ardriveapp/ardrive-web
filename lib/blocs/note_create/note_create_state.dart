@@ -74,10 +74,10 @@ class NoteCreateEditing extends NoteCreateState {
 
 /// State when an error occurs during note creation
 class NoteCreateError extends NoteCreateState {
-  final String message;
+  final NoteCreateErrorKey errorKey;
 
-  const NoteCreateError(this.message);
+  const NoteCreateError(this.errorKey);
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [errorKey];
 }

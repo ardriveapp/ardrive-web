@@ -1412,6 +1412,10 @@
   "@noteNameInvalidCharactersError": {
     "description": "Error message when note name contains invalid characters"
   },
+  "noteCreateFileFailed": "Failed to create note file. Please try again.",
+  "@noteCreateFileFailed": {
+    "description": "Error message when note file creation fails"
+  },
   "view": "View",
   "@view": {
     "description": "Label for view mode options"

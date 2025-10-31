@@ -130,7 +130,7 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
           await showStandardDialog(
             context,
             title: appLocalizationsOf(context).error,
-            description: state.message,
+            description: _getCreateErrorMessage(context, state.errorKey),
             actions: [
               ModalAction(
                 action: () => Navigator.of(context).pop(),
@@ -279,6 +279,14 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
         return appLocalizationsOf(context).noteNameEmptyError;
       case NoteNameValidationError.invalidCharacters:
         return appLocalizationsOf(context).noteNameInvalidCharactersError;
+    }
+  }
+
+  /// Resolves note creation error key to localized error message
+  String _getCreateErrorMessage(BuildContext context, NoteCreateErrorKey errorKey) {
+    switch (errorKey) {
+      case NoteCreateErrorKey.createFileFailed:
+        return appLocalizationsOf(context).noteCreateFileFailed;
     }
   }
 }

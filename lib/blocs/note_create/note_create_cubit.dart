@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -10,6 +11,11 @@ import 'note_create_state.dart';
 enum NoteNameValidationError {
   empty,
   invalidCharacters,
+}
+
+/// Error keys for note creation failures
+enum NoteCreateErrorKey {
+  createFileFailed,
 }
 
 /// Cubit for managing note creation state
@@ -104,8 +110,10 @@ class NoteCreateCubit extends Cubit<NoteCreateState> {
 
       return ioFile;
     } catch (e) {
+      // Log the error internally
+      logger.e('Failed to create note file', e);
       // Emit error state temporarily to show error to user
-      emit(NoteCreateError('Failed to create note: $e'));
+      emit(const NoteCreateError(NoteCreateErrorKey.createFileFailed));
       // Restore editing state to keep UI interactive
       emit(editingState);
       return null;
