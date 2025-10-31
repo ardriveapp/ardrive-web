@@ -7,17 +7,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'note_create_state.dart';
 
-/// Error keys for note name validation
-enum NoteNameValidationError {
-  empty,
-  invalidCharacters,
-}
-
-/// Error keys for note creation failures
-enum NoteCreateErrorKey {
-  createFileFailed,
-}
-
 /// Cubit for managing note creation state
 class NoteCreateCubit extends Cubit<NoteCreateState> {
   final String driveId;

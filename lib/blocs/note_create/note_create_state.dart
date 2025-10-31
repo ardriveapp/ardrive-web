@@ -1,5 +1,15 @@
-import 'package:ardrive/blocs/note_create/note_create_cubit.dart';
 import 'package:equatable/equatable.dart';
+
+/// Error keys for note name validation
+enum NoteNameValidationError {
+  empty,
+  invalidCharacters,
+}
+
+/// Error keys for note creation failures
+enum NoteCreateErrorKey {
+  createFileFailed,
+}
 
 /// Represents the view mode for the markdown editor
 enum NoteViewMode {
