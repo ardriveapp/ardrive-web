@@ -1388,6 +1388,50 @@
   "@newFolder": {
     "description": "Create a new folder entity"
   },
+  "newNote": "New Note",
+  "@newNote": {
+    "description": "Create a new markdown note"
+  },
+  "createNewNote": "Create New Note",
+  "@createNewNote": {
+    "description": "Title for note creation modal"
+  },
+  "noteName": "Note Name",
+  "@noteName": {
+    "description": "Label for note name input field"
+  },
+  "enterNoteName": "Enter note name...",
+  "@enterNoteName": {
+    "description": "Placeholder text for note name input"
+  },
+  "view": "View",
+  "@view": {
+    "description": "Label for view mode options"
+  },
+  "editOnly": "Edit",
+  "@editOnly": {
+    "description": "Edit-only view mode"
+  },
+  "splitView": "Split",
+  "@splitView": {
+    "description": "Split view mode showing editor and preview"
+  },
+  "previewOnly": "Preview",
+  "@previewOnly": {
+    "description": "Preview-only view mode"
+  },
+  "discardChanges": "Discard Changes?",
+  "@discardChanges": {
+    "description": "Dialog title when discarding unsaved note changes"
+  },
+  "discardChangesDescription": "You have unsaved changes. Are you sure you want to discard them?",
+  "@discardChangesDescription": {
+    "description": "Dialog message when discarding unsaved note changes"
+  },
+  "discardEmphasized": "DISCARD",
+  "@discardEmphasized": {
+    "description": "Discard button text, emphasized with upper case"
+  },
   "newSnapshot": "New Snapshot",
   "@newSnapshot": {
     "description": "The action of snapshotting a drive"

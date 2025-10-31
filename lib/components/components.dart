@@ -9,5 +9,7 @@ export 'file_share_dialog.dart';
 export 'folder_create_form.dart';
 export 'fs_entry_move_form.dart';
 export 'fs_entry_rename_form.dart';
+export 'note_create/note_create_form.dart';
+export 'note_create/note_editor_widget.dart';
 export 'progress_dialog.dart';
 export 'upload_form.dart';

@@ -5,6 +5,7 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 class DocumentPreviewWidget extends StatefulWidget {
   final String filename;
@@ -31,6 +32,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
   bool _showScrollToTop = false;
   bool _controlsVisible = true;
   Timer? _hideControlsTimer;
+  bool _showAsMarkdown = true; // Toggle between markdown and plain text view
 
   @override
   void initState() {
@@ -48,6 +50,135 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
     _scrollController.dispose();
     _cancelHideControlsTimer();
     super.dispose();
+  }
+
+  bool _isMarkdown() {
+    return widget.contentType == 'text/markdown' ||
+        widget.contentType == 'text/x-markdown';
+  }
+
+  Widget _buildContentWidget(dynamic typography, dynamic colors, {bool isFullScreen = false}) {
+    if (_isMarkdown() && _showAsMarkdown) {
+      // Render markdown with proper formatting using flutter_markdown
+      return MarkdownBody(
+        data: widget.content,
+        selectable: true,
+        imageBuilder: (uri, title, alt) {
+          return Image.network(
+            uri.toString(),
+            errorBuilder: (context, error, stackTrace) {
+              // Handle image loading errors (e.g., SVG images, network issues)
+              return Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colors.themeBgCanvas,
+                  border: Border.all(color: colors.themeBorderDefault),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.broken_image_outlined,
+                      size: 16,
+                      color: colors.themeFgSubtle,
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        alt ?? title ?? 'Image',
+                        style: typography.paragraphSmall().copyWith(
+                          color: colors.themeFgSubtle,
+                          fontStyle: FontStyle.italic,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+        styleSheet: MarkdownStyleSheet(
+          p: isFullScreen
+              ? typography.paragraphNormal(
+                  fontWeight: ArFontWeight.book,
+                  color: colors.themeFgDefault,
+                ).copyWith(height: 1.8)
+              : typography.paragraphSmall(
+                  fontWeight: ArFontWeight.book,
+                  color: colors.themeFgDefault,
+                ).copyWith(height: 1.5),
+          h1: isFullScreen
+              ? typography.heading1(color: colors.themeFgDefault)
+              : typography.heading3(color: colors.themeFgDefault),
+          h2: isFullScreen
+              ? typography.heading2(color: colors.themeFgDefault)
+              : typography.heading4(color: colors.themeFgDefault),
+          h3: isFullScreen
+              ? typography.heading3(color: colors.themeFgDefault)
+              : typography.heading5(color: colors.themeFgDefault),
+          h4: isFullScreen
+              ? typography.heading4(color: colors.themeFgDefault)
+              : typography.heading6(color: colors.themeFgDefault),
+          h5: typography.heading5(color: colors.themeFgDefault),
+          h6: typography.heading6(color: colors.themeFgDefault),
+          listBullet: typography.paragraphNormal(color: colors.themeFgDefault),
+          code: typography.paragraphSmall(
+            fontWeight: ArFontWeight.book,
+          ).copyWith(
+            fontFamily: 'Courier New',
+            fontFamilyFallback: const ['monospace'],
+            backgroundColor: colors.themeBgCanvas,
+            color: colors.themeFgDefault,
+          ),
+          codeblockDecoration: BoxDecoration(
+            color: colors.themeBgCanvas,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: colors.themeBorderDefault),
+          ),
+          blockquote: typography.paragraphNormal().copyWith(
+            color: colors.themeFgSubtle,
+            fontStyle: FontStyle.italic,
+          ),
+          blockquoteDecoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(
+                color: colors.themeBorderDefault,
+                width: 4,
+              ),
+            ),
+          ),
+          strong: typography.paragraphNormal(
+            fontWeight: ArFontWeight.bold,
+          ).copyWith(color: colors.themeFgDefault),
+          em: typography.paragraphNormal().copyWith(
+            fontStyle: FontStyle.italic,
+            color: colors.themeFgDefault,
+          ),
+        ),
+      );
+    } else {
+      // Render as plain text
+      return Text(
+        widget.content,
+        style: isFullScreen
+            ? typography.paragraphNormal(
+                fontWeight: ArFontWeight.book,
+                color: colors.themeFgDefault,
+              ).copyWith(
+                fontFamily: 'Courier New',
+                height: 1.8,
+              )
+            : typography.paragraphSmall(
+                fontWeight: ArFontWeight.book,
+              ).copyWith(
+                fontFamily: 'Courier New',
+                height: 1.5,
+              ),
+      );
+    }
   }
 
   void _scrollListener() {
@@ -179,15 +310,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                     padding: const EdgeInsets.all(16),
                     child: Align(
                       alignment: Alignment.topLeft,
-                      child: Text(
-                        widget.content,
-                        style: typography.paragraphSmall(
-                          fontWeight: ArFontWeight.book,
-                        ).copyWith(
-                          fontFamily: 'Courier New',
-                          height: 1.5,
-                        ),
-                      ),
+                      child: _buildContentWidget(typography, colors, isFullScreen: false),
                     ),
                   ),
                 ),
@@ -238,16 +361,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                     alignment: Alignment.topLeft,
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 1200),
-                      child: Text(
-                        widget.content,
-                        style: typography.paragraphNormal(
-                          fontWeight: ArFontWeight.book,
-                          color: colors.themeFgDefault,
-                        ).copyWith(
-                          fontFamily: 'Courier New',
-                          height: 1.8,
-                        ),
-                      ),
+                      child: _buildContentWidget(typography, colors, isFullScreen: true),
                     ),
                   ),
                 ),
@@ -325,6 +439,23 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                 tooltip: 'Copy to clipboard',
                 onPressed: _copyToClipboard,
               ),
+              if (_isMarkdown()) ...[
+                const SizedBox(width: 8),
+                Tooltip(
+                  message: _showAsMarkdown ? 'View as plain text' : 'View as markdown',
+                  child: IconButton(
+                    icon: Icon(
+                      _showAsMarkdown ? Icons.text_fields : Icons.article_outlined,
+                      size: 24,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _showAsMarkdown = !_showAsMarkdown;
+                      });
+                    },
+                  ),
+                ),
+              ],
               const SizedBox(width: 8),
               IconButton(
                 icon: Icon(
@@ -341,3 +472,4 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
     );
   }
 }
+
