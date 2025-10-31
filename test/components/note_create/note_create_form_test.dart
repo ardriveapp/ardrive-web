@@ -162,10 +162,12 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
+      // Find the text field and verify it exists
+      final textFieldFinder = find.byType(ArDriveTextFieldNew);
+      expect(textFieldFinder, findsOneWidget);
+
       // The ArDriveTextFieldNew should have autofocus enabled
-      final textField = tester.widget<ArDriveTextFieldNew>(
-        find.byType(ArDriveTextFieldNew),
-      );
+      final textField = tester.widget<ArDriveTextFieldNew>(textFieldFinder);
       expect(textField.autofocus, true);
     });
   });

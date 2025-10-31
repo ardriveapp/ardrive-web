@@ -211,6 +211,7 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
             children: [
               Expanded(
                 child: ArDriveTextFieldNew(
+                  key: const Key('note_name_text_field'),
                   controller: _nameController,
                   onChanged: (value) {
                     context.read<NoteCreateCubit>().updateNoteName(value);
