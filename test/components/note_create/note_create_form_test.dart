@@ -4,6 +4,8 @@ import 'package:ardrive/components/note_create/note_create_form.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -22,11 +24,22 @@ void main() {
     });
 
     Widget createTestWidget() {
-      return MaterialApp(
-        home: Scaffold(
-          body: BlocProvider.value(
-            value: cubit,
-            child: const NoteCreateForm(),
+      return ArDriveTheme(
+        themeData: lightTheme(),
+        child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('en', ''),
+          ],
+          home: Scaffold(
+            body: BlocProvider.value(
+              value: cubit,
+              child: const NoteCreateForm(),
+            ),
           ),
         ),
       );
@@ -49,7 +62,7 @@ void main() {
 
       // Should find action buttons
       expect(find.text('CANCEL'), findsOneWidget);
-      expect(find.text('CREATE NOTE'), findsOneWidget);
+      expect(find.text('NEXT'), findsOneWidget);
     });
 
     testWidgets('Create Note button is disabled when name is empty',
@@ -126,6 +139,10 @@ void main() {
     });
 
     testWidgets('displays error when invalid name is entered', (tester) async {
+      // Set a larger viewport to accommodate error message display
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 

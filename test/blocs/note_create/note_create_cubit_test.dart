@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:ardrive/blocs/note_create/note_create_cubit.dart';
 import 'package:ardrive/blocs/note_create/note_create_state.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -202,7 +204,7 @@ void main() {
 
       expect(file, isNotNull);
       final bytes = await file!.readAsBytes();
-      final content = String.fromCharCodes(bytes);
+      final content = utf8.decode(bytes);
       expect(content, 'Hello 世界 🌍');
     });
   });
