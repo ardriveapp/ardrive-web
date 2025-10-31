@@ -13,6 +13,7 @@ import 'package:ardrive/blocs/upload/payment_method/view/upload_payment_method_v
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/blocs/upload/upload_handles/file_v2_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
+import 'package:ardrive/components/help_info_modals.dart';
 import 'package:ardrive/components/license/cc_type_form.dart';
 import 'package:ardrive/components/license/udl_params_form.dart';
 import 'package:ardrive/components/license/view_license_definition.dart';
@@ -31,7 +32,6 @@ import 'package:ardrive/entities/manifest_data.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/manifest/domain/manifest_repository.dart';
-import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/services.dart';
@@ -40,7 +40,6 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/logger.dart';
-import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
@@ -1816,6 +1815,7 @@ class _UploadReadyWidget extends StatelessWidget {
                         padding: const EdgeInsets.only(left: 8.0),
                         child: ArDriveIconButton(
                           icon: ArDriveIcons.info(
+                            size: 16,
                             color: colorTokens.textMid,
                           ),
                           tooltip:
@@ -1902,7 +1902,7 @@ class _UploadReadyWidget extends StatelessWidget {
                           tooltip: 'Learn more about licenses',
                           child: GestureDetector(
                             onTap: () {
-                              openUrl(url: Resources.licenseHelpLink);
+                              showLicensingInfoModal(context: context);
                             },
                             child: ArDriveIcons.question(
                               color: colorTokens.textLow,

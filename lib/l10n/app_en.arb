@@ -462,6 +462,14 @@
   "@deviceNotSupportBiometrics": {
     "description": "Biometric is not supported"
   },
+  "developerDocs": "Developer Docs",
+  "@developerDocs": {
+    "description": "Link to developer documentation"
+  },
+  "discord": "Discord",
+  "@discord": {
+    "description": "Discord community platform name"
+  },
   "displayedPaginatedData": "{from} - {to} of {total}",
   "@displayedPaginatedData": {
     "description": "Indicates the user what items of a list are being displayed. Example: 1 - 25 of 100",
@@ -1376,6 +1384,10 @@
   "@neverDeletedEmphasized": {
     "description": "Uploaded items cannot be deleted. Emphasized with upper case"
   },
+  "needHelpReachOut": "Need help? Reach out to us:",
+  "@needHelpReachOut": {
+    "description": "Support modal header message"
+  },
   "newDrive": "New Drive",
   "@newDrive": {
     "description": "Create a new drive entity"
@@ -1682,6 +1694,10 @@
   "@resyncTooltip": {
     "description": "resync tooltip text"
   },
+  "resources": "Resources",
+  "@resources": {
+    "description": "Resources section in support modal"
+  },
   "revealHiddenItems": "Reveal hidden items",
   "@revealHiddenItems": {
     "description": "The action of revealing hidden items."
@@ -1744,7 +1760,7 @@
   "@shareFileWithOthers": {
     "description": "To share a file link"
   },
-  "shareLogsDescription": "You can share your logs with the ArDrive team to help us improve the app. The logs can be downloaded to your device and shared with us via email, Discord, or added to a support ticket.",
+  "shareLogsDescription": "You can share your logs with the ArDrive team to help us improve the app. The logs can be downloaded to your device and shared with us via Discord or email to support@ardrive.io.",
   "@shareLogsDescription": {},
   "shareLogsEmailBody": "ArDrive user logs are attached.",
   "@shareLogsEmailBody": {},
@@ -1909,7 +1925,7 @@
         "example": "2"
       },
       "total": {
-        "type": "int", 
+        "type": "int",
         "example": "5"
       }
     }
@@ -1973,6 +1989,14 @@
   "tryAgainEmphasized": "TRY AGAIN",
   "@tryAgainEmphasized": {
     "description": "Try it again. Emphasized with upper case"
+  },
+  "troubleshooting": "Troubleshooting",
+  "@troubleshooting": {
+    "description": "Troubleshooting section in support modal"
+  },
+  "troubleshootingDescription": "Download diagnostic logs to share with our support team. Logs contain app activity data but no passwords or private keys.",
+  "@troubleshootingDescription": {
+    "description": "Description of troubleshooting/diagnostic logs"
   },
   "tryLaterCongestionEmphasized": "TRY LATER",
   "@tryLaterCongestionEmphasized": {

@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/app_version_widget.dart';
+import 'package:ardrive/components/copy_button.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/main.dart';
@@ -15,6 +16,7 @@ import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/open_url_utils.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_logger/ardrive_logger.dart';
@@ -24,7 +26,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class AppSideBar extends StatefulWidget {
   const AppSideBar({super.key});
@@ -511,9 +512,11 @@ class DriveListTile extends StatelessWidget {
   }
 }
 
-Future<void> shareLogs({
+Future<void> showSupportModal({
   required BuildContext context,
 }) async {
+  final typography = ArDriveTypographyNew.of(context);
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
   final logExportInfo = LogExportInfo(
     emailSubject: appLocalizationsOf(context).shareLogsEmailSubject,
     emailBody: appLocalizationsOf(context).shareLogsEmailBody,
@@ -521,70 +524,157 @@ Future<void> shareLogs({
     shareSubject: appLocalizationsOf(context).shareLogsNativeShareSubject,
     emailSupport: Resources.emailSupport,
   );
-  final canLaunchEmail = await canLaunchUrl(Uri.parse('mailto:'));
+
   showArDriveDialog(
     context,
-    content: ArDriveStandardModal(
+    content: ArDriveStandardModalNew(
       hasCloseButton: true,
       title: appLocalizationsOf(context).help,
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            appLocalizationsOf(context).shareLogsDescription,
-            style: ArDriveTypography.body.buttonLargeBold(),
-          ),
-          const SizedBox(
-            height: 16,
-          ),
-          Text(
-            appLocalizationsOf(context).ourChannels,
-            style: ArDriveTypography.body.buttonLargeBold().copyWith(
-                  fontWeight: FontWeight.bold,
+      content: SizedBox(
+        width: 384,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              appLocalizationsOf(context).needHelpReachOut,
+              style: typography.paragraphLarge(
+                fontWeight: ArFontWeight.semiBold,
+                color: colorTokens.textHigh,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              appLocalizationsOf(context).email,
+              style: typography.paragraphNormal(
+                fontWeight: ArFontWeight.bold,
+                color: colorTokens.textHigh,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    Resources.emailSupport,
+                    style: typography.paragraphNormal(
+                      color: colorTokens.textMid,
+                    ),
+                  ),
                 ),
-          ),
-          ArDriveClickArea(
-            child: GestureDetector(
-              onTap: () {
-                openUrl(
-                  url: Resources.discordLink,
-                );
-              },
-              child: Text(
-                discord,
-                style: ArDriveTypography.body.buttonLargeBold().copyWith(
-                      decoration: TextDecoration.underline,
-                    ),
+                const SizedBox(width: 8),
+                const CopyButton(
+                  text: Resources.emailSupport,
+                  showCopyText: false,
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Text(
+              appLocalizationsOf(context).resources,
+              style: typography.paragraphNormal(
+                fontWeight: ArFontWeight.bold,
+                color: colorTokens.textHigh,
               ),
             ),
-          ),
-          const SizedBox(
-            height: 4,
-          ),
-          ArDriveClickArea(
-            child: GestureDetector(
-              onTap: () {
-                openUrl(
-                  url: Resources.helpCenterLink,
-                );
-              },
-              child: Text(
-                appLocalizationsOf(context).helpCenter,
-                style: ArDriveTypography.body.buttonLargeBold().copyWith(
-                      decoration: TextDecoration.underline,
+            const SizedBox(height: 12),
+            ArDriveClickArea(
+              child: GestureDetector(
+                onTap: () {
+                  openUrl(url: Resources.discordLink);
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      appLocalizationsOf(context).discord,
+                      style: typography.paragraphNormal(
+                        color: colorTokens.textLink,
+                        fontWeight: ArFontWeight.semiBold,
+                      ),
                     ),
+                    const SizedBox(width: 4),
+                    ArDriveIcons.arrowRightOutline(
+                      size: 14,
+                      color: colorTokens.textLink,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            ArDriveClickArea(
+              child: GestureDetector(
+                onTap: () {
+                  openUrl(url: Resources.docsLink);
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      appLocalizationsOf(context).developerDocs,
+                      style: typography.paragraphNormal(
+                        color: colorTokens.textLink,
+                        fontWeight: ArFontWeight.semiBold,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    ArDriveIcons.arrowRightOutline(
+                      size: 14,
+                      color: colorTokens.textLink,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            ArDriveClickArea(
+              child: GestureDetector(
+                onTap: () {
+                  openFeedbackSurveyUrl();
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      appLocalizationsOf(context).leaveFeedback,
+                      style: typography.paragraphNormal(
+                        color: colorTokens.textLink,
+                        fontWeight: ArFontWeight.semiBold,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    ArDriveIcons.arrowRightOutline(
+                      size: 14,
+                      color: colorTokens.textLink,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              appLocalizationsOf(context).troubleshooting,
+              style: typography.paragraphNormal(
+                fontWeight: ArFontWeight.bold,
+                color: colorTokens.textHigh,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              appLocalizationsOf(context).troubleshootingDescription,
+              style: typography.paragraphSmall(
+                color: colorTokens.textMid,
+              ),
+            ),
+          ],
+        ),
       ),
       actions: [
         ModalAction(
           action: () async {
             await logger.exportLogs(info: logExportInfo);
             if (context.mounted) {
-              final typography = ArDriveTypographyNew.of(context);
-
               showArDriveDialog(
                 context,
                 content: ArDriveStandardModalNew(
@@ -620,26 +710,6 @@ Future<void> shareLogs({
           },
           title: appLocalizationsOf(context).download,
         ),
-        if (AppPlatform.isMobile && canLaunchEmail)
-          ModalAction(
-            action: () {
-              logger.exportLogs(
-                info: logExportInfo,
-                shareAsEmail: true,
-              );
-            },
-            title: appLocalizationsOf(context).shareLogsWithEmailText,
-          ),
-        if (AppPlatform.isMobile)
-          ModalAction(
-            action: () {
-              logger.exportLogs(
-                info: logExportInfo,
-                share: true,
-              );
-            },
-            title: appLocalizationsOf(context).share,
-          ),
       ],
     ),
   );

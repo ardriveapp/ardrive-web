@@ -1,9 +1,8 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
-import 'package:ardrive/misc/misc.dart';
+import 'package:ardrive/components/help_info_modals.dart';
 import 'package:ardrive/user/download_wallet/bloc/download_wallet_bloc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/io_utils.dart';
-import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -94,9 +93,7 @@ class DownloadWalletModal extends StatelessWidget {
               ArDriveClickArea(
                 child: GestureDetector(
                   onTap: () {
-                    openUrl(
-                      url: Resources.howDoesKeyFileLoginWork,
-                    );
+                    showKeyfileInfoModal(context: context);
                   },
                   child: Text(
                     appLocalizationsOf(context).whatIsAKeyFile,
