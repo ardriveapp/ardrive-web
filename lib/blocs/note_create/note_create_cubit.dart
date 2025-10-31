@@ -76,6 +76,9 @@ class NoteCreateCubit extends Cubit<NoteCreateState> {
     if (currentState is! NoteCreateEditing) return null;
     if (!currentState.isValidName) return null;
 
+    // Save the editing state to restore after error
+    final editingState = currentState;
+
     try {
       // Convert markdown content to bytes
       final bytes = utf8.encode(currentState.content);
@@ -95,7 +98,10 @@ class NoteCreateCubit extends Cubit<NoteCreateState> {
 
       return ioFile;
     } catch (e) {
+      // Emit error state temporarily to show error to user
       emit(NoteCreateError('Failed to create note: $e'));
+      // Restore editing state to keep UI interactive
+      emit(editingState);
       return null;
     }
   }
