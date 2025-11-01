@@ -7,6 +7,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 enum EditorAction {
   bold,
   italic,
+  underline,
   strikethrough,
   heading1,
   heading2,
@@ -98,6 +99,10 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
       case EditorAction.italic:
         newText = '*$selectedText*';
         cursorOffset = selectedText.isEmpty ? 1 : newText.length;
+        break;
+      case EditorAction.underline:
+        newText = '<u>$selectedText</u>';
+        cursorOffset = selectedText.isEmpty ? 3 : newText.length;
         break;
       case EditorAction.strikethrough:
         newText = '~~$selectedText~~';
@@ -210,16 +215,13 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
               tooltip: 'Bold', fontWeight: FontWeight.bold),
           _toolbarButton(context, 'I', EditorAction.italic,
               tooltip: 'Italic', fontStyle: FontStyle.italic),
+          _toolbarButton(context, 'U', EditorAction.underline,
+              tooltip: 'Underline', textDecoration: TextDecoration.underline),
           _toolbarButton(context, 'S', EditorAction.strikethrough,
               tooltip: 'Strikethrough',
               textDecoration: TextDecoration.lineThrough),
           _toolbarDivider(),
-          _toolbarButton(context, 'H1', EditorAction.heading1,
-              tooltip: 'Heading 1'),
-          _toolbarButton(context, 'H2', EditorAction.heading2,
-              tooltip: 'Heading 2'),
-          _toolbarButton(context, 'H3', EditorAction.heading3,
-              tooltip: 'Heading 3'),
+          _headingDropdownButton(context),
           _toolbarDivider(),
           _toolbarButton(context, '•', EditorAction.unorderedList,
               tooltip: 'Bullet List'),
@@ -236,10 +238,7 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
           _toolbarButton(context, 'Link', EditorAction.link,
               tooltip: 'Insert Link'),
           _toolbarDivider(),
-          _viewModeButton(context, 'Edit', NoteViewMode.editOnly),
-          if (!widget.isMobile)
-            _viewModeButton(context, 'Split', NoteViewMode.splitView),
-          _viewModeButton(context, 'Preview', NoteViewMode.previewOnly),
+          _viewToggleButton(context),
     ];
 
     return Container(
@@ -319,34 +318,77 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
     );
   }
 
-  Widget _viewModeButton(
-    BuildContext context,
-    String label,
-    NoteViewMode mode,
-  ) {
+  Widget _headingDropdownButton(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colors;
-    final isSelected = widget.viewMode == mode;
 
-    return InkWell(
-      onTap: () => widget.onViewModeChanged(mode),
-      borderRadius: BorderRadius.circular(4),
+    return PopupMenuButton<EditorAction>(
+      tooltip: 'Heading',
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected ? colors.themeAccentEmphasis : colors.themeBgSurface,
+          color: colors.themeBgSurface,
           borderRadius: BorderRadius.circular(4),
-          border: Border.all(
-            color: isSelected
-                ? colors.themeAccentEmphasis
-                : colors.themeBorderDefault,
-          ),
+          border: Border.all(color: colors.themeBorderDefault),
         ),
-        child: Text(
-          label,
-          style: typography.paragraphSmall(
-            fontWeight: ArFontWeight.bold,
-            color: isSelected ? colors.themeFgOnAccent : colors.themeFgDefault,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'H',
+              style: typography
+                  .paragraphSmall(fontWeight: ArFontWeight.bold),
+            ),
+            const SizedBox(width: 2),
+            Icon(Icons.arrow_drop_down, size: 16, color: colors.themeFgDefault),
+          ],
+        ),
+      ),
+      onSelected: (action) => _applyMarkdown(action),
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: EditorAction.heading1,
+          child: Text('Heading 1', style: typography.paragraphNormal()),
+        ),
+        PopupMenuItem(
+          value: EditorAction.heading2,
+          child: Text('Heading 2', style: typography.paragraphNormal()),
+        ),
+        PopupMenuItem(
+          value: EditorAction.heading3,
+          child: Text('Heading 3', style: typography.paragraphNormal()),
+        ),
+      ],
+    );
+  }
+
+  Widget _viewToggleButton(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+    final isEditMode = widget.viewMode == NoteViewMode.editOnly ||
+                       widget.viewMode == NoteViewMode.splitView;
+
+    return Tooltip(
+      message: isEditMode ? 'Preview' : 'Edit',
+      child: InkWell(
+        onTap: () {
+          // Toggle between edit and preview
+          final newMode = isEditMode
+              ? NoteViewMode.previewOnly
+              : NoteViewMode.editOnly;
+          widget.onViewModeChanged(newMode);
+        },
+        borderRadius: BorderRadius.circular(4),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: colors.themeBgSurface,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: colors.themeBorderDefault),
+          ),
+          child: Icon(
+            isEditMode ? Icons.visibility_outlined : Icons.edit_outlined,
+            size: 16,
+            color: colors.themeFgDefault,
           ),
         ),
       ),

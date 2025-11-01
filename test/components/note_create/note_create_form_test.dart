@@ -56,10 +56,8 @@ void main() {
       // Should find the .md extension label
       expect(find.text('.md'), findsOneWidget);
 
-      // Should find view mode buttons
-      expect(find.text('Edit'), findsOneWidget);
-      expect(find.text('Split'), findsOneWidget);
-      expect(find.text('Preview'), findsOneWidget);
+      // Should find view mode toggle button (icon button)
+      expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
 
       // Should find action buttons
       expect(find.text('CANCEL'), findsOneWidget);
@@ -97,7 +95,7 @@ void main() {
       );
     });
 
-    testWidgets('view mode toggle buttons work', (tester) async {
+    testWidgets('view mode toggle button works', (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -108,34 +106,32 @@ void main() {
             .having((s) => s.viewMode, 'viewMode', NoteViewMode.splitView),
       );
 
-      // Tap Edit button
-      await tester.tap(find.text('Edit'));
-      await tester.pump();
+      // Find and tap the view toggle icon button (visibility icon when in edit mode)
+      final toggleButton = find.byIcon(Icons.visibility_outlined);
+      expect(toggleButton, findsOneWidget);
 
-      expect(
-        cubit.state,
-        isA<NoteCreateEditing>()
-            .having((s) => s.viewMode, 'viewMode', NoteViewMode.editOnly),
-      );
+      await tester.tap(toggleButton);
+      await tester.pumpAndSettle();
 
-      // Tap Preview button
-      await tester.tap(find.text('Preview'));
-      await tester.pump();
-
+      // Should switch to preview mode
       expect(
         cubit.state,
         isA<NoteCreateEditing>()
             .having((s) => s.viewMode, 'viewMode', NoteViewMode.previewOnly),
       );
 
-      // Tap Split button
-      await tester.tap(find.text('Split'));
-      await tester.pump();
+      // Tap again to toggle back
+      final editButton = find.byIcon(Icons.edit_outlined);
+      expect(editButton, findsOneWidget);
 
+      await tester.tap(editButton);
+      await tester.pumpAndSettle();
+
+      // Should switch back to edit mode
       expect(
         cubit.state,
         isA<NoteCreateEditing>()
-            .having((s) => s.viewMode, 'viewMode', NoteViewMode.splitView),
+            .having((s) => s.viewMode, 'viewMode', NoteViewMode.editOnly),
       );
     });
 

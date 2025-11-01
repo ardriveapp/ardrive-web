@@ -318,13 +318,12 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
               onChanged: (content) {
                 context.read<NoteCreateCubit>().updateContent(content);
               },
-              // On mobile, treat split view as edit only (split doesn't fit well on small screens)
+              // Mobile: simple edit/preview toggle
               showEditor: state.viewMode == NoteViewMode.editOnly ||
                   state.viewMode == NoteViewMode.splitView,
-              showPreview: state.viewMode == NoteViewMode.previewOnly,
-              viewMode: state.viewMode == NoteViewMode.splitView
-                  ? NoteViewMode.editOnly
-                  : state.viewMode,
+              showPreview: state.viewMode == NoteViewMode.previewOnly ||
+                  state.viewMode == NoteViewMode.splitView,
+              viewMode: state.viewMode,
               onViewModeChanged: (mode) {
                 context.read<NoteCreateCubit>().setViewMode(mode);
               },
