@@ -27,6 +27,7 @@ class NoteEditorWidget extends StatefulWidget {
   final bool showPreview;
   final NoteViewMode viewMode;
   final ValueChanged<NoteViewMode> onViewModeChanged;
+  final bool isMobile;
 
   const NoteEditorWidget({
     super.key,
@@ -36,6 +37,7 @@ class NoteEditorWidget extends StatefulWidget {
     this.showPreview = true,
     required this.viewMode,
     required this.onViewModeChanged,
+    this.isMobile = false,
   });
 
   @override
@@ -203,18 +205,7 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
   Widget _buildToolbar(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colors;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: colors.themeBgCanvas,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: colors.themeBorderDefault),
-      ),
-      child: Wrap(
-        spacing: 4,
-        runSpacing: 4,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
+    final toolbarButtons = [
           _toolbarButton(context, 'B', EditorAction.bold,
               tooltip: 'Bold', fontWeight: FontWeight.bold),
           _toolbarButton(context, 'I', EditorAction.italic,
@@ -246,10 +237,37 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
               tooltip: 'Insert Link'),
           _toolbarDivider(),
           _viewModeButton(context, 'Edit', NoteViewMode.editOnly),
-          _viewModeButton(context, 'Split', NoteViewMode.splitView),
+          if (!widget.isMobile)
+            _viewModeButton(context, 'Split', NoteViewMode.splitView),
           _viewModeButton(context, 'Preview', NoteViewMode.previewOnly),
-        ],
+    ];
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: colors.themeBgCanvas,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: colors.themeBorderDefault),
       ),
+      child: widget.isMobile
+          ? SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: toolbarButtons
+                    .map((button) => Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: button,
+                        ))
+                    .toList(),
+              ),
+            )
+          : Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: toolbarButtons,
+            ),
     );
   }
 

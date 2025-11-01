@@ -1396,6 +1396,14 @@
   "@createNewNote": {
     "description": "Title for note creation modal"
   },
+  "editNote": "Edit Note",
+  "@editNote": {
+    "description": "Title for note editing modal"
+  },
+  "saveEmphasized": "SAVE",
+  "@saveEmphasized": {
+    "description": "Save button text (emphasized/uppercase)"
+  },
   "noteName": "Note Name",
   "@noteName": {
     "description": "Label for note name input field"

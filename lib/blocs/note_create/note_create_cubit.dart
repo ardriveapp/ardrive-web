@@ -11,16 +11,25 @@ import 'note_create_state.dart';
 class NoteCreateCubit extends Cubit<NoteCreateState> {
   final String driveId;
   final String parentFolderId;
+  final String? existingFileId; // For editing existing notes
+  final bool isEditMode;
 
   NoteCreateCubit({
     required this.driveId,
     required this.parentFolderId,
-  }) : super(const NoteCreateInitial()) {
-    // Initialize with empty editing state
-    emit(const NoteCreateEditing(
-      noteName: '',
-      content: '',
-      isValidName: false,
+    this.existingFileId,
+    String? initialName,
+    String? initialContent,
+  })  : isEditMode = existingFileId != null,
+        super(const NoteCreateInitial()) {
+    // Initialize with provided content (edit mode) or empty (create mode)
+    final noteName = initialName ?? '';
+    final content = initialContent ?? '';
+
+    emit(NoteCreateEditing(
+      noteName: noteName,
+      content: content,
+      isValidName: noteName.trim().isNotEmpty,
       viewMode: NoteViewMode.splitView,
     ));
   }

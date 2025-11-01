@@ -92,6 +92,10 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
     Navigator.of(context).pop(ioFile);
   }
 
+  bool _isMobile(BuildContext context) {
+    return MediaQuery.of(context).size.width < 600;
+  }
+
   double _getResponsiveWidth(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
 
@@ -149,8 +153,6 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
         _hasUnsavedChanges =
             state.noteName.isNotEmpty || state.content.isNotEmpty;
 
-        final modalWidth = _getResponsiveWidth(context);
-
         return PopScope(
           canPop: false,
           onPopInvoked: (didPop) async {
@@ -161,33 +163,176 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
               navigator.pop();
             }
           },
-          child: ArDriveStandardModalNew(
-            width: modalWidth,
-            title: appLocalizationsOf(context).createNewNote,
-            content: _buildContent(context, state, modalWidth),
-            actions: [
-              ModalAction(
-                action: () async {
-                  final navigator = Navigator.of(context);
-                  if (await _confirmDiscard()) {
-                    if (mounted) navigator.pop();
-                  }
-                },
-                title: appLocalizationsOf(context).cancelEmphasized,
-                customWidth: 100,
-                customHeight: 40,
+          child: _isMobile(context)
+              ? _buildMobileLayout(context, state)
+              : _buildDesktopLayout(context, state),
+        );
+      },
+    );
+  }
+
+  /// Build full-page mobile layout
+  Widget _buildMobileLayout(BuildContext context, NoteCreateEditing state) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+    final typography = ArDriveTypographyNew.of(context);
+    final cubit = context.read<NoteCreateCubit>();
+    final isEditMode = cubit.isEditMode;
+
+    return Scaffold(
+      backgroundColor: colors.themeBgSurface,
+      appBar: AppBar(
+        backgroundColor: colors.themeBgSurface,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.close, color: colors.themeFgDefault),
+          onPressed: () async {
+            final navigator = Navigator.of(context);
+            if (await _confirmDiscard()) {
+              if (mounted) navigator.pop();
+            }
+          },
+        ),
+        title: Text(
+          isEditMode
+              ? appLocalizationsOf(context).editNote
+              : appLocalizationsOf(context).createNewNote,
+          style: typography.heading5(
+            color: colors.themeFgDefault,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: state.isValidName ? _createNote : null,
+            child: Text(
+              isEditMode
+                  ? appLocalizationsOf(context).saveEmphasized
+                  : appLocalizationsOf(context).nextEmphasized,
+              style: typography.paragraphNormal(
+                color: state.isValidName
+                    ? colors.themeAccentBrand
+                    : colors.themeFgDisabled,
+                fontWeight: ArFontWeight.semiBold,
               ),
-              ModalAction(
-                action: _createNote,
-                title: appLocalizationsOf(context).nextEmphasized,
-                isEnable: state.isValidName,
-                customWidth: 100,
-                customHeight: 40,
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: _buildMobileContent(context, state),
+    );
+  }
+
+  /// Build desktop/tablet modal layout
+  Widget _buildDesktopLayout(BuildContext context, NoteCreateEditing state) {
+    final modalWidth = _getResponsiveWidth(context);
+    final cubit = context.read<NoteCreateCubit>();
+    final isEditMode = cubit.isEditMode;
+
+    return ArDriveStandardModalNew(
+      width: modalWidth,
+      title: isEditMode
+          ? appLocalizationsOf(context).editNote
+          : appLocalizationsOf(context).createNewNote,
+      content: _buildContent(context, state, modalWidth),
+      actions: [
+        ModalAction(
+          action: () async {
+            final navigator = Navigator.of(context);
+            if (await _confirmDiscard()) {
+              if (mounted) navigator.pop();
+            }
+          },
+          title: appLocalizationsOf(context).cancelEmphasized,
+          customWidth: 100,
+          customHeight: 40,
+        ),
+        ModalAction(
+          action: _createNote,
+          title: isEditMode
+              ? appLocalizationsOf(context).saveEmphasized
+              : appLocalizationsOf(context).nextEmphasized,
+          isEnable: state.isValidName,
+          customWidth: 100,
+          customHeight: 40,
+        ),
+      ],
+    );
+  }
+
+  /// Build mobile-optimized content (full height)
+  Widget _buildMobileContent(BuildContext context, NoteCreateEditing state) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+
+    return Container(
+      color: colors.themeBgCanvas,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Note name input
+          Text(
+            appLocalizationsOf(context).noteName,
+            style: ArDriveTypographyNew.of(context).heading6(),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: ArDriveTextFieldNew(
+                  key: const Key('note_name_text_field'),
+                  controller: _nameController,
+                  onChanged: (value) {
+                    context.read<NoteCreateCubit>().updateNoteName(value);
+                  },
+                  hintText: appLocalizationsOf(context).enterNoteName,
+                  autofocus: true,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '.md',
+                style: ArDriveTypographyNew.of(context)
+                    .paragraphNormal()
+                    .copyWith(
+                      color: colors.themeFgSubtle,
+                    ),
               ),
             ],
           ),
-        );
-      },
+          if (state.nameError != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                _getErrorMessage(context, state.nameError!),
+                style: ArDriveTypographyNew.of(context).paragraphSmall(
+                      color: colors.themeErrorDefault,
+                    ),
+              ),
+            ),
+          const SizedBox(height: 16),
+
+          // Markdown editor - takes remaining space
+          Expanded(
+            child: NoteEditorWidget(
+              initialContent: state.content,
+              onChanged: (content) {
+                context.read<NoteCreateCubit>().updateContent(content);
+              },
+              // On mobile, treat split view as edit only (split doesn't fit well on small screens)
+              showEditor: state.viewMode == NoteViewMode.editOnly ||
+                  state.viewMode == NoteViewMode.splitView,
+              showPreview: state.viewMode == NoteViewMode.previewOnly,
+              viewMode: state.viewMode == NoteViewMode.splitView
+                  ? NoteViewMode.editOnly
+                  : state.viewMode,
+              onViewModeChanged: (mode) {
+                context.read<NoteCreateCubit>().setViewMode(mode);
+              },
+              isMobile: true,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
