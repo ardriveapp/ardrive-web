@@ -47,6 +47,11 @@ void main() {
     }
 
     testWidgets('renders with initial state', (tester) async {
+      // Set larger viewport to accommodate modal
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -56,8 +61,8 @@ void main() {
       // Should find the .md extension label
       expect(find.text('.md'), findsOneWidget);
 
-      // Should find view mode toggle button (icon button)
-      expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
+      // Should find view mode toggle button (book icon in edit mode)
+      expect(find.byIcon(Icons.menu_book_outlined), findsOneWidget);
 
       // Should find action buttons
       expect(find.text('CANCEL'), findsOneWidget);
@@ -66,6 +71,10 @@ void main() {
 
     testWidgets('Create Note button is disabled when name is empty',
         (tester) async {
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -76,6 +85,10 @@ void main() {
     });
 
     testWidgets('updates note name when text is entered', (tester) async {
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -96,18 +109,22 @@ void main() {
     });
 
     testWidgets('view mode toggle button works', (tester) async {
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Initial state should be split view
+      // Initial state should be edit mode
       expect(
         cubit.state,
         isA<NoteCreateEditing>()
-            .having((s) => s.viewMode, 'viewMode', NoteViewMode.splitView),
+            .having((s) => s.viewMode, 'viewMode', NoteViewMode.editOnly),
       );
 
-      // Find and tap the view toggle icon button (visibility icon when in edit mode)
-      final toggleButton = find.byIcon(Icons.visibility_outlined);
+      // Find and tap the view toggle icon button (book icon when in edit mode)
+      final toggleButton = find.byIcon(Icons.menu_book_outlined);
       expect(toggleButton, findsOneWidget);
 
       await tester.tap(toggleButton);

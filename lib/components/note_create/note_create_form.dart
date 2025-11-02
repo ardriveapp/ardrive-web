@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/note_create/note_create_cubit.dart';
 import 'package:ardrive/blocs/note_create/note_create_state.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -39,6 +40,94 @@ Future<void> promptToCreateNote(
   }
 }
 
+/// Entry point function to edit an existing markdown note
+Future<void> promptToEditNote(
+  BuildContext context, {
+  required String driveId,
+  required String parentFolderId,
+  required String fileId,
+  required String fileName,
+  required String fileContent,
+  required int fileSize,
+}) async {
+  // Block files over 5MB
+  const maxFileSize = 5 * 1024 * 1024; // 5MB
+  const warnFileSize = 1 * 1024 * 1024; // 1MB
+
+  if (fileSize > maxFileSize) {
+    await showStandardDialog(
+      context,
+      title: appLocalizationsOf(context).error,
+      description: 'This file is too large to edit (${(fileSize / 1024 / 1024).toStringAsFixed(1)}MB). Files over 5MB cannot be edited.',
+      actions: [
+        ModalAction(
+          action: () => Navigator.of(context).pop(),
+          title: appLocalizationsOf(context).okEmphasized,
+        ),
+      ],
+    );
+    return;
+  }
+
+  // Warn for files over 1MB
+  if (fileSize > warnFileSize && context.mounted) {
+    final proceed = await showAnimatedDialogWithBuilder<bool>(
+      context,
+      builder: (context) => ArDriveStandardModalNew(
+        title: 'Large File Warning',
+        description: 'This file is ${(fileSize / 1024 / 1024).toStringAsFixed(1)}MB. Editing large files may affect performance. Do you want to continue?',
+        actions: [
+          ModalAction(
+            action: () => Navigator.of(context).pop(false),
+            title: appLocalizationsOf(context).cancelEmphasized,
+          ),
+          ModalAction(
+            action: () => Navigator.of(context).pop(true),
+            title: 'Continue',
+          ),
+        ],
+      ),
+    );
+
+    if (proceed != true) return;
+  }
+
+  if (!context.mounted) return;
+
+  final ioFile = await showAnimatedDialogWithBuilder<IOFile>(
+    context,
+    builder: (context) => BlocProvider(
+      create: (context) => NoteCreateCubit(
+        driveId: driveId,
+        parentFolderId: parentFolderId,
+        existingFileId: fileId,
+        initialName: fileName.endsWith('.md')
+            ? fileName.substring(0, fileName.length - 3)
+            : fileName,
+        initialContent: fileContent,
+      ),
+      child: const NoteCreateForm(),
+    ),
+    barrierDismissible: false,
+  );
+
+  // If user saved the edited note, show upload flow
+  // Auto-replace the existing file without showing conflict modal
+  if (ioFile != null && context.mounted) {
+    logger.d('promptToEditNote: Showing upload modal for edited note: ${ioFile.name}');
+    await promptToUpload(
+      context,
+      driveId: driveId,
+      parentFolderId: parentFolderId,
+      isFolderUpload: false,
+      files: [ioFile],
+      autoReplaceConflicts: true, // Auto-replace when editing markdown
+    );
+  } else {
+    logger.w('promptToEditNote: Not showing upload modal - ioFile: ${ioFile != null}, context.mounted: ${context.mounted}');
+  }
+}
+
 /// Modal form for creating a new markdown note
 class NoteCreateForm extends StatefulWidget {
   const NoteCreateForm({super.key});
@@ -50,6 +139,19 @@ class NoteCreateForm extends StatefulWidget {
 class _NoteCreateFormState extends State<NoteCreateForm> {
   final _nameController = TextEditingController();
   bool _hasUnsavedChanges = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Populate name controller with initial name from cubit (for edit mode)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final cubit = context.read<NoteCreateCubit>();
+      final state = cubit.state;
+      if (state is NoteCreateEditing && state.noteName.isNotEmpty) {
+        _nameController.text = state.noteName;
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -83,9 +185,16 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
 
   Future<void> _createNote() async {
     final cubit = context.read<NoteCreateCubit>();
+    logger.d('_createNote called, isEditMode: ${cubit.isEditMode}');
+
     final ioFile = await cubit.createNoteFile();
 
-    if (ioFile == null) return;
+    if (ioFile == null) {
+      logger.w('createNoteFile returned null, not proceeding');
+      return;
+    }
+
+    logger.d('Created note file: ${ioFile.name}, closing modal');
 
     // Close this modal and return the file to the caller
     if (!mounted) return;
@@ -201,21 +310,18 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: state.isValidName ? _createNote : null,
-            child: Text(
-              isEditMode
-                  ? appLocalizationsOf(context).saveEmphasized
-                  : appLocalizationsOf(context).nextEmphasized,
-              style: typography.paragraphNormal(
-                color: state.isValidName
-                    ? colors.themeAccentBrand
-                    : colors.themeFgDisabled,
-                fontWeight: ArFontWeight.semiBold,
-              ),
+          ArDriveButton(
+            text: appLocalizationsOf(context).nextEmphasized,
+            maxHeight: 36,
+            maxWidth: 80,
+            fontStyle: typography.paragraphNormal(
+              color: colors.themeFgOnAccent,
+              fontWeight: ArFontWeight.semiBold,
             ),
+            isDisabled: !state.isValidName,
+            onPressed: state.isValidName ? _createNote : null,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 16),
         ],
       ),
       body: _buildMobileContent(context, state),
@@ -248,9 +354,7 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
         ),
         ModalAction(
           action: _createNote,
-          title: isEditMode
-              ? appLocalizationsOf(context).saveEmphasized
-              : appLocalizationsOf(context).nextEmphasized,
+          title: appLocalizationsOf(context).nextEmphasized,
           isEnable: state.isValidName,
           customWidth: 100,
           customHeight: 40,
@@ -319,10 +423,8 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
                 context.read<NoteCreateCubit>().updateContent(content);
               },
               // Mobile: simple edit/preview toggle
-              showEditor: state.viewMode == NoteViewMode.editOnly ||
-                  state.viewMode == NoteViewMode.splitView,
-              showPreview: state.viewMode == NoteViewMode.previewOnly ||
-                  state.viewMode == NoteViewMode.splitView,
+              showEditor: state.viewMode == NoteViewMode.editOnly,
+              showPreview: state.viewMode == NoteViewMode.previewOnly,
               viewMode: state.viewMode,
               onViewModeChanged: (mode) {
                 context.read<NoteCreateCubit>().setViewMode(mode);
@@ -401,10 +503,8 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
               onChanged: (content) {
                 context.read<NoteCreateCubit>().updateContent(content);
               },
-              showEditor: state.viewMode == NoteViewMode.editOnly ||
-                  state.viewMode == NoteViewMode.splitView,
-              showPreview: state.viewMode == NoteViewMode.splitView ||
-                  state.viewMode == NoteViewMode.previewOnly,
+              showEditor: state.viewMode == NoteViewMode.editOnly,
+              showPreview: state.viewMode == NoteViewMode.previewOnly,
               viewMode: state.viewMode,
               onViewModeChanged: (NoteViewMode mode) {
                 context.read<NoteCreateCubit>().setViewMode(mode);

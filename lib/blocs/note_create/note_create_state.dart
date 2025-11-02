@@ -16,9 +16,6 @@ enum NoteViewMode {
   /// Show only the markdown editor
   editOnly,
 
-  /// Show both editor and preview side-by-side
-  splitView,
-
   /// Show only the rendered preview
   previewOnly,
 }
@@ -51,7 +48,7 @@ class NoteCreateEditing extends NoteCreateState {
     required this.noteName,
     required this.content,
     required this.isValidName,
-    this.viewMode = NoteViewMode.splitView,
+    this.viewMode = NoteViewMode.editOnly,
     this.nameError,
   });
 

@@ -27,7 +27,8 @@ void main() {
           noteName: '',
           content: '',
           isValidName: false,
-          viewMode: NoteViewMode.splitView,
+          viewMode: NoteViewMode.editOnly,
+          nameError: NoteNameValidationError.empty,
         ),
       );
     });
@@ -45,10 +46,17 @@ void main() {
     );
 
     blocTest<NoteCreateCubit, NoteCreateState>(
-      'updateNoteName invalidates empty name',
+      'updateNoteName invalidates empty name after valid name',
       build: () => cubit,
-      act: (cubit) => cubit.updateNoteName(''),
+      act: (cubit) {
+        cubit.updateNoteName('Valid Name'); // First set a valid name
+        cubit.updateNoteName(''); // Then clear it
+      },
       expect: () => [
+        isA<NoteCreateEditing>()
+            .having((s) => s.noteName, 'noteName', 'Valid Name')
+            .having((s) => s.isValidName, 'isValidName', true)
+            .having((s) => s.nameError, 'nameError', null),
         isA<NoteCreateEditing>()
             .having((s) => s.noteName, 'noteName', '')
             .having((s) => s.isValidName, 'isValidName', false)
@@ -113,15 +121,15 @@ void main() {
     blocTest<NoteCreateCubit, NoteCreateState>(
       'setViewMode changes view mode',
       build: () => cubit,
-      act: (cubit) => cubit.setViewMode(NoteViewMode.editOnly),
+      act: (cubit) => cubit.setViewMode(NoteViewMode.previewOnly),
       expect: () => [
         isA<NoteCreateEditing>()
-            .having((s) => s.viewMode, 'viewMode', NoteViewMode.editOnly),
+            .having((s) => s.viewMode, 'viewMode', NoteViewMode.previewOnly),
       ],
     );
 
     blocTest<NoteCreateCubit, NoteCreateState>(
-      'cycleViewMode cycles from splitView to previewOnly',
+      'cycleViewMode cycles from editOnly to previewOnly',
       build: () => cubit,
       act: (cubit) => cubit.cycleViewMode(),
       expect: () => [
@@ -131,12 +139,12 @@ void main() {
     );
 
     blocTest<NoteCreateCubit, NoteCreateState>(
-      'cycleViewMode cycles through all modes',
+      'cycleViewMode toggles between edit and preview modes',
       build: () => cubit,
       act: (cubit) {
-        cubit.cycleViewMode(); // Split -> Preview
+        cubit.cycleViewMode(); // Edit -> Preview
         cubit.cycleViewMode(); // Preview -> Edit
-        cubit.cycleViewMode(); // Edit -> Split
+        cubit.cycleViewMode(); // Edit -> Preview
       },
       expect: () => [
         isA<NoteCreateEditing>()
@@ -144,7 +152,7 @@ void main() {
         isA<NoteCreateEditing>()
             .having((s) => s.viewMode, 'viewMode', NoteViewMode.editOnly),
         isA<NoteCreateEditing>()
-            .having((s) => s.viewMode, 'viewMode', NoteViewMode.splitView),
+            .having((s) => s.viewMode, 'viewMode', NoteViewMode.previewOnly),
       ],
     );
 

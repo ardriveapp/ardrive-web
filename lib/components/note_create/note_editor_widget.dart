@@ -2,12 +2,12 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive/blocs/note_create/note_create_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:markdown/markdown.dart' as md;
 
 /// Actions that can be performed on the markdown editor
 enum EditorAction {
   bold,
   italic,
-  underline,
   strikethrough,
   heading1,
   heading2,
@@ -100,10 +100,6 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
         newText = '*$selectedText*';
         cursorOffset = selectedText.isEmpty ? 1 : newText.length;
         break;
-      case EditorAction.underline:
-        newText = '<u>$selectedText</u>';
-        cursorOffset = selectedText.isEmpty ? 3 : newText.length;
-        break;
       case EditorAction.strikethrough:
         newText = '~~$selectedText~~';
         cursorOffset = selectedText.isEmpty ? 2 : newText.length;
@@ -175,6 +171,7 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
         Expanded(
           child: Container(
             decoration: BoxDecoration(
+              color: colors.themeBgSurface, // White/light background
               border: Border.all(color: colors.themeBorderDefault),
               borderRadius: BorderRadius.circular(4),
             ),
@@ -186,23 +183,11 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
   }
 
   Widget _buildEditorArea(BuildContext context) {
-    if (widget.showEditor && widget.showPreview) {
-      // Split view
-      return Row(
-        children: [
-          Expanded(child: _buildEditor(context)),
-          VerticalDivider(
-            width: 1,
-            color: ArDriveTheme.of(context).themeData.colors.themeBorderDefault,
-          ),
-          Expanded(child: _buildPreview(context)),
-        ],
-      );
-    } else if (widget.showEditor) {
-      // Edit only
+    if (widget.showEditor) {
+      // Edit mode
       return _buildEditor(context);
     } else {
-      // Preview only
+      // Preview mode
       return _buildPreview(context);
     }
   }
@@ -215,27 +200,25 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
               tooltip: 'Bold', fontWeight: FontWeight.bold),
           _toolbarButton(context, 'I', EditorAction.italic,
               tooltip: 'Italic', fontStyle: FontStyle.italic),
-          _toolbarButton(context, 'U', EditorAction.underline,
-              tooltip: 'Underline', textDecoration: TextDecoration.underline),
           _toolbarButton(context, 'S', EditorAction.strikethrough,
               tooltip: 'Strikethrough',
               textDecoration: TextDecoration.lineThrough),
           _toolbarDivider(),
           _headingDropdownButton(context),
           _toolbarDivider(),
-          _toolbarButton(context, '•', EditorAction.unorderedList,
+          _toolbarIconButton(context, Icons.format_list_bulleted, EditorAction.unorderedList,
               tooltip: 'Bullet List'),
-          _toolbarButton(context, '1.', EditorAction.orderedList,
+          _toolbarIconButton(context, Icons.format_list_numbered, EditorAction.orderedList,
               tooltip: 'Numbered List'),
           _toolbarDivider(),
           _toolbarButton(context, '""', EditorAction.quote,
               tooltip: 'Quote'),
           _toolbarButton(context, '</>', EditorAction.code,
               tooltip: 'Inline Code'),
-          _toolbarButton(context, '{ }', EditorAction.codeBlock,
+          _toolbarIconButton(context, Icons.code, EditorAction.codeBlock,
               tooltip: 'Code Block'),
           _toolbarDivider(),
-          _toolbarButton(context, 'Link', EditorAction.link,
+          _toolbarIconButton(context, Icons.link, EditorAction.link,
               tooltip: 'Insert Link'),
           _toolbarDivider(),
           _viewToggleButton(context),
@@ -249,16 +232,19 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
         border: Border.all(color: colors.themeBorderDefault),
       ),
       child: widget.isMobile
-          ? SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: toolbarButtons
-                    .map((button) => Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: button,
-                        ))
-                    .toList(),
+          ? Scrollbar(
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: toolbarButtons
+                      .map((button) => Padding(
+                            padding: const EdgeInsets.only(right: 4),
+                            child: button,
+                          ))
+                      .toList(),
+                ),
               ),
             )
           : Wrap(
@@ -303,6 +289,36 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
                   fontStyle: fontStyle,
                   decoration: textDecoration,
                 ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _toolbarIconButton(
+    BuildContext context,
+    IconData icon,
+    EditorAction action, {
+    String? tooltip,
+  }) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+
+    return Tooltip(
+      message: tooltip ?? '',
+      child: InkWell(
+        onTap: () => _applyMarkdown(action),
+        borderRadius: BorderRadius.circular(4),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: colors.themeBgSurface,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: colors.themeBorderDefault),
+          ),
+          child: Icon(
+            icon,
+            size: 16,
+            color: colors.themeFgDefault,
           ),
         ),
       ),
@@ -364,8 +380,7 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
 
   Widget _viewToggleButton(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colors;
-    final isEditMode = widget.viewMode == NoteViewMode.editOnly ||
-                       widget.viewMode == NoteViewMode.splitView;
+    final isEditMode = widget.viewMode == NoteViewMode.editOnly;
 
     return Tooltip(
       message: isEditMode ? 'Preview' : 'Edit',
@@ -386,7 +401,7 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
             border: Border.all(color: colors.themeBorderDefault),
           ),
           child: Icon(
-            isEditMode ? Icons.visibility_outlined : Icons.edit_outlined,
+            isEditMode ? Icons.menu_book_outlined : Icons.edit_outlined,
             size: 16,
             color: colors.themeFgDefault,
           ),
@@ -399,6 +414,8 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colors;
 
+    // TextField has its own internal scrolling, no need for wrapper
+    // Background color applied to parent container
     return TextField(
       controller: _controller,
       focusNode: _focusNode,
@@ -427,6 +444,7 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colors;
 
+    // Background color applied to parent container
     if (_controller.text.isEmpty) {
       return SingleChildScrollView(
         controller: _previewScrollController,
@@ -441,12 +459,16 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
       );
     }
 
-    return Markdown(
+    return ArDriveScrollBar(
       controller: _previewScrollController,
-      data: _controller.text,
-      selectable: true,
-      padding: const EdgeInsets.all(16),
-      imageBuilder: (uri, title, alt) {
+      alwaysVisible: true,
+      child: Markdown(
+        controller: _previewScrollController,
+        data: _controller.text,
+        selectable: true,
+        padding: const EdgeInsets.all(16),
+        extensionSet: md.ExtensionSet.gitHubWeb,
+        imageBuilder: (uri, title, alt) {
         return Image.network(
           uri.toString(),
           errorBuilder: (context, error, stackTrace) {
@@ -540,6 +562,7 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
               fontStyle: FontStyle.italic,
               color: colors.themeFgDefault,
             ),
+      ),
       ),
     );
   }

@@ -26,11 +26,15 @@ class NoteCreateCubit extends Cubit<NoteCreateState> {
     final noteName = initialName ?? '';
     final content = initialContent ?? '';
 
+    // Properly validate the initial name
+    final validation = _validateNoteName(noteName);
+
     emit(NoteCreateEditing(
       noteName: noteName,
       content: content,
-      isValidName: noteName.trim().isNotEmpty,
-      viewMode: NoteViewMode.splitView,
+      isValidName: validation.isValid,
+      nameError: validation.errorKey,
+      viewMode: NoteViewMode.editOnly,
     ));
   }
 
@@ -65,14 +69,13 @@ class NoteCreateCubit extends Cubit<NoteCreateState> {
     emit(currentState.copyWith(viewMode: mode));
   }
 
-  /// Cycles through view modes: edit -> split -> preview -> edit
+  /// Toggles between edit and preview modes
   void cycleViewMode() {
     final currentState = state;
     if (currentState is! NoteCreateEditing) return;
 
     final nextMode = switch (currentState.viewMode) {
-      NoteViewMode.editOnly => NoteViewMode.splitView,
-      NoteViewMode.splitView => NoteViewMode.previewOnly,
+      NoteViewMode.editOnly => NoteViewMode.previewOnly,
       NoteViewMode.previewOnly => NoteViewMode.editOnly,
     };
 

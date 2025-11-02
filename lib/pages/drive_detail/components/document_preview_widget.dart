@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:ardrive/components/note_create/note_create_form.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
+import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +15,7 @@ class DocumentPreviewWidget extends StatefulWidget {
   final String contentType;
   final bool isSharePage;
   final bool isFullScreen;
+  final FileDataTableItem? fileItem; // For edit functionality
 
   const DocumentPreviewWidget({
     super.key,
@@ -21,6 +24,7 @@ class DocumentPreviewWidget extends StatefulWidget {
     required this.contentType,
     required this.isSharePage,
     this.isFullScreen = false,
+    this.fileItem,
   });
 
   @override
@@ -273,11 +277,27 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
               contentType: widget.contentType,
               isSharePage: widget.isSharePage,
               isFullScreen: true,
+              fileItem: widget.fileItem,
             ),
           ),
         ),
       );
     }
+  }
+
+  Future<void> _editNote() async {
+    final fileItem = widget.fileItem;
+    if (fileItem == null) return;
+
+    await promptToEditNote(
+      context,
+      driveId: fileItem.driveId,
+      parentFolderId: fileItem.parentFolderId,
+      fileId: fileItem.fileId,
+      fileName: fileItem.name,
+      fileContent: widget.content,
+      fileSize: fileItem.size ?? 0,
+    );
   }
 
   @override
@@ -454,6 +474,14 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                       });
                     },
                   ),
+                ),
+              ],
+              if (_isMarkdown() && widget.fileItem != null && !widget.isSharePage) ...[
+                const SizedBox(width: 8),
+                ArDriveIconButton(
+                  icon: ArDriveIcons.edit(size: 20),
+                  tooltip: 'Edit note',
+                  onPressed: _editNote,
                 ),
               ],
               const SizedBox(width: 8),
