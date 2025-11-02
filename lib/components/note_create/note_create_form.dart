@@ -55,10 +55,11 @@ Future<void> promptToEditNote(
   const warnFileSize = 1 * 1024 * 1024; // 1MB
 
   if (fileSize > maxFileSize) {
+    final fileSizeMB = (fileSize / 1024 / 1024).toStringAsFixed(1);
     await showStandardDialog(
       context,
       title: appLocalizationsOf(context).error,
-      description: 'This file is too large to edit (${(fileSize / 1024 / 1024).toStringAsFixed(1)}MB). Files over 5MB cannot be edited.',
+      description: appLocalizationsOf(context).noteFileTooLarge(fileSizeMB),
       actions: [
         ModalAction(
           action: () => Navigator.of(context).pop(),
@@ -71,11 +72,12 @@ Future<void> promptToEditNote(
 
   // Warn for files over 1MB
   if (fileSize > warnFileSize && context.mounted) {
+    final fileSizeMB = (fileSize / 1024 / 1024).toStringAsFixed(1);
     final proceed = await showAnimatedDialogWithBuilder<bool>(
       context,
       builder: (context) => ArDriveStandardModalNew(
-        title: 'Large File Warning',
-        description: 'This file is ${(fileSize / 1024 / 1024).toStringAsFixed(1)}MB. Editing large files may affect performance. Do you want to continue?',
+        title: appLocalizationsOf(context).noteLargeFileWarningTitle,
+        description: appLocalizationsOf(context).noteLargeFileWarningDescription(fileSizeMB),
         actions: [
           ModalAction(
             action: () => Navigator.of(context).pop(false),
@@ -83,7 +85,7 @@ Future<void> promptToEditNote(
           ),
           ModalAction(
             action: () => Navigator.of(context).pop(true),
-            title: 'Continue',
+            title: appLocalizationsOf(context).continueEmphasized,
           ),
         ],
       ),
