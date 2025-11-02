@@ -1472,10 +1472,6 @@
       }
     }
   },
-  "continueEmphasized": "CONTINUE",
-  "@continueEmphasized": {
-    "description": "Continue button text, emphasized with upper case"
-  },
   "markdownEditorBold": "Bold",
   "@markdownEditorBold": {
     "description": "Tooltip for bold formatting button in markdown editor"
