@@ -24,8 +24,6 @@ enum EditorAction {
 class NoteEditorWidget extends StatefulWidget {
   final String initialContent;
   final ValueChanged<String> onChanged;
-  final bool showEditor;
-  final bool showPreview;
   final NoteViewMode viewMode;
   final ValueChanged<NoteViewMode> onViewModeChanged;
   final bool isMobile;
@@ -34,8 +32,6 @@ class NoteEditorWidget extends StatefulWidget {
     super.key,
     required this.initialContent,
     required this.onChanged,
-    this.showEditor = true,
-    this.showPreview = true,
     required this.viewMode,
     required this.onViewModeChanged,
     this.isMobile = false,
@@ -183,12 +179,11 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
   }
 
   Widget _buildEditorArea(BuildContext context) {
-    if (widget.showEditor) {
-      // Edit mode
-      return _buildEditor(context);
-    } else {
-      // Preview mode
-      return _buildPreview(context);
+    switch (widget.viewMode) {
+      case NoteViewMode.editOnly:
+        return _buildEditor(context);
+      case NoteViewMode.previewOnly:
+        return _buildPreview(context);
     }
   }
 

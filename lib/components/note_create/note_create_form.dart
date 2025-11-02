@@ -424,9 +424,6 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
               onChanged: (content) {
                 context.read<NoteCreateCubit>().updateContent(content);
               },
-              // Mobile: simple edit/preview toggle
-              showEditor: state.viewMode == NoteViewMode.editOnly,
-              showPreview: state.viewMode == NoteViewMode.previewOnly,
               viewMode: state.viewMode,
               onViewModeChanged: (mode) {
                 context.read<NoteCreateCubit>().setViewMode(mode);
@@ -505,8 +502,6 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
               onChanged: (content) {
                 context.read<NoteCreateCubit>().updateContent(content);
               },
-              showEditor: state.viewMode == NoteViewMode.editOnly,
-              showPreview: state.viewMode == NoteViewMode.previewOnly,
               viewMode: state.viewMode,
               onViewModeChanged: (NoteViewMode mode) {
                 context.read<NoteCreateCubit>().setViewMode(mode);
