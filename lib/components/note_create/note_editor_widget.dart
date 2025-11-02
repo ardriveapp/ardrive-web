@@ -1,5 +1,6 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive/blocs/note_create/note_create_state.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:markdown/markdown.dart' as md;
@@ -190,31 +191,33 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
   Widget _buildToolbar(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colors;
 
+    final localizations = appLocalizationsOf(context);
+
     final toolbarButtons = [
           _toolbarButton(context, 'B', EditorAction.bold,
-              tooltip: 'Bold', fontWeight: FontWeight.bold),
+              tooltip: localizations.markdownEditorBold, fontWeight: FontWeight.bold),
           _toolbarButton(context, 'I', EditorAction.italic,
-              tooltip: 'Italic', fontStyle: FontStyle.italic),
+              tooltip: localizations.markdownEditorItalic, fontStyle: FontStyle.italic),
           _toolbarButton(context, 'S', EditorAction.strikethrough,
-              tooltip: 'Strikethrough',
+              tooltip: localizations.markdownEditorStrikethrough,
               textDecoration: TextDecoration.lineThrough),
           _toolbarDivider(),
           _headingDropdownButton(context),
           _toolbarDivider(),
           _toolbarIconButton(context, Icons.format_list_bulleted, EditorAction.unorderedList,
-              tooltip: 'Bullet List'),
+              tooltip: localizations.markdownEditorBulletList),
           _toolbarIconButton(context, Icons.format_list_numbered, EditorAction.orderedList,
-              tooltip: 'Numbered List'),
+              tooltip: localizations.markdownEditorNumberedList),
           _toolbarDivider(),
           _toolbarButton(context, '""', EditorAction.quote,
-              tooltip: 'Quote'),
+              tooltip: localizations.markdownEditorQuote),
           _toolbarButton(context, '</>', EditorAction.code,
-              tooltip: 'Inline Code'),
+              tooltip: localizations.markdownEditorInlineCode),
           _toolbarIconButton(context, Icons.code, EditorAction.codeBlock,
-              tooltip: 'Code Block'),
+              tooltip: localizations.markdownEditorCodeBlock),
           _toolbarDivider(),
           _toolbarIconButton(context, Icons.link, EditorAction.link,
-              tooltip: 'Insert Link'),
+              tooltip: localizations.markdownEditorInsertLink),
           _toolbarDivider(),
           _viewToggleButton(context),
     ];
@@ -332,9 +335,10 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
   Widget _headingDropdownButton(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colors;
+    final localizations = appLocalizationsOf(context);
 
     return PopupMenuButton<EditorAction>(
-      tooltip: 'Heading',
+      tooltip: localizations.markdownEditorHeading,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
@@ -359,15 +363,15 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
       itemBuilder: (context) => [
         PopupMenuItem(
           value: EditorAction.heading1,
-          child: Text('Heading 1', style: typography.paragraphNormal()),
+          child: Text(localizations.markdownEditorHeading1, style: typography.paragraphNormal()),
         ),
         PopupMenuItem(
           value: EditorAction.heading2,
-          child: Text('Heading 2', style: typography.paragraphNormal()),
+          child: Text(localizations.markdownEditorHeading2, style: typography.paragraphNormal()),
         ),
         PopupMenuItem(
           value: EditorAction.heading3,
-          child: Text('Heading 3', style: typography.paragraphNormal()),
+          child: Text(localizations.markdownEditorHeading3, style: typography.paragraphNormal()),
         ),
       ],
     );
@@ -375,10 +379,11 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
 
   Widget _viewToggleButton(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colors;
+    final localizations = appLocalizationsOf(context);
     final isEditMode = widget.viewMode == NoteViewMode.editOnly;
 
     return Tooltip(
-      message: isEditMode ? 'Preview' : 'Edit',
+      message: isEditMode ? localizations.markdownEditorPreview : localizations.markdownEditorEdit,
       child: InkWell(
         onTap: () {
           // Toggle between edit and preview
@@ -426,7 +431,7 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
       decoration: InputDecoration(
         contentPadding: const EdgeInsets.all(16),
         border: InputBorder.none,
-        hintText: 'Write your note in markdown...',
+        hintText: appLocalizationsOf(context).markdownEditorPlaceholder,
         hintStyle: typography.paragraphNormal().copyWith(
               color: colors.themeFgSubtle,
             ),
@@ -445,7 +450,7 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
         controller: _previewScrollController,
         padding: const EdgeInsets.all(16),
         child: Text(
-          'Preview will appear here...',
+          appLocalizationsOf(context).markdownPreviewPlaceholder,
           style: typography.paragraphNormal().copyWith(
                 color: colors.themeFgSubtle,
                 fontStyle: FontStyle.italic,
@@ -467,6 +472,7 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
         return Image.network(
           uri.toString(),
           errorBuilder: (context, error, stackTrace) {
+            final localizations = appLocalizationsOf(context);
             // Handle image loading errors (e.g., SVG images, network issues)
             return Container(
               padding: const EdgeInsets.all(8),
@@ -486,7 +492,7 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
-                      alt ?? title ?? 'Image',
+                      alt ?? title ?? localizations.markdownImageAltText,
                       style: typography.paragraphSmall().copyWith(
                         color: colors.themeFgSubtle,
                         fontStyle: FontStyle.italic,

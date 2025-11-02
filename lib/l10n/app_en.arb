@@ -1476,6 +1476,78 @@
   "@continueEmphasized": {
     "description": "Continue button text, emphasized with upper case"
   },
+  "markdownEditorBold": "Bold",
+  "@markdownEditorBold": {
+    "description": "Tooltip for bold formatting button in markdown editor"
+  },
+  "markdownEditorItalic": "Italic",
+  "@markdownEditorItalic": {
+    "description": "Tooltip for italic formatting button in markdown editor"
+  },
+  "markdownEditorStrikethrough": "Strikethrough",
+  "@markdownEditorStrikethrough": {
+    "description": "Tooltip for strikethrough formatting button in markdown editor"
+  },
+  "markdownEditorBulletList": "Bullet List",
+  "@markdownEditorBulletList": {
+    "description": "Tooltip for bullet list button in markdown editor"
+  },
+  "markdownEditorNumberedList": "Numbered List",
+  "@markdownEditorNumberedList": {
+    "description": "Tooltip for numbered list button in markdown editor"
+  },
+  "markdownEditorQuote": "Quote",
+  "@markdownEditorQuote": {
+    "description": "Tooltip for quote button in markdown editor"
+  },
+  "markdownEditorInlineCode": "Inline Code",
+  "@markdownEditorInlineCode": {
+    "description": "Tooltip for inline code button in markdown editor"
+  },
+  "markdownEditorCodeBlock": "Code Block",
+  "@markdownEditorCodeBlock": {
+    "description": "Tooltip for code block button in markdown editor"
+  },
+  "markdownEditorInsertLink": "Insert Link",
+  "@markdownEditorInsertLink": {
+    "description": "Tooltip for insert link button in markdown editor"
+  },
+  "markdownEditorHeading": "Heading",
+  "@markdownEditorHeading": {
+    "description": "Tooltip for heading dropdown button in markdown editor"
+  },
+  "markdownEditorHeading1": "Heading 1",
+  "@markdownEditorHeading1": {
+    "description": "Dropdown item for Heading 1 in markdown editor"
+  },
+  "markdownEditorHeading2": "Heading 2",
+  "@markdownEditorHeading2": {
+    "description": "Dropdown item for Heading 2 in markdown editor"
+  },
+  "markdownEditorHeading3": "Heading 3",
+  "@markdownEditorHeading3": {
+    "description": "Dropdown item for Heading 3 in markdown editor"
+  },
+  "markdownEditorPreview": "Preview",
+  "@markdownEditorPreview": {
+    "description": "Tooltip for preview mode toggle in markdown editor"
+  },
+  "markdownEditorEdit": "Edit",
+  "@markdownEditorEdit": {
+    "description": "Tooltip for edit mode toggle in markdown editor"
+  },
+  "markdownEditorPlaceholder": "Write your note in markdown...",
+  "@markdownEditorPlaceholder": {
+    "description": "Placeholder text in the markdown editor text field"
+  },
+  "markdownPreviewPlaceholder": "Preview will appear here...",
+  "@markdownPreviewPlaceholder": {
+    "description": "Placeholder text shown when preview is empty"
+  },
+  "markdownImageAltText": "Image",
+  "@markdownImageAltText": {
+    "description": "Default alt text for images in markdown preview"
+  },
   "newSnapshot": "New Snapshot",
   "@newSnapshot": {
     "description": "The action of snapshotting a drive"
