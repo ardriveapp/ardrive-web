@@ -146,13 +146,36 @@ class _UploadRepositoryImpl implements UploadRepository {
     }
 
     /// Creates the uploader and starts the upload.
-    final uploadController = await _ardriveUploader.uploadFiles(
-      files: uploadFiles,
-      wallet: _auth.currentUser.wallet,
-      driveKey: driveKey?.key,
-      uploadThumbnail: uploadThumbnail,
-      type: uploadMethod == UploadMethod.ar ? UploadType.d2n : UploadType.turbo,
-    );
+    /// Tiered approach for D2N uploads:
+    /// - Files < 500MB: Batch bundle (up to 500 files per bundle)
+    /// - Files >= 500MB and <= 20GB: Individual atomic bundles
+    /// - Turbo uploads: Use existing path (1 file per upload)
+    final UploadController uploadController;
+
+    if (uploadMethod == UploadMethod.ar) {
+      // D2N upload: Use atomic bundling via uploadEntities()
+      // The data_bundler will handle tiering based on file sizes
+      final entities = uploadFiles
+          .map<(ARFSUploadMetadataArgs, IOEntity)>((f) => (f.$1, f.$2))
+          .toList();
+
+      uploadController = await _ardriveUploader.uploadEntities(
+        entities: entities,
+        wallet: _auth.currentUser.wallet,
+        driveKey: driveKey?.key,
+        uploadThumbnail: uploadThumbnail,
+        type: UploadType.d2n,
+      );
+    } else {
+      // Turbo upload: Use existing path (1 file per upload)
+      uploadController = await _ardriveUploader.uploadFiles(
+        files: uploadFiles,
+        wallet: _auth.currentUser.wallet,
+        driveKey: driveKey?.key,
+        uploadThumbnail: uploadThumbnail,
+        type: UploadType.turbo,
+      );
+    }
 
     uploadController.onCompleteTask((tasks) {
       _saveTaskToDB(tasks, conflictingFiles, []);
