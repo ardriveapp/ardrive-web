@@ -368,6 +368,7 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
   /// Build mobile-optimized content (full height)
   Widget _buildMobileContent(BuildContext context, NoteCreateEditing state) {
     final colors = ArDriveTheme.of(context).themeData.colors;
+    final cubit = context.read<NoteCreateCubit>();
 
     return Container(
       color: colors.themeBgCanvas,
@@ -387,11 +388,12 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
                 child: ArDriveTextFieldNew(
                   key: const Key('note_name_text_field'),
                   controller: _nameController,
-                  onChanged: (value) {
+                  onChanged: cubit.isEditMode ? null : (value) {
                     context.read<NoteCreateCubit>().updateNoteName(value);
                   },
                   hintText: appLocalizationsOf(context).enterNoteName,
-                  autofocus: true,
+                  autofocus: !cubit.isEditMode,
+                  isEnabled: !cubit.isEditMode,
                 ),
               ),
               const SizedBox(width: 8),
@@ -439,6 +441,7 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
   Widget _buildContent(
       BuildContext context, NoteCreateEditing state, double modalWidth) {
     final editorHeight = _getResponsiveEditorHeight(context);
+    final cubit = context.read<NoteCreateCubit>();
 
     return SizedBox(
       width: modalWidth,
@@ -458,11 +461,12 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
                 child: ArDriveTextFieldNew(
                   key: const Key('note_name_text_field'),
                   controller: _nameController,
-                  onChanged: (value) {
+                  onChanged: cubit.isEditMode ? null : (value) {
                     context.read<NoteCreateCubit>().updateNoteName(value);
                   },
                   hintText: appLocalizationsOf(context).enterNoteName,
-                  autofocus: true,
+                  autofocus: !cubit.isEditMode,
+                  isEnabled: !cubit.isEditMode,
                 ),
               ),
               const SizedBox(width: 8),
