@@ -28,9 +28,9 @@ const maxFilesSizePerBundleUsingTurbo = 1;
 final batchBundleThreshold = const MiB(500).size;  // 500 MB
 
 // Maximum bundle size limits
-// D2N: 500MB for batch bundles, 20GB for individual file bundles
+// D2N: 500MB for batch bundles
+// Individual file bundles (>= 500MB) are capped by maxSingleFileSize (20GB)
 final d2nBatchBundleSizeLimit = const MiB(500).size;
-final d2nMaxBundleSize = const GiB(20).size;
 final turboBundleSizeLimit = const GiB(10).size;
 
 int getBundleSizeLimit(bool isTurbo) =>

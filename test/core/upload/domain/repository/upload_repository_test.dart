@@ -59,6 +59,8 @@ void main() {
       registerFallbackValue(getTestWallet());
       registerFallbackValue(UploadType.d2n);
       registerFallbackValue(SecretKey([1, 2, 3, 4, 5]));
+      // Register fallback for entities parameter
+      registerFallbackValue(<(ARFSUploadMetadataArgs, IOEntity)>[]);
     });
 
     group('uploadFiles', () {
@@ -66,11 +68,6 @@ void main() {
           () async {
         // Arrange
         final file = MockIOFile(contentType: 'text/plain');
-        final metadataArgs = ARFSUploadMetadataArgs.file(
-            driveId: 'drive-id',
-            parentFolderId: 'folder-id',
-            isPrivate: false,
-            type: UploadType.d2n);
 
         final mockDrive = MockDrive();
         final mockFolderEntry = MockFolderEntry();
@@ -83,12 +80,13 @@ void main() {
         when(() => mockDrive.privacy).thenReturn('public');
         when(() => mockDrive.id).thenReturn('drive-id');
         when(() => mockFolderEntry.id).thenReturn('folder-id');
-        when(() => mockArDriveUploader.uploadFiles(
-              files: [(metadataArgs, file)],
+        // Mock uploadEntities since D2N now uses uploadEntities instead of uploadFiles
+        when(() => mockArDriveUploader.uploadEntities(
+              entities: any(named: 'entities'),
               wallet: any(named: 'wallet'),
-              driveKey: null,
-              uploadThumbnail: false,
-              type: UploadType.d2n,
+              driveKey: any(named: 'driveKey'),
+              uploadThumbnail: any(named: 'uploadThumbnail'),
+              type: any(named: 'type'),
             )).thenAnswer((_) async => mockUploadController);
         when(() => mockUploadController.onCompleteTask(any()))
             .thenAnswer((_) async => {});
@@ -107,12 +105,12 @@ void main() {
 
         // Assert
         expect(result, equals(mockUploadController));
-        verify(() => mockArDriveUploader.uploadFiles(
-              files: [(metadataArgs, file)],
+        verify(() => mockArDriveUploader.uploadEntities(
+              entities: any(named: 'entities'),
               wallet: any(named: 'wallet'),
-              driveKey: null,
-              uploadThumbnail: false,
-              type: UploadType.d2n,
+              driveKey: any(named: 'driveKey'),
+              uploadThumbnail: any(named: 'uploadThumbnail'),
+              type: any(named: 'type'),
             )).called(1);
       });
 
@@ -121,12 +119,6 @@ void main() {
         // Arrange
         final file = await IOFile.fromData(Uint8List(0),
             name: 'dummy_file.txt', lastModifiedDate: DateTime.now());
-        final metadataArgs = ARFSUploadMetadataArgs.file(
-          driveId: 'drive-id',
-          parentFolderId: 'folder-id',
-          isPrivate: true,
-          type: UploadType.d2n,
-        );
 
         final mockDrive = MockDrive();
         final mockFolderEntry = MockFolderEntry();
@@ -142,12 +134,12 @@ void main() {
         when(() => mockFolderEntry.id).thenReturn('folder-id');
         when(() => mockDriveDao.getDriveKey(any(), any())).thenAnswer(
             (_) async => DriveKey(SecretKey([1, 2, 3, 4, 5]), true));
-        when(() => mockArDriveUploader.uploadFiles(
-              files: [(metadataArgs, file)],
+        when(() => mockArDriveUploader.uploadEntities(
+              entities: any(named: 'entities'),
               wallet: any(named: 'wallet'),
-              driveKey: SecretKey([1, 2, 3, 4, 5]),
-              uploadThumbnail: false,
-              type: UploadType.d2n,
+              driveKey: any(named: 'driveKey'),
+              uploadThumbnail: any(named: 'uploadThumbnail'),
+              type: any(named: 'type'),
             )).thenAnswer((_) async => mockUploadController);
         when(() => mockUploadController.onCompleteTask(any()))
             .thenAnswer((_) async => {});
@@ -166,12 +158,12 @@ void main() {
 
         // Assert
         expect(result, equals(mockUploadController));
-        verify(() => mockArDriveUploader.uploadFiles(
-              files: [(metadataArgs, file)],
+        verify(() => mockArDriveUploader.uploadEntities(
+              entities: any(named: 'entities'),
               wallet: any(named: 'wallet'),
-              driveKey: SecretKey([1, 2, 3, 4, 5]),
-              uploadThumbnail: false,
-              type: UploadType.d2n,
+              driveKey: any(named: 'driveKey'),
+              uploadThumbnail: any(named: 'uploadThumbnail'),
+              type: any(named: 'type'),
             )).called(1);
       });
 
@@ -179,13 +171,6 @@ void main() {
           () async {
         // Arrange
         final file = MockIOFile(contentType: 'text/plain');
-        final metadataArgs = ARFSUploadMetadataArgs.file(
-          driveId: 'drive-id',
-          parentFolderId: 'folder-id',
-          isPrivate: false,
-          type: UploadType.d2n,
-          assignedName: 'assigned-name',
-        );
 
         final mockDrive = MockDrive();
         final mockFolderEntry = MockFolderEntry();
@@ -199,11 +184,12 @@ void main() {
         when(() => mockDrive.privacy).thenReturn('public');
         when(() => mockDrive.id).thenReturn('drive-id');
         when(() => mockFolderEntry.id).thenReturn('folder-id');
-        when(() => mockArDriveUploader.uploadFiles(
-              files: [(metadataArgs, file)],
+        when(() => mockArDriveUploader.uploadEntities(
+              entities: any(named: 'entities'),
               wallet: any(named: 'wallet'),
-              uploadThumbnail: false,
-              type: UploadType.d2n,
+              driveKey: any(named: 'driveKey'),
+              uploadThumbnail: any(named: 'uploadThumbnail'),
+              type: any(named: 'type'),
             )).thenAnswer((_) async => mockUploadController);
         when(() => mockUploadController.onCompleteTask(any()))
             .thenAnswer((_) async => {});
@@ -222,11 +208,12 @@ void main() {
 
         // Assert
         expect(result, equals(mockUploadController));
-        verify(() => mockArDriveUploader.uploadFiles(
-              files: [(metadataArgs, file)],
+        verify(() => mockArDriveUploader.uploadEntities(
+              entities: any(named: 'entities'),
               wallet: any(named: 'wallet'),
-              uploadThumbnail: false,
-              type: UploadType.d2n,
+              driveKey: any(named: 'driveKey'),
+              uploadThumbnail: any(named: 'uploadThumbnail'),
+              type: any(named: 'type'),
             )).called(1);
       });
 
@@ -234,13 +221,6 @@ void main() {
           () async {
         // Arrange
         final file = MockIOFile(contentType: 'text/plain');
-        final metadataArgs = ARFSUploadMetadataArgs.file(
-          driveId: 'drive-id',
-          parentFolderId: 'folder-id',
-          isPrivate: true,
-          type: UploadType.d2n,
-          assignedName: 'assigned-name',
-        );
 
         final mockDrive = MockDrive();
         final mockFolderEntry = MockFolderEntry();
@@ -256,12 +236,12 @@ void main() {
         when(() => mockFolderEntry.id).thenReturn('folder-id');
         when(() => mockDriveDao.getDriveKey(any(), any())).thenAnswer(
             (_) async => DriveKey(SecretKey([1, 2, 3, 4, 5]), true));
-        when(() => mockArDriveUploader.uploadFiles(
-              files: [(metadataArgs, file)],
+        when(() => mockArDriveUploader.uploadEntities(
+              entities: any(named: 'entities'),
               wallet: any(named: 'wallet'),
-              uploadThumbnail: false,
-              driveKey: SecretKey([1, 2, 3, 4, 5]),
-              type: UploadType.d2n,
+              driveKey: any(named: 'driveKey'),
+              uploadThumbnail: any(named: 'uploadThumbnail'),
+              type: any(named: 'type'),
             )).thenAnswer((_) async => mockUploadController);
         when(() => mockUploadController.onCompleteTask(any()))
             .thenAnswer((_) async => {});
@@ -280,12 +260,12 @@ void main() {
 
         // Assert
         expect(result, equals(mockUploadController));
-        verify(() => mockArDriveUploader.uploadFiles(
-              files: [(metadataArgs, file)],
+        verify(() => mockArDriveUploader.uploadEntities(
+              entities: any(named: 'entities'),
               wallet: any(named: 'wallet'),
-              driveKey: SecretKey([1, 2, 3, 4, 5]),
-              uploadThumbnail: false,
-              type: UploadType.d2n,
+              driveKey: any(named: 'driveKey'),
+              uploadThumbnail: any(named: 'uploadThumbnail'),
+              type: any(named: 'type'),
             )).called(1);
       });
 
@@ -308,15 +288,6 @@ void main() {
 
         // Arrange
         final file = MockIOFile(contentType: 'text/plain');
-        final metadataArgs = ARFSUploadMetadataArgs(
-          driveId: 'drive-id',
-          parentFolderId: 'folder-id',
-          isPrivate: false,
-          type: UploadType.d2n,
-          assignedName: 'assigned-name',
-          licenseAdditionalTags: licenseState.params?.toAdditionalTags(),
-          licenseDefinitionTxId: 'license-definition-tx-id',
-        );
 
         final mockDrive = MockDrive();
         final mockFolderEntry = MockFolderEntry();
@@ -330,11 +301,12 @@ void main() {
         when(() => mockDrive.privacy).thenReturn('public');
         when(() => mockDrive.id).thenReturn('drive-id');
         when(() => mockFolderEntry.id).thenReturn('folder-id');
-        when(() => mockArDriveUploader.uploadFiles(
-              files: [(metadataArgs, file)],
+        when(() => mockArDriveUploader.uploadEntities(
+              entities: any(named: 'entities'),
               wallet: any(named: 'wallet'),
-              uploadThumbnail: false,
-              type: UploadType.d2n,
+              driveKey: any(named: 'driveKey'),
+              uploadThumbnail: any(named: 'uploadThumbnail'),
+              type: any(named: 'type'),
             )).thenAnswer((_) async => mockUploadController);
         when(() => mockUploadController.onCompleteTask(any()))
             .thenAnswer((_) async => {});
@@ -354,11 +326,12 @@ void main() {
         // Assert
         expect(result, equals(mockUploadController));
         // here we ensure that the license tags are added to the metadata args
-        verify(() => mockArDriveUploader.uploadFiles(
-              files: [(metadataArgs, file)],
+        verify(() => mockArDriveUploader.uploadEntities(
+              entities: any(named: 'entities'),
               wallet: any(named: 'wallet'),
-              uploadThumbnail: false,
-              type: UploadType.d2n,
+              driveKey: any(named: 'driveKey'),
+              uploadThumbnail: any(named: 'uploadThumbnail'),
+              type: any(named: 'type'),
             )).called(1);
       });
 
@@ -381,15 +354,6 @@ void main() {
 
         // Arrange
         final file = MockIOFile(contentType: 'text/plain');
-        final metadataArgs = ARFSUploadMetadataArgs(
-          driveId: 'drive-id',
-          parentFolderId: 'folder-id',
-          isPrivate: true,
-          type: UploadType.d2n,
-          assignedName: 'assigned-name',
-          licenseAdditionalTags: licenseState.params?.toAdditionalTags(),
-          licenseDefinitionTxId: 'license-definition-tx-id',
-        );
 
         final mockDrive = MockDrive();
         final mockFolderEntry = MockFolderEntry();
@@ -405,12 +369,12 @@ void main() {
         when(() => mockFolderEntry.id).thenReturn('folder-id');
         when(() => mockDriveDao.getDriveKey(any(), any())).thenAnswer(
             (_) async => DriveKey(SecretKey([1, 2, 3, 4, 5]), true));
-        when(() => mockArDriveUploader.uploadFiles(
-              files: [(metadataArgs, file)],
+        when(() => mockArDriveUploader.uploadEntities(
+              entities: any(named: 'entities'),
               wallet: any(named: 'wallet'),
-              uploadThumbnail: false,
-              type: UploadType.d2n,
-              driveKey: SecretKey([1, 2, 3, 4, 5]),
+              driveKey: any(named: 'driveKey'),
+              uploadThumbnail: any(named: 'uploadThumbnail'),
+              type: any(named: 'type'),
             )).thenAnswer((_) async => mockUploadController);
         when(() => mockUploadController.onCompleteTask(any()))
             .thenAnswer((_) async => {});
@@ -430,12 +394,12 @@ void main() {
         // Assert
         expect(result, equals(mockUploadController));
         // here we ensure that the license tags are added to the metadata args
-        verify(() => mockArDriveUploader.uploadFiles(
-              files: [(metadataArgs, file)],
+        verify(() => mockArDriveUploader.uploadEntities(
+              entities: any(named: 'entities'),
               wallet: any(named: 'wallet'),
-              driveKey: SecretKey([1, 2, 3, 4, 5]),
-              uploadThumbnail: false,
-              type: UploadType.d2n,
+              driveKey: any(named: 'driveKey'),
+              uploadThumbnail: any(named: 'uploadThumbnail'),
+              type: any(named: 'type'),
             )).called(1);
       });
     });

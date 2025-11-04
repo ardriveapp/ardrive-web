@@ -133,13 +133,15 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
         final fileMetadata = e.$1 as ARFSFileUploadMetadata;
         final file = e.$2 as IOFile;
 
-        // Prepare all data items for this file (metadata + data)
+        // Prepare data items (metadata + data + thumbnail file)
+        // Skip thumbnail signing since we'll create our own DataItemFile for bundling
         final preparation = await prepareDataItems(
           file: file,
           metadata: fileMetadata,
           wallet: wallet,
           driveKey: driveKey,
-          addThumbnail: true, // Include thumbnail for D2N bundling
+          addThumbnail: true,
+          skipThumbnailSigning: true, // We'll sign it ourselves with file-specific key
         );
 
         List<DataItemFile> thisFileItems = List.from(preparation.dataItemFiles);
@@ -147,7 +149,9 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
 
         // For D2N uploads, include thumbnail in the bundle (3 items per file)
         // This ensures atomicity: if bundle fails, whole file (including thumbnail) fails
-        if (preparation.thumbnailDataItem != null) {
+        // We create our own DataItemFile (rather than using preparation.thumbnailDataItem)
+        // to have full control over encryption with file-specific keys
+        if (preparation.thumbnailFile != null) {
           // Derive file-specific encryption key if private drive
           SecretKey? fileKey;
           if (driveKey != null) {
@@ -812,6 +816,9 @@ Future<UploadFilePreparation> prepareDataItems({
 
   /// pass down to the thumbnail creation
   bool addThumbnail = true,
+
+  /// Skip thumbnail signing (generate file only, for bundling context)
+  bool skipThumbnailSigning = false,
 }) async {
   SecretKey? key;
 
@@ -869,15 +876,18 @@ Future<UploadFilePreparation> prepareDataItems({
         originalFileId: metadata.id,
       );
 
-      thumbnailDataItem = await createDataItemForThumbnail(
-        file: thumbnailFile,
-        metadata: thumbnailMetadata,
-        wallet: wallet,
-        encryptionKey: key,
-        fileId: metadata.id,
-      );
+      // Only sign thumbnail if not skipping (bundling context skips signing)
+      if (!skipThumbnailSigning) {
+        thumbnailDataItem = await createDataItemForThumbnail(
+          file: thumbnailFile,
+          metadata: thumbnailMetadata,
+          wallet: wallet,
+          encryptionKey: key,
+          fileId: metadata.id,
+        );
 
-      thumbnailMetadata.setTxId = thumbnailDataItem.id;
+        thumbnailMetadata.setTxId = thumbnailDataItem.id;
+      }
 
       metadata.updateThumbnailInfo([thumbnailMetadata]);
     } catch (e) {
