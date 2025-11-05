@@ -295,6 +295,15 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
     // Each file gets its own bundle (metadata + data + thumbnail)
     // This ensures atomicity for large files up to 20GB
     for (var filePrep in largeFilePreparations) {
+      // Validate file size doesn't exceed maximum supported size
+      if (filePrep.totalSize > maxSingleFileSize) {
+        final maxSizeGB = (maxSingleFileSize / (1024 * 1024 * 1024)).toStringAsFixed(0);
+        throw Exception(
+          'File size (${filePrep.totalSize} bytes) exceeds maximum supported size of ${maxSizeGB}GB. '
+          'ArDrive supports files up to ${maxSizeGB}GB to ensure reasonable upload times and atomicity.',
+        );
+      }
+
       logger.i(
         'Creating individual bundle for large file '
         '(${filePrep.dataItems.length} items, ${filePrep.totalSize} bytes)',
