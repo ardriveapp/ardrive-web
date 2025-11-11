@@ -401,12 +401,6 @@ class ArweaveService {
           // TODO: instantiate entity and add to blockHistory
         }
 
-        // Ensure unmined transactions are grouped in block 0
-        if (blockHistory.isEmpty ||
-            blockHistory.last.blockHeight != blockHeight) {
-          blockHistory.add(BlockEntities(blockHeight));
-        }
-
         blockHistory.last.entities.add(entity);
 
         // If there are errors in parsing the entity, ignore it.
