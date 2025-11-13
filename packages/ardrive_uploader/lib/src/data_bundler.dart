@@ -105,23 +105,88 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
   }) async {
     List<ARFSUploadMetadata> folderMetadatas = [];
     List<DataItemFile> folderDataItems = [];
-    List<DataResultWithContents<TransactionResult>> transactionResults = [];
 
     if (entities.isEmpty) {
       throw Exception('The list of entities is empty');
     }
 
+    // Tiered file preparations:
+    // - Small files (< 500MB): batch together
+    // - Large files (>= 500MB): individual bundles
+    const batchThreshold = 500 * 1024 * 1024; // 500 MB
+
+    List<({
+      ARFSUploadMetadata metadata,
+      List<DataItemFile> dataItems,
+      int totalSize,
+    })> smallFilePreparations = [];
+
+    List<({
+      ARFSUploadMetadata metadata,
+      List<DataItemFile> dataItems,
+      int totalSize,
+    })> largeFilePreparations = [];
+
     for (var e in entities) {
       if (e.$2 is IOFile) {
-        transactionResults.add(DataResultWithContents<TransactionResult>(
-          dataItemResult: await createDataBundle(
+        // For files, prepare data items (metadata + data + optional thumbnail)
+        final fileMetadata = e.$1 as ARFSFileUploadMetadata;
+        final file = e.$2 as IOFile;
+
+        // Prepare data items (metadata + data + thumbnail file)
+        // Skip thumbnail signing since we'll create our own DataItemFile for bundling
+        final preparation = await prepareDataItems(
+          file: file,
+          metadata: fileMetadata,
+          wallet: wallet,
+          driveKey: driveKey,
+          addThumbnail: true,
+          skipThumbnailSigning: true, // We'll sign it ourselves with file-specific key
+        );
+
+        List<DataItemFile> thisFileItems = List.from(preparation.dataItemFiles);
+        int thisFileSize = thisFileItems.fold(0, (sum, item) => sum + item.dataSize);
+
+        // For D2N uploads, include thumbnail in the bundle (3 items per file)
+        // This ensures atomicity: if bundle fails, whole file (including thumbnail) fails
+        // We create our own DataItemFile (rather than using preparation.thumbnailDataItem)
+        // to have full control over encryption with file-specific keys
+        if (preparation.thumbnailFile != null) {
+          // Derive file-specific encryption key if private drive
+          SecretKey? fileKey;
+          if (driveKey != null) {
+            fileKey = await deriveFileKey(
+              driveKey,
+              fileMetadata.id,
+              keyByteLength,
+            );
+          }
+
+          final thumbnailItem = await _createThumbnailDataItemFile(
+            thumbnailFile: preparation.thumbnailFile!,
+            thumbnailMetadata: fileMetadata.thumbnailInfo!.first,
             wallet: wallet,
-            file: e.$2 as IOFile,
-            metadata: e.$1 as ARFSFileUploadMetadata,
-            driveKey: driveKey,
-          ),
-          contents: [e.$1],
-        ));
+            encryptionKey: fileKey,
+            fileId: fileMetadata.id,
+          );
+          thisFileItems.add(thumbnailItem);
+          thisFileSize += thumbnailItem.dataSize;
+        }
+
+        final filePrep = (
+          metadata: fileMetadata,
+          dataItems: thisFileItems,
+          totalSize: thisFileSize,
+        );
+
+        // Tier files by size:
+        // Small files (< 500MB) get batched together
+        // Large files (>= 500MB) get individual bundles
+        if (thisFileSize < batchThreshold) {
+          smallFilePreparations.add(filePrep);
+        } else {
+          largeFilePreparations.add(filePrep);
+        }
       } else if (e.$2 is IOFolder) {
         final folderMetadata = e.$1;
 
@@ -142,20 +207,121 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
       customBundleTags,
     );
 
-    final folderBundle = await createDataBundleTransaction(
-      dataItemFiles: folderDataItems,
-      wallet: wallet,
-      tags: bundleTags.map((e) => createTag(e.name, e.value)).toList(),
-    );
+    final results = <DataResultWithContents<TransactionResult>>[];
 
-    /// All folders inside a single BDI, and the remaining files
-    return [
-      DataResultWithContents(
+    // Bundle all folders together (if any)
+    if (folderDataItems.isNotEmpty) {
+      final folderBundle = await createDataBundleTransaction(
+        dataItemFiles: folderDataItems,
+        wallet: wallet,
+        tags: bundleTags.map((e) => createTag(e.name, e.value)).toList(),
+      );
+
+      results.add(DataResultWithContents(
         dataItemResult: folderBundle,
         contents: folderMetadatas,
-      ),
-      ...transactionResults
-    ];
+      ));
+    }
+
+    // Handle small files (< 500MB): Batch together
+    // Max 500 files OR 500MB per bundle (whichever hits first)
+    if (smallFilePreparations.isNotEmpty) {
+      const maxBatchSize = 500 * 1024 * 1024; // 500 MB
+      const maxFilesPerBundle = 500;
+
+      List<DataItemFile> currentBatchItems = [];
+      List<ARFSUploadMetadata> currentBatchMetadata = [];
+      int currentBatchSize = 0;
+      int currentBatchFileCount = 0;
+
+      for (var filePrep in smallFilePreparations) {
+        // Check if adding this file would exceed limits
+        final wouldExceedSize = currentBatchSize + filePrep.totalSize > maxBatchSize;
+        final wouldExceedCount = currentBatchFileCount >= maxFilesPerBundle;
+
+        if ((wouldExceedSize || wouldExceedCount) && currentBatchItems.isNotEmpty) {
+          // Create bundle for current batch
+          logger.i(
+            'Creating batch bundle with $currentBatchFileCount files '
+            '(${currentBatchItems.length} items, $currentBatchSize bytes)',
+          );
+
+          final batchBundle = await createDataBundleTransaction(
+            dataItemFiles: currentBatchItems,
+            wallet: wallet,
+            tags: bundleTags.map((e) => createTag(e.name, e.value)).toList(),
+          );
+
+          results.add(DataResultWithContents(
+            dataItemResult: batchBundle,
+            contents: List.from(currentBatchMetadata),
+          ));
+
+          // Start new batch
+          currentBatchItems = [];
+          currentBatchMetadata = [];
+          currentBatchSize = 0;
+          currentBatchFileCount = 0;
+        }
+
+        // Add complete file to current batch
+        currentBatchItems.addAll(filePrep.dataItems);
+        currentBatchMetadata.add(filePrep.metadata);
+        currentBatchSize += filePrep.totalSize;
+        currentBatchFileCount++;
+      }
+
+      // Create bundle for remaining files
+      if (currentBatchItems.isNotEmpty) {
+        logger.i(
+          'Creating final batch bundle with $currentBatchFileCount files '
+          '(${currentBatchItems.length} items, $currentBatchSize bytes)',
+        );
+
+        final finalBundle = await createDataBundleTransaction(
+          dataItemFiles: currentBatchItems,
+          wallet: wallet,
+          tags: bundleTags.map((e) => createTag(e.name, e.value)).toList(),
+        );
+
+        results.add(DataResultWithContents(
+          dataItemResult: finalBundle,
+          contents: currentBatchMetadata,
+        ));
+      }
+    }
+
+    // Handle large files (>= 500MB): Individual atomic bundles
+    // Each file gets its own bundle (metadata + data + thumbnail)
+    // This ensures atomicity for large files up to 20GB
+    for (var filePrep in largeFilePreparations) {
+      // Validate file size doesn't exceed maximum supported size
+      if (filePrep.totalSize > maxSingleFileSize) {
+        final maxSizeGB = (maxSingleFileSize / (1024 * 1024 * 1024)).toStringAsFixed(0);
+        throw Exception(
+          'File size (${filePrep.totalSize} bytes) exceeds maximum supported size of ${maxSizeGB}GB. '
+          'ArDrive supports files up to ${maxSizeGB}GB to ensure reasonable upload times and atomicity.',
+        );
+      }
+
+      logger.i(
+        'Creating individual bundle for large file '
+        '(${filePrep.dataItems.length} items, ${filePrep.totalSize} bytes)',
+      );
+
+      final individualBundle = await createDataBundleTransaction(
+        dataItemFiles: filePrep.dataItems,
+        wallet: wallet,
+        tags: bundleTags.map((e) => createTag(e.name, e.value)).toList(),
+      );
+
+      results.add(DataResultWithContents(
+        dataItemResult: individualBundle,
+        contents: [filePrep.metadata],
+      ));
+    }
+
+    return results;
   }
 
   Future<TransactionResult> createDataBundleTransaction({
@@ -659,6 +825,9 @@ Future<UploadFilePreparation> prepareDataItems({
 
   /// pass down to the thumbnail creation
   bool addThumbnail = true,
+
+  /// Skip thumbnail signing (generate file only, for bundling context)
+  bool skipThumbnailSigning = false,
 }) async {
   SecretKey? key;
 
@@ -716,15 +885,18 @@ Future<UploadFilePreparation> prepareDataItems({
         originalFileId: metadata.id,
       );
 
-      thumbnailDataItem = await createDataItemForThumbnail(
-        file: thumbnailFile,
-        metadata: thumbnailMetadata,
-        wallet: wallet,
-        encryptionKey: key,
-        fileId: metadata.id,
-      );
+      // Only sign thumbnail if not skipping (bundling context skips signing)
+      if (!skipThumbnailSigning) {
+        thumbnailDataItem = await createDataItemForThumbnail(
+          file: thumbnailFile,
+          metadata: thumbnailMetadata,
+          wallet: wallet,
+          encryptionKey: key,
+          fileId: metadata.id,
+        );
 
-      thumbnailMetadata.setTxId = thumbnailDataItem.id;
+        thumbnailMetadata.setTxId = thumbnailDataItem.id;
+      }
 
       metadata.updateThumbnailInfo([thumbnailMetadata]);
     } catch (e) {
@@ -855,4 +1027,43 @@ Future<DataItemResult> createDataItemForThumbnail({
 
     return r;
   });
+}
+
+/// Creates an encrypted DataItemFile for a thumbnail to be included in a bundle.
+/// This is used for D2N uploads to bundle thumbnails with file data (3 items per file).
+/// Handles encryption properly for private drives.
+Future<DataItemFile> _createThumbnailDataItemFile({
+  required IOFile thumbnailFile,
+  required ThumbnailUploadMetadata thumbnailMetadata,
+  required Wallet wallet,
+  SecretKey? encryptionKey,
+  required String fileId,
+}) async {
+  // Generate encrypted or plain data stream using the same logic as file data
+  final dataGenerator = await _dataGenerator(
+    dataStream: thumbnailFile.openReadStream,
+    fileLength: thumbnailMetadata.size,
+    metadataId: fileId,
+    wallet: wallet,
+    encryptionKey: encryptionKey,
+  );
+
+  // Update thumbnail metadata with cipher info if encrypted
+  if (encryptionKey != null) {
+    final cipher = dataGenerator.$3;
+    final cipherIv = dataGenerator.$2;
+    thumbnailMetadata.setCipherTags(
+      cipherTag: cipher!,
+      cipherIvTag: encodeBytesToBase64(cipherIv!),
+    );
+  }
+
+  return DataItemFile(
+    dataSize: dataGenerator.$4, // Use encrypted size if encrypted
+    streamGenerator: dataGenerator.$1,
+    tags: thumbnailMetadata
+        .thumbnailTags()
+        .map((e) => createTag(e.name, e.value))
+        .toList(),
+  );
 }
