@@ -67,6 +67,7 @@ Future<void> promptToUpload(
   required String parentFolderId,
   required bool isFolderUpload,
   List<IOFile>? files,
+  bool autoReplaceConflicts = false,
 }) async {
   final driveDetailCubit = context.read<DriveDetailCubit>();
   final manifestRepository = ManifestRepositoryImpl(
@@ -114,6 +115,7 @@ Future<void> promptToUpload(
     uploadRepository: context.read<UploadRepository>(),
     manifestRepository: manifestRepository,
     createManifestCubit: createManifestCubit,
+    autoReplaceConflicts: autoReplaceConflicts,
   );
 
   if (files != null) {

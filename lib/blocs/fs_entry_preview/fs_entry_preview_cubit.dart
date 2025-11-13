@@ -619,6 +619,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         filename: selectedItem.name,
         content: content,
         contentType: selectedItem.contentType,
+        fileItem: selectedItem,
       ));
     } catch (e) {
       logger.e('Error loading document preview', e);

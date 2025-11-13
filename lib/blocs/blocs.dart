@@ -12,6 +12,8 @@ export 'fs_entry_license/fs_entry_license_bloc.dart';
 export 'fs_entry_move/fs_entry_move_bloc.dart';
 export 'fs_entry_rename/fs_entry_rename_cubit.dart';
 export 'keyboard_listener/keyboard_listener_bloc.dart';
+export 'note_create/note_create_cubit.dart';
+export 'note_create/note_create_state.dart';
 export 'profile/profile_cubit.dart';
 export 'profile_add/profile_add_cubit.dart';
 export 'shared_file/shared_file_cubit.dart';

@@ -60,6 +60,7 @@ class UploadCubit extends Cubit<UploadState> {
     required CreateManifestCubit createManifestCubit,
     bool uploadFolders = false,
     bool isDragNDrop = false,
+    bool autoReplaceConflicts = false,
   })  : _isUploadFolders = uploadFolders,
         _isDragNDrop = isDragNDrop,
         _parentFolderId = parentFolderId,
@@ -74,6 +75,7 @@ class UploadCubit extends Cubit<UploadState> {
         _uploadThumbnail = configService.config.uploadThumbnails,
         _manifestRepository = manifestRepository,
         _createManifestCubit = createManifestCubit,
+        _autoReplaceConflicts = autoReplaceConflicts,
         super(uploadFolders ? UploadLoadingFolders() : UploadLoadingFiles());
 
   // Dependencies
@@ -90,6 +92,7 @@ class UploadCubit extends Cubit<UploadState> {
   final String _driveId;
   final String _parentFolderId;
   final bool _isDragNDrop;
+  final bool _autoReplaceConflicts;
 
   /// Utils for test
   @visibleForTesting
@@ -739,6 +742,15 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     if (_conflictingFiles.isNotEmpty) {
+      // Auto-replace conflicts when flag is set (used for markdown editing)
+      if (_autoReplaceConflicts) {
+        logger.d('Auto-replacing ${_conflictingFiles.length} conflicting file(s)');
+        await prepareUploadPlanAndCostEstimates(
+          uploadAction: UploadActions.replace,
+        );
+        return;
+      }
+
       if (checkFailedFiles) {
         _failedFiles.clear();
 

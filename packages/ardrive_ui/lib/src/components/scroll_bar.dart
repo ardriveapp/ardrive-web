@@ -1,5 +1,4 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:ardrive_ui/src/styles/colors/global_colors.dart';
 import 'package:flutter/material.dart';
 
 class ArDriveScrollBar extends StatelessWidget {
@@ -18,16 +17,20 @@ class ArDriveScrollBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+    final thumbColor = isVisible
+        ? colors.themeBorderDefault.withOpacity(0.9)
+        : Colors.transparent;
+    final trackColor = isVisible
+        ? colors.themeBorderDefault.withOpacity(0.5)
+        : Colors.transparent;
+
     return Theme(
       data: ArDriveTheme.of(context).themeData.materialThemeData.copyWith(
             scrollbarTheme: ScrollbarThemeData(
-              thumbColor: MaterialStateProperty.all<Color>(
-                isVisible ? grey.shade400 : Colors.transparent,
-              ), // set the color of the thumb
-              trackColor: MaterialStateProperty.all<Color>(
-                isVisible ? grey.shade400 : Colors.transparent,
-              ), // set the color of the track
-              thickness: MaterialStateProperty.all<double>(2.0),
+              thumbColor: MaterialStateProperty.all<Color>(thumbColor),
+              trackColor: MaterialStateProperty.all<Color>(trackColor),
+              thickness: MaterialStateProperty.all<double>(4.0),
             ),
           ),
       child: isVisible
@@ -35,7 +38,7 @@ class ArDriveScrollBar extends StatelessWidget {
               interactive: true,
               thumbVisibility: alwaysVisible,
               controller: controller,
-              thickness: 2.0,
+              thickness: 4.0,
               child: child,
             )
           : child,
