@@ -16,6 +16,7 @@ abstract class UploadFileStrategy {
     required Wallet wallet,
     required UploadController controller,
     required bool Function() verifyCancel,
+    List<DataItemResult>? signedDataItemResults,
   });
 }
 
@@ -61,11 +62,14 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
     required Wallet wallet,
     required UploadController controller,
     required bool Function() verifyCancel,
+    List<DataItemResult>? signedDataItemResults,
   }) async {
-    final dataItemResults = await createDataItemResultFromDataItemFiles(
-      dataItems,
-      wallet,
-    );
+    // Use pre-signed data items if available to avoid re-signing
+    final dataItemResults = signedDataItemResults ??
+        await createDataItemResultFromDataItemFiles(
+          dataItems,
+          wallet,
+        );
 
     logger.i('metadata uploaded for the file: ${task.metadataUploaded}');
 
@@ -214,6 +218,7 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
     required Wallet wallet,
     required UploadController controller,
     required bool Function() verifyCancel,
+    List<DataItemResult>? signedDataItemResults,
   }) async {
     final bundle = await _dataBundler.createDataBundle(
       file: task.file,
@@ -236,6 +241,7 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
           ),
         );
       },
+      signedDataItemResults: signedDataItemResults,
     );
 
     if (bundle is TransactionResult) {

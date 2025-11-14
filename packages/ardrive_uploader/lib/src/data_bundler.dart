@@ -28,6 +28,7 @@ abstract class DataBundler<T> {
     Function? onFinishMetadataCreation,
     Function? onStartBundleCreation,
     Function? onFinishBundleCreation,
+    List<DataItemResult>? signedDataItemResults,
   });
 
   Future<List<DataResultWithContents<T>>> createDataBundleForEntities({
@@ -63,8 +64,11 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
     Function? onFinishMetadataCreation,
     Function? onStartBundleCreation,
     Function? onFinishBundleCreation,
+    List<DataItemResult>? signedDataItemResults,
   }) async {
     List<DataItemFile> dataItemFilesToUse = [];
+    List<DataItemResult>? signedDataItemResultsToUse;
+
     if (dataItemFiles == null) {
       final uploadPreparation = await prepareDataItems(
         file: file,
@@ -76,8 +80,10 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
       );
 
       dataItemFilesToUse = uploadPreparation.dataItemFiles;
+      signedDataItemResultsToUse = uploadPreparation.signedDataItemResults;
     } else {
       dataItemFilesToUse = dataItemFiles;
+      signedDataItemResultsToUse = signedDataItemResults;
     }
 
     onStartBundleCreation?.call();
@@ -88,6 +94,7 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
       tags: getBundleTags(AppInfoServices(), customBundleTags)
           .map((e) => createTag(e.name, e.value))
           .toList(),
+      signedDataItemResults: signedDataItemResultsToUse,
     );
 
     onFinishBundleCreation?.call();
@@ -162,11 +169,14 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
     required final Wallet wallet,
     required final List<DataItemFile> dataItemFiles,
     required final List<Tag> tags,
+    List<DataItemResult>? signedDataItemResults,
   }) async {
-    final dataItemList = await createDataItemResultFromDataItemFiles(
-      dataItemFiles,
-      wallet,
-    );
+    // Use pre-signed data items if available to avoid re-signing
+    final dataItemList = signedDataItemResults ??
+        await createDataItemResultFromDataItemFiles(
+          dataItemFiles,
+          wallet,
+        );
 
     final dataBundleTaskEither =
         createDataBundleTaskEither(TaskEither.of(dataItemList));
@@ -215,12 +225,16 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
       },
     );
 
-    return (await result).match(
+    final transactionResult = await (await result).match(
       (l) {
         throw l;
       },
       (r) => r,
     ).run();
+
+    logger.d('D2N bundle transaction created with ID: ${transactionResult.id}');
+
+    return transactionResult;
   }
 }
 
@@ -242,6 +256,7 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
     Function? onFinishMetadataCreation,
     Function? onStartBundleCreation,
     Function? onFinishBundleCreation,
+    List<DataItemResult>? signedDataItemResults,
   }) {
     return _createBundleStable(
       file: file,
@@ -470,7 +485,17 @@ Future<DataItemFile> _generateMetadataDataItem({
   );
 }
 
-Future<DataItemFile> _generateFileMetadataDataItem({
+class _FileMetadataDataItemResult {
+  final DataItemFile dataItemFile;
+  final DataItemResult signedDataItemResult;
+
+  _FileMetadataDataItemResult({
+    required this.dataItemFile,
+    required this.signedDataItemResult,
+  });
+}
+
+Future<_FileMetadataDataItemResult> _generateFileMetadataDataItem({
   required ARFSFileUploadMetadata metadata,
   required DataItemResult dataItemResult,
   required Wallet wallet,
@@ -531,7 +556,7 @@ Future<DataItemFile> _generateFileMetadataDataItem({
 
   final metadataTaskEither = await metadataTask.run();
 
-  metadataTaskEither.match((l) {
+  final signedMetadataDataItemResult = metadataTaskEither.match((l) {
     throw l;
   }, (metadataDataItem) {
     logger.d(
@@ -540,13 +565,18 @@ Future<DataItemFile> _generateFileMetadataDataItem({
     return metadataDataItem;
   });
 
-  return DataItemFile(
+  final dataItemFile = DataItemFile(
     dataSize: metadataLength,
     streamGenerator: metadataGenerator,
     tags: metadata
         .getEntityMetadataTags()
         .map((e) => createTag(e.name, e.value))
         .toList(),
+  );
+
+  return _FileMetadataDataItemResult(
+    dataItemFile: dataItemFile,
+    signedDataItemResult: signedMetadataDataItemResult,
   );
 }
 
@@ -735,7 +765,7 @@ Future<UploadFilePreparation> prepareDataItems({
 
   onStartMetadataCreation?.call();
 
-  final metadataDataItem = await _generateFileMetadataDataItem(
+  final metadataResult = await _generateFileMetadataDataItem(
     metadata: metadata,
     dataItemResult: dataDataItemResult,
     wallet: wallet,
@@ -751,9 +781,11 @@ Future<UploadFilePreparation> prepareDataItems({
   onFinishMetadataCreation?.call();
 
   return UploadFilePreparation(
-    dataItemFiles: [metadataDataItem, dataDataItem],
+    dataItemFiles: [metadataResult.dataItemFile, dataDataItem],
     thumbnailFile: thumbnailFile,
     thumbnailDataItem: thumbnailDataItem,
+    metadataSignedDataItemResult: metadataResult.signedDataItemResult,
+    dataSignedDataItemResult: dataDataItemResult,
   );
 }
 
@@ -762,11 +794,28 @@ class UploadFilePreparation {
   final IOFile? thumbnailFile;
   final DataItemResult? thumbnailDataItem;
 
+  /// Pre-signed metadata data item result to avoid re-signing
+  final DataItemResult? metadataSignedDataItemResult;
+
+  /// Pre-signed file data data item result to avoid re-signing
+  final DataItemResult? dataSignedDataItemResult;
+
   UploadFilePreparation({
     required this.dataItemFiles,
     this.thumbnailFile,
     this.thumbnailDataItem,
+    this.metadataSignedDataItemResult,
+    this.dataSignedDataItemResult,
   });
+
+  /// Helper to get signed data items as a list for compatibility
+  List<DataItemResult>? get signedDataItemResults {
+    if (metadataSignedDataItemResult != null &&
+        dataSignedDataItemResult != null) {
+      return [metadataSignedDataItemResult!, dataSignedDataItemResult!];
+    }
+    return null;
+  }
 }
 
 Future<DataItemResult> _getDataItemResult({
