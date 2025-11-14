@@ -61,6 +61,7 @@ class UploadDispatcher {
           wallet: wallet,
           controller: controller,
           verifyCancel: verifyCancel,
+          signedDataItemResults: uploadPreparation.signedDataItemResults,
         );
 
         var updatedTask = controller.tasks[task.id]! as FileUploadTask;
