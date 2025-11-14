@@ -270,6 +270,13 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
     Function? onFinishBundleCreation,
     List<DataItemResult>? signedDataItemResults,
   }) {
+    // Note: signedDataItemResults is not used in BDI bundler because the external
+    // library function createBundledDataItemTaskEither does not support pre-signed items
+    if (signedDataItemResults != null) {
+      logger.d(
+          '⚠️ createBundledDataItemTaskEither does not support pre-signed items - file bundle will be re-signed');
+    }
+
     return _createBundleStable(
       file: file,
       metadata: metadata,
