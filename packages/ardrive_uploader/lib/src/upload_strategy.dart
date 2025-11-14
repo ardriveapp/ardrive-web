@@ -65,6 +65,12 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
     List<DataItemResult>? signedDataItemResults,
   }) async {
     // Use pre-signed data items if available to avoid re-signing
+    if (signedDataItemResults != null) {
+      logger.d('♻️ Reusing ${signedDataItemResults.length} pre-signed data items for Turbo upload (avoiding re-signature)');
+    } else {
+      logger.d('⚠️ No pre-signed data items available, will sign ${dataItems.length} items');
+    }
+
     final dataItemResults = signedDataItemResults ??
         await createDataItemResultFromDataItemFiles(
           dataItems,

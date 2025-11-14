@@ -112,6 +112,7 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
   }) async {
     List<ARFSUploadMetadata> folderMetadatas = [];
     List<DataItemFile> folderDataItems = [];
+    List<DataItemResult> signedFolderDataItems = [];
     List<DataResultWithContents<TransactionResult>> transactionResults = [];
 
     if (entities.isEmpty) {
@@ -134,13 +135,14 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
 
         folderMetadatas.add(folderMetadata);
 
-        final folderItem = await _generateMetadataDataItem(
+        final folderItemResult = await _generateMetadataDataItem(
           metadata: e.$1,
           wallet: wallet,
           driveKey: driveKey,
         );
 
-        folderDataItems.add(folderItem);
+        folderDataItems.add(folderItemResult.dataItemFile);
+        signedFolderDataItems.add(folderItemResult.signedDataItemResult);
       }
     }
 
@@ -153,6 +155,8 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
       dataItemFiles: folderDataItems,
       wallet: wallet,
       tags: bundleTags.map((e) => createTag(e.name, e.value)).toList(),
+      signedDataItemResults:
+          signedFolderDataItems.isNotEmpty ? signedFolderDataItems : null,
     );
 
     /// All folders inside a single BDI, and the remaining files
@@ -172,6 +176,14 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
     List<DataItemResult>? signedDataItemResults,
   }) async {
     // Use pre-signed data items if available to avoid re-signing
+    if (signedDataItemResults != null) {
+      logger.d(
+          '♻️ Reusing ${signedDataItemResults.length} pre-signed data items for D2N bundle (avoiding re-signature)');
+    } else {
+      logger.d(
+          '⚠️ No pre-signed data items available for D2N, will sign ${dataItemFiles.length} items');
+    }
+
     final dataItemList = signedDataItemResults ??
         await createDataItemResultFromDataItemFiles(
           dataItemFiles,
@@ -329,6 +341,7 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
   }) async {
     List<ARFSUploadMetadata> folderMetadatas = [];
     List<DataItemFile> folderDataItems = [];
+    List<DataItemResult> signedFolderDataItems = [];
     List<DataResultWithContents<DataItemResult>> dataItemsResult = [];
 
     if (entities.isEmpty) {
@@ -352,13 +365,14 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
 
         folderMetadatas.add(folderMetadata);
 
-        final folderItem = await _generateMetadataDataItem(
+        final folderItemResult = await _generateMetadataDataItem(
           metadata: e.$1,
           wallet: wallet,
           driveKey: driveKey,
         );
 
-        folderDataItems.add(folderItem);
+        folderDataItems.add(folderItemResult.dataItemFile);
+        signedFolderDataItems.add(folderItemResult.signedDataItemResult);
       }
     }
 
@@ -366,6 +380,12 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
       AppInfoServices(),
       customBundleTags,
     );
+
+    // Note: createBundledDataItemTaskEither from arweave library doesn't support
+    // pre-signed items, so folder metadata may be re-signed here.
+    // This is a known limitation of the external library.
+    logger.d(
+        '⚠️ createBundledDataItemTaskEither does not support pre-signed items - folder metadata will be re-signed');
 
     final folderBDITask = await (await createBundledDataItemTaskEither(
       dataItemFiles: folderDataItems,
@@ -408,7 +428,17 @@ DataItemFile _generateDataDataItem({
   return dataItemFile;
 }
 
-Future<DataItemFile> _generateMetadataDataItem({
+class _MetadataDataItemResult {
+  final DataItemFile dataItemFile;
+  final DataItemResult signedDataItemResult;
+
+  _MetadataDataItemResult({
+    required this.dataItemFile,
+    required this.signedDataItemResult,
+  });
+}
+
+Future<_MetadataDataItemResult> _generateMetadataDataItem({
   required ARFSUploadMetadata metadata,
   required Wallet wallet,
   SecretKey? driveKey,
@@ -463,25 +493,32 @@ Future<DataItemFile> _generateMetadataDataItem({
         .toList(),
   ).flatMap((metadataDataItem) => TaskEither.of(metadataDataItem));
 
+  logger.d('🔐 Signing folder/entity METADATA item for: ${metadata.id}');
+
   final metadataTaskEither = await metadataTask.run();
 
-  metadataTaskEither.match((l) {
+  final signedMetadataDataItemResult = metadataTaskEither.match((l) {
     print(StackTrace.current);
     throw l;
   }, (metadataDataItem) {
     logger.d(
-        'Metadata tx id: on _generateMetadataDataItem ${metadataDataItem.id}');
+        '✅ Signed folder/entity METADATA item with ID: ${metadataDataItem.id}');
     metadata.setMetadataTxId = metadataDataItem.id;
     return metadataDataItem;
   });
 
-  return DataItemFile(
+  final dataItemFile = DataItemFile(
     dataSize: length,
     streamGenerator: metadataStreamGenerator,
     tags: metadata
         .getEntityMetadataTags()
         .map((e) => createTag(e.name, e.value))
         .toList(),
+  );
+
+  return _MetadataDataItemResult(
+    dataItemFile: dataItemFile,
+    signedDataItemResult: signedMetadataDataItemResult,
   );
 }
 
@@ -544,6 +581,8 @@ Future<_FileMetadataDataItemResult> _generateFileMetadataDataItem({
 
   logger.d('Metadata tags: ${getJsonFromListOfTags(metadata.getDataTags())}');
 
+  logger.d('🔐 Signing file METADATA item for file: ${metadata.name}');
+
   final metadataTask = createDataItemTaskEither(
     wallet: wallet,
     dataStream: metadataGenerator,
@@ -559,8 +598,7 @@ Future<_FileMetadataDataItemResult> _generateFileMetadataDataItem({
   final signedMetadataDataItemResult = metadataTaskEither.match((l) {
     throw l;
   }, (metadataDataItem) {
-    logger.d(
-        'Metadata tx id on _generateFileMetadataDataItem: ${metadataDataItem.id}');
+    logger.d('✅ Signed file METADATA item with ID: ${metadataDataItem.id}');
     metadata.setMetadataTxId = metadataDataItem.id;
     return metadataDataItem;
   });
@@ -843,6 +881,8 @@ Future<DataItemResult> _getDataItemResult({
 
   logger.d('Data tags: ${getJsonFromListOfTags(metadata.getDataTags())}');
 
+  logger.d('🔐 Signing file DATA item for file: ${metadata.name}');
+
   final fileDataItemEither = createDataItemTaskEither(
     wallet: wallet,
     dataStream: dataStreamGenerator,
@@ -856,7 +896,7 @@ Future<DataItemResult> _getDataItemResult({
   return fileDataItemResult.match((l) {
     throw l;
   }, (r) {
-    logger.d('Data tx id: ${r.id}');
+    logger.d('✅ Signed file DATA item with ID: ${r.id}');
     metadata.updateDataTxId(r.id);
 
     return r;
