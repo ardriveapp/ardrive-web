@@ -62,11 +62,13 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
         );
 
       case const (FsEntryPreviewText):
+        final textState = widget.state as FsEntryPreviewText;
         return DocumentPreviewWidget(
-          filename: (widget.state as FsEntryPreviewText).filename,
-          content: (widget.state as FsEntryPreviewText).content,
-          contentType: (widget.state as FsEntryPreviewText).contentType,
+          filename: textState.filename,
+          content: textState.content,
+          contentType: textState.contentType,
           isSharePage: widget.isSharePage,
+          fileItem: textState.fileItem,
         );
 
       case const (FsEntryPreviewEmail):

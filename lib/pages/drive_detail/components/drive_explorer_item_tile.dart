@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:ardrive/arns/presentation/ant_icon.dart';
 import 'package:ardrive/arns/presentation/assign_name_modal.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
+import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
@@ -8,6 +11,7 @@ import 'package:ardrive/components/fs_entry_license_form.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/pin_indicator.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/drive_explorer/thumbnail/thumbnail_bloc.dart';
@@ -16,11 +20,13 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/has_arns_name.dart';
 import 'package:ardrive/utils/format_date.dart';
+import 'package:ardrive/utils/has_arns_name.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/size_constants.dart';
+import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/material.dart';
@@ -546,23 +552,37 @@ class _DriveExplorerItemTileTrailingState
           ),
         ),
       if (isOwner) ...[
-        ArDriveDropdownItem(
-          onClick: () {
-            promptToRenameModal(
-              context,
-              driveId: item.driveId,
-              fileId: item.id,
-              initialName: item.name,
-            );
-          },
-          content: _buildItem(
-            appLocalizationsOf(context).rename,
-            ArDriveIcons.editFilled(
-              size: defaultIconSize,
+        if (item is FileDataTableItem)
+          ArDriveDropdownItem(
+            onClick: () async {
+              final fileItem = item;
+              final isMarkdown = fileItem.contentType == 'text/markdown' ||
+                  fileItem.contentType == 'text/x-markdown';
+
+              if (isMarkdown) {
+                // For markdown files, show edit dialog instead of rename
+                await handleMarkdownFileEdit(context, fileItem);
+              } else {
+                // For other files, show normal rename dialog
+                promptToRenameModal(
+                  context,
+                  driveId: item.driveId,
+                  fileId: item.id,
+                  initialName: item.name,
+                );
+              }
+            },
+            content: _buildItem(
+              item.contentType == 'text/markdown' ||
+                  item.contentType == 'text/x-markdown'
+                  ? appLocalizationsOf(context).editNote
+                  : appLocalizationsOf(context).rename,
+              ArDriveIcons.editFilled(
+                size: defaultIconSize,
+              ),
+              height: height,
             ),
-            height: height,
           ),
-        ),
         ArDriveDropdownItem(
           onClick: () {
             promptToMove(
@@ -653,6 +673,148 @@ class _DriveExplorerItemTileTrailingState
 bool isMobile(BuildContext context) {
   final isPortrait = MediaQuery.of(context).orientation == Orientation.portrait;
   return isPortrait;
+}
+
+/// Downloads markdown file content and shows edit dialog
+/// Supports both public and private files
+Future<void> handleMarkdownFileEdit(
+  BuildContext context,
+  FileDataTableItem fileItem,
+) async {
+  try {
+    // Get required services
+    final driveDao = context.read<DriveDao>();
+    final configService = context.read<ConfigService>();
+    final arweaveService = context.read<ArweaveService>();
+    final crypto = context.read<ArDriveCrypto>();
+    final profileCubit = context.read<ProfileCubit>();
+
+    // Get drive to check if it's private
+    final drive = await driveDao.driveById(driveId: fileItem.driveId).getSingle();
+
+    if (!context.mounted) return;
+
+    // Show loading indicator
+    showAnimatedDialogWithBuilder(
+      context,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+      barrierDismissible: false,
+    );
+
+    if (!context.mounted) return;
+
+    // Get gateway URL and build data URL
+    final gatewayUrl = configService.config.defaultArweaveGatewayUrl;
+    final dataUrl = '$gatewayUrl/${fileItem.dataTxId}';
+
+    // Fetch the file bytes using ArDriveHTTP
+    final response = await ArDriveHTTP().getAsBytes(dataUrl);
+    final dataBytes = response.data;
+
+    if (dataBytes == null) {
+      throw Exception('Failed to download file');
+    }
+
+    // Decrypt if private
+    Uint8List bytesToDecode = dataBytes;
+    final isPinFile = fileItem.pinnedDataOwnerAddress != null;
+
+    if (drive.isPrivate && !isPinFile) {
+      logger.d('Decrypting private markdown file: ${fileItem.name}');
+
+      // Get profile key
+      final profile = profileCubit.state;
+      DriveKey? driveKey;
+
+      if (profile is ProfileLoggedIn) {
+        driveKey = await driveDao.getDriveKey(
+          fileItem.driveId,
+          profile.user.cipherKey,
+        );
+      } else {
+        // For shared drives without profile
+        driveKey = await driveDao.getDriveKeyFromMemory(fileItem.driveId);
+      }
+
+      if (driveKey == null) {
+        throw Exception('Unable to access drive key. Please ensure you have access to this private drive.');
+      }
+
+      // Derive file-specific key
+      final fileKey = await driveDao.getFileKey(
+        fileItem.fileId,
+        driveKey.key,
+      );
+
+      // Get transaction metadata for cipher tags
+      final transaction = await arweaveService.getTransactionDetails(
+        fileItem.dataTxId,
+      );
+
+      if (transaction == null) {
+        throw Exception('Failed to fetch file metadata');
+      }
+
+      // Decrypt the data
+      try {
+        final decryptedBytes = await crypto.decryptDataFromTransaction(
+          transaction,
+          dataBytes,
+          fileKey,
+        );
+        bytesToDecode = decryptedBytes;
+        logger.d('Successfully decrypted private file');
+      } catch (e) {
+        logger.e('Decryption failed', e);
+        throw Exception('Failed to decrypt file. The file may be corrupted or you may not have the correct permissions.');
+      }
+    }
+
+    // Convert bytes to string
+    final content = utf8.decode(bytesToDecode, allowMalformed: true);
+
+    // Close loading indicator
+    if (context.mounted) {
+      Navigator.of(context).pop();
+    }
+
+    // Show edit dialog
+    if (context.mounted) {
+      await promptToEditNote(
+        context,
+        driveId: fileItem.driveId,
+        parentFolderId: fileItem.parentFolderId,
+        fileId: fileItem.fileId,
+        fileName: fileItem.name,
+        fileContent: content,
+        fileSize: fileItem.size ?? 0,
+      );
+    }
+  } catch (e) {
+    logger.e('Failed to load markdown file for editing', e);
+
+    // Close loading indicator
+    if (context.mounted) {
+      Navigator.of(context).pop();
+    }
+
+    // Show error dialog
+    if (context.mounted) {
+      await showStandardDialog(
+        context,
+        title: 'Error',
+        description: 'Failed to load file for editing: ${e.toString()}',
+        actions: [
+          ModalAction(
+            action: () => Navigator.of(context).pop(),
+            title: 'OK',
+          ),
+        ],
+      );
+    }
+  }
 }
 
 class EntityActionsMenu extends StatelessWidget {
@@ -891,18 +1053,31 @@ class EntityActionsMenu extends StatelessWidget {
           ),
         ),
       ),
-      if (isOwner && !isFileRevision) ...[
+      if (isOwner && !isFileRevision && item is FileDataTableItem) ...[
         ArDriveDropdownItem(
-          onClick: () {
-            promptToRenameModal(
-              context,
-              driveId: item.driveId,
-              fileId: item.id,
-              initialName: item.name,
-            );
+          onClick: () async {
+            final fileItem = item;
+            final isMarkdown = fileItem.contentType == 'text/markdown' ||
+                fileItem.contentType == 'text/x-markdown';
+
+            if (isMarkdown) {
+              // For markdown files, show edit dialog instead of rename
+              await handleMarkdownFileEdit(context, fileItem);
+            } else {
+              // For other files, show normal rename dialog
+              promptToRenameModal(
+                context,
+                driveId: item.driveId,
+                fileId: item.id,
+                initialName: item.name,
+              );
+            }
           },
           content: _buildItem(
-            appLocalizationsOf(context).rename,
+            item.contentType == 'text/markdown' ||
+                item.contentType == 'text/x-markdown'
+                ? appLocalizationsOf(context).editNote
+                : appLocalizationsOf(context).rename,
             ArDriveIcons.editFilled(
               size: defaultIconSize,
             ),

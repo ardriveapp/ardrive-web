@@ -1400,6 +1400,162 @@
   "@newFolder": {
     "description": "Create a new folder entity"
   },
+  "newNote": "New Note",
+  "@newNote": {
+    "description": "Create a new markdown note"
+  },
+  "createNewNote": "Create New Note",
+  "@createNewNote": {
+    "description": "Title for note creation modal"
+  },
+  "editNote": "Edit Note",
+  "@editNote": {
+    "description": "Title for note editing modal"
+  },
+  "saveEmphasized": "SAVE",
+  "@saveEmphasized": {
+    "description": "Save button text (emphasized/uppercase)"
+  },
+  "noteName": "Note Name",
+  "@noteName": {
+    "description": "Label for note name input field"
+  },
+  "enterNoteName": "Enter note name...",
+  "@enterNoteName": {
+    "description": "Placeholder text for note name input"
+  },
+  "noteNameEmptyError": "Note name cannot be empty",
+  "@noteNameEmptyError": {
+    "description": "Error message when note name is empty"
+  },
+  "noteNameInvalidCharactersError": "Invalid name. Cannot contain: / \\ *",
+  "@noteNameInvalidCharactersError": {
+    "description": "Error message when note name contains invalid characters"
+  },
+  "noteCreateFileFailed": "Failed to create note file. Please try again.",
+  "@noteCreateFileFailed": {
+    "description": "Error message when note file creation fails"
+  },
+  "view": "View",
+  "@view": {
+    "description": "Label for view mode options"
+  },
+  "editOnly": "Edit",
+  "@editOnly": {
+    "description": "Edit-only view mode"
+  },
+  "previewOnly": "Preview",
+  "@previewOnly": {
+    "description": "Preview-only view mode"
+  },
+  "discardChanges": "Discard Changes?",
+  "@discardChanges": {
+    "description": "Dialog title when discarding unsaved note changes"
+  },
+  "discardChangesDescription": "You have unsaved changes. Are you sure you want to discard them?",
+  "@discardChangesDescription": {
+    "description": "Dialog message when discarding unsaved note changes"
+  },
+  "discardEmphasized": "DISCARD",
+  "@discardEmphasized": {
+    "description": "Discard button text, emphasized with upper case"
+  },
+  "noteFileTooLarge": "This file is too large to edit ({fileSizeMB}MB). Files over 5MB cannot be edited.",
+  "@noteFileTooLarge": {
+    "description": "Error message when a note file exceeds the maximum size limit",
+    "placeholders": {
+      "fileSizeMB": {
+        "type": "String",
+        "example": "6.5"
+      }
+    }
+  },
+  "noteLargeFileWarningTitle": "Large File Warning",
+  "@noteLargeFileWarningTitle": {
+    "description": "Title for warning dialog when opening a large file"
+  },
+  "noteLargeFileWarningDescription": "This file is {fileSizeMB}MB. Editing large files may affect performance. Do you want to continue?",
+  "@noteLargeFileWarningDescription": {
+    "description": "Warning message for large files that may affect performance",
+    "placeholders": {
+      "fileSizeMB": {
+        "type": "String",
+        "example": "2.3"
+      }
+    }
+  },
+  "markdownEditorBold": "Bold",
+  "@markdownEditorBold": {
+    "description": "Tooltip for bold formatting button in markdown editor"
+  },
+  "markdownEditorItalic": "Italic",
+  "@markdownEditorItalic": {
+    "description": "Tooltip for italic formatting button in markdown editor"
+  },
+  "markdownEditorStrikethrough": "Strikethrough",
+  "@markdownEditorStrikethrough": {
+    "description": "Tooltip for strikethrough formatting button in markdown editor"
+  },
+  "markdownEditorBulletList": "Bullet List",
+  "@markdownEditorBulletList": {
+    "description": "Tooltip for bullet list button in markdown editor"
+  },
+  "markdownEditorNumberedList": "Numbered List",
+  "@markdownEditorNumberedList": {
+    "description": "Tooltip for numbered list button in markdown editor"
+  },
+  "markdownEditorQuote": "Quote",
+  "@markdownEditorQuote": {
+    "description": "Tooltip for quote button in markdown editor"
+  },
+  "markdownEditorInlineCode": "Inline Code",
+  "@markdownEditorInlineCode": {
+    "description": "Tooltip for inline code button in markdown editor"
+  },
+  "markdownEditorCodeBlock": "Code Block",
+  "@markdownEditorCodeBlock": {
+    "description": "Tooltip for code block button in markdown editor"
+  },
+  "markdownEditorInsertLink": "Insert Link",
+  "@markdownEditorInsertLink": {
+    "description": "Tooltip for insert link button in markdown editor"
+  },
+  "markdownEditorHeading": "Heading",
+  "@markdownEditorHeading": {
+    "description": "Tooltip for heading dropdown button in markdown editor"
+  },
+  "markdownEditorHeading1": "Heading 1",
+  "@markdownEditorHeading1": {
+    "description": "Dropdown item for Heading 1 in markdown editor"
+  },
+  "markdownEditorHeading2": "Heading 2",
+  "@markdownEditorHeading2": {
+    "description": "Dropdown item for Heading 2 in markdown editor"
+  },
+  "markdownEditorHeading3": "Heading 3",
+  "@markdownEditorHeading3": {
+    "description": "Dropdown item for Heading 3 in markdown editor"
+  },
+  "markdownEditorPreview": "Preview",
+  "@markdownEditorPreview": {
+    "description": "Tooltip for preview mode toggle in markdown editor"
+  },
+  "markdownEditorEdit": "Edit",
+  "@markdownEditorEdit": {
+    "description": "Tooltip for edit mode toggle in markdown editor"
+  },
+  "markdownEditorPlaceholder": "Write your note in markdown...",
+  "@markdownEditorPlaceholder": {
+    "description": "Placeholder text in the markdown editor text field"
+  },
+  "markdownPreviewPlaceholder": "Preview will appear here...",
+  "@markdownPreviewPlaceholder": {
+    "description": "Placeholder text shown when preview is empty"
+  },
+  "markdownImageAltText": "Image",
+  "@markdownImageAltText": {
+    "description": "Default alt text for images in markdown preview"
+  },
   "newSnapshot": "New Snapshot",
   "@newSnapshot": {
     "description": "The action of snapshotting a drive"

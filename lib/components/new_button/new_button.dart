@@ -449,6 +449,16 @@ class NewButton extends StatelessWidget {
             name: appLocalizations.newFolder,
             icon: ArDriveIcons.iconNewFolder1(size: defaultIconSize),
           ),
+          ArDriveNewButtonItem(
+            onClick: () => promptToCreateNote(
+              context,
+              driveId: driveDetailState.currentDrive.id,
+              parentFolderId: currentFolder!.folder.id,
+            ),
+            isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
+            name: appLocalizations.newNote,
+            icon: ArDriveIcons.edit(size: defaultIconSize), // TODO: Create dedicated note icon (document/text icon)
+          ),
           if (drive != null)
             ArDriveNewButtonItem(
               name: appLocalizationsOf(context).newFilePin,
@@ -539,6 +549,16 @@ class NewButton extends StatelessWidget {
             isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
             name: appLocalizations.newFolder,
             icon: ArDriveIcons.iconNewFolder1(size: defaultIconSize),
+          ),
+          ArDriveNewButtonItem(
+            onClick: () => promptToCreateNote(
+              context,
+              driveId: driveDetailState.currentDrive.id,
+              parentFolderId: currentFolder!.folder.id,
+            ),
+            isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
+            name: appLocalizations.newNote,
+            icon: ArDriveIcons.edit(size: defaultIconSize), // TODO: Create dedicated note icon (document/text icon)
           ),
           if (drive != null)
             ArDriveNewButtonItem(

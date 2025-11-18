@@ -28,6 +28,7 @@ abstract class DataBundler<T> {
     Function? onFinishMetadataCreation,
     Function? onStartBundleCreation,
     Function? onFinishBundleCreation,
+    List<DataItemResult>? signedDataItemResults,
   });
 
   Future<List<DataResultWithContents<T>>> createDataBundleForEntities({
@@ -63,8 +64,11 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
     Function? onFinishMetadataCreation,
     Function? onStartBundleCreation,
     Function? onFinishBundleCreation,
+    List<DataItemResult>? signedDataItemResults,
   }) async {
     List<DataItemFile> dataItemFilesToUse = [];
+    List<DataItemResult>? signedDataItemResultsToUse;
+
     if (dataItemFiles == null) {
       final uploadPreparation = await prepareDataItems(
         file: file,
@@ -76,8 +80,10 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
       );
 
       dataItemFilesToUse = uploadPreparation.dataItemFiles;
+      signedDataItemResultsToUse = uploadPreparation.signedDataItemResults;
     } else {
       dataItemFilesToUse = dataItemFiles;
+      signedDataItemResultsToUse = signedDataItemResults;
     }
 
     onStartBundleCreation?.call();
@@ -88,6 +94,7 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
       tags: getBundleTags(AppInfoServices(), customBundleTags)
           .map((e) => createTag(e.name, e.value))
           .toList(),
+      signedDataItemResults: signedDataItemResultsToUse,
     );
 
     onFinishBundleCreation?.call();
@@ -105,6 +112,7 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
   }) async {
     List<ARFSUploadMetadata> folderMetadatas = [];
     List<DataItemFile> folderDataItems = [];
+    List<DataItemResult> signedFolderDataItems = [];
     List<DataResultWithContents<TransactionResult>> transactionResults = [];
 
     if (entities.isEmpty) {
@@ -127,13 +135,14 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
 
         folderMetadatas.add(folderMetadata);
 
-        final folderItem = await _generateMetadataDataItem(
+        final folderItemResult = await _generateMetadataDataItem(
           metadata: e.$1,
           wallet: wallet,
           driveKey: driveKey,
         );
 
-        folderDataItems.add(folderItem);
+        folderDataItems.add(folderItemResult.dataItemFile);
+        signedFolderDataItems.add(folderItemResult.signedDataItemResult);
       }
     }
 
@@ -146,6 +155,8 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
       dataItemFiles: folderDataItems,
       wallet: wallet,
       tags: bundleTags.map((e) => createTag(e.name, e.value)).toList(),
+      signedDataItemResults:
+          signedFolderDataItems.isNotEmpty ? signedFolderDataItems : null,
     );
 
     /// All folders inside a single BDI, and the remaining files
@@ -162,11 +173,22 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
     required final Wallet wallet,
     required final List<DataItemFile> dataItemFiles,
     required final List<Tag> tags,
+    List<DataItemResult>? signedDataItemResults,
   }) async {
-    final dataItemList = await createDataItemResultFromDataItemFiles(
-      dataItemFiles,
-      wallet,
-    );
+    // Use pre-signed data items if available to avoid re-signing
+    if (signedDataItemResults != null) {
+      logger.d(
+          '♻️ Reusing ${signedDataItemResults.length} pre-signed data items for D2N bundle (avoiding re-signature)');
+    } else {
+      logger.d(
+          '⚠️ No pre-signed data items available for D2N, will sign ${dataItemFiles.length} items');
+    }
+
+    final dataItemList = signedDataItemResults ??
+        await createDataItemResultFromDataItemFiles(
+          dataItemFiles,
+          wallet,
+        );
 
     final dataBundleTaskEither =
         createDataBundleTaskEither(TaskEither.of(dataItemList));
@@ -215,12 +237,16 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
       },
     );
 
-    return (await result).match(
+    final transactionResult = await (await result).match(
       (l) {
         throw l;
       },
       (r) => r,
     ).run();
+
+    logger.d('D2N bundle transaction created with ID: ${transactionResult.id}');
+
+    return transactionResult;
   }
 }
 
@@ -242,7 +268,15 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
     Function? onFinishMetadataCreation,
     Function? onStartBundleCreation,
     Function? onFinishBundleCreation,
+    List<DataItemResult>? signedDataItemResults,
   }) {
+    // Note: signedDataItemResults is not used in BDI bundler because the external
+    // library function createBundledDataItemTaskEither does not support pre-signed items
+    if (signedDataItemResults != null) {
+      logger.d(
+          '⚠️ createBundledDataItemTaskEither does not support pre-signed items - file bundle will be re-signed');
+    }
+
     return _createBundleStable(
       file: file,
       metadata: metadata,
@@ -314,6 +348,7 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
   }) async {
     List<ARFSUploadMetadata> folderMetadatas = [];
     List<DataItemFile> folderDataItems = [];
+    List<DataItemResult> signedFolderDataItems = [];
     List<DataResultWithContents<DataItemResult>> dataItemsResult = [];
 
     if (entities.isEmpty) {
@@ -337,13 +372,14 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
 
         folderMetadatas.add(folderMetadata);
 
-        final folderItem = await _generateMetadataDataItem(
+        final folderItemResult = await _generateMetadataDataItem(
           metadata: e.$1,
           wallet: wallet,
           driveKey: driveKey,
         );
 
-        folderDataItems.add(folderItem);
+        folderDataItems.add(folderItemResult.dataItemFile);
+        signedFolderDataItems.add(folderItemResult.signedDataItemResult);
       }
     }
 
@@ -351,6 +387,12 @@ class BDIDataBundler implements DataBundler<DataItemResult> {
       AppInfoServices(),
       customBundleTags,
     );
+
+    // Note: createBundledDataItemTaskEither from arweave library doesn't support
+    // pre-signed items, so folder metadata may be re-signed here.
+    // This is a known limitation of the external library.
+    logger.d(
+        '⚠️ createBundledDataItemTaskEither does not support pre-signed items - folder metadata will be re-signed');
 
     final folderBDITask = await (await createBundledDataItemTaskEither(
       dataItemFiles: folderDataItems,
@@ -393,7 +435,17 @@ DataItemFile _generateDataDataItem({
   return dataItemFile;
 }
 
-Future<DataItemFile> _generateMetadataDataItem({
+class _MetadataDataItemResult {
+  final DataItemFile dataItemFile;
+  final DataItemResult signedDataItemResult;
+
+  _MetadataDataItemResult({
+    required this.dataItemFile,
+    required this.signedDataItemResult,
+  });
+}
+
+Future<_MetadataDataItemResult> _generateMetadataDataItem({
   required ARFSUploadMetadata metadata,
   required Wallet wallet,
   SecretKey? driveKey,
@@ -448,19 +500,21 @@ Future<DataItemFile> _generateMetadataDataItem({
         .toList(),
   ).flatMap((metadataDataItem) => TaskEither.of(metadataDataItem));
 
+  logger.d('🔐 Signing folder/entity METADATA item for: ${metadata.id}');
+
   final metadataTaskEither = await metadataTask.run();
 
-  metadataTaskEither.match((l) {
+  final signedMetadataDataItemResult = metadataTaskEither.match((l) {
     print(StackTrace.current);
     throw l;
   }, (metadataDataItem) {
     logger.d(
-        'Metadata tx id: on _generateMetadataDataItem ${metadataDataItem.id}');
+        '✅ Signed folder/entity METADATA item with ID: ${metadataDataItem.id}');
     metadata.setMetadataTxId = metadataDataItem.id;
     return metadataDataItem;
   });
 
-  return DataItemFile(
+  final dataItemFile = DataItemFile(
     dataSize: length,
     streamGenerator: metadataStreamGenerator,
     tags: metadata
@@ -468,9 +522,24 @@ Future<DataItemFile> _generateMetadataDataItem({
         .map((e) => createTag(e.name, e.value))
         .toList(),
   );
+
+  return _MetadataDataItemResult(
+    dataItemFile: dataItemFile,
+    signedDataItemResult: signedMetadataDataItemResult,
+  );
 }
 
-Future<DataItemFile> _generateFileMetadataDataItem({
+class _FileMetadataDataItemResult {
+  final DataItemFile dataItemFile;
+  final DataItemResult signedDataItemResult;
+
+  _FileMetadataDataItemResult({
+    required this.dataItemFile,
+    required this.signedDataItemResult,
+  });
+}
+
+Future<_FileMetadataDataItemResult> _generateFileMetadataDataItem({
   required ARFSFileUploadMetadata metadata,
   required DataItemResult dataItemResult,
   required Wallet wallet,
@@ -519,6 +588,8 @@ Future<DataItemFile> _generateFileMetadataDataItem({
 
   logger.d('Metadata tags: ${getJsonFromListOfTags(metadata.getDataTags())}');
 
+  logger.d('🔐 Signing file METADATA item for file: ${metadata.name}');
+
   final metadataTask = createDataItemTaskEither(
     wallet: wallet,
     dataStream: metadataGenerator,
@@ -531,22 +602,26 @@ Future<DataItemFile> _generateFileMetadataDataItem({
 
   final metadataTaskEither = await metadataTask.run();
 
-  metadataTaskEither.match((l) {
+  final signedMetadataDataItemResult = metadataTaskEither.match((l) {
     throw l;
   }, (metadataDataItem) {
-    logger.d(
-        'Metadata tx id on _generateFileMetadataDataItem: ${metadataDataItem.id}');
+    logger.d('✅ Signed file METADATA item with ID: ${metadataDataItem.id}');
     metadata.setMetadataTxId = metadataDataItem.id;
     return metadataDataItem;
   });
 
-  return DataItemFile(
+  final dataItemFile = DataItemFile(
     dataSize: metadataLength,
     streamGenerator: metadataGenerator,
     tags: metadata
         .getEntityMetadataTags()
         .map((e) => createTag(e.name, e.value))
         .toList(),
+  );
+
+  return _FileMetadataDataItemResult(
+    dataItemFile: dataItemFile,
+    signedDataItemResult: signedMetadataDataItemResult,
   );
 }
 
@@ -735,7 +810,7 @@ Future<UploadFilePreparation> prepareDataItems({
 
   onStartMetadataCreation?.call();
 
-  final metadataDataItem = await _generateFileMetadataDataItem(
+  final metadataResult = await _generateFileMetadataDataItem(
     metadata: metadata,
     dataItemResult: dataDataItemResult,
     wallet: wallet,
@@ -751,9 +826,11 @@ Future<UploadFilePreparation> prepareDataItems({
   onFinishMetadataCreation?.call();
 
   return UploadFilePreparation(
-    dataItemFiles: [metadataDataItem, dataDataItem],
+    dataItemFiles: [metadataResult.dataItemFile, dataDataItem],
     thumbnailFile: thumbnailFile,
     thumbnailDataItem: thumbnailDataItem,
+    metadataSignedDataItemResult: metadataResult.signedDataItemResult,
+    dataSignedDataItemResult: dataDataItemResult,
   );
 }
 
@@ -762,11 +839,28 @@ class UploadFilePreparation {
   final IOFile? thumbnailFile;
   final DataItemResult? thumbnailDataItem;
 
+  /// Pre-signed metadata data item result to avoid re-signing
+  final DataItemResult? metadataSignedDataItemResult;
+
+  /// Pre-signed file data data item result to avoid re-signing
+  final DataItemResult? dataSignedDataItemResult;
+
   UploadFilePreparation({
     required this.dataItemFiles,
     this.thumbnailFile,
     this.thumbnailDataItem,
+    this.metadataSignedDataItemResult,
+    this.dataSignedDataItemResult,
   });
+
+  /// Helper to get signed data items as a list for compatibility
+  List<DataItemResult>? get signedDataItemResults {
+    if (metadataSignedDataItemResult != null &&
+        dataSignedDataItemResult != null) {
+      return [metadataSignedDataItemResult!, dataSignedDataItemResult!];
+    }
+    return null;
+  }
 }
 
 Future<DataItemResult> _getDataItemResult({
@@ -794,6 +888,8 @@ Future<DataItemResult> _getDataItemResult({
 
   logger.d('Data tags: ${getJsonFromListOfTags(metadata.getDataTags())}');
 
+  logger.d('🔐 Signing file DATA item for file: ${metadata.name}');
+
   final fileDataItemEither = createDataItemTaskEither(
     wallet: wallet,
     dataStream: dataStreamGenerator,
@@ -807,7 +903,7 @@ Future<DataItemResult> _getDataItemResult({
   return fileDataItemResult.match((l) {
     throw l;
   }, (r) {
-    logger.d('Data tx id: ${r.id}');
+    logger.d('✅ Signed file DATA item with ID: ${r.id}');
     metadata.updateDataTxId(r.id);
 
     return r;
