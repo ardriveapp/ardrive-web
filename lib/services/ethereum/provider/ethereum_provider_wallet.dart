@@ -15,11 +15,10 @@ class EthereumProviderWallet extends EthereumWallet {
   // Ethereum Provider accepts an optional chainId parameter
   @override
   Future<Uint8List> sign(
-    Uint8List message, {
-    int? chainId,
-  }) async {
+    Uint8List message, [String? context]
+  ) async {
     final signature =
-        await credentials.signPersonalMessage(message, chainId: chainId);
+        await credentials.signPersonalMessage(message);
     return signature;
   }
 

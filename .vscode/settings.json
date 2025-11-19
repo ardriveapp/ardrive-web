@@ -18,5 +18,11 @@
     "Undernames",
     "Widgetbook"
   ],
-  "dart.flutterSdkPath": ".fvm/versions/3.19.6"
+  "dart.flutterSdkPath": ".fvm/versions/3.19.6",
+  "files.watcherExclude": {
+    "**/.fvm/**": true
+  },
+  "search.exclude": {
+    "**/.fvm": true
+  }
 }

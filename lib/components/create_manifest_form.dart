@@ -70,6 +70,7 @@ Future<void> promptToCreateManifest(
                 ),
                 arweave: context.read<ArweaveService>().client,
                 pstService: pst,
+                getD2nGatewayUrl: () => configService.config.defaultArweaveGatewayForDataRequest.url,
               ),
               context.read<FolderRepository>(),
               ManifestDataBuilder(

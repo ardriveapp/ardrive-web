@@ -2,6 +2,7 @@ import 'package:ardrive/gar/utils/gateway_validator.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/services/config/selected_gateway.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:collection/collection.dart';
@@ -72,11 +73,14 @@ class GarRepositoryImpl implements GarRepository {
 
   @override
   Future<void> updateGateway(Gateway gateway) async {
+    final newGatewayUrl = 'https://${gateway.settings.fqdn}';
+    logger.i('Gateway updated to: $newGatewayUrl (${gateway.settings.label})');
+
     await configService.updateAppConfig(
       configService.config.copyWith(
         defaultArweaveGatewayForDataRequest: SelectedGateway(
           label: gateway.settings.label,
-          url: 'https://${gateway.settings.fqdn}',
+          url: newGatewayUrl,
         ),
       ),
     );
@@ -114,7 +118,8 @@ class GarRepositoryImpl implements GarRepository {
   @override
   Future<void> updateCustomGateway(String gatewayUrl) async {
     final cleanedUrl = cleanGatewayUrl(gatewayUrl);
-    
+    logger.i('Custom gateway updated to: $cleanedUrl');
+
     await configService.updateAppConfig(
       configService.config.copyWith(
         defaultArweaveGatewayForDataRequest: SelectedGateway(

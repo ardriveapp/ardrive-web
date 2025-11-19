@@ -98,16 +98,24 @@ class _UploadFileStrategyFactory implements UploadFileStrategyFactory {
 
 class StreamedUploadFactory {
   final Uri turboUploadUri;
+  final String? Function()? getD2nGatewayUrl;
 
   StreamedUploadFactory({
     required this.turboUploadUri,
+    this.getD2nGatewayUrl,
   });
 
   Future<StreamedUpload> fromUploadType(
     UploadTask task,
   ) async {
     if (task.type == UploadType.d2n) {
-      return D2NStreamedUpload();
+      // Get current gateway URL from callback and create Arweave client fresh for each upload
+      final gatewayUrl = getD2nGatewayUrl?.call();
+      final arweaveClient = gatewayUrl != null
+          ? Arweave(gatewayUrl: Uri.parse(gatewayUrl))
+          : null;
+
+      return D2NStreamedUpload(arweaveClient: arweaveClient);
     } else if (task.type == UploadType.turbo) {
       bool useMultipart;
 

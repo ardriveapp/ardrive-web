@@ -62,6 +62,7 @@ abstract class ArDriveUploader {
     required Uri turboUploadUri,
     Arweave? arweave,
     PstService? pstService,
+    String? Function()? getD2nGatewayUrl,
   }) {
     metadataGenerator ??= ARFSUploadMetadataGenerator(
       tagsGenerator: ARFSTagsGenetator(
@@ -86,6 +87,7 @@ abstract class ArDriveUploader {
 
     final streamedUploadFactory = StreamedUploadFactory(
       turboUploadUri: turboUploadUri,
+      getD2nGatewayUrl: getD2nGatewayUrl,
     );
 
     return _ArDriveUploader(

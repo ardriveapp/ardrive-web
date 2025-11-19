@@ -7,6 +7,9 @@ import 'package:arweave/arweave.dart';
 
 class D2NStreamedUpload implements StreamedUpload<UploadItem> {
   UploadAborter? _aborter;
+  final Arweave? arweaveClient;
+
+  D2NStreamedUpload({this.arweaveClient});
 
   @override
   Future<StreamedUploadResult> send(
@@ -24,9 +27,13 @@ class D2NStreamedUpload implements StreamedUpload<UploadItem> {
       throw Exception('Upload canceled');
     }
 
-    logger.d('D2NStreamedUpload.send');
+    if (arweaveClient != null) {
+      logger.d('D2N upload using custom gateway: ${arweaveClient!.api.gatewayUrl}');
+    } else {
+      logger.d('D2N upload using default gateway');
+    }
 
-    final progressStreamTask = await uploadTransaction((uploadItem).data).run();
+    final progressStreamTask = await uploadTransaction((uploadItem).data, arweaveClient).run();
     Completer<StreamedUploadResult> upload = Completer<StreamedUploadResult>();
 
     progressStreamTask.match((l) {

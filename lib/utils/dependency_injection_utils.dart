@@ -100,6 +100,7 @@ UploadRepository createUploadRepository(BuildContext context) {
             context.read<ConfigService>().config.defaultArweaveGatewayForDataRequest.url),
       ),
       pstService: context.read<PstService>(),
+      getD2nGatewayUrl: () => context.read<ConfigService>().config.defaultArweaveGatewayForDataRequest.url,
     ),
     driveDao: context.read<DriveDao>(),
     auth: context.read<ArDriveAuth>(),

@@ -12,9 +12,7 @@ dependencies:
   ardrive_io:
     path: ../ardrive_io
   arweave:
-    git:
-      url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v3.9.0
+    path: C:/source/arweave-dart
   ardrive_utils:
     path: ../ardrive_utils
   ardrive_crypto:

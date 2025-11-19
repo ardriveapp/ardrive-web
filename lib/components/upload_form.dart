@@ -80,6 +80,7 @@ Future<void> promptToUpload(
       ),
       arweave: context.read<ArweaveService>().client,
       pstService: context.read<PstService>(),
+      getD2nGatewayUrl: () => configService.config.defaultArweaveGatewayForDataRequest.url,
     ),
     context.read<FolderRepository>(),
     ManifestDataBuilder(

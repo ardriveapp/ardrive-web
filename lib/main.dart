@@ -508,6 +508,8 @@ class AppState extends State<App> {
               ),
             ),
             pstService: _.read<PstService>(),
+            // Use the gateway URL configured in Settings > Gateway (callback reads current value)
+            getD2nGatewayUrl: () => configService.config.defaultArweaveGatewayForDataRequest.url,
           ),
         ),
 
