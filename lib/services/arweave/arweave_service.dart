@@ -297,6 +297,7 @@ class ArweaveService {
     int lastBlockHeight, {
     required String ownerAddress,
     required DriveID driveId,
+    int? currentBlockHeight,
   }) async {
     // FIXME - PE-3440
     /// Make use of `eagerError: true` to make it fail on first error
@@ -360,10 +361,12 @@ class ArweaveService {
         continue;
       }
 
-      // Process unmined transactions (block == null) with block height 0
-      // They will be marked as pending and cleaned up by _updateTransactionStatuses
-      // if they remain unmined beyond the timeout thresholds (8-24 hours)
-      final blockHeight = transaction.block?.height ?? 0;
+      // Process unmined transactions using currentBlockHeight
+      // They appear "as of now" and will be updated when actually mined
+      // Transaction status system handles pending → confirmed transition
+      final blockHeight = transaction.block?.height
+          ?? currentBlockHeight
+          ?? lastBlockHeight;
 
       if (blockHistory.isEmpty ||
           blockHistory.last.blockHeight != blockHeight) {
