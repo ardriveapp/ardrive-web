@@ -845,6 +845,7 @@ class _SyncRepository implements SyncRepository {
 
         snapshotItems = await SnapshotItem.instantiateAll(
           snapshotsStream,
+          lastBlockHeight: lastBlockHeight,
           arweave: _arweave,
         ).toList();
 
