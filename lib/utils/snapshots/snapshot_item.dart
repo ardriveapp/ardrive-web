@@ -18,6 +18,22 @@ typedef DriveHistoryTransaction
 typedef SnapshotEntityTransaction
     = SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
 
+/// Exception thrown when a snapshot transaction is missing required tags
+/// or has invalid data that prevents it from being processed.
+class MalformedSnapshotException implements Exception {
+  final String txId;
+  final String reason;
+
+  MalformedSnapshotException({
+    required this.txId,
+    required this.reason,
+  });
+
+  @override
+  String toString() =>
+      'MalformedSnapshotException: Snapshot $txId is malformed: $reason';
+}
+
 abstract class SnapshotItem implements SegmentedGQLData {
   abstract final int blockStart;
   abstract final int blockEnd;
@@ -31,12 +47,27 @@ abstract class SnapshotItem implements SegmentedGQLData {
     @visibleForTesting String? fakeSource,
   }) {
     final tags = node.tags;
-    final blockStart =
-        tags.firstWhere((element) => element.name == 'Block-Start').value;
-    final blockEnd =
-        tags.firstWhere((element) => element.name == 'Block-End').value;
-    final driveId =
-        tags.firstWhere((element) => element.name == 'Drive-Id').value;
+    final blockStart = tags.firstWhere(
+      (element) => element.name == 'Block-Start',
+      orElse: () => throw MalformedSnapshotException(
+        txId: node.id,
+        reason: 'Missing required tag: Block-Start',
+      ),
+    ).value;
+    final blockEnd = tags.firstWhere(
+      (element) => element.name == 'Block-End',
+      orElse: () => throw MalformedSnapshotException(
+        txId: node.id,
+        reason: 'Missing required tag: Block-End',
+      ),
+    ).value;
+    final driveId = tags.firstWhere(
+      (element) => element.name == 'Drive-Id',
+      orElse: () => throw MalformedSnapshotException(
+        txId: node.id,
+        reason: 'Missing required tag: Drive-Id',
+      ),
+    ).value;
     final timestamp = node.block!.timestamp;
     final txId = node.id;
 
@@ -74,7 +105,11 @@ abstract class SnapshotItem implements SegmentedGQLData {
           arweave: arweave,
         );
       } catch (e) {
-        logger.e('Ignoring snapshot transaction with invalid block range', e);
+        if (e is MalformedSnapshotException) {
+          logger.w('Skipping malformed snapshot: $e');
+        } else {
+          logger.e('Ignoring snapshot transaction with invalid block range', e);
+        }
         continue;
       }
 
@@ -99,10 +134,20 @@ abstract class SnapshotItem implements SegmentedGQLData {
   }) {
     late Range totalRange;
     List<TransactionCommonMixin$Tag> tags = item.tags;
-    String? maybeBlockHeightStart =
-        tags.firstWhere((tag) => tag.name == 'Block-Start').value;
-    String? maybeBlockHeightEnd =
-        tags.firstWhere((tag) => tag.name == 'Block-End').value;
+    String? maybeBlockHeightStart = tags.firstWhere(
+      (tag) => tag.name == 'Block-Start',
+      orElse: () => throw MalformedSnapshotException(
+        txId: item.id,
+        reason: 'Missing required tag: Block-Start',
+      ),
+    ).value;
+    String? maybeBlockHeightEnd = tags.firstWhere(
+      (tag) => tag.name == 'Block-End',
+      orElse: () => throw MalformedSnapshotException(
+        txId: item.id,
+        reason: 'Missing required tag: Block-End',
+      ),
+    ).value;
 
     try {
       int blockHeightStart = int.parse(maybeBlockHeightStart);

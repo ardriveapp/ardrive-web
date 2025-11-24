@@ -832,27 +832,29 @@ class _SyncRepository implements SyncRepository {
 
     List<SnapshotItem> snapshotItems = [];
 
-    if (_configService.config.enableSyncFromSnapshot) {
-      logger.i('Syncing from snapshot: ${drive.id}');
+    // Wrap snapshot processing in try/finally to ensure disposal
+    try {
+      if (_configService.config.enableSyncFromSnapshot) {
+        logger.i('Syncing from snapshot: ${drive.id}');
 
-      final snapshotsStream = _arweave.getAllSnapshotsOfDrive(
-        driveId,
-        lastBlockHeight,
-        ownerAddress: ownerAddress,
-      );
+        final snapshotsStream = _arweave.getAllSnapshotsOfDrive(
+          driveId,
+          lastBlockHeight,
+          ownerAddress: ownerAddress,
+        );
 
-      snapshotItems = await SnapshotItem.instantiateAll(
-        snapshotsStream,
-        arweave: _arweave,
-      ).toList();
+        snapshotItems = await SnapshotItem.instantiateAll(
+          snapshotsStream,
+          arweave: _arweave,
+        ).toList();
 
-      List<SnapshotItem> snapshotsVerified =
-          await _snapshotValidationService.validateSnapshotItems(snapshotItems);
+        List<SnapshotItem> snapshotsVerified =
+            await _snapshotValidationService.validateSnapshotItems(snapshotItems);
 
-      snapshotItems = snapshotsVerified;
-    }
+        snapshotItems = snapshotsVerified;
+      }
 
-    final SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
+      final SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
       items: snapshotItems,
     );
 
@@ -994,18 +996,21 @@ class _SyncRepository implements SyncRepository {
     logger.d(
         'Duration of streaming phase for ${drive.name}: $fetchPhaseTotalTime ms. Processed $totalTransactionsProcessed transactions');
 
-    // Yield final progress before cleanup
-    yield 0.8;
+      // Yield final progress before cleanup
+      yield 0.8;
 
-    await SnapshotItemOnChain.dispose(drive.id);
+      final syncDriveTotalTime =
+          DateTime.now().difference(startSyncDT).inMilliseconds;
 
-    final syncDriveTotalTime =
-        DateTime.now().difference(startSyncDT).inMilliseconds;
+      final averageBetweenFetchAndGet = fetchPhaseTotalTime / syncDriveTotalTime;
 
-    final averageBetweenFetchAndGet = fetchPhaseTotalTime / syncDriveTotalTime;
-
-    logger.i(
-        'Drive ${drive.name} completed parse phase. Progress by block height: $fetchPhasePercentage%. Starting parse phase. Sync duration: $syncDriveTotalTime ms. Fetching used ${(averageBetweenFetchAndGet * 100).toStringAsFixed(2)}% of drive sync process');
+      logger.i(
+          'Drive ${drive.name} completed parse phase. Progress by block height: $fetchPhasePercentage%. Starting parse phase. Sync duration: $syncDriveTotalTime ms. Fetching used ${(averageBetweenFetchAndGet * 100).toStringAsFixed(2)}% of drive sync process');
+    } finally {
+      // Always dispose snapshot cache, even on error or cancellation
+      await SnapshotItemOnChain.dispose(drive.id);
+      logger.d('Disposed snapshot cache for drive ${drive.id}');
+    }
   }
 
   /// Process a chunk of transactions through the entity parsing pipeline.
