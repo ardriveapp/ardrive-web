@@ -143,7 +143,8 @@ class SnapshotItemOnChain implements SnapshotItem {
   final ArweaveService _arweave;
 
   static final Map<String, Cache<Uint8List>> _jsonMetadataCaches = {};
-  static final Set<TxID> allTxs = {};
+  static final Map<String, Future<Cache<Uint8List>>> _cacheInitFutures = {};
+  static final Map<DriveID, Set<TxID>> _txIdsByDrive = {};
 
   SnapshotItemOnChain({
     required this.blockEnd,
@@ -235,7 +236,11 @@ class SnapshotItemOnChain implements SnapshotItem {
     final Cache<Uint8List> cache = await _lazilyInitCache(driveId);
 
     await cache.put(txId, data);
-    allTxs.add(txId);
+
+    // Track tx IDs per drive
+    _txIdsByDrive.putIfAbsent(driveId, () => <TxID>{});
+    _txIdsByDrive[driveId]!.add(txId);
+
     return data;
   }
 
@@ -249,27 +254,75 @@ class SnapshotItemOnChain implements SnapshotItem {
     return value;
   }
 
+  /// Gets cached transaction IDs for all drives currently in memory.
+  /// This should be called after all drives sync but before disposal.
   static Future<List<TxID>> getAllCachedTransactionIds() async {
-    return allTxs.toList();
+    final allTxIds = <TxID>{};
+    for (final txIds in _txIdsByDrive.values) {
+      allTxIds.addAll(txIds);
+    }
+    return allTxIds.toList();
+  }
+
+  /// Gets cached transaction IDs for a specific drive.
+  static Future<List<TxID>> getCachedTransactionIds(DriveID driveId) async {
+    final txIds = _txIdsByDrive[driveId];
+    return txIds?.toList() ?? [];
   }
 
   static Future<Cache<Uint8List>> _lazilyInitCache(DriveID driveId) async {
-    if (!_jsonMetadataCaches.containsKey(driveId)) {
-      final store = await newMemoryCacheStore();
-      final cache = await store.cache<Uint8List>(
-        name: 'snapshot-data-$driveId',
-        maxEntries: 100000,
-      );
-
-      _jsonMetadataCaches[driveId] = cache;
+    // Check if cache already exists
+    if (_jsonMetadataCaches.containsKey(driveId)) {
+      return _jsonMetadataCaches[driveId]!;
     }
 
-    return _jsonMetadataCaches[driveId]!;
+    // Check if initialization is already in progress
+    if (_cacheInitFutures.containsKey(driveId)) {
+      return _cacheInitFutures[driveId]!;
+    }
+
+    // Start initialization
+    final initFuture = _createCache(driveId);
+    _cacheInitFutures[driveId] = initFuture;
+
+    try {
+      final cache = await initFuture;
+      _jsonMetadataCaches[driveId] = cache;
+      return cache;
+    } finally {
+      // Clean up the future after initialization completes
+      _cacheInitFutures.remove(driveId);
+    }
+  }
+
+  /// Helper method to create a new cache instance
+  static Future<Cache<Uint8List>> _createCache(DriveID driveId) async {
+    final store = await newMemoryCacheStore();
+    final cache = await store.cache<Uint8List>(
+      name: 'snapshot-data-$driveId',
+      maxEntries: 100000,
+    );
+    return cache;
   }
 
   static Future<void> dispose(DriveID driveId) async {
-    final cache = _jsonMetadataCaches[driveId];
+    // Wait for any pending initialization to complete
+    final initFuture = _cacheInitFutures[driveId];
+    if (initFuture != null) {
+      await initFuture;
+    }
 
+    // Clear and remove cache
+    final cache = _jsonMetadataCaches[driveId];
     await cache?.clear();
+    _jsonMetadataCaches.remove(driveId);
+
+    // Remove init future
+    _cacheInitFutures.remove(driveId);
+
+    // Clear and remove tx IDs for this drive
+    _txIdsByDrive.remove(driveId);
+
+    logger.d('Disposed snapshot cache for drive $driveId');
   }
 }
