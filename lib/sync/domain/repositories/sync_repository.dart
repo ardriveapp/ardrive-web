@@ -1098,6 +1098,7 @@ class _SyncRepository implements SyncRepository {
             lastBlockHeight,
             driveId: drive.id,
             ownerAddress: ownerAddress,
+            currentBlockHeight: currentBlockHeight,
           );
 
           // Create entries for all the new revisions of file and folders in this drive.

@@ -297,6 +297,7 @@ class ArweaveService {
     int lastBlockHeight, {
     required String ownerAddress,
     required DriveID driveId,
+    int? currentBlockHeight,
   }) async {
     // FIXME - PE-3440
     /// Make use of `eagerError: true` to make it fail on first error
@@ -360,16 +361,16 @@ class ArweaveService {
         continue;
       }
 
-      // If we encounter a transaction that has yet to be mined, we stop moving through history.
-      // We can continue once the transaction is mined.
-      if (transaction.block == null) {
-        // TODO: Revisit
-        break;
-      }
+      // Process unmined transactions using currentBlockHeight
+      // They appear "as of now" and will be updated when actually mined
+      // Transaction status system handles pending → confirmed transition
+      final blockHeight = transaction.block?.height
+          ?? currentBlockHeight
+          ?? lastBlockHeight;
 
       if (blockHistory.isEmpty ||
-          transaction.block!.height != blockHistory.last.blockHeight) {
-        blockHistory.add(BlockEntities(transaction.block!.height));
+          blockHistory.last.blockHeight != blockHeight) {
+        blockHistory.add(BlockEntities(blockHeight));
       }
 
       try {
@@ -401,12 +402,6 @@ class ArweaveService {
           }
         } else if (entityType == EntityTypeTag.snapshot) {
           // TODO: instantiate entity and add to blockHistory
-        }
-
-        // TODO: Revisit
-        if (blockHistory.isEmpty ||
-            transaction.block!.height != blockHistory.last.blockHeight) {
-          blockHistory.add(BlockEntities(transaction.block!.height));
         }
 
         blockHistory.last.entities.add(entity);
