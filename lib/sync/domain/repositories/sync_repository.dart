@@ -389,6 +389,8 @@ class _SyncRepository implements SyncRepository {
                 (file) => metadataTxsFromSnapshots.contains(file.metadataTxId))
             .map((file) => file.dataTxId)
             .toList();
+        // Clear cached transaction IDs now that we've used them
+        SnapshotItemOnChain.clearAllCachedTransactionIds();
         _arnsRepository
             .waitForARNSRecordsToUpdate()
             .then((value) => _arnsRepository.saveAllFilesWithAssignedNames());

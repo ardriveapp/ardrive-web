@@ -365,9 +365,17 @@ class SnapshotItemOnChain implements SnapshotItem {
     // Remove init future
     _cacheInitFutures.remove(driveId);
 
-    // Clear and remove tx IDs for this drive
-    _txIdsByDrive.remove(driveId);
+    // NOTE: We keep transaction IDs in _txIdsByDrive for now
+    // They will be cleared after post-sync operations use them
+    // via clearAllCachedTransactionIds()
 
     logger.d('Disposed snapshot cache for drive $driveId');
+  }
+
+  /// Clears all cached transaction IDs from all drives.
+  /// Should be called after post-sync operations that use transaction IDs.
+  static void clearAllCachedTransactionIds() {
+    _txIdsByDrive.clear();
+    logger.d('Cleared all cached transaction IDs from snapshots');
   }
 }
