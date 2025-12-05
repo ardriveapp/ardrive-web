@@ -19,37 +19,37 @@ class SnapshotValidationService {
       final appConfig = _configService.config;
 
       try {
-        final snapshotValidation = await http.head(
+        const validationTimeout = Duration(seconds: 10);
+
+        final snapshotValidation = await http
+            .head(
           Uri.parse(
               '${appConfig.defaultArweaveGatewayForDataRequest.url}/${snapshotItem.txId}'),
+        )
+            .timeout(
+          validationTimeout,
+          onTimeout: () {
+            logger.w('HEAD request timeout for snapshot ${snapshotItem.txId}');
+            return http.Response('', 408); // Request Timeout
+          },
         );
 
-        logger.d('Validating snapshot ${snapshotItem.txId}');
+        logger.d(
+            'HEAD request for snapshot ${snapshotItem.txId}: ${snapshotValidation.statusCode}');
 
+        // Accept snapshot if HEAD request succeeds
         if (snapshotValidation.statusCode == 200) {
-          if (snapshotValidation.headers['content-length'] != null) {
-            int lenght =
-                int.parse(snapshotValidation.headers['content-length']!);
-
-            final headers = {
-              'Range': 'bytes=${lenght - 8}-$lenght',
-            };
-
-            final validationRequest = await http.get(
-              Uri.parse(
-                  '${appConfig.defaultArweaveGatewayForDataRequest.url}/${snapshotItem.txId}'),
-              headers: headers,
-            );
-
-            logger.d(
-                'Validation request status code: ${validationRequest.statusCode}');
-          }
           logger.d('Snapshot ${snapshotItem.txId} is valid');
-
           snapshotsVerified.add(snapshotItem);
+        } else {
+          logger.w(
+              'Snapshot ${snapshotItem.txId} failed validation: ${snapshotValidation.statusCode}');
         }
-      } catch (e) {
-        logger.w('Error while validating snapshot. ${snapshotItem.txId}');
+      } catch (e, stackTrace) {
+        logger.e(
+            'Error while validating snapshot ${snapshotItem.txId}',
+            e,
+            stackTrace);
       }
     });
 

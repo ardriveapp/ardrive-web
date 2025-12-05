@@ -18,6 +18,22 @@ typedef DriveHistoryTransaction
 typedef SnapshotEntityTransaction
     = SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
 
+/// Exception thrown when a snapshot transaction is missing required tags
+/// or has invalid data that prevents it from being processed.
+class MalformedSnapshotException implements Exception {
+  final String txId;
+  final String reason;
+
+  MalformedSnapshotException({
+    required this.txId,
+    required this.reason,
+  });
+
+  @override
+  String toString() =>
+      'MalformedSnapshotException: Snapshot $txId is malformed: $reason';
+}
+
 abstract class SnapshotItem implements SegmentedGQLData {
   abstract final int blockStart;
   abstract final int blockEnd;
@@ -31,12 +47,27 @@ abstract class SnapshotItem implements SegmentedGQLData {
     @visibleForTesting String? fakeSource,
   }) {
     final tags = node.tags;
-    final blockStart =
-        tags.firstWhere((element) => element.name == 'Block-Start').value;
-    final blockEnd =
-        tags.firstWhere((element) => element.name == 'Block-End').value;
-    final driveId =
-        tags.firstWhere((element) => element.name == 'Drive-Id').value;
+    final blockStart = tags.firstWhere(
+      (element) => element.name == 'Block-Start',
+      orElse: () => throw MalformedSnapshotException(
+        txId: node.id,
+        reason: 'Missing required tag: Block-Start',
+      ),
+    ).value;
+    final blockEnd = tags.firstWhere(
+      (element) => element.name == 'Block-End',
+      orElse: () => throw MalformedSnapshotException(
+        txId: node.id,
+        reason: 'Missing required tag: Block-End',
+      ),
+    ).value;
+    final driveId = tags.firstWhere(
+      (element) => element.name == 'Drive-Id',
+      orElse: () => throw MalformedSnapshotException(
+        txId: node.id,
+        reason: 'Missing required tag: Drive-Id',
+      ),
+    ).value;
     final timestamp = node.block!.timestamp;
     final txId = node.id;
 
@@ -74,7 +105,11 @@ abstract class SnapshotItem implements SegmentedGQLData {
           arweave: arweave,
         );
       } catch (e) {
-        logger.e('Ignoring snapshot transaction with invalid block range', e);
+        if (e is MalformedSnapshotException) {
+          logger.w('Skipping malformed snapshot: $e');
+        } else {
+          logger.e('Ignoring snapshot transaction with invalid block range', e);
+        }
         continue;
       }
 
@@ -99,10 +134,20 @@ abstract class SnapshotItem implements SegmentedGQLData {
   }) {
     late Range totalRange;
     List<TransactionCommonMixin$Tag> tags = item.tags;
-    String? maybeBlockHeightStart =
-        tags.firstWhere((tag) => tag.name == 'Block-Start').value;
-    String? maybeBlockHeightEnd =
-        tags.firstWhere((tag) => tag.name == 'Block-End').value;
+    String? maybeBlockHeightStart = tags.firstWhere(
+      (tag) => tag.name == 'Block-Start',
+      orElse: () => throw MalformedSnapshotException(
+        txId: item.id,
+        reason: 'Missing required tag: Block-Start',
+      ),
+    ).value;
+    String? maybeBlockHeightEnd = tags.firstWhere(
+      (tag) => tag.name == 'Block-End',
+      orElse: () => throw MalformedSnapshotException(
+        txId: item.id,
+        reason: 'Missing required tag: Block-End',
+      ),
+    ).value;
 
     try {
       int blockHeightStart = int.parse(maybeBlockHeightStart);
@@ -143,7 +188,8 @@ class SnapshotItemOnChain implements SnapshotItem {
   final ArweaveService _arweave;
 
   static final Map<String, Cache<Uint8List>> _jsonMetadataCaches = {};
-  static final Set<TxID> allTxs = {};
+  static final Map<String, Future<Cache<Uint8List>>> _cacheInitFutures = {};
+  static final Map<DriveID, Set<TxID>> _txIdsByDrive = {};
 
   SnapshotItemOnChain({
     required this.blockEnd,
@@ -235,7 +281,11 @@ class SnapshotItemOnChain implements SnapshotItem {
     final Cache<Uint8List> cache = await _lazilyInitCache(driveId);
 
     await cache.put(txId, data);
-    allTxs.add(txId);
+
+    // Track tx IDs per drive
+    _txIdsByDrive.putIfAbsent(driveId, () => <TxID>{});
+    _txIdsByDrive[driveId]!.add(txId);
+
     return data;
   }
 
@@ -249,27 +299,83 @@ class SnapshotItemOnChain implements SnapshotItem {
     return value;
   }
 
+  /// Gets cached transaction IDs for all drives currently in memory.
+  /// This should be called after all drives sync but before disposal.
   static Future<List<TxID>> getAllCachedTransactionIds() async {
-    return allTxs.toList();
+    final allTxIds = <TxID>{};
+    for (final txIds in _txIdsByDrive.values) {
+      allTxIds.addAll(txIds);
+    }
+    return allTxIds.toList();
+  }
+
+  /// Gets cached transaction IDs for a specific drive.
+  static Future<List<TxID>> getCachedTransactionIds(DriveID driveId) async {
+    final txIds = _txIdsByDrive[driveId];
+    return txIds?.toList() ?? [];
   }
 
   static Future<Cache<Uint8List>> _lazilyInitCache(DriveID driveId) async {
-    if (!_jsonMetadataCaches.containsKey(driveId)) {
-      final store = await newMemoryCacheStore();
-      final cache = await store.cache<Uint8List>(
-        name: 'snapshot-data-$driveId',
-        maxEntries: 100000,
-      );
-
-      _jsonMetadataCaches[driveId] = cache;
+    // Check if cache already exists
+    if (_jsonMetadataCaches.containsKey(driveId)) {
+      return _jsonMetadataCaches[driveId]!;
     }
 
-    return _jsonMetadataCaches[driveId]!;
+    // Check if initialization is already in progress
+    if (_cacheInitFutures.containsKey(driveId)) {
+      return _cacheInitFutures[driveId]!;
+    }
+
+    // Start initialization
+    final initFuture = _createCache(driveId);
+    _cacheInitFutures[driveId] = initFuture;
+
+    try {
+      final cache = await initFuture;
+      _jsonMetadataCaches[driveId] = cache;
+      return cache;
+    } finally {
+      // Clean up the future after initialization completes
+      _cacheInitFutures.remove(driveId);
+    }
+  }
+
+  /// Helper method to create a new cache instance
+  static Future<Cache<Uint8List>> _createCache(DriveID driveId) async {
+    final store = await newMemoryCacheStore();
+    final cache = await store.cache<Uint8List>(
+      name: 'snapshot-data-$driveId',
+      maxEntries: 100000,
+    );
+    return cache;
   }
 
   static Future<void> dispose(DriveID driveId) async {
-    final cache = _jsonMetadataCaches[driveId];
+    // Wait for any pending initialization to complete
+    final initFuture = _cacheInitFutures[driveId];
+    if (initFuture != null) {
+      await initFuture;
+    }
 
+    // Clear and remove cache
+    final cache = _jsonMetadataCaches[driveId];
     await cache?.clear();
+    _jsonMetadataCaches.remove(driveId);
+
+    // Remove init future
+    _cacheInitFutures.remove(driveId);
+
+    // NOTE: We keep transaction IDs in _txIdsByDrive for now
+    // They will be cleared after post-sync operations use them
+    // via clearAllCachedTransactionIds()
+
+    logger.d('Disposed snapshot cache for drive $driveId');
+  }
+
+  /// Clears all cached transaction IDs from all drives.
+  /// Should be called after post-sync operations that use transaction IDs.
+  static void clearAllCachedTransactionIds() {
+    _txIdsByDrive.clear();
+    logger.d('Cleared all cached transaction IDs from snapshots');
   }
 }

@@ -127,6 +127,11 @@ class _SyncRepository implements SyncRepository {
   final Map<String, GhostFolder> _ghostFolders = {};
   final Set<String> _folderIds = <String>{};
 
+  /// Maximum number of transactions to hold in memory during streaming sync.
+  /// Larger values = better throughput, higher memory usage
+  /// Smaller values = lower memory usage, more frequent DB commits
+  static const kStreamTransactionChunkSize = 1000;
+
   DateTime? _lastSync;
 
   _SyncRepository({
@@ -384,6 +389,8 @@ class _SyncRepository implements SyncRepository {
                 (file) => metadataTxsFromSnapshots.contains(file.metadataTxId))
             .map((file) => file.dataTxId)
             .toList();
+        // Clear cached transaction IDs now that we've used them
+        SnapshotItemOnChain.clearAllCachedTransactionIds();
         _arnsRepository
             .waitForARNSRecordsToUpdate()
             .then((value) => _arnsRepository.saveAllFilesWithAssignedNames());
@@ -627,8 +634,16 @@ class _SyncRepository implements SyncRepository {
   }) async {
     // Check for cancellation at the start
     cancellationToken?.checkCancellation();
-    final pendingTxMap = {
-      for (final tx in await driveDao.pendingTransactions().get()) tx.id: tx,
+
+    // Load all pending transactions
+    // Note: We load all at once here, but the memory impact is acceptable
+    // since we're just building a map. The original code did the same.
+    final allPendingTxs = await driveDao.pendingTransactions().get();
+
+    logger.i('Loaded ${allPendingTxs.length} pending transactions');
+
+    final pendingTxMap = <String, NetworkTransaction>{
+      for (final tx in allPendingTxs) tx.id: tx,
     };
 
     /// Remove all confirmed transactions from the pending map
@@ -813,31 +828,36 @@ class _SyncRepository implements SyncRepository {
 
     logger.d('Fetching all transactions for drive ${drive.id}');
 
-    final transactions = <DriveEntityHistoryTransactionModel>[];
+    final transactionBuffer = <DriveEntityHistoryTransactionModel>[];
+    int totalTransactionsProcessed = 0;
+    int totalTransactionsReceived = 0;
 
     List<SnapshotItem> snapshotItems = [];
 
-    if (_configService.config.enableSyncFromSnapshot) {
-      logger.i('Syncing from snapshot: ${drive.id}');
+    // Wrap snapshot processing in try/finally to ensure disposal
+    try {
+      if (_configService.config.enableSyncFromSnapshot) {
+        logger.i('Syncing from snapshot: ${drive.id}');
 
-      final snapshotsStream = _arweave.getAllSnapshotsOfDrive(
-        driveId,
-        lastBlockHeight,
-        ownerAddress: ownerAddress,
-      );
+        final snapshotsStream = _arweave.getAllSnapshotsOfDrive(
+          driveId,
+          lastBlockHeight,
+          ownerAddress: ownerAddress,
+        );
 
-      snapshotItems = await SnapshotItem.instantiateAll(
-        snapshotsStream,
-        arweave: _arweave,
-      ).toList();
+        snapshotItems = await SnapshotItem.instantiateAll(
+          snapshotsStream,
+          lastBlockHeight: lastBlockHeight,
+          arweave: _arweave,
+        ).toList();
 
-      List<SnapshotItem> snapshotsVerified =
-          await _snapshotValidationService.validateSnapshotItems(snapshotItems);
+        List<SnapshotItem> snapshotsVerified =
+            await _snapshotValidationService.validateSnapshotItems(snapshotItems);
 
-      snapshotItems = snapshotsVerified;
-    }
+        snapshotItems = snapshotsVerified;
+      }
 
-    final SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
+      final SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
       items: snapshotItems,
     );
 
@@ -884,28 +904,14 @@ class _SyncRepository implements SyncRepository {
     /// This percentage is based on block heights.
     var fetchPhasePercentage = 0.0;
 
-    /// First phase of the sync
-    /// Here we get all transactions from its drive.
+    /// Streaming phase: fetch and parse in chunks to reduce memory usage
     await for (DriveEntityHistoryTransactionModel t in transactionsStream) {
-      // Check for cancellation periodically during transaction processing
+      // Check for cancellation periodically
       token.checkCancellation();
-      double calculatePercentageBasedOnBlockHeights() {
-        final block = t.transactionCommonMixin.block;
-
-        if (block != null) {
-          return (1 -
-              ((currentBlockHeight - block.height) /
-                  totalBlockHeightDifference));
-        }
-
-        /// if the block is null, we don't calculate and keep the same percentage
-        return fetchPhasePercentage;
-      }
 
       /// Initialize only once `firstBlockHeight` and `totalBlockHeightDifference`
       if (firstBlockHeight == null) {
         final block = t.transactionCommonMixin.block;
-
         if (block != null) {
           firstBlockHeight = block.height;
           totalBlockHeightDifference = currentBlockHeight - firstBlockHeight;
@@ -919,24 +925,71 @@ class _SyncRepository implements SyncRepository {
         }
       }
 
-      transactions.add(t);
+      // Add transaction to buffer
+      transactionBuffer.add(t);
+      totalTransactionsReceived++;
 
-      /// We can only calculate the fetch percentage if we have the `firstBlockHeight`
-      if (firstBlockHeight != null) {
-        if (totalBlockHeightDifference > 0) {
-          fetchPhasePercentage = calculatePercentageBasedOnBlockHeights();
-        } else {
-          // If the difference is zero means that the first phase was concluded.
-          logger.d('The syncs first phase just finished!');
-          fetchPhasePercentage = 1;
+      // Process chunk when buffer is full
+      if (transactionBuffer.length >= kStreamTransactionChunkSize) {
+        await _processTransactionChunk(
+          transactions: List.from(transactionBuffer),
+          drive: drive,
+          driveKey: driveKey?.key,
+          currentBlockHeight: currentBlockHeight,
+          lastBlockHeight: lastBlockHeight,
+          transactionParseBatchSize: transactionParseBatchSize,
+          snapshotDriveHistory: snapshotDriveHistory,
+          ownerAddress: ownerAddress,
+        );
+
+        totalTransactionsProcessed += transactionBuffer.length;
+        transactionBuffer.clear();
+
+        logger.d(
+            'Processed $totalTransactionsProcessed / $totalTransactionsReceived transactions');
+      }
+
+      // Calculate and yield progress based on block heights
+      if (firstBlockHeight != null && totalBlockHeightDifference > 0) {
+        final block = t.transactionCommonMixin.block;
+        if (block != null) {
+          fetchPhasePercentage =
+              1 - ((currentBlockHeight - block.height) / totalBlockHeightDifference);
         }
-        final percentage =
-            calculatePercentageBasedOnBlockHeights() * fetchPhaseWeight;
-        yield percentage;
+
+        // Yield progress (80% for streaming, 20% reserved for final operations)
+        final streamProgress = fetchPhasePercentage * 0.8;
+        yield streamProgress;
       }
     }
 
-    logger.d('Done fetching data - ${gqlDriveHistory.driveId}');
+    // Process remaining transactions in buffer
+    if (transactionBuffer.isNotEmpty) {
+      logger.d(
+          'Processing final chunk of ${transactionBuffer.length} transactions');
+
+      try {
+        await _processTransactionChunk(
+          transactions: transactionBuffer,
+          drive: drive,
+          driveKey: driveKey?.key,
+          currentBlockHeight: currentBlockHeight,
+          lastBlockHeight: lastBlockHeight,
+          transactionParseBatchSize: transactionParseBatchSize,
+          snapshotDriveHistory: snapshotDriveHistory,
+          ownerAddress: ownerAddress,
+        );
+
+        totalTransactionsProcessed += transactionBuffer.length;
+        transactionBuffer.clear();
+      } catch (e) {
+        logger.e('[Sync Drive] Error while parsing final transaction chunk', e);
+        rethrow;
+      }
+    }
+
+    logger.d(
+        'Done processing all $totalTransactionsProcessed transactions - ${gqlDriveHistory.driveId}');
 
     txFechedCallback?.call(drive.id, gqlDriveHistory.txCount);
 
@@ -944,35 +997,53 @@ class _SyncRepository implements SyncRepository {
         DateTime.now().difference(fetchPhaseStartDT).inMilliseconds;
 
     logger.d(
-        'Duration of fetch phase for ${drive.name}: $fetchPhaseTotalTime ms. Progress by block height: $fetchPhasePercentage%. Starting parse phase');
+        'Duration of streaming phase for ${drive.name}: $fetchPhaseTotalTime ms. Processed $totalTransactionsProcessed transactions');
 
-    try {
-      yield* _parseDriveTransactionsIntoDatabaseEntities(
-        transactions: transactions,
-        drive: drive,
-        driveKey: driveKey?.key,
-        currentBlockHeight: currentBlockHeight,
-        lastBlockHeight: lastBlockHeight,
-        batchSize: transactionParseBatchSize,
-        snapshotDriveHistory: snapshotDriveHistory,
-        ownerAddress: ownerAddress,
-      ).map(
-        (parseProgress) => parseProgress * 0.9,
-      );
-    } catch (e) {
-      logger.e('[Sync Drive] Error while parsing transactions', e);
-      rethrow;
+      // Yield final progress before cleanup
+      yield 0.8;
+
+      final syncDriveTotalTime =
+          DateTime.now().difference(startSyncDT).inMilliseconds;
+
+      final averageBetweenFetchAndGet = fetchPhaseTotalTime / syncDriveTotalTime;
+
+      logger.i(
+          'Drive ${drive.name} completed parse phase. Progress by block height: $fetchPhasePercentage%. Starting parse phase. Sync duration: $syncDriveTotalTime ms. Fetching used ${(averageBetweenFetchAndGet * 100).toStringAsFixed(2)}% of drive sync process');
+    } finally {
+      // Always dispose snapshot cache, even on error or cancellation
+      await SnapshotItemOnChain.dispose(drive.id);
+      logger.d('Disposed snapshot cache for drive ${drive.id}');
     }
+  }
 
-    await SnapshotItemOnChain.dispose(drive.id);
+  /// Process a chunk of transactions through the entity parsing pipeline.
+  /// This helper method is used by streaming sync to process transactions in batches.
+  Future<void> _processTransactionChunk({
+    required List<DriveEntityHistoryTransactionModel> transactions,
+    required Drive drive,
+    required SecretKey? driveKey,
+    required int currentBlockHeight,
+    required int lastBlockHeight,
+    required int transactionParseBatchSize,
+    required SnapshotDriveHistory snapshotDriveHistory,
+    required String ownerAddress,
+  }) async {
+    if (transactions.isEmpty) return;
 
-    final syncDriveTotalTime =
-        DateTime.now().difference(startSyncDT).inMilliseconds;
+    logger.d('Processing chunk of ${transactions.length} transactions');
 
-    final averageBetweenFetchAndGet = fetchPhaseTotalTime / syncDriveTotalTime;
-
-    logger.i(
-        'Drive ${drive.name} completed parse phase. Progress by block height: $fetchPhasePercentage%. Starting parse phase. Sync duration: $syncDriveTotalTime ms. Fetching used ${(averageBetweenFetchAndGet * 100).toStringAsFixed(2)}% of drive sync process');
+    await for (final _ in _parseDriveTransactionsIntoDatabaseEntities(
+      transactions: transactions,
+      drive: drive,
+      driveKey: driveKey,
+      currentBlockHeight: currentBlockHeight,
+      lastBlockHeight: lastBlockHeight,
+      batchSize: transactionParseBatchSize,
+      snapshotDriveHistory: snapshotDriveHistory,
+      ownerAddress: ownerAddress,
+    )) {
+      // Just consume the stream, progress is handled in main loop
+    }
   }
 
   Future<void> _updateLicenses({
@@ -985,32 +1056,37 @@ class _SyncRepository implements SyncRepository {
 
     logger.d('Syncing ${licenseAssertionTxIds.length} license assertions');
 
+    // Collect all license assertion companions from all batches
+    final allLicenseAssertionCompanions = <LicensesCompanion>[];
+    var skippedLicenseAssertions = 0;
+
     await for (final licenseAssertionTxsBatch
         in _arweave.getLicenseAssertions(licenseAssertionTxIds)) {
-      final licenseAssertionEntities = licenseAssertionTxsBatch
-          .map((tx) => LicenseAssertionEntity.fromTransaction(tx));
-      final licenseCompanions = licenseAssertionEntities.map((entity) {
-        final revision = revisionsToSyncLicense.firstWhere(
-          (rev) => rev.licenseTxId == entity.txId,
-        );
-        final licenseType =
-            _licenseService.licenseTypeByTxId(entity.licenseDefinitionTxId);
-        return entity.toCompanion(
-          fileId: revision.fileId,
-          driveId: revision.driveId,
-          licenseType: licenseType ?? LicenseType.unknown,
-        );
-      });
+      // Parse each transaction individually with error handling
+      for (final tx in licenseAssertionTxsBatch) {
+        try {
+          final entity = LicenseAssertionEntity.fromTransaction(tx);
+          final revision = revisionsToSyncLicense.firstWhere(
+            (rev) => rev.licenseTxId == entity.txId,
+          );
+          final licenseType =
+              _licenseService.licenseTypeByTxId(entity.licenseDefinitionTxId);
+          final companion = entity.toCompanion(
+            fileId: revision.fileId,
+            driveId: revision.driveId,
+            licenseType: licenseType ?? LicenseType.unknown,
+          );
+          allLicenseAssertionCompanions.add(companion);
+        } catch (e) {
+          // Skip malformed license assertions and continue processing
+          skippedLicenseAssertions++;
+          logger.w(
+              'Skipping malformed license assertion transaction ${tx.id}: $e');
+        }
+      }
 
       logger.d(
-          'Inserting batch of ${licenseCompanions.length} license assertions');
-
-      await _driveDao.transaction(
-        () async => {
-          for (final licenseAssertionCompanion in licenseCompanions)
-            {await _driveDao.insertLicense(licenseAssertionCompanion)}
-        },
-      );
+          'Collected batch of license assertions (${allLicenseAssertionCompanions.length} total, $skippedLicenseAssertions skipped)');
     }
 
     final licenseComposedTxIds = revisionsToSyncLicense
@@ -1020,32 +1096,59 @@ class _SyncRepository implements SyncRepository {
 
     logger.d('Syncing ${licenseComposedTxIds.length} composed licenses');
 
+    // Collect all license composed companions from all batches
+    final allLicenseComposedCompanions = <LicensesCompanion>[];
+    var skippedLicenseComposed = 0;
+
     await for (final licenseComposedTxsBatch
         in _arweave.getLicenseComposed(licenseComposedTxIds)) {
-      final licenseComposedEntities = licenseComposedTxsBatch
-          .map((tx) => LicenseComposedEntity.fromTransaction(tx));
-      final licenseCompanions = licenseComposedEntities.map((entity) {
-        final revision = revisionsToSyncLicense.firstWhere(
-          (rev) => rev.licenseTxId == entity.txId,
-        );
-        final licenseType =
-            _licenseService.licenseTypeByTxId(entity.licenseDefinitionTxId);
-        return entity.toCompanion(
-          fileId: revision.fileId,
-          driveId: revision.driveId,
-          licenseType: licenseType ?? LicenseType.unknown,
-        );
-      });
+      // Parse each transaction individually with error handling
+      for (final tx in licenseComposedTxsBatch) {
+        try {
+          final entity = LicenseComposedEntity.fromTransaction(tx);
+          final revision = revisionsToSyncLicense.firstWhere(
+            (rev) => rev.licenseTxId == entity.txId,
+          );
+          final licenseType =
+              _licenseService.licenseTypeByTxId(entity.licenseDefinitionTxId);
+          final companion = entity.toCompanion(
+            fileId: revision.fileId,
+            driveId: revision.driveId,
+            licenseType: licenseType ?? LicenseType.unknown,
+          );
+          allLicenseComposedCompanions.add(companion);
+        } catch (e) {
+          // Skip malformed license composed transactions and continue processing
+          skippedLicenseComposed++;
+          logger.w(
+              'Skipping malformed license composed transaction ${tx.id}: $e');
+        }
+      }
 
       logger.d(
-          'Inserting batch of ${licenseCompanions.length} composed licenses');
+          'Collected batch of composed licenses (${allLicenseComposedCompanions.length} total, $skippedLicenseComposed skipped)');
+    }
 
-      await _driveDao.transaction(
-        () async => {
-          for (final licenseAssertionCompanion in licenseCompanions)
-            {await _driveDao.insertLicense(licenseAssertionCompanion)}
-        },
-      );
+    // Insert all licenses in a single transaction to minimize database exports
+    final totalLicenses =
+        allLicenseAssertionCompanions.length + allLicenseComposedCompanions.length;
+    final totalSkipped = skippedLicenseAssertions + skippedLicenseComposed;
+
+    if (totalLicenses > 0) {
+      logger.d('Inserting all $totalLicenses licenses in a single transaction');
+      await _driveDao.transaction(() async {
+        for (final licenseCompanion in allLicenseAssertionCompanions) {
+          await _driveDao.insertLicense(licenseCompanion);
+        }
+        for (final licenseCompanion in allLicenseComposedCompanions) {
+          await _driveDao.insertLicense(licenseCompanion);
+        }
+      });
+      logger.i(
+          'Successfully inserted $totalLicenses licenses ($totalSkipped skipped due to malformed data)');
+    } else if (totalSkipped > 0) {
+      logger.w(
+          'No licenses inserted. All $totalSkipped license transactions were malformed and skipped.');
     }
   }
 
