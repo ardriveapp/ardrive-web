@@ -32,7 +32,7 @@ Future<Transaction> fakePrepareTransaction(invocation) async {
 
   await transaction.prepareChunks();
 
-  await transaction.sign(ArweaveSigner(wallet));
+  await transaction.sign(ArweaveSigner(wallet, context: 'test-snapshot-tx'));
 
   return transaction;
 }
@@ -44,7 +44,7 @@ Future<DataItem> fakePrepareDataItem(invocation) async {
   final dataItem = await entity.asDataItem(null);
   dataItem.setOwner(await wallet.getOwner());
 
-  await dataItem.sign(ArweaveSigner(wallet));
+  await dataItem.sign(ArweaveSigner(wallet, context: 'test-snapshot-data-item'));
 
   return dataItem;
 }

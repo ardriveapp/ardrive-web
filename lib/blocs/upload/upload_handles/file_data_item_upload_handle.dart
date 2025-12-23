@@ -71,7 +71,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
 
   Future<List<DataItem>> prepareAndSignDataItems() async {
     final fileData = await file.ioFile.readAsBytes();
-    final signer = ArweaveSigner(wallet);
+    final signer = ArweaveSigner(wallet, context: 'file-data-item-upload');
 
     dataTx = isPrivate
         ? await crypto.createEncryptedDataItem(fileData, fileKey!)

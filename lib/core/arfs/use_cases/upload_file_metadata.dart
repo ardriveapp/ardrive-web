@@ -58,7 +58,7 @@ class UploadFileMetadata {
     required Wallet wallet,
   }) async {
     try {
-      final signer = ArweaveSigner(wallet);
+      final signer = ArweaveSigner(wallet, context: 'file-metadata-upload');
 
       // Prepare the metadata data item
       final metadataDataItem = await _arweaveService.prepareEntityDataItem(

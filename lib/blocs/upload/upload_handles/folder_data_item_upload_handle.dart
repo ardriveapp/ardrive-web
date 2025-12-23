@@ -66,7 +66,7 @@ class FolderDataItemUploadHandle implements UploadHandle, DataItemHandle {
       key: driveKey,
     );
 
-    final signer = ArweaveSigner(wallet);
+    final signer = ArweaveSigner(wallet, context: 'folder-entity-upload');
 
     await folderEntityTx.sign(signer);
   }

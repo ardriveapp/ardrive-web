@@ -20,7 +20,9 @@ dependencies:
       url: https://github.com/ardriveapp/ardrive_http.git
       ref: v1.3.2
   arweave:
-    path: C:/source/arweave-dart
+    git:
+      url: https://github.com/ardriveapp/arweave-dart.git
+      ref: d441df4eea1f432051d4871b6a369d743c72f0b5
   js: ^0.6.7
   equatable: ^2.0.5
   image: ^4.2.0

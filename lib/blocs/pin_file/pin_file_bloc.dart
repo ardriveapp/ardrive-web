@@ -282,7 +282,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
     final stateAsPinFileFieldsValid = state as PinFileFieldsValid;
     final profileState = _profileCubit.state as ProfileLoggedIn;
     final wallet = profileState.user.wallet;
-    final signer = ArweaveSigner(wallet);
+    final signer = ArweaveSigner(wallet, context: 'pin-file');
 
     emit(PinFileCreating(
       id: stateAsPinFileFieldsValid.id,

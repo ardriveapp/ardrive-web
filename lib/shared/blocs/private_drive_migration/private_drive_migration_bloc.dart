@@ -107,7 +107,8 @@ class PrivateDriveMigrationBloc
         final dataItem = DataItem.withBlobData(data: message, owner: owner);
         dataItem.addTag('Action', 'Generate-Signature-V2');
 
-        final walletSignatureV1 = await wallet.sign(message);
+        final walletSignatureV1 =
+            await wallet.sign(message, 'drive-migration-v1-signature');
 
         final driveKeyV2 = await crypto.deriveDriveKey(wallet, drive.id,
             ardriveAuth.currentUser.password, DriveSignatureType.v2, null);
@@ -128,7 +129,7 @@ class PrivateDriveMigrationBloc
         final driveSignatureDataItem = await driveSignature.asPreparedDataItem(
             owner: owner, appInfo: appInfo);
 
-        await driveSignatureDataItem.sign(ArweaveSigner(wallet));
+        await driveSignatureDataItem.sign(ArweaveSigner(wallet, context: 'drive-migration-signature'));
 
         // upload via turbo
         await turboUploadService.postDataItem(

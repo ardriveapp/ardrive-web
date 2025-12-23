@@ -13,6 +13,7 @@ Future<String> signNonceAndData({
     Uint8List.fromList(
       (data != null ? '$data$nonce' : nonce).toString().codeUnits,
     ),
+    'turbo-nonce-auth',
   );
   return base64UrlEncode(signature);
 }

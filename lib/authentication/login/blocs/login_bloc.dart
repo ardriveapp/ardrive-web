@@ -148,9 +148,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
   Future<Wallet?> validateAndReturnWalletFile(IOFile walletFile) async {
     try {
-      final wallet =
-          Wallet.fromJwk(json.decode(await walletFile.readAsString()));
-
+      final wallet = Wallet.fromJwk(
+        json.decode(await walletFile.readAsString()),
+        onSign: walletOnSign,
+      );
+      logger.d('Wallet validated from file');
       return wallet;
     } catch (e) {
       logger.e('Invalid wallet file', e);
@@ -170,8 +172,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       profileType = ProfileType.json;
 
-      final wallet =
-          Wallet.fromJwk(json.decode(await event.walletFile.readAsString()));
+      final wallet = Wallet.fromJwk(
+        json.decode(await event.walletFile.readAsString()),
+        onSign: walletOnSign,
+      );
+      logger.d('Wallet loaded from file for login');
 
       if (await _arDriveAuth.userHasPassword(wallet)) {
         emit(LoginLoadingIfUserAlreadyExistsSuccess());
@@ -336,7 +341,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     required Wallet derivedEthWallet,
     required Uint8List fullEntropy,
   }) async {
-    final verifySignature = await wallet.sign(fullEntropy);
+    final verifySignature =
+        await wallet.sign(fullEntropy, 'eth-signature-verification');
 
     // Check GQL for generated wallet to see if the password matches
     int? firstTxBlockHeight = await _arweaveService
@@ -530,14 +536,15 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     emit(LoginShowLoader());
     wallet = await generateWalletFromMnemonic(mnemonic);
 
-    final verifySignature = await wallet.sign(fullEntropy);
+    final verifySignature =
+        await wallet.sign(fullEntropy, 'eth-wallet-verification-upload');
 
     // upload verification signature with derived Arweave wallet
     final dataItem = DataItem.withBlobData(
       data: verifySignature,
       owner: await wallet.getOwner(),
     );
-    await dataItem.sign(ArweaveSigner(wallet));
+    await dataItem.sign(ArweaveSigner(wallet, context: 'eth-verification-upload'));
 
     await _turboUploadService.postDataItem(dataItem: dataItem, wallet: wallet);
 
@@ -616,7 +623,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         throw Exception('ArConnect permissions not granted');
       }
 
-      final wallet = ArConnectWallet(_arConnectService);
+      final wallet = ArConnectWallet(_arConnectService, onSign: walletOnSign);
+      logger.d('ArConnect wallet created for login');
 
       profileType = ProfileType.arConnect;
 
@@ -874,15 +882,16 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     late EthereumProviderWallet derivedEthWallet;
     try {
-      final signature =
-          await ethWallet.sign(Uint8List.fromList(signMessage.codeUnits));
+      final signature = await ethWallet.sign(
+          Uint8List.fromList(signMessage.codeUnits), 'metamask-wallet-derive');
 
       final signatureSha256 = await sha256.hash(signature);
 
       final privateKey = web3credentials.EthPrivateKey(
           Uint8List.fromList(signatureSha256.bytes));
 
-      derivedEthWallet = EthereumProviderWallet(privateKey);
+      derivedEthWallet = EthereumProviderWallet(privateKey, onSign: walletOnSign);
+      logger.d('Derived EthereumProviderWallet created from Metamask signature');
     } catch (e) {
       emit(LoginCloseBlockingDialog());
       emit(LoginFailure(e));

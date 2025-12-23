@@ -300,7 +300,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   Future<void> signTx(bool isArConnectProfile) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
     final wallet = profile.user.wallet;
-    final signer = ArweaveSigner(wallet);
+    final signer = ArweaveSigner(wallet, context: 'snapshot-create');
 
     try {
       logger.i(

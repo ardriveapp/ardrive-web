@@ -74,13 +74,14 @@ class ArDriveCrypto {
           Uint8List.fromList(utf8.encode('drive') + Uuid.parse(driveId));
 
       if (signatureType == DriveSignatureType.v1) {
-        walletSignature = await wallet.sign(message);
+        walletSignature = await wallet.sign(message, 'drive-key-derivation-v1');
       } else if (signatureType == DriveSignatureType.v2) {
         final owner = await wallet.getOwner();
         final dataItem = DataItem.withBlobData(data: message, owner: owner);
         dataItem.addTag('Action', 'Drive-Signature-V2');
         try {
-          walletSignature = await wallet.signDataItem(dataItem);
+          walletSignature =
+              await wallet.signDataItem(dataItem, 'drive-key-derivation-v2');
         } catch (e) {
           throw Exception('Failed to sign data item: $e');
         }

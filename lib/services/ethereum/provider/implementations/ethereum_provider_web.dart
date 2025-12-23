@@ -41,7 +41,8 @@ Future<EthereumProviderWallet?> connect() async {
       ],
     );
 
-    return EthereumProviderWallet(credentials[0]);
+    logger.d('Connected to Ethereum provider, creating wallet');
+    return EthereumProviderWallet(credentials[0], onSign: walletOnSign);
   } catch (e) {
     logger.d('Error connecting to Ethereum provider: $e');
     return null;

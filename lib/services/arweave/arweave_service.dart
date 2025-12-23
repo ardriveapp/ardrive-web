@@ -1246,7 +1246,7 @@ class ArweaveService {
     );
 
     if (!skipSignature) {
-      await tx.sign(ArweaveSigner(wallet));
+      await tx.sign(ArweaveSigner(wallet, context: 'entity-tx'));
     }
 
     return tx;
@@ -1266,7 +1266,7 @@ class ArweaveService {
     item.setOwner(await wallet.getOwner());
 
     if (!skipSignature) {
-      await item.sign(ArweaveSigner(wallet));
+      await item.sign(ArweaveSigner(wallet, context: 'entity-data-item'));
     }
 
     return item;
@@ -1288,7 +1288,7 @@ class ArweaveService {
       wallet,
     );
 
-    await bundleTx.sign(ArweaveSigner(wallet));
+    await bundleTx.sign(ArweaveSigner(wallet, context: 'data-bundle-tx'));
 
     return bundleTx;
   }
@@ -1307,7 +1307,7 @@ class ArweaveService {
       )
       ..addBundleTags()
       ..setOwner(await wallet.getOwner());
-    await item.sign(ArweaveSigner(wallet));
+    await item.sign(ArweaveSigner(wallet, context: 'bundled-data-item'));
 
     logger.i('Prepared bundled data item with id ${item.id}'
         ' with tags ${item.tags}');
@@ -1326,7 +1326,7 @@ class ArweaveService {
       wallet,
     );
 
-    await bundleTx.sign(ArweaveSigner(wallet));
+    await bundleTx.sign(ArweaveSigner(wallet, context: 'data-bundle-tx-blob'));
 
     return bundleTx;
   }

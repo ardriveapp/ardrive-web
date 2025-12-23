@@ -35,7 +35,9 @@ dependencies:
   ardrive_io:
     path: ../../ardrive_io
   arweave:
-    path: C:/source/arweave-dart
+    git:
+      url: https://github.com/ardriveapp/arweave-dart.git
+      ref: d441df4eea1f432051d4871b6a369d743c72f0b5
   ardrive_utils:
     path: ../../ardrive_utils
   # The following adds the Cupertino Icons font to your application.

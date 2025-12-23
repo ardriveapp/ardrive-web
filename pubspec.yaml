@@ -51,7 +51,9 @@ dependencies:
   pst:
     path: ./packages/pst
   arweave:
-    path: C:/source/arweave-dart
+    git:
+      url: https://github.com/ardriveapp/arweave-dart.git
+      ref: d441df4eea1f432051d4871b6a369d743c72f0b5
   ario_sdk:
     path: ./packages/ario_sdk
   cryptography: ^2.0.5
@@ -161,8 +163,9 @@ dependency_overrides:
       ref: master
   http: ^1.1.0
   arweave:
-    path: C:/source/arweave-dart
-
+    git:
+      url: https://github.com/ardriveapp/arweave-dart.git
+      ref: d441df4eea1f432051d4871b6a369d743c72f0b5
   ardrive_io:
     path: ./packages/ardrive_io
   ardrive_ui:

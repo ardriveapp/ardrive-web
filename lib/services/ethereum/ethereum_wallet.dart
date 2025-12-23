@@ -9,6 +9,7 @@ import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
 
 abstract class EthereumWallet extends Wallet {
+  EthereumWallet({super.onSign});
   /// Returns 12-word seed phrase derived from first half of message hash and full message hash.
   Future<(String, Uint8List)> deriveArdriveSeedphrase(
       int chainId, String password) async {

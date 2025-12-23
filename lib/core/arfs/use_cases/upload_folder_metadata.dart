@@ -59,7 +59,7 @@ class UploadFolderMetadata {
     SecretKey? driveKey,
   }) async {
     try {
-      final signer = ArweaveSigner(wallet);
+      final signer = ArweaveSigner(wallet, context: 'folder-metadata-upload');
 
       // Prepare the metadata data item
       final metadataDataItem = await _arweaveService.prepareEntityDataItem(

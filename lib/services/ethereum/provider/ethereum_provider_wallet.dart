@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:ardrive/utils/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:webthree/credentials.dart';
 
@@ -10,15 +11,16 @@ import '../ethereum_wallet.dart';
 class EthereumProviderWallet extends EthereumWallet {
   final CredentialsWithKnownAddress credentials;
 
-  EthereumProviderWallet(this.credentials);
+  EthereumProviderWallet(this.credentials, {super.onSign}) {
+    logger.d('EthereumProviderWallet instantiated');
+  }
 
   // Ethereum Provider accepts an optional chainId parameter
   @override
-  Future<Uint8List> sign(
-    Uint8List message, [String? context]
-  ) async {
-    final signature =
-        await credentials.signPersonalMessage(message);
+  Future<Uint8List> sign(Uint8List message, [String? context]) async {
+    onSign?.call('Ethereum signing ${message.length} bytes', context);
+    logger.d('EthereumProviderWallet.sign() called with context: $context');
+    final signature = await credentials.signPersonalMessage(message);
     return signature;
   }
 

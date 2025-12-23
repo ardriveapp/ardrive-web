@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:isolate';
 
+import 'package:ardrive/utils/logger.dart';
 import 'package:arweave/arweave.dart';
 
 void heavyComputationTask(SendPort sendPort) async {
@@ -31,7 +32,8 @@ Future<Wallet> generateWalletFromMnemonic(String mnemonic) async {
   walletGeneratorSendPort.send([mnemonic, walletGeneratorReceivePort.sendPort]);
 
   final walletJsonStr = await walletGeneratorReceivePort.first as String;
-  final wallet = Wallet.fromJwk(jsonDecode(walletJsonStr));
+  logger.d('Wallet generated from mnemonic (stub)');
+  final wallet = Wallet.fromJwk(jsonDecode(walletJsonStr), onSign: walletOnSign);
 
   return wallet;
 }

@@ -1,10 +1,11 @@
-import 'dart:typed_data';
-
 import 'package:arconnect/src/arconnect/arconnect.dart';
 import 'package:arweave/arweave.dart';
+import 'package:flutter/foundation.dart';
 
 class ArConnectWallet extends Wallet {
-  ArConnectWallet(this.arConnectService);
+  ArConnectWallet(this.arConnectService, {super.onSign}) {
+    debugPrint('ArConnectWallet instantiated');
+  }
 
   final ArConnectService arConnectService;
 
@@ -20,6 +21,8 @@ class ArConnectWallet extends Wallet {
 
   @override
   Future<Uint8List> sign(Uint8List message, [String? context]) async {
+    onSign?.call('ArConnect signing ${message.length} bytes', context);
+    debugPrint('ArConnectWallet.sign() called with context: $context');
     return await arConnectService.getSignature(message);
   }
 }

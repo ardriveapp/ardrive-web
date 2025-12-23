@@ -62,9 +62,10 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
           );
 
           //Returning this class doesn't do anything, but it could be useful for debugging
+          logger.d('Loading JSON wallet from profile');
           return ProfileLoadDetails(
             details: profile,
-            wallet: Wallet.fromJwk(walletJwk),
+            wallet: Wallet.fromJwk(walletJwk, onSign: walletOnSign),
             key: profileKdRes.key,
             walletPublicKey: publicKey,
           );
@@ -72,9 +73,10 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
           throw ProfilePasswordIncorrectException();
         }
       case ProfileType.arConnect:
+        logger.d('Loading ArConnect wallet from profile');
         return ProfileLoadDetails(
           details: profile,
-          wallet: ArConnectWallet(ArConnectService()),
+          wallet: ArConnectWallet(ArConnectService(), onSign: walletOnSign),
           key: profileKdRes.key,
           walletPublicKey: publicKey,
         );

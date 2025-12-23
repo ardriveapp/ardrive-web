@@ -119,7 +119,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         key: createRes.driveKey,
       );
 
-      final signer = ArweaveSigner(profile.user.wallet);
+      final signer = ArweaveSigner(profile.user.wallet, context: 'drive-create');
 
       await rootFolderDataItem.sign(signer);
       await driveDataItem.sign(signer);

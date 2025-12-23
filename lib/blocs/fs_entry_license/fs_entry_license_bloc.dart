@@ -252,7 +252,7 @@ class FsEntryLicenseBloc
     final licenseAssertionTxDataItems = <DataItem>[];
     final fileRevisionTxDataItems = <DataItem>[];
 
-    final signer = ArweaveSigner(profile.user.wallet);
+    final signer = ArweaveSigner(profile.user.wallet, context: 'license-assertion');
 
     await _driveDao.transaction(() async {
       for (var file in filesToLicense!) {
