@@ -1000,30 +1000,42 @@ class _SyncRepository implements SyncRepository {
         'Duration of streaming phase for ${drive.name}: $fetchPhaseTotalTime ms. Processed $totalTransactionsProcessed transactions');
 
     // Fetch pending (unmined) transactions to show Turbo uploads immediately
+    // This is best-effort: errors here should not fail the drive sync
     logger.d('Fetching pending transactions for drive ${drive.id}');
     int pendingTransactionCount = 0;
 
-    await for (final pendingTxBatch
-        in _arweave.getPendingTransactionsForDrive(
-      driveId,
-      ownerAddress: ownerAddress,
-    )) {
-      if (pendingTxBatch.isNotEmpty) {
-        logger.d('Processing ${pendingTxBatch.length} pending transactions');
+    try {
+      await for (final pendingTxBatch
+          in _arweave.getPendingTransactionsForDrive(
+        driveId,
+        ownerAddress: ownerAddress,
+      )) {
+        // Check for cancellation before processing each batch
+        if (token.isCancelled) {
+          logger.d('Pending transactions fetch cancelled for drive ${drive.id}');
+          break;
+        }
 
-        await _processTransactionChunk(
-          transactions: pendingTxBatch,
-          drive: drive,
-          driveKey: driveKey?.key,
-          currentBlockHeight: currentBlockHeight,
-          lastBlockHeight: lastBlockHeight,
-          transactionParseBatchSize: transactionParseBatchSize,
-          snapshotDriveHistory: snapshotDriveHistory,
-          ownerAddress: ownerAddress,
-        );
+        if (pendingTxBatch.isNotEmpty) {
+          logger.d('Processing ${pendingTxBatch.length} pending transactions');
 
-        pendingTransactionCount += pendingTxBatch.length;
+          await _processTransactionChunk(
+            transactions: pendingTxBatch,
+            drive: drive,
+            driveKey: driveKey?.key,
+            currentBlockHeight: currentBlockHeight,
+            lastBlockHeight: lastBlockHeight,
+            transactionParseBatchSize: transactionParseBatchSize,
+            snapshotDriveHistory: snapshotDriveHistory,
+            ownerAddress: ownerAddress,
+          );
+
+          pendingTransactionCount += pendingTxBatch.length;
+        }
       }
+    } catch (e) {
+      // Log but don't rethrow - pending tx fetch is best-effort
+      logger.w('Error fetching pending transactions for drive ${drive.id}: $e');
     }
 
     if (pendingTransactionCount > 0) {

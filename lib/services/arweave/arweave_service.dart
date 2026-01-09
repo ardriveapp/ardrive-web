@@ -258,52 +258,63 @@ class ArweaveService {
   }) async* {
     String? cursor;
     while (true) {
-      final queryResult = await graphQLRetry.execute(
-        PendingDriveEntitiesQuery(
-          variables: PendingDriveEntitiesArguments(
-            driveId: driveId,
-            after: cursor,
-            ownerAddress: ownerAddress,
+      try {
+        final queryResult = await graphQLRetry.execute(
+          PendingDriveEntitiesQuery(
+            variables: PendingDriveEntitiesArguments(
+              driveId: driveId,
+              after: cursor,
+              ownerAddress: ownerAddress,
+            ),
           ),
-        ),
-      );
+        );
 
-      if (queryResult.data == null) {
-        logger.w('No data in pending transactions query result');
+        if (queryResult.data == null) {
+          logger.w('No data in pending transactions query result');
+          break;
+        }
+
+        final edges = queryResult.data!.transactions.edges;
+        final hasNextPage = queryResult.data!.transactions.pageInfo.hasNextPage;
+
+        // Guard against empty edges with hasNextPage=true causing infinite loop
+        if (edges.isEmpty) {
+          break;
+        }
+
+        // Filter to only include transactions with no block (pending/unmined)
+        final pendingTransactions = edges
+            .where((edge) => edge.node.block == null)
+            .where((edge) => _isSupportedArFSVersion(edge.node))
+            .map((e) => DriveEntityHistoryTransactionModel(
+                  transactionCommonMixin: e.node,
+                  cursor: e.cursor,
+                ))
+            .toList();
+
+        if (pendingTransactions.isNotEmpty) {
+          logger.d('Found ${pendingTransactions.length} pending transactions for drive $driveId');
+          yield pendingTransactions;
+        }
+
+        // If no more pages, we're done
+        if (!hasNextPage) {
+          break;
+        }
+
+        // If we hit a page with mined transactions, we can stop
+        // (since we're sorting HEIGHT_DESC, pending txs appear first)
+        final hasMinedTxs = edges.any((edge) => edge.node.block != null);
+        if (hasMinedTxs && pendingTransactions.isEmpty) {
+          break;
+        }
+
+        // Advance cursor for next page
+        cursor = edges.last.cursor;
+      } catch (e) {
+        logger.e('Error fetching pending transactions for drive $driveId', e);
         break;
       }
-
-      // Filter to only include transactions with no block (pending/unmined)
-      final pendingTransactions = queryResult.data!.transactions.edges
-          .where((edge) => edge.node.block == null)
-          .where((edge) => _isSupportedArFSVersion(edge.node))
-          .map((e) => DriveEntityHistoryTransactionModel(
-                transactionCommonMixin: e.node,
-                cursor: e.cursor,
-              ))
-          .toList();
-
-      if (pendingTransactions.isNotEmpty) {
-        logger.d('Found ${pendingTransactions.length} pending transactions for drive $driveId');
-        yield pendingTransactions;
-      }
-
-      // If no more pages or we've gone through enough to find all pending txs
-      if (!queryResult.data!.transactions.pageInfo.hasNextPage) {
-        break;
-      }
-
-      // If we hit a page with mined transactions, we can stop
-      // (since we're sorting HEIGHT_DESC, pending txs appear first)
-      final hasMinedTxs = queryResult.data!.transactions.edges
-          .any((edge) => edge.node.block != null);
-      if (hasMinedTxs && pendingTransactions.isEmpty) {
-        break;
-      }
-
-      cursor = queryResult.data!.transactions.edges.isNotEmpty
-          ? queryResult.data!.transactions.edges.last.cursor
-          : null;
     }
   }
 
