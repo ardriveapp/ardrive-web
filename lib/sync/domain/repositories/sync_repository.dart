@@ -999,6 +999,37 @@ class _SyncRepository implements SyncRepository {
     logger.d(
         'Duration of streaming phase for ${drive.name}: $fetchPhaseTotalTime ms. Processed $totalTransactionsProcessed transactions');
 
+    // Fetch pending (unmined) transactions to show Turbo uploads immediately
+    logger.d('Fetching pending transactions for drive ${drive.id}');
+    int pendingTransactionCount = 0;
+
+    await for (final pendingTxBatch
+        in _arweave.getPendingTransactionsForDrive(
+      driveId,
+      ownerAddress: ownerAddress,
+    )) {
+      if (pendingTxBatch.isNotEmpty) {
+        logger.d('Processing ${pendingTxBatch.length} pending transactions');
+
+        await _processTransactionChunk(
+          transactions: pendingTxBatch,
+          drive: drive,
+          driveKey: driveKey?.key,
+          currentBlockHeight: currentBlockHeight,
+          lastBlockHeight: lastBlockHeight,
+          transactionParseBatchSize: transactionParseBatchSize,
+          snapshotDriveHistory: snapshotDriveHistory,
+          ownerAddress: ownerAddress,
+        );
+
+        pendingTransactionCount += pendingTxBatch.length;
+      }
+    }
+
+    if (pendingTransactionCount > 0) {
+      logger.i('Processed $pendingTransactionCount pending transactions for drive ${drive.name}');
+    }
+
       // Yield final progress before cleanup
       yield 0.8;
 

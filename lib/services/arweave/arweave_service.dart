@@ -249,6 +249,70 @@ class ArweaveService {
     );
   }
 
+  /// Fetches pending (unmined) transactions for a drive.
+  /// These are transactions that have been indexed but don't yet have a block.
+  /// Used to show Turbo-uploaded files immediately before they're mined.
+  Stream<List<DriveEntityHistoryTransactionModel>> getPendingTransactionsForDrive(
+    String driveId, {
+    required String ownerAddress,
+  }) async* {
+    String? cursor;
+    while (true) {
+      final queryResult = await graphQLRetry.execute(
+        PendingDriveEntitiesQuery(
+          variables: PendingDriveEntitiesArguments(
+            driveId: driveId,
+            after: cursor,
+            ownerAddress: ownerAddress,
+          ),
+        ),
+      );
+
+      if (queryResult.data == null) {
+        logger.w('No data in pending transactions query result');
+        break;
+      }
+
+      // Filter to only include transactions with no block (pending/unmined)
+      final pendingTransactions = queryResult.data!.transactions.edges
+          .where((edge) => edge.node.block == null)
+          .where((edge) => _isSupportedArFSVersion(edge.node))
+          .map((e) => DriveEntityHistoryTransactionModel(
+                transactionCommonMixin: e.node,
+                cursor: e.cursor,
+              ))
+          .toList();
+
+      if (pendingTransactions.isNotEmpty) {
+        logger.d('Found ${pendingTransactions.length} pending transactions for drive $driveId');
+        yield pendingTransactions;
+      }
+
+      // If no more pages or we've gone through enough to find all pending txs
+      if (!queryResult.data!.transactions.pageInfo.hasNextPage) {
+        break;
+      }
+
+      // If we hit a page with mined transactions, we can stop
+      // (since we're sorting HEIGHT_DESC, pending txs appear first)
+      final hasMinedTxs = queryResult.data!.transactions.edges
+          .any((edge) => edge.node.block != null);
+      if (hasMinedTxs && pendingTransactions.isEmpty) {
+        break;
+      }
+
+      cursor = queryResult.data!.transactions.edges.isNotEmpty
+          ? queryResult.data!.transactions.edges.last.cursor
+          : null;
+    }
+  }
+
+  bool _isSupportedArFSVersion(TransactionCommonMixin node) {
+    final arfsTag =
+        node.tags.firstWhereOrNull((tag) => tag.name == EntityTag.arFs);
+    return arfsTag != null && supportedArFSVersionsSet.contains(arfsTag.value);
+  }
+
   Stream<List<LicenseAssertions$Query$TransactionConnection$TransactionEdge$Transaction>>
       getLicenseAssertions(Iterable<String> licenseAssertionTxIds) async* {
     const chunkSize = 100;
