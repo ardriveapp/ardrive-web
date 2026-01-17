@@ -159,9 +159,9 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                     padding: const EdgeInsets.only(left: 40.0),
                     child: Text(
                       appLocalizationsOf(context).review,
-                      style: ArDriveTypography.body
-                          .leadBold()
-                          .copyWith(fontWeight: FontWeight.w700),
+                      style: ArDriveTypographyNew.of(context).heading5(
+                        fontWeight: ArFontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -186,7 +186,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                   child: turboLogo(context, height: 15),
                                 ),
                                 const SizedBox(
-                                  height: 18,
+                                  height: 24,
                                 ),
                                 BlocBuilder<PaymentReviewBloc,
                                     PaymentReviewState>(
@@ -199,23 +199,21 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                         is PaymentReviewPaymentModelLoaded) {
                                       return Text(
                                         state.credits,
-                                        style: ArDriveTypography.headline
-                                            .headline4Regular(
+                                        style: ArDriveTypographyNew.of(context)
+                                            .heading4(
+                                              fontWeight: ArFontWeight.semiBold,
                                               color: ArDriveTheme.of(context)
                                                   .themeData
                                                   .colors
                                                   .themeFgMuted,
-                                            )
-                                            .copyWith(
-                                              fontWeight: FontWeight.w600,
                                             ),
                                       );
                                     }
 
                                     return Text(
                                       '0',
-                                      style: ArDriveTypography.headline
-                                          .headline4Regular(
+                                      style: ArDriveTypographyNew.of(context)
+                                          .heading4(
                                         color: ArDriveTheme.of(context)
                                             .themeData
                                             .colors
@@ -227,7 +225,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                 Text(
                                   appLocalizationsOf(context).credits,
                                   style:
-                                      ArDriveTypography.body.buttonLargeRegular(
+                                      ArDriveTypographyNew.of(context).paragraphLarge(
                                     color: ArDriveTheme.of(context)
                                         .themeData
                                         .colors
@@ -246,9 +244,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                     children: [
                                       Text(
                                         'Subtotal',
-                                        style: ArDriveTypography.body
-                                            .buttonNormalRegular()
-                                            .copyWith(
+                                        style: ArDriveTypographyNew.of(context).paragraphNormal(
                                               color: ArDriveTheme.of(context)
                                                   .themeData
                                                   .colors
@@ -267,9 +263,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                               is PaymentReviewPaymentModelLoaded) {
                                             return Text(
                                               '\$${state.subTotal}',
-                                              style: ArDriveTypography.body
-                                                  .buttonNormalRegular()
-                                                  .copyWith(
+                                              style: ArDriveTypographyNew.of(context).paragraphNormal(
                                                     color:
                                                         ArDriveTheme.of(context)
                                                             .themeData
@@ -281,9 +275,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
 
                                           return Text(
                                             '\$0',
-                                            style: ArDriveTypography.body
-                                                .buttonNormalRegular()
-                                                .copyWith(
+                                            style: ArDriveTypographyNew.of(context).paragraphNormal(
                                                   color:
                                                       ArDriveTheme.of(context)
                                                           .themeData
@@ -300,9 +292,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                     children: [
                                       Text(
                                         'Discount',
-                                        style: ArDriveTypography.body
-                                            .buttonNormalRegular()
-                                            .copyWith(
+                                        style: ArDriveTypographyNew.of(context).paragraphNormal(
                                               color: ArDriveTheme.of(context)
                                                   .themeData
                                                   .colors
@@ -322,9 +312,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                               is PaymentReviewPaymentModelLoaded) {
                                             return Text(
                                               state.promoDiscount!,
-                                              style: ArDriveTypography.body
-                                                  .buttonNormalRegular()
-                                                  .copyWith(
+                                              style: ArDriveTypographyNew.of(context).paragraphNormal(
                                                     color:
                                                         ArDriveTheme.of(context)
                                                             .themeData
@@ -345,8 +333,8 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                   children: [
                                     Text(
                                       appLocalizationsOf(context).total,
-                                      style: ArDriveTypography.body
-                                          .buttonNormalBold(),
+                                      style: ArDriveTypographyNew.of(context)
+                                          .paragraphNormal(fontWeight: ArFontWeight.bold),
                                     ),
                                     const Spacer(),
                                     BlocBuilder<PaymentReviewBloc,
@@ -360,20 +348,17 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                             is PaymentReviewPaymentModelLoaded) {
                                           return Text(
                                             '\$${state.total}',
-                                            style: ArDriveTypography.body
-                                                .buttonNormalBold()
-                                                .copyWith(
-                                                  fontWeight: FontWeight.w700,
+                                            style: ArDriveTypographyNew.of(context).paragraphNormal(
+                                                  fontWeight: ArFontWeight.bold,
                                                 ),
                                           );
                                         }
 
                                         return Text(
                                           '\$0',
-                                          style: ArDriveTypography.body
-                                              .buttonNormalBold()
-                                              .copyWith(
-                                                fontWeight: FontWeight.w700,
+                                          style: ArDriveTypographyNew.of(context)
+                                              .paragraphNormal(
+                                                fontWeight: ArFontWeight.bold,
                                               ),
                                         );
                                       },
@@ -441,7 +426,8 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                       Text(
                         appLocalizationsOf(context)
                             .leaveAnEmailToReceiveAReceipt,
-                        style: ArDriveTypography.body.buttonNormalBold(
+                        style: ArDriveTypographyNew.of(context).paragraphNormal(
+                          fontWeight: ArFontWeight.bold,
                           color: ArDriveTheme.of(context)
                               .themeData
                               .colors
@@ -449,7 +435,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                         ),
                       ),
                       const SizedBox(
-                        height: 16,
+                        height: 24,
                       ),
                       ArDriveTheme(
                         key: const ValueKey('turbo_payment_form'),
@@ -485,7 +471,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                         ),
                       ),
                       const SizedBox(
-                        height: 16,
+                        height: 24,
                       ),
                       ArDriveCheckBox(
                         isDisabled:
@@ -494,7 +480,8 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                             '${_emailIsValid && _emailChecked}${_emailController.text}'),
                         title: appLocalizationsOf(context)
                             .keepMeUpToDateOnNewsAndPromotions,
-                        titleStyle: ArDriveTypography.body.buttonNormalBold(
+                        titleStyle: ArDriveTypographyNew.of(context).paragraphNormal(
+                          fontWeight: ArFontWeight.bold,
                           color: ArDriveTheme.of(context)
                               .themeData
                               .colors
@@ -518,7 +505,8 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                 defaultMapper: (text) => TextSpan(
                                   text: text,
                                   style:
-                                      ArDriveTypography.body.buttonNormalBold(
+                                      ArDriveTypographyNew.of(context).paragraphNormal(
+                                    fontWeight: ArFontWeight.bold,
                                     color: ArDriveTheme.of(context)
                                         .themeData
                                         .colors
@@ -529,8 +517,9 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                                   appLocalizationsOf(context).aggreeToTerms_link:
                                       (text) => TextSpan(
                                             text: text,
-                                            style: ArDriveTypography.body
-                                                .buttonNormalBold(
+                                            style: ArDriveTypographyNew.of(context)
+                                                .paragraphNormal(
+                                                  fontWeight: ArFontWeight.bold,
                                                   color:
                                                       ArDriveTheme.of(context)
                                                           .themeData
@@ -588,7 +577,8 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                     maxHeight: 44,
                     maxWidth: 143,
                     text: appLocalizationsOf(context).pay,
-                    fontStyle: ArDriveTypography.body.buttonLargeBold(
+                    fontStyle: ArDriveTypographyNew.of(context).paragraphLarge(
+                      fontWeight: ArFontWeight.bold,
                       color: Colors.white,
                     ),
                     isDisabled: state is PaymentReviewLoadingQuote ||
@@ -621,7 +611,8 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                     maxHeight: 44,
                     maxWidth: double.maxFinite,
                     text: appLocalizationsOf(context).pay,
-                    fontStyle: ArDriveTypography.body.buttonLargeBold(
+                    fontStyle: ArDriveTypographyNew.of(context).paragraphLarge(
+                      fontWeight: ArFontWeight.bold,
                       color: Colors.white,
                     ),
                     isDisabled: state is PaymentReviewLoadingQuote ||
@@ -654,7 +645,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
               },
             ),
             const SizedBox(
-              height: 16,
+              height: 24,
             ),
             ArDriveClickArea(
               child: GestureDetector(
@@ -665,7 +656,8 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                 },
                 child: Text(
                   appLocalizationsOf(context).back,
-                  style: ArDriveTypography.body.buttonLargeBold(
+                  style: ArDriveTypographyNew.of(context).paragraphLarge(
+                    fontWeight: ArFontWeight.bold,
                     color: ArDriveTheme.of(context)
                         .themeData
                         .colors
@@ -691,7 +683,8 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                 },
                 child: Text(
                   appLocalizationsOf(context).back,
-                  style: ArDriveTypography.body.buttonLargeBold(
+                  style: ArDriveTypographyNew.of(context).paragraphLarge(
+                    fontWeight: ArFontWeight.bold,
                     color: ArDriveTheme.of(context)
                         .themeData
                         .colors
@@ -707,7 +700,8 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                     maxHeight: 44,
                     maxWidth: 143,
                     text: appLocalizationsOf(context).pay,
-                    fontStyle: ArDriveTypography.body.buttonLargeBold(
+                    fontStyle: ArDriveTypographyNew.of(context).paragraphLarge(
+                      fontWeight: ArFontWeight.bold,
                       color: Colors.white,
                     ),
                     isDisabled: state is PaymentReviewLoadingQuote ||
@@ -740,7 +734,8 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                     maxHeight: 44,
                     maxWidth: double.maxFinite,
                     text: appLocalizationsOf(context).pay,
-                    fontStyle: ArDriveTypography.body.buttonLargeBold(
+                    fontStyle: ArDriveTypographyNew.of(context).paragraphLarge(
+                      fontWeight: ArFontWeight.bold,
                       color: Colors.white,
                     ),
                     isDisabled: state is PaymentReviewLoadingQuote ||
@@ -841,7 +836,8 @@ class RefreshButtonState extends State<RefreshButton>
           opacity: _controller,
           child: Text(
             'Refresh',
-            style: ArDriveTypography.body.buttonNormalBold(
+            style: ArDriveTypographyNew.of(context).paragraphNormal(
+              fontWeight: ArFontWeight.bold,
               color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
             ),
           ),
@@ -926,7 +922,8 @@ class RefreshQuoteButtonState extends State<RefreshQuoteButton>
                     axisAlignment: -1,
                     child: Text(
                       appLocalizationsOf(context).refresh,
-                      style: ArDriveTypography.body.buttonNormalBold(
+                      style: ArDriveTypographyNew.of(context).paragraphNormal(
+                        fontWeight: ArFontWeight.bold,
                         color: ArDriveTheme.of(context)
                             .themeData
                             .colors

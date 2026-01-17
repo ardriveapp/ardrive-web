@@ -94,10 +94,10 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                   const Divider(height: 24),
                   _credits(context),
                   const Padding(
-                    padding: EdgeInsets.only(top: 16),
+                    padding: EdgeInsets.only(top: 24),
                     child: QuoteRefreshWidget(),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                   _formDesktop(
                     context,
                     theme,
@@ -105,7 +105,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 ],
               ),
             ),
-            const Divider(height: 16),
+            const Divider(height: 24),
             const SizedBox(height: 24),
             _footer(context),
           ],
@@ -202,7 +202,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 24),
                           _formDesktop(
                             context,
                             theme,
@@ -210,7 +210,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                         ],
                       ),
                     ),
-                    const Divider(height: 16),
+                    const Divider(height: 24),
                     const SizedBox(height: 24),
                     _footer(context),
                   ],
@@ -239,7 +239,9 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                   builder: (context, state) {
                     return Text(
                       '${convertWinstonToLiteralString(state.winstonCredits)} Credits',
-                      style: ArDriveTypography.body.leadBold(),
+                      style: ArDriveTypographyNew.of(context).heading5(
+                        fontWeight: ArFontWeight.bold,
+                      ),
                     );
                   },
                 ),
@@ -250,7 +252,8 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                         children: [
                           TextSpan(
                             text: '\$${state.paymentAmount}',
-                            style: ArDriveTypography.body.captionBold(
+                            style: ArDriveTypographyNew.of(context).caption(
+                              fontWeight: ArFontWeight.bold,
                               color: ArDriveTheme.of(context)
                                   .themeData
                                   .colors
@@ -288,7 +291,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
 
     return TextSpan(
       text: ' $text',
-      style: ArDriveTypography.body.buttonNormalRegular(
+      style: ArDriveTypographyNew.of(context).paragraphNormal(
         color: ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
       ),
     );
@@ -303,16 +306,17 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
         children: [
           Text(
             appLocalizationsOf(context).paymentDetails,
-            style: ArDriveTypography.body
-                .leadBold()
-                .copyWith(fontWeight: FontWeight.w700),
+            style: ArDriveTypographyNew.of(context).heading5(
+              fontWeight: ArFontWeight.bold,
+            ),
           ),
           const SizedBox(
             height: 12,
           ),
           Text(
             appLocalizationsOf(context).thisIsAOneTimePaymentPoweredByStripe,
-            style: ArDriveTypography.body.captionBold(
+            style: ArDriveTypographyNew.of(context).caption(
+              fontWeight: ArFontWeight.bold,
               color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
             ),
           ),
@@ -333,7 +337,8 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
               maxWidth: double.maxFinite,
               maxHeight: 44,
               text: appLocalizationsOf(context).review,
-              fontStyle: ArDriveTypography.body.buttonLargeBold(
+              fontStyle: ArDriveTypographyNew.of(context).paragraphLarge(
+                fontWeight: ArFontWeight.bold,
                 color: Colors.white,
               ),
               isDisabled: _selectedCountry == null ||
@@ -360,7 +365,8 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 },
                 child: Text(
                   appLocalizationsOf(context).back,
-                  style: ArDriveTypography.body.buttonLargeBold(
+                  style: ArDriveTypographyNew.of(context).paragraphLarge(
+                    fontWeight: ArFontWeight.bold,
                     color: ArDriveTheme.of(context)
                         .themeData
                         .colors
@@ -387,7 +393,8 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 },
                 child: Text(
                   appLocalizationsOf(context).back,
-                  style: ArDriveTypography.body.buttonLargeBold(
+                  style: ArDriveTypographyNew.of(context).paragraphLarge(
+                    fontWeight: ArFontWeight.bold,
                     color: ArDriveTheme.of(context)
                         .themeData
                         .colors
@@ -400,7 +407,8 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
               maxHeight: 44,
               maxWidth: 143,
               text: appLocalizationsOf(context).review,
-              fontStyle: ArDriveTypography.body.buttonLargeBold(
+              fontStyle: ArDriveTypographyNew.of(context).paragraphLarge(
+                fontWeight: ArFontWeight.bold,
                 color: Colors.white,
               ),
               isDisabled: _selectedCountry == null ||
@@ -441,7 +449,8 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
               alignment: Alignment.centerLeft,
               child: TextFieldLabel(
                 text: '${appLocalizationsOf(context).creditCard} *',
-                style: ArDriveTypography.body.buttonNormalBold(
+                style: ArDriveTypographyNew.of(context).paragraphNormal(
+                  fontWeight: ArFontWeight.bold,
                   color: theme.requiredLabelColor,
                 ),
               ),
@@ -613,7 +622,8 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   Widget promoCodeLabel() {
     return Text(
       'Promo Code', // TODO: localize
-      style: ArDriveTypography.body.buttonNormalBold(
+      style: ArDriveTypographyNew.of(context).paragraphNormal(
+        fontWeight: ArFontWeight.bold,
         color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
       ),
     );
@@ -644,7 +654,8 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
             child: Align(
               child: Text(
                 'Promo code successfully applied', // TODO: localize
-                style: ArDriveTypography.body.buttonNormalBold(
+                style: ArDriveTypographyNew.of(context).paragraphNormal(
+                  fontWeight: ArFontWeight.bold,
                   color: ArDriveTheme.of(context)
                       .themeData
                       .colors
@@ -768,7 +779,8 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
               : SystemMouseCursors.click,
           child: Text(
             'Apply', // TODO: localize
-            style: ArDriveTypography.body.buttonNormalBold(
+            style: ArDriveTypographyNew.of(context).paragraphNormal(
+              fontWeight: ArFontWeight.bold,
               color: ArDriveTheme.of(context).themeData.colors.themeInputText,
             ),
           ),
@@ -905,25 +917,22 @@ class TimerWidgetState extends State<TimerWidget> {
       textColor = ArDriveTheme.of(context).themeData.colors.themeFgDefault;
     }
 
+    final typography = ArDriveTypographyNew.of(context);
     if (widget.isFetching) {
       return Text(
         appLocalizationsOf(context).fetchingNewQuote,
-        style: ArDriveTypography.body.buttonNormalBold().copyWith(
-              color: textColor,
-              fontWeight: FontWeight.w700,
-            ),
+        style: typography.paragraphNormal(
+          fontWeight: ArFontWeight.bold,
+          color: textColor,
+        ),
       );
     } else if (widget.hasError) {
       return Text(
         appLocalizationsOf(context).errorFetchingQuote,
-        style: ArDriveTypography.body
-            .buttonNormalBold(
-              color:
-                  ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
-            )
-            .copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+        style: typography.paragraphNormal(
+          fontWeight: ArFontWeight.bold,
+          color: ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
+        ),
       );
     }
 
@@ -937,12 +946,13 @@ class TimerWidgetState extends State<TimerWidget> {
           defaultMapper: (textPart) => RichText(
                 text: TextSpan(
                   text: textPart,
-                  style: ArDriveTypography.body.buttonNormalBold().copyWith(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDefault,
-                      ),
+                  style: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.bold,
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault,
+                  ),
                 ),
               ),
           parts: {
@@ -950,10 +960,12 @@ class TimerWidgetState extends State<TimerWidget> {
               final richText = RichText(
                 text: TextSpan(
                   text: text,
-                  style: ArDriveTypography.body.buttonNormalBold().copyWith(
-                        color: textColor,
-                        fontWeight: widget.boldTimer ? FontWeight.w700 : null,
-                      ),
+                  style: typography.paragraphNormal(
+                    fontWeight: widget.boldTimer
+                        ? ArFontWeight.bold
+                        : ArFontWeight.semiBold,
+                    color: textColor,
+                  ),
                 ),
               );
 
@@ -1069,7 +1081,8 @@ class _InputDropdownMenuState<T extends InputDropdownItem>
                   child: Text(
                     e.label,
                     style: widget.itemsTextStyle ??
-                        ArDriveTypography.body.captionBold(
+                        ArDriveTypographyNew.of(context).caption(
+                          fontWeight: ArFontWeight.bold,
                           color: ArDriveTheme.of(context)
                               .themeData
                               .textFieldTheme
@@ -1104,7 +1117,8 @@ class _InputDropdownMenuState<T extends InputDropdownItem>
                   alignment: Alignment.centerLeft,
                   child: TextFieldLabel(
                     text: widget.label!,
-                    style: ArDriveTypography.body.buttonNormalBold(
+                    style: ArDriveTypographyNew.of(context).paragraphNormal(
+                      fontWeight: ArFontWeight.bold,
                       color: ArDriveTheme.of(context)
                           .themeData
                           .textFieldTheme
@@ -1176,7 +1190,8 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                     TimerWidget(
                       humanReadable: true,
                       humanReadableWithPadding: true,
-                      textStyle: ArDriveTypography.body.captionBold(
+                      textStyle: ArDriveTypographyNew.of(context).caption(
+                        fontWeight: ArFontWeight.bold,
                         color: ArDriveTheme.of(context)
                             .themeData
                             .colors
@@ -1225,7 +1240,8 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                             Flexible(
                               child: Text(
                                 appLocalizationsOf(context).unableToUpdateQuote,
-                                style: ArDriveTypography.body.captionBold(
+                                style: ArDriveTypographyNew.of(context).caption(
+                                  fontWeight: ArFontWeight.bold,
                                   color: ArDriveTheme.of(context)
                                       .themeData
                                       .colors
@@ -1268,7 +1284,8 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                         const SizedBox(width: 4),
                         Text(
                           appLocalizationsOf(context).refresh,
-                          style: ArDriveTypography.body.captionBold(
+                          style: ArDriveTypographyNew.of(context).caption(
+                            fontWeight: ArFontWeight.bold,
                             color: ArDriveTheme.of(context)
                                 .themeData
                                 .colors
@@ -1349,7 +1366,8 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                                 child: Text(
                                   appLocalizationsOf(context)
                                       .unableToUpdateQuote,
-                                  style: ArDriveTypography.body.captionBold(
+                                  style: ArDriveTypographyNew.of(context).caption(
+                                    fontWeight: ArFontWeight.bold,
                                     color: ArDriveTheme.of(context)
                                         .themeData
                                         .colors
@@ -1392,7 +1410,8 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                           const SizedBox(width: 4),
                           Text(
                             appLocalizationsOf(context).refresh,
-                            style: ArDriveTypography.body.captionBold(
+                            style: ArDriveTypographyNew.of(context).caption(
+                              fontWeight: ArFontWeight.bold,
                               color: ArDriveTheme.of(context)
                                   .themeData
                                   .colors

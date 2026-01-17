@@ -96,12 +96,15 @@ class ErrorView extends StatelessWidget {
                       .colors
                       .themeErrorDefault,
                 ),
-                Text(errorTitle, style: ArDriveTypography.body.leadBold()),
+                Text(errorTitle, style: ArDriveTypographyNew.of(context).heading5(
+                  fontWeight: ArFontWeight.bold,
+                )),
                 const SizedBox(height: 16),
                 Text(
                   errorMessage,
                   textAlign: TextAlign.center,
-                  style: ArDriveTypography.body.buttonNormalBold(
+                  style: ArDriveTypographyNew.of(context).paragraphNormal(
+                    fontWeight: ArFontWeight.bold,
                     color: ArDriveTheme.of(context)
                         .themeData
                         .colors
@@ -118,7 +121,8 @@ class ErrorView extends StatelessWidget {
                 maxHeight: 44,
                 maxWidth: 143,
                 text: appLocalizationsOf(context).tryAgain,
-                fontStyle: ArDriveTypography.body.buttonLargeBold(
+                fontStyle: ArDriveTypographyNew.of(context).paragraphLarge(
+                  fontWeight: ArFontWeight.bold,
                   color: Colors.white,
                 ),
                 onPressed: onTryAgain,

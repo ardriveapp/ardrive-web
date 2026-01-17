@@ -61,7 +61,8 @@ class _InputDropdownMenuState<T extends InputDropdownItem>
                   child: Text(
                     e.label,
                     style: widget.itemsTextStyle ??
-                        ArDriveTypography.body.captionBold(
+                        ArDriveTypographyNew.of(context).caption(
+                          fontWeight: ArFontWeight.bold,
                           color: ArDriveTheme.of(context)
                               .themeData
                               .textFieldTheme
@@ -94,7 +95,8 @@ class _InputDropdownMenuState<T extends InputDropdownItem>
                   alignment: Alignment.centerLeft,
                   child: TextFieldLabel(
                     text: widget.label!,
-                    style: ArDriveTypography.body.buttonNormalBold(
+                    style: ArDriveTypographyNew.of(context).paragraphNormal(
+                      fontWeight: ArFontWeight.bold,
                       color: ArDriveTheme.of(context)
                           .themeData
                           .textFieldTheme

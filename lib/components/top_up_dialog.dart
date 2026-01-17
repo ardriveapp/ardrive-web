@@ -1,11 +1,14 @@
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/help_info_modals.dart';
 import 'package:ardrive/components/turbo_logo.dart';
+import 'package:ardrive/cookie_policy_consent/cookie_policy_consent.dart';
+import 'package:ardrive/cookie_policy_consent/views/cookie_policy_consent_modal.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/components/input_dropdown_menu.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
+import 'package:ardrive/turbo/topup/views/unified/unified_crypto_flow.dart';
 import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -68,13 +71,13 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [turboLogo(context, height: 30)],
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 32),
                   _BalanceView(
                     balance: state.balance,
                     estimatedStorage: state.estimatedStorageForBalance,
                     fileSizeUnit: paymentBloc.currentDataUnit.name,
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 32),
                   PresetAmountSelector(
                     amounts: presetAmounts,
                     currencyUnit: '\$',
@@ -91,28 +94,14 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                     estimatedStorage: state.estimatedStorageForSelectedAmount,
                     storageUnit: paymentBloc.currentDataUnit.name,
                   ),
-                  const SizedBox(height: 16),
-                  ScreenTypeLayout.builder(
-                    mobile: (context) => Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const UnitSelector(),
-                        const SizedBox(height: 16),
-                        _nextButton(maxWidth: double.maxFinite, maxHeight: 44),
-                      ],
-                    ),
-                    desktop: (context) => Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Expanded(
-                          child: UnitSelector(),
-                        ),
-                        _nextButton(
-                          maxWidth: 143,
-                          maxHeight: 40,
-                        ),
-                      ],
-                    ),
+                  const SizedBox(height: 24),
+                  const UnitSelector(),
+                  const SizedBox(height: 32),
+                  // Payment method buttons - side by side
+                  _PaymentMethodButtons(
+                    isDisabled: paymentBloc.currentAmount == 0 ||
+                        state is EstimationLoading ||
+                        state is EstimationLoadError,
                   ),
                 ],
               ),
@@ -140,35 +129,155 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
     );
   }
 
-  Widget _nextButton({
-    required double maxWidth,
-    required double maxHeight,
-  }) {
-    final paymentBloc = context.read<TurboTopUpEstimationBloc>();
+}
 
-    return BlocBuilder<TurboTopUpEstimationBloc, TopupEstimationState>(
-      builder: (context, state) {
-        return ArDriveButton(
-          isDisabled: paymentBloc.currentAmount == 0 ||
-              state is EstimationLoading ||
-              state is EstimationLoadError,
-          maxWidth: maxWidth,
-          maxHeight: maxHeight,
-          fontStyle: ArDriveTypography.body
-              .buttonLargeBold(
-                color:
-                    ArDriveTheme.of(context).themeData.colors.themeFgOnAccent,
-              )
-              .copyWith(fontWeight: FontWeight.w700),
-          text: appLocalizationsOf(context).next,
-          onPressed: () {
-            context
-                .read<TurboTopupFlowBloc>()
-                .add(const TurboTopUpShowPaymentFormView(4));
-          },
-        );
+/// Payment method buttons for Card and Crypto
+class _PaymentMethodButtons extends StatelessWidget {
+  final bool isDisabled;
+
+  const _PaymentMethodButtons({
+    required this.isDisabled,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ScreenTypeLayout.builder(
+      mobile: (context) => Column(
+        children: [
+          // Pay with Card button
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: _CardPaymentButton(isDisabled: isDisabled),
+          ),
+          const SizedBox(height: 12),
+          // Pay with Crypto button
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: _CryptoPaymentButton(isDisabled: isDisabled),
+          ),
+        ],
+      ),
+      desktop: (context) => Row(
+        children: [
+          // Pay with Card button
+          Expanded(
+            child: SizedBox(
+              height: 48,
+              child: _CardPaymentButton(isDisabled: isDisabled),
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Pay with Crypto button
+          Expanded(
+            child: SizedBox(
+              height: 48,
+              child: _CryptoPaymentButton(isDisabled: isDisabled),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Card payment button with cookie consent
+class _CardPaymentButton extends StatelessWidget {
+  final bool isDisabled;
+
+  const _CardPaymentButton({required this.isDisabled});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+    // For disabled state, use themeFgMuted for better contrast against themeAccentDisabled background
+    final textColor = isDisabled ? colors.themeFgMuted : colors.themeFgOnAccent;
+
+    return ArDriveButton(
+      isDisabled: isDisabled,
+      icon: Icon(
+        Icons.credit_card,
+        size: 18,
+        color: textColor,
+      ),
+      text: 'Pay with Card',
+      fontStyle: ArDriveTypographyNew.of(context).paragraphLarge(
+        fontWeight: ArFontWeight.bold,
+        color: textColor,
+      ),
+      onPressed: () async {
+        // Check cookie consent before proceeding to card payment
+        final cookieConsent = ArDriveCookiePolicyConsent();
+        final hasConsent = await cookieConsent.hasAcceptedCookiePolicy();
+
+        if (!context.mounted) return;
+
+        if (hasConsent) {
+          // Already has consent, proceed directly
+          context
+              .read<TurboTopupFlowBloc>()
+              .add(const TurboTopUpShowPaymentFormView(4));
+        } else {
+          // Show cookie consent modal, then proceed if accepted
+          showCookiePolicyConsentModal(context, (ctx) {
+            ctx.read<TurboTopupFlowBloc>().add(
+                  const TurboTopUpShowPaymentFormView(4),
+                );
+          });
+        }
       },
     );
+  }
+}
+
+/// Crypto payment button
+class _CryptoPaymentButton extends StatelessWidget {
+  final bool isDisabled;
+
+  const _CryptoPaymentButton({required this.isDisabled});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+
+    return ArDriveButton(
+      isDisabled: isDisabled,
+      style: ArDriveButtonStyle.secondary,
+      icon: Icon(
+        Icons.currency_bitcoin,
+        size: 18,
+        color: isDisabled ? colors.themeFgDisabled : colors.themeFgDefault,
+      ),
+      text: 'Pay with Crypto',
+      fontStyle: ArDriveTypographyNew.of(context).paragraphLarge(
+        fontWeight: ArFontWeight.bold,
+        color: isDisabled ? colors.themeFgDisabled : colors.themeFgDefault,
+      ),
+      onPressed: () {
+        _openCryptoModal(context);
+      },
+    );
+  }
+
+  Future<void> _openCryptoModal(BuildContext context) async {
+    // Get the current selected amount from the estimation bloc
+    final estimationBloc = context.read<TurboTopUpEstimationBloc>();
+    final fiatAmount = estimationBloc.currentAmount;
+
+    // Close the current turbo modal
+    Navigator.of(context).pop();
+
+    // Small delay for animation
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    // Show the new unified crypto flow
+    if (context.mounted) {
+      await showUnifiedCryptoModal(
+        context,
+        fiatAmount: fiatAmount,
+      );
+    }
   }
 }
 
@@ -183,7 +292,9 @@ class UnitSelector extends StatelessWidget {
       children: [
         CurrencyDropdownMenu(
           label: appLocalizationsOf(context).currency,
-          itemsTextStyle: ArDriveTypography.body.captionBold(),
+          itemsTextStyle: ArDriveTypographyNew.of(context).caption(
+            fontWeight: ArFontWeight.bold,
+          ),
           items: [
             CurrencyItem('USD'),
           ],
@@ -191,7 +302,9 @@ class UnitSelector extends StatelessWidget {
             children: [
               Text(
                 item?.label ?? 'USD',
-                style: ArDriveTypography.body.buttonNormalBold(),
+                style: ArDriveTypographyNew.of(context).paragraphNormal(
+                  fontWeight: ArFontWeight.bold,
+                ),
               ),
               const SizedBox(width: 8),
               ArDriveIcons.carretDown(size: 16),
@@ -203,7 +316,9 @@ class UnitSelector extends StatelessWidget {
         ),
         UnitDropdownMenu(
           label: appLocalizationsOf(context).units,
-          itemsTextStyle: ArDriveTypography.body.captionBold(),
+          itemsTextStyle: ArDriveTypographyNew.of(context).caption(
+            fontWeight: ArFontWeight.bold,
+          ),
           items: FileSizeUnit.values
               .map(
                 (unit) => UnitItem(unit),
@@ -213,7 +328,9 @@ class UnitSelector extends StatelessWidget {
             children: [
               Text(
                 item?.label ?? 'GB',
-                style: ArDriveTypography.body.buttonNormalBold(),
+                style: ArDriveTypographyNew.of(context).paragraphNormal(
+                  fontWeight: ArFontWeight.bold,
+                ),
               ),
               const SizedBox(width: 8),
               ArDriveIcons.carretDown(size: 16),
@@ -328,18 +445,12 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
                 style: ArDriveButtonStyle.primary,
                 maxHeight: height,
                 maxWidth: width,
-                fontStyle: ArDriveTypography.body.smallBold().copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: selectedAmount == amount
-                          ? ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeBgSurface
-                          : ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeFgMuted,
-                    ),
+                fontStyle: ArDriveTypographyNew.of(context).paragraphSmall(
+                  fontWeight: ArFontWeight.bold,
+                  color: selectedAmount == amount
+                      ? ArDriveTheme.of(context).themeData.colors.themeBgSurface
+                      : ArDriveTheme.of(context).themeData.colors.themeFgMuted,
+                ),
                 text: '${widget.currencyUnit}$amount',
                 onPressed: () {
                   _onPresetAmountSelected(amount);
@@ -392,14 +503,16 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
         ),
       ),
     );
-    final textStyle = ArDriveTypography.body.buttonNormalRegular(
+    final typography = ArDriveTypographyNew.of(context);
+    final textStyle = typography.paragraphNormal(
       color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
     );
     final appLimitsWarning = splitTranslationsWithMultipleStyles(
       originalText: appLocalizationsOf(context).turboModalBrowserLimit,
       defaultMapper: (text) => TextSpan(
         text: text,
-        style: ArDriveTypography.body.buttonNormalBold(
+        style: typography.paragraphNormal(
+          fontWeight: ArFontWeight.bold,
           color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
         ),
       ),
@@ -424,13 +537,14 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
         children: [
           Text(
             appLocalizationsOf(context).buyCredits,
-            style: ArDriveTypography.body.smallBold(),
+            style: typography.paragraphSmall(fontWeight: ArFontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
             appLocalizationsOf(context)
                 .creditsWillBeAutomaticallyAddedToYourTurboBalance,
-            style: ArDriveTypography.body.buttonNormalBold(
+            style: typography.paragraphNormal(
+              fontWeight: ArFontWeight.bold,
               color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
             ),
           ),
@@ -441,7 +555,8 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
           const SizedBox(height: 32),
           Text(
             appLocalizationsOf(context).amount,
-            style: ArDriveTypography.body.buttonNormalBold(
+            style: typography.paragraphNormal(
+              fontWeight: ArFontWeight.bold,
               color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
             ),
           ),
@@ -454,7 +569,8 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
                 const SizedBox(height: 24),
                 Text(
                   _customAmountText,
-                  style: ArDriveTypography.body.buttonNormalBold(
+                  style: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.bold,
                     color:
                         ArDriveTheme.of(context).themeData.colors.themeFgMuted,
                   ),
@@ -486,7 +602,8 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
                               (_customAmountValidationMessage?.isEmpty ?? true)
                           ? _customAmountText
                           : '',
-                      style: ArDriveTypography.body.buttonNormalBold(
+                      style: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.bold,
                         color: ArDriveTheme.of(context)
                             .themeData
                             .colors
@@ -531,7 +648,8 @@ class _PresetAmountSelectorState extends State<PresetAmountSelector> {
           showErrorMessage: false,
           preffix: Text(
             '\$ ',
-            style: ArDriveTypography.body.buttonLargeBold(
+            style: ArDriveTypographyNew.of(context).paragraphLarge(
+              fontWeight: ArFontWeight.bold,
               color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
             ),
           ),
@@ -636,7 +754,7 @@ class _BalanceView extends StatefulWidget {
 }
 
 class _BalanceViewState extends State<_BalanceView> {
-  balanceContents(bool isMobile) => [
+  List<Widget> balanceContents(bool isMobile, ArdriveTypographyNew typography) => [
         Flexible(
           flex: 1,
           child: Column(
@@ -645,12 +763,13 @@ class _BalanceViewState extends State<_BalanceView> {
             children: [
               Text(
                 appLocalizationsOf(context).arBalance,
-                style: ArDriveTypography.body.smallBold(),
+                style: typography.paragraphSmall(fontWeight: ArFontWeight.bold),
               ),
               const SizedBox(height: 4),
               Text(
                 '${convertWinstonToLiteralString(widget.balance)} ${appLocalizationsOf(context).credits}',
-                style: ArDriveTypography.body.buttonXLargeBold(
+                style: typography.paragraphLarge(
+                  fontWeight: ArFontWeight.bold,
                   color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
                 ),
               ),
@@ -669,12 +788,13 @@ class _BalanceViewState extends State<_BalanceView> {
             children: [
               Text(
                 appLocalizationsOf(context).estimatedStorage,
-                style: ArDriveTypography.body.smallBold(),
+                style: typography.paragraphSmall(fontWeight: ArFontWeight.bold),
               ),
               const SizedBox(height: 4),
               Text(
                 '${widget.estimatedStorage} ${widget.fileSizeUnit}',
-                style: ArDriveTypography.body.buttonXLargeBold(
+                style: typography.paragraphLarge(
+                  fontWeight: ArFontWeight.bold,
                   color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
                 ),
               ),
@@ -685,16 +805,17 @@ class _BalanceViewState extends State<_BalanceView> {
 
   @override
   Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
     return ScreenTypeLayout.builder(
       desktop: (context) => Row(
         mainAxisAlignment: MainAxisAlignment.start,
-        children: balanceContents(false),
+        children: balanceContents(false, typography),
       ),
       mobile: (context) => Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: balanceContents(true),
+        children: balanceContents(true, typography),
       ),
     );
   }
@@ -718,6 +839,7 @@ class PriceEstimateView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
     return BlocBuilder<TurboTopUpEstimationBloc, TopupEstimationState>(
       buildWhen: (previous, current) {
         return current is EstimationLoaded || current is EstimationLoadError;
@@ -730,7 +852,8 @@ class PriceEstimateView extends StatelessWidget {
               const Divider(height: 32),
               Text(
                 appLocalizationsOf(context).unableToFetchEstimateAtThisTime,
-                style: ArDriveTypography.body.buttonNormalBold(
+                style: typography.paragraphNormal(
+                  fontWeight: ArFontWeight.bold,
                   color: ArDriveTheme.of(context)
                       .themeData
                       .colors
@@ -749,18 +872,18 @@ class PriceEstimateView extends StatelessWidget {
               children: [
                 Text(
                   '$fiatCurrency $fiatAmount = ${convertWinstonToLiteralString(estimatedCredits)} ${appLocalizationsOf(context).credits}',
-                  style: ArDriveTypography.body.buttonNormalBold(),
+                  style: typography.paragraphNormal(fontWeight: ArFontWeight.bold),
                 ),
                 Transform.translate(
                   offset: const Offset(0, 4),
                   child: Text(
                     ' ~ ',
-                    style: ArDriveTypography.body.buttonNormalBold(),
+                    style: typography.paragraphNormal(fontWeight: ArFontWeight.bold),
                   ),
                 ),
                 Text(
                   '$estimatedStorage $storageUnit',
-                  style: ArDriveTypography.body.buttonNormalBold(),
+                  style: typography.paragraphNormal(fontWeight: ArFontWeight.bold),
                 ),
               ],
             ),
@@ -773,7 +896,8 @@ class PriceEstimateView extends StatelessWidget {
                     TextSpan(
                       text: appLocalizationsOf(context)
                           .howAreConversionsDetermined,
-                      style: ArDriveTypography.body.buttonNormalBold(
+                      style: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.bold,
                         color: ArDriveTheme.of(context)
                             .themeData
                             .colors

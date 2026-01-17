@@ -313,9 +313,12 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
       late DriveKey checkDriveKey;
       try {
+        logger.d('Attempting to derive drive key for drive: $driveId, sigType: $sigType');
         checkDriveKey = await _crypto.deriveDriveKey(
             wallet, driveId, password, sigType, driveSignature);
-      } catch (e) {
+        logger.d('Successfully derived drive key');
+      } catch (e, stackTrace) {
+        logger.e('Failed to derive drive key - this may be a signing failure, not wrong password', e, stackTrace);
         throw WrongPasswordException('Password is incorrect');
       }
 

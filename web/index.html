@@ -40,6 +40,33 @@
     <script defer src="js/eml-parse-js.min.js"></script>
     <script defer src="js/eml_parser.js"></script>
 
+    <!-- Ethers.js for Ethereum wallet interactions -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.11.1/dist/ethers.umd.min.js"></script>
+
+    <!-- Crypto Wallet Bridge (custom JS for wallet connections) -->
+    <script defer src="js/crypto_wallet_bridge.js"></script>
+
+    <!-- Turbo SDK for Crypto Payments -->
+    <script type="module">
+      const TURBO_SDK_VERSION = '1.19.0';
+      const SDK_URL = `https://unpkg.com/@ardrive/turbo-sdk@${TURBO_SDK_VERSION}/bundles/web.bundle.min.js`;
+
+      try {
+        const turboModule = await import(SDK_URL);
+        window.TurboFactory = turboModule.TurboFactory;
+        window.ARToTokenAmount = turboModule.ARToTokenAmount;
+        window.ARIOToTokenAmount = turboModule.ARIOToTokenAmount;
+        window.ETHToTokenAmount = turboModule.ETHToTokenAmount;
+        window.SOLToTokenAmount = turboModule.SOLToTokenAmount;
+        window.TurboSDKLoaded = true;
+        console.log('Turbo SDK loaded successfully (v' + TURBO_SDK_VERSION + ')');
+      } catch (e) {
+        console.error('Failed to load Turbo SDK:', e);
+        window.TurboSDKLoaded = false;
+        window.TurboSDKError = e.message;
+      }
+    </script>
+
     <!-- End Plausible Web Analytics -->
     <script>
       // The value below is injected by flutter build, do not touch.
@@ -47,11 +74,6 @@
     </script>
       <!-- This script adds the flutter initialization JS code -->
     <script src="flutter.js" defer></script>
-    <script
-      type="application/javascript"
-      src="/assets/packages/flutter_inappwebview_web/assets/web/web_support.js"
-      defer
-    ></script>
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
     <style id="splash-screen-style">
     html {

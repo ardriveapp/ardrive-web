@@ -15,6 +15,7 @@ class TurboSuccessView extends StatelessWidget {
       detailMessage:
           appLocalizationsOf(context).yourCreditsWillBeAddedToYourAccount,
       closeButtonLabel: appLocalizationsOf(context).close,
+      showConfetti: true,
     );
   }
 }
@@ -117,18 +118,19 @@ class _SuccessViewState extends State<SuccessView> {
                       .themeSuccessDefault,
                 ),
                 Text(widget.successMessage,
-                    style: ArDriveTypography.body.leadBold()),
+                    style: ArDriveTypographyNew.of(context).heading5(
+                      fontWeight: ArFontWeight.bold,
+                    )),
                 const SizedBox(height: 16),
                 Text(
                   widget.detailMessage,
-                  style: ArDriveTypography.body
-                      .buttonNormalRegular(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDefault,
-                      )
-                      .copyWith(fontWeight: FontWeight.w700),
+                  style: ArDriveTypographyNew.of(context).paragraphNormal(
+                    fontWeight: ArFontWeight.bold,
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault,
+                  ),
                 ),
               ],
             ),
@@ -141,7 +143,8 @@ class _SuccessViewState extends State<SuccessView> {
                 maxHeight: 44,
                 maxWidth: 143,
                 text: widget.closeButtonLabel,
-                fontStyle: ArDriveTypography.body.buttonLargeBold(
+                fontStyle: ArDriveTypographyNew.of(context).paragraphLarge(
+                  fontWeight: ArFontWeight.bold,
                   color: Colors.white,
                 ),
                 onPressed: () {
