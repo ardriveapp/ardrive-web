@@ -51,6 +51,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
   int? _connectedChainId;
   String? _connectedSolAddress;
   double _currentAmountUsd = 0;
+  bool _isCurrentAmountInTokens = false; // True if amount is in token units
   String? _promoCode;
 
   // Stream subscriptions
@@ -420,16 +421,9 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
 
     if (_selectedToken == null) return;
 
-    // Check if AO connect signature is needed (ARIO via ETH)
-    if (_selectedToken == CryptoToken.arioAOViaEth) {
-      if (!_signerCache.hasAOSignature(_connectedEthAddress!)) {
-        emit(CryptoTopupAOConnectSignature(
-          token: _selectedToken!,
-          ethAddress: _connectedEthAddress!,
-        ));
-        return;
-      }
-    }
+    // Note: AO connect signature for ARIO via ETH is now deferred to payment time.
+    // The signature will be requested lazily by signAndCacheAOConnect() when the
+    // user clicks the final "Pay" button, streamlining the checkout flow.
 
     // For EVM tokens, check if on correct chain and switch if needed
     if (event.walletType == WalletType.ethereum) {
@@ -1234,18 +1228,33 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     CryptoToken token,
   ) async {
     final walletAddress = _getWalletAddress(token);
-    if (walletAddress == null) return;
+    if (walletAddress == null) {
+      logger.w('Cannot enter amount entry: wallet address is null');
+      return;
+    }
 
     final balance = await _getTokenBalance(token);
 
     // Start balance refresh timer
     _startBalanceRefreshTimer();
 
+    // Emit initial state - use token mode if amount is in tokens
     emit(CryptoTopupAmountEntry(
       token: token,
       walletAddress: walletAddress,
       balance: balance,
+      currentAmount: _currentAmountUsd,
+      isLoadingQuote: _currentAmountUsd > 0,
+      isUsdMode: !_isCurrentAmountInTokens,
     ));
+
+    // If we already have an amount set, fetch the quote
+    if (_currentAmountUsd > 0) {
+      add(CryptoTopupAmountChanged(
+        amount: _currentAmountUsd,
+        isUsd: !_isCurrentAmountInTokens,
+      ));
+    }
   }
 
   String? _getWalletAddress(CryptoToken token) {
@@ -1338,11 +1347,17 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     CryptoTopupUpdateAmount event,
     Emitter<CryptoTopupState> emit,
   ) {
+    // Store the amount for later use when entering amount entry
+    // Store raw value - we'll handle USD vs token conversion in the handler
+    _currentAmountUsd = event.amount;
+    _isCurrentAmountInTokens = !event.isUsd;
+
     final currentState = state;
-    final isUsdMode = currentState is CryptoTopupAmountEntry
-        ? currentState.isUsdMode
-        : true;
-    add(CryptoTopupAmountChanged(amount: event.amount, isUsd: isUsdMode));
+
+    // Only trigger quote fetch if already in amount entry state
+    if (currentState is CryptoTopupAmountEntry) {
+      add(CryptoTopupAmountChanged(amount: event.amount, isUsd: event.isUsd));
+    }
   }
 
   void _onToggleAmountMode(
@@ -1475,6 +1490,22 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     Emitter<CryptoTopupState> emit,
   ) {
     add(const CryptoTopupPriceVolatilityAccepted());
+  }
+
+  // ============================================
+  // Wallet Detection (public API)
+  // ============================================
+
+  /// Detect available Ethereum wallet providers.
+  /// Returns detection result with flags for each supported wallet.
+  EthereumProviderDetection detectEthereumProviders() {
+    return _ethereumWalletService.detectProviders();
+  }
+
+  /// Detect available Solana wallet providers.
+  /// Returns detection result with flags for each supported wallet.
+  SolanaProviderDetection detectSolanaProviders() {
+    return _solanaWalletService.detectProviders();
   }
 
   // ============================================

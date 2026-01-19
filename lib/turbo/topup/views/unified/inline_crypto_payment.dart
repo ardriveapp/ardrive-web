@@ -1,6 +1,6 @@
 import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
-import 'package:ardrive/turbo/topup/models/wallet_connection_state.dart';
+import 'package:ardrive/turbo/topup/views/crypto_topup/components/wallet_selector_modal.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -27,84 +27,118 @@ class InlineCryptoPayment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final themeData = ArDriveTheme.of(context).themeData;
+    final colors = themeData.colors;
+    final colorTokens = themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return BlocBuilder<CryptoTopupBloc, CryptoTopupState>(
       builder: (context, state) {
         final showInternalBackButton = _canGoBackInFlow(state);
+        final showBackButton = showInternalBackButton || onBackToPaymentMethods != null;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        return Stack(
           children: [
-            // Header with back button
-            if (showInternalBackButton || onBackToPaymentMethods != null) ...[
-              Row(
-                children: [
-                  InkWell(
-                    onTap: () {
-                      if (showInternalBackButton) {
-                        // Go back within crypto flow
-                        context.read<CryptoTopupBloc>().add(const CryptoTopupGoBack());
-                      } else if (onBackToPaymentMethods != null) {
-                        // Go back to payment method selection
-                        onBackToPaymentMethods!();
-                      }
-                    },
-                    borderRadius: BorderRadius.circular(4),
-                    child: Padding(
-                      padding: const EdgeInsets.all(4),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+            Column(
+              children: [
+                // Red top line (ArDrive modal pattern)
+                Container(
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: colorTokens.containerRed,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(8),
+                      topRight: Radius.circular(8),
+                    ),
+                  ),
+                ),
+                // Main content
+                Expanded(
+                  child: Container(
+                    color: colors.themeBgCanvas,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            Icons.arrow_back,
-                            size: 18,
-                            color: colors.themeFgMuted,
+                          const SizedBox(height: 24), // Space for close button
+
+                          // Token selector
+                          _TokenSelector(
+                            selectedToken: _getSelectedToken(state),
+                            onTokenSelected: (token) {
+                              context.read<CryptoTopupBloc>().add(CryptoTopupSelectToken(token));
+                            },
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            showInternalBackButton ? 'Back' : 'Change payment method',
-                            style: typography.paragraphSmall(
-                              color: colors.themeFgMuted,
-                            ),
+                          const SizedBox(height: 16),
+
+                          // Wallet connection status
+                          _WalletConnectionSection(
+                            state: state,
+                            fiatAmount: fiatAmount,
                           ),
                         ],
                       ),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // Token selector
-            _TokenSelector(
-              selectedToken: _getSelectedToken(state),
-              onTokenSelected: (token) {
-                context.read<CryptoTopupBloc>().add(CryptoTopupSelectToken(token));
-              },
+                ),
+                // Footer with back button and continue button
+                Container(
+                  color: colors.themeBgCanvas,
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      if (showBackButton)
+                        ArDriveClickArea(
+                          child: GestureDetector(
+                            onTap: () {
+                              if (showInternalBackButton) {
+                                // Go back within crypto flow
+                                context.read<CryptoTopupBloc>().add(const CryptoTopupGoBack());
+                              } else if (onBackToPaymentMethods != null) {
+                                // Go back to payment method selection
+                                onBackToPaymentMethods!();
+                              }
+                            },
+                            child: Text(
+                              'Back',
+                              style: typography.paragraphLarge(
+                                fontWeight: ArFontWeight.bold,
+                                color: colors.themeAccentDisabled,
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        const SizedBox.shrink(),
+                      if (_isReadyToContinue(state))
+                        SizedBox(
+                          height: 48,
+                          child: ArDriveButton(
+                            text: 'Continue',
+                            onPressed: onContinue,
+                          ),
+                        )
+                      else
+                        const SizedBox.shrink(),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-
-            // Wallet connection status
-            _WalletConnectionSection(
-              state: state,
-              fiatAmount: fiatAmount,
-            ),
-
-            // Continue button (only when ready)
-            if (_isReadyToContinue(state)) ...[
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ArDriveButton(
-                  text: 'Continue',
-                  onPressed: onContinue,
+            // Close button in top right
+            if (onCancel != null)
+              Positioned(
+                right: 27,
+                top: 27,
+                child: ArDriveClickArea(
+                  child: GestureDetector(
+                    onTap: onCancel,
+                    child: ArDriveIcons.x(),
+                  ),
                 ),
               ),
-            ],
           ],
         );
       },
@@ -119,6 +153,10 @@ class InlineCryptoPayment extends StatelessWidget {
     if (state is CryptoTopupAmountEntry) return true;
     // Can go back from wallet not installed to token selection
     if (state is CryptoTopupWalletNotInstalled) return true;
+    // Can go back from AO signature to token selection
+    if (state is CryptoTopupAOConnectSignature) return true;
+    // Can go back from network switch to token selection
+    if (state is CryptoTopupNetworkSwitch) return true;
     return false;
   }
 
@@ -179,17 +217,28 @@ class _TokenSelector extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
             ),
             itemBuilder: (context) => [
-              _buildTokenMenuItem(context, CryptoToken.arioAO, isRecommended: true),
+              // ARIO options (no fees)
+              _buildTokenMenuItem(context, CryptoToken.arioAO),
+              _buildTokenMenuItem(context, CryptoToken.arioAOViaEth),
+              _buildTokenMenuItem(context, CryptoToken.arioBase),
+              // Base L2 tokens (fast, low fees)
               _buildTokenMenuItem(context, CryptoToken.ethBase),
               _buildTokenMenuItem(context, CryptoToken.usdcBase),
+              // Solana
               _buildTokenMenuItem(context, CryptoToken.sol),
+              // Ethereum L1 tokens (slower, higher fees)
+              _buildTokenMenuItem(context, CryptoToken.ethL1),
+              _buildTokenMenuItem(context, CryptoToken.usdcEth),
             ],
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  _TokenIcon(token: selectedToken ?? CryptoToken.arioAO),
-                  const SizedBox(width: 12),
+                  // Only show token icon if a token is selected
+                  if (selectedToken != null) ...[
+                    _TokenIcon(token: selectedToken!),
+                    const SizedBox(width: 12),
+                  ],
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -198,7 +247,9 @@ class _TokenSelector extends StatelessWidget {
                           selectedToken?.displayName ?? 'Select token',
                           style: typography.paragraphNormal(
                             fontWeight: ArFontWeight.semiBold,
-                            color: colors.themeFgDefault,
+                            color: selectedToken != null
+                                ? colors.themeFgDefault
+                                : colors.themeFgMuted,
                           ),
                         ),
                         if (selectedToken != null)
@@ -226,11 +277,15 @@ class _TokenSelector extends StatelessWidget {
 
   PopupMenuItem<CryptoToken> _buildTokenMenuItem(
     BuildContext context,
-    CryptoToken token, {
-    bool isRecommended = false,
-  }) {
+    CryptoToken token,
+  ) {
     final colors = ArDriveTheme.of(context).themeData.colors;
     final typography = ArDriveTypographyNew.of(context);
+
+    // ARIO tokens have no fees
+    final isNoFees = token == CryptoToken.arioAO ||
+        token == CryptoToken.arioAOViaEth ||
+        token == CryptoToken.arioBase;
 
     return PopupMenuItem<CryptoToken>(
       value: token,
@@ -251,7 +306,7 @@ class _TokenSelector extends StatelessWidget {
                         color: colors.themeFgDefault,
                       ),
                     ),
-                    if (isRecommended) ...[
+                    if (isNoFees) ...[
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -259,14 +314,15 @@ class _TokenSelector extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: colors.themeSuccessSubtle,
+                          color: colors.themeBgSubtle,
                           borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: colors.themeBorderDefault),
                         ),
                         child: Text(
-                          'Recommended',
+                          'No Fees',
                           style: typography.caption(
                             fontWeight: ArFontWeight.semiBold,
-                            color: colors.themeSuccessDefault,
+                            color: colors.themeFgMuted,
                           ),
                         ),
                       ),
@@ -395,6 +451,10 @@ class _WalletConnectionSection extends StatelessWidget {
     ArdriveTypographyNew typography,
   ) {
     final bloc = context.read<CryptoTopupBloc>();
+    final walletType = walletState.token.walletType;
+
+    // Get detected wallets based on type - uses actual JS bridge detection
+    final detectedWallets = _getDetectedWallets(context, walletType);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -413,70 +473,66 @@ class _WalletConnectionSection extends StatelessWidget {
               color: colors.themeFgDefault,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 4),
+          Text(
+            _getWalletSubtitle(walletType),
+            style: typography.paragraphSmall(
+              color: colors.themeFgMuted,
+            ),
+          ),
+          const SizedBox(height: 16),
 
-          // Show available wallets based on token type
-          if (walletState.token.walletType == WalletType.ethereum) ...[
-            _WalletButton(
-              label: 'MetaMask',
-              icon: Icons.account_balance_wallet,
-              isConnecting: walletState.isConnecting,
-              onPressed: () {
-                bloc.add(const CryptoTopupConnectWallet(
-                  ethereumProvider: EthereumWalletProvider.metamask,
-                ));
-              },
-            ),
-            const SizedBox(height: 8),
-            _WalletButton(
-              label: 'Coinbase Wallet',
-              icon: Icons.account_balance_wallet,
-              isConnecting: walletState.isConnecting,
-              onPressed: () {
-                bloc.add(const CryptoTopupConnectWallet(
-                  ethereumProvider: EthereumWalletProvider.coinbaseWallet,
-                ));
-              },
-            ),
-          ] else if (walletState.token.walletType == WalletType.solana) ...[
-            _WalletButton(
-              label: 'Phantom',
-              icon: Icons.account_balance_wallet,
-              isConnecting: walletState.isConnecting,
-              onPressed: () {
-                bloc.add(const CryptoTopupConnectWallet(
-                  solanaProvider: SolanaWalletProvider.phantom,
-                ));
-              },
-            ),
-            const SizedBox(height: 8),
-            _WalletButton(
-              label: 'Solflare',
-              icon: Icons.account_balance_wallet,
-              isConnecting: walletState.isConnecting,
-              onPressed: () {
-                bloc.add(const CryptoTopupConnectWallet(
-                  solanaProvider: SolanaWalletProvider.solflare,
-                ));
-              },
-            ),
-          ] else if (walletState.token.walletType == WalletType.arweave) ...[
-            // ARIO uses existing ArConnect
+          // Show network switching message if applicable
+          if (walletState.isSwitchingNetwork) ...[
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: colors.themeSuccessSubtle,
+                color: colors.themeInfoSubtle,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.check_circle, color: colors.themeSuccessDefault, size: 20),
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: colors.themeInfoFb,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Switching network in your wallet...',
+                      style: typography.paragraphSmall(
+                        color: colors.themeInfoFb,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // Arweave uses existing ArConnect
+          if (walletType == WalletType.arweave) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: colors.themeBgSubtle,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: colors.themeBorderDefault),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.check_circle, color: colors.themeFgMuted, size: 20),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'Using your connected ArConnect wallet',
                       style: typography.paragraphSmall(
-                        color: colors.themeSuccessDefault,
+                        color: colors.themeFgDefault,
                       ),
                     ),
                   ),
@@ -493,10 +549,22 @@ class _WalletConnectionSection extends StatelessWidget {
                 },
               ),
             ),
+          ] else ...[
+            // Show wallet grid for Ethereum/Solana
+            _WalletGrid(
+              wallets: detectedWallets,
+              isConnecting: walletState.isConnecting,
+              onWalletSelected: (wallet) {
+                bloc.add(CryptoTopupConnectWallet(
+                  ethereumProvider: wallet.ethereumProvider,
+                  solanaProvider: wallet.solanaProvider,
+                ));
+              },
+            ),
           ],
 
           // Error message
-          if (walletState.error != null) ...[
+          if (walletState.error != null && !walletState.isSwitchingNetwork) ...[
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
@@ -525,6 +593,42 @@ class _WalletConnectionSection extends StatelessWidget {
     );
   }
 
+  List<DetectedWallet> _getDetectedWallets(
+    BuildContext context,
+    WalletType walletType,
+  ) {
+    final bloc = context.read<CryptoTopupBloc>();
+
+    if (walletType == WalletType.ethereum) {
+      final detection = bloc.detectEthereumProviders();
+      return DetectedWallet.fromEthereumDetection(
+        hasMetaMask: detection.hasMetaMask,
+        hasCoinbase: detection.hasCoinbaseWallet,
+        hasRainbow: detection.hasRainbow,
+        hasTrust: false, // Not currently detected by JS bridge
+        hasBrave: detection.hasBrave,
+      );
+    } else if (walletType == WalletType.solana) {
+      final detection = bloc.detectSolanaProviders();
+      return DetectedWallet.fromSolanaDetection(
+        hasPhantom: detection.hasPhantom,
+        hasSolflare: detection.hasSolflare,
+      );
+    }
+    return [];
+  }
+
+  String _getWalletSubtitle(WalletType walletType) {
+    switch (walletType) {
+      case WalletType.ethereum:
+        return 'Choose your Ethereum wallet';
+      case WalletType.solana:
+        return 'Choose your Solana wallet';
+      case WalletType.arweave:
+        return 'Connect with ArConnect';
+    }
+  }
+
   Widget _buildQuoteSection(
     BuildContext context,
     CryptoTopupAmountEntry amountState,
@@ -546,12 +650,12 @@ class _WalletConnectionSection extends StatelessWidget {
           // Connected wallet
           Row(
             children: [
-              Icon(Icons.check_circle, color: colors.themeSuccessDefault, size: 16),
+              Icon(Icons.check_circle, color: colors.themeFgMuted, size: 16),
               const SizedBox(width: 8),
               Text(
                 'Wallet connected',
                 style: typography.paragraphSmall(
-                  color: colors.themeSuccessDefault,
+                  color: colors.themeFgDefault,
                   fontWeight: ArFontWeight.semiBold,
                 ),
               ),
@@ -894,42 +998,151 @@ class _QuoteRow extends StatelessWidget {
   }
 }
 
-class _WalletButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
+/// Grid of wallet options (RainbowKit-style)
+class _WalletGrid extends StatelessWidget {
+  final List<DetectedWallet> wallets;
   final bool isConnecting;
-  final VoidCallback onPressed;
+  final ValueChanged<DetectedWallet> onWalletSelected;
 
-  const _WalletButton({
-    required this.label,
-    required this.icon,
+  const _WalletGrid({
+    required this.wallets,
     required this.isConnecting,
-    required this.onPressed,
+    required this.onWalletSelected,
   });
 
   @override
   Widget build(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colors;
+    final typography = ArDriveTypographyNew.of(context);
 
-    return SizedBox(
-      width: double.infinity,
-      child: ArDriveButton(
-        style: ArDriveButtonStyle.secondary,
-        isDisabled: isConnecting,
-        icon: isConnecting
-            ? SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: colors.themeFgMuted,
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: wallets.map((wallet) {
+        return _WalletGridItem(
+          wallet: wallet,
+          isConnecting: isConnecting,
+          onTap: () => onWalletSelected(wallet),
+          colors: colors,
+          typography: typography,
+        );
+      }).toList(),
+    );
+  }
+}
+
+/// Individual wallet item in the grid
+class _WalletGridItem extends StatelessWidget {
+  final DetectedWallet wallet;
+  final bool isConnecting;
+  final VoidCallback onTap;
+  final ArDriveColors colors;
+  final ArdriveTypographyNew typography;
+
+  const _WalletGridItem({
+    required this.wallet,
+    required this.isConnecting,
+    required this.onTap,
+    required this.colors,
+    required this.typography,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isConnecting ? null : onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: 100,
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          decoration: BoxDecoration(
+            color: colors.themeBgSurface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colors.themeBorderDefault),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Wallet icon
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: _getWalletColor(),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-              )
-            : Icon(icon, size: 18),
-        text: isConnecting ? 'Connecting...' : label,
-        onPressed: isConnecting ? null : onPressed,
+                child: Center(
+                  child: isConnecting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          wallet.displayName.substring(0, 1).toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Wallet name
+              Text(
+                wallet.displayName,
+                style: typography.paragraphSmall(
+                  fontWeight: ArFontWeight.semiBold,
+                  color: colors.themeFgDefault,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              // Detected badge
+              if (wallet.isInstalled) ...[
+                const SizedBox(height: 2),
+                Text(
+                  'Detected',
+                  style: typography.caption(
+                    color: colors.themeSuccessDefault,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
+  }
+
+  Color _getWalletColor() {
+    switch (wallet.id) {
+      case 'metamask':
+        return const Color(0xFFE2761B); // MetaMask orange
+      case 'coinbase':
+        return const Color(0xFF0052FF); // Coinbase blue
+      case 'rainbow':
+        return const Color(0xFF001E59); // Rainbow dark blue
+      case 'trust':
+        return const Color(0xFF3375BB); // Trust blue
+      case 'brave':
+        return const Color(0xFFFF5500); // Brave orange
+      case 'phantom':
+        return const Color(0xFFAB9FF2); // Phantom purple
+      case 'solflare':
+        return const Color(0xFFFC8C03); // Solflare orange
+      case 'walletconnect':
+        return const Color(0xFF3B99FC); // WalletConnect blue
+      default:
+        return colors.themeFgMuted;
+    }
   }
 }
 
@@ -944,25 +1157,47 @@ class _TokenIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
-    final typography = ArDriveTypographyNew.of(context);
-
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: colors.themeBgSubtle,
+        color: _getTokenColor(token),
         borderRadius: BorderRadius.circular(size / 2),
       ),
       child: Center(
         child: Text(
-          token.symbol.substring(0, token.symbol.length > 2 ? 2 : token.symbol.length),
-          style: typography.paragraphSmall(
-            fontWeight: ArFontWeight.bold,
-            color: colors.themeFgDefault,
+          _getTokenAbbreviation(token),
+          style: TextStyle(
+            fontSize: size * 0.35,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
       ),
     );
+  }
+
+  String _getTokenAbbreviation(CryptoToken token) {
+    return switch (token) {
+      CryptoToken.arioAO ||
+      CryptoToken.arioAOViaEth ||
+      CryptoToken.arioBase =>
+        'AR',
+      CryptoToken.ethL1 || CryptoToken.ethBase => 'ETH',
+      CryptoToken.sol => 'SOL',
+      CryptoToken.usdcBase || CryptoToken.usdcEth => 'USD',
+    };
+  }
+
+  Color _getTokenColor(CryptoToken token) {
+    return switch (token) {
+      CryptoToken.arioAO ||
+      CryptoToken.arioAOViaEth ||
+      CryptoToken.arioBase =>
+        const Color(0xFF000000),
+      CryptoToken.ethL1 || CryptoToken.ethBase => const Color(0xFF627EEA),
+      CryptoToken.sol => const Color(0xFF9945FF),
+      CryptoToken.usdcBase || CryptoToken.usdcEth => const Color(0xFF2775CA),
+    };
   }
 }

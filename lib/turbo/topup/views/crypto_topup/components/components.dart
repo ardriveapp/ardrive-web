@@ -8,3 +8,4 @@ export 'quote_display.dart';
 export 'token_card.dart';
 export 'transaction_status.dart';
 export 'wallet_option_card.dart';
+export 'wallet_selector_modal.dart';

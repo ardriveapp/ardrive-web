@@ -138,33 +138,43 @@ class _TurboReviewViewState extends State<TurboReviewView> {
             );
           }
 
-          return SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Align(
-                  alignment: Alignment.topRight,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 26, right: 26),
-                    child: ArDriveClickArea(
-                      child: GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: ArDriveIcons.x()),
-                    ),
-                  ),
-                ),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 40.0),
-                    child: Text(
-                      appLocalizationsOf(context).review,
-                      style: ArDriveTypographyNew.of(context).heading5(
-                        fontWeight: ArFontWeight.bold,
+          return Stack(
+            children: [
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Red top line (ArDrive modal pattern)
+                  Container(
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: theme.colorTokens.containerRed,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(8),
+                        topRight: Radius.circular(8),
                       ),
                     ),
                   ),
-                ),
+                  // Main content
+                  Expanded(
+                    child: Container(
+                      color: theme.colors.themeBgCanvas,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(height: 40), // Space for close button
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 40.0),
+                                child: Text(
+                                  appLocalizationsOf(context).review,
+                                  style: ArDriveTypographyNew.of(context).heading5(
+                                    fontWeight: ArFontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
                 Padding(
                   padding: const EdgeInsets.all(20.0),
                   child: ArDriveCard(
@@ -553,8 +563,25 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                     ],
                   ),
                 ),
-              ],
-            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              // Close button in top right
+              Positioned(
+                right: 27,
+                top: 27,
+                child: ArDriveClickArea(
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: ArDriveIcons.x(),
+                  ),
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -570,77 +597,39 @@ class _TurboReviewViewState extends State<TurboReviewView> {
           children: [
             BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
               builder: (context, state) {
-                return ScreenTypeLayout.builder(
-                  // FIXME: the desktop section is never gonna be rendered
-                  /// because its wrapped in another layout builder for mobile.
-                  desktop: (context) => ArDriveButton(
-                    maxHeight: 44,
-                    maxWidth: 143,
-                    text: appLocalizationsOf(context).pay,
-                    fontStyle: ArDriveTypographyNew.of(context).paragraphLarge(
-                      fontWeight: ArFontWeight.bold,
-                      color: Colors.white,
-                    ),
-                    isDisabled: state is PaymentReviewLoadingQuote ||
-                        !_emailIsValid ||
-                        !_isTermsChecked,
-                    customContent: state is PaymentReviewLoading
-                        ? const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : null,
-                    onPressed: () async {
-                      if (state is PaymentReviewLoading) {
-                        return;
-                      }
-
-                      context.read<PaymentReviewBloc>().add(
-                            PaymentReviewFinishPayment(
-                              email: _emailController.text,
-                              userAcceptedToReceiveEmails: _emailChecked,
-                            ),
-                          );
-                    },
+                return ArDriveButton(
+                  maxHeight: 44,
+                  maxWidth: double.maxFinite,
+                  text: appLocalizationsOf(context).pay,
+                  fontStyle: ArDriveTypographyNew.of(context).paragraphLarge(
+                    fontWeight: ArFontWeight.bold,
+                    color: Colors.white,
                   ),
-                  mobile: (context) => ArDriveButton(
-                    maxHeight: 44,
-                    maxWidth: double.maxFinite,
-                    text: appLocalizationsOf(context).pay,
-                    fontStyle: ArDriveTypographyNew.of(context).paragraphLarge(
-                      fontWeight: ArFontWeight.bold,
-                      color: Colors.white,
-                    ),
-                    isDisabled: state is PaymentReviewLoadingQuote ||
-                        !_emailIsValid ||
-                        !_isTermsChecked,
-                    customContent: state is PaymentReviewLoading
-                        ? const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : null,
-                    onPressed: () async {
-                      if (state is PaymentReviewLoading) {
-                        return;
-                      }
+                  isDisabled: state is PaymentReviewLoadingQuote ||
+                      !_emailIsValid ||
+                      !_isTermsChecked,
+                  customContent: state is PaymentReviewLoading
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : null,
+                  onPressed: () async {
+                    if (state is PaymentReviewLoading) {
+                      return;
+                    }
 
-                      context.read<PaymentReviewBloc>().add(
-                            PaymentReviewFinishPayment(
-                              email: _emailController.text,
-                              userAcceptedToReceiveEmails: _emailChecked,
-                            ),
-                          );
-                    },
-                  ),
+                    context.read<PaymentReviewBloc>().add(
+                          PaymentReviewFinishPayment(
+                            email: _emailController.text,
+                            userAcceptedToReceiveEmails: _emailChecked,
+                          ),
+                        );
+                  },
                 );
               },
             ),

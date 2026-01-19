@@ -115,6 +115,9 @@ class CryptoPaymentService {
   }
 
   /// Get quote by token amount (instead of USD amount)
+  ///
+  /// Uses token-specific pricing endpoint to get accurate pricing
+  /// including token-specific benefits (e.g., ARIO has no fees).
   Future<CryptoQuote> getQuoteByTokenAmount({
     required CryptoToken token,
     required double tokenAmount,
@@ -122,15 +125,47 @@ class CryptoPaymentService {
     String? destinationAddress,
   }) async {
     try {
-      // First estimate the USD value
-      final usdValue = _estimateUsdValue(token, tokenAmount);
+      // Convert display amount to smallest unit (e.g., mARIO, wei, lamports)
+      final tokenAmountSmallestUnit = _tokenAmountToBigInt(token, tokenAmount);
 
-      // Then get a quote for that USD amount
-      return getQuote(
+      // Use token-specific pricing endpoint for accurate pricing
+      // This properly accounts for token-specific benefits (e.g., ARIO no fees)
+      final priceResult = await _getPriceForToken(
         token: token,
-        usdAmount: usdValue,
+        tokenAmount: tokenAmountSmallestUnit,
         promoCode: promoCode,
         destinationAddress: destinationAddress,
+      );
+
+      // Get winc per GiB for storage calculation
+      final wincPerGiB = await _getWincPerGiB();
+
+      // Calculate storage estimate
+      final storageGiB = priceResult.winc.toDouble() / wincPerGiB.toDouble();
+
+      // Parse adjustment if present
+      Adjustment? adjustment;
+      if (priceResult.adjustments.isNotEmpty) {
+        adjustment = priceResult.adjustments.first;
+      }
+
+      // Estimate USD value for display purposes
+      final usdValue = await _priceService.tokenToUsd(token, tokenAmount);
+
+      return CryptoQuote(
+        token: token,
+        tokenAmount: tokenAmountSmallestUnit,
+        wincAmount: priceResult.winc,
+        creditsDisplay: priceResult.winc.toDouble() / 1e12,
+        estimatedStorageGiB: storageGiB,
+        usdValue: usdValue,
+        adjustment: adjustment,
+        expiresAt: DateTime.now().add(const Duration(minutes: 5)),
+        originalCreditsDisplay: adjustment != null
+            ? priceResult.winc.toDouble() /
+                (1 - (adjustment.discountPercentage / 100)) /
+                1e12
+            : null,
       );
     } catch (e) {
       logger.e('Error getting quote by token amount: $e');
@@ -645,8 +680,13 @@ class CryptoPaymentService {
 
       final data = jsonDecode(result.data);
       final winc = BigInt.parse(data['winc']);
-      final actualPaymentAmount = data['actualPaymentAmount'] as int?;
-      final quotedPaymentAmount = data['quotedPaymentAmount'] as int?;
+      // API may return these as strings or ints, so parse safely
+      final actualPaymentAmount = data['actualPaymentAmount'] != null
+          ? int.tryParse(data['actualPaymentAmount'].toString())
+          : null;
+      final quotedPaymentAmount = data['quotedPaymentAmount'] != null
+          ? int.tryParse(data['quotedPaymentAmount'].toString())
+          : null;
       final adjustments = ((data['adjustments'] ?? []) as List)
           .map((e) => Adjustment.fromJson(e))
           .toList();
@@ -659,7 +699,100 @@ class CryptoPaymentService {
       );
     } on ArDriveHTTPException catch (e) {
       if (e.statusCode == 400) {
-        throw CryptoPaymentException.invalidPromoCode(promoCode ?? '');
+        // Check the actual error response
+        final errorMessage = e.data?.toString() ?? '';
+
+        // Only treat as promo code error if there's actually a promo code
+        // and the error mentions it
+        if (promoCode != null &&
+            promoCode.isNotEmpty &&
+            (errorMessage.toLowerCase().contains('promo') ||
+                errorMessage.toLowerCase().contains('coupon') ||
+                errorMessage.toLowerCase().contains('code'))) {
+          throw CryptoPaymentException.invalidPromoCode(promoCode);
+        }
+
+        // Log and throw general error
+        logger.e('API returned 400: $errorMessage');
+        throw CryptoPaymentException(
+          errorMessage.isNotEmpty ? errorMessage : 'Bad request',
+        );
+      }
+      rethrow;
+    }
+  }
+
+  /// Get price for a specific token amount using token-specific endpoint.
+  ///
+  /// This endpoint properly accounts for token-specific pricing benefits
+  /// (e.g., ARIO has no fees, giving more credits than USD equivalent).
+  ///
+  /// Endpoint: GET /v1/price/{tokenType}/{tokenAmount}
+  /// Where tokenAmount is in the smallest unit (mARIO, wei, lamports, etc.)
+  Future<_PriceForFiatResult> _getPriceForToken({
+    required CryptoToken token,
+    required BigInt tokenAmount,
+    String? promoCode,
+    String? destinationAddress,
+  }) async {
+    final tokenType = token.turboTokenType;
+
+    final params = <String, String>{};
+    if (promoCode != null && promoCode.isNotEmpty) {
+      params['promoCode'] = promoCode;
+    }
+    if (destinationAddress != null) {
+      params['destinationAddress'] = destinationAddress;
+    }
+
+    final queryString = params.isEmpty
+        ? ''
+        : '?${params.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&')}';
+
+    try {
+      final result = await _httpClient.get(
+        url: '$_paymentUrl/v1/price/$tokenType/$tokenAmount$queryString',
+      );
+
+      final data = jsonDecode(result.data);
+      final winc = BigInt.parse(data['winc']);
+      // API may return these as strings or ints, so parse safely
+      final actualPaymentAmount = data['actualPaymentAmount'] != null
+          ? int.tryParse(data['actualPaymentAmount'].toString())
+          : null;
+      final quotedPaymentAmount = data['quotedPaymentAmount'] != null
+          ? int.tryParse(data['quotedPaymentAmount'].toString())
+          : null;
+      final adjustments = ((data['adjustments'] ?? []) as List)
+          .map((e) => Adjustment.fromJson(e))
+          .toList();
+
+      return _PriceForFiatResult(
+        winc: winc,
+        actualPaymentAmount: actualPaymentAmount,
+        quotedPaymentAmount: quotedPaymentAmount,
+        adjustments: adjustments,
+      );
+    } on ArDriveHTTPException catch (e) {
+      if (e.statusCode == 400) {
+        // Check the actual error response
+        final errorMessage = e.data?.toString() ?? '';
+
+        // Only treat as promo code error if there's actually a promo code
+        // and the error mentions it
+        if (promoCode != null &&
+            promoCode.isNotEmpty &&
+            (errorMessage.toLowerCase().contains('promo') ||
+                errorMessage.toLowerCase().contains('coupon') ||
+                errorMessage.toLowerCase().contains('code'))) {
+          throw CryptoPaymentException.invalidPromoCode(promoCode);
+        }
+
+        // Log and throw general error
+        logger.e('API returned 400: $errorMessage');
+        throw CryptoPaymentException(
+          errorMessage.isNotEmpty ? errorMessage : 'Bad request',
+        );
       }
       rethrow;
     }
@@ -714,21 +847,6 @@ class CryptoPaymentService {
   /// Refresh price cache
   Future<void> refreshPrices() async {
     await _priceService.refreshPrices();
-  }
-
-  double _estimateUsdValue(CryptoToken token, double tokenAmount) {
-    // Synchronous fallback - use cached price or default
-    // For async version, use tokenToUsd()
-    final pricePerToken = switch (token) {
-      CryptoToken.arioAO ||
-      CryptoToken.arioAOViaEth ||
-      CryptoToken.arioBase =>
-        0.05,
-      CryptoToken.ethBase || CryptoToken.ethL1 => 3000.0,
-      CryptoToken.sol => 150.0,
-      CryptoToken.usdcBase || CryptoToken.usdcEth => 1.0,
-    };
-    return tokenAmount * pricePerToken;
   }
 
   BigInt _tokenAmountToBigInt(CryptoToken token, double amount) {

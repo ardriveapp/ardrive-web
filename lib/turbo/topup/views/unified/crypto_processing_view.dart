@@ -9,7 +9,9 @@ class CryptoProcessingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final themeData = ArDriveTheme.of(context).themeData;
+    final colors = themeData.colors;
+    final colorTokens = themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return BlocBuilder<CryptoTopupBloc, CryptoTopupState>(
@@ -30,75 +32,96 @@ class CryptoProcessingView extends StatelessWidget {
           }
         }
 
-        return Center(
-          child: Padding(
-            padding: const EdgeInsets.all(48),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Animated loading indicator
-                SizedBox(
-                  width: 64,
-                  height: 64,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    color: colors.themeAccentDefault,
-                  ),
+        return Column(
+          children: [
+            // Red top line (ArDrive modal pattern)
+            Container(
+              height: 6,
+              decoration: BoxDecoration(
+                color: colorTokens.containerRed,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(8),
+                  topRight: Radius.circular(8),
                 ),
-                const SizedBox(height: 32),
-
-                // Main message
-                Text(
-                  message,
-                  style: typography.heading5(
-                    fontWeight: ArFontWeight.semiBold,
-                    color: colors.themeFgDefault,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-
-                // Sub message
-                if (submessage != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    submessage,
-                    style: typography.paragraphNormal(
-                      color: colors.themeFgMuted,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-
-                const SizedBox(height: 48),
-
-                // Don't close warning
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: colors.themeBgSubtle,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: colors.themeFgMuted,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        "Please don't close this window",
-                        style: typography.paragraphSmall(
-                          color: colors.themeFgMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
+            // Main content
+            Expanded(
+              child: Container(
+                color: colors.themeBgCanvas,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(48),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Animated loading indicator
+                        SizedBox(
+                          width: 64,
+                          height: 64,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 3,
+                            color: colors.themeAccentDefault,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+
+                        // Main message
+                        Text(
+                          message,
+                          style: typography.heading5(
+                            fontWeight: ArFontWeight.semiBold,
+                            color: colors.themeFgDefault,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+
+                        // Sub message
+                        if (submessage != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            submessage,
+                            style: typography.paragraphNormal(
+                              color: colors.themeFgMuted,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+
+                        const SizedBox(height: 48),
+
+                        // Don't close warning
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: colors.themeBgSubtle,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                color: colors.themeFgMuted,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                "Please don't close this window",
+                                style: typography.paragraphSmall(
+                                  color: colors.themeFgMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         );
       },
     );

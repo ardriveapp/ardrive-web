@@ -1,3 +1,4 @@
+import 'package:ardrive/components/help_info_modals.dart';
 import 'package:ardrive/components/turbo_logo.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
@@ -30,6 +31,7 @@ class TurboBalance extends StatefulWidget {
 
 class _TurboBalanceState extends State<TurboBalance> {
   late TurboBalanceCubit _turboBalanceCubit;
+  bool _isInfoModalOpen = false;
 
   @override
   void initState() {
@@ -38,6 +40,14 @@ class _TurboBalanceState extends State<TurboBalance> {
       paymentService: widget.paymentService,
       wallet: widget.wallet,
     )..getBalance();
+  }
+
+  void _showInfoModal() {
+    if (_isInfoModalOpen) return;
+    _isInfoModalOpen = true;
+    showTurboInfoModal(context: context).then((_) {
+      _isInfoModalOpen = false;
+    });
   }
 
   Widget addButton(BuildContext context) {
@@ -75,7 +85,21 @@ class _TurboBalanceState extends State<TurboBalance> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          turboLogo(context, height: 15),
+          Row(
+            children: [
+              turboLogo(context, height: 15),
+              const SizedBox(width: 4),
+              ArDriveClickArea(
+                child: GestureDetector(
+                  onTap: _showInfoModal,
+                  child: ArDriveIcons.info(
+                    size: 14,
+                    color: colorTokens.textLow,
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 8),
           BlocBuilder<TurboBalanceCubit, TurboBalanceState>(
             bloc: _turboBalanceCubit,

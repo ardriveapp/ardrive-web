@@ -21,7 +21,9 @@ class CryptoConfirmationView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final themeData = ArDriveTheme.of(context).themeData;
+    final colors = themeData.colors;
+    final colorTokens = themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return BlocBuilder<CryptoTopupBloc, CryptoTopupState>(
@@ -32,95 +34,135 @@ class CryptoConfirmationView extends StatelessWidget {
 
         final bloc = context.read<CryptoTopupBloc>();
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header with back button
-              Row(
-                children: [
-                  if (onBack != null)
-                    IconButton(
-                      icon: Icon(Icons.arrow_back, color: colors.themeFgDefault),
-                      onPressed: onBack,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+        return Stack(
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Red top line (ArDrive modal pattern)
+                Container(
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: colorTokens.containerRed,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(8),
+                      topRight: Radius.circular(8),
                     ),
-                  if (onBack != null) const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Confirm Payment',
-                      style: typography.heading5(
-                        fontWeight: ArFontWeight.bold,
-                        color: colors.themeFgDefault,
+                  ),
+                ),
+                // Main content
+                Expanded(
+                  child: Container(
+                    color: colors.themeBgCanvas,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 24), // Space for close button
+                          // Header (title only, no back button)
+                          Text(
+                            'Confirm Payment',
+                            style: typography.heading5(
+                              fontWeight: ArFontWeight.bold,
+                              color: colors.themeFgDefault,
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+
+                          // Payment summary card
+                          _PaymentSummaryCard(
+                            quote: state.quote,
+                            fromAddress: state.fromAddress,
+                            token: state.token,
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Network status (for EVM tokens)
+                          if (state.token.requiresGasEstimation) ...[
+                            _NetworkStatusBanner(
+                              networkState: state.networkState,
+                              token: state.token,
+                              onSwitchNetwork: () {
+                                final chainId = state.token.chainId;
+                                if (chainId != null) {
+                                  bloc.add(CryptoTopupSwitchNetwork(chainId));
+                                }
+                              },
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+
+                          // Quote timer
+                          _QuoteTimer(expiresAt: state.quote.expiresAt),
+                          const SizedBox(height: 24),
+
+                          // Terms notice
+                          Text(
+                            'By confirming, you agree to the Terms of Service. '
+                            'This transaction cannot be reversed once confirmed.',
+                            style: typography.paragraphSmall(
+                              color: colors.themeFgMuted,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  if (onClose != null)
-                    IconButton(
-                      icon: Icon(Icons.close, color: colors.themeFgMuted),
-                      onPressed: onClose,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 32),
-
-              // Payment summary card
-              _PaymentSummaryCard(
-                quote: state.quote,
-                fromAddress: state.fromAddress,
-                token: state.token,
-              ),
-              const SizedBox(height: 24),
-
-              // Network status (for EVM tokens)
-              if (state.token.requiresGasEstimation) ...[
-                _NetworkStatusBanner(
-                  networkState: state.networkState,
-                  token: state.token,
-                  onSwitchNetwork: () {
-                    final chainId = state.token.chainId;
-                    if (chainId != null) {
-                      bloc.add(CryptoTopupSwitchNetwork(chainId));
-                    }
-                  },
                 ),
-                const SizedBox(height: 24),
+                // Footer with back button on left and confirm button on right
+                Container(
+                  color: colors.themeBgCanvas,
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      if (onBack != null)
+                        ArDriveClickArea(
+                          child: GestureDetector(
+                            onTap: onBack,
+                            child: Text(
+                              'Back',
+                              style: typography.paragraphLarge(
+                                fontWeight: ArFontWeight.bold,
+                                color: colors.themeAccentDisabled,
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        const SizedBox.shrink(),
+                      SizedBox(
+                        height: 48,
+                        child: ArDriveButton(
+                          isDisabled:
+                              state.networkState == NetworkState.needsSwitch ||
+                                  state.networkState == NetworkState.switching,
+                          text: _getButtonText(state),
+                          onPressed: () {
+                            bloc.add(const CryptoTopupConfirmPayment());
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
-
-              // Quote timer
-              _QuoteTimer(expiresAt: state.quote.expiresAt),
-              const SizedBox(height: 24),
-
-              // Terms notice
-              Text(
-                'By confirming, you agree to the Terms of Service. '
-                'This transaction cannot be reversed once confirmed.',
-                style: typography.paragraphSmall(
-                  color: colors.themeFgMuted,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-
-              // Confirm button
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ArDriveButton(
-                  isDisabled: state.networkState == NetworkState.needsSwitch ||
-                      state.networkState == NetworkState.switching,
-                  text: _getButtonText(state),
-                  onPressed: () {
-                    bloc.add(const CryptoTopupConfirmPayment());
-                  },
+            ),
+            // Close button in top right
+            if (onClose != null)
+              Positioned(
+                right: 27,
+                top: 27,
+                child: ArDriveClickArea(
+                  child: GestureDetector(
+                    onTap: onClose,
+                    child: ArDriveIcons.x(),
+                  ),
                 ),
               ),
-            ],
-          ),
+          ],
         );
       },
     );
@@ -291,17 +333,18 @@ class _NetworkStatusBanner extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: colors.themeSuccessSubtle,
+          color: colors.themeBgSubtle,
           borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: colors.themeBorderDefault),
         ),
         child: Row(
           children: [
-            Icon(Icons.check_circle, color: colors.themeSuccessDefault, size: 20),
+            Icon(Icons.check_circle, color: colors.themeFgMuted, size: 20),
             const SizedBox(width: 8),
             Text(
               'Connected to ${token.networkDisplayName}',
               style: typography.paragraphSmall(
-                color: colors.themeSuccessDefault,
+                color: colors.themeFgDefault,
               ),
             ),
           ],

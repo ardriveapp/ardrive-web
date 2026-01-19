@@ -8,18 +8,39 @@ class TurboTopupScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeData = ArDriveTheme.of(context).themeData;
+    final colors = themeData.colors;
+    final colorTokens = themeData.colorTokens;
+
     return Stack(
       children: [
-        Container(
-          padding: const EdgeInsets.all(40.0),
-          color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              child,
-            ],
-          ),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Red top line (ArDrive modal pattern)
+            Container(
+              height: 6,
+              decoration: BoxDecoration(
+                color: colorTokens.containerRed,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(8),
+                  topRight: Radius.circular(8),
+                ),
+              ),
+            ),
+            // Main content
+            Container(
+              padding: const EdgeInsets.all(40.0),
+              color: colors.themeBgCanvas,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  child,
+                ],
+              ),
+            ),
+          ],
         ),
         Positioned(
           right: 27,

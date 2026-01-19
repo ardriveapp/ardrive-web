@@ -3,6 +3,7 @@ library;
 
 export 'components/components.dart';
 export 'amount_entry_view.dart';
+export 'ao_connect_signature_view.dart';
 export 'confirmation_view.dart';
 export 'crypto_topup_modal.dart';
 export 'error_view.dart';

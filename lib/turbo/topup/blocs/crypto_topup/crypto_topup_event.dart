@@ -408,9 +408,15 @@ class CryptoTopupGoBack extends CryptoTopupEvent {
 /// Update payment amount
 class CryptoTopupUpdateAmount extends CryptoTopupEvent {
   final double amount;
-  const CryptoTopupUpdateAmount(this.amount);
+
+  /// Whether the amount is in USD. If false, amount is in token units.
+  /// Defaults to true for backwards compatibility.
+  final bool isUsd;
+
+  const CryptoTopupUpdateAmount(this.amount, {this.isUsd = true});
+
   @override
-  List<Object?> get props => [amount];
+  List<Object?> get props => [amount, isUsd];
 }
 
 /// Toggle between USD and token input mode

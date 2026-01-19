@@ -8,10 +8,15 @@ import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
+import 'package:ardrive/turbo/topup/blocs/unified_topup/unified_topup_bloc.dart';
+import 'package:ardrive/turbo/topup/components/payment_method_selector.dart';
+import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/views/topup_payment_form.dart';
 import 'package:ardrive/turbo/topup/views/topup_review_view.dart';
 import 'package:ardrive/turbo/topup/views/topup_success_view.dart';
 import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
+import 'package:ardrive/turbo/topup/views/unified/unified_crypto_flow.dart';
+import 'package:ardrive/turbo/topup/views/unified_pay_view.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
@@ -19,7 +24,7 @@ import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:flutter_stripe/flutter_stripe.dart' hide PaymentMethod;
 
 void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
   final activityTracker = context.read<ActivityTracker>();
@@ -80,6 +85,11 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
             turbo: context.read<Turbo>(),
           )..add(LoadInitialData()),
         ),
+        BlocProvider(
+          create: (context) => UnifiedTopupBloc(
+            turbo: context.read<Turbo>(),
+          )..add(const UnifiedTopupStarted()),
+        ),
       ],
       child: TurboModal(parentContext: modalContext),
     ),
@@ -123,6 +133,10 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
   late final AnimationController _opacityController;
   bool isOpacityTransitionDelayed = false;
 
+  /// Whether to use the new unified flow (3-page: Pay, Confirm, Success)
+  /// Set to true to enable the new UX
+  static const bool useUnifiedFlow = true;
+
   @override
   initState() {
     super.initState();
@@ -164,7 +178,19 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
   TurboTopupFlowState? _previousState;
 
   Widget _content() {
-    return BlocBuilder<TurboTopupFlowBloc, TurboTopupFlowState>(
+    return BlocConsumer<TurboTopupFlowBloc, TurboTopupFlowState>(
+      listenWhen: (previous, current) {
+        // Listen when going back to estimation view (from payment form)
+        return current is TurboTopupFlowShowingEstimationView &&
+            previous is! TurboTopupFlowShowingEstimationView &&
+            previous is! TurboTopupFlowInitial;
+      },
+      listener: (context, state) {
+        // When going back to estimation view, restore the unified bloc state
+        if (useUnifiedFlow && state is TurboTopupFlowShowingEstimationView) {
+          context.read<UnifiedTopupBloc>().add(const UnifiedTopupBackToLoaded());
+        }
+      },
       buildWhen: (previous, current) {
         return previous.runtimeType != current.runtimeType;
       },
@@ -172,7 +198,16 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
         Widget view;
 
         if (state is TurboTopupFlowShowingEstimationView) {
-          view = const TopUpEstimationView();
+          // Use new unified flow or old flow based on flag
+          if (useUnifiedFlow) {
+            view = UnifiedPayView(
+              onContinue: (method, token, amount) {
+                _handleUnifiedContinue(context, method, token, amount);
+              },
+            );
+          } else {
+            view = const TopUpEstimationView();
+          }
         } else if (state is TurboTopupFlowShowingPaymentFormView) {
           PlausibleEventTracker.trackPageview(
             page: PlausiblePageView.turboPaymentDetails,
@@ -282,6 +317,39 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
         );
       },
     );
+  }
+
+  /// Handles the continue action from the unified pay view.
+  ///
+  /// For card payments: transitions to the payment form view.
+  /// For crypto payments: opens the crypto modal.
+  void _handleUnifiedContinue(
+    BuildContext context,
+    PaymentMethod method,
+    CryptoToken? token,
+    double amount,
+  ) {
+    if (method == PaymentMethod.card) {
+      // For card payments, go to the payment form view
+      // First update the estimation bloc with the selected amount
+      context.read<TurboTopUpEstimationBloc>().add(FiatAmountSelected(amount));
+      // Then transition to payment form
+      context.read<TurboTopupFlowBloc>().add(const TurboTopUpShowPaymentFormView(4));
+    } else if (method == PaymentMethod.crypto && token != null) {
+      // For crypto payments, close this modal and open the crypto modal
+      Navigator.of(context).pop();
+
+      // Small delay for animation
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (widget.parentContext.mounted) {
+          showUnifiedCryptoModal(
+            widget.parentContext,
+            fiatAmount: amount,
+            preselectedToken: token,
+          );
+        }
+      });
+    }
   }
 
   void _showSuccessDialog() {

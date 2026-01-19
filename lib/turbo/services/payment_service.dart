@@ -206,9 +206,13 @@ Future<ArDriveHTTPResponse> _requestPriceForFiat(
   final String urlParams = _urlParamsForGetPriceForFiat(
       promoCode: promoCode, walletAddress: walletAddress);
 
+  // Convert amount to integer to avoid decimal in URL (e.g., 1000.0 -> 1000)
+  // The API expects amount in cents as an integer
+  final int amountCents = amount.round();
+
   try {
     final result = await httpClient.get(
-      url: '$turboPaymentUri/v1/price/$currency/$amount$urlParams',
+      url: '$turboPaymentUri/v1/price/$currency/$amountCents$urlParams',
     );
 
     if (!acceptedStatusCodes.contains(result.statusCode)) {
@@ -221,8 +225,25 @@ Future<ArDriveHTTPResponse> _requestPriceForFiat(
   } catch (error) {
     if (error is ArDriveHTTPException) {
       if (error.statusCode == 400) {
-        logger.e('Invalid promo code: $promoCode');
-        throw PaymentServiceInvalidPromoCode(promoCode: promoCode);
+        // Check the actual error response to provide a more specific error message
+        final errorData = error.data;
+        final errorMessage = errorData?.toString() ?? '';
+
+        // Check if it's actually a promo code error
+        if (promoCode != null &&
+            promoCode.isNotEmpty &&
+            (errorMessage.toLowerCase().contains('promo') ||
+                errorMessage.toLowerCase().contains('coupon') ||
+                errorMessage.toLowerCase().contains('code'))) {
+          logger.e('Invalid promo code: $promoCode - $errorMessage');
+          throw PaymentServiceInvalidPromoCode(promoCode: promoCode);
+        }
+
+        // Log the actual error and throw a general exception
+        logger.e('API returned 400: $errorMessage');
+        throw PaymentServiceException(
+          'Price fetch failed: ${errorMessage.isNotEmpty ? errorMessage : 'Bad request'}',
+        );
       }
     }
 

@@ -66,51 +66,70 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
   }
 
   Widget _mobileView(BuildContext context, ArDriveTextFieldTheme theme) {
-    return Container(
-      color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
-      child: SingleChildScrollView(
-        child: Column(
-          children: [
-            Align(
-              alignment: Alignment.topRight,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 26, right: 26),
-                child: ArDriveClickArea(
-                  child: GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: ArDriveIcons.x(),
-                  ),
-                ),
-              ),
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return Column(
+      children: [
+        // Red top line (ArDrive modal pattern)
+        Container(
+          height: 6,
+          decoration: BoxDecoration(
+            color: colorTokens.containerRed,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(8),
+              topRight: Radius.circular(8),
             ),
-            Padding(
-              padding: const EdgeInsets.only(
-                left: 40,
-                right: 40,
-              ),
+          ),
+        ),
+        Expanded(
+          child: Container(
+            color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+            child: SingleChildScrollView(
               child: Column(
                 children: [
-                  _header(context),
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 26, right: 26),
+                      child: ArDriveClickArea(
+                        child: GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: ArDriveIcons.x(),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 40,
+                      right: 40,
+                    ),
+                    child: Column(
+                      children: [
+                        _header(context),
+                        const Divider(height: 24),
+                        _credits(context),
+                        const Padding(
+                          padding: EdgeInsets.only(top: 24),
+                          child: QuoteRefreshWidget(),
+                        ),
+                        const SizedBox(height: 24),
+                        _formDesktop(
+                          context,
+                          theme,
+                        ),
+                      ],
+                    ),
+                  ),
                   const Divider(height: 24),
-                  _credits(context),
-                  const Padding(
-                    padding: EdgeInsets.only(top: 24),
-                    child: QuoteRefreshWidget(),
-                  ),
                   const SizedBox(height: 24),
-                  _formDesktop(
-                    context,
-                    theme,
-                  ),
+                  _footer(context),
                 ],
               ),
             ),
-            const Divider(height: 24),
-            const SizedBox(height: 24),
-            _footer(context),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -153,6 +172,8 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
             );
           }
 
+          final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
           return ArDriveDevToolsShortcuts(
             customShortcuts: [
               Shortcut(
@@ -164,58 +185,75 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 },
               ),
             ],
-            child: Container(
-              color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 26, right: 26),
-                        child: ArDriveClickArea(
-                          child: GestureDetector(
-                            onTap: () => Navigator.pop(context),
-                            child: ArDriveIcons.x(),
-                          ),
-                        ),
-                      ),
+            child: Column(
+              children: [
+                // Red top line (ArDrive modal pattern)
+                Container(
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: colorTokens.containerRed,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(8),
+                      topRight: Radius.circular(8),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        left: 40,
-                        right: 40,
-                      ),
+                  ),
+                ),
+                Expanded(
+                  child: Container(
+                    color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+                    child: SingleChildScrollView(
                       child: Column(
                         children: [
-                          _header(context),
-                          const Divider(height: 24),
-                          Row(
-                            children: [
-                              Flexible(child: _credits(context)),
-                              const Flexible(
-                                flex: 1,
-                                child: Padding(
-                                  padding: EdgeInsets.only(left: 8.0),
-                                  child: QuoteRefreshWidget(),
+                          Align(
+                            alignment: Alignment.topRight,
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 26, right: 26),
+                              child: ArDriveClickArea(
+                                child: GestureDetector(
+                                  onTap: () => Navigator.pop(context),
+                                  child: ArDriveIcons.x(),
                                 ),
                               ),
-                            ],
+                            ),
                           ),
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              left: 40,
+                              right: 40,
+                            ),
+                            child: Column(
+                              children: [
+                                _header(context),
+                                const Divider(height: 24),
+                                Row(
+                                  children: [
+                                    Flexible(child: _credits(context)),
+                                    const Flexible(
+                                      flex: 1,
+                                      child: Padding(
+                                        padding: EdgeInsets.only(left: 8.0),
+                                        child: QuoteRefreshWidget(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 24),
+                                _formDesktop(
+                                  context,
+                                  theme,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Divider(height: 24),
                           const SizedBox(height: 24),
-                          _formDesktop(
-                            context,
-                            theme,
-                          ),
+                          _footer(context),
                         ],
                       ),
                     ),
-                    const Divider(height: 24),
-                    const SizedBox(height: 24),
-                    _footer(context),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
           );
         },
@@ -506,20 +544,6 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
               countryTextField(theme),
             ],
           ),
-          const SizedBox(height: 16),
-          Row(children: [promoCodeLabel()]),
-          ScreenTypeLayout.builder(
-            mobile: (context) => Row(children: [
-              promoCodeWidget(theme),
-            ]),
-            desktop: (context) => Row(children: [
-              promoCodeWidget(theme),
-              const Flexible(child: SizedBox()),
-            ]),
-          ),
-          const SizedBox(
-            height: 16,
-          ),
         ],
       ),
     );
@@ -659,7 +683,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                   color: ArDriveTheme.of(context)
                       .themeData
                       .colors
-                      .themeSuccessDefault,
+                      .themeFgDefault,
                 ),
               ),
             ),
@@ -680,7 +704,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 color: ArDriveTheme.of(context)
                     .themeData
                     .colors
-                    .themeSuccessDefault,
+                    .themeFgMuted,
               ),
             ),
           ),

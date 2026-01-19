@@ -67,11 +67,14 @@ async function getSignature(message) {
 
 async function signDataItem(data, tags, owner, target, anchor) {
   console.log('[ArConnect] signDataItem called with', data.length, 'bytes');
+  console.log('[ArConnect] tags:', tags);
   try {
+    // Tags come from Dart as base64-encoded strings, decode them for Wander
     const jsTags = tags.map(tag => ({
       name: atob(tag.name),
       value: atob(tag.value),
     }));
+    console.log('[ArConnect] decoded tags:', jsTags);
 
     const jsDataItem = {
       owner: owner,

@@ -7,10 +7,12 @@ import 'package:ardrive/turbo/services/ethereum_wallet_service.dart';
 import 'package:ardrive/turbo/services/solana_wallet_service.dart';
 import 'package:ardrive/turbo/services/wallet_signer_cache.dart';
 import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
+import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/views/unified/crypto_confirmation_view.dart';
 import 'package:ardrive/turbo/topup/views/unified/crypto_processing_view.dart';
 import 'package:ardrive/turbo/topup/views/unified/crypto_result_view.dart';
 import 'package:ardrive/turbo/topup/views/unified/inline_crypto_payment.dart';
+import 'package:ardrive/turbo/topup/views/unified/wallet_connection_view.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +32,9 @@ class UnifiedCryptoFlow extends StatefulWidget {
   /// The amount in USD that the user wants to pay
   final double fiatAmount;
 
+  /// Optional preselected token (skips token selection)
+  final CryptoToken? preselectedToken;
+
   /// Callback when payment is successful
   final VoidCallback? onSuccess;
 
@@ -42,6 +47,7 @@ class UnifiedCryptoFlow extends StatefulWidget {
   const UnifiedCryptoFlow({
     super.key,
     required this.fiatAmount,
+    this.preselectedToken,
     this.onSuccess,
     this.onCancel,
     this.onBack,
@@ -98,9 +104,16 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
       arweaveWalletAddress: auth.currentUser.walletAddress,
     );
 
-    // Initialize and set the fiat amount
+    // Initialize and set the amount
     _bloc!.add(const CryptoTopupStarted());
-    _bloc!.add(CryptoTopupUpdateAmount(widget.fiatAmount));
+    // For crypto payments, fiatAmount is actually the token amount
+    // Pass isUsd: false to use token-specific pricing (e.g., ARIO has no fees)
+    _bloc!.add(CryptoTopupUpdateAmount(widget.fiatAmount, isUsd: false));
+
+    // If a token was preselected, select it
+    if (widget.preselectedToken != null) {
+      _bloc!.add(CryptoTopupSelectToken(widget.preselectedToken!));
+    }
 
     if (mounted) {
       setState(() {
@@ -137,30 +150,64 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
   }
 
   Widget _buildContent(BuildContext context, CryptoTopupState state) {
-    // Initial/Token selection/Wallet connection/Amount entry states
-    // These all show the inline crypto payment view
-    if (state is CryptoTopupInitial ||
-        state is CryptoTopupTokenSelection ||
-        state is CryptoTopupWalletConnection ||
-        state is CryptoTopupWalletNotInstalled ||
-        state is CryptoTopupAmountEntry ||
-        state is CryptoTopupAOConnectSignature) {
-      return InlineCryptoPayment(
-        key: const ValueKey('inline_crypto'),
-        fiatAmount: widget.fiatAmount,
-        onContinue: () {
+    // When token is preselected, show streamlined wallet connection flow
+    // (skips the InlineCryptoPayment which has redundant token selection)
+    if (widget.preselectedToken != null) {
+      // Wallet connection states - show wallet connection view
+      if (state is CryptoTopupInitial ||
+          state is CryptoTopupTokenSelection ||
+          state is CryptoTopupWalletConnection ||
+          state is CryptoTopupWalletNotInstalled ||
+          state is CryptoTopupNetworkSwitch ||
+          state is CryptoTopupAOConnectSignature) {
+        return WalletConnectionView(
+          key: const ValueKey('wallet_connection'),
+          token: widget.preselectedToken!,
+          fiatAmount: widget.fiatAmount,
+          onBack: widget.onBack,
+          onCancel: widget.onCancel,
+        );
+      }
+
+      // Amount entry - automatically proceed to confirmation
+      // (we already have the amount from the unified pay view)
+      if (state is CryptoTopupAmountEntry) {
+        // Trigger proceed to confirmation
+        WidgetsBinding.instance.addPostFrameCallback((_) {
           _bloc!.add(const CryptoTopupProceedToConfirmation());
-        },
-        onCancel: widget.onCancel,
-        onBackToPaymentMethods: widget.onBack,
-      );
+        });
+        return const Center(child: CircularProgressIndicator());
+      }
+    } else {
+      // No preselected token - show full inline crypto payment flow
+      // (this path is for when crypto flow is opened without token selection)
+      if (state is CryptoTopupInitial ||
+          state is CryptoTopupTokenSelection ||
+          state is CryptoTopupWalletConnection ||
+          state is CryptoTopupWalletNotInstalled ||
+          state is CryptoTopupAmountEntry ||
+          state is CryptoTopupAOConnectSignature) {
+        return InlineCryptoPayment(
+          key: const ValueKey('inline_crypto'),
+          fiatAmount: widget.fiatAmount,
+          onContinue: () {
+            _bloc!.add(const CryptoTopupProceedToConfirmation());
+          },
+          onCancel: widget.onCancel,
+          onBackToPaymentMethods: widget.onBack,
+        );
+      }
     }
 
     // Confirmation state
     if (state is CryptoTopupConfirmation) {
       return CryptoConfirmationView(
         key: const ValueKey('confirmation'),
-        onBack: () => _bloc!.add(const CryptoTopupGoBack()),
+        // When there's a preselected token, back should go to parent view
+        // Otherwise, back goes to amount entry within the crypto flow
+        onBack: widget.preselectedToken != null
+            ? widget.onBack
+            : () => _bloc!.add(const CryptoTopupGoBack()),
         onClose: widget.onCancel,
       );
     }
@@ -204,12 +251,16 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
 /// rather than embedded in the main top-up view.
 class UnifiedCryptoModal extends StatelessWidget {
   final double fiatAmount;
+  final CryptoToken? preselectedToken;
   final VoidCallback? onClose;
+  final VoidCallback? onBackToPaymentMethods;
 
   const UnifiedCryptoModal({
     super.key,
     required this.fiatAmount,
+    this.preselectedToken,
     this.onClose,
+    this.onBackToPaymentMethods,
   });
 
   @override
@@ -224,6 +275,7 @@ class UnifiedCryptoModal extends StatelessWidget {
         height: 560,
         child: UnifiedCryptoFlow(
           fiatAmount: fiatAmount,
+          preselectedToken: preselectedToken,
           onSuccess: () {
             Navigator.of(context).pop();
             onClose?.call();
@@ -231,6 +283,15 @@ class UnifiedCryptoModal extends StatelessWidget {
           onCancel: () {
             Navigator.of(context).pop();
             onClose?.call();
+          },
+          onBack: () {
+            Navigator.of(context).pop();
+            // If we have a callback to go back to payment methods, call it
+            if (onBackToPaymentMethods != null) {
+              onBackToPaymentMethods!();
+            } else {
+              onClose?.call();
+            }
           },
         ),
       ),
@@ -242,7 +303,9 @@ class UnifiedCryptoModal extends StatelessWidget {
 Future<void> showUnifiedCryptoModal(
   BuildContext context, {
   required double fiatAmount,
+  CryptoToken? preselectedToken,
   VoidCallback? onClose,
+  VoidCallback? onBackToPaymentMethods,
 }) async {
   final themeColors = ArDriveTheme.of(context).themeData.colors;
 
@@ -257,7 +320,9 @@ Future<void> showUnifiedCryptoModal(
       ],
       child: UnifiedCryptoModal(
         fiatAmount: fiatAmount,
+        preselectedToken: preselectedToken,
         onClose: onClose,
+        onBackToPaymentMethods: onBackToPaymentMethods,
       ),
     ),
   );

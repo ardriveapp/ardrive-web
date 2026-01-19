@@ -46,7 +46,9 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final themeData = ArDriveTheme.of(context).themeData;
+    final colors = themeData.colors;
+    final colorTokens = themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return BlocBuilder<CryptoTopupBloc, CryptoTopupState>(
@@ -62,46 +64,65 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
 
         return Stack(
           children: [
-            // Confetti widgets
-            Align(
-              alignment: Alignment.topLeft,
-              child: ConfettiWidget(
-                numberOfParticles: 15,
-                blastDirection: -pi / 4, // Diagonal right
-                blastDirectionality: BlastDirectionality.explosive,
-                confettiController: _confettiController1,
-                maxBlastForce: 50,
-                minBlastForce: 20,
-                emissionFrequency: 0.05,
-                gravity: 0.2,
-                colors: [
-                  colors.themeSuccessDefault,
-                  colors.themeAccentDefault,
-                  colors.themeFgDefault.withOpacity(0.5),
-                ],
-              ),
-            ),
-            Align(
-              alignment: Alignment.topRight,
-              child: ConfettiWidget(
-                numberOfParticles: 15,
-                blastDirection: -3 * pi / 4, // Diagonal left
-                blastDirectionality: BlastDirectionality.explosive,
-                confettiController: _confettiController2,
-                maxBlastForce: 50,
-                minBlastForce: 20,
-                emissionFrequency: 0.05,
-                gravity: 0.2,
-                colors: [
-                  colors.themeSuccessDefault,
-                  colors.themeAccentDefault,
-                  colors.themeFgDefault.withOpacity(0.5),
-                ],
-              ),
-            ),
+            Column(
+              children: [
+                // Red top line (ArDrive modal pattern)
+                Container(
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: colorTokens.containerRed,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(8),
+                      topRight: Radius.circular(8),
+                    ),
+                  ),
+                ),
+                // Main content
+                Expanded(
+                  child: Container(
+                    color: colors.themeBgCanvas,
+                    child: Stack(
+                      children: [
+                        // Confetti widgets
+                        Align(
+                          alignment: Alignment.topLeft,
+                          child: ConfettiWidget(
+                            numberOfParticles: 15,
+                            blastDirection: -pi / 4, // Diagonal right
+                            blastDirectionality: BlastDirectionality.explosive,
+                            confettiController: _confettiController1,
+                            maxBlastForce: 50,
+                            minBlastForce: 20,
+                            emissionFrequency: 0.05,
+                            gravity: 0.2,
+                            colors: [
+                              colors.themeSuccessDefault,
+                              colors.themeAccentDefault,
+                              colors.themeFgDefault.withOpacity(0.5),
+                            ],
+                          ),
+                        ),
+                        Align(
+                          alignment: Alignment.topRight,
+                          child: ConfettiWidget(
+                            numberOfParticles: 15,
+                            blastDirection: -3 * pi / 4, // Diagonal left
+                            blastDirectionality: BlastDirectionality.explosive,
+                            confettiController: _confettiController2,
+                            maxBlastForce: 50,
+                            minBlastForce: 20,
+                            emissionFrequency: 0.05,
+                            gravity: 0.2,
+                            colors: [
+                              colors.themeSuccessDefault,
+                              colors.themeAccentDefault,
+                              colors.themeFgDefault.withOpacity(0.5),
+                            ],
+                          ),
+                        ),
 
-            // Main content
-            Center(
+                        // Main content
+                        Center(
               child: Padding(
                 padding: const EdgeInsets.all(48),
                 child: Column(
@@ -112,13 +133,17 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: colors.themeSuccessSubtle,
+                        color: colors.themeBgSubtle,
                         shape: BoxShape.circle,
+                        border: Border.all(
+                          color: colors.themeBorderDefault,
+                          width: 2,
+                        ),
                       ),
                       child: Icon(
                         Icons.check,
                         size: 48,
-                        color: colors.themeSuccessDefault,
+                        color: colors.themeFgDefault,
                       ),
                     ),
                     const SizedBox(height: 32),
@@ -187,6 +212,23 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
                 ),
               ),
             ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            // Close button in top right
+            Positioned(
+              right: 27,
+              top: 27,
+              child: ArDriveClickArea(
+                child: GestureDetector(
+                  onTap: widget.onDone,
+                  child: ArDriveIcons.x(),
+                ),
+              ),
+            ),
           ],
         );
       },
@@ -224,7 +266,9 @@ class CryptoErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final themeData = ArDriveTheme.of(context).themeData;
+    final colors = themeData.colors;
+    final colorTokens = themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return BlocBuilder<CryptoTopupBloc, CryptoTopupState>(
@@ -239,124 +283,161 @@ class CryptoErrorView extends StatelessWidget {
           canRetry = state.canRetry;
         }
 
-        return Center(
-          child: Padding(
-            padding: const EdgeInsets.all(48),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+        return Stack(
+          children: [
+            Column(
               children: [
-                // Error icon
+                // Red top line (ArDrive modal pattern)
                 Container(
-                  width: 80,
-                  height: 80,
+                  height: 6,
                   decoration: BoxDecoration(
-                    color: colors.themeErrorSubtle,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.close,
-                    size: 48,
-                    color: colors.themeErrorDefault,
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // Error message
-                Text(
-                  'Payment Failed',
-                  style: typography.heading4(
-                    fontWeight: ArFontWeight.bold,
-                    color: colors.themeFgDefault,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Error details
-                Text(
-                  errorMessage,
-                  style: typography.paragraphNormal(
-                    color: colors.themeFgMuted,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-
-                if (errorDetails != null && errorDetails.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: colors.themeBgSubtle,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      errorDetails,
-                      style: typography.paragraphSmall(
-                        color: colors.themeFgMuted,
-                      ),
-                      textAlign: TextAlign.center,
+                    color: colorTokens.containerRed,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(8),
+                      topRight: Radius.circular(8),
                     ),
                   ),
-                ],
+                ),
+                // Main content
+                Expanded(
+                  child: Container(
+                    color: colors.themeBgCanvas,
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(48),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Error icon
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                color: colors.themeErrorSubtle,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.close,
+                                size: 48,
+                                color: colors.themeErrorDefault,
+                              ),
+                            ),
+                            const SizedBox(height: 32),
 
-                const SizedBox(height: 16),
+                            // Error message
+                            Text(
+                              'Payment Failed',
+                              style: typography.heading4(
+                                fontWeight: ArFontWeight.bold,
+                                color: colors.themeFgDefault,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
 
-                // No funds charged notice
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: colors.themeSuccessSubtle,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: colors.themeSuccessDefault,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Your funds have not been charged.',
-                        style: typography.paragraphSmall(
-                          color: colors.themeSuccessDefault,
+                            // Error details
+                            Text(
+                              errorMessage,
+                              style: typography.paragraphNormal(
+                                color: colors.themeFgMuted,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+
+                            if (errorDetails != null && errorDetails.isNotEmpty) ...[
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: colors.themeBgSubtle,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  errorDetails,
+                                  style: typography.paragraphSmall(
+                                    color: colors.themeFgMuted,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
+
+                            const SizedBox(height: 16),
+
+                            // No funds charged notice
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: colors.themeBgSubtle,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: colors.themeBorderDefault),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.info_outline,
+                                    color: colors.themeFgMuted,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Your funds have not been charged.',
+                                    style: typography.paragraphSmall(
+                                      color: colors.themeFgDefault,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(height: 48),
+
+                            // Action buttons
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (canRetry) ...[
+                                  SizedBox(
+                                    width: 140,
+                                    height: 48,
+                                    child: ArDriveButton(
+                                      text: 'Try Again',
+                                      onPressed: onRetry,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                ],
+                                SizedBox(
+                                  width: 140,
+                                  height: 48,
+                                  child: ArDriveButton(
+                                    style: ArDriveButtonStyle.secondary,
+                                    text: 'Close',
+                                    onPressed: onClose,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 48),
-
-                // Action buttons
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (canRetry) ...[
-                      SizedBox(
-                        width: 140,
-                        height: 48,
-                        child: ArDriveButton(
-                          text: 'Try Again',
-                          onPressed: onRetry,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                    ],
-                    SizedBox(
-                      width: 140,
-                      height: 48,
-                      child: ArDriveButton(
-                        style: ArDriveButtonStyle.secondary,
-                        text: 'Close',
-                        onPressed: onClose,
-                      ),
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),
-          ),
+            // Close button in top right
+            Positioned(
+              right: 27,
+              top: 27,
+              child: ArDriveClickArea(
+                child: GestureDetector(
+                  onTap: onClose,
+                  child: ArDriveIcons.x(),
+                ),
+              ),
+            ),
+          ],
         );
       },
     );
