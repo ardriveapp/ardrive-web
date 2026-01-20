@@ -249,6 +249,81 @@ class ArweaveService {
     );
   }
 
+  /// Fetches pending (unmined) transactions for a drive.
+  /// These are transactions that have been indexed but don't yet have a block.
+  /// Used to show Turbo-uploaded files immediately before they're mined.
+  Stream<List<DriveEntityHistoryTransactionModel>> getPendingTransactionsForDrive(
+    String driveId, {
+    required String ownerAddress,
+  }) async* {
+    String? cursor;
+    while (true) {
+      try {
+        final queryResult = await graphQLRetry.execute(
+          PendingDriveEntitiesQuery(
+            variables: PendingDriveEntitiesArguments(
+              driveId: driveId,
+              after: cursor,
+              ownerAddress: ownerAddress,
+            ),
+          ),
+        );
+
+        if (queryResult.data == null) {
+          logger.w('No data in pending transactions query result');
+          break;
+        }
+
+        final edges = queryResult.data!.transactions.edges;
+        final hasNextPage = queryResult.data!.transactions.pageInfo.hasNextPage;
+
+        // Guard against empty edges with hasNextPage=true causing infinite loop
+        if (edges.isEmpty) {
+          break;
+        }
+
+        // Filter to only include transactions with no block (pending/unmined)
+        final pendingTransactions = edges
+            .where((edge) => edge.node.block == null)
+            .where((edge) => _isSupportedArFSVersion(edge.node))
+            .map((e) => DriveEntityHistoryTransactionModel(
+                  transactionCommonMixin: e.node,
+                  cursor: e.cursor,
+                ))
+            .toList();
+
+        if (pendingTransactions.isNotEmpty) {
+          logger.d('Found ${pendingTransactions.length} pending transactions for drive $driveId');
+          yield pendingTransactions;
+        }
+
+        // If no more pages, we're done
+        if (!hasNextPage) {
+          break;
+        }
+
+        // If we hit a page with mined transactions, we can stop
+        // (since we're sorting HEIGHT_DESC, pending txs appear first)
+        final hasMinedTxs = edges.any((edge) => edge.node.block != null);
+        if (hasMinedTxs && pendingTransactions.isEmpty) {
+          break;
+        }
+
+        // Advance cursor for next page
+        cursor = edges.last.cursor;
+      } catch (e) {
+        logger.e('Error fetching pending transactions for drive $driveId', e);
+        break;
+      }
+    }
+  }
+
+  bool _isSupportedArFSVersion(TransactionCommonMixin node) {
+    final arfsTag =
+        node.tags.firstWhereOrNull((tag) => tag.name == EntityTag.arFs);
+    return arfsTag != null && supportedArFSVersionsSet.contains(arfsTag.value);
+  }
+
   Stream<List<LicenseAssertions$Query$TransactionConnection$TransactionEdge$Transaction>>
       getLicenseAssertions(Iterable<String> licenseAssertionTxIds) async* {
     const chunkSize = 100;
@@ -297,6 +372,7 @@ class ArweaveService {
     int lastBlockHeight, {
     required String ownerAddress,
     required DriveID driveId,
+    int? currentBlockHeight,
   }) async {
     // FIXME - PE-3440
     /// Make use of `eagerError: true` to make it fail on first error
@@ -360,16 +436,16 @@ class ArweaveService {
         continue;
       }
 
-      // If we encounter a transaction that has yet to be mined, we stop moving through history.
-      // We can continue once the transaction is mined.
-      if (transaction.block == null) {
-        // TODO: Revisit
-        break;
-      }
+      // Process unmined transactions using currentBlockHeight
+      // They appear "as of now" and will be updated when actually mined
+      // Transaction status system handles pending → confirmed transition
+      final blockHeight = transaction.block?.height
+          ?? currentBlockHeight
+          ?? lastBlockHeight;
 
       if (blockHistory.isEmpty ||
-          transaction.block!.height != blockHistory.last.blockHeight) {
-        blockHistory.add(BlockEntities(transaction.block!.height));
+          blockHistory.last.blockHeight != blockHeight) {
+        blockHistory.add(BlockEntities(blockHeight));
       }
 
       try {
@@ -401,12 +477,6 @@ class ArweaveService {
           }
         } else if (entityType == EntityTypeTag.snapshot) {
           // TODO: instantiate entity and add to blockHistory
-        }
-
-        // TODO: Revisit
-        if (blockHistory.isEmpty ||
-            transaction.block!.height != blockHistory.last.blockHeight) {
-          blockHistory.add(BlockEntities(transaction.block!.height));
         }
 
         blockHistory.last.entities.add(entity);

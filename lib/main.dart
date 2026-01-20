@@ -365,7 +365,9 @@ class AppState extends State<App> {
           create: (context) => AppBannerBloc(
             keyValueStore: localKeyValueStore,
             auth: context.read<ArDriveAuth>(),
-          )..add(const AppBannerRequested(banner: AppBannerType.androidSunset)),
+          ),
+          // Uncomment to enable announcement banner on app start:
+          // ..add(const AppBannerRequested(banner: AppBannerType.announcement)),
         ),
         BlocProvider(
           create: (context) => ProfileNameBloc(
