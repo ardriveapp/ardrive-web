@@ -12,8 +12,6 @@ class _MockLocalKeyValueStore extends Mock implements LocalKeyValueStore {}
 
 class _MockArDriveAuth extends Mock implements ArDriveAuth {}
 
-class _FakeUser extends Fake implements User {}
-
 void main() {
   late _MockLocalKeyValueStore store;
   late _MockArDriveAuth auth;
