@@ -10,14 +10,14 @@ part 'app_banner_event.dart';
 part 'app_banner_state.dart';
 
 enum AppBannerType {
-  androidSunset,
+  announcement,
 }
 
 extension AppBannerTypeX on AppBannerType {
   String get storageKey {
     switch (this) {
-      case AppBannerType.androidSunset:
-        return 'android_sunset_banner_dismissed';
+      case AppBannerType.announcement:
+        return 'app_announcement_banner_dismissed';
     }
   }
 }
@@ -34,9 +34,10 @@ class AppBannerBloc extends Bloc<AppBannerEvent, AppBannerState> {
 
     _authSubscription = auth.onAuthStateChanged().listen((user) {
       if (user == null) {
-        add(const AppBannerReset(banner: AppBannerType.androidSunset));
+        add(const AppBannerReset(banner: AppBannerType.announcement));
       } else {
-        add(const AppBannerRequested(banner: AppBannerType.androidSunset));
+        // Android sunset banner disabled - uncomment to re-enable:
+        // add(const AppBannerRequested(banner: AppBannerType.announcement));
       }
     });
   }
@@ -49,7 +50,7 @@ class AppBannerBloc extends Bloc<AppBannerEvent, AppBannerState> {
     Emitter<AppBannerState> emit,
   ) async {
     switch (event.banner) {
-      case AppBannerType.androidSunset:
+      case AppBannerType.announcement:
         final dismissed =
             _keyValueStore.getBool(event.banner.storageKey) ?? false;
         if (!dismissed) {
@@ -65,7 +66,7 @@ class AppBannerBloc extends Bloc<AppBannerEvent, AppBannerState> {
     Emitter<AppBannerState> emit,
   ) async {
     switch (event.banner) {
-      case AppBannerType.androidSunset:
+      case AppBannerType.announcement:
         await _keyValueStore.putBool(event.banner.storageKey, true);
         break;
     }
@@ -78,7 +79,7 @@ class AppBannerBloc extends Bloc<AppBannerEvent, AppBannerState> {
     Emitter<AppBannerState> emit,
   ) async {
     switch (event.banner) {
-      case AppBannerType.androidSunset:
+      case AppBannerType.announcement:
         await _keyValueStore.remove(event.banner.storageKey);
         break;
     }

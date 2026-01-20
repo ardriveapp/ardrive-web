@@ -32,39 +32,39 @@ void main() {
   });
 
   blocTest<AppBannerBloc, AppBannerState>(
-    'emits visible when Android sunset banner has not been dismissed',
+    'emits visible when announcement banner has not been dismissed',
     build: () {
-      when(() => store.getBool(AppBannerType.androidSunset.storageKey))
+      when(() => store.getBool(AppBannerType.announcement.storageKey))
           .thenReturn(false);
       return AppBannerBloc(keyValueStore: store, auth: auth);
     },
     act: (bloc) => bloc.add(
-      const AppBannerRequested(banner: AppBannerType.androidSunset),
+      const AppBannerRequested(banner: AppBannerType.announcement),
     ),
     expect: () => const <AppBannerState>[
-      AppBannerVisible(banner: AppBannerType.androidSunset),
+      AppBannerVisible(banner: AppBannerType.announcement),
     ],
     verify: (_) {
-      verify(() => store.getBool(AppBannerType.androidSunset.storageKey))
+      verify(() => store.getBool(AppBannerType.announcement.storageKey))
           .called(1);
     },
   );
 
   blocTest<AppBannerBloc, AppBannerState>(
-    'emits hidden when Android sunset banner already dismissed',
+    'emits hidden when announcement banner already dismissed',
     build: () {
-      when(() => store.getBool(AppBannerType.androidSunset.storageKey))
+      when(() => store.getBool(AppBannerType.announcement.storageKey))
           .thenReturn(true);
       return AppBannerBloc(keyValueStore: store, auth: auth);
     },
     act: (bloc) => bloc.add(
-      const AppBannerRequested(banner: AppBannerType.androidSunset),
+      const AppBannerRequested(banner: AppBannerType.announcement),
     ),
     expect: () => const <AppBannerState>[
       AppBannerHidden(),
     ],
     verify: (_) {
-      verify(() => store.getBool(AppBannerType.androidSunset.storageKey))
+      verify(() => store.getBool(AppBannerType.announcement.storageKey))
           .called(1);
     },
   );
@@ -72,25 +72,25 @@ void main() {
   blocTest<AppBannerBloc, AppBannerState>(
     'persists dismissal and hides the banner',
     build: () {
-      when(() => store.getBool(AppBannerType.androidSunset.storageKey))
+      when(() => store.getBool(AppBannerType.announcement.storageKey))
           .thenReturn(false);
-      when(() => store.putBool(AppBannerType.androidSunset.storageKey, true))
+      when(() => store.putBool(AppBannerType.announcement.storageKey, true))
           .thenAnswer((_) async => true);
       return AppBannerBloc(keyValueStore: store, auth: auth);
     },
     act: (bloc) async {
       bloc
-        ..add(const AppBannerRequested(banner: AppBannerType.androidSunset))
-        ..add(const AppBannerDismissed(banner: AppBannerType.androidSunset));
+        ..add(const AppBannerRequested(banner: AppBannerType.announcement))
+        ..add(const AppBannerDismissed(banner: AppBannerType.announcement));
     },
     expect: () => const <AppBannerState>[
-      AppBannerVisible(banner: AppBannerType.androidSunset),
+      AppBannerVisible(banner: AppBannerType.announcement),
       AppBannerHidden(),
     ],
     verify: (_) {
-      verify(() => store.getBool(AppBannerType.androidSunset.storageKey))
+      verify(() => store.getBool(AppBannerType.announcement.storageKey))
           .called(1);
-      verify(() => store.putBool(AppBannerType.androidSunset.storageKey, true))
+      verify(() => store.putBool(AppBannerType.announcement.storageKey, true))
           .called(1);
     },
   );
@@ -98,23 +98,18 @@ void main() {
   blocTest<AppBannerBloc, AppBannerState>(
     'resets dismissal when auth logs out',
     build: () {
-      when(() => store.remove(AppBannerType.androidSunset.storageKey))
+      when(() => store.remove(AppBannerType.announcement.storageKey))
           .thenAnswer((_) async => true);
-      when(() => store.getBool(AppBannerType.androidSunset.storageKey))
-          .thenReturn(false);
       return AppBannerBloc(keyValueStore: store, auth: auth);
     },
     act: (bloc) async {
-      authController.add(_FakeUser());
-      await pumpEventQueue();
       authController.add(null);
     },
     expect: () => const <AppBannerState>[
-      AppBannerVisible(banner: AppBannerType.androidSunset),
       AppBannerHidden(),
     ],
     verify: (_) {
-      verify(() => store.remove(AppBannerType.androidSunset.storageKey))
+      verify(() => store.remove(AppBannerType.announcement.storageKey))
           .called(1);
     },
   );
