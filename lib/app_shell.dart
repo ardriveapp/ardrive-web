@@ -575,6 +575,11 @@ class AppShellState extends State<AppShell> {
     String? url,
     String? urlText,
   }) {
+    // Don't render banner if no message is configured
+    if (message.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return BlocBuilder<AppBannerBloc, AppBannerState>(
       builder: (context, state) {
         if (state is AppBannerVisible &&
