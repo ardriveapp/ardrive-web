@@ -60,7 +60,8 @@ class _SuccessContent extends StatelessWidget {
   String _formatCredits(BigInt credits) {
     // Convert from winstons to readable credits format
     // 1 credit = 10^12 winstons
-    final creditsDouble = credits / BigInt.from(10).pow(12);
+    final divisor = BigInt.from(10).pow(12);
+    final creditsDouble = credits.toDouble() / divisor.toDouble();
     return '${creditsDouble.toStringAsFixed(4)} Credits';
   }
 }

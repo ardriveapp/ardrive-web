@@ -197,6 +197,7 @@ class _AmountEntryContent extends StatelessWidget {
 
   bool _canContinue(CryptoTopupAmountEntry state) {
     return state.quote != null &&
+        !state.quote!.isExpired &&
         !state.isLoadingQuote &&
         state.hasSufficientBalance &&
         state.currentAmount > 0;

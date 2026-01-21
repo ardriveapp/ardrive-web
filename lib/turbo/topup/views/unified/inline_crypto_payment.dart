@@ -4,6 +4,7 @@ import 'package:ardrive/turbo/topup/views/crypto_topup/components/wallet_selecto
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Inline crypto payment section that appears within the main top-up dialog.
 ///
@@ -171,7 +172,9 @@ class InlineCryptoPayment extends StatelessWidget {
 
   bool _isReadyToContinue(CryptoTopupState state) {
     if (state is CryptoTopupAmountEntry) {
-      return state.quote != null && !state.balance.hasError;
+      return state.quote != null &&
+          !state.quote!.isExpired &&
+          !state.balance.hasError;
     }
     return false;
   }
@@ -319,7 +322,7 @@ class _TokenSelector extends StatelessWidget {
                           border: Border.all(color: colors.themeBorderDefault),
                         ),
                         child: Text(
-                          'No Fees',
+                          'No Turbo Fee',
                           style: typography.caption(
                             fontWeight: ArFontWeight.semiBold,
                             color: colors.themeFgMuted,
@@ -783,14 +786,25 @@ class _WalletConnectionSection extends StatelessWidget {
               style: ArDriveButtonStyle.secondary,
               text: 'Install $walletName',
               onPressed: () {
-                // Open install URL in new tab
-                // TODO: Use url_launcher
+                _openInstallUrl(walletState.walletType);
               },
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _openInstallUrl(WalletType walletType) async {
+    final url = switch (walletType) {
+      WalletType.ethereum => 'https://metamask.io/download/',
+      WalletType.solana => 'https://phantom.app/download',
+      WalletType.arweave => 'https://www.arconnect.io/download',
+    };
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   Widget _buildAOConnectSignatureSection(

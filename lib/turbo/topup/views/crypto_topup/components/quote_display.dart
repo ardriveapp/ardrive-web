@@ -104,9 +104,12 @@ class QuoteDisplay extends StatelessWidget {
   }
 
   String _calculateRate(CryptoQuote quote) {
-    if (quote.tokenAmount == BigInt.zero) return 'N/A';
-    // This is simplified - actual rate calculation would depend on credits value
-    return 'varies';
+    if (quote.tokenAmount == BigInt.zero || quote.creditsDisplay == 0) {
+      return 'N/A';
+    }
+    // Calculate credits per token
+    final creditsPerToken = quote.creditsDisplay / quote.tokenAmountDisplay;
+    return '${creditsPerToken.toStringAsFixed(2)} Credits';
   }
 }
 

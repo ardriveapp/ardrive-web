@@ -199,7 +199,7 @@ extension CryptoTokenX on CryptoToken {
   String get description => switch (this) {
         CryptoToken.arioAO => 'Instant · Uses your ArDrive wallet',
         CryptoToken.arioAOViaEth => 'Instant · Requires one-time signature',
-        CryptoToken.arioBase => '~3 min · No fees',
+        CryptoToken.arioBase => '~3 min · Low gas fees',
         CryptoToken.sol => '~2 min · Low fees',
         CryptoToken.usdcBase => '~3 min · Stablecoin',
         CryptoToken.ethBase => '~3 min · Low fees',

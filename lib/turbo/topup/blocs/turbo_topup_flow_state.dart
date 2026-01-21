@@ -56,6 +56,20 @@ class TurboTopUpShowingSessionExpiredView extends TurboTopupFlowState {
       : super(isMovingForward);
 }
 
+class TurboTopupFlowShowingCryptoView extends TurboTopupFlowState {
+  final CryptoToken token;
+  final double amount;
+
+  const TurboTopupFlowShowingCryptoView({
+    bool isMovingForward = true,
+    required this.token,
+    required this.amount,
+  }) : super(isMovingForward);
+
+  @override
+  List<Object> get props => [isMovingForward, token, amount];
+}
+
 enum TurboErrorType {
   network,
   server,

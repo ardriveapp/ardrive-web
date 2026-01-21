@@ -21,11 +21,11 @@ class CryptoPriceService {
   /// Cache duration - prices are valid for this long
   static const _cacheDuration = Duration(minutes: 2);
 
-  /// Default prices to use as fallback
+  /// Default prices to use as fallback (updated periodically)
   static const Map<CryptoToken, double> _defaultPrices = {
-    CryptoToken.arioAO: 0.05,
-    CryptoToken.arioAOViaEth: 0.05,
-    CryptoToken.arioBase: 0.05,
+    CryptoToken.arioAO: 0.005, // ~$0.005 as of early 2025
+    CryptoToken.arioAOViaEth: 0.005,
+    CryptoToken.arioBase: 0.005,
     CryptoToken.ethBase: 3000.0,
     CryptoToken.ethL1: 3000.0,
     CryptoToken.sol: 150.0,
@@ -33,9 +33,9 @@ class CryptoPriceService {
     CryptoToken.usdcEth: 1.0,
   };
 
-  /// CoinGecko ID mappings
+  /// CoinGecko ID mappings for each asset
   static const Map<String, String> _coinGeckoIds = {
-    'ario': 'arweave', // ARIO uses AR pricing as proxy for now
+    'ario': 'ar-io-network', // AR.IO Network ARIO token
     'eth': 'ethereum',
     'sol': 'solana',
     'usdc': 'usd-coin',
@@ -121,7 +121,7 @@ class CryptoPriceService {
   // ============================================
 
   Future<void> _fetchPrices() async {
-    // Build the CoinGecko API URL
+    // Build the CoinGecko API URL with all token IDs
     final ids = _coinGeckoIds.values.toSet().join(',');
     final url = 'https://api.coingecko.com/api/v3/simple/price'
         '?ids=$ids&vs_currencies=usd&include_24hr_change=false';
@@ -150,19 +150,20 @@ class CryptoPriceService {
       _priceCache[CryptoToken.usdcBase] = _CachedPrice(usdcPrice, now);
       _priceCache[CryptoToken.usdcEth] = _CachedPrice(usdcPrice, now);
 
-      // For ARIO, we use AR price as a proxy (or could query ar.io gateway)
-      final arPrice = _parsePrice(data, 'arweave');
-      if (arPrice != null) {
-        // ARIO is typically a fraction of AR price
-        // This is an approximation - ideally query ar.io gateway for actual ARIO price
-        final arioPrice = arPrice * 0.003; // ~0.3% of AR price as estimate
+      // Parse ARIO price from CoinGecko (ar-io-network)
+      final arioPrice = _parsePrice(data, 'ar-io-network');
+      if (arioPrice != null) {
         _priceCache[CryptoToken.arioAO] = _CachedPrice(arioPrice, now);
         _priceCache[CryptoToken.arioAOViaEth] = _CachedPrice(arioPrice, now);
         _priceCache[CryptoToken.arioBase] = _CachedPrice(arioPrice, now);
+        logger.d('Fetched ARIO price from CoinGecko: \$$arioPrice');
+      } else {
+        logger.w('ARIO price not found in CoinGecko response, using default');
       }
 
       logger.d('Updated crypto prices: ETH=\$${ethPrice ?? "N/A"}, '
-          'SOL=\$${solPrice ?? "N/A"}, USDC=\$$usdcPrice');
+          'SOL=\$${solPrice ?? "N/A"}, USDC=\$$usdcPrice, '
+          'ARIO=\$${arioPrice ?? "N/A"}');
     } catch (e) {
       logger.e('Error fetching prices from CoinGecko: $e');
       rethrow;
@@ -204,7 +205,7 @@ extension CryptoPriceExtension on CryptoToken {
       case CryptoToken.arioAO:
       case CryptoToken.arioAOViaEth:
       case CryptoToken.arioBase:
-        return 'arweave'; // Use AR as proxy
+        return 'ar-io-network'; // AR.IO Network ARIO token
       case CryptoToken.ethBase:
       case CryptoToken.ethL1:
         return 'ethereum';

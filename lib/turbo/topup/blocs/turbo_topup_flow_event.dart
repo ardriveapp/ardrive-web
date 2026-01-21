@@ -56,3 +56,17 @@ class TurboTopUpShowErrorView extends TurboTopupFlowEvent {
 
   const TurboTopUpShowErrorView(this.errorType) : super(0);
 }
+
+// show crypto payment flow
+class TurboTopUpShowCryptoView extends TurboTopupFlowEvent {
+  final CryptoToken token;
+  final double amount;
+
+  const TurboTopUpShowCryptoView({
+    required this.token,
+    required this.amount,
+  }) : super(2);
+
+  @override
+  List<Object> get props => [token, amount];
+}

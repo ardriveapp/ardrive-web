@@ -75,13 +75,13 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                 onDismiss: () {
                   context
                       .read<TurboTopupFlowBloc>()
-                      .add(const TurboTopUpShowPaymentFormView(4));
+                      .add(const TurboTopUpShowPaymentFormView(2));
                 },
                 onTryAgain: () {
                   Navigator.pop(context);
                   context
                       .read<TurboTopupFlowBloc>()
-                      .add(const TurboTopUpShowPaymentFormView(4));
+                      .add(const TurboTopUpShowPaymentFormView(2));
                 },
               ),
             ),
@@ -102,7 +102,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                 onDismiss: () {
                   context
                       .read<TurboTopupFlowBloc>()
-                      .add(const TurboTopUpShowPaymentFormView(4));
+                      .add(const TurboTopUpShowPaymentFormView(2));
                 },
                 onTryAgain: () {
                   Navigator.pop(context);
@@ -640,7 +640,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
               child: GestureDetector(
                 onTap: () {
                   context.read<TurboTopupFlowBloc>().add(
-                        const TurboTopUpShowPaymentFormView(4),
+                        const TurboTopUpShowPaymentFormView(2),
                       );
                 },
                 child: Text(
@@ -667,7 +667,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
               child: GestureDetector(
                 onTap: () {
                   context.read<TurboTopupFlowBloc>().add(
-                        const TurboTopUpShowPaymentFormView(4),
+                        const TurboTopUpShowPaymentFormView(2),
                       );
                 },
                 child: Text(

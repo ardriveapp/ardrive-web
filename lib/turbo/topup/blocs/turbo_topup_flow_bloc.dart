@@ -1,4 +1,5 @@
 import 'package:ardrive/turbo/models/payment_user_information.dart';
+import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/models/price_estimate.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -69,6 +70,14 @@ class TurboTopupFlowBloc
             TurboTopupFlowShowingErrorView(
               isMovingForward: _currentStep <= event.stepNumber,
               errorType: event.errorType,
+            ),
+          );
+        } else if (event is TurboTopUpShowCryptoView) {
+          emit(
+            TurboTopupFlowShowingCryptoView(
+              isMovingForward: _currentStep <= event.stepNumber,
+              token: event.token,
+              amount: event.amount,
             ),
           );
         }

@@ -2,6 +2,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/config/crypto_network_config.dart';
 import 'package:ardrive/turbo/services/crypto_payment_service.dart';
+import 'package:ardrive/turbo/services/crypto_price_service.dart';
 import 'package:ardrive/turbo/services/crypto_transaction_storage.dart';
 import 'package:ardrive/turbo/services/ethereum_wallet_service.dart';
 import 'package:ardrive/turbo/services/solana_wallet_service.dart';
@@ -132,15 +133,21 @@ class _CryptoPaymentOptionState extends State<CryptoPaymentOption> {
     // Create the signer cache
     final signerCache = WalletSignerCache();
 
+    // Create price service for real-time gas estimation
+    final priceService = CryptoPriceService(httpClient: httpClient);
+
     // Create the crypto topup services
     final cryptoPaymentService = CryptoPaymentService(
       networkConfig: networkConfig,
       httpClient: httpClient,
       signerCache: signerCache,
+      priceService: priceService,
     );
 
-    final ethereumWalletService =
-        EthereumWalletService(networkConfig: networkConfig);
+    final ethereumWalletService = EthereumWalletService(
+      networkConfig: networkConfig,
+      getTokenPrice: priceService.getUsdPrice,
+    );
     final solanaWalletService =
         SolanaWalletService(networkConfig: networkConfig);
 
@@ -281,15 +288,21 @@ Future<void> showCryptoTopupModalStandalone(
   // Create the signer cache
   final signerCache = WalletSignerCache();
 
+  // Create price service for real-time gas estimation
+  final priceService = CryptoPriceService(httpClient: httpClient);
+
   // Create the crypto topup services
   final cryptoPaymentService = CryptoPaymentService(
     networkConfig: networkConfig,
     httpClient: httpClient,
     signerCache: signerCache,
+    priceService: priceService,
   );
 
-  final ethereumWalletService =
-      EthereumWalletService(networkConfig: networkConfig);
+  final ethereumWalletService = EthereumWalletService(
+    networkConfig: networkConfig,
+    getTokenPrice: priceService.getUsdPrice,
+  );
   final solanaWalletService = SolanaWalletService(networkConfig: networkConfig);
 
   // Get SharedPreferences for transaction storage

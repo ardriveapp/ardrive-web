@@ -755,6 +755,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       networkState: NetworkState.checking,
       gasEstimateUsd: gasEstimate,
       promoCode: _promoCode,
+      currentChainId: _connectedChainId,
     ));
 
     // Check network state
@@ -782,9 +783,15 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
 
     final currentChainId = _connectedChainId;
     if (currentChainId == requiredChainId) {
-      emit(currentState.copyWith(networkState: NetworkState.correct));
+      emit(currentState.copyWith(
+        networkState: NetworkState.correct,
+        currentChainId: currentChainId,
+      ));
     } else {
-      emit(currentState.copyWith(networkState: NetworkState.needsSwitch));
+      emit(currentState.copyWith(
+        networkState: NetworkState.needsSwitch,
+        currentChainId: currentChainId,
+      ));
     }
   }
 
@@ -829,7 +836,10 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     final currentState = state;
 
     if (currentState is CryptoTopupConfirmation) {
-      emit(currentState.copyWith(networkState: NetworkState.correct));
+      emit(currentState.copyWith(
+        networkState: NetworkState.correct,
+        currentChainId: event.newChainId,
+      ));
     } else if (currentState is CryptoTopupNetworkSwitch) {
       // Return to confirmation
       if (_selectedToken != null && _currentQuote != null) {
@@ -840,6 +850,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
           toAddress: 'Turbo Gateway',
           networkState: NetworkState.correct,
           promoCode: _promoCode,
+          currentChainId: event.newChainId,
         ));
       }
     } else if (currentState is CryptoTopupWalletConnection && _selectedToken != null) {
@@ -939,6 +950,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
           toAddress: 'Turbo Gateway',
           networkState: NetworkState.correct,
           promoCode: _promoCode,
+          currentChainId: chainId,
         ));
       } else {
         // Still wrong network

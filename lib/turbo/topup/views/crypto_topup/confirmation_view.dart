@@ -35,7 +35,7 @@ class ConfirmationView extends StatelessWidget {
   }
 }
 
-class _ConfirmationContent extends StatelessWidget {
+class _ConfirmationContent extends StatefulWidget {
   final CryptoTopupConfirmation state;
   final VoidCallback? onBack;
   final VoidCallback? onClose;
@@ -47,10 +47,18 @@ class _ConfirmationContent extends StatelessWidget {
   });
 
   @override
+  State<_ConfirmationContent> createState() => _ConfirmationContentState();
+}
+
+class _ConfirmationContentState extends State<_ConfirmationContent> {
+  bool _termsAccepted = false;
+
+  @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
     final bloc = context.read<CryptoTopupBloc>();
+    final state = widget.state;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -60,16 +68,16 @@ class _ConfirmationContent extends StatelessWidget {
           // Header with back button
           Row(
             children: [
-              if (onBack != null && !state.isProcessing)
+              if (widget.onBack != null && !state.isProcessing)
                 GestureDetector(
-                  onTap: onBack,
+                  onTap: widget.onBack,
                   child: Icon(
                     Icons.arrow_back,
                     color: colorTokens.textMid,
                     size: 24,
                   ),
                 ),
-              if (onBack != null) const SizedBox(width: 12),
+              if (widget.onBack != null) const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   'Confirm Payment',
@@ -79,9 +87,9 @@ class _ConfirmationContent extends StatelessWidget {
                   ),
                 ),
               ),
-              if (onClose != null && !state.isProcessing)
+              if (widget.onClose != null && !state.isProcessing)
                 GestureDetector(
-                  onTap: onClose,
+                  onTap: widget.onClose,
                   child: Icon(
                     Icons.close,
                     color: colorTokens.textMid,
@@ -118,26 +126,56 @@ class _ConfirmationContent extends StatelessWidget {
             const SizedBox(height: 16),
           ],
 
+          // Terms acceptance checkbox
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: Checkbox(
+                  value: _termsAccepted,
+                  onChanged: state.isProcessing
+                      ? null
+                      : (value) {
+                          setState(() {
+                            _termsAccepted = value ?? false;
+                          });
+                        },
+                  activeColor: colorTokens.textHigh,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: GestureDetector(
+                  onTap: state.isProcessing
+                      ? null
+                      : () {
+                          setState(() {
+                            _termsAccepted = !_termsAccepted;
+                          });
+                        },
+                  child: Text(
+                    'I agree to the terms of service',
+                    style: typography.paragraphSmall(
+                      color: colorTokens.textMid,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
           // Confirm button
           SizedBox(
             width: double.infinity,
             child: ArDriveButton(
               text: state.isProcessing ? 'Processing...' : 'Confirm & Pay',
-              onPressed: state.canConfirm
+              onPressed: state.canConfirm && _termsAccepted
                   ? () => bloc.add(const CryptoTopupConfirmPayment())
                   : null,
-              isDisabled: !state.canConfirm || state.isProcessing,
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Terms notice
-          Center(
-            child: Text(
-              'By confirming, you agree to the terms of service.',
-              style: typography.paragraphSmall(
-                color: colorTokens.textLow,
-              ),
+              isDisabled: !state.canConfirm || !_termsAccepted || state.isProcessing,
             ),
           ),
         ],
@@ -191,7 +229,7 @@ class _NetworkStatusSection extends StatelessWidget {
       case NetworkState.needsAdd:
       case NetworkState.switchFailed:
         return NetworkWarningBanner(
-          currentChainId: 1, // This would come from actual wallet state
+          currentChainId: state.currentChainId ?? 1,
           requiredChainId: requiredChainId,
           isSwitching: state.networkState == NetworkState.switching,
           onSwitchNetwork: () {

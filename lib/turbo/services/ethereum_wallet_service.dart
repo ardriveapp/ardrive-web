@@ -15,6 +15,7 @@ import 'package:js/js.dart';
 /// Uses the CryptoWalletBridge JavaScript API for wallet communication.
 class EthereumWalletService {
   final CryptoNetworkConfig _networkConfig;
+  final Future<double> Function(CryptoToken)? _getTokenPrice;
 
   EthereumWalletState? _connectedWallet;
   final _connectionController = StreamController<EthereumWalletState?>.broadcast();
@@ -22,8 +23,11 @@ class EthereumWalletService {
 
   bool _listenersRegistered = false;
 
-  EthereumWalletService({required CryptoNetworkConfig networkConfig})
-      : _networkConfig = networkConfig;
+  EthereumWalletService({
+    required CryptoNetworkConfig networkConfig,
+    Future<double> Function(CryptoToken)? getTokenPrice,
+  })  : _networkConfig = networkConfig,
+        _getTokenPrice = getTokenPrice;
 
   /// Stream of wallet connection state changes
   Stream<EthereumWalletState?> get connectionStream =>
@@ -318,8 +322,16 @@ class EthereumWalletService {
       final gasCostWei = gasPrice * gasLimit;
       final gasCostEth = gasCostWei.toDouble() / 1e18;
 
-      // Convert to USD (rough estimate - should use price oracle)
-      const ethPriceUsd = 3000.0; // TODO: Get from price feed
+      // Convert to USD using real-time price if available
+      double ethPriceUsd = 3000.0; // Fallback default
+      if (_getTokenPrice != null) {
+        try {
+          // Get ETH price (use ethL1 or ethBase - same underlying asset)
+          ethPriceUsd = await _getTokenPrice(CryptoToken.ethL1);
+        } catch (e) {
+          logger.w('Failed to get ETH price, using fallback: $e');
+        }
+      }
       return gasCostEth * ethPriceUsd;
     } catch (e) {
       logger.w('Error estimating network fee: $e');

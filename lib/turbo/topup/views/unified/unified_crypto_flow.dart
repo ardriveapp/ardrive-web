@@ -2,6 +2,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/turbo/config/crypto_network_config.dart';
 import 'package:ardrive/turbo/services/crypto_payment_service.dart';
+import 'package:ardrive/turbo/services/crypto_price_service.dart';
 import 'package:ardrive/turbo/services/crypto_transaction_storage.dart';
 import 'package:ardrive/turbo/services/ethereum_wallet_service.dart';
 import 'package:ardrive/turbo/services/solana_wallet_service.dart';
@@ -81,13 +82,18 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
     // Create services
     final httpClient = ArDriveHTTP();
     final signerCache = WalletSignerCache();
+    final priceService = CryptoPriceService(httpClient: httpClient);
     final cryptoPaymentService = CryptoPaymentService(
       networkConfig: networkConfig,
       httpClient: httpClient,
       signerCache: signerCache,
+      priceService: priceService,
     );
 
-    _ethereumWalletService = EthereumWalletService(networkConfig: networkConfig);
+    _ethereumWalletService = EthereumWalletService(
+      networkConfig: networkConfig,
+      getTokenPrice: priceService.getUsdPrice,
+    );
     _solanaWalletService = SolanaWalletService(networkConfig: networkConfig);
 
     // Get SharedPreferences for transaction storage

@@ -4,6 +4,7 @@ import 'package:ardrive/turbo/topup/models/wallet_connection_state.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Simplified wallet connection view for when token is already selected.
 ///
@@ -207,10 +208,7 @@ class WalletConnectionView extends StatelessWidget {
             height: 48,
             child: ArDriveButton(
               text: 'Install ${_getWalletAppName()}',
-              onPressed: () {
-                // Open wallet install link
-                bloc.add(const CryptoTopupGoBack());
-              },
+              onPressed: () => _openInstallUrl(token.walletType),
             ),
           ),
         ],
@@ -236,7 +234,7 @@ class WalletConnectionView extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Please sign the message in your ArConnect wallet to continue.',
+                'Please sign the message in your Ethereum wallet to continue.',
                 style: typography.paragraphNormal(
                   color: colors.themeFgDefault,
                 ),
@@ -458,6 +456,19 @@ class WalletConnectionView extends StatelessWidget {
       WalletType.ethereum => 'Wallet',
       WalletType.solana => 'Wallet',
     };
+  }
+
+  /// Opens the wallet install URL in an external browser
+  Future<void> _openInstallUrl(WalletType walletType) async {
+    final url = switch (walletType) {
+      WalletType.ethereum => 'https://metamask.io/download/',
+      WalletType.solana => 'https://phantom.app/download',
+      WalletType.arweave => 'https://www.arconnect.io/download',
+    };
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 }
 

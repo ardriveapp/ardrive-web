@@ -332,6 +332,7 @@ class CryptoTopupConfirmation extends CryptoTopupState {
   final double? gasEstimateUsd;
   final String? networkError;
   final String? promoCode;
+  final int? currentChainId;
 
   const CryptoTopupConfirmation({
     required this.token,
@@ -343,6 +344,7 @@ class CryptoTopupConfirmation extends CryptoTopupState {
     this.gasEstimateUsd,
     this.networkError,
     this.promoCode,
+    this.currentChainId,
   });
 
   /// Whether the confirm button should be enabled
@@ -354,6 +356,7 @@ class CryptoTopupConfirmation extends CryptoTopupState {
     bool? isProcessing,
     double? gasEstimateUsd,
     String? networkError,
+    int? currentChainId,
   }) {
     return CryptoTopupConfirmation(
       token: token,
@@ -365,6 +368,7 @@ class CryptoTopupConfirmation extends CryptoTopupState {
       gasEstimateUsd: gasEstimateUsd ?? this.gasEstimateUsd,
       networkError: networkError,
       promoCode: promoCode,
+      currentChainId: currentChainId ?? this.currentChainId,
     );
   }
 
@@ -379,6 +383,7 @@ class CryptoTopupConfirmation extends CryptoTopupState {
         gasEstimateUsd,
         networkError,
         promoCode,
+        currentChainId,
       ];
 }
 
