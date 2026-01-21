@@ -26,7 +26,7 @@ import 'package:responsive_builder/responsive_builder.dart';
 
 import 'blocs/blocs.dart';
 import 'components/app_top_bar.dart';
-import 'components/banners/android_sunset_banner.dart';
+import 'components/banners/app_announcement_banner.dart';
 import 'components/components.dart';
 import 'components/progress_bar.dart';
 import 'components/wallet_switch_dialog.dart';
@@ -501,7 +501,10 @@ class AppShellState extends State<AppShell> {
                   builder: (context, state) {
                     return Column(
                       children: [
-                        _buildAndroidSunsetBanner(context),
+                        _buildAnnouncementBanner(
+                        context,
+                        message: '', // Configure message when enabling banner
+                      ),
                         if (state is! PrivateDriveMigrationHidden)
                           _updatePrivateDrivesBanner(context, true),
                         Flexible(
@@ -537,7 +540,10 @@ class AppShellState extends State<AppShell> {
                 builder: (context, state) {
                   return Column(
                     children: [
-                      _buildAndroidSunsetBanner(context),
+                      _buildAnnouncementBanner(
+                        context,
+                        message: '', // Configure message when enabling banner
+                      ),
                       if (state is! PrivateDriveMigrationHidden)
                         _updatePrivateDrivesBanner(context, false),
                       Flexible(
@@ -563,15 +569,28 @@ class AppShellState extends State<AppShell> {
         },
       );
 
-  Widget _buildAndroidSunsetBanner(BuildContext context) {
+  Widget _buildAnnouncementBanner(
+    BuildContext context, {
+    required String message,
+    String? url,
+    String? urlText,
+  }) {
+    // Don't render banner if no message is configured
+    if (message.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return BlocBuilder<AppBannerBloc, AppBannerState>(
       builder: (context, state) {
         if (state is AppBannerVisible &&
-            state.banner == AppBannerType.androidSunset) {
-          return AndroidSunsetBanner(
+            state.banner == AppBannerType.announcement) {
+          return AppAnnouncementBanner(
+            message: message,
+            url: url,
+            urlText: urlText,
             onDismiss: () => context.read<AppBannerBloc>().add(
                   const AppBannerDismissed(
-                    banner: AppBannerType.androidSunset,
+                    banner: AppBannerType.announcement,
                   ),
                 ),
           );

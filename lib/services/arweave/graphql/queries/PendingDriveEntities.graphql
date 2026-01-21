@@ -1,0 +1,25 @@
+query PendingDriveEntities(
+  $driveId: String!
+  $after: String
+  $ownerAddress: String!
+) {
+  transactions(
+    owners: [$ownerAddress]
+    first: 100
+    sort: HEIGHT_DESC
+    tags: [
+      { name: "Drive-Id", values: [$driveId] }
+    ]
+    after: $after
+  ) {
+    pageInfo {
+      hasNextPage
+    }
+    edges {
+      node {
+        ...TransactionCommon
+      }
+      cursor
+    }
+  }
+}

@@ -3,15 +3,19 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
-class AndroidSunsetBanner extends StatelessWidget {
-  const AndroidSunsetBanner({
+class AppAnnouncementBanner extends StatelessWidget {
+  const AppAnnouncementBanner({
     super.key,
+    required this.message,
     required this.onDismiss,
+    this.url,
+    this.urlText,
   });
 
-  static const _learnMoreUrl = 'https://ardrive.io/mobile';
-
+  final String message;
   final VoidCallback onDismiss;
+  final String? url;
+  final String? urlText;
 
   @override
   Widget build(BuildContext context) {
@@ -53,26 +57,26 @@ class AndroidSunsetBanner extends StatelessWidget {
                         fontWeight: ArFontWeight.semiBold,
                       ),
                       children: [
-                        const TextSpan(
-                          text:
-                              'The ArDrive Android app is being sunset. Make sure to back up any wallets generated in the Android app. ',
-                        ),
-                        TextSpan(
-                          text: 'Learn more',
-                          style: typography
-                              .paragraphNormal(
-                                color: colors.themeWarningEmphasis,
-                                fontWeight: ArFontWeight.semiBold,
-                              )
-                              .copyWith(
-                                decoration: TextDecoration.underline,
-                              ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () => openUrl(
-                                  url: _learnMoreUrl,
-                                  webOnlyWindowName: '_blank',
+                        TextSpan(text: message),
+                        if (url != null) ...[
+                          const TextSpan(text: ' '),
+                          TextSpan(
+                            text: urlText ?? 'Learn more',
+                            style: typography
+                                .paragraphNormal(
+                                  color: colors.themeWarningEmphasis,
+                                  fontWeight: ArFontWeight.semiBold,
+                                )
+                                .copyWith(
+                                  decoration: TextDecoration.underline,
                                 ),
-                        ),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () => openUrl(
+                                    url: url!,
+                                    webOnlyWindowName: '_blank',
+                                  ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
