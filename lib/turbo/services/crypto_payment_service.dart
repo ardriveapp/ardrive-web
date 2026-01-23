@@ -405,18 +405,31 @@ class CryptoPaymentService {
   /// Get ARIO balance on AO network.
   Future<TokenBalance> _getArioAOBalance(String arweaveAddress) async {
     try {
-      // Use the ar.io SDK to get ARIO balance
-      // This is loaded via ario_sdk.min.js
-      final ario = getProperty(_globalThis, 'ario');
-      if (ario == null) {
+      // Use the ar.io SDK to get ARIO balance via the global getARIOTokens function
+      // This is loaded via ario_sdk.min.js and exposed as window.getARIOTokens
+      final getARIOTokens = getProperty(_globalThis, 'getARIOTokens');
+      if (getARIOTokens == null) {
+        logger.w('getARIOTokens not found on window');
         return TokenBalance.error(
           CryptoToken.arioAO,
           'ARIO SDK not loaded',
         );
       }
 
-      final result = callMethod(ario, 'getARIOTokens', [arweaveAddress]);
+      final result = callMethod(_globalThis, 'getARIOTokens', [arweaveAddress]);
       final balanceStr = await promiseToFuture(result) as String;
+
+      // The result might be "null" string if no balance
+      if (balanceStr == 'null' || balanceStr.isEmpty) {
+        return TokenBalance(
+          token: CryptoToken.arioAO,
+          rawBalance: BigInt.zero,
+          lastUpdated: DateTime.now(),
+        );
+      }
+
+      // Balance is returned in mARIO (smallest unit, 6 decimals)
+      // So 1 ARIO = 1,000,000 mARIO
       final balance = BigInt.parse(balanceStr);
 
       return TokenBalance(

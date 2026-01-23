@@ -264,6 +264,9 @@ class CheckoutSummary extends StatelessWidget {
   /// Applied promo code (optional)
   final String? promoCode;
 
+  /// USD equivalent for token prices (optional)
+  final double? usdEquivalent;
+
   const CheckoutSummary({
     super.key,
     required this.creditsToReceive,
@@ -282,6 +285,7 @@ class CheckoutSummary extends StatelessWidget {
     this.tokenBalanceAfter,
     this.networkFeeEstimate,
     this.promoCode,
+    this.usdEquivalent,
   });
 
   BigInt get _newBalance => newBalance ?? (currentBalance + creditsToReceive);
@@ -354,6 +358,9 @@ class CheckoutSummary extends StatelessWidget {
           _CompactRow(
             label: isPriceInToken ? 'You pay' : 'Total',
             value: _formatPrice(),
+            subValue: isPriceInToken && usdEquivalent != null
+                ? '~\$${NumberFormat('#,##0.00').format(usdEquivalent)}'
+                : null,
             typography: typography,
             colors: colors,
             isBold: true,

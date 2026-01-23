@@ -77,7 +77,8 @@ class CryptoConfirmationView extends StatelessWidget {
                             expiresAt: state.quote.expiresAt,
                             isLoading: false,
                             onRefresh: () {
-                              bloc.add(const CryptoTopupQuoteRefreshRequested());
+                              bloc.add(
+                                  const CryptoTopupQuoteRefreshRequested());
                             },
                           ),
                           const SizedBox(height: 16),
@@ -89,6 +90,7 @@ class CryptoConfirmationView extends StatelessWidget {
                             priceAmount: state.quote.tokenAmountDisplay,
                             priceSymbol: state.token.symbol,
                             isPriceInToken: true,
+                            usdEquivalent: state.quote.usdValue,
                             currentBalance: state.currentTurboBalance,
                             currentBalanceStorage: state.currentBalanceStorage,
                             newBalanceStorage: state.newBalanceStorage,
@@ -141,13 +143,6 @@ class CryptoConfirmationView extends StatelessWidget {
                                     ..onTap = () => openUrl(
                                           url: Resources.agreementLink,
                                         ),
-                                ),
-                                TextSpan(
-                                  text:
-                                      '. This transaction cannot be reversed once confirmed.',
-                                  style: typography.paragraphSmall(
-                                    color: colors.themeFgMuted,
-                                  ),
                                 ),
                               ],
                             ),
