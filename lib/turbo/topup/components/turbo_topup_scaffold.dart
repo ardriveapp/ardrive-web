@@ -36,7 +36,7 @@ class TurboTopupScaffold extends StatelessWidget {
             ),
             // Main content
             Container(
-              padding: const EdgeInsets.fromLTRB(20, 32, 20, 20),
+              padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
               color: colors.themeBgCanvas,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
