@@ -44,14 +44,28 @@ class TurboTopUpEstimationBloc
                 .i('initializing the estimation view and getting the balance');
             await _getBalance();
 
-            logger.i('getting the price estimate');
-            await _computeAndUpdatePriceEstimate(
-              emit,
-              currentAmount: 0,
-              currentCurrency: currentCurrency,
-              currentDataUnit: currentDataUnit,
-              promoCode: turbo.promoCode,
-              shouldRethrow: true,
+            // Emit initial state without computing price estimate
+            // This avoids race condition with UnifiedTopupBloc which also
+            // calls turbo.computePriceEstimate. Price estimate will be
+            // computed when user selects an amount.
+            final balance = _balance!;
+            final estimatedStorageForBalance =
+                await turbo.computeStorageEstimateForCredits(
+              credits: balance,
+              outputDataUnit: currentDataUnit,
+            );
+
+            emit(
+              EstimationLoaded(
+                balance: balance,
+                estimatedStorageForBalance:
+                    estimatedStorageForBalance.toStringAsFixed(2),
+                selectedAmount: 0,
+                creditsForSelectedAmount: BigInt.zero,
+                estimatedStorageForSelectedAmount: '0',
+                currencyUnit: currentCurrency,
+                dataUnit: currentDataUnit,
+              ),
             );
           } catch (e, s) {
             logger.e('error initializing the estimation view', e, s);

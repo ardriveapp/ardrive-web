@@ -473,11 +473,13 @@ class StripePaymentProvider implements TurboPaymentProvider {
     required Wallet wallet,
     String? promoCode,
   }) async {
-    final correctAmount = amount * 100;
+    // Convert dollars to cents and round to integer (API expects whole cents)
+    // Using toInt() to get a clean integer value for the URL
+    final correctAmount = (amount * 100).round();
 
     return paymentService.getPaymentIntent(
       currency: currency,
-      amount: correctAmount,
+      amount: correctAmount.toDouble(),
       wallet: wallet,
       promoCode: promoCode,
     );

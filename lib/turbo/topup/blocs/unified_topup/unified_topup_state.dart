@@ -100,9 +100,19 @@ class UnifiedTopupLoaded extends UnifiedTopupState {
   /// Whether an amount has been selected
   bool get hasAmount => fiatAmount > 0;
 
+  /// Whether the amount meets minimum requirements
+  bool get meetsMinimum {
+    if (paymentMethod == PaymentMethod.card) {
+      return fiatAmount >= minFiatAmount;
+    }
+    // Crypto has no minimum (handled by token-specific validation)
+    return fiatAmount > 0;
+  }
+
   /// Whether user can continue to confirmation
   bool get canContinue =>
       hasAmount &&
+      meetsMinimum &&
       !isLoadingQuote &&
       errorMessage == null &&
       (paymentMethod == PaymentMethod.card || selectedToken != null);

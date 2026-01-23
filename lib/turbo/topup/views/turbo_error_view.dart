@@ -36,13 +36,115 @@ class TurboErrorView extends StatelessWidget {
     }
   }
 
+  String _getErrorTitleForErrorType(BuildContext context) {
+    switch (errorType) {
+      case TurboErrorType.sessionExpired:
+        return appLocalizationsOf(context).turboSessionExpiredTitle;
+      default:
+        return appLocalizationsOf(context).theresBeenAProblem;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Use different view for session expired (not an error, just a state)
+    if (errorType == TurboErrorType.sessionExpired) {
+      return SessionExpiredView(
+        onRefresh: () => onTryAgain(),
+        onDismiss: () => onDismiss(),
+      );
+    }
+
     return ErrorView(
       errorMessage: _getErrorMessageForErrorType(context),
-      errorTitle: appLocalizationsOf(context).theresBeenAProblem,
+      errorTitle: _getErrorTitleForErrorType(context),
       onDismiss: () => onDismiss(),
       onTryAgain: () => onTryAgain(),
+    );
+  }
+}
+
+/// A view specifically for session expiration - less alarming than error view.
+class SessionExpiredView extends StatelessWidget {
+  const SessionExpiredView({
+    super.key,
+    required this.onRefresh,
+    required this.onDismiss,
+  });
+
+  final VoidCallback onRefresh;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+    final typography = ArDriveTypographyNew.of(context);
+
+    return ArDriveCard(
+      height: 400,
+      contentPadding: EdgeInsets.zero,
+      content: Column(
+        children: [
+          // Close button
+          Align(
+            alignment: Alignment.topRight,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 26, right: 26),
+              child: ArDriveClickArea(
+                child: GestureDetector(
+                  onTap: () {
+                    onDismiss();
+                    Navigator.pop(context);
+                  },
+                  child: ArDriveIcons.x(),
+                ),
+              ),
+            ),
+          ),
+          // Content
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Refresh icon instead of error triangle
+                  ArDriveIcons.refresh(
+                    size: 48,
+                    color: colors.themeFgMuted,
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    appLocalizationsOf(context).turboSessionExpiredTitle,
+                    style: typography.heading5(
+                      fontWeight: ArFontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    appLocalizationsOf(context).turboErrorMessageSessionExpired,
+                    textAlign: TextAlign.center,
+                    style: typography.paragraphNormal(
+                      color: colors.themeFgMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  ArDriveButton(
+                    maxHeight: 44,
+                    maxWidth: 160,
+                    text: appLocalizationsOf(context).refresh,
+                    fontStyle: typography.paragraphLarge(
+                      fontWeight: ArFontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    onPressed: onRefresh,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

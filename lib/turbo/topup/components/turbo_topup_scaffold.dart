@@ -3,14 +3,20 @@ import 'package:flutter/material.dart';
 
 class TurboTopupScaffold extends StatelessWidget {
   final Widget child;
+  final String? title;
 
-  const TurboTopupScaffold({super.key, required this.child});
+  const TurboTopupScaffold({
+    super.key,
+    required this.child,
+    this.title,
+  });
 
   @override
   Widget build(BuildContext context) {
     final themeData = ArDriveTheme.of(context).themeData;
     final colors = themeData.colors;
     final colorTokens = themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
 
     return Stack(
       children: [
@@ -30,12 +36,22 @@ class TurboTopupScaffold extends StatelessWidget {
             ),
             // Main content
             Container(
-              padding: const EdgeInsets.all(40.0),
+              padding: const EdgeInsets.fromLTRB(20, 32, 20, 20),
               color: colors.themeBgCanvas,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (title != null) ...[
+                    Text(
+                      title!,
+                      style: typography.heading5(
+                        fontWeight: ArFontWeight.bold,
+                        color: colors.themeFgDefault,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   child,
                 ],
               ),
@@ -43,8 +59,8 @@ class TurboTopupScaffold extends StatelessWidget {
           ],
         ),
         Positioned(
-          right: 27,
-          top: 27,
+          right: 20,
+          top: 20,
           child: ArDriveClickArea(
             child: GestureDetector(
               onTap: () => Navigator.pop(context),

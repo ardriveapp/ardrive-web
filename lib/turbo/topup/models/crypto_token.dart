@@ -253,6 +253,41 @@ extension CryptoTokenX on CryptoToken {
         CryptoToken.usdcEth => 'usdc',
         CryptoToken.ethL1 => 'ethereum',
       };
+
+  /// Base URL for the block explorer for this token's network
+  String get explorerBaseUrl => switch (this) {
+        CryptoToken.arioAO || CryptoToken.arioAOViaEth => 'https://ao.link',
+        CryptoToken.arioBase ||
+        CryptoToken.usdcBase ||
+        CryptoToken.ethBase =>
+          'https://basescan.org',
+        CryptoToken.sol => 'https://solscan.io',
+        CryptoToken.usdcEth || CryptoToken.ethL1 => 'https://etherscan.io',
+      };
+
+  /// Get the full explorer URL for a transaction ID
+  String getExplorerUrl(String txId) => switch (this) {
+        CryptoToken.arioAO ||
+        CryptoToken.arioAOViaEth =>
+          'https://ao.link/#/message/$txId',
+        CryptoToken.arioBase ||
+        CryptoToken.usdcBase ||
+        CryptoToken.ethBase =>
+          'https://basescan.org/tx/$txId',
+        CryptoToken.sol => 'https://solscan.io/tx/$txId',
+        CryptoToken.usdcEth || CryptoToken.ethL1 => 'https://etherscan.io/tx/$txId',
+      };
+
+  /// Name of the block explorer for this token's network
+  String get explorerName => switch (this) {
+        CryptoToken.arioAO || CryptoToken.arioAOViaEth => 'AO Link',
+        CryptoToken.arioBase ||
+        CryptoToken.usdcBase ||
+        CryptoToken.ethBase =>
+          'Basescan',
+        CryptoToken.sol => 'Solscan',
+        CryptoToken.usdcEth || CryptoToken.ethL1 => 'Etherscan',
+      };
 }
 
 /// Groups tokens by their wallet requirement for UI display

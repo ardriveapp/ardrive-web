@@ -242,18 +242,21 @@ class TurboSDKService {
 
   /// Estimate USD value for a token amount.
   ///
-  /// This is a rough estimate; actual values should come from price feeds.
+  /// Estimates USD value for UI display purposes only.
+  ///
+  /// IMPORTANT: These are fallback estimates. The actual payment flow uses
+  /// live prices from CoinGecko via CryptoPriceService.
+  /// These values must match CryptoPriceService._defaultPrices for consistency.
   double _estimateUsdValue(CryptoToken token, double amount) {
-    // These are placeholder estimates - real implementation should
-    // fetch current prices from an oracle or API
+    // Fallback prices - must match CryptoPriceService._defaultPrices
     final approximateUsdPrice = switch (token) {
       CryptoToken.arioAO ||
       CryptoToken.arioAOViaEth ||
       CryptoToken.arioBase =>
-        0.05, // ~$0.05 per ARIO
-      CryptoToken.ethBase || CryptoToken.ethL1 => 3000.0, // ~$3000 per ETH
-      CryptoToken.sol => 150.0, // ~$150 per SOL
-      CryptoToken.usdcBase || CryptoToken.usdcEth => 1.0, // $1 per USDC
+        0.005, // ARIO - matches CryptoPriceService fallback
+      CryptoToken.ethBase || CryptoToken.ethL1 => 3000.0, // ETH
+      CryptoToken.sol => 150.0, // SOL
+      CryptoToken.usdcBase || CryptoToken.usdcEth => 1.0, // USDC
     };
     return amount * approximateUsdPrice;
   }

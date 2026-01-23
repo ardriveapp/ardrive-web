@@ -1,7 +1,10 @@
+import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
-import 'package:ardrive/turbo/topup/models/crypto_quote.dart';
+import 'package:ardrive/turbo/topup/components/purchase_summary.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -55,12 +58,12 @@ class CryptoConfirmationView extends StatelessWidget {
                   child: Container(
                     color: colors.themeBgCanvas,
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(24),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(height: 24), // Space for close button
-                          // Header (title only, no back button)
+                          const SizedBox(height: 32), // Space for close button
+                          // Header
                           Text(
                             'Confirm Payment',
                             style: typography.heading5(
@@ -68,15 +71,37 @@ class CryptoConfirmationView extends StatelessWidget {
                               color: colors.themeFgDefault,
                             ),
                           ),
-                          const SizedBox(height: 32),
-
-                          // Payment summary card
-                          _PaymentSummaryCard(
-                            quote: state.quote,
-                            fromAddress: state.fromAddress,
-                            token: state.token,
+                          const SizedBox(height: 12),
+                          // Quote timer bar (styled like credit card review)
+                          _QuoteTimerBar(
+                            expiresAt: state.quote.expiresAt,
+                            isLoading: false,
+                            onRefresh: () {
+                              bloc.add(const CryptoTopupQuoteRefreshRequested());
+                            },
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 16),
+
+                          // Comprehensive checkout summary
+                          CheckoutSummary(
+                            creditsToReceive: state.quote.wincAmount,
+                            storageEstimate: state.quote.formattedStorage,
+                            priceAmount: state.quote.tokenAmountDisplay,
+                            priceSymbol: state.token.symbol,
+                            isPriceInToken: true,
+                            currentBalance: state.currentTurboBalance,
+                            currentBalanceStorage: state.currentBalanceStorage,
+                            newBalanceStorage: state.newBalanceStorage,
+                            tokenSymbol: state.token.symbol,
+                            tokenBalance: state.tokenBalance,
+                            tokenBalanceAfter: state.tokenBalanceAfter,
+                            // Network fee is shown by the wallet itself, not needed here
+                            promoCode: state.promoCode,
+                            discountPercent: state.quote.hasDiscount
+                                ? state.quote.discountPercentage.round()
+                                : null,
+                          ),
+                          const SizedBox(height: 16),
 
                           // Network status (for EVM tokens)
                           if (state.token.requiresGasEstimation) ...[
@@ -90,22 +115,44 @@ class CryptoConfirmationView extends StatelessWidget {
                                 }
                               },
                             ),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 16),
                           ],
 
-                          // Quote timer
-                          _QuoteTimer(expiresAt: state.quote.expiresAt),
-                          const SizedBox(height: 24),
-
-                          // Terms notice
-                          Text(
-                            'By confirming, you agree to the Terms of Service. '
-                            'This transaction cannot be reversed once confirmed.',
-                            style: typography.paragraphSmall(
-                              color: colors.themeFgMuted,
+                          // Terms notice with link
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'By confirming, you agree to the ',
+                                  style: typography.paragraphSmall(
+                                    color: colors.themeFgMuted,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: 'Terms of Service and Privacy Policy',
+                                  style: typography
+                                      .paragraphSmall(
+                                        color: colors.themeFgMuted,
+                                      )
+                                      .copyWith(
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () => openUrl(
+                                          url: Resources.agreementLink,
+                                        ),
+                                ),
+                                TextSpan(
+                                  text:
+                                      '. This transaction cannot be reversed once confirmed.',
+                                  style: typography.paragraphSmall(
+                                    color: colors.themeFgMuted,
+                                  ),
+                                ),
+                              ],
                             ),
-                            textAlign: TextAlign.center,
                           ),
+                          const SizedBox(height: 16),
                         ],
                       ),
                     ),
@@ -114,7 +161,7 @@ class CryptoConfirmationView extends StatelessWidget {
                 // Footer with back button on left and confirm button on right
                 Container(
                   color: colors.themeBgCanvas,
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -136,9 +183,9 @@ class CryptoConfirmationView extends StatelessWidget {
                       SizedBox(
                         height: 48,
                         child: ArDriveButton(
-                          isDisabled:
-                              state.networkState == NetworkState.needsSwitch ||
-                                  state.networkState == NetworkState.switching,
+                          isDisabled: !state.canConfirm ||
+                              state.quote.isExpired ||
+                              state.networkState == NetworkState.checking,
                           text: _getButtonText(state),
                           onPressed: () {
                             bloc.add(const CryptoTopupConfirmPayment());
@@ -169,6 +216,12 @@ class CryptoConfirmationView extends StatelessWidget {
   }
 
   String _getButtonText(CryptoTopupConfirmation state) {
+    if (state.quote.isExpired) {
+      return 'Quote Expired - Go Back';
+    }
+    if (state.networkState == NetworkState.checking) {
+      return 'Checking Network...';
+    }
     if (state.networkState == NetworkState.switching) {
       return 'Switching Network...';
     }
@@ -176,140 +229,6 @@ class CryptoConfirmationView extends StatelessWidget {
       return 'Switch Network First';
     }
     return 'Confirm & Pay ${state.quote.formattedTokenAmount}';
-  }
-}
-
-class _PaymentSummaryCard extends StatelessWidget {
-  final CryptoQuote quote;
-  final String fromAddress;
-  final CryptoToken token;
-
-  const _PaymentSummaryCard({
-    required this.quote,
-    required this.fromAddress,
-    required this.token,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
-    final typography = ArDriveTypographyNew.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colors.themeBgSubtle,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.themeBorderDefault),
-      ),
-      child: Column(
-        children: [
-          // You're buying
-          _SummaryRow(
-            label: "You're buying",
-            value: quote.formattedCredits,
-            typography: typography,
-            colors: colors,
-            isLarge: true,
-          ),
-          const SizedBox(height: 16),
-          Divider(color: colors.themeBorderDefault, height: 1),
-          const SizedBox(height: 16),
-
-          // You pay
-          _SummaryRow(
-            label: 'You pay',
-            value: quote.formattedTokenAmount,
-            typography: typography,
-            colors: colors,
-          ),
-          const SizedBox(height: 12),
-
-          // Network fee (if applicable)
-          if (token.requiresGasEstimation) ...[
-            _SummaryRow(
-              label: 'Est. network fee',
-              value: '~\$2-5',
-              typography: typography,
-              colors: colors,
-              isMuted: true,
-            ),
-            const SizedBox(height: 12),
-          ],
-
-          // From wallet
-          _SummaryRow(
-            label: 'From',
-            value: _truncateAddress(fromAddress),
-            typography: typography,
-            colors: colors,
-            isMuted: true,
-          ),
-          const SizedBox(height: 12),
-
-          // To
-          _SummaryRow(
-            label: 'To',
-            value: 'Turbo Credits Gateway',
-            typography: typography,
-            colors: colors,
-            isMuted: true,
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _truncateAddress(String address) {
-    if (address.length < 12) return address;
-    return '${address.substring(0, 6)}...${address.substring(address.length - 4)}';
-  }
-}
-
-class _SummaryRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final ArdriveTypographyNew typography;
-  final ArDriveColors colors;
-  final bool isLarge;
-  final bool isMuted;
-
-  const _SummaryRow({
-    required this.label,
-    required this.value,
-    required this.typography,
-    required this.colors,
-    this.isLarge = false,
-    this.isMuted = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: isLarge
-              ? typography.paragraphLarge(color: colors.themeFgDefault)
-              : typography.paragraphNormal(
-                  color: isMuted ? colors.themeFgMuted : colors.themeFgDefault,
-                ),
-        ),
-        Text(
-          value,
-          style: isLarge
-              ? typography.paragraphLarge(
-                  fontWeight: ArFontWeight.bold,
-                  color: colors.themeFgDefault,
-                )
-              : typography.paragraphNormal(
-                  fontWeight: isMuted ? ArFontWeight.book : ArFontWeight.semiBold,
-                  color: isMuted ? colors.themeFgMuted : colors.themeFgDefault,
-                ),
-        ),
-      ],
-    );
   }
 }
 
@@ -328,6 +247,36 @@ class _NetworkStatusBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colors;
     final typography = ArDriveTypographyNew.of(context);
+
+    if (networkState == NetworkState.checking) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: colors.themeBgSubtle,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: colors.themeBorderDefault),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: colors.themeFgMuted,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Checking network...',
+              style: typography.paragraphSmall(
+                color: colors.themeFgMuted,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     if (networkState == NetworkState.correct) {
       return Container(
@@ -417,10 +366,17 @@ class _NetworkStatusBanner extends StatelessWidget {
   }
 }
 
-class _QuoteTimer extends StatelessWidget {
+/// Styled quote timer bar with refresh button (matches credit card review)
+class _QuoteTimerBar extends StatelessWidget {
   final DateTime? expiresAt;
+  final bool isLoading;
+  final VoidCallback onRefresh;
 
-  const _QuoteTimer({this.expiresAt});
+  const _QuoteTimerBar({
+    required this.expiresAt,
+    required this.isLoading,
+    required this.onRefresh,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -429,41 +385,87 @@ class _QuoteTimer extends StatelessWidget {
 
     if (expiresAt == null) return const SizedBox.shrink();
 
-    return StreamBuilder(
-      stream: Stream.periodic(const Duration(seconds: 1)),
-      builder: (context, snapshot) {
-        final remaining = expiresAt!.difference(DateTime.now());
-        final isExpired = remaining.isNegative;
-        final minutes = remaining.inMinutes;
-        final seconds = remaining.inSeconds % 60;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: colors.themeBgSubtle,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colors.themeBorderDefault),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.schedule,
+            size: 16,
+            color: colors.themeFgMuted,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: StreamBuilder(
+              stream: Stream.periodic(const Duration(seconds: 1)),
+              builder: (context, snapshot) {
+                final remaining = expiresAt!.difference(DateTime.now());
+                final isExpired = remaining.isNegative;
+                final minutes = remaining.inMinutes.abs();
+                final seconds = (remaining.inSeconds % 60).abs();
 
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: isExpired ? colors.themeErrorSubtle : colors.themeBgSubtle,
-            borderRadius: BorderRadius.circular(8),
+                return Text(
+                  isExpired
+                      ? 'Quote expired'
+                      : 'Quote updates in ${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
+                  style: typography.paragraphSmall(
+                    color: isExpired
+                        ? colors.themeErrorDefault
+                        : colors.themeFgMuted,
+                  ),
+                );
+              },
+            ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.timer,
-                size: 16,
-                color: isExpired ? colors.themeErrorDefault : colors.themeFgMuted,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                isExpired
-                    ? 'Quote expired - please go back and refresh'
-                    : 'Quote expires in ${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
-                style: typography.paragraphSmall(
-                  color: isExpired ? colors.themeErrorDefault : colors.themeFgMuted,
+          const SizedBox(width: 8),
+          ArDriveClickArea(
+            child: GestureDetector(
+              onTap: isLoading ? null : onRefresh,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: colors.themeBgCanvas,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: colors.themeBorderDefault),
                 ),
+                child: isLoading
+                    ? SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: colors.themeFgMuted,
+                        ),
+                      )
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.refresh,
+                            size: 14,
+                            color: colors.themeFgMuted,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Refresh',
+                            style: typography.paragraphSmall(
+                              fontWeight: ArFontWeight.semiBold,
+                              color: colors.themeFgDefault,
+                            ),
+                          ),
+                        ],
+                      ),
               ),
-            ],
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 }

@@ -10,6 +10,7 @@ import 'package:ardrive/turbo/topup/models/crypto_quote.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/models/pending_transaction.dart';
 import 'package:ardrive/turbo/topup/models/wallet_connection_state.dart';
+import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -59,6 +60,15 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
   StreamSubscription<SolanaWalletState?>? _solWalletSubscription;
   StreamSubscription<int>? _ethChainSubscription;
 
+  /// Current Turbo balance (in winc) for display on checkout
+  final BigInt currentTurboBalance;
+
+  /// Current balance storage estimate (e.g., "5.2 GB")
+  final String currentBalanceStorage;
+
+  /// New balance storage estimate (e.g., "7.3 GB")
+  final String newBalanceStorage;
+
   CryptoTopupBloc({
     required CryptoPaymentService paymentService,
     required EthereumWalletService ethereumWalletService,
@@ -66,7 +76,11 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     required WalletSignerCache signerCache,
     required CryptoTransactionStorage transactionStorage,
     required this.arweaveWalletAddress,
-  })  : _paymentService = paymentService,
+    BigInt? currentTurboBalance,
+    this.currentBalanceStorage = '0 GB',
+    this.newBalanceStorage = '0 GB',
+  })  : currentTurboBalance = currentTurboBalance ?? BigInt.zero,
+        _paymentService = paymentService,
         _ethereumWalletService = ethereumWalletService,
         _solanaWalletService = solanaWalletService,
         _signerCache = signerCache,
@@ -135,6 +149,38 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     on<CryptoTopupAcceptNewQuote>(_onAcceptNewQuote);
   }
 
+  /// Calculates storage values based on the current quote.
+  /// Returns a record with (currentBalanceStorage, newBalanceStorage).
+  ({String currentStorage, String newStorage}) _calculateStorageValues(
+      CryptoQuote quote) {
+    if (quote.wincAmount > BigInt.zero && quote.estimatedStorageGiB > 0) {
+      // Calculate storage per winc based on the quote
+      final storagePerWinc =
+          quote.estimatedStorageGiB / quote.wincAmount.toDouble();
+
+      // Calculate current balance storage in GiB
+      final currentStorageGiB = currentTurboBalance.toDouble() * storagePerWinc;
+      final currentStorage = formatStorageWithDynamicUnit(
+        currentStorageGiB,
+        includeApprox: false,
+      );
+
+      // Calculate new balance storage in GiB (current + purchase)
+      final newStorageGiB = currentStorageGiB + quote.estimatedStorageGiB;
+      final newStorage = formatStorageWithDynamicUnit(
+        newStorageGiB,
+        includeApprox: false,
+      );
+
+      return (currentStorage: currentStorage, newStorage: newStorage);
+    }
+
+    return (
+      currentStorage: currentBalanceStorage,
+      newStorage: newBalanceStorage
+    );
+  }
+
   void _subscribeToWalletChanges() {
     // Listen to Ethereum wallet changes
     _ethWalletSubscription = _ethereumWalletService.connectionStream.listen(
@@ -198,6 +244,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     final existingLock = await _transactionStorage.getSessionLock();
     if (existingLock != null && existingLock.isValid) {
       if (existingLock.isDifferentTab(_transactionStorage.tabId)) {
+        _cancelAllTimers(); // Cancel session timer we just started
         emit(CryptoTopupConcurrentSessionWarning(
           otherSessionStartedAt: existingLock.timestamp,
           otherTabId: existingLock.tabId,
@@ -747,6 +794,16 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     // (actual address is determined by the SDK during payment)
     const toAddress = 'Turbo Gateway';
 
+    // Get token balance from amount entry state if available
+    double? tokenBalance;
+    final currentState = state;
+    if (currentState is CryptoTopupAmountEntry) {
+      tokenBalance = currentState.balance.balanceDisplay;
+    }
+
+    // Calculate storage values dynamically based on the quote
+    final storageValues = _calculateStorageValues(quote);
+
     emit(CryptoTopupConfirmation(
       token: token,
       quote: quote,
@@ -756,6 +813,10 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       gasEstimateUsd: gasEstimate,
       promoCode: _promoCode,
       currentChainId: _connectedChainId,
+      currentTurboBalance: currentTurboBalance,
+      currentBalanceStorage: storageValues.currentStorage,
+      newBalanceStorage: storageValues.newStorage,
+      tokenBalance: tokenBalance,
     ));
 
     // Check network state
@@ -843,6 +904,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     } else if (currentState is CryptoTopupNetworkSwitch) {
       // Return to confirmation
       if (_selectedToken != null && _currentQuote != null) {
+        final storageValues = _calculateStorageValues(_currentQuote!);
         emit(CryptoTopupConfirmation(
           token: _selectedToken!,
           quote: _currentQuote!,
@@ -851,6 +913,9 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
           networkState: NetworkState.correct,
           promoCode: _promoCode,
           currentChainId: event.newChainId,
+          currentTurboBalance: currentTurboBalance,
+          currentBalanceStorage: storageValues.currentStorage,
+          newBalanceStorage: storageValues.newStorage,
         ));
       }
     } else if (currentState is CryptoTopupWalletConnection && _selectedToken != null) {
@@ -943,6 +1008,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       if (_selectedToken != null &&
           chainId == _selectedToken!.chainId &&
           _currentQuote != null) {
+        final storageValues = _calculateStorageValues(_currentQuote!);
         emit(CryptoTopupConfirmation(
           token: _selectedToken!,
           quote: _currentQuote!,
@@ -951,6 +1017,9 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
           networkState: NetworkState.correct,
           promoCode: _promoCode,
           currentChainId: chainId,
+          currentTurboBalance: currentTurboBalance,
+          currentBalanceStorage: storageValues.currentStorage,
+          newBalanceStorage: storageValues.newStorage,
         ));
       } else {
         // Still wrong network
@@ -1074,6 +1143,10 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     CryptoTopupPaymentFailed event,
     Emitter<CryptoTopupState> emit,
   ) {
+    // Cancel timers when payment fails - user will need to retry or restart
+    _cancelQuoteTimer();
+    _balanceRefreshTimer?.cancel();
+
     emit(CryptoTopupError(
       errorType: event.isUserRejected
           ? CryptoTopupErrorType.transactionRejected
@@ -1190,6 +1263,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     CryptoTopupConcurrentSessionDetected event,
     Emitter<CryptoTopupState> emit,
   ) async {
+    _cancelAllTimers(); // Cancel all timers when concurrent session detected
     final lock = await _transactionStorage.getSessionLock();
     if (lock != null) {
       emit(CryptoTopupConcurrentSessionWarning(
@@ -1285,6 +1359,8 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
             token.walletType == WalletType.ethereum ? _ethereumWalletService : null,
         solanaWallet:
             token.walletType == WalletType.solana ? _solanaWalletService : null,
+        arweaveAddress:
+            token.walletType == WalletType.arweave ? arweaveWalletAddress : null,
       );
     } catch (e) {
       logger.e('Error fetching balance: $e');

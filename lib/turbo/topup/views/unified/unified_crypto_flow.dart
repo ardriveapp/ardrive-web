@@ -36,6 +36,18 @@ class UnifiedCryptoFlow extends StatefulWidget {
   /// Optional preselected token (skips token selection)
   final CryptoToken? preselectedToken;
 
+  /// Current Turbo balance (in winc) for display on checkout
+  final BigInt currentTurboBalance;
+
+  /// Current balance storage estimate (e.g., "5.2 GB")
+  final String currentBalanceStorage;
+
+  /// Credits to receive (in winc) for calculating new balance
+  final BigInt creditsToReceive;
+
+  /// New balance storage estimate (e.g., "7.3 GB")
+  final String newBalanceStorage;
+
   /// Callback when payment is successful
   final VoidCallback? onSuccess;
 
@@ -45,14 +57,19 @@ class UnifiedCryptoFlow extends StatefulWidget {
   /// Callback to go back to payment method selection
   final VoidCallback? onBack;
 
-  const UnifiedCryptoFlow({
+  UnifiedCryptoFlow({
     super.key,
     required this.fiatAmount,
     this.preselectedToken,
+    BigInt? currentTurboBalance,
+    this.currentBalanceStorage = '0 GB',
+    BigInt? creditsToReceive,
+    this.newBalanceStorage = '0 GB',
     this.onSuccess,
     this.onCancel,
     this.onBack,
-  });
+  })  : currentTurboBalance = currentTurboBalance ?? BigInt.zero,
+        creditsToReceive = creditsToReceive ?? BigInt.zero;
 
   @override
   State<UnifiedCryptoFlow> createState() => _UnifiedCryptoFlowState();
@@ -100,7 +117,7 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
     final prefs = await SharedPreferences.getInstance();
     final transactionStorage = CryptoTransactionStorage(prefs);
 
-    // Create the BLoC
+    // Create the BLoC with balance data for checkout display
     _bloc = CryptoTopupBloc(
       paymentService: cryptoPaymentService,
       ethereumWalletService: _ethereumWalletService!,
@@ -108,6 +125,9 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
       signerCache: signerCache,
       transactionStorage: transactionStorage,
       arweaveWalletAddress: auth.currentUser.walletAddress,
+      currentTurboBalance: widget.currentTurboBalance,
+      currentBalanceStorage: widget.currentBalanceStorage,
+      newBalanceStorage: widget.newBalanceStorage,
     );
 
     // Initialize and set the amount

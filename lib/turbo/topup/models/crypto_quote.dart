@@ -1,5 +1,6 @@
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/models/payment_model.dart';
+import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:equatable/equatable.dart';
 
 /// Quote for a cryptocurrency top-up payment.
@@ -79,13 +80,9 @@ class CryptoQuote extends Equatable {
   /// Format the credits for display
   String get formattedCredits => '${creditsDisplay.toStringAsFixed(3)} Credits';
 
-  /// Format the storage estimate for display
-  String get formattedStorage {
-    if (estimatedStorageGiB >= 1000) {
-      return '~${(estimatedStorageGiB / 1000).toStringAsFixed(1)} TB';
-    }
-    return '~${estimatedStorageGiB.toStringAsFixed(1)} GB';
-  }
+  /// Format the storage estimate for display with dynamic units
+  String get formattedStorage =>
+      formatStorageWithDynamicUnit(estimatedStorageGiB);
 
   /// Format network fee for display
   String get formattedNetworkFee {

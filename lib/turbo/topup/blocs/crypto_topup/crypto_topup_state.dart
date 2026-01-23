@@ -334,7 +334,19 @@ class CryptoTopupConfirmation extends CryptoTopupState {
   final String? promoCode;
   final int? currentChainId;
 
-  const CryptoTopupConfirmation({
+  /// Current Turbo credits balance (in winc)
+  final BigInt currentTurboBalance;
+
+  /// Current balance storage estimate (e.g., "5.2 GB")
+  final String currentBalanceStorage;
+
+  /// New balance storage estimate (e.g., "7.3 GB")
+  final String newBalanceStorage;
+
+  /// User's token balance in wallet (display amount, e.g., 5000.0 for ARIO)
+  final double? tokenBalance;
+
+  CryptoTopupConfirmation({
     required this.token,
     required this.quote,
     required this.fromAddress,
@@ -345,7 +357,18 @@ class CryptoTopupConfirmation extends CryptoTopupState {
     this.networkError,
     this.promoCode,
     this.currentChainId,
-  });
+    BigInt? currentTurboBalance,
+    this.currentBalanceStorage = '0 GB',
+    this.newBalanceStorage = '0 GB',
+    this.tokenBalance,
+  }) : currentTurboBalance = currentTurboBalance ?? BigInt.zero;
+
+  /// New Turbo balance after purchase
+  BigInt get newTurboBalance => currentTurboBalance + quote.wincAmount;
+
+  /// Token balance after purchase
+  double? get tokenBalanceAfter =>
+      tokenBalance != null ? tokenBalance! - quote.tokenAmountDisplay : null;
 
   /// Whether the confirm button should be enabled
   bool get canConfirm =>
@@ -357,6 +380,10 @@ class CryptoTopupConfirmation extends CryptoTopupState {
     double? gasEstimateUsd,
     String? networkError,
     int? currentChainId,
+    BigInt? currentTurboBalance,
+    String? currentBalanceStorage,
+    String? newBalanceStorage,
+    double? tokenBalance,
   }) {
     return CryptoTopupConfirmation(
       token: token,
@@ -369,6 +396,10 @@ class CryptoTopupConfirmation extends CryptoTopupState {
       networkError: networkError,
       promoCode: promoCode,
       currentChainId: currentChainId ?? this.currentChainId,
+      currentTurboBalance: currentTurboBalance ?? this.currentTurboBalance,
+      currentBalanceStorage: currentBalanceStorage ?? this.currentBalanceStorage,
+      newBalanceStorage: newBalanceStorage ?? this.newBalanceStorage,
+      tokenBalance: tokenBalance ?? this.tokenBalance,
     );
   }
 
@@ -384,6 +415,10 @@ class CryptoTopupConfirmation extends CryptoTopupState {
         networkError,
         promoCode,
         currentChainId,
+        currentTurboBalance,
+        currentBalanceStorage,
+        newBalanceStorage,
+        tokenBalance,
       ];
 }
 

@@ -123,9 +123,11 @@ class PaymentService {
 
     final urlParams = _urlParamsForGetPriceForFiat(promoCode: promoCode);
 
+    // Ensure amount is formatted as integer (no decimal point) for the API
+    final amountInt = amount.toInt();
     final result = await httpClient.get(
       url:
-          '$turboPaymentUri/v1/top-up/payment-intent/$walletAddress/$currency/$amount$urlParams',
+          '$turboPaymentUri/v1/top-up/payment-intent/$walletAddress/$currency/$amountInt$urlParams',
     );
 
     return PaymentModel.fromJson(jsonDecode(result.data));

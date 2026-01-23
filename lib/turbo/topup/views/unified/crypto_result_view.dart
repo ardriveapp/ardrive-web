@@ -1,10 +1,12 @@
 import 'dart:math';
 
 import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
+import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Success view shown after successful crypto payment.
 class CryptoSuccessView extends StatefulWidget {
@@ -55,11 +57,13 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
       builder: (context, state) {
         String creditsAdded = '';
         String? txId;
+        CryptoToken? token;
 
         if (state is CryptoTopupSuccess) {
           // Format BigInt credits as readable string
           creditsAdded = _formatCredits(state.creditsAdded);
           txId = state.txId;
+          token = state.token;
         }
 
         return Stack(
@@ -167,7 +171,7 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
                       textAlign: TextAlign.center,
                     ),
 
-                    // Transaction ID
+                    // Transaction ID with explorer link
                     if (txId != null && txId.isNotEmpty) ...[
                       const SizedBox(height: 24),
                       Container(
@@ -192,6 +196,34 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
                                 color: colors.themeFgDefault,
                               ),
                             ),
+                            if (token != null) ...[
+                              const SizedBox(height: 12),
+                              GestureDetector(
+                                onTap: () async {
+                                  final url = Uri.parse(token!.getExplorerUrl(txId!));
+                                  if (await canLaunchUrl(url)) {
+                                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                                  }
+                                },
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    ArDriveIcons.newWindow(
+                                      size: 14,
+                                      color: colors.themeAccentDefault,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'View on ${token.explorerName}',
+                                      style: typography.paragraphSmall(
+                                        fontWeight: ArFontWeight.semiBold,
+                                        color: colors.themeAccentDefault,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),

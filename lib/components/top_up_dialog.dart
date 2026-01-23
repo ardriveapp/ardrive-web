@@ -87,7 +87,7 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
                     fiatCurrency: '\$',
                     estimatedCredits: state.creditsForSelectedAmount,
                     estimatedStorage: state.estimatedStorageForSelectedAmount,
-                    storageUnit: paymentBloc.currentDataUnit.name,
+                    storageUnit: paymentBloc.currentDataUnit.abbreviation,
                   ),
                   const SizedBox(height: 20),
                   // Payment method buttons - side by side

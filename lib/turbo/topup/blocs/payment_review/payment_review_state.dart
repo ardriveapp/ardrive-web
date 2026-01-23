@@ -12,12 +12,17 @@ class PaymentReviewInitial extends PaymentReviewState {
 }
 
 class PaymentReviewLoading extends PaymentReviewPaymentModelLoaded {
-  const PaymentReviewLoading({
+  PaymentReviewLoading({
     required super.quoteExpirationDate,
     required super.total,
     required super.subTotal,
     required super.credits,
     required super.promoDiscount,
+    super.creditsWinc,
+    super.currentBalance,
+    super.storageEstimate,
+    super.currentBalanceStorage,
+    super.newBalanceStorage,
   });
 
   @override
@@ -41,13 +46,37 @@ class PaymentReviewPaymentModelLoaded extends PaymentReviewState {
   final String? promoDiscount;
   final DateTime quoteExpirationDate;
 
-  const PaymentReviewPaymentModelLoaded({
+  /// Credits to receive in winc (for calculating new balance)
+  final BigInt creditsWinc;
+
+  /// Current Turbo balance in winc
+  final BigInt currentBalance;
+
+  /// Storage estimate for credits to receive
+  final String storageEstimate;
+
+  /// Storage estimate for current balance
+  final String currentBalanceStorage;
+
+  /// Storage estimate for new balance after purchase
+  final String newBalanceStorage;
+
+  PaymentReviewPaymentModelLoaded({
     required this.total,
     required this.subTotal,
     required this.credits,
     required this.promoDiscount,
     required this.quoteExpirationDate,
-  });
+    BigInt? creditsWinc,
+    BigInt? currentBalance,
+    this.storageEstimate = '0 GB',
+    this.currentBalanceStorage = '0 GB',
+    this.newBalanceStorage = '0 GB',
+  })  : creditsWinc = creditsWinc ?? BigInt.zero,
+        currentBalance = currentBalance ?? BigInt.zero;
+
+  /// New balance after purchase
+  BigInt get newBalance => currentBalance + creditsWinc;
 
   PaymentReviewPaymentModelLoaded copyWith({
     String? total,
@@ -55,6 +84,11 @@ class PaymentReviewPaymentModelLoaded extends PaymentReviewState {
     String? credits,
     DateTime? quoteExpirationDate,
     String? promoDiscount,
+    BigInt? creditsWinc,
+    BigInt? currentBalance,
+    String? storageEstimate,
+    String? currentBalanceStorage,
+    String? newBalanceStorage,
   }) {
     return PaymentReviewPaymentModelLoaded(
       total: total ?? this.total,
@@ -62,6 +96,11 @@ class PaymentReviewPaymentModelLoaded extends PaymentReviewState {
       credits: credits ?? this.credits,
       quoteExpirationDate: quoteExpirationDate ?? this.quoteExpirationDate,
       promoDiscount: promoDiscount ?? this.promoDiscount,
+      creditsWinc: creditsWinc ?? this.creditsWinc,
+      currentBalance: currentBalance ?? this.currentBalance,
+      storageEstimate: storageEstimate ?? this.storageEstimate,
+      currentBalanceStorage: currentBalanceStorage ?? this.currentBalanceStorage,
+      newBalanceStorage: newBalanceStorage ?? this.newBalanceStorage,
     );
   }
 
@@ -72,16 +111,26 @@ class PaymentReviewPaymentModelLoaded extends PaymentReviewState {
         credits,
         promoDiscount ?? '',
         quoteExpirationDate,
+        creditsWinc,
+        currentBalance,
+        storageEstimate,
+        currentBalanceStorage,
+        newBalanceStorage,
       ];
 }
 
 class PaymentReviewLoadingQuote extends PaymentReviewPaymentModelLoaded {
-  const PaymentReviewLoadingQuote({
+  PaymentReviewLoadingQuote({
     required super.quoteExpirationDate,
     required super.total,
     required super.subTotal,
     required super.credits,
     required super.promoDiscount,
+    super.creditsWinc,
+    super.currentBalance,
+    super.storageEstimate,
+    super.currentBalanceStorage,
+    super.newBalanceStorage,
   });
 
   @override
@@ -95,12 +144,17 @@ class PaymentReviewLoadingQuote extends PaymentReviewPaymentModelLoaded {
 }
 
 class PaymentReviewQuoteLoaded extends PaymentReviewPaymentModelLoaded {
-  const PaymentReviewQuoteLoaded({
+  PaymentReviewQuoteLoaded({
     required super.quoteExpirationDate,
     required super.total,
     required super.subTotal,
     required super.credits,
     required super.promoDiscount,
+    super.creditsWinc,
+    super.currentBalance,
+    super.storageEstimate,
+    super.currentBalanceStorage,
+    super.newBalanceStorage,
   });
 
   @override
@@ -115,13 +169,18 @@ class PaymentReviewQuoteLoaded extends PaymentReviewPaymentModelLoaded {
 
 class PaymentReviewQuoteError extends PaymentReviewPaymentModelLoaded {
   final TurboErrorType errorType;
-  const PaymentReviewQuoteError({
+  PaymentReviewQuoteError({
     required this.errorType,
     required super.total,
     required super.subTotal,
     required super.credits,
     required super.quoteExpirationDate,
     required super.promoDiscount,
+    super.creditsWinc,
+    super.currentBalance,
+    super.storageEstimate,
+    super.currentBalanceStorage,
+    super.newBalanceStorage,
   });
 
   @override
@@ -136,12 +195,17 @@ class PaymentReviewQuoteError extends PaymentReviewPaymentModelLoaded {
 }
 
 class PaymentReviewPaymentSuccess extends PaymentReviewPaymentModelLoaded {
-  const PaymentReviewPaymentSuccess({
+  PaymentReviewPaymentSuccess({
     required super.quoteExpirationDate,
     required super.total,
     required super.subTotal,
     required super.credits,
     required super.promoDiscount,
+    super.creditsWinc,
+    super.currentBalance,
+    super.storageEstimate,
+    super.currentBalanceStorage,
+    super.newBalanceStorage,
   });
 
   @override
@@ -169,13 +233,18 @@ class PaymentReviewError extends PaymentReviewState {
 class PaymentReviewPaymentError extends PaymentReviewPaymentModelLoaded {
   final TurboErrorType errorType;
 
-  const PaymentReviewPaymentError({
+  PaymentReviewPaymentError({
     required super.quoteExpirationDate,
     required super.total,
     required super.subTotal,
     required super.credits,
     required this.errorType,
     required super.promoDiscount,
+    super.creditsWinc,
+    super.currentBalance,
+    super.storageEstimate,
+    super.currentBalanceStorage,
+    super.newBalanceStorage,
   });
 
   @override

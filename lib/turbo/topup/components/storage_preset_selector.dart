@@ -388,7 +388,7 @@ class _UnitDropdown extends StatelessWidget {
           return PopupMenuItem<FileSizeUnit>(
             value: unit,
             child: Text(
-              unit.name,
+              unit.abbreviation,
               style: typography.paragraphNormal(
                 fontWeight: ArFontWeight.semiBold,
                 color: colors.themeFgDefault,
@@ -402,7 +402,7 @@ class _UnitDropdown extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                selectedUnit.name,
+                selectedUnit.abbreviation,
                 style: typography.paragraphNormal(
                   fontWeight: ArFontWeight.semiBold,
                   color: colors.themeFgDefault,

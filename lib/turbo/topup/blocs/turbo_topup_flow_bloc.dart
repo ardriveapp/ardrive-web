@@ -37,6 +37,10 @@ class TurboTopupFlowBloc
           emit(
             TurboTopupFlowShowingSuccessView(
               isMovingForward: _currentStep <= event.stepNumber,
+              amountPaid: event.amountPaid,
+              creditsReceived: event.creditsReceived,
+              storageEstimate: event.storageEstimate,
+              newBalanceStorage: event.newBalanceStorage,
             ),
           );
         } else if (event is TurboTopUpShowPaymentReviewView) {
@@ -50,12 +54,6 @@ class TurboTopupFlowBloc
             TurboTopupFlowShowingPaymentReviewView(
               isMovingForward: _currentStep <= event.stepNumber,
               priceEstimate: turbo.currentPriceEstimate,
-            ),
-          );
-        } else if (event is TurboTopUpShowSuccessView) {
-          emit(
-            TurboTopupFlowShowingSuccessView(
-              isMovingForward: _currentStep <= event.stepNumber,
             ),
           );
         } else if (event is TurboTopUpShowSessionExpiredView) {
@@ -78,6 +76,10 @@ class TurboTopupFlowBloc
               isMovingForward: _currentStep <= event.stepNumber,
               token: event.token,
               amount: event.amount,
+              currentTurboBalance: event.currentTurboBalance,
+              currentBalanceStorage: event.currentBalanceStorage,
+              creditsToReceive: event.creditsToReceive,
+              newBalanceStorage: event.newBalanceStorage,
             ),
           );
         }

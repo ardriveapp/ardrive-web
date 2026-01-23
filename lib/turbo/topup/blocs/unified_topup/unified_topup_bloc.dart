@@ -1,10 +1,13 @@
 import 'dart:async';
 
+import 'package:ardrive/turbo/services/crypto_price_service.dart';
 import 'package:ardrive/turbo/topup/components/amount_mode_toggle.dart';
+import 'package:ardrive/turbo/topup/components/fiat_preset_selector.dart';
 import 'package:ardrive/turbo/topup/components/payment_method_selector.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/models/price_estimate.dart';
 import 'package:ardrive/turbo/turbo.dart';
+import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:equatable/equatable.dart';
@@ -26,6 +29,7 @@ const double defaultFiatAmount = 0;
 /// - Balance calculations
 class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
   final Turbo turbo;
+  final CryptoPriceService priceService;
 
   StreamSubscription<PriceEstimate>? _priceEstimateSubscription;
 
@@ -34,6 +38,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
 
   UnifiedTopupBloc({
     required this.turbo,
+    required this.priceService,
   }) : super(const UnifiedTopupInitial()) {
     // Listen to price estimate changes from Turbo service
     _priceEstimateSubscription = turbo.onPriceEstimateChanged.listen((estimate) {
@@ -80,10 +85,12 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
         amountMode: AmountMode.currency,
         fiatAmount: defaultFiatAmount,
         currentBalance: balance,
-        currentBalanceStorage: balanceStorage.toStringAsFixed(2),
+        currentBalanceStorage:
+            formatStorageWithDynamicUnit(balanceStorage, includeApprox: false),
         creditsToReceive: BigInt.zero,
         estimatedStorage: '0',
-        newBalanceStorage: balanceStorage.toStringAsFixed(2), // Same as current when no purchase
+        newBalanceStorage:
+            formatStorageWithDynamicUnit(balanceStorage, includeApprox: false),
       ));
     } catch (e, s) {
       logger.e('Error initializing unified topup', e, s);
@@ -164,8 +171,8 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
 
       if (currentState.paymentMethod == PaymentMethod.crypto &&
           currentState.selectedToken != null) {
-        // Convert token amount to USD using estimated prices
-        usdEquivalent = _estimateUsdValue(currentState.selectedToken!, event.amount);
+        // Convert token amount to USD using live CoinGecko prices
+        usdEquivalent = await _getUsdValue(currentState.selectedToken!, event.amount);
         usdAmount = usdEquivalent;
       } else {
         // Card payment - amount is already in USD
@@ -192,7 +199,8 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
           fiatAmount: event.amount,
           usdEquivalent: usdEquivalent,
           creditsToReceive: estimate.estimate.winstonCredits,
-          estimatedStorage: estimate.estimatedStorage.toStringAsFixed(2),
+          estimatedStorage:
+              formatStorageWithDynamicUnit(estimate.estimatedStorage, includeApprox: false),
           newBalanceStorage: newBalanceStorage,
           isLoadingQuote: false,
         ));
@@ -208,21 +216,9 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
     }
   }
 
-  /// Estimates the USD value of a given token amount.
-  ///
-  /// Uses approximate market prices for estimation purposes.
-  /// Actual prices will be fetched during the payment flow.
-  double _estimateUsdValue(CryptoToken token, double tokenAmount) {
-    final pricePerToken = switch (token) {
-      CryptoToken.arioAO ||
-      CryptoToken.arioAOViaEth ||
-      CryptoToken.arioBase =>
-        0.05, // ARIO ~$0.05
-      CryptoToken.ethBase || CryptoToken.ethL1 => 3000.0, // ETH ~$3000
-      CryptoToken.sol => 150.0, // SOL ~$150
-      CryptoToken.usdcBase || CryptoToken.usdcEth => 1.0, // USDC = $1
-    };
-    return tokenAmount * pricePerToken;
+  /// Gets the USD value of a given token amount using live CoinGecko prices.
+  Future<double> _getUsdValue(CryptoToken token, double tokenAmount) async {
+    return priceService.tokenToUsd(token, tokenAmount);
   }
 
   Future<void> _onStorageSizeSelected(
@@ -287,6 +283,26 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
         throw Exception('Could not determine price for storage');
       }
 
+      // Check minimum amount for card payments
+      if (currentState.paymentMethod == PaymentMethod.card &&
+          priceInUsd < minFiatAmount) {
+        if (state is UnifiedTopupLoaded) {
+          emit((state as UnifiedTopupLoaded).copyWith(
+            storageSize: event.size,
+            storageUnit: event.unit,
+            fiatAmount: priceInUsd,
+            creditsToReceive: BigInt.zero,
+            estimatedStorage: event.size.toStringAsFixed(
+              event.size == event.size.roundToDouble() ? 0 : 2,
+            ),
+            isLoadingQuote: false,
+            errorMessage:
+                'Minimum purchase is \$$minFiatAmount for card payments. Please select a larger storage amount.',
+          ));
+        }
+        return;
+      }
+
       // Now compute the full price estimate with correct amount
       final estimate = await turbo.computePriceEstimate(
         currentAmount: priceInUsd,
@@ -307,11 +323,11 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
           storageUnit: event.unit,
           fiatAmount: priceInUsd,
           creditsToReceive: estimate.estimate.winstonCredits,
-          estimatedStorage: event.size.toStringAsFixed(
-            event.size == event.size.roundToDouble() ? 0 : 2,
-          ),
+          estimatedStorage:
+              formatStorageWithDynamicUnit(estimate.estimatedStorage, includeApprox: false),
           newBalanceStorage: newBalanceStorage,
           isLoadingQuote: false,
+          clearError: true,
         ));
       }
     } catch (e, s) {
@@ -334,9 +350,9 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
     final newBalance = currentBalance + creditsToReceive;
     final storage = await turbo.computeStorageEstimateForCredits(
       credits: newBalance,
-      outputDataUnit: displayUnit,
+      outputDataUnit: FileSizeUnit.gigabytes, // Always get in GiB for dynamic formatting
     );
-    return storage.toStringAsFixed(2);
+    return formatStorageWithDynamicUnit(storage, includeApprox: false);
   }
 
   /// Converts storage size to GB equivalent
@@ -387,8 +403,10 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
           );
           emit(loadedState.copyWith(
             displayUnit: event.unit,
-            currentBalanceStorage: balanceStorage.toStringAsFixed(2),
-            estimatedStorage: estimate.estimatedStorage.toStringAsFixed(2),
+            currentBalanceStorage:
+                formatStorageWithDynamicUnit(balanceStorage, includeApprox: false),
+            estimatedStorage:
+                formatStorageWithDynamicUnit(estimate.estimatedStorage, includeApprox: false),
             newBalanceStorage: newBalanceStorage,
           ));
         }
@@ -440,7 +458,8 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
             promoCode: event.code,
             discountPercent: discountPercent,
             creditsToReceive: estimate.estimate.winstonCredits,
-            estimatedStorage: estimate.estimatedStorage.toStringAsFixed(2),
+            estimatedStorage:
+                formatStorageWithDynamicUnit(estimate.estimatedStorage, includeApprox: false),
             newBalanceStorage: newBalanceStorage,
             isLoadingQuote: false,
           ));
@@ -495,7 +514,8 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
           );
           emit(loadedState.copyWith(
             creditsToReceive: estimate.estimate.winstonCredits,
-            estimatedStorage: estimate.estimatedStorage.toStringAsFixed(2),
+            estimatedStorage:
+                formatStorageWithDynamicUnit(estimate.estimatedStorage, includeApprox: false),
             newBalanceStorage: newBalanceStorage,
           ));
         }
@@ -555,7 +575,8 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
     // Update with new price estimate
     emit(currentState.copyWith(
       creditsToReceive: event.estimate.estimate.winstonCredits,
-      estimatedStorage: event.estimate.estimatedStorage.toStringAsFixed(2),
+      estimatedStorage:
+          formatStorageWithDynamicUnit(event.estimate.estimatedStorage, includeApprox: false),
       newBalanceStorage: newBalanceStorage,
     ));
   }

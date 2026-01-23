@@ -8,7 +8,6 @@ import 'package:ardrive/turbo/topup/components/storage_preset_selector.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
-import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -74,8 +73,9 @@ class _LoadingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const TurboTopupScaffold(
+      title: 'Buy Turbo Credits',
       child: SizedBox(
-        height: 500,
+        height: 400,
         child: Center(
           child: CircularProgressIndicator(),
         ),
@@ -95,6 +95,7 @@ class _LoadedView extends StatelessWidget {
 
     return SingleChildScrollView(
       child: TurboTopupScaffold(
+        title: 'Buy Turbo Credits',
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -112,7 +113,7 @@ class _LoadedView extends StatelessWidget {
                 ));
               },
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
             // Amount mode toggle (Storage / Currency)
             AmountModeToggle(
@@ -122,7 +123,7 @@ class _LoadedView extends StatelessWidget {
                 bloc.add(UnifiedTopupAmountModeChanged(mode));
               },
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
             // Amount selector (varies by mode)
             if (state.amountMode == AmountMode.storage)
@@ -130,32 +131,31 @@ class _LoadedView extends StatelessWidget {
             else
               _CurrencyAmountSection(state: state, bloc: bloc),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
             // Promo code section
             _PromoCodeSection(state: state, bloc: bloc),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
-            // Purchase summary
+            // Purchase summary (simplified - balance shown on final checkout)
             if (state.fiatAmount > 0)
               PurchaseSummary(
                 creditsToReceive: state.creditsToReceive,
-                storageUnit: state.displayUnit.name,
+                // estimatedStorage already includes the unit from formatStorageWithDynamicUnit
+                storageEstimate: state.estimatedStorage,
+                // Don't pass storageUnit since estimatedStorage already contains it
                 priceAmount: state.fiatAmount,
                 priceSymbol: state.priceSymbol,
                 isPriceInToken: state.paymentMethod == PaymentMethod.crypto,
                 usdEquivalent: state.usdEquivalent,
-                currentBalance: state.currentBalance,
-                currentBalanceStorage: '${state.currentBalanceStorage} ${state.displayUnit.name}',
-                newBalanceStorage: '${state.newBalanceStorage} ${state.displayUnit.name}',
                 hasPromoDiscount: state.discountPercent != null,
                 discountPercent: state.discountPercent,
               )
             else
               const _EmptySummaryPlaceholder(),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
             // Error message
             if (state.errorMessage != null)
@@ -164,7 +164,7 @@ class _LoadedView extends StatelessWidget {
             // Continue button
             SizedBox(
               width: double.infinity,
-              height: 48,
+              height: 44,
               child: ArDriveButton(
                 isDisabled: !state.canContinue || state.isLoadingQuote,
                 text: state.isLoadingQuote ? 'Loading...' : 'Continue',
@@ -205,8 +205,7 @@ class _StorageAmountSection extends StatelessWidget {
 
     return StoragePresetSelector(
       selectedPreset: selectedPreset,
-      customValue:
-          selectedPreset == null ? state.storageSize : null,
+      customValue: selectedPreset == null ? state.storageSize : null,
       customUnit: state.storageUnit,
       onPresetSelected: (preset) {
         bloc.add(UnifiedTopupStorageSizeSelected(
@@ -242,9 +241,8 @@ class _CurrencyAmountSection extends StatelessWidget {
       // USD preset selector
       return FiatPresetSelector.usd(
         selectedPreset: _findFiatPreset(state.fiatAmount),
-        customValue: _findFiatPreset(state.fiatAmount) == null
-            ? state.fiatAmount
-            : null,
+        customValue:
+            _findFiatPreset(state.fiatAmount) == null ? state.fiatAmount : null,
         onPresetSelected: (amount) {
           bloc.add(UnifiedTopupAmountSelected(amount));
         },
@@ -256,7 +254,8 @@ class _CurrencyAmountSection extends StatelessWidget {
       // Token preset selector
       return FiatPresetSelector.token(
         token: state.selectedToken!,
-        selectedPreset: _findTokenPreset(state.fiatAmount, state.selectedToken!),
+        selectedPreset:
+            _findTokenPreset(state.fiatAmount, state.selectedToken!),
         customValue:
             _findTokenPreset(state.fiatAmount, state.selectedToken!) == null
                 ? state.fiatAmount
@@ -361,7 +360,8 @@ class _PromoCodeSectionState extends State<_PromoCodeSection> {
         ),
         child: Row(
           children: [
-            Icon(Icons.check_circle, color: colors.themeSuccessDefault, size: 20),
+            Icon(Icons.check_circle,
+                color: colors.themeSuccessDefault, size: 20),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -373,7 +373,8 @@ class _PromoCodeSectionState extends State<_PromoCodeSection> {
               ),
             ),
             IconButton(
-              icon: Icon(Icons.close, color: colors.themeSuccessDefault, size: 18),
+              icon: Icon(Icons.close,
+                  color: colors.themeSuccessDefault, size: 18),
               onPressed: () {
                 widget.bloc.add(const UnifiedTopupPromoCodeRemoved());
               },
@@ -399,7 +400,9 @@ class _PromoCodeSectionState extends State<_PromoCodeSection> {
             child: Row(
               children: [
                 Icon(
-                  _isExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_right,
+                  _isExpanded
+                      ? Icons.keyboard_arrow_down
+                      : Icons.keyboard_arrow_right,
                   size: 18,
                   color: colors.themeFgMuted,
                 ),
@@ -454,7 +457,10 @@ class _PromoCodeSectionState extends State<_PromoCodeSection> {
                   maxHeight: 44,
                   fontStyle: ArDriveTypographyNew.of(context).paragraphSmall(
                     fontWeight: ArFontWeight.semiBold,
-                    color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault,
                   ),
                   onPressed: () {
                     if (_controller.text.isNotEmpty) {

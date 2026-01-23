@@ -6,7 +6,25 @@ import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 
 class TurboSuccessView extends StatelessWidget {
-  const TurboSuccessView({super.key});
+  /// Amount paid (formatted, e.g., "$25.00")
+  final String? amountPaid;
+
+  /// Credits received (formatted, e.g., "0.25 AR")
+  final String? creditsReceived;
+
+  /// Storage estimate for credits received (e.g., "2.5 GB")
+  final String? storageEstimate;
+
+  /// New balance after purchase (formatted storage, e.g., "7.5 GB")
+  final String? newBalanceStorage;
+
+  const TurboSuccessView({
+    super.key,
+    this.amountPaid,
+    this.creditsReceived,
+    this.storageEstimate,
+    this.newBalanceStorage,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -16,6 +34,10 @@ class TurboSuccessView extends StatelessWidget {
           appLocalizationsOf(context).yourCreditsWillBeAddedToYourAccount,
       closeButtonLabel: appLocalizationsOf(context).close,
       showConfetti: true,
+      amountPaid: amountPaid,
+      creditsReceived: creditsReceived,
+      storageEstimate: storageEstimate,
+      newBalanceStorage: newBalanceStorage,
     );
   }
 }
@@ -26,12 +48,28 @@ class SuccessView extends StatefulWidget {
   final String closeButtonLabel;
   final bool showConfetti;
 
+  /// Amount paid (formatted, e.g., "$25.00")
+  final String? amountPaid;
+
+  /// Credits received (formatted, e.g., "0.25 AR")
+  final String? creditsReceived;
+
+  /// Storage estimate for credits received (e.g., "2.5 GB")
+  final String? storageEstimate;
+
+  /// New balance after purchase (formatted storage, e.g., "7.5 GB")
+  final String? newBalanceStorage;
+
   const SuccessView({
     super.key,
     required this.successMessage,
     required this.detailMessage,
     required this.closeButtonLabel,
     this.showConfetti = false,
+    this.amountPaid,
+    this.creditsReceived,
+    this.storageEstimate,
+    this.newBalanceStorage,
   });
 
   @override
@@ -54,6 +92,38 @@ class _SuccessViewState extends State<SuccessView> {
       confettiController1!.play();
       confettiController2!.play();
     }
+  }
+
+  bool get _hasPaymentDetails =>
+      widget.amountPaid != null ||
+      widget.storageEstimate != null ||
+      widget.newBalanceStorage != null;
+
+  Widget _buildDetailRow(
+    BuildContext context,
+    String label,
+    String value,
+    ArDriveColors colors, {
+    bool isBold = false,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: ArDriveTypographyNew.of(context).paragraphSmall(
+            color: colors.themeFgMuted,
+          ),
+        ),
+        Text(
+          value,
+          style: ArDriveTypographyNew.of(context).paragraphSmall(
+            fontWeight: isBold ? ArFontWeight.bold : ArFontWeight.semiBold,
+            color: colors.themeFgDefault,
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -120,20 +190,62 @@ class _SuccessViewState extends State<SuccessView> {
                           size: 40,
                           color: colors.themeSuccessDefault,
                         ),
+                        const SizedBox(height: 16),
                         Text(
                           widget.successMessage,
                           style: ArDriveTypographyNew.of(context).heading5(
                             fontWeight: ArFontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 8),
                         Text(
                           widget.detailMessage,
                           style: ArDriveTypographyNew.of(context).paragraphNormal(
-                            fontWeight: ArFontWeight.bold,
-                            color: colors.themeFgDefault,
+                            color: colors.themeFgMuted,
                           ),
+                          textAlign: TextAlign.center,
                         ),
+                        // Purchase details
+                        if (_hasPaymentDetails) ...[
+                          const SizedBox(height: 24),
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: colors.themeBgSubtle,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Column(
+                              children: [
+                                if (widget.amountPaid != null)
+                                  _buildDetailRow(
+                                    context,
+                                    'Amount Paid',
+                                    widget.amountPaid!,
+                                    colors,
+                                  ),
+                                if (widget.storageEstimate != null) ...[
+                                  const SizedBox(height: 8),
+                                  _buildDetailRow(
+                                    context,
+                                    'Storage Added',
+                                    widget.storageEstimate!,
+                                    colors,
+                                  ),
+                                ],
+                                if (widget.newBalanceStorage != null) ...[
+                                  const SizedBox(height: 8),
+                                  _buildDetailRow(
+                                    context,
+                                    'New Balance',
+                                    widget.newBalanceStorage!,
+                                    colors,
+                                    isBold: true,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                     const Spacer(),

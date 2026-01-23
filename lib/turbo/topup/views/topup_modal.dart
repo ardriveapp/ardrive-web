@@ -2,7 +2,9 @@ import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/services/crypto_price_service.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
+import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
@@ -88,6 +90,7 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
         BlocProvider(
           create: (context) => UnifiedTopupBloc(
             turbo: context.read<Turbo>(),
+            priceService: CryptoPriceService(httpClient: ArDriveHTTP()),
           )..add(const UnifiedTopupStarted()),
         ),
       ],
@@ -133,6 +136,10 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
   late final AnimationController _opacityController;
   bool isOpacityTransitionDelayed = false;
 
+  // Keep PaymentFormBloc alive across payment form and review views
+  // so the Stripe CardField element stays mounted with card data
+  PaymentFormBloc? _paymentFormBloc;
+
   @override
   initState() {
     super.initState();
@@ -145,6 +152,7 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
   @override
   dispose() {
     _opacityController.dispose();
+    _paymentFormBloc?.close();
     super.dispose();
   }
 
@@ -154,7 +162,12 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
       listener: (context, state) {
         if (state is TurboTopupFlowShowingSuccessView) {
           Navigator.of(context).pop();
-          _showSuccessDialog();
+          _showSuccessDialog(
+            amountPaid: state.amountPaid,
+            creditsReceived: state.creditsReceived,
+            storageEstimate: state.storageEstimate,
+            newBalanceStorage: state.newBalanceStorage,
+          );
         } else if (state is TurboTopupFlowShowingErrorView) {
           _showErrorDialog(state.errorType,
               parentContext: widget.parentContext);
@@ -184,7 +197,9 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
       listener: (context, state) {
         // When going back to estimation view, restore the unified bloc state
         if (state is TurboTopupFlowShowingEstimationView) {
-          context.read<UnifiedTopupBloc>().add(const UnifiedTopupBackToLoaded());
+          context
+              .read<UnifiedTopupBloc>()
+              .add(const UnifiedTopupBackToLoaded());
         }
       },
       buildWhen: (previous, current) {
@@ -204,14 +219,18 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
           PlausibleEventTracker.trackPageview(
             page: PlausiblePageView.turboPaymentDetails,
           );
+          // Create PaymentFormBloc if not exists, or reuse existing one
+          // This keeps the Stripe CardField mounted with card data
+          _paymentFormBloc ??= PaymentFormBloc(
+            context.read<Turbo>(),
+            state.priceEstimate,
+          )..add(PaymentFormLoadSupportedCountries());
+
           view = Stack(
             children: [
-              BlocProvider<PaymentFormBloc>(
+              BlocProvider<PaymentFormBloc>.value(
                 key: const ValueKey('payment_form'),
-                create: (context) => PaymentFormBloc(
-                  context.read<Turbo>(),
-                  state.priceEstimate,
-                )..add(PaymentFormLoadSupportedCountries()),
+                value: _paymentFormBloc!,
                 child: Container(
                   key: const ValueKey('payment_form'),
                   color: Colors.transparent,
@@ -228,14 +247,18 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
           PlausibleEventTracker.trackPageview(
             page: PlausiblePageView.turboPurchaseReview,
           );
+          // Reuse the existing PaymentFormBloc to keep CardField mounted
+          // with the card data entered by the user
+          _paymentFormBloc ??= PaymentFormBloc(
+            context.read<Turbo>(),
+            state.priceEstimate,
+          )..add(PaymentFormLoadSupportedCountries());
+
           view = Stack(
             children: [
-              BlocProvider<PaymentFormBloc>(
+              BlocProvider<PaymentFormBloc>.value(
                 key: const ValueKey('payment_form'),
-                create: (context) => PaymentFormBloc(
-                  context.read<Turbo>(),
-                  state.priceEstimate,
-                )..add(PaymentFormLoadSupportedCountries()),
+                value: _paymentFormBloc!,
                 child: Container(
                   key: const ValueKey('payment_form'),
                   color:
@@ -265,6 +288,10 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
           view = UnifiedCryptoFlow(
             fiatAmount: state.amount,
             preselectedToken: state.token,
+            currentTurboBalance: state.currentTurboBalance,
+            currentBalanceStorage: state.currentBalanceStorage,
+            creditsToReceive: state.creditsToReceive,
+            newBalanceStorage: state.newBalanceStorage,
             onSuccess: () {
               Navigator.of(context).pop();
             },
@@ -344,37 +371,89 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
       // First compute the price estimate directly to ensure turbo._currentAmount is set
       // before we transition to the payment form (avoids race condition)
       final turbo = context.read<Turbo>();
-      await turbo.computePriceEstimate(
-        currentAmount: amount,
-        currentCurrency: 'usd',
-        currentDataUnit: FileSizeUnit.gigabytes,
-        promoCode: turbo.promoCode,
-      );
-      // Also update the estimation bloc for consistency
-      if (context.mounted) {
-        context.read<TurboTopUpEstimationBloc>().add(FiatAmountSelected(amount));
-        // Then transition to payment form (step 2 in the flow)
-        context.read<TurboTopupFlowBloc>().add(const TurboTopUpShowPaymentFormView(2));
+      try {
+        await turbo.computePriceEstimate(
+          currentAmount: amount,
+          currentCurrency: 'usd',
+          currentDataUnit: FileSizeUnit.gigabytes,
+          promoCode: turbo.promoCode,
+        );
+        // Also update the estimation bloc for consistency
+        if (context.mounted) {
+          context
+              .read<TurboTopUpEstimationBloc>()
+              .add(FiatAmountSelected(amount));
+          // Then transition to payment form (step 2 in the flow)
+          context
+              .read<TurboTopupFlowBloc>()
+              .add(const TurboTopUpShowPaymentFormView(2));
+        }
+      } catch (e) {
+        logger.e('Error computing price estimate: $e');
+        if (context.mounted) {
+          // Show error state - user can retry from the unified pay view
+          context
+              .read<TurboTopupFlowBloc>()
+              .add(const TurboTopUpShowErrorView(
+                TurboErrorType.fetchEstimationInformationFailed,
+              ));
+        }
       }
     } else if (method == PaymentMethod.crypto && token != null) {
-      // For crypto payments, transition to crypto flow view (same pattern as card)
+      // For crypto payments, get balance data from unified topup bloc
+      final unifiedState = context.read<UnifiedTopupBloc>().state;
+      BigInt currentBalance = BigInt.zero;
+      String currentBalanceStorage = '0';
+      BigInt creditsToReceive = BigInt.zero;
+      String newBalanceStorage = '0';
+
+      if (unifiedState is UnifiedTopupLoaded) {
+        currentBalance = unifiedState.currentBalance;
+        currentBalanceStorage = unifiedState.currentBalanceStorage;
+        creditsToReceive = unifiedState.creditsToReceive;
+        newBalanceStorage = unifiedState.newBalanceStorage;
+      }
+
+      // Transition to crypto flow view with balance data for checkout display
+      // Note: currentBalanceStorage and newBalanceStorage already include units from dynamic formatting
       context.read<TurboTopupFlowBloc>().add(TurboTopUpShowCryptoView(
             token: token,
             amount: amount,
+            currentTurboBalance: currentBalance,
+            currentBalanceStorage: currentBalanceStorage,
+            creditsToReceive: creditsToReceive,
+            newBalanceStorage: newBalanceStorage,
           ));
     }
   }
 
-  void _showSuccessDialog() {
+  void _showSuccessDialog({
+    String? amountPaid,
+    String? creditsReceived,
+    String? storageEstimate,
+    String? newBalanceStorage,
+  }) {
+    // Use parentContext since the current context is invalid after pop()
     showArDriveDialog(
-      context,
-      content: const ArDriveStandardModal(
+      widget.parentContext,
+      content: ArDriveStandardModal(
         width: 575,
-        content: Hero(tag: 'turbo_success', child: TurboSuccessView()),
+        content: Hero(
+          tag: 'turbo_success',
+          child: TurboSuccessView(
+            amountPaid: amountPaid,
+            creditsReceived: creditsReceived,
+            storageEstimate: storageEstimate,
+            newBalanceStorage: newBalanceStorage,
+          ),
+        ),
       ),
       barrierDismissible: false,
-      barrierColor:
-          ArDriveTheme.of(context).themeData.colors.shadow.withOpacity(0.9),
+      barrierColor: ArDriveTheme.of(widget.parentContext)
+          .themeData
+          .colors
+          .shadow
+          .withOpacity(0.9),
     );
   }
 
