@@ -77,7 +77,9 @@ class SessionExpiredView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final themeData = ArDriveTheme.of(context).themeData;
+    final colors = themeData.colors;
+    final colorTokens = themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return ArDriveCard(
@@ -85,6 +87,17 @@ class SessionExpiredView extends StatelessWidget {
       contentPadding: EdgeInsets.zero,
       content: Column(
         children: [
+          // Red top line (ArDrive modal pattern)
+          Container(
+            height: 6,
+            decoration: BoxDecoration(
+              color: colorTokens.containerRed,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(8),
+                topRight: Radius.circular(8),
+              ),
+            ),
+          ),
           // Close button
           Align(
             alignment: Alignment.topRight,
