@@ -69,6 +69,10 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
   /// New balance storage estimate (e.g., "7.3 GB")
   final String newBalanceStorage;
 
+  /// Pre-fetched ARIO balance from ArDriveAuth (in ARIO units as string, e.g., "5.0")
+  /// Used for ARIO on AO tokens to avoid redundant JS calls
+  final String? arioBalance;
+
   CryptoTopupBloc({
     required CryptoPaymentService paymentService,
     required EthereumWalletService ethereumWalletService,
@@ -79,6 +83,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     BigInt? currentTurboBalance,
     this.currentBalanceStorage = '0 GB',
     this.newBalanceStorage = '0 GB',
+    this.arioBalance,
   })  : currentTurboBalance = currentTurboBalance ?? BigInt.zero,
         _paymentService = paymentService,
         _ethereumWalletService = ethereumWalletService,
@@ -736,6 +741,53 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
   ) async {
     if (_selectedToken == null || _currentAmountUsd <= 0) return;
 
+    final currentState = state;
+
+    // If we're in the confirmation state, refresh the quote directly
+    if (currentState is CryptoTopupConfirmation) {
+      // Emit loading state (update the confirmation with a loading indicator)
+      emit(currentState.copyWith(isRefreshingQuote: true));
+
+      try {
+        final quote = await _paymentService.getQuote(
+          token: _selectedToken!,
+          usdAmount: _currentAmountUsd,
+          promoCode: _promoCode,
+          destinationAddress: arweaveWalletAddress,
+        );
+
+        _currentQuote = quote;
+        _startQuoteTimer();
+
+        // Get token balance for the updated confirmation
+        final balance = await _getTokenBalance(_selectedToken!);
+        final storageValues = _calculateStorageValues(quote);
+
+        emit(CryptoTopupConfirmation(
+          token: currentState.token,
+          quote: quote,
+          fromAddress: currentState.fromAddress,
+          toAddress: currentState.toAddress,
+          networkState: currentState.networkState,
+          gasEstimateUsd: currentState.gasEstimateUsd,
+          promoCode: _promoCode,
+          currentChainId: _connectedChainId,
+          currentTurboBalance: currentTurboBalance,
+          currentBalanceStorage: storageValues.currentStorage,
+          newBalanceStorage: storageValues.newStorage,
+          tokenBalance: balance.balanceDisplay,
+        ));
+      } catch (e) {
+        logger.e('Error refreshing quote: $e');
+        emit(currentState.copyWith(
+          isRefreshingQuote: false,
+          error: 'Failed to refresh quote',
+        ));
+      }
+      return;
+    }
+
+    // Otherwise, use the standard amount changed flow for amount entry state
     add(CryptoTopupAmountChanged(
       amount: _currentAmountUsd,
       isUsd: true,
@@ -1132,10 +1184,16 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     // Release session lock
     await _transactionStorage.releaseSessionLock();
 
+    // Calculate new balance from current + credits added
+    final newBalance = currentTurboBalance + event.creditsAdded;
+
     emit(CryptoTopupSuccess(
       txId: event.txId,
       creditsAdded: event.creditsAdded,
       token: _selectedToken!,
+      tokenAmountSpent: _currentQuote?.tokenAmountDisplay ?? 0,
+      usdValue: _currentQuote?.usdValue,
+      newBalance: newBalance,
     ));
   }
 
@@ -1353,6 +1411,25 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
 
   Future<TokenBalance> _getTokenBalance(CryptoToken token) async {
     try {
+      // For ARIO on AO, use the pre-fetched balance from ArDriveAuth if available
+      // This avoids redundant JS calls and ensures consistency with the profile dropdown
+      if (token == CryptoToken.arioAO && arioBalance != null) {
+        try {
+          // arioBalance is in ARIO units (e.g., "5.0" for 5 ARIO)
+          // We need to convert to mARIO (smallest unit) by multiplying by 1e6
+          final arioValue = double.parse(arioBalance!);
+          final rawBalance = BigInt.from((arioValue * 1e6).round());
+          return TokenBalance(
+            token: token,
+            rawBalance: rawBalance,
+            lastUpdated: DateTime.now(),
+          );
+        } catch (e) {
+          logger.w('Failed to parse pre-fetched ARIO balance: $e');
+          // Fall through to fetch from service
+        }
+      }
+
       return await _paymentService.getTokenBalance(
         token: token,
         ethereumWallet:

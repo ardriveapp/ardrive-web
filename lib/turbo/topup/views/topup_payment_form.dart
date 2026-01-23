@@ -90,7 +90,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                   Align(
                     alignment: Alignment.topRight,
                     child: Padding(
-                      padding: const EdgeInsets.only(top: 26, right: 26),
+                      padding: const EdgeInsets.only(top: 20, right: 20),
                       child: ArDriveClickArea(
                         child: GestureDetector(
                           onTap: () => Navigator.pop(context),
@@ -207,7 +207,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                           Align(
                             alignment: Alignment.topRight,
                             child: Padding(
-                              padding: const EdgeInsets.only(top: 26, right: 26),
+                              padding: const EdgeInsets.only(top: 20, right: 20),
                               child: ArDriveClickArea(
                                 child: GestureDetector(
                                   onTap: () => Navigator.pop(context),

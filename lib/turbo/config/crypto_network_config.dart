@@ -80,7 +80,7 @@ class CryptoNetworkConfig {
   String get aoGatewayUrl => 'https://ao.arweave.net';
 
   /// AO block explorer URL
-  String get aoExplorerUrl => 'https://ao.link';
+  String get aoExplorerUrl => 'https://scan.ar.io';
 
   // ============================================
   // Contract Addresses
@@ -158,15 +158,19 @@ class CryptoNetworkConfig {
   /// Get the block explorer URL for a transaction
   String getExplorerTxUrl(CryptoToken token, String txId) {
     return switch (token) {
-      CryptoToken.arioAO || CryptoToken.arioAOViaEth =>
-        'https://ao.link/#/message/$txId',
+      CryptoToken.arioAO ||
+      CryptoToken.arioAOViaEth =>
+        'https://scan.ar.io/#/message/$txId',
       CryptoToken.arioBase ||
       CryptoToken.usdcBase ||
       CryptoToken.ethBase =>
         '$baseExplorerUrl/tx/$txId',
-      CryptoToken.usdcEth || CryptoToken.ethL1 => '$ethereumExplorerUrl/tx/$txId',
-      CryptoToken.sol =>
-        isTestnet ? '$solanaExplorerUrl/tx/$txId' : 'https://solscan.io/tx/$txId',
+      CryptoToken.usdcEth ||
+      CryptoToken.ethL1 =>
+        '$ethereumExplorerUrl/tx/$txId',
+      CryptoToken.sol => isTestnet
+          ? '$solanaExplorerUrl/tx/$txId'
+          : 'https://solscan.io/tx/$txId',
     };
   }
 
@@ -175,7 +179,8 @@ class CryptoNetworkConfig {
     return switch (token) {
       CryptoToken.usdcBase => usdcBaseAddress,
       CryptoToken.usdcEth => usdcEthAddress,
-      CryptoToken.arioBase => arioBaseAddress.isNotEmpty ? arioBaseAddress : null,
+      CryptoToken.arioBase =>
+        arioBaseAddress.isNotEmpty ? arioBaseAddress : null,
       _ => null, // Native tokens or non-EVM
     };
   }

@@ -4,6 +4,7 @@ import 'package:ardrive/turbo/topup/views/crypto_topup/components/wallet_selecto
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Inline crypto payment section that appears within the main top-up dialog.
@@ -131,8 +132,8 @@ class InlineCryptoPayment extends StatelessWidget {
             // Close button in top right
             if (onCancel != null)
               Positioned(
-                right: 27,
-                top: 27,
+                right: 20,
+                top: 20,
                 child: ArDriveClickArea(
                   child: GestureDetector(
                     onTap: onCancel,
@@ -1171,6 +1172,8 @@ class _TokenIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isSvg = token.logoAsset.endsWith('.svg');
+
     return Container(
       width: size,
       height: size,
@@ -1178,14 +1181,35 @@ class _TokenIcon extends StatelessWidget {
         color: _getTokenColor(token),
         borderRadius: BorderRadius.circular(size / 2),
       ),
-      child: Center(
-        child: Text(
-          _getTokenAbbreviation(token),
-          style: TextStyle(
-            fontSize: size * 0.35,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(size / 2),
+        child: isSvg
+            ? SvgPicture.asset(
+                token.logoAsset,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                placeholderBuilder: (context) => _buildFallback(),
+              )
+            : Image.asset(
+                token.logoAsset,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => _buildFallback(),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildFallback() {
+    return Center(
+      child: Text(
+        _getTokenAbbreviation(token),
+        style: TextStyle(
+          fontSize: size * 0.35,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
         ),
       ),
     );

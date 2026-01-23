@@ -221,7 +221,9 @@ extension CryptoTokenX on CryptoToken {
 
   /// Whether this is an ERC-20 token
   bool get isERC20 => switch (this) {
-        CryptoToken.arioBase || CryptoToken.usdcBase || CryptoToken.usdcEth =>
+        CryptoToken.arioBase ||
+        CryptoToken.usdcBase ||
+        CryptoToken.usdcEth =>
           true,
         _ => false,
       };
@@ -256,7 +258,7 @@ extension CryptoTokenX on CryptoToken {
 
   /// Base URL for the block explorer for this token's network
   String get explorerBaseUrl => switch (this) {
-        CryptoToken.arioAO || CryptoToken.arioAOViaEth => 'https://ao.link',
+        CryptoToken.arioAO || CryptoToken.arioAOViaEth => 'https://scan.ar.io',
         CryptoToken.arioBase ||
         CryptoToken.usdcBase ||
         CryptoToken.ethBase =>
@@ -269,24 +271,45 @@ extension CryptoTokenX on CryptoToken {
   String getExplorerUrl(String txId) => switch (this) {
         CryptoToken.arioAO ||
         CryptoToken.arioAOViaEth =>
-          'https://ao.link/#/message/$txId',
+          'https://scan.ar.io/#/message/$txId',
         CryptoToken.arioBase ||
         CryptoToken.usdcBase ||
         CryptoToken.ethBase =>
           'https://basescan.org/tx/$txId',
         CryptoToken.sol => 'https://solscan.io/tx/$txId',
-        CryptoToken.usdcEth || CryptoToken.ethL1 => 'https://etherscan.io/tx/$txId',
+        CryptoToken.usdcEth ||
+        CryptoToken.ethL1 =>
+          'https://etherscan.io/tx/$txId',
       };
 
   /// Name of the block explorer for this token's network
   String get explorerName => switch (this) {
-        CryptoToken.arioAO || CryptoToken.arioAOViaEth => 'AO Link',
+        CryptoToken.arioAO || CryptoToken.arioAOViaEth => 'scan.ar.io',
         CryptoToken.arioBase ||
         CryptoToken.usdcBase ||
         CryptoToken.ethBase =>
           'Basescan',
         CryptoToken.sol => 'Solscan',
         CryptoToken.usdcEth || CryptoToken.ethL1 => 'Etherscan',
+      };
+
+  /// Asset path for the token logo (based on the underlying asset, not the network)
+  String get logoAsset => switch (this) {
+        // ARIO tokens (all variants use the AR.IO logo)
+        CryptoToken.arioAO ||
+        CryptoToken.arioAOViaEth ||
+        CryptoToken.arioBase =>
+          'assets/images/crypto/ario.svg',
+        // Solana
+        CryptoToken.sol => 'assets/images/crypto/solana.png',
+        // USDC
+        CryptoToken.usdcBase ||
+        CryptoToken.usdcEth =>
+          'assets/images/crypto/usdc.png',
+        // Ethereum
+        CryptoToken.ethBase ||
+        CryptoToken.ethL1 =>
+          'assets/images/crypto/ethereum.png',
       };
 }
 

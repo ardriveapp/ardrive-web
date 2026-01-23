@@ -55,20 +55,18 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
 
     return BlocBuilder<CryptoTopupBloc, CryptoTopupState>(
       builder: (context, state) {
-        String creditsAdded = '';
-        String? txId;
-        CryptoToken? token;
-
-        if (state is CryptoTopupSuccess) {
-          // Format BigInt credits as readable string
-          creditsAdded = _formatCredits(state.creditsAdded);
-          txId = state.txId;
-          token = state.token;
+        if (state is! CryptoTopupSuccess) {
+          return const SizedBox.shrink();
         }
+
+        final token = state.token;
+        final txId = state.txId;
 
         return Stack(
           children: [
             Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Red top line (ArDrive modal pattern)
                 Container(
@@ -81,100 +79,58 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
                     ),
                   ),
                 ),
-                // Main content
-                Expanded(
-                  child: Container(
-                    color: colors.themeBgCanvas,
-                    child: Stack(
-                      children: [
-                        // Confetti widgets
-                        Align(
-                          alignment: Alignment.topLeft,
-                          child: ConfettiWidget(
-                            numberOfParticles: 15,
-                            blastDirection: -pi / 4, // Diagonal right
-                            blastDirectionality: BlastDirectionality.explosive,
-                            confettiController: _confettiController1,
-                            maxBlastForce: 50,
-                            minBlastForce: 20,
-                            emissionFrequency: 0.05,
-                            gravity: 0.2,
-                            colors: [
-                              colors.themeSuccessDefault,
-                              colors.themeAccentDefault,
-                              colors.themeFgDefault.withOpacity(0.5),
-                            ],
-                          ),
-                        ),
-                        Align(
-                          alignment: Alignment.topRight,
-                          child: ConfettiWidget(
-                            numberOfParticles: 15,
-                            blastDirection: -3 * pi / 4, // Diagonal left
-                            blastDirectionality: BlastDirectionality.explosive,
-                            confettiController: _confettiController2,
-                            maxBlastForce: 50,
-                            minBlastForce: 20,
-                            emissionFrequency: 0.05,
-                            gravity: 0.2,
-                            colors: [
-                              colors.themeSuccessDefault,
-                              colors.themeAccentDefault,
-                              colors.themeFgDefault.withOpacity(0.5),
-                            ],
-                          ),
-                        ),
-
-                        // Main content
-                        Center(
-              child: Padding(
-                padding: const EdgeInsets.all(48),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                // Confetti row
+                Row(
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Success icon
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: colors.themeBgSubtle,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: colors.themeBorderDefault,
-                          width: 2,
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.check,
-                        size: 48,
-                        color: colors.themeFgDefault,
-                      ),
+                    ConfettiWidget(
+                      numberOfParticles: 10,
+                      blastDirection: -pi / 2,
+                      blastDirectionality: BlastDirectionality.explosive,
+                      confettiController: _confettiController1,
+                      maxBlastForce: 40,
+                      child: const SizedBox(height: 0, width: 0),
                     ),
-                    const SizedBox(height: 32),
-
-                    // Success message
-                    Text(
-                      'Payment Successful!',
-                      style: typography.heading4(
-                        fontWeight: ArFontWeight.bold,
-                        color: colors.themeFgDefault,
-                      ),
+                    ConfettiWidget(
+                      numberOfParticles: 10,
+                      blastDirection: pi / 2,
+                      blastDirectionality: BlastDirectionality.explosive,
+                      confettiController: _confettiController2,
+                      maxBlastForce: 40,
+                      child: const SizedBox(height: 0, width: 0),
                     ),
-                    const SizedBox(height: 16),
-
-                    // Credits added
-                    Text(
-                      '$creditsAdded added to your account',
-                      style: typography.paragraphLarge(
-                        color: colors.themeFgMuted,
+                  ],
+                ),
+                // Main content
+                Container(
+                  color: colors.themeBgCanvas,
+                  padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Title - left aligned with icon
+                      Row(
+                        children: [
+                          ArDriveIcons.checkCirle(
+                            size: 28,
+                            color: colors.themeSuccessDefault,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Payment Successful',
+                            style: typography.heading5(
+                              fontWeight: ArFontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-
-                    // Transaction ID with explorer link
-                    if (txId != null && txId.isNotEmpty) ...[
                       const SizedBox(height: 24),
+
+                      // Summary card
                       Container(
+                        width: double.infinity,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: colors.themeBgSubtle,
@@ -182,78 +138,98 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
                         ),
                         child: Column(
                           children: [
-                            Text(
-                              'Transaction ID',
-                              style: typography.paragraphSmall(
-                                color: colors.themeFgMuted,
-                              ),
+                            // Amount paid
+                            _SummaryRow(
+                              label: 'Paid',
+                              value: _formatTokenAmount(state.tokenAmountSpent, token.symbol),
+                              subValue: state.usdValue != null
+                                  ? '\$${state.usdValue!.toStringAsFixed(2)}'
+                                  : null,
                             ),
-                            const SizedBox(height: 4),
-                            SelectableText(
-                              _truncateTxId(txId),
-                              style: typography.paragraphSmall(
-                                fontWeight: ArFontWeight.semiBold,
-                                color: colors.themeFgDefault,
-                              ),
+                            const SizedBox(height: 12),
+                            Divider(color: colors.themeBorderDefault, height: 1),
+                            const SizedBox(height: 12),
+                            // Credits added
+                            _SummaryRow(
+                              label: 'Credits added',
+                              value: _formatCredits(state.creditsAdded),
                             ),
-                            if (token != null) ...[
+                            // New balance (if available)
+                            if (state.newBalance != null) ...[
                               const SizedBox(height: 12),
-                              GestureDetector(
-                                onTap: () async {
-                                  final url = Uri.parse(token!.getExplorerUrl(txId!));
-                                  if (await canLaunchUrl(url)) {
-                                    await launchUrl(url, mode: LaunchMode.externalApplication);
-                                  }
-                                },
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    ArDriveIcons.newWindow(
-                                      size: 14,
-                                      color: colors.themeAccentDefault,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'View on ${token.explorerName}',
-                                      style: typography.paragraphSmall(
-                                        fontWeight: ArFontWeight.semiBold,
-                                        color: colors.themeAccentDefault,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                              Divider(color: colors.themeBorderDefault, height: 1),
+                              const SizedBox(height: 12),
+                              _SummaryRow(
+                                label: 'New balance',
+                                value: _formatCredits(state.newBalance!),
+                                isHighlighted: true,
                               ),
                             ],
                           ],
                         ),
                       ),
-                    ],
 
-                    const SizedBox(height: 48),
-
-                    // Done button
-                    SizedBox(
-                      width: 200,
-                      height: 48,
-                      child: ArDriveButton(
-                        text: 'Done',
-                        onPressed: widget.onDone,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+                      // Transaction ID as clickable link
+                      if (txId.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        GestureDetector(
+                          onTap: () async {
+                            final url = Uri.parse(token.getExplorerUrl(txId));
+                            if (await canLaunchUrl(url)) {
+                              await launchUrl(url,
+                                  mode: LaunchMode.externalApplication);
+                            }
+                          },
+                          child: Row(
+                            children: [
+                              Text(
+                                'Transaction: ',
+                                style: typography.paragraphSmall(
+                                  color: colors.themeFgMuted,
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  _truncateTxId(txId),
+                                  style: typography.paragraphSmall(
+                                    fontWeight: ArFontWeight.semiBold,
+                                    color: colors.themeAccentDefault,
+                                  ),
+                                ),
+                              ),
+                              ArDriveIcons.newWindow(
+                                size: 14,
+                                color: colors.themeAccentDefault,
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
-                    ),
+
+                      const SizedBox(height: 24),
+                      // Done button - right aligned
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: ArDriveButton(
+                          maxHeight: 44,
+                          maxWidth: 143,
+                          text: 'Done',
+                          fontStyle: typography.paragraphLarge(
+                            fontWeight: ArFontWeight.bold,
+                            color: Colors.white,
+                          ),
+                          onPressed: widget.onDone,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
             // Close button in top right
             Positioned(
-              right: 27,
-              top: 27,
+              right: 20,
+              top: 20,
               child: ArDriveClickArea(
                 child: GestureDetector(
                   onTap: widget.onDone,
@@ -267,21 +243,84 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
     );
   }
 
-  String _formatCredits(BigInt credits) {
-    // Credits are stored in winston (smallest unit), convert to AR
-    // 1 AR = 10^12 winston
-    final ar = credits ~/ BigInt.from(1000000000000);
-    if (ar >= BigInt.one) {
-      return '${ar.toString()} AR';
+  String _formatTokenAmount(double amount, String symbol) {
+    if (amount >= 1000) {
+      return '${amount.toStringAsFixed(0)} $symbol';
+    } else if (amount >= 1) {
+      return '${amount.toStringAsFixed(2)} $symbol';
+    } else {
+      return '${amount.toStringAsFixed(4)} $symbol';
     }
-    // Show in smaller units if less than 1 AR
-    final mAR = credits ~/ BigInt.from(1000000000);
-    return '${mAR.toString()} mAR';
+  }
+
+  String _formatCredits(BigInt credits) {
+    // Credits are stored in winc (winston credits), convert to display
+    // 1 Credit = 10^12 winc
+    final creditValue = credits.toDouble() / 1e12;
+    if (creditValue >= 1) {
+      return '${creditValue.toStringAsFixed(2)} Credits';
+    } else {
+      // Show in smaller units for very small amounts
+      final mCredits = creditValue * 1000;
+      return '${mCredits.toStringAsFixed(2)} mCredits';
+    }
   }
 
   String _truncateTxId(String txId) {
     if (txId.length < 20) return txId;
-    return '${txId.substring(0, 10)}...${txId.substring(txId.length - 10)}';
+    return '${txId.substring(0, 8)}...${txId.substring(txId.length - 8)}';
+  }
+}
+
+/// Summary row widget for consistent layout
+class _SummaryRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final String? subValue;
+  final bool isHighlighted;
+
+  const _SummaryRow({
+    required this.label,
+    required this.value,
+    this.subValue,
+    this.isHighlighted = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+    final typography = ArDriveTypographyNew.of(context);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: typography.paragraphNormal(
+            color: colors.themeFgMuted,
+          ),
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              value,
+              style: typography.paragraphNormal(
+                fontWeight: isHighlighted ? ArFontWeight.bold : ArFontWeight.semiBold,
+                color: isHighlighted ? colors.themeSuccessDefault : colors.themeFgDefault,
+              ),
+            ),
+            if (subValue != null)
+              Text(
+                subValue!,
+                style: typography.paragraphSmall(
+                  color: colors.themeFgMuted,
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
   }
 }
 
@@ -318,6 +357,8 @@ class CryptoErrorView extends StatelessWidget {
         return Stack(
           children: [
             Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Red top line (ArDrive modal pattern)
                 Container(
@@ -331,137 +372,106 @@ class CryptoErrorView extends StatelessWidget {
                   ),
                 ),
                 // Main content
-                Expanded(
-                  child: Container(
-                    color: colors.themeBgCanvas,
-                    child: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(48),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // Error icon
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                color: colors.themeErrorSubtle,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.close,
-                                size: 48,
-                                color: colors.themeErrorDefault,
-                              ),
+                Container(
+                  color: colors.themeBgCanvas,
+                  padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Title - left aligned
+                      Text(
+                        'Payment Failed',
+                        style: typography.heading5(
+                          fontWeight: ArFontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Icon and message
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ArDriveIcons.triangle(
+                            size: 32,
+                            color: colors.themeErrorDefault,
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  errorMessage,
+                                  style: typography.paragraphNormal(
+                                    color: colors.themeFgMuted,
+                                  ),
+                                ),
+                                if (errorDetails != null &&
+                                    errorDetails.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    errorDetails,
+                                    style: typography.paragraphSmall(
+                                      color: colors.themeFgMuted,
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
-                            const SizedBox(height: 32),
-
-                            // Error message
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      // No funds charged notice
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: colors.themeBgSubtle,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: colors.themeBorderDefault),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              color: colors.themeFgMuted,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
                             Text(
-                              'Payment Failed',
-                              style: typography.heading4(
-                                fontWeight: ArFontWeight.bold,
+                              'Your funds have not been charged.',
+                              style: typography.paragraphSmall(
                                 color: colors.themeFgDefault,
                               ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Error details
-                            Text(
-                              errorMessage,
-                              style: typography.paragraphNormal(
-                                color: colors.themeFgMuted,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-
-                            if (errorDetails != null && errorDetails.isNotEmpty) ...[
-                              const SizedBox(height: 16),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: colors.themeBgSubtle,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  errorDetails,
-                                  style: typography.paragraphSmall(
-                                    color: colors.themeFgMuted,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ],
-
-                            const SizedBox(height: 16),
-
-                            // No funds charged notice
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: colors.themeBgSubtle,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: colors.themeBorderDefault),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.info_outline,
-                                    color: colors.themeFgMuted,
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Your funds have not been charged.',
-                                    style: typography.paragraphSmall(
-                                      color: colors.themeFgDefault,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            const SizedBox(height: 48),
-
-                            // Action buttons
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                if (canRetry) ...[
-                                  SizedBox(
-                                    width: 140,
-                                    height: 48,
-                                    child: ArDriveButton(
-                                      text: 'Try Again',
-                                      onPressed: onRetry,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                ],
-                                SizedBox(
-                                  width: 140,
-                                  height: 48,
-                                  child: ArDriveButton(
-                                    style: ArDriveButtonStyle.secondary,
-                                    text: 'Close',
-                                    onPressed: onClose,
-                                  ),
-                                ),
-                              ],
                             ),
                           ],
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 24),
+                      // Action button - right aligned
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: ArDriveButton(
+                          maxHeight: 44,
+                          maxWidth: 143,
+                          text: canRetry ? 'Try Again' : 'Close',
+                          fontStyle: typography.paragraphLarge(
+                            fontWeight: ArFontWeight.bold,
+                            color: Colors.white,
+                          ),
+                          onPressed: canRetry ? onRetry : onClose,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
             // Close button in top right
             Positioned(
-              right: 27,
-              top: 27,
+              right: 20,
+              top: 20,
               child: ArDriveClickArea(
                 child: GestureDetector(
                   onTap: onClose,

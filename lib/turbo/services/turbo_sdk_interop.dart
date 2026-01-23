@@ -85,20 +85,44 @@ class TurboConfigJS {
 
 @JS()
 @anonymous
+class ServiceConfigJS {
+  external factory ServiceConfigJS({
+    String? url,
+  });
+
+  external String? get url;
+}
+
+@JS()
+@anonymous
 class TurboAuthConfigJS {
   external factory TurboAuthConfigJS({
-    Object signer,
+    Object? signer,
+    Object? walletAdapter,
     String? gatewayUrl,
-    String? paymentServiceUrl,
-    String? uploadServiceUrl,
+    Object? paymentServiceConfig,
+    Object? uploadServiceConfig,
     String? token,
   });
 
-  external Object get signer;
+  external Object? get signer;
+  external Object? get walletAdapter;
   external String? get gatewayUrl;
-  external String? get paymentServiceUrl;
-  external String? get uploadServiceUrl;
+  external Object? get paymentServiceConfig;
+  external Object? get uploadServiceConfig;
   external String? get token;
+}
+
+/// Wallet adapter config for EVM token transfers
+/// The SDK expects { getSigner: () => ethersSigner } for EVM payments
+@JS()
+@anonymous
+class WalletAdapterConfigJS {
+  external factory WalletAdapterConfigJS({
+    Object getSigner,
+  });
+
+  external Object get getSigner;
 }
 
 @JS()
@@ -107,10 +131,12 @@ class TopUpWithTokensParamsJS {
   external factory TopUpWithTokensParamsJS({
     Object tokenAmount,
     Object? feeMultiplier,
+    String? turboCreditDestinationAddress,
   });
 
   external Object get tokenAmount;
   external Object? get feeMultiplier;
+  external String? get turboCreditDestinationAddress;
 }
 
 @JS()
@@ -162,7 +188,11 @@ Future<Object> createUnauthenticatedTurbo({
   return TurboFactoryJS.unauthenticated(config);
 }
 
-/// Create an authenticated Turbo client
+/// Create an authenticated Turbo client with a signer
+///
+/// Use this for:
+/// - ARIO on AO (ArconnectSigner)
+/// - ARIO on AO via ETH (InjectedEthereumSigner)
 Future<Object> createAuthenticatedTurbo({
   required Object signer,
   String? gatewayUrl,
@@ -172,12 +202,90 @@ Future<Object> createAuthenticatedTurbo({
 }) async {
   _ensureSDKLoaded();
 
+  // Build service config objects as expected by the SDK
+  final paymentServiceConfig = paymentServiceUrl != null
+      ? ServiceConfigJS(url: paymentServiceUrl)
+      : null;
+  final uploadServiceConfig = uploadServiceUrl != null
+      ? ServiceConfigJS(url: uploadServiceUrl)
+      : null;
+
   final config = TurboAuthConfigJS(
     signer: signer,
     gatewayUrl: gatewayUrl,
-    paymentServiceUrl: paymentServiceUrl,
-    uploadServiceUrl: uploadServiceUrl,
+    paymentServiceConfig: paymentServiceConfig,
+    uploadServiceConfig: uploadServiceConfig,
     token: token,
+  );
+
+  return TurboFactoryJS.authenticated(config);
+}
+
+/// Create an authenticated Turbo client with a wallet adapter
+///
+/// Use this for EVM token transfers (ETH, USDC, ARIO on Base/Ethereum).
+/// The wallet adapter pattern is: { getSigner: () => ethersSigner }
+/// This allows the SDK to manage transaction signing internally.
+Future<Object> createAuthenticatedTurboWithWalletAdapter({
+  required Object ethersSigner,
+  String? gatewayUrl,
+  String? paymentServiceUrl,
+  String? uploadServiceUrl,
+  required String token,
+}) async {
+  _ensureSDKLoaded();
+
+  // Build service config objects as expected by the SDK
+  final paymentServiceConfig = paymentServiceUrl != null
+      ? ServiceConfigJS(url: paymentServiceUrl)
+      : null;
+  final uploadServiceConfig = uploadServiceUrl != null
+      ? ServiceConfigJS(url: uploadServiceUrl)
+      : null;
+
+  // Create the walletAdapter with getSigner function
+  // The SDK expects: { getSigner: () => ethersSigner }
+  final walletAdapter = jsify({
+    'getSigner': allowInterop(() => ethersSigner),
+  });
+
+  final config = TurboAuthConfigJS(
+    walletAdapter: walletAdapter,
+    gatewayUrl: gatewayUrl,
+    paymentServiceConfig: paymentServiceConfig,
+    uploadServiceConfig: uploadServiceConfig,
+    token: token,
+  );
+
+  return TurboFactoryJS.authenticated(config);
+}
+
+/// Create an authenticated Turbo client with a Solana wallet adapter
+///
+/// Use this for Solana (SOL) payments.
+/// The SDK expects the raw window.solana adapter object.
+Future<Object> createAuthenticatedTurboWithSolanaAdapter({
+  required Object solanaWalletAdapter,
+  String? gatewayUrl,
+  String? paymentServiceUrl,
+  String? uploadServiceUrl,
+}) async {
+  _ensureSDKLoaded();
+
+  // Build service config objects as expected by the SDK
+  final paymentServiceConfig = paymentServiceUrl != null
+      ? ServiceConfigJS(url: paymentServiceUrl)
+      : null;
+  final uploadServiceConfig = uploadServiceUrl != null
+      ? ServiceConfigJS(url: uploadServiceUrl)
+      : null;
+
+  final config = TurboAuthConfigJS(
+    walletAdapter: solanaWalletAdapter,
+    gatewayUrl: gatewayUrl,
+    paymentServiceConfig: paymentServiceConfig,
+    uploadServiceConfig: uploadServiceConfig,
+    token: 'solana',
   );
 
   return TurboFactoryJS.authenticated(config);
@@ -195,11 +303,16 @@ Future<BigInt> getWincForToken(Object turboClient, Object tokenAmount) async {
 }
 
 /// Execute top up with tokens
-Future<Object> topUpWithTokens(Object turboClient, Object tokenAmount,
-    {Object? feeMultiplier}) async {
+Future<Object> topUpWithTokens(
+  Object turboClient,
+  Object tokenAmount, {
+  Object? feeMultiplier,
+  String? destinationAddress,
+}) async {
   final params = TopUpWithTokensParamsJS(
     tokenAmount: tokenAmount,
     feeMultiplier: feeMultiplier,
+    turboCreditDestinationAddress: destinationAddress,
   );
   final result = callMethod(turboClient, 'topUpWithTokens', [params]);
   return promiseToFuture(result);

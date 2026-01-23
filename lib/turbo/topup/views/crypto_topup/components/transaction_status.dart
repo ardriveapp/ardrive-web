@@ -231,7 +231,7 @@ class _TransactionLink extends StatelessWidget {
       case Blockchain.solana:
         return 'https://solscan.io/tx/$txId';
       case Blockchain.ao:
-        return 'https://ao.link/#/message/$txId';
+        return 'https://scan.ar.io/#/message/$txId';
     }
   }
 
@@ -394,7 +394,8 @@ class TransactionErrorView extends StatelessWidget {
             child: Icon(
               Icons.error_outline,
               size: 48,
-              color: ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
+              color:
+                  ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
             ),
           ),
           const SizedBox(height: 24),

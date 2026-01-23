@@ -2,6 +2,7 @@ import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/models/wallet_connection_state.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 /// A card widget displaying a cryptocurrency token option for selection.
 ///
@@ -108,9 +109,7 @@ class _TokenIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-    // Map token to icon asset path
-    final iconPath = _getTokenIconPath(token);
+    final isSvg = token.logoAsset.endsWith('.svg');
 
     return Container(
       width: size,
@@ -121,16 +120,22 @@ class _TokenIcon extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(size / 2),
-        child: iconPath != null
-            ? Image.asset(
-                iconPath,
+        child: isSvg
+            ? SvgPicture.asset(
+                token.logoAsset,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                placeholderBuilder: (context) => _buildFallbackIcon(context),
+              )
+            : Image.asset(
+                token.logoAsset,
                 width: size,
                 height: size,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) =>
                     _buildFallbackIcon(context),
-              )
-            : _buildFallbackIcon(context),
+              ),
       ),
     );
   }
@@ -148,12 +153,6 @@ class _TokenIcon extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String? _getTokenIconPath(CryptoToken token) {
-    // Token icons are not yet available - use text fallback
-    // TODO: Add token icon assets and update paths here
-    return null;
   }
 }
 

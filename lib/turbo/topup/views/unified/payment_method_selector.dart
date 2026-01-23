@@ -57,7 +57,7 @@ class PaymentMethodSelector extends StatelessWidget {
         _PaymentMethodOption(
           title: 'Pay with Crypto',
           subtitle: 'ARIO • ETH • SOL • USDC — No KYC required',
-          icon: Icons.currency_bitcoin,
+          icon: Icons.account_balance_wallet,
           isSelected: selectedMethod == PaymentMethod.crypto,
           isExpanded: selectedMethod == PaymentMethod.crypto,
           onTap: () => onMethodChanged(PaymentMethod.crypto),

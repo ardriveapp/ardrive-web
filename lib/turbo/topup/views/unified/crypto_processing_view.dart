@@ -61,7 +61,7 @@ class CryptoProcessingView extends StatelessWidget {
                           height: 64,
                           child: CircularProgressIndicator(
                             strokeWidth: 3,
-                            color: colors.themeAccentDefault,
+                            color: colorTokens.containerRed,
                           ),
                         ),
                         const SizedBox(height: 32),

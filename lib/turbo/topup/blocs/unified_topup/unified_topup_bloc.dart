@@ -545,6 +545,9 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
       usdEquivalent: currentState.usdEquivalent,
       creditsToReceive: currentState.creditsToReceive,
       promoCode: currentState.promoCode,
+      currentBalance: currentState.currentBalance,
+      currentBalanceStorage: currentState.currentBalanceStorage,
+      newBalanceStorage: currentState.newBalanceStorage,
     ));
   }
 

@@ -1233,7 +1233,7 @@ double smallestToUsdc(BigInt smallest) => smallest.toDouble() / 1e6;
 ```dart
 String getExplorerTxUrl(CryptoToken token, String txId, bool isTestnet) {
   return switch (token) {
-    CryptoToken.arioAO => 'https://ao.link/#/message/$txId',
+    CryptoToken.arioAO => 'https://scan.ar.io/#/message/$txId',
     CryptoToken.arioBase || CryptoToken.ethBase || CryptoToken.usdcBase =>
       isTestnet
         ? 'https://sepolia.basescan.org/tx/$txId'

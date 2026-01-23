@@ -22,7 +22,7 @@ extension PaymentMethodExtension on PaymentMethod {
       case PaymentMethod.card:
         return Icons.credit_card;
       case PaymentMethod.crypto:
-        return Icons.currency_bitcoin;
+        return Icons.account_balance_wallet;
     }
   }
 }

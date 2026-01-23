@@ -227,6 +227,15 @@ class UnifiedTopupReadyToContinue extends UnifiedTopupState {
   final BigInt creditsToReceive;
   final String? promoCode;
 
+  /// Current user balance (in winc) - needed for checkout display
+  final BigInt currentBalance;
+
+  /// Estimated storage for current balance
+  final String currentBalanceStorage;
+
+  /// Estimated storage for new balance (currentBalance + creditsToReceive)
+  final String newBalanceStorage;
+
   const UnifiedTopupReadyToContinue({
     required this.paymentMethod,
     this.selectedToken,
@@ -234,6 +243,9 @@ class UnifiedTopupReadyToContinue extends UnifiedTopupState {
     this.usdEquivalent,
     required this.creditsToReceive,
     this.promoCode,
+    required this.currentBalance,
+    required this.currentBalanceStorage,
+    required this.newBalanceStorage,
   });
 
   /// For crypto payments, get the USD amount to pass to the crypto flow
@@ -247,5 +259,8 @@ class UnifiedTopupReadyToContinue extends UnifiedTopupState {
         usdEquivalent,
         creditsToReceive,
         promoCode,
+        currentBalance,
+        currentBalanceStorage,
+        newBalanceStorage,
       ];
 }

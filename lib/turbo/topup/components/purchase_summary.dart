@@ -309,7 +309,7 @@ class CheckoutSummary extends StatelessWidget {
           _CompactRow(
             label: "You're buying",
             value: '${convertWinstonToLiteralString(creditsToReceive)} credits',
-            subValue: '~$storageEstimate',
+            subValue: storageEstimate,
             typography: typography,
             colors: colors,
           ),
@@ -378,13 +378,15 @@ class CheckoutSummary extends StatelessWidget {
             ),
           ],
 
+          // Divider after "You Pay" section
+          const SizedBox(height: 12),
+          Divider(color: colors.themeBorderDefault, height: 1),
+          const SizedBox(height: 12),
+
           // Token balance (for crypto payments)
           if (isPriceInToken &&
               tokenSymbol != null &&
               tokenBalance != null) ...[
-            const SizedBox(height: 12),
-            Divider(color: colors.themeBorderDefault, height: 1),
-            const SizedBox(height: 12),
             _CompactRow(
               label: '$tokenSymbol balance',
               value: _formatTokenAmount(tokenBalance!),
@@ -399,17 +401,16 @@ class CheckoutSummary extends StatelessWidget {
               typography: typography,
               colors: colors,
             ),
+            const SizedBox(height: 12),
+            Divider(color: colors.themeBorderDefault, height: 1),
+            const SizedBox(height: 12),
           ],
-
-          const SizedBox(height: 12),
-          Divider(color: colors.themeBorderDefault, height: 1),
-          const SizedBox(height: 12),
 
           // Section 3: Turbo Credits Balance
           _CompactRow(
-            label: 'Current balance',
+            label: 'Credit balance',
             value: '${convertWinstonToLiteralString(currentBalance)} credits',
-            subValue: '~$currentBalanceStorage',
+            subValue: currentBalanceStorage,
             typography: typography,
             colors: colors,
           ),
@@ -417,7 +418,7 @@ class CheckoutSummary extends StatelessWidget {
           _CompactRow(
             label: 'After purchase',
             value: '${convertWinstonToLiteralString(_newBalance)} credits',
-            subValue: '~$newBalanceStorage',
+            subValue: newBalanceStorage,
             typography: typography,
             colors: colors,
             isBold: true,

@@ -4,6 +4,7 @@ import 'package:ardrive/turbo/topup/models/wallet_connection_state.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Simplified wallet connection view for when token is already selected.
@@ -156,8 +157,8 @@ class WalletConnectionView extends StatelessWidget {
             // Close button in top right
             if (onCancel != null)
               Positioned(
-                right: 27,
-                top: 27,
+                right: 20,
+                top: 20,
                 child: ArDriveClickArea(
                   child: GestureDetector(
                     onTap: onCancel,
@@ -545,6 +546,8 @@ class _TokenIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isSvg = token.logoAsset.endsWith('.svg');
+
     return Container(
       width: 40,
       height: 40,
@@ -552,14 +555,35 @@ class _TokenIcon extends StatelessWidget {
         color: _getTokenColor(token),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Center(
-        child: Text(
-          _getTokenAbbreviation(token),
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: isSvg
+            ? SvgPicture.asset(
+                token.logoAsset,
+                width: 40,
+                height: 40,
+                fit: BoxFit.cover,
+                placeholderBuilder: (context) => _buildFallback(),
+              )
+            : Image.asset(
+                token.logoAsset,
+                width: 40,
+                height: 40,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => _buildFallback(),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildFallback() {
+    return Center(
+      child: Text(
+        _getTokenAbbreviation(token),
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
         ),
       ),
     );

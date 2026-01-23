@@ -329,9 +329,11 @@ class CryptoTopupConfirmation extends CryptoTopupState {
   final String toAddress;
   final NetworkState networkState;
   final bool isProcessing;
+  final bool isRefreshingQuote;
   final double? gasEstimateUsd;
   final String? networkError;
   final String? promoCode;
+  final String? error;
   final int? currentChainId;
 
   /// Current Turbo credits balance (in winc)
@@ -353,9 +355,11 @@ class CryptoTopupConfirmation extends CryptoTopupState {
     required this.toAddress,
     this.networkState = NetworkState.checking,
     this.isProcessing = false,
+    this.isRefreshingQuote = false,
     this.gasEstimateUsd,
     this.networkError,
     this.promoCode,
+    this.error,
     this.currentChainId,
     BigInt? currentTurboBalance,
     this.currentBalanceStorage = '0 GB',
@@ -375,10 +379,13 @@ class CryptoTopupConfirmation extends CryptoTopupState {
       networkState == NetworkState.correct && !isProcessing;
 
   CryptoTopupConfirmation copyWith({
+    CryptoQuote? quote,
     NetworkState? networkState,
     bool? isProcessing,
+    bool? isRefreshingQuote,
     double? gasEstimateUsd,
     String? networkError,
+    String? error,
     int? currentChainId,
     BigInt? currentTurboBalance,
     String? currentBalanceStorage,
@@ -387,14 +394,16 @@ class CryptoTopupConfirmation extends CryptoTopupState {
   }) {
     return CryptoTopupConfirmation(
       token: token,
-      quote: quote,
+      quote: quote ?? this.quote,
       fromAddress: fromAddress,
       toAddress: toAddress,
       networkState: networkState ?? this.networkState,
       isProcessing: isProcessing ?? this.isProcessing,
+      isRefreshingQuote: isRefreshingQuote ?? this.isRefreshingQuote,
       gasEstimateUsd: gasEstimateUsd ?? this.gasEstimateUsd,
       networkError: networkError,
       promoCode: promoCode,
+      error: error,
       currentChainId: currentChainId ?? this.currentChainId,
       currentTurboBalance: currentTurboBalance ?? this.currentTurboBalance,
       currentBalanceStorage: currentBalanceStorage ?? this.currentBalanceStorage,
@@ -411,9 +420,11 @@ class CryptoTopupConfirmation extends CryptoTopupState {
         toAddress,
         networkState,
         isProcessing,
+        isRefreshingQuote,
         gasEstimateUsd,
         networkError,
         promoCode,
+        error,
         currentChainId,
         currentTurboBalance,
         currentBalanceStorage,
@@ -541,15 +552,23 @@ class CryptoTopupSuccess extends CryptoTopupState {
   final BigInt? newBalance;
   final CryptoToken token;
 
+  /// Token amount spent (e.g., 100.0 for ARIO)
+  final double tokenAmountSpent;
+
+  /// USD equivalent at time of purchase
+  final double? usdValue;
+
   const CryptoTopupSuccess({
     required this.txId,
     required this.creditsAdded,
     this.newBalance,
     required this.token,
+    required this.tokenAmountSpent,
+    this.usdValue,
   });
 
   @override
-  List<Object?> get props => [txId, creditsAdded, newBalance, token];
+  List<Object?> get props => [txId, creditsAdded, newBalance, token, tokenAmountSpent, usdValue];
 }
 
 // ============================================

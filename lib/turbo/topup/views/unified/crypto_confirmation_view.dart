@@ -1,17 +1,20 @@
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
-import 'package:ardrive/turbo/topup/components/purchase_summary.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
+import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl/intl.dart';
 
 /// Streamlined crypto payment confirmation view.
 ///
-/// Shows a summary of the payment and a confirm button.
-/// This replaces the previous multi-step confirmation flow.
+/// Two-section layout focused on clarity:
+/// 1. "Paying With" - what you're spending
+/// 2. "You'll Receive" - what you're getting
 class CryptoConfirmationView extends StatelessWidget {
   final VoidCallback? onBack;
   final VoidCallback? onClose;
@@ -62,7 +65,7 @@ class CryptoConfirmationView extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(height: 32), // Space for close button
+                          const SizedBox(height: 32),
                           // Header
                           Text(
                             'Confirm Payment',
@@ -71,33 +74,14 @@ class CryptoConfirmationView extends StatelessWidget {
                               color: colors.themeFgDefault,
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          // Quote timer bar (styled like credit card review)
-                          _QuoteTimerBar(
-                            expiresAt: state.quote.expiresAt,
-                            isLoading: false,
-                            onRefresh: () {
-                              bloc.add(
-                                  const CryptoTopupQuoteRefreshRequested());
-                            },
-                          ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 20),
 
-                          // Comprehensive checkout summary
-                          CheckoutSummary(
-                            creditsToReceive: state.quote.wincAmount,
-                            storageEstimate: state.quote.formattedStorage,
-                            priceAmount: state.quote.tokenAmountDisplay,
-                            priceSymbol: state.token.symbol,
-                            isPriceInToken: true,
+                          // Section 1: Paying With
+                          _PayingWithSection(
+                            token: state.token,
+                            walletAddress: state.fromAddress,
+                            amount: state.quote.tokenAmountDisplay,
                             usdEquivalent: state.quote.usdValue,
-                            currentBalance: state.currentTurboBalance,
-                            currentBalanceStorage: state.currentBalanceStorage,
-                            newBalanceStorage: state.newBalanceStorage,
-                            tokenSymbol: state.token.symbol,
-                            tokenBalance: state.tokenBalance,
-                            tokenBalanceAfter: state.tokenBalanceAfter,
-                            // Network fee is shown by the wallet itself, not needed here
                             promoCode: state.promoCode,
                             discountPercent: state.quote.hasDiscount
                                 ? state.quote.discountPercentage.round()
@@ -105,8 +89,28 @@ class CryptoConfirmationView extends StatelessWidget {
                           ),
                           const SizedBox(height: 16),
 
-                          // Network status (for EVM tokens)
+                          // Section 2: You'll Receive
+                          _YoullReceiveSection(
+                            creditsToReceive: state.quote.wincAmount,
+                            storageEstimate: state.quote.formattedStorage,
+                            newBalance: state.newTurboBalance,
+                            newBalanceStorage: state.newBalanceStorage,
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Quote timer (less prominent)
+                          _QuoteTimerBar(
+                            expiresAt: state.quote.expiresAt,
+                            isLoading: state.isRefreshingQuote,
+                            onRefresh: () {
+                              bloc.add(
+                                  const CryptoTopupQuoteRefreshRequested());
+                            },
+                          ),
+
+                          // Network status (for EVM tokens only)
                           if (state.token.requiresGasEstimation) ...[
+                            const SizedBox(height: 12),
                             _NetworkStatusBanner(
                               networkState: state.networkState,
                               token: state.token,
@@ -117,75 +121,89 @@ class CryptoConfirmationView extends StatelessWidget {
                                 }
                               },
                             ),
-                            const SizedBox(height: 16),
                           ],
-
-                          // Terms notice with link
-                          Text.rich(
-                            TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: 'By confirming, you agree to the ',
-                                  style: typography.paragraphSmall(
-                                    color: colors.themeFgMuted,
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: 'Terms of Service and Privacy Policy',
-                                  style: typography
-                                      .paragraphSmall(
-                                        color: colors.themeFgMuted,
-                                      )
-                                      .copyWith(
-                                        decoration: TextDecoration.underline,
-                                      ),
-                                  recognizer: TapGestureRecognizer()
-                                    ..onTap = () => openUrl(
-                                          url: Resources.agreementLink,
-                                        ),
-                                ),
-                              ],
-                            ),
-                          ),
                           const SizedBox(height: 16),
                         ],
                       ),
                     ),
                   ),
                 ),
-                // Footer with back button on left and confirm button on right
+                // Footer with terms and buttons
                 Container(
                   color: colors.themeBgCanvas,
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (onBack != null)
-                        ArDriveClickArea(
-                          child: GestureDetector(
-                            onTap: onBack,
-                            child: Text(
-                              'Back',
-                              style: typography.paragraphLarge(
-                                fontWeight: ArFontWeight.bold,
-                                color: colors.themeAccentDisabled,
+                      // Divider
+                      Divider(color: colors.themeBorderDefault, height: 1),
+                      const SizedBox(height: 16),
+                      // Terms notice
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: 'By confirming, you agree to the ',
+                              style: typography.paragraphSmall(
+                                color: colors.themeFgMuted,
                               ),
                             ),
-                          ),
-                        )
-                      else
-                        const SizedBox.shrink(),
-                      SizedBox(
-                        height: 48,
-                        child: ArDriveButton(
-                          isDisabled: !state.canConfirm ||
-                              state.quote.isExpired ||
-                              state.networkState == NetworkState.checking,
-                          text: _getButtonText(state),
-                          onPressed: () {
-                            bloc.add(const CryptoTopupConfirmPayment());
-                          },
+                            TextSpan(
+                              text: 'Terms of Service',
+                              style: typography
+                                  .paragraphSmall(
+                                    color: colors.themeFgMuted,
+                                  )
+                                  .copyWith(
+                                    decoration: TextDecoration.underline,
+                                  ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () => openUrl(
+                                      url: Resources.agreementLink,
+                                    ),
+                            ),
+                            TextSpan(
+                              text: '.',
+                              style: typography.paragraphSmall(
+                                color: colors.themeFgMuted,
+                              ),
+                            ),
+                          ],
                         ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Buttons
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          if (onBack != null)
+                            ArDriveClickArea(
+                              child: GestureDetector(
+                                onTap: onBack,
+                                child: Text(
+                                  'Back',
+                                  style: typography.paragraphLarge(
+                                    fontWeight: ArFontWeight.bold,
+                                    color: colors.themeAccentDisabled,
+                                  ),
+                                ),
+                              ),
+                            )
+                          else
+                            const SizedBox.shrink(),
+                          SizedBox(
+                            height: 48,
+                            child: ArDriveButton(
+                              isDisabled: !state.canConfirm ||
+                                  state.quote.isExpired ||
+                                  state.networkState == NetworkState.checking,
+                              text: _getButtonText(state),
+                              onPressed: () {
+                                bloc.add(const CryptoTopupConfirmPayment());
+                              },
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -195,8 +213,8 @@ class CryptoConfirmationView extends StatelessWidget {
             // Close button in top right
             if (onClose != null)
               Positioned(
-                right: 27,
-                top: 27,
+                right: 20,
+                top: 20,
                 child: ArDriveClickArea(
                   child: GestureDetector(
                     onTap: onClose,
@@ -212,7 +230,7 @@ class CryptoConfirmationView extends StatelessWidget {
 
   String _getButtonText(CryptoTopupConfirmation state) {
     if (state.quote.isExpired) {
-      return 'Quote Expired - Go Back';
+      return 'Quote Expired';
     }
     if (state.networkState == NetworkState.checking) {
       return 'Checking Network...';
@@ -223,9 +241,371 @@ class CryptoConfirmationView extends StatelessWidget {
     if (state.networkState == NetworkState.needsSwitch) {
       return 'Switch Network First';
     }
-    return 'Confirm & Pay ${state.quote.formattedTokenAmount}';
+    return 'Confirm & Pay';
   }
 }
+
+// ============================================
+// Section 1: Paying With
+// ============================================
+
+class _PayingWithSection extends StatelessWidget {
+  final CryptoToken token;
+  final String walletAddress;
+  final double amount;
+  final double? usdEquivalent;
+  final String? promoCode;
+  final int? discountPercent;
+
+  const _PayingWithSection({
+    required this.token,
+    required this.walletAddress,
+    required this.amount,
+    this.usdEquivalent,
+    this.promoCode,
+    this.discountPercent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+    final typography = ArDriveTypographyNew.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.themeBgSubtle,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.themeBorderDefault),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section label
+          Text(
+            'PAYING WITH',
+            style: typography.paragraphSmall(
+              fontWeight: ArFontWeight.semiBold,
+              color: colors.themeFgMuted,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Token info row
+          Row(
+            children: [
+              // Token icon
+              _TokenIcon(token: token, size: 40),
+              const SizedBox(width: 12),
+              // Token name and wallet
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      token.displayName,
+                      style: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colors.themeFgDefault,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _truncateAddress(walletAddress),
+                      style: typography.paragraphSmall(
+                        color: colors.themeFgMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Divider
+          Divider(color: colors.themeBorderDefault, height: 1),
+          const SizedBox(height: 16),
+
+          // Amount (big and prominent)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _formatAmount(amount),
+                    style: typography.heading4(
+                      fontWeight: ArFontWeight.bold,
+                      color: colors.themeFgDefault,
+                    ),
+                  ),
+                  if (usdEquivalent != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      '~\$${NumberFormat('#,##0.00').format(usdEquivalent)}',
+                      style: typography.paragraphSmall(
+                        color: colors.themeFgMuted,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              Text(
+                token.symbol,
+                style: typography.heading4(
+                  fontWeight: ArFontWeight.bold,
+                  color: colors.themeFgMuted,
+                ),
+              ),
+            ],
+          ),
+
+          // Promo/discount badge
+          if (promoCode != null && promoCode!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: colors.themeSuccessSubtle,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.local_offer,
+                    size: 14,
+                    color: colors.themeSuccessDefault,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    discountPercent != null
+                        ? '$promoCode ($discountPercent% off)'
+                        : promoCode!,
+                    style: typography.paragraphSmall(
+                      fontWeight: ArFontWeight.semiBold,
+                      color: colors.themeSuccessDefault,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _formatAmount(double amount) {
+    if (amount == amount.roundToDouble() && amount < 1000) {
+      return amount.toInt().toString();
+    }
+    return amount
+        .toStringAsFixed(4)
+        .replaceAll(RegExp(r'0+$'), '')
+        .replaceAll(RegExp(r'\.$'), '');
+  }
+
+  String _truncateAddress(String address) {
+    if (address.length <= 12) return address;
+    return '${address.substring(0, 6)}...${address.substring(address.length - 4)}';
+  }
+}
+
+// ============================================
+// Section 2: You'll Receive
+// ============================================
+
+class _YoullReceiveSection extends StatelessWidget {
+  final BigInt creditsToReceive;
+  final String storageEstimate;
+  final BigInt newBalance;
+  final String newBalanceStorage;
+
+  const _YoullReceiveSection({
+    required this.creditsToReceive,
+    required this.storageEstimate,
+    required this.newBalance,
+    required this.newBalanceStorage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+    final typography = ArDriveTypographyNew.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.themeBgSubtle,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.themeBorderDefault),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section label
+          Text(
+            "YOU'LL RECEIVE",
+            style: typography.paragraphSmall(
+              fontWeight: ArFontWeight.semiBold,
+              color: colors.themeFgMuted,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Credits amount (big and prominent)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    convertWinstonToLiteralString(creditsToReceive),
+                    style: typography.heading4(
+                      fontWeight: ArFontWeight.bold,
+                      color: colors.themeSuccessDefault,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    storageEstimate,
+                    style: typography.paragraphSmall(
+                      color: colors.themeFgMuted,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                'credits',
+                style: typography.heading4(
+                  fontWeight: ArFontWeight.bold,
+                  color: colors.themeFgMuted,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Divider
+          Divider(color: colors.themeBorderDefault, height: 1),
+          const SizedBox(height: 12),
+
+          // New balance row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'New balance',
+                style: typography.paragraphSmall(
+                  color: colors.themeFgMuted,
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '${convertWinstonToLiteralString(newBalance)} credits',
+                    style: typography.paragraphSmall(
+                      fontWeight: ArFontWeight.semiBold,
+                      color: colors.themeFgDefault,
+                    ),
+                  ),
+                  Text(
+                    newBalanceStorage,
+                    style: typography.paragraphSmall(
+                      color: colors.themeFgMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ============================================
+// Token Icon
+// ============================================
+
+class _TokenIcon extends StatelessWidget {
+  final CryptoToken token;
+  final double size;
+
+  const _TokenIcon({
+    required this.token,
+    this.size = 40,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isSvg = token.logoAsset.endsWith('.svg');
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: _getTokenColor(token),
+        borderRadius: BorderRadius.circular(size / 2),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(size / 2),
+        child: isSvg
+            ? SvgPicture.asset(
+                token.logoAsset,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                placeholderBuilder: (context) => _buildFallback(),
+              )
+            : Image.asset(
+                token.logoAsset,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => _buildFallback(),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildFallback() {
+    return Center(
+      child: Text(
+        token.symbol.substring(0, token.symbol.length > 2 ? 2 : token.symbol.length),
+        style: TextStyle(
+          fontSize: size * 0.35,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  Color _getTokenColor(CryptoToken token) {
+    return switch (token) {
+      CryptoToken.arioAO ||
+      CryptoToken.arioAOViaEth ||
+      CryptoToken.arioBase =>
+        const Color(0xFF000000),
+      CryptoToken.ethL1 || CryptoToken.ethBase => const Color(0xFF627EEA),
+      CryptoToken.sol => const Color(0xFF9945FF),
+      CryptoToken.usdcBase || CryptoToken.usdcEth => const Color(0xFF2775CA),
+    };
+  }
+}
+
+// ============================================
+// Network Status Banner
+// ============================================
 
 class _NetworkStatusBanner extends StatelessWidget {
   final NetworkState networkState;
@@ -243,89 +623,69 @@ class _NetworkStatusBanner extends StatelessWidget {
     final colors = ArDriveTheme.of(context).themeData.colors;
     final typography = ArDriveTypographyNew.of(context);
 
-    if (networkState == NetworkState.checking) {
-      return Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: colors.themeBgSubtle,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: colors.themeBorderDefault),
-        ),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: colors.themeFgMuted,
-              ),
+    // Only show for non-correct states or when checking
+    if (networkState == NetworkState.correct) {
+      // Show a subtle success indicator
+      return Row(
+        children: [
+          Icon(Icons.check_circle_outline,
+              color: colors.themeSuccessDefault, size: 16),
+          const SizedBox(width: 6),
+          Text(
+            'Connected to ${token.networkDisplayName}',
+            style: typography.paragraphSmall(
+              color: colors.themeFgMuted,
             ),
-            const SizedBox(width: 8),
-            Text(
-              'Checking network...',
-              style: typography.paragraphSmall(
-                color: colors.themeFgMuted,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
-    if (networkState == NetworkState.correct) {
-      return Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: colors.themeBgSubtle,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: colors.themeBorderDefault),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.check_circle, color: colors.themeFgMuted, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              'Connected to ${token.networkDisplayName}',
-              style: typography.paragraphSmall(
-                color: colors.themeFgDefault,
-              ),
+    if (networkState == NetworkState.checking) {
+      return Row(
+        children: [
+          SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: colors.themeFgMuted,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'Checking network...',
+            style: typography.paragraphSmall(
+              color: colors.themeFgMuted,
+            ),
+          ),
+        ],
       );
     }
 
     if (networkState == NetworkState.switching) {
-      return Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: colors.themeBgSubtle,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: colors.themeFgMuted,
-              ),
+      return Row(
+        children: [
+          SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: colors.themeFgMuted,
             ),
-            const SizedBox(width: 8),
-            Text(
-              'Switching network...',
-              style: typography.paragraphSmall(
-                color: colors.themeFgMuted,
-              ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'Switching to ${token.networkDisplayName}...',
+            style: typography.paragraphSmall(
+              color: colors.themeFgMuted,
             ),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
-    // Needs switch
+    // Needs switch - show warning banner
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -334,24 +694,31 @@ class _NetworkStatusBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.warning_amber, color: colors.themeWarningFg, size: 20),
+          Icon(Icons.warning_amber, color: colors.themeWarningFg, size: 18),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Please switch to ${token.networkDisplayName}',
+              'Switch to ${token.networkDisplayName}',
               style: typography.paragraphSmall(
                 color: colors.themeWarningFg,
               ),
             ),
           ),
           const SizedBox(width: 8),
-          TextButton(
-            onPressed: onSwitchNetwork,
-            child: Text(
-              'Switch',
-              style: typography.paragraphSmall(
-                fontWeight: ArFontWeight.bold,
+          GestureDetector(
+            onTap: onSwitchNetwork,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
                 color: colors.themeWarningFg,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'Switch',
+                style: typography.paragraphSmall(
+                  fontWeight: ArFontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
@@ -361,7 +728,10 @@ class _NetworkStatusBanner extends StatelessWidget {
   }
 }
 
-/// Styled quote timer bar with refresh button (matches credit card review)
+// ============================================
+// Quote Timer Bar
+// ============================================
+
 class _QuoteTimerBar extends StatelessWidget {
   final DateTime? expiresAt;
   final bool isLoading;
@@ -380,87 +750,53 @@ class _QuoteTimerBar extends StatelessWidget {
 
     if (expiresAt == null) return const SizedBox.shrink();
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: colors.themeBgSubtle,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colors.themeBorderDefault),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.schedule,
-            size: 16,
-            color: colors.themeFgMuted,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: StreamBuilder(
-              stream: Stream.periodic(const Duration(seconds: 1)),
-              builder: (context, snapshot) {
-                final remaining = expiresAt!.difference(DateTime.now());
-                final isExpired = remaining.isNegative;
-                final minutes = remaining.inMinutes.abs();
-                final seconds = (remaining.inSeconds % 60).abs();
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.schedule,
+          size: 14,
+          color: colors.themeFgMuted,
+        ),
+        const SizedBox(width: 6),
+        StreamBuilder(
+          stream: Stream.periodic(const Duration(seconds: 1)),
+          builder: (context, snapshot) {
+            final remaining = expiresAt!.difference(DateTime.now());
+            final isExpired = remaining.isNegative;
+            final minutes = remaining.inMinutes.abs();
+            final seconds = (remaining.inSeconds % 60).abs();
 
-                return Text(
-                  isExpired
-                      ? 'Quote expired'
-                      : 'Quote updates in ${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
-                  style: typography.paragraphSmall(
-                    color: isExpired
-                        ? colors.themeErrorDefault
-                        : colors.themeFgMuted,
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(width: 8),
-          ArDriveClickArea(
-            child: GestureDetector(
-              onTap: isLoading ? null : onRefresh,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: colors.themeBgCanvas,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: colors.themeBorderDefault),
-                ),
-                child: isLoading
-                    ? SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: colors.themeFgMuted,
-                        ),
-                      )
-                    : Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.refresh,
-                            size: 14,
-                            color: colors.themeFgMuted,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Refresh',
-                            style: typography.paragraphSmall(
-                              fontWeight: ArFontWeight.semiBold,
-                              color: colors.themeFgDefault,
-                            ),
-                          ),
-                        ],
-                      ),
+            return Text(
+              isExpired
+                  ? 'Quote expired'
+                  : 'Price valid for ${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
+              style: typography.paragraphSmall(
+                color:
+                    isExpired ? colors.themeErrorDefault : colors.themeFgMuted,
               ),
-            ),
-          ),
-        ],
-      ),
+            );
+          },
+        ),
+        const SizedBox(width: 8),
+        GestureDetector(
+          onTap: isLoading ? null : onRefresh,
+          child: isLoading
+              ? SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: colors.themeFgMuted,
+                  ),
+                )
+              : Icon(
+                  Icons.refresh,
+                  size: 16,
+                  color: colors.themeFgMuted,
+                ),
+        ),
+      ],
     );
   }
 }

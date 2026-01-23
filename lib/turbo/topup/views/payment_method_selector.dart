@@ -44,7 +44,7 @@ class PaymentMethodSelector extends StatelessWidget {
           Expanded(
             child: _PaymentMethodTab(
               label: 'Crypto',
-              icon: Icons.currency_bitcoin,
+              icon: Icons.account_balance_wallet,
               isSelected: selected == TopupPaymentMethod.crypto,
               onTap: () => onMethodChanged(TopupPaymentMethod.crypto),
             ),

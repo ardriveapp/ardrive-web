@@ -128,6 +128,8 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
       currentTurboBalance: widget.currentTurboBalance,
       currentBalanceStorage: widget.currentBalanceStorage,
       newBalanceStorage: widget.newBalanceStorage,
+      // Pass the pre-fetched ARIO balance from ArDriveAuth for ARIO on AO tokens
+      arioBalance: auth.currentUser.ioTokens,
     );
 
     // Initialize and set the amount

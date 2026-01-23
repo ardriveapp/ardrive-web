@@ -1,6 +1,7 @@
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 /// Payment method options
 enum PaymentMethod {
@@ -190,7 +191,7 @@ class _CryptoPaymentTab extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.currency_bitcoin,
+                Icons.account_balance_wallet,
                 size: 18,
                 color:
                     isSelected ? colors.themeBgSurface : colors.themeFgMuted,
@@ -306,57 +307,48 @@ class _TokenIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+    final isSvg = token.logoAsset.endsWith('.svg');
+
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: _getTokenColor(token),
+        color: colors.themeBgSubtle,
         borderRadius: BorderRadius.circular(size / 2),
       ),
-      child: Center(
-        child: Text(
-          _getTokenAbbreviation(token),
-          style: TextStyle(
-            fontSize: size * 0.35,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(size / 2),
+        child: isSvg
+            ? SvgPicture.asset(
+                token.logoAsset,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                placeholderBuilder: (context) => _buildFallbackIcon(context),
+              )
+            : Image.asset(
+                token.logoAsset,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    _buildFallbackIcon(context),
+              ),
       ),
     );
   }
 
-  String _getTokenAbbreviation(CryptoToken token) {
-    switch (token) {
-      case CryptoToken.arioAO:
-      case CryptoToken.arioAOViaEth:
-      case CryptoToken.arioBase:
-        return 'AR';
-      case CryptoToken.ethL1:
-      case CryptoToken.ethBase:
-        return 'ETH';
-      case CryptoToken.sol:
-        return 'SOL';
-      case CryptoToken.usdcBase:
-      case CryptoToken.usdcEth:
-        return '\$';
-    }
-  }
-
-  Color _getTokenColor(CryptoToken token) {
-    switch (token) {
-      case CryptoToken.arioAO:
-      case CryptoToken.arioAOViaEth:
-      case CryptoToken.arioBase:
-        return const Color(0xFF000000); // ARIO black
-      case CryptoToken.ethL1:
-      case CryptoToken.ethBase:
-        return const Color(0xFF627EEA); // ETH blue
-      case CryptoToken.sol:
-        return const Color(0xFF9945FF); // SOL purple
-      case CryptoToken.usdcBase:
-      case CryptoToken.usdcEth:
-        return const Color(0xFF2775CA); // USDC blue
-    }
+  Widget _buildFallbackIcon(BuildContext context) {
+    return Center(
+      child: Text(
+        token.symbol.substring(0, token.symbol.length > 2 ? 2 : token.symbol.length),
+        style: TextStyle(
+          fontSize: size * 0.35,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+    );
   }
 }

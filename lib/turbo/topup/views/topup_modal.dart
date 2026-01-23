@@ -412,6 +412,11 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
         currentBalanceStorage = unifiedState.currentBalanceStorage;
         creditsToReceive = unifiedState.creditsToReceive;
         newBalanceStorage = unifiedState.newBalanceStorage;
+      } else if (unifiedState is UnifiedTopupReadyToContinue) {
+        currentBalance = unifiedState.currentBalance;
+        currentBalanceStorage = unifiedState.currentBalanceStorage;
+        creditsToReceive = unifiedState.creditsToReceive;
+        newBalanceStorage = unifiedState.newBalanceStorage;
       }
 
       // Transition to crypto flow view with balance data for checkout display

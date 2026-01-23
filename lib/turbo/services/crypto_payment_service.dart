@@ -543,8 +543,12 @@ class CryptoPaymentService {
     // Convert token amount
     final tokenAmount = convertARIOToTokenAmount(quote.tokenAmountDisplay);
 
-    // Execute top-up
-    final result = await topUpWithTokens(turbo, tokenAmount);
+    // Execute top-up with destination address
+    final result = await topUpWithTokens(
+      turbo,
+      tokenAmount,
+      destinationAddress: arweaveAddress,
+    );
     final txId = getProperty(result, 'id')?.toString();
 
     if (txId == null || txId.isEmpty) {
@@ -585,8 +589,12 @@ class CryptoPaymentService {
     // Convert token amount
     final tokenAmount = convertARIOToTokenAmount(quote.tokenAmountDisplay);
 
-    // Execute top-up
-    final result = await topUpWithTokens(turbo, tokenAmount);
+    // Execute top-up with destination address
+    final result = await topUpWithTokens(
+      turbo,
+      tokenAmount,
+      destinationAddress: arweaveAddress,
+    );
     final txId = getProperty(result, 'id')?.toString();
 
     if (txId == null || txId.isEmpty) {
@@ -597,6 +605,10 @@ class CryptoPaymentService {
   }
 
   /// Execute EVM token payment (ETH, USDC, ARIO on Base/Ethereum).
+  ///
+  /// For EVM token transfers, we use the walletAdapter pattern:
+  /// `walletAdapter: { getSigner: () => ethersSigner }`
+  /// This allows the SDK to manage transaction signing internally.
   Future<String> _executeEvmPayment(
     CryptoToken token,
     CryptoQuote quote,
@@ -606,16 +618,17 @@ class CryptoPaymentService {
     // Ensure we're on the correct chain
     await ethereumWallet.ensureCorrectChain(token);
 
-    // Get signer
+    // Get ethers.js signer for the wallet adapter
     final chainId = _networkConfig.getChainIdForToken(token)!;
-    final signer = await _signerCache.getOrCreateEthereumSigner(
+    final ethersSigner = await _signerCache.getOrCreateEthereumSigner(
       ethereumWallet,
       chainId,
     );
 
-    // Create authenticated Turbo client
-    final turbo = await createAuthenticatedTurbo(
-      signer: signer,
+    // Create authenticated Turbo client with wallet adapter pattern
+    // EVM payments use walletAdapter: { getSigner: () => signer }
+    final turbo = await createAuthenticatedTurboWithWalletAdapter(
+      ethersSigner: ethersSigner,
       paymentServiceUrl: _paymentUrl,
       token: token.turboTokenType,
     );
@@ -623,8 +636,12 @@ class CryptoPaymentService {
     // Convert token amount based on type
     final tokenAmount = _convertTokenAmountForSDK(token, quote.tokenAmountDisplay);
 
-    // Execute top-up
-    final result = await topUpWithTokens(turbo, tokenAmount);
+    // Execute top-up with destination address
+    final result = await topUpWithTokens(
+      turbo,
+      tokenAmount,
+      destinationAddress: arweaveAddress,
+    );
     final txId = getProperty(result, 'id')?.toString();
 
     if (txId == null || txId.isEmpty) {
@@ -635,26 +652,33 @@ class CryptoPaymentService {
   }
 
   /// Execute Solana SOL payment.
+  ///
+  /// For Solana payments, we use the walletAdapter pattern:
+  /// `walletAdapter: window.solana`
+  /// The SDK expects the raw Solana wallet provider (Phantom/Solflare).
   Future<String> _executeSolanaPayment(
     CryptoQuote quote,
     String arweaveAddress,
     SolanaWalletService solanaWallet,
   ) async {
-    // Get the Solana wallet adapter
+    // Get the Solana wallet adapter (window.solana)
     final walletAdapter = await _signerCache.getOrCreateSolanaSigner(solanaWallet);
 
-    // Create authenticated Turbo client
-    final turbo = await createAuthenticatedTurbo(
-      signer: walletAdapter,
+    // Create authenticated Turbo client with Solana wallet adapter
+    final turbo = await createAuthenticatedTurboWithSolanaAdapter(
+      solanaWalletAdapter: walletAdapter,
       paymentServiceUrl: _paymentUrl,
-      token: 'solana',
     );
 
     // Convert token amount
     final tokenAmount = convertSOLToTokenAmount(quote.tokenAmountDisplay);
 
-    // Execute top-up
-    final result = await topUpWithTokens(turbo, tokenAmount);
+    // Execute top-up with destination address
+    final result = await topUpWithTokens(
+      turbo,
+      tokenAmount,
+      destinationAddress: arweaveAddress,
+    );
     final txId = getProperty(result, 'id')?.toString();
 
     if (txId == null || txId.isEmpty) {
