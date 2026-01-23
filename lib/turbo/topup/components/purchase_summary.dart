@@ -86,8 +86,8 @@ class PurchaseSummary extends StatelessWidget {
             // If storageUnit is provided, append it (for backwards compatibility)
             subValue: storageEstimate != null
                 ? storageUnit != null
-                    ? '~$storageEstimate $storageUnit of storage'
-                    : '~$storageEstimate of storage'
+                    ? '~$storageEstimate $storageUnit'
+                    : '~$storageEstimate'
                 : null,
           ),
           const SizedBox(height: 12),
@@ -309,7 +309,7 @@ class CheckoutSummary extends StatelessWidget {
           _CompactRow(
             label: "You're buying",
             value: '${convertWinstonToLiteralString(creditsToReceive)} credits',
-            subValue: '~$storageEstimate storage',
+            subValue: '~$storageEstimate',
             typography: typography,
             colors: colors,
           ),

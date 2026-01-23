@@ -132,9 +132,13 @@ class _SuccessViewState extends State<SuccessView> {
     final colors = themeData.colors;
     final colorTokens = themeData.colorTokens;
 
+    final typography = ArDriveTypographyNew.of(context);
+
     return Stack(
       children: [
         Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Red top line (ArDrive modal pattern)
             Container(
@@ -147,134 +151,128 @@ class _SuccessViewState extends State<SuccessView> {
                 ),
               ),
             ),
+            // Confetti (positioned at top)
+            if (widget.showConfetti)
+              Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ConfettiWidget(
+                    numberOfParticles: 10,
+                    blastDirection: -pi / 2,
+                    blastDirectionality: BlastDirectionality.explosive,
+                    confettiController: confettiController1!,
+                    maxBlastForce: 40,
+                    child: const SizedBox(height: 0, width: 0),
+                  ),
+                  ConfettiWidget(
+                    numberOfParticles: 10,
+                    blastDirection: pi / 2,
+                    blastDirectionality: BlastDirectionality.explosive,
+                    confettiController: confettiController2!,
+                    maxBlastForce: 40,
+                    child: const SizedBox(height: 0, width: 0),
+                  ),
+                ],
+              ),
             // Main content
-            Expanded(
-              child: Container(
-                color: colors.themeBgCanvas,
-                child: Column(
-                  children: [
-                    if (widget.showConfetti)
-                      Row(
-                        mainAxisSize: MainAxisSize.max,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          ConfettiWidget(
-                            numberOfParticles: 10,
-                            blastDirection: -pi / 2,
-                            blastDirectionality: BlastDirectionality.explosive,
-                            confettiController: confettiController1!,
-                            maxBlastForce: 40,
-                            child: const SizedBox(
-                              height: 0,
-                              width: 0,
-                            ),
-                          ),
-                          ConfettiWidget(
-                            numberOfParticles: 10,
-                            blastDirection: pi / 2,
-                            blastDirectionality: BlastDirectionality.explosive,
-                            confettiController: confettiController2!,
-                            maxBlastForce: 40,
-                            child: const SizedBox(
-                              height: 0,
-                              width: 0,
-                            ),
-                          ),
-                        ],
+            Container(
+              color: colors.themeBgCanvas,
+              padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title - left aligned
+                  Row(
+                    children: [
+                      ArDriveIcons.checkCirle(
+                        size: 28,
+                        color: colors.themeSuccessDefault,
                       ),
-                    const Spacer(),
-                    // Success icon and message
-                    Column(
-                      children: [
-                        ArDriveIcons.checkCirle(
-                          size: 40,
-                          color: colors.themeSuccessDefault,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          widget.successMessage,
-                          style: ArDriveTypographyNew.of(context).heading5(
-                            fontWeight: ArFontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          widget.detailMessage,
-                          style: ArDriveTypographyNew.of(context).paragraphNormal(
-                            color: colors.themeFgMuted,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        // Purchase details
-                        if (_hasPaymentDetails) ...[
-                          const SizedBox(height: 24),
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: colors.themeBgSubtle,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Column(
-                              children: [
-                                if (widget.amountPaid != null)
-                                  _buildDetailRow(
-                                    context,
-                                    'Amount Paid',
-                                    widget.amountPaid!,
-                                    colors,
-                                  ),
-                                if (widget.storageEstimate != null) ...[
-                                  const SizedBox(height: 8),
-                                  _buildDetailRow(
-                                    context,
-                                    'Storage Added',
-                                    widget.storageEstimate!,
-                                    colors,
-                                  ),
-                                ],
-                                if (widget.newBalanceStorage != null) ...[
-                                  const SizedBox(height: 8),
-                                  _buildDetailRow(
-                                    context,
-                                    'New Balance',
-                                    widget.newBalanceStorage!,
-                                    colors,
-                                    isBold: true,
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const Spacer(),
-                    // Close button
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 40),
-                      child: ArDriveButton(
-                        maxHeight: 44,
-                        maxWidth: 143,
-                        text: widget.closeButtonLabel,
-                        fontStyle: ArDriveTypographyNew.of(context).paragraphLarge(
+                      const SizedBox(width: 12),
+                      Text(
+                        widget.successMessage,
+                        style: typography.heading5(
                           fontWeight: ArFontWeight.bold,
-                          color: Colors.white,
                         ),
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    widget.detailMessage,
+                    style: typography.paragraphNormal(
+                      color: colors.themeFgMuted,
+                    ),
+                  ),
+                  // Purchase details
+                  if (_hasPaymentDetails) ...[
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: colors.themeBgSubtle,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        children: [
+                          if (widget.amountPaid != null)
+                            _buildDetailRow(
+                              context,
+                              'Amount Paid',
+                              widget.amountPaid!,
+                              colors,
+                            ),
+                          if (widget.storageEstimate != null) ...[
+                            const SizedBox(height: 8),
+                            _buildDetailRow(
+                              context,
+                              'Storage Added',
+                              widget.storageEstimate!,
+                              colors,
+                            ),
+                          ],
+                          if (widget.newBalanceStorage != null) ...[
+                            const SizedBox(height: 8),
+                            _buildDetailRow(
+                              context,
+                              'New Balance',
+                              widget.newBalanceStorage!,
+                              colors,
+                              isBold: true,
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ],
-                ),
+                  const SizedBox(height: 24),
+                  // Close button - right aligned
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ArDriveButton(
+                      maxHeight: 44,
+                      maxWidth: 143,
+                      text: widget.closeButtonLabel,
+                      fontStyle: typography.paragraphLarge(
+                        fontWeight: ArFontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
         // Close button in top right
         Positioned(
-          right: 27,
-          top: 27,
+          right: 20,
+          top: 20,
           child: ArDriveClickArea(
             child: GestureDetector(
               onTap: () => Navigator.pop(context),
