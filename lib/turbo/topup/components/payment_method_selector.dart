@@ -65,10 +65,8 @@ class PaymentMethodSelector extends StatelessWidget {
                       onMethodChanged(PaymentMethod.crypto);
                     }
                   },
-                  onTokenSelected: (token) {
-                    onMethodChanged(PaymentMethod.crypto);
-                    onTokenSelected(token);
-                  },
+                  // onTap already handles method change, just forward token selection
+                  onTokenSelected: onTokenSelected,
                 ),
               ),
             ],
