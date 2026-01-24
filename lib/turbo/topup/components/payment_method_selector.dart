@@ -240,51 +240,39 @@ class _CryptoPaymentTab extends StatelessWidget {
             _TokenIcon(token: token),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          token.displayName,
-                          style: typography.paragraphNormal(
-                            fontWeight: ArFontWeight.semiBold,
-                            color: colors.themeFgDefault,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                  Flexible(
+                    child: Text(
+                      token.displayName,
+                      style: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colors.themeFgDefault,
                       ),
-                      if (hasNoTurboFee) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.themeBgSubtle,
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: colors.themeBorderDefault),
-                          ),
-                          child: Text(
-                            'No Turbo Fee',
-                            style: typography.caption(
-                              fontWeight: ArFontWeight.semiBold,
-                              color: colors.themeFgMuted,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  Text(
-                    token.description,
-                    style: typography.paragraphSmall(
-                      color: colors.themeFgMuted,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  if (hasNoTurboFee) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.themeBgSubtle,
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: colors.themeBorderDefault),
+                      ),
+                      child: Text(
+                        'No Turbo Fee',
+                        style: typography.caption(
+                          fontWeight: ArFontWeight.semiBold,
+                          color: colors.themeFgMuted,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

@@ -304,8 +304,10 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                     fontWeight: ArFontWeight.bold,
                     color: Colors.white,
                   ),
-                  isDisabled:
-                      state is PaymentReviewLoadingQuote || !_emailIsValid,
+                  isDisabled: state is PaymentReviewLoadingQuote ||
+                      !_emailIsValid ||
+                      (state is PaymentReviewPaymentModelLoaded &&
+                          DateTime.now().isAfter(state.quoteExpirationDate)),
                   customContent: state is PaymentReviewLoading
                       ? const SizedBox(
                           height: 24,
@@ -333,7 +335,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                 appLocalizationsOf(context).back,
                 style: typography.paragraphLarge(
                   fontWeight: ArFontWeight.bold,
-                  color: colors.themeAccentDisabled,
+                  color: colors.themeFgMuted,
                 ),
               ),
             ),
@@ -354,7 +356,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                 appLocalizationsOf(context).back,
                 style: typography.paragraphLarge(
                   fontWeight: ArFontWeight.bold,
-                  color: colors.themeAccentDisabled,
+                  color: colors.themeFgMuted,
                 ),
               ),
             ),
@@ -368,8 +370,10 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                   fontWeight: ArFontWeight.bold,
                   color: Colors.white,
                 ),
-                isDisabled:
-                    state is PaymentReviewLoadingQuote || !_emailIsValid,
+                isDisabled: state is PaymentReviewLoadingQuote ||
+                    !_emailIsValid ||
+                    (state is PaymentReviewPaymentModelLoaded &&
+                        DateTime.now().isAfter(state.quoteExpirationDate)),
                 customContent: state is PaymentReviewLoading
                     ? const SizedBox(
                         height: 24,

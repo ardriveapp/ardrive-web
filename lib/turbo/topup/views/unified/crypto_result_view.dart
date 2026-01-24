@@ -259,10 +259,11 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
     final creditValue = credits.toDouble() / 1e12;
     if (creditValue >= 1) {
       return '${creditValue.toStringAsFixed(2)} Credits';
+    } else if (creditValue >= 0.01) {
+      return '${creditValue.toStringAsFixed(4)} Credits';
     } else {
-      // Show in smaller units for very small amounts
-      final mCredits = creditValue * 1000;
-      return '${mCredits.toStringAsFixed(2)} mCredits';
+      // For very small amounts, show more decimal places
+      return '${creditValue.toStringAsFixed(6)} Credits';
     }
   }
 

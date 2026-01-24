@@ -196,7 +196,9 @@ class CryptoConfirmationView extends StatelessWidget {
                             child: ArDriveButton(
                               isDisabled: !state.canConfirm ||
                                   state.quote.isExpired ||
-                                  state.networkState == NetworkState.checking,
+                                  state.networkState == NetworkState.checking ||
+                                  state.networkState == NetworkState.switching ||
+                                  state.isRefreshingQuote,
                               text: _getButtonText(state),
                               onPressed: () {
                                 bloc.add(const CryptoTopupConfirmPayment());
