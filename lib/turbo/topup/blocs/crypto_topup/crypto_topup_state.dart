@@ -260,9 +260,12 @@ class CryptoTopupAmountEntry extends CryptoTopupState {
 
   /// Check if user has sufficient balance including gas
   bool get hasSufficientBalanceWithGas {
-    if (quote == null || !token.requiresGasEstimation)
+    if (quote == null || !token.requiresGasEstimation) {
       return hasSufficientBalance;
-    if (!token.isNativeToken) return hasSufficientBalance;
+    }
+    if (!token.isNativeToken) {
+      return hasSufficientBalance;
+    }
     // For native tokens, balance must cover payment + gas
     // Gas is in USD, so we need to convert (simplified check)
     return hasSufficientBalance;
