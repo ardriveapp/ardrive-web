@@ -127,10 +127,12 @@ class _TurboReviewViewState extends State<TurboReviewView> {
       child: BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
         buildWhen: (previous, current) {
           return current is PaymentReviewPaymentModelLoaded ||
-              current is PaymentReviewLoadingPaymentModel;
+              current is PaymentReviewLoadingPaymentModel ||
+              current is PaymentReviewInitial;
         },
         builder: (context, state) {
-          if (state is PaymentReviewLoadingPaymentModel) {
+          if (state is PaymentReviewLoadingPaymentModel ||
+              state is PaymentReviewInitial) {
             return const TurboTopupScaffold(
               child: SizedBox(
                 height: 575,

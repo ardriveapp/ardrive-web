@@ -61,9 +61,11 @@ class CryptoNetworkConfig {
   // ============================================
 
   /// Solana RPC URL
+  /// Using QuickNode premium RPC for reliable browser-based requests
+  /// (public Solana RPC returns 403 for browser requests)
   String get solanaRpcUrl => isTestnet
       ? 'https://api.devnet.solana.com'
-      : 'https://api.mainnet-beta.solana.com';
+      : 'https://damp-stylish-sheet.solana-mainnet.quiknode.pro/b3dd2ce1c4f1a06d5fb6c42b80d6848796dd6408/';
 
   /// Solana block explorer URL
   String get solanaExplorerUrl =>

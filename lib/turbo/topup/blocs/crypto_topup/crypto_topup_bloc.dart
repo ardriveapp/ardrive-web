@@ -1588,16 +1588,38 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     }
   }
 
-  void _onRetry(
+  Future<void> _onRetry(
     CryptoTopupRetry event,
     Emitter<CryptoTopupState> emit,
-  ) {
+  ) async {
     final currentState = state;
     if (currentState is CryptoTopupError && currentState.txId != null) {
       add(CryptoTopupRetryTransaction(currentState.txId!));
     } else {
-      // Restart from token selection
-      add(const CryptoTopupStarted());
+      // Clear state and restart - emit token selection directly to avoid
+      // async gaps that can leave the UI in an unhandled state
+      _selectedToken = null;
+      _currentQuote = null;
+      _originalQuote = null;
+      _currentAmountUsd = 0;
+
+      // Start session timer
+      _startSessionTimer();
+
+      // Get connected wallet states
+      final ethWallet = _ethereumWalletService.connectedWallet;
+      final solWallet = _solanaWalletService.connectedWallet;
+
+      _connectedEthAddress = ethWallet?.address;
+      _connectedChainId = ethWallet?.chainId;
+      _connectedSolAddress = solWallet?.address;
+
+      emit(CryptoTopupTokenSelection(
+        ethAddress: _connectedEthAddress,
+        ethChainId: _connectedChainId,
+        solAddress: _connectedSolAddress,
+        isLoadingBalances: false,
+      ));
     }
   }
 

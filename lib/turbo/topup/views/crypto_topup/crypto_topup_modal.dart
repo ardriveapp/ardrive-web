@@ -48,19 +48,9 @@ class CryptoTopupModal extends StatelessWidget {
   }
 
   void _handleStateChanges(BuildContext context, CryptoTopupState state) {
-    // Handle session timeout
-    if (state is CryptoTopupSessionTimeout) {
-      _showSessionTimeoutDialog(context);
-    }
-
     // Handle account changed warning
     if (state is CryptoTopupAccountChangedWarning) {
       _showAccountChangedDialog(context, state);
-    }
-
-    // Handle concurrent session warning
-    if (state is CryptoTopupConcurrentSessionWarning) {
-      _showConcurrentSessionDialog(context, state);
     }
 
     // Handle price volatility warning
@@ -146,8 +136,38 @@ class CryptoTopupModal extends StatelessWidget {
       );
     }
 
-    // Default loading state
-    return const Center(child: CircularProgressIndicator());
+    if (state is CryptoTopupSessionTimeout) {
+      return _SessionExpiredView(
+        key: const ValueKey('session_expired'),
+        onClose: _close(context),
+      );
+    }
+
+    if (state is CryptoTopupConcurrentSessionWarning) {
+      return _ConcurrentSessionView(
+        key: const ValueKey('concurrent_session'),
+        state: state,
+        onClose: _close(context),
+        onTakeOver: () => bloc.add(const CryptoTopupTakeOverSession()),
+      );
+    }
+
+    // Default loading state - include close button as safety net
+    return Stack(
+      children: [
+        const Center(child: CircularProgressIndicator()),
+        Positioned(
+          right: 20,
+          top: 20,
+          child: ArDriveClickArea(
+            child: GestureDetector(
+              onTap: _close(context),
+              child: ArDriveIcons.x(),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   VoidCallback _close(BuildContext context) {
@@ -156,27 +176,6 @@ class CryptoTopupModal extends StatelessWidget {
       onClose?.call();
       Navigator.of(context).pop();
     };
-  }
-
-  void _showSessionTimeoutDialog(BuildContext context) {
-    showArDriveDialog(
-      context,
-      content: ArDriveStandardModal(
-        title: 'Session Expired',
-        content: const Text(
-          'Your session has expired due to inactivity. Please start a new payment.',
-        ),
-        actions: [
-          ModalAction(
-            action: () {
-              Navigator.of(context).pop(); // Close dialog
-              _close(context)(); // Close modal
-            },
-            title: 'Close',
-          ),
-        ],
-      ),
-    );
   }
 
   void _showAccountChangedDialog(
@@ -207,40 +206,6 @@ class CryptoTopupModal extends StatelessWidget {
               bloc.add(const CryptoTopupAcceptAccountChange());
             },
             title: 'Continue',
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showConcurrentSessionDialog(
-    BuildContext context,
-    CryptoTopupConcurrentSessionWarning state,
-  ) {
-    final bloc = context.read<CryptoTopupBloc>();
-
-    showArDriveDialog(
-      context,
-      content: ArDriveStandardModal(
-        title: 'Active Session Detected',
-        content: const Text(
-          'Another crypto payment session is active in a different tab. '
-          'Would you like to take over this session?',
-        ),
-        actions: [
-          ModalAction(
-            action: () {
-              Navigator.of(context).pop();
-              _close(context)();
-            },
-            title: 'Cancel',
-          ),
-          ModalAction(
-            action: () {
-              Navigator.of(context).pop();
-              bloc.add(const CryptoTopupTakeOverSession());
-            },
-            title: 'Take Over',
           ),
         ],
       ),
@@ -306,4 +271,245 @@ Future<void> showCryptoTopupModal(BuildContext context) async {
       );
     },
   );
+}
+
+/// Session expired view - renders inside the modal with proper styling
+class _SessionExpiredView extends StatelessWidget {
+  final VoidCallback onClose;
+
+  const _SessionExpiredView({
+    super.key,
+    required this.onClose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
+
+    return Stack(
+      children: [
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Red top line
+            Container(
+              height: 6,
+              decoration: BoxDecoration(
+                color: colorTokens.containerRed,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(8),
+                  topRight: Radius.circular(8),
+                ),
+              ),
+            ),
+            // Content
+            Expanded(
+              child: Container(
+                color: colors.themeBgCanvas,
+                padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title
+                    Text(
+                      'Session Expired',
+                      style: typography.heading5(
+                        fontWeight: ArFontWeight.bold,
+                        color: colors.themeFgDefault,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    // Icon and message
+                    Expanded(
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.timer_off_outlined,
+                              size: 64,
+                              color: colors.themeWarningFg,
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Your session has expired due to inactivity.',
+                              style: typography.paragraphLarge(
+                                color: colors.themeFgDefault,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Please start a new payment to continue.',
+                              style: typography.paragraphNormal(
+                                color: colors.themeFgMuted,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Close button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ArDriveButton(
+                        text: 'Close',
+                        onPressed: onClose,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        // Close button in top right
+        Positioned(
+          right: 20,
+          top: 20,
+          child: ArDriveClickArea(
+            child: GestureDetector(
+              onTap: onClose,
+              child: ArDriveIcons.x(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Concurrent session warning view - renders inside the modal
+class _ConcurrentSessionView extends StatelessWidget {
+  final CryptoTopupConcurrentSessionWarning state;
+  final VoidCallback onClose;
+  final VoidCallback onTakeOver;
+
+  const _ConcurrentSessionView({
+    super.key,
+    required this.state,
+    required this.onClose,
+    required this.onTakeOver,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
+
+    return Stack(
+      children: [
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Red top line
+            Container(
+              height: 6,
+              decoration: BoxDecoration(
+                color: colorTokens.containerRed,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(8),
+                  topRight: Radius.circular(8),
+                ),
+              ),
+            ),
+            // Content
+            Expanded(
+              child: Container(
+                color: colors.themeBgCanvas,
+                padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title
+                    Text(
+                      'Active Session Detected',
+                      style: typography.heading5(
+                        fontWeight: ArFontWeight.bold,
+                        color: colors.themeFgDefault,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    // Icon and message
+                    Expanded(
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.tab_outlined,
+                              size: 64,
+                              color: colors.themeWarningFg,
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Another payment session is active',
+                              style: typography.paragraphLarge(
+                                color: colors.themeFgDefault,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'A crypto payment is in progress in another tab. '
+                              'You can take over this session or cancel.',
+                              style: typography.paragraphNormal(
+                                color: colors.themeFgMuted,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Action buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 48,
+                            child: ArDriveButton(
+                              text: 'Cancel',
+                              style: ArDriveButtonStyle.secondary,
+                              onPressed: onClose,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: SizedBox(
+                            height: 48,
+                            child: ArDriveButton(
+                              text: 'Take Over',
+                              onPressed: onTakeOver,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        // Close button in top right
+        Positioned(
+          right: 20,
+          top: 20,
+          child: ArDriveClickArea(
+            child: GestureDetector(
+              onTap: onClose,
+              child: ArDriveIcons.x(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }

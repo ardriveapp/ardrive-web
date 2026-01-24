@@ -625,10 +625,14 @@ class CryptoPaymentService {
       chainId,
     );
 
+    // Get the RPC URL for the token's network (required by SDK to identify chain)
+    final gatewayUrl = _networkConfig.getRpcUrlForToken(token);
+
     // Create authenticated Turbo client with wallet adapter pattern
     // EVM payments use walletAdapter: { getSigner: () => signer }
     final turbo = await createAuthenticatedTurboWithWalletAdapter(
       ethersSigner: ethersSigner,
+      gatewayUrl: gatewayUrl,
       paymentServiceUrl: _paymentUrl,
       token: token.turboTokenType,
     );
@@ -665,9 +669,11 @@ class CryptoPaymentService {
     final walletAdapter = await _signerCache.getOrCreateSolanaSigner(solanaWallet);
 
     // Create authenticated Turbo client with Solana wallet adapter
+    // gatewayUrl is the Solana RPC endpoint - required for transaction submission
     final turbo = await createAuthenticatedTurboWithSolanaAdapter(
       solanaWalletAdapter: walletAdapter,
       paymentServiceUrl: _paymentUrl,
+      gatewayUrl: _networkConfig.solanaRpcUrl,
     );
 
     // Convert token amount
@@ -898,15 +904,19 @@ class CryptoPaymentService {
 
   Object _convertTokenAmountForSDK(CryptoToken token, double amount) {
     return switch (token) {
+      // AO-based ARIO uses SDK's ARIOToTokenAmount
       CryptoToken.arioAO ||
-      CryptoToken.arioAOViaEth ||
-      CryptoToken.arioBase =>
+      CryptoToken.arioAOViaEth =>
         convertARIOToTokenAmount(amount),
+      // Base ARIO (ERC-20) uses 6 decimals, same as USDC
+      // Do NOT use SDK's ARIOToTokenAmount - that's for AO-based ARIO
+      CryptoToken.arioBase ||
+      CryptoToken.usdcBase ||
+      CryptoToken.usdcEth =>
+        // 6 decimals: multiply by 1e6
+        _createBigIntJS((amount * 1e6).toInt()),
       CryptoToken.ethBase || CryptoToken.ethL1 => convertETHToTokenAmount(amount),
       CryptoToken.sol => convertSOLToTokenAmount(amount),
-      CryptoToken.usdcBase || CryptoToken.usdcEth =>
-        // USDC: multiply by 1e6 directly
-        _createBigIntJS((amount * 1e6).toInt()),
     };
   }
 

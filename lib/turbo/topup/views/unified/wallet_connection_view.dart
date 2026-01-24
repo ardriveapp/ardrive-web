@@ -1,6 +1,9 @@
+import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/models/wallet_connection_state.dart';
+import 'package:ardrive/turbo/services/ethereum_wallet_service.dart';
+import 'package:ardrive/turbo/services/solana_wallet_service.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,10 +14,10 @@ import 'package:url_launcher/url_launcher.dart';
 ///
 /// Shows:
 /// - Selected token summary
-/// - Wallet options directly (no extra button click)
+/// - Only installed wallet options (detected at runtime)
 /// - Network switching if needed
 /// - AO Connect signature if needed
-class WalletConnectionView extends StatelessWidget {
+class WalletConnectionView extends StatefulWidget {
   final CryptoToken token;
   final double fiatAmount;
   final VoidCallback? onBack;
@@ -27,6 +30,41 @@ class WalletConnectionView extends StatelessWidget {
     this.onBack,
     this.onCancel,
   });
+
+  @override
+  State<WalletConnectionView> createState() => _WalletConnectionViewState();
+}
+
+class _WalletConnectionViewState extends State<WalletConnectionView> {
+  EthereumProviderDetection? _ethereumDetection;
+  SolanaProviderDetection? _solanaDetection;
+  bool _hasArConnect = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _detectWallets();
+  }
+
+  void _detectWallets() {
+    final bloc = context.read<CryptoTopupBloc>();
+
+    if (widget.token.walletType == WalletType.ethereum) {
+      setState(() {
+        _ethereumDetection = bloc.detectEthereumProviders();
+      });
+    } else if (widget.token.walletType == WalletType.solana) {
+      setState(() {
+        _solanaDetection = bloc.detectSolanaProviders();
+      });
+    } else if (widget.token.walletType == WalletType.arweave) {
+      // Check if ArConnect extension is installed
+      final arConnectService = ArConnectService();
+      setState(() {
+        _hasArConnect = arConnectService.isExtensionPresent();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +110,7 @@ class WalletConnectionView extends StatelessWidget {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Connect your ${token.walletType.displayName} to complete the purchase.',
+                              'Connect your ${widget.token.walletType.displayName} to complete the purchase.',
                               style: typography.paragraphNormal(
                                 color: colors.themeFgMuted,
                               ),
@@ -89,21 +127,21 @@ class WalletConnectionView extends StatelessWidget {
                               ),
                               child: Row(
                                 children: [
-                                  _TokenIcon(token: token),
+                                  _TokenIcon(token: widget.token),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'Paying with ${token.displayName}',
+                                          'Paying with ${widget.token.displayName}',
                                           style: typography.paragraphNormal(
                                             fontWeight: ArFontWeight.semiBold,
                                             color: colors.themeFgDefault,
                                           ),
                                         ),
                                         Text(
-                                          token.networkDisplayName,
+                                          widget.token.networkDisplayName,
                                           style: typography.paragraphSmall(
                                             color: colors.themeFgMuted,
                                           ),
@@ -133,15 +171,15 @@ class WalletConnectionView extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      if (onBack != null)
+                      if (widget.onBack != null)
                         ArDriveClickArea(
                           child: GestureDetector(
-                            onTap: onBack,
+                            onTap: widget.onBack,
                             child: Text(
                               'Back',
                               style: typography.paragraphLarge(
                                 fontWeight: ArFontWeight.bold,
-                                color: colors.themeAccentDisabled,
+                                color: colors.themeFgMuted,
                               ),
                             ),
                           ),
@@ -155,13 +193,13 @@ class WalletConnectionView extends StatelessWidget {
               ],
             ),
             // Close button in top right
-            if (onCancel != null)
+            if (widget.onCancel != null)
               Positioned(
                 right: 20,
                 top: 20,
                 child: ArDriveClickArea(
                   child: GestureDetector(
-                    onTap: onCancel,
+                    onTap: widget.onCancel,
                     child: ArDriveIcons.x(),
                   ),
                 ),
@@ -194,7 +232,7 @@ class WalletConnectionView extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    '${token.walletType.displayName} not detected. Please install it to continue.',
+                    '${widget.token.walletType.displayName} not detected. Please install it to continue.',
                     style: typography.paragraphNormal(
                       color: colors.themeErrorDefault,
                     ),
@@ -209,7 +247,7 @@ class WalletConnectionView extends StatelessWidget {
             height: 48,
             child: ArDriveButton(
               text: 'Install ${_getWalletAppName()}',
-              onPressed: () => _openInstallUrl(token.walletType),
+              onPressed: () => _openInstallUrl(widget.token.walletType),
             ),
           ),
         ],
@@ -264,7 +302,7 @@ class WalletConnectionView extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Please switch to ${token.networkDisplayName} in your wallet.',
+                    'Please switch to ${widget.token.networkDisplayName} in your wallet.',
                     style: typography.paragraphNormal(
                       color: colors.themeFgDefault,
                     ),
@@ -280,7 +318,7 @@ class WalletConnectionView extends StatelessWidget {
             child: ArDriveButton(
               text: 'Switch Network',
               onPressed: () {
-                final chainId = token.chainId;
+                final chainId = widget.token.chainId;
                 if (chainId != null) {
                   bloc.add(CryptoTopupSwitchNetwork(chainId));
                 }
@@ -310,7 +348,7 @@ class WalletConnectionView extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Connecting to ${token.walletType.displayName}...',
+                'Connecting to ${widget.token.walletType.displayName}...',
                 style: typography.paragraphNormal(
                   color: colors.themeFgDefault,
                 ),
@@ -325,13 +363,16 @@ class WalletConnectionView extends StatelessWidget {
     return _buildWalletOptions(context, bloc);
   }
 
-  /// Build wallet options inline instead of requiring a button click
+  /// Build wallet options based on detected wallets
   Widget _buildWalletOptions(BuildContext context, CryptoTopupBloc bloc) {
     final colors = ArDriveTheme.of(context).themeData.colors;
     final typography = ArDriveTypographyNew.of(context);
 
     // For Arweave wallet (ArConnect), show single connect button
-    if (token.walletType == WalletType.arweave) {
+    if (widget.token.walletType == WalletType.arweave) {
+      if (!_hasArConnect) {
+        return _buildNoWalletsDetected(context, colors, typography);
+      }
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -345,16 +386,71 @@ class WalletConnectionView extends StatelessWidget {
           const SizedBox(height: 12),
           _WalletOptionButton(
             name: 'ArConnect',
-            icon: Icons.account_balance_wallet,
-            iconColor: const Color(0xFFAB9AFF),
+            logoAsset: 'assets/images/wallets/arconnect.png',
             onTap: () => bloc.add(const CryptoTopupConnectWallet()),
           ),
         ],
       );
     }
 
-    // For Ethereum wallets, show common options
-    if (token.walletType == WalletType.ethereum) {
+    // For Ethereum wallets, show only detected wallets
+    if (widget.token.walletType == WalletType.ethereum) {
+      final detection = _ethereumDetection;
+      if (detection == null || !detection.hasAnyProvider) {
+        return _buildNoWalletsDetected(context, colors, typography);
+      }
+
+      final walletButtons = <Widget>[];
+
+      if (detection.hasMetaMask) {
+        walletButtons.add(_WalletOptionButton(
+          name: 'MetaMask',
+          logoAsset: 'assets/images/login/metamask_logo_flat.svg',
+          onTap: () => bloc.add(const CryptoTopupConnectWallet(
+            ethereumProvider: EthereumWalletProvider.metamask,
+          )),
+        ));
+      }
+
+      if (detection.hasCoinbaseWallet) {
+        if (walletButtons.isNotEmpty) {
+          walletButtons.add(const SizedBox(height: 8));
+        }
+        walletButtons.add(_WalletOptionButton(
+          name: 'Coinbase Wallet',
+          logoAsset: 'assets/images/wallets/coinbase.png',
+          onTap: () => bloc.add(const CryptoTopupConnectWallet(
+            ethereumProvider: EthereumWalletProvider.coinbaseWallet,
+          )),
+        ));
+      }
+
+      if (detection.hasRainbow) {
+        if (walletButtons.isNotEmpty) {
+          walletButtons.add(const SizedBox(height: 8));
+        }
+        walletButtons.add(_WalletOptionButton(
+          name: 'Rainbow',
+          logoAsset: 'assets/images/wallets/rainbow.png',
+          onTap: () => bloc.add(const CryptoTopupConnectWallet(
+            ethereumProvider: EthereumWalletProvider.rainbow,
+          )),
+        ));
+      }
+
+      if (detection.hasBrave) {
+        if (walletButtons.isNotEmpty) {
+          walletButtons.add(const SizedBox(height: 8));
+        }
+        walletButtons.add(_WalletOptionButton(
+          name: 'Brave Wallet',
+          logoAsset: 'assets/images/wallets/brave.png',
+          onTap: () => bloc.add(const CryptoTopupConnectWallet(
+            ethereumProvider: EthereumWalletProvider.metamask, // Brave uses MetaMask interface
+          )),
+        ));
+      }
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -366,38 +462,43 @@ class WalletConnectionView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          _WalletOptionButton(
-            name: 'MetaMask',
-            icon: Icons.account_balance_wallet,
-            iconColor: const Color(0xFFE2761B),
-            onTap: () => bloc.add(const CryptoTopupConnectWallet(
-              ethereumProvider: EthereumWalletProvider.metamask,
-            )),
-          ),
-          const SizedBox(height: 8),
-          _WalletOptionButton(
-            name: 'Coinbase Wallet',
-            icon: Icons.account_balance_wallet,
-            iconColor: const Color(0xFF0052FF),
-            onTap: () => bloc.add(const CryptoTopupConnectWallet(
-              ethereumProvider: EthereumWalletProvider.coinbaseWallet,
-            )),
-          ),
-          const SizedBox(height: 8),
-          _WalletOptionButton(
-            name: 'Other Wallet (Browser)',
-            icon: Icons.public,
-            iconColor: colors.themeFgMuted,
-            onTap: () => bloc.add(const CryptoTopupConnectWallet(
-              ethereumProvider: null, // Uses default injected provider
-            )),
-          ),
+          ...walletButtons,
         ],
       );
     }
 
-    // For Solana wallets
-    if (token.walletType == WalletType.solana) {
+    // For Solana wallets, show only detected wallets
+    if (widget.token.walletType == WalletType.solana) {
+      final detection = _solanaDetection;
+      if (detection == null || !detection.hasAnyProvider) {
+        return _buildNoWalletsDetected(context, colors, typography);
+      }
+
+      final walletButtons = <Widget>[];
+
+      if (detection.hasPhantom) {
+        walletButtons.add(_WalletOptionButton(
+          name: 'Phantom',
+          logoAsset: 'assets/images/wallets/phantom.svg',
+          onTap: () => bloc.add(const CryptoTopupConnectWallet(
+            solanaProvider: SolanaWalletProvider.phantom,
+          )),
+        ));
+      }
+
+      if (detection.hasSolflare) {
+        if (walletButtons.isNotEmpty) {
+          walletButtons.add(const SizedBox(height: 8));
+        }
+        walletButtons.add(_WalletOptionButton(
+          name: 'Solflare',
+          logoAsset: 'assets/images/wallets/solflare.svg',
+          onTap: () => bloc.add(const CryptoTopupConnectWallet(
+            solanaProvider: SolanaWalletProvider.solflare,
+          )),
+        ));
+      }
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -409,32 +510,7 @@ class WalletConnectionView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          _WalletOptionButton(
-            name: 'Phantom',
-            icon: Icons.account_balance_wallet,
-            iconColor: const Color(0xFFAB9AFF),
-            onTap: () => bloc.add(const CryptoTopupConnectWallet(
-              solanaProvider: SolanaWalletProvider.phantom,
-            )),
-          ),
-          const SizedBox(height: 8),
-          _WalletOptionButton(
-            name: 'Solflare',
-            icon: Icons.account_balance_wallet,
-            iconColor: const Color(0xFFFC8C1C),
-            onTap: () => bloc.add(const CryptoTopupConnectWallet(
-              solanaProvider: SolanaWalletProvider.solflare,
-            )),
-          ),
-          const SizedBox(height: 8),
-          _WalletOptionButton(
-            name: 'Other Wallet (Browser)',
-            icon: Icons.public,
-            iconColor: colors.themeFgMuted,
-            onTap: () => bloc.add(const CryptoTopupConnectWallet(
-              solanaProvider: null, // Uses default
-            )),
-          ),
+          ...walletButtons,
         ],
       );
     }
@@ -450,12 +526,78 @@ class WalletConnectionView extends StatelessWidget {
     );
   }
 
+  /// Build message when no wallets are detected
+  Widget _buildNoWalletsDetected(
+    BuildContext context,
+    ArDriveColors colors,
+    ArdriveTypographyNew typography,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colors.themeWarningSubtle,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded,
+                      color: colors.themeWarningFg),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'No wallets detected',
+                      style: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colors.themeWarningFg,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _getInstallInstructions(),
+                style: typography.paragraphSmall(
+                  color: colors.themeFgMuted,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ArDriveButton(
+            text: 'Install ${_getWalletAppName()}',
+            onPressed: () => _openInstallUrl(widget.token.walletType),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _getInstallInstructions() {
+    return switch (widget.token.walletType) {
+      WalletType.ethereum =>
+        'Please install a wallet extension like MetaMask or Coinbase Wallet to continue.',
+      WalletType.solana =>
+        'Please install Phantom or Solflare to continue.',
+      WalletType.arweave => 'Please install ArConnect to continue.',
+    };
+  }
+
   /// Gets the specific wallet app name based on wallet type
   String _getWalletAppName() {
-    return switch (token.walletType) {
+    return switch (widget.token.walletType) {
       WalletType.arweave => 'ArConnect',
-      WalletType.ethereum => 'Wallet',
-      WalletType.solana => 'Wallet',
+      WalletType.ethereum => 'MetaMask',
+      WalletType.solana => 'Phantom',
     };
   }
 
@@ -473,17 +615,15 @@ class WalletConnectionView extends StatelessWidget {
   }
 }
 
-/// A styled wallet option button
+/// A styled wallet option button with logo
 class _WalletOptionButton extends StatelessWidget {
   final String name;
-  final IconData icon;
-  final Color iconColor;
+  final String logoAsset;
   final VoidCallback onTap;
 
   const _WalletOptionButton({
     required this.name,
-    required this.icon,
-    required this.iconColor,
+    required this.logoAsset,
     required this.onTap,
   });
 
@@ -505,18 +645,9 @@ class _WalletOptionButton extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                icon,
-                size: 20,
-                color: iconColor,
-              ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: _buildLogo(),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -536,6 +667,26 @@ class _WalletOptionButton extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildLogo() {
+    final isSvg = logoAsset.endsWith('.svg');
+
+    if (isSvg) {
+      return SvgPicture.asset(
+        logoAsset,
+        width: 36,
+        height: 36,
+        fit: BoxFit.contain,
+      );
+    } else {
+      return Image.asset(
+        logoAsset,
+        width: 36,
+        height: 36,
+        fit: BoxFit.contain,
+      );
+    }
   }
 }
 

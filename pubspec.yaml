@@ -201,6 +201,7 @@ flutter:
     - assets/images/login/bento_box/
     - assets/images/icons/
     - assets/images/crypto/
+    - assets/images/wallets/
     - assets/animations/
 
 sentry:
