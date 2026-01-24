@@ -179,18 +179,14 @@ class _CryptoPaymentOptionState extends State<CryptoPaymentOption> {
         context,
         content: BlocProvider.value(
           value: bloc,
-          child: CryptoTopupModal(
-            onClose: () {
-              bloc.close();
-            },
-          ),
+          child: const CryptoTopupModal(),
         ),
         barrierDismissible: false,
         barrierColor: themeColors.shadow.withOpacity(0.9),
       );
     }
 
-    // Clean up when modal is closed
+    // Clean up when modal is closed (single cleanup point)
     bloc.close();
     ethereumWalletService.dispose();
     solanaWalletService.dispose();
@@ -333,11 +329,7 @@ Future<void> showCryptoTopupModalStandalone(
       context,
       content: BlocProvider.value(
         value: bloc,
-        child: CryptoTopupModal(
-          onClose: () {
-            bloc.close();
-          },
-        ),
+        child: const CryptoTopupModal(),
       ),
       barrierDismissible: false,
       barrierColor: themeColors.shadow.withOpacity(0.9),
@@ -350,7 +342,7 @@ Future<void> showCryptoTopupModalStandalone(
     onSuccess?.call();
   }
 
-  // Clean up
+  // Clean up (single cleanup point)
   bloc.close();
   ethereumWalletService.dispose();
   solanaWalletService.dispose();

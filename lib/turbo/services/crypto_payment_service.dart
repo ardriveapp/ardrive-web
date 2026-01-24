@@ -92,6 +92,17 @@ class CryptoPaymentService {
         adjustment = priceResult.adjustments.first;
       }
 
+      // Calculate original credits display with division-by-zero guard
+      double? originalCreditsDisplay;
+      if (adjustment != null) {
+        final denom = priceResult.actualPaymentAmount ?? (usdAmount * 100);
+        if (denom != 0) {
+          originalCreditsDisplay = (priceResult.quotedPaymentAmount ?? usdAmount) *
+              (priceResult.winc.toDouble() / denom) /
+              1e12;
+        }
+      }
+
       return CryptoQuote(
         token: token,
         tokenAmount: tokenAmount,
@@ -101,12 +112,7 @@ class CryptoPaymentService {
         usdValue: usdAmount,
         adjustment: adjustment,
         expiresAt: DateTime.now().add(const Duration(minutes: 5)),
-        originalCreditsDisplay: adjustment != null
-            ? (priceResult.quotedPaymentAmount ?? usdAmount) *
-                (priceResult.winc.toDouble() /
-                    (priceResult.actualPaymentAmount ?? usdAmount * 100)) /
-                1e12
-            : null,
+        originalCreditsDisplay: originalCreditsDisplay,
       );
     } catch (e) {
       logger.e('Error getting crypto quote: $e');
@@ -152,6 +158,14 @@ class CryptoPaymentService {
       // Estimate USD value for display purposes
       final usdValue = await _priceService.tokenToUsd(token, tokenAmount);
 
+      // Calculate original credits display with 100% discount guard
+      double? originalCreditsDisplay;
+      if (adjustment != null && adjustment.discountPercentage < 100) {
+        originalCreditsDisplay = priceResult.winc.toDouble() /
+            (1 - (adjustment.discountPercentage / 100)) /
+            1e12;
+      }
+
       return CryptoQuote(
         token: token,
         tokenAmount: tokenAmountSmallestUnit,
@@ -161,11 +175,7 @@ class CryptoPaymentService {
         usdValue: usdValue,
         adjustment: adjustment,
         expiresAt: DateTime.now().add(const Duration(minutes: 5)),
-        originalCreditsDisplay: adjustment != null
-            ? priceResult.winc.toDouble() /
-                (1 - (adjustment.discountPercentage / 100)) /
-                1e12
-            : null,
+        originalCreditsDisplay: originalCreditsDisplay,
       );
     } catch (e) {
       logger.e('Error getting quote by token amount: $e');
@@ -417,10 +427,23 @@ class CryptoPaymentService {
       }
 
       final result = callMethod(_globalThis, 'getARIOTokens', [arweaveAddress]);
-      final balanceStr = await promiseToFuture(result) as String;
+      final dynamic rawResult = await promiseToFuture(result);
 
-      // The result might be "null" string if no balance
-      if (balanceStr == 'null' || balanceStr.isEmpty) {
+      // Safely convert result to string
+      String? balanceStr;
+      if (rawResult == null) {
+        balanceStr = null;
+      } else if (rawResult is String) {
+        balanceStr = rawResult;
+      } else if (rawResult is num) {
+        balanceStr = rawResult.toString();
+      } else {
+        // Try toString() as last resort
+        balanceStr = rawResult.toString();
+      }
+
+      // The result might be null, "null" string, or empty if no balance
+      if (balanceStr == null || balanceStr == 'null' || balanceStr.isEmpty) {
         return TokenBalance(
           token: CryptoToken.arioAO,
           rawBalance: BigInt.zero,
@@ -430,7 +453,14 @@ class CryptoPaymentService {
 
       // Balance is returned in mARIO (smallest unit, 6 decimals)
       // So 1 ARIO = 1,000,000 mARIO
-      final balance = BigInt.parse(balanceStr);
+      final balance = BigInt.tryParse(balanceStr);
+      if (balance == null) {
+        logger.w('Failed to parse ARIO balance: $balanceStr');
+        return TokenBalance.error(
+          CryptoToken.arioAO,
+          'Invalid balance format',
+        );
+      }
 
       return TokenBalance(
         token: CryptoToken.arioAO,

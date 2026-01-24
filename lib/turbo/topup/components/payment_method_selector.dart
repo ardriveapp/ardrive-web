@@ -171,10 +171,10 @@ class _CryptoPaymentTab extends StatelessWidget {
       child: PopupMenuButton<CryptoToken>(
         initialValue: selectedToken,
         onSelected: (token) {
-          onTap(); // Also trigger the onTap to select crypto method
+          onTap(); // Trigger onTap to select crypto method
           onTokenSelected(token);
         },
-        onCanceled: onTap, // Select crypto method even if menu is dismissed
+        // Don't call onTap on cancel - only switch methods when token is selected
         offset: const Offset(0, 48),
         constraints: const BoxConstraints(minWidth: 300),
         shape: RoundedRectangleBorder(
