@@ -392,9 +392,7 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
         logger.e('Error computing price estimate: $e');
         if (context.mounted) {
           // Show error state - user can retry from the unified pay view
-          context
-              .read<TurboTopupFlowBloc>()
-              .add(const TurboTopUpShowErrorView(
+          context.read<TurboTopupFlowBloc>().add(const TurboTopUpShowErrorView(
                 TurboErrorType.fetchEstimationInformationFailed,
               ));
         }

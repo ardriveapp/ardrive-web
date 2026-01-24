@@ -69,7 +69,8 @@ class CryptoPriceService {
   /// Get USD prices for multiple tokens efficiently.
   ///
   /// Fetches all prices in a single API call.
-  Future<Map<CryptoToken, double>> getUsdPrices(List<CryptoToken> tokens) async {
+  Future<Map<CryptoToken, double>> getUsdPrices(
+      List<CryptoToken> tokens) async {
     // Check if we need to fetch
     final needsFetch = tokens.any((token) {
       final cached = _priceCache[token];

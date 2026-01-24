@@ -187,8 +187,7 @@ class _CryptoPaymentTab extends StatelessWidget {
               Icon(
                 Icons.account_balance_wallet,
                 size: 18,
-                color:
-                    isSelected ? colors.themeBgSurface : colors.themeFgMuted,
+                color: isSelected ? colors.themeBgSurface : colors.themeFgMuted,
               ),
               const SizedBox(width: 8),
               Flexible(
@@ -207,8 +206,7 @@ class _CryptoPaymentTab extends StatelessWidget {
               Icon(
                 Icons.keyboard_arrow_down,
                 size: 16,
-                color:
-                    isSelected ? colors.themeBgSurface : colors.themeFgMuted,
+                color: isSelected ? colors.themeBgSurface : colors.themeFgMuted,
               ),
             ],
           ),
@@ -324,7 +322,8 @@ class _TokenIcon extends StatelessWidget {
   Widget _buildFallbackIcon(BuildContext context) {
     return Center(
       child: Text(
-        token.symbol.substring(0, token.symbol.length > 2 ? 2 : token.symbol.length),
+        token.symbol
+            .substring(0, token.symbol.length > 2 ? 2 : token.symbol.length),
         style: TextStyle(
           fontSize: size * 0.35,
           fontWeight: FontWeight.bold,

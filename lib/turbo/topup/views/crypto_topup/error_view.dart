@@ -48,9 +48,7 @@ class _ErrorContent extends StatelessWidget {
       txId: state.txId,
       token: state.token,
       canRetry: state.canRetry,
-      onRetry: state.canRetry
-          ? () => bloc.add(const CryptoTopupRetry())
-          : null,
+      onRetry: state.canRetry ? () => bloc.add(const CryptoTopupRetry()) : null,
       onCancel: onCancel ?? () => bloc.add(const CryptoTopupClose()),
     );
   }

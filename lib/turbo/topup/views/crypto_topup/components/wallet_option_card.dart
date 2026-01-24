@@ -158,14 +158,11 @@ class WalletOptionCard extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isConnected
-              ? colorTokens.containerL2
-              : colorTokens.containerL1,
+          color:
+              isConnected ? colorTokens.containerL2 : colorTokens.containerL1,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isConnected
-                ? colorTokens.strokeHigh
-                : colorTokens.strokeLow,
+            color: isConnected ? colorTokens.strokeHigh : colorTokens.strokeLow,
             width: isConnected ? 2 : 1,
           ),
         ),
@@ -373,9 +370,12 @@ class WalletOptionsList extends StatelessWidget {
             isConnected: connectedWallet == wallet.provider,
             connectedAddress:
                 connectedWallet == wallet.provider ? connectedAddress : null,
-            onTap: onWalletTap != null ? () => onWalletTap!(wallet.provider) : null,
-            onInstallTap:
-                onInstallTap != null ? () => onInstallTap!(wallet.provider) : null,
+            onTap: onWalletTap != null
+                ? () => onWalletTap!(wallet.provider)
+                : null,
+            onInstallTap: onInstallTap != null
+                ? () => onInstallTap!(wallet.provider)
+                : null,
           ),
         );
       }).toList(),

@@ -26,7 +26,8 @@ class StoragePreset {
   }
 
   String get displayString {
-    final formattedValue = value.toStringAsFixed(value == value.roundToDouble() ? 0 : 1);
+    final formattedValue =
+        value.toStringAsFixed(value == value.roundToDouble() ? 0 : 1);
     switch (unit) {
       case FileSizeUnit.bytes:
         return '$formattedValue B';
@@ -290,7 +291,8 @@ class _PresetButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ArDriveButton(
-      backgroundColor: isSelected ? colors.themeFgMuted : colors.themeBorderDefault,
+      backgroundColor:
+          isSelected ? colors.themeFgMuted : colors.themeBorderDefault,
       style: ArDriveButtonStyle.primary,
       maxHeight: 44,
       fontStyle: typography.paragraphSmall(

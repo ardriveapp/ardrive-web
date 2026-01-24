@@ -99,7 +99,8 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const SizedBox(height: 24), // Space for close button
+                            const SizedBox(
+                                height: 24), // Space for close button
                             // Title
                             Text(
                               'Connect Wallet',
@@ -123,7 +124,8 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
                               decoration: BoxDecoration(
                                 color: colors.themeBgSubtle,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: colors.themeBorderDefault),
+                                border: Border.all(
+                                    color: colors.themeBorderDefault),
                               ),
                               child: Row(
                                 children: [
@@ -131,7 +133,8 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'Paying with ${widget.token.displayName}',
@@ -446,7 +449,8 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
           name: 'Brave Wallet',
           logoAsset: 'assets/images/wallets/brave.png',
           onTap: () => bloc.add(const CryptoTopupConnectWallet(
-            ethereumProvider: EthereumWalletProvider.metamask, // Brave uses MetaMask interface
+            ethereumProvider: EthereumWalletProvider
+                .metamask, // Brave uses MetaMask interface
           )),
         ));
       }
@@ -586,8 +590,7 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
     return switch (widget.token.walletType) {
       WalletType.ethereum =>
         'Please install a wallet extension like MetaMask or Coinbase Wallet to continue.',
-      WalletType.solana =>
-        'Please install Phantom or Solflare to continue.',
+      WalletType.solana => 'Please install Phantom or Solflare to continue.',
       WalletType.arweave => 'Please install ArConnect to continue.',
     };
   }

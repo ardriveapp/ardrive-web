@@ -143,7 +143,14 @@ class CryptoTopupWalletConnection extends CryptoTopupState {
   }
 
   @override
-  List<Object?> get props => [token, walletType, isConnecting, isSwitchingNetwork, error, isUserRejected];
+  List<Object?> get props => [
+        token,
+        walletType,
+        isConnecting,
+        isSwitchingNetwork,
+        error,
+        isUserRejected
+      ];
 }
 
 /// Wallet extension not installed
@@ -197,7 +204,8 @@ class CryptoTopupAOConnectSignature extends CryptoTopupState {
   }
 
   @override
-  List<Object?> get props => [token, ethAddress, isSigningMessage, error, isUserRejected];
+  List<Object?> get props =>
+      [token, ethAddress, isSigningMessage, error, isUserRejected];
 }
 
 // ============================================
@@ -252,7 +260,8 @@ class CryptoTopupAmountEntry extends CryptoTopupState {
 
   /// Check if user has sufficient balance including gas
   bool get hasSufficientBalanceWithGas {
-    if (quote == null || !token.requiresGasEstimation) return hasSufficientBalance;
+    if (quote == null || !token.requiresGasEstimation)
+      return hasSufficientBalance;
     if (!token.isNativeToken) return hasSufficientBalance;
     // For native tokens, balance must cover payment + gas
     // Gas is in USD, so we need to convert (simplified check)
@@ -375,8 +384,7 @@ class CryptoTopupConfirmation extends CryptoTopupState {
       tokenBalance != null ? tokenBalance! - quote.tokenAmountDisplay : null;
 
   /// Whether the confirm button should be enabled
-  bool get canConfirm =>
-      networkState == NetworkState.correct && !isProcessing;
+  bool get canConfirm => networkState == NetworkState.correct && !isProcessing;
 
   CryptoTopupConfirmation copyWith({
     CryptoQuote? quote,
@@ -406,7 +414,8 @@ class CryptoTopupConfirmation extends CryptoTopupState {
       error: error,
       currentChainId: currentChainId ?? this.currentChainId,
       currentTurboBalance: currentTurboBalance ?? this.currentTurboBalance,
-      currentBalanceStorage: currentBalanceStorage ?? this.currentBalanceStorage,
+      currentBalanceStorage:
+          currentBalanceStorage ?? this.currentBalanceStorage,
       newBalanceStorage: newBalanceStorage ?? this.newBalanceStorage,
       tokenBalance: tokenBalance ?? this.tokenBalance,
     );
@@ -469,7 +478,8 @@ class CryptoTopupNetworkSwitch extends CryptoTopupState {
       requiredChainId: requiredChainId,
       isAdding: isAdding ?? this.isAdding,
       isSwitching: isSwitching ?? this.isSwitching,
-      showManualInstructions: showManualInstructions ?? this.showManualInstructions,
+      showManualInstructions:
+          showManualInstructions ?? this.showManualInstructions,
       error: error,
     );
   }
@@ -568,7 +578,8 @@ class CryptoTopupSuccess extends CryptoTopupState {
   });
 
   @override
-  List<Object?> get props => [txId, creditsAdded, newBalance, token, tokenAmountSpent, usdValue];
+  List<Object?> get props =>
+      [txId, creditsAdded, newBalance, token, tokenAmountSpent, usdValue];
 }
 
 // ============================================

@@ -175,7 +175,8 @@ class _ConfirmationContentState extends State<_ConfirmationContent> {
               onPressed: state.canConfirm && _termsAccepted
                   ? () => bloc.add(const CryptoTopupConfirmPayment())
                   : null,
-              isDisabled: !state.canConfirm || !_termsAccepted || state.isProcessing,
+              isDisabled:
+                  !state.canConfirm || !_termsAccepted || state.isProcessing,
             ),
           ),
         ],

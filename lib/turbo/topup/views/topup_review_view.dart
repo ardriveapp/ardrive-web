@@ -524,9 +524,11 @@ class _PayingWithSection extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       'was \$${NumberFormat('#,##0.00').format(double.tryParse(subTotal!) ?? 0)}',
-                      style: typography.paragraphSmall(
-                        color: colors.themeFgMuted,
-                      ).copyWith(decoration: TextDecoration.lineThrough),
+                      style: typography
+                          .paragraphSmall(
+                            color: colors.themeFgMuted,
+                          )
+                          .copyWith(decoration: TextDecoration.lineThrough),
                     ),
                   ],
                 ],
@@ -758,13 +760,16 @@ class _EmailSection extends StatelessWidget {
           const SizedBox(height: 12),
           ArDriveCheckBox(
             isDisabled: !emailIsValid || emailController.text.isEmpty,
-            key: ValueKey('${emailIsValid && emailChecked}${emailController.text}'),
-            title: appLocalizationsOf(context).keepMeUpToDateOnNewsAndPromotions,
+            key: ValueKey(
+                '${emailIsValid && emailChecked}${emailController.text}'),
+            title:
+                appLocalizationsOf(context).keepMeUpToDateOnNewsAndPromotions,
             titleStyle: typography.paragraphSmall(
               color: colors.themeFgDefault,
             ),
             onChange: onCheckChanged,
-            checked: emailIsValid && emailChecked && emailController.text.isNotEmpty,
+            checked:
+                emailIsValid && emailChecked && emailController.text.isNotEmpty,
           ),
         ],
       ),
@@ -814,7 +819,8 @@ class _QuoteTimerBar extends StatelessWidget {
                   ? 'Quote expired'
                   : 'Price valid for ${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
               style: typography.paragraphSmall(
-                color: isExpired ? colors.themeErrorDefault : colors.themeFgMuted,
+                color:
+                    isExpired ? colors.themeErrorDefault : colors.themeFgMuted,
               ),
             );
           },

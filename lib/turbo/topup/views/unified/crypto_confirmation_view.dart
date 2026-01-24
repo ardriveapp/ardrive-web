@@ -200,7 +200,8 @@ class CryptoConfirmationView extends StatelessWidget {
                               isDisabled: !state.canConfirm ||
                                   state.quote.isExpired ||
                                   state.networkState == NetworkState.checking ||
-                                  state.networkState == NetworkState.switching ||
+                                  state.networkState ==
+                                      NetworkState.switching ||
                                   state.isRefreshingQuote,
                               text: _getButtonText(state),
                               onPressed: () {
@@ -632,7 +633,8 @@ class _TokenIcon extends StatelessWidget {
   Widget _buildFallback() {
     return Center(
       child: Text(
-        token.symbol.substring(0, token.symbol.length > 2 ? 2 : token.symbol.length),
+        token.symbol
+            .substring(0, token.symbol.length > 2 ? 2 : token.symbol.length),
         style: TextStyle(
           fontSize: size * 0.35,
           fontWeight: FontWeight.bold,

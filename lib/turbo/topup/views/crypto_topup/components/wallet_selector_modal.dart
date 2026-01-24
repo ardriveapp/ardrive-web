@@ -153,7 +153,8 @@ class WalletSelectorModal extends StatelessWidget {
 
   String _getInstallMessage() {
     return switch (walletType) {
-      WalletType.ethereum => 'Please install a wallet extension like MetaMask, Coinbase Wallet, or Rainbow to continue.',
+      WalletType.ethereum =>
+        'Please install a wallet extension like MetaMask, Coinbase Wallet, or Rainbow to continue.',
       WalletType.solana => 'Please install Phantom or Solflare to continue.',
       WalletType.arweave => 'Please install ArConnect to continue.',
     };
@@ -254,9 +255,8 @@ class _WalletCard extends StatelessWidget {
                 wallet.displayName,
                 style: typography.paragraphSmall(
                   fontWeight: ArFontWeight.semiBold,
-                  color: isDisabled
-                      ? colors.themeFgMuted
-                      : colors.themeFgDefault,
+                  color:
+                      isDisabled ? colors.themeFgMuted : colors.themeFgDefault,
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 1,

@@ -34,14 +34,10 @@ class TokenCard extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected
-              ? colorTokens.containerL2
-              : colorTokens.containerL1,
+          color: isSelected ? colorTokens.containerL2 : colorTokens.containerL1,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected
-                ? colorTokens.strokeHigh
-                : colorTokens.strokeLow,
+            color: isSelected ? colorTokens.strokeHigh : colorTokens.strokeLow,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -173,7 +169,8 @@ class _TokenIcon extends StatelessWidget {
 
     return Center(
       child: Text(
-        token.symbol.substring(0, token.symbol.length > 2 ? 2 : token.symbol.length),
+        token.symbol
+            .substring(0, token.symbol.length > 2 ? 2 : token.symbol.length),
         style: typography.paragraphSmall(
           fontWeight: ArFontWeight.bold,
           color: colorTokens.textHigh,

@@ -86,9 +86,7 @@ class _PaymentMethodTab extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
         decoration: BoxDecoration(
-          color: isSelected
-              ? colorTokens.containerL3
-              : Colors.transparent,
+          color: isSelected ? colorTokens.containerL3 : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Opacity(
@@ -99,9 +97,7 @@ class _PaymentMethodTab extends StatelessWidget {
               Icon(
                 method.icon,
                 size: 18,
-                color: isSelected
-                    ? colorTokens.textHigh
-                    : colorTokens.textMid,
+                color: isSelected ? colorTokens.textHigh : colorTokens.textMid,
               ),
               const SizedBox(width: 8),
               Text(
@@ -109,9 +105,8 @@ class _PaymentMethodTab extends StatelessWidget {
                 style: typography.paragraphNormal(
                   fontWeight:
                       isSelected ? ArFontWeight.semiBold : ArFontWeight.book,
-                  color: isSelected
-                      ? colorTokens.textHigh
-                      : colorTokens.textMid,
+                  color:
+                      isSelected ? colorTokens.textHigh : colorTokens.textMid,
                 ),
               ),
             ],
@@ -179,14 +174,10 @@ class _PaymentMethodPill extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
         decoration: BoxDecoration(
-          color: isSelected
-              ? colorTokens.containerL3
-              : colorTokens.containerL1,
+          color: isSelected ? colorTokens.containerL3 : colorTokens.containerL1,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected
-                ? colorTokens.strokeHigh
-                : colorTokens.strokeLow,
+            color: isSelected ? colorTokens.strokeHigh : colorTokens.strokeLow,
           ),
         ),
         child: Opacity(
@@ -196,9 +187,7 @@ class _PaymentMethodPill extends StatelessWidget {
             style: typography.paragraphSmall(
               fontWeight:
                   isSelected ? ArFontWeight.semiBold : ArFontWeight.book,
-              color: isSelected
-                  ? colorTokens.textHigh
-                  : colorTokens.textMid,
+              color: isSelected ? colorTokens.textHigh : colorTokens.textMid,
             ),
           ),
         ),

@@ -86,13 +86,15 @@ class CryptoSuccessView extends StatelessWidget {
                             // Amount paid
                             _SummaryRow(
                               label: 'Paid',
-                              value: _formatTokenAmount(state.tokenAmountSpent, token.symbol),
+                              value: _formatTokenAmount(
+                                  state.tokenAmountSpent, token.symbol),
                               subValue: state.usdValue != null
                                   ? '\$${state.usdValue!.toStringAsFixed(2)}'
                                   : null,
                             ),
                             const SizedBox(height: 12),
-                            Divider(color: colors.themeBorderDefault, height: 1),
+                            Divider(
+                                color: colors.themeBorderDefault, height: 1),
                             const SizedBox(height: 12),
                             // Credits added
                             _SummaryRow(
@@ -102,7 +104,8 @@ class CryptoSuccessView extends StatelessWidget {
                             // New balance (if available)
                             if (state.newBalance != null) ...[
                               const SizedBox(height: 12),
-                              Divider(color: colors.themeBorderDefault, height: 1),
+                              Divider(
+                                  color: colors.themeBorderDefault, height: 1),
                               const SizedBox(height: 12),
                               _SummaryRow(
                                 label: 'New balance',
@@ -252,8 +255,11 @@ class _SummaryRow extends StatelessWidget {
             Text(
               value,
               style: typography.paragraphNormal(
-                fontWeight: isHighlighted ? ArFontWeight.bold : ArFontWeight.semiBold,
-                color: isHighlighted ? colors.themeSuccessDefault : colors.themeFgDefault,
+                fontWeight:
+                    isHighlighted ? ArFontWeight.bold : ArFontWeight.semiBold,
+                color: isHighlighted
+                    ? colors.themeSuccessDefault
+                    : colors.themeFgDefault,
               ),
             ),
             if (subValue != null)
@@ -290,7 +296,8 @@ class CryptoErrorView extends StatelessWidget {
 
     return BlocBuilder<CryptoTopupBloc, CryptoTopupState>(
       builder: (context, state) {
-        String errorMessage = 'An error occurred while processing your payment.';
+        String errorMessage =
+            'An error occurred while processing your payment.';
         String? errorDetails;
         bool canRetry = true;
 

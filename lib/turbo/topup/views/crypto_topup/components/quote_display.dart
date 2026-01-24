@@ -250,7 +250,8 @@ class _QuoteExpirationTimerState extends State<_QuoteExpirationTimer> {
 
     final minutes = _remaining.inMinutes;
     final seconds = _remaining.inSeconds % 60;
-    final timeString = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    final timeString =
+        '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
 
     return Row(
       children: [
@@ -263,7 +264,9 @@ class _QuoteExpirationTimerState extends State<_QuoteExpirationTimer> {
         Text(
           isExpired ? 'Quote expired' : 'Quote expires in $timeString',
           style: typography.paragraphSmall(
-            fontWeight: isCritical || isWarning ? ArFontWeight.semiBold : ArFontWeight.book,
+            fontWeight: isCritical || isWarning
+                ? ArFontWeight.semiBold
+                : ArFontWeight.book,
             color: timerColor,
           ),
         ),

@@ -23,7 +23,8 @@ class AOConnectSignatureView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<CryptoTopupBloc, CryptoTopupState>(
-      buildWhen: (previous, current) => current is CryptoTopupAOConnectSignature,
+      buildWhen: (previous, current) =>
+          current is CryptoTopupAOConnectSignature,
       builder: (context, state) {
         if (state is! CryptoTopupAOConnectSignature) {
           return const SizedBox.shrink();

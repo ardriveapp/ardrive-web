@@ -121,7 +121,8 @@ class _NetworkSwitchContent extends StatelessWidget {
                       : 'Switch Network',
               onPressed: state.isSwitching || state.isAdding
                   ? null
-                  : () => bloc.add(CryptoTopupSwitchNetwork(state.requiredChainId)),
+                  : () =>
+                      bloc.add(CryptoTopupSwitchNetwork(state.requiredChainId)),
               isDisabled: state.isSwitching || state.isAdding,
             ),
           ),
@@ -131,7 +132,8 @@ class _NetworkSwitchContent extends StatelessWidget {
           if (!state.showManualInstructions)
             Center(
               child: GestureDetector(
-                onTap: () => bloc.add(const CryptoTopupShowManualNetworkSwitch()),
+                onTap: () =>
+                    bloc.add(const CryptoTopupShowManualNetworkSwitch()),
                 child: Text(
                   'Show manual instructions',
                   style: typography.paragraphSmall(
@@ -217,9 +219,7 @@ class _NetworkRow extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: isActive
-                ? colorTokens.containerL2
-                : colorTokens.containerL3,
+            color: isActive ? colorTokens.containerL2 : colorTokens.containerL3,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Center(

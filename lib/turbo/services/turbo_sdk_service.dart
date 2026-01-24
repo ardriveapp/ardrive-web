@@ -173,7 +173,8 @@ class TurboSDKService {
     ensureSDKAvailable();
 
     try {
-      final client = await _createAuthenticatedClient(CryptoToken.arioAO, signer);
+      final client =
+          await _createAuthenticatedClient(CryptoToken.arioAO, signer);
       return await getTurboBalance(client);
     } catch (e) {
       logger.e('Error getting balance: $e');
@@ -221,9 +222,12 @@ class TurboSDKService {
       CryptoToken.arioAOViaEth ||
       CryptoToken.arioBase =>
         convertARIOToTokenAmount(amount),
-      CryptoToken.ethBase || CryptoToken.ethL1 => convertETHToTokenAmount(amount),
+      CryptoToken.ethBase ||
+      CryptoToken.ethL1 =>
+        convertETHToTokenAmount(amount),
       CryptoToken.sol => convertSOLToTokenAmount(amount),
-      CryptoToken.usdcBase || CryptoToken.usdcEth =>
+      CryptoToken.usdcBase ||
+      CryptoToken.usdcEth =>
         // USDC uses 6 decimals - use decimal-safe conversion
         _createBigIntJSFromString(_toSmallestUnit(amount, 6)),
     };

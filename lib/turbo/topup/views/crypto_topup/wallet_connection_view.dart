@@ -132,16 +132,16 @@ class _WalletConnectionContent extends StatelessWidget {
           // Wallet options (hide while switching network)
           if (!state.isSwitchingNetwork)
             _WalletOptions(
-            token: state.token,
-            walletType: state.walletType,
-            isConnecting: state.isConnecting,
-            onConnect: (UIWalletProvider provider) {
-              bloc.add(CryptoTopupConnectWallet(
-                ethereumProvider: provider.ethereumProvider,
-                solanaProvider: provider.solanaProvider,
-              ));
-            },
-          ),
+              token: state.token,
+              walletType: state.walletType,
+              isConnecting: state.isConnecting,
+              onConnect: (UIWalletProvider provider) {
+                bloc.add(CryptoTopupConnectWallet(
+                  ethereumProvider: provider.ethereumProvider,
+                  solanaProvider: provider.solanaProvider,
+                ));
+              },
+            ),
         ],
       ),
     );
@@ -189,7 +189,8 @@ class _SelectedTokenInfo extends StatelessWidget {
             ),
             child: Center(
               child: Text(
-                token.symbol.substring(0, token.symbol.length > 2 ? 2 : token.symbol.length),
+                token.symbol.substring(
+                    0, token.symbol.length > 2 ? 2 : token.symbol.length),
                 style: typography.paragraphSmall(
                   fontWeight: ArFontWeight.bold,
                   color: colorTokens.textHigh,

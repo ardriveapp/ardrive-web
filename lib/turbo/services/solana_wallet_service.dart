@@ -18,7 +18,8 @@ class SolanaWalletService {
   final CryptoNetworkConfig _networkConfig;
 
   SolanaWalletState? _connectedWallet;
-  final _connectionController = StreamController<SolanaWalletState?>.broadcast();
+  final _connectionController =
+      StreamController<SolanaWalletState?>.broadcast();
 
   bool _listenersRegistered = false;
   SolanaWalletProvider? _activeProvider;

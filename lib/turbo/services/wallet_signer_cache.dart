@@ -181,7 +181,8 @@ class WalletSignerCache {
         if (ethereumWallet == null) {
           throw SignerCacheException('Ethereum wallet service required');
         }
-        final effectiveChainId = chainId ?? ethereumWallet.connectedWallet?.chainId;
+        final effectiveChainId =
+            chainId ?? ethereumWallet.connectedWallet?.chainId;
         if (effectiveChainId == null) {
           throw SignerCacheException('Chain ID required for Ethereum signer');
         }

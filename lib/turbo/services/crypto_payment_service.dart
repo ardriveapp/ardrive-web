@@ -47,7 +47,8 @@ class CryptoPaymentService {
   })  : _networkConfig = networkConfig,
         _httpClient = httpClient,
         _signerCache = signerCache,
-        _priceService = priceService ?? CryptoPriceService(httpClient: httpClient);
+        _priceService =
+            priceService ?? CryptoPriceService(httpClient: httpClient);
 
   /// Payment service URL
   String get _paymentUrl => _networkConfig.turboPaymentUrl;
@@ -97,9 +98,10 @@ class CryptoPaymentService {
       if (adjustment != null) {
         final denom = priceResult.actualPaymentAmount ?? (usdAmount * 100);
         if (denom != 0) {
-          originalCreditsDisplay = (priceResult.quotedPaymentAmount ?? usdAmount) *
-              (priceResult.winc.toDouble() / denom) /
-              1e12;
+          originalCreditsDisplay =
+              (priceResult.quotedPaymentAmount ?? usdAmount) *
+                  (priceResult.winc.toDouble() / denom) /
+                  1e12;
         }
       }
 
@@ -309,12 +311,15 @@ class CryptoPaymentService {
 
       // Get the appropriate signer for the token type
       Object? signer;
-      if (pendingTx.token.walletType == WalletType.ethereum && ethereumWallet != null) {
+      if (pendingTx.token.walletType == WalletType.ethereum &&
+          ethereumWallet != null) {
         final chainId = _networkConfig.getChainIdForToken(pendingTx.token);
         if (chainId != null) {
-          signer = await _signerCache.getOrCreateEthereumSigner(ethereumWallet, chainId);
+          signer = await _signerCache.getOrCreateEthereumSigner(
+              ethereumWallet, chainId);
         }
-      } else if (pendingTx.token.walletType == WalletType.solana && solanaWallet != null) {
+      } else if (pendingTx.token.walletType == WalletType.solana &&
+          solanaWallet != null) {
         signer = await _signerCache.getOrCreateSolanaSigner(solanaWallet);
       } else if (pendingTx.token.walletType == WalletType.arweave) {
         final arweaveWallet = getProperty(_globalThis, 'arweaveWallet');
@@ -354,7 +359,8 @@ class CryptoPaymentService {
         return CryptoPaymentResult.failure(
           status: CryptoPaymentStatus.confirmationTimeout,
           transactionId: pendingTx.transactionId,
-          errorMessage: 'Transaction not confirmed yet. Please wait and try again.',
+          errorMessage:
+              'Transaction not confirmed yet. Please wait and try again.',
           token: pendingTx.token,
         );
       }
@@ -529,7 +535,8 @@ class CryptoPaymentService {
         if (ethereumWallet == null) {
           throw CryptoPaymentException('Ethereum wallet required');
         }
-        return _executeArioAOViaEthPayment(quote, arweaveAddress, ethereumWallet);
+        return _executeArioAOViaEthPayment(
+            quote, arweaveAddress, ethereumWallet);
 
       case CryptoToken.arioBase:
       case CryptoToken.usdcBase:
@@ -595,7 +602,8 @@ class CryptoPaymentService {
     EthereumWalletService ethereumWallet,
   ) async {
     // Get or create the AO signature
-    final aoSignature = await _signerCache.signAndCacheAOConnect(ethereumWallet);
+    final aoSignature =
+        await _signerCache.signAndCacheAOConnect(ethereumWallet);
 
     // Get ethers provider and signer
     final bridge = getProperty(_globalThis, 'CryptoWalletBridge');
@@ -606,7 +614,8 @@ class CryptoPaymentService {
 
     // Set the public key (derived from signature)
     final ethers = getProperty(_globalThis, 'ethers');
-    final publicKeyBytes = callMethod(ethers, 'getBytes', [aoSignature.publicKey]);
+    final publicKeyBytes =
+        callMethod(ethers, 'getBytes', [aoSignature.publicKey]);
     signer.publicKey = publicKeyBytes;
 
     // Create authenticated Turbo client
@@ -668,7 +677,8 @@ class CryptoPaymentService {
     );
 
     // Convert token amount based on type
-    final tokenAmount = _convertTokenAmountForSDK(token, quote.tokenAmountDisplay);
+    final tokenAmount =
+        _convertTokenAmountForSDK(token, quote.tokenAmountDisplay);
 
     // Execute top-up with destination address
     final result = await topUpWithTokens(
@@ -696,7 +706,8 @@ class CryptoPaymentService {
     SolanaWalletService solanaWallet,
   ) async {
     // Get the Solana wallet adapter (window.solana)
-    final walletAdapter = await _signerCache.getOrCreateSolanaSigner(solanaWallet);
+    final walletAdapter =
+        await _signerCache.getOrCreateSolanaSigner(solanaWallet);
 
     // Create authenticated Turbo client with Solana wallet adapter
     // gatewayUrl is the Solana RPC endpoint - required for transaction submission
@@ -877,7 +888,8 @@ class CryptoPaymentService {
     // Check cache
     if (_wincPerGiB != null &&
         _wincPerGiBCacheTime != null &&
-        DateTime.now().difference(_wincPerGiBCacheTime!) < _wincPerGiBCacheDuration) {
+        DateTime.now().difference(_wincPerGiBCacheTime!) <
+            _wincPerGiBCacheDuration) {
       return _wincPerGiB!;
     }
 
@@ -899,7 +911,8 @@ class CryptoPaymentService {
     }
   }
 
-  Future<BigInt> _getTokenAmountForUsd(CryptoToken token, double usdAmount) async {
+  Future<BigInt> _getTokenAmountForUsd(
+      CryptoToken token, double usdAmount) async {
     // Use the price service to get live token prices
     final tokenAmount = await _priceService.usdToToken(token, usdAmount);
     return _tokenAmountToBigInt(token, tokenAmount);
@@ -946,7 +959,9 @@ class CryptoPaymentService {
       CryptoToken.usdcEth =>
         // 6 decimals - use decimal-safe conversion
         _createBigIntJSFromString(_toSmallestUnit(amount, 6)),
-      CryptoToken.ethBase || CryptoToken.ethL1 => convertETHToTokenAmount(amount),
+      CryptoToken.ethBase ||
+      CryptoToken.ethL1 =>
+        convertETHToTokenAmount(amount),
       CryptoToken.sol => convertSOLToTokenAmount(amount),
     };
   }

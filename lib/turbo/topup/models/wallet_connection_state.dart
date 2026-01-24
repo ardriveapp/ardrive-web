@@ -37,7 +37,8 @@ extension EthereumWalletProviderX on EthereumWalletProvider {
   String get iconAsset => switch (this) {
         EthereumWalletProvider.metamask =>
           'assets/images/icons/metamask_logo.svg',
-        EthereumWalletProvider.rainbow => 'assets/images/icons/rainbow_logo.svg',
+        EthereumWalletProvider.rainbow =>
+          'assets/images/icons/rainbow_logo.svg',
         EthereumWalletProvider.walletConnect =>
           'assets/images/icons/walletconnect_logo.svg',
         EthereumWalletProvider.coinbaseWallet =>
@@ -108,7 +109,8 @@ class EthereumWalletState extends Equatable {
   }
 
   /// Display name with provider
-  String get displayWithProvider => '$truncatedAddress (${provider.displayName})';
+  String get displayWithProvider =>
+      '$truncatedAddress (${provider.displayName})';
 
   /// Whether the wallet is on the correct chain for the given token
   bool isCorrectChainFor(CryptoToken token, {required bool isTestnet}) {
@@ -171,7 +173,8 @@ class SolanaWalletState extends Equatable {
   }
 
   /// Display name with provider
-  String get displayWithProvider => '$truncatedAddress (${provider.displayName})';
+  String get displayWithProvider =>
+      '$truncatedAddress (${provider.displayName})';
 
   /// Balance in SOL (from lamports)
   double? get balanceInSol =>
@@ -313,6 +316,14 @@ class TokenBalance extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      [token, rawBalance, isStale, lastUpdated, error, isNetworkError, isLoading, usdValue];
+  List<Object?> get props => [
+        token,
+        rawBalance,
+        isStale,
+        lastUpdated,
+        error,
+        isNetworkError,
+        isLoading,
+        usdValue
+      ];
 }

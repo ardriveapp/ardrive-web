@@ -165,7 +165,8 @@ class CryptoTransactionStorage {
   // ============================================
 
   /// Acquire a session lock for the current tab
-  Future<bool> acquireSessionLock(String state, {String? arweaveAddress}) async {
+  Future<bool> acquireSessionLock(String state,
+      {String? arweaveAddress}) async {
     try {
       final existingLock = await getSessionLock();
 

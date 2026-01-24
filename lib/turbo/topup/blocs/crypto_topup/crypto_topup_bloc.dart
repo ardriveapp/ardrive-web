@@ -264,8 +264,8 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     // Check for pending transaction
     PendingCryptoTransaction? pendingTx;
     try {
-      pendingTx = await _transactionStorage
-          .getPendingTransaction(arweaveWalletAddress);
+      pendingTx =
+          await _transactionStorage.getPendingTransaction(arweaveWalletAddress);
     } catch (e) {
       logger.w('Error checking pending transactions: $e');
     }
@@ -482,7 +482,8 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       final requiredChainId = _selectedToken!.chainId;
       if (requiredChainId != null && event.chainId != requiredChainId) {
         // Automatically request network switch
-        logger.d('Wrong network: ${event.chainId}, need $requiredChainId. Switching...');
+        logger.d(
+            'Wrong network: ${event.chainId}, need $requiredChainId. Switching...');
         add(CryptoTopupNetworkSwitchRequested(requiredChainId));
         return;
       }
@@ -917,7 +918,8 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     // Show switching state in UI
     if (currentState is CryptoTopupConfirmation) {
       emit(currentState.copyWith(networkState: NetworkState.switching));
-    } else if (currentState is CryptoTopupWalletConnection && _selectedToken != null) {
+    } else if (currentState is CryptoTopupWalletConnection &&
+        _selectedToken != null) {
       // Show switching state on wallet connection screen
       emit(CryptoTopupWalletConnection(
         token: _selectedToken!,
@@ -972,7 +974,8 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
           tokenBalance: balance.balanceDisplay,
         ));
       }
-    } else if (currentState is CryptoTopupWalletConnection && _selectedToken != null) {
+    } else if (currentState is CryptoTopupWalletConnection &&
+        _selectedToken != null) {
       // After wallet connection + network switch, proceed to amount entry
       await _emitAmountEntry(emit, _selectedToken!);
     } else if (currentState is CryptoTopupAmountEntry) {
@@ -1234,7 +1237,8 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
 
     try {
       // Get the pending transaction from storage
-      final pendingTx = await _transactionStorage.getPendingTransaction(arweaveWalletAddress);
+      final pendingTx =
+          await _transactionStorage.getPendingTransaction(arweaveWalletAddress);
       if (pendingTx == null || pendingTx.transactionId != event.txId) {
         add(CryptoTopupPaymentFailed(
           error: 'Pending transaction not found',
@@ -1257,10 +1261,11 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       if (result.success) {
         add(CryptoTopupPaymentSucceeded(
           txId: event.txId,
-          creditsAdded: BigInt.from(((result.creditsAdded ?? 0) * 1e12).toInt()),
+          creditsAdded:
+              BigInt.from(((result.creditsAdded ?? 0) * 1e12).toInt()),
         ));
       } else if (result.status == CryptoPaymentStatus.pending ||
-                 result.status == CryptoPaymentStatus.confirmationTimeout) {
+          result.status == CryptoPaymentStatus.confirmationTimeout) {
         emit(CryptoTopupProcessing(
           txId: event.txId,
           token: _selectedToken!,
@@ -1436,12 +1441,14 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
 
       return await _paymentService.getTokenBalance(
         token: token,
-        ethereumWallet:
-            token.walletType == WalletType.ethereum ? _ethereumWalletService : null,
+        ethereumWallet: token.walletType == WalletType.ethereum
+            ? _ethereumWalletService
+            : null,
         solanaWallet:
             token.walletType == WalletType.solana ? _solanaWalletService : null,
-        arweaveAddress:
-            token.walletType == WalletType.arweave ? arweaveWalletAddress : null,
+        arweaveAddress: token.walletType == WalletType.arweave
+            ? arweaveWalletAddress
+            : null,
       );
     } catch (e) {
       logger.e('Error fetching balance: $e');
@@ -1635,7 +1642,8 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     CryptoTopupResumePendingTransaction event,
     Emitter<CryptoTopupState> emit,
   ) async {
-    final pendingTx = await _transactionStorage.getPendingTransaction(arweaveWalletAddress);
+    final pendingTx =
+        await _transactionStorage.getPendingTransaction(arweaveWalletAddress);
     if (pendingTx != null) {
       _selectedToken = pendingTx.token;
       add(CryptoTopupRetryTransaction(pendingTx.transactionId));

@@ -99,7 +99,8 @@ class PaymentReviewPaymentModelLoaded extends PaymentReviewState {
       creditsWinc: creditsWinc ?? this.creditsWinc,
       currentBalance: currentBalance ?? this.currentBalance,
       storageEstimate: storageEstimate ?? this.storageEstimate,
-      currentBalanceStorage: currentBalanceStorage ?? this.currentBalanceStorage,
+      currentBalanceStorage:
+          currentBalanceStorage ?? this.currentBalanceStorage,
       newBalanceStorage: newBalanceStorage ?? this.newBalanceStorage,
     );
   }

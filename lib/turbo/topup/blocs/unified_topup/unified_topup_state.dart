@@ -167,8 +167,7 @@ class UnifiedTopupLoaded extends UnifiedTopupState {
       fiatAmount: fiatAmount ?? this.fiatAmount,
       usdEquivalent:
           clearUsdEquivalent ? null : (usdEquivalent ?? this.usdEquivalent),
-      storageSize:
-          clearStorageSize ? null : (storageSize ?? this.storageSize),
+      storageSize: clearStorageSize ? null : (storageSize ?? this.storageSize),
       storageUnit: storageUnit ?? this.storageUnit,
       displayUnit: displayUnit ?? this.displayUnit,
       currentBalance: currentBalance ?? this.currentBalance,

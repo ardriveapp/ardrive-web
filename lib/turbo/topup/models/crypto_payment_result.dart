@@ -76,8 +76,7 @@ extension CryptoPaymentStatusX on CryptoPaymentStatus {
   /// Human-readable error message
   String get errorMessage => switch (this) {
         CryptoPaymentStatus.success => 'Your credits have been added.',
-        CryptoPaymentStatus.pending =>
-          'Waiting for blockchain confirmation...',
+        CryptoPaymentStatus.pending => 'Waiting for blockchain confirmation...',
         CryptoPaymentStatus.failed =>
           'The transaction failed on the blockchain.',
         CryptoPaymentStatus.userRejected =>

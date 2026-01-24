@@ -37,7 +37,8 @@ class InlineCryptoPayment extends StatelessWidget {
     return BlocBuilder<CryptoTopupBloc, CryptoTopupState>(
       builder: (context, state) {
         final showInternalBackButton = _canGoBackInFlow(state);
-        final showBackButton = showInternalBackButton || onBackToPaymentMethods != null;
+        final showBackButton =
+            showInternalBackButton || onBackToPaymentMethods != null;
 
         return Stack(
           children: [
@@ -69,7 +70,9 @@ class InlineCryptoPayment extends StatelessWidget {
                           _TokenSelector(
                             selectedToken: _getSelectedToken(state),
                             onTokenSelected: (token) {
-                              context.read<CryptoTopupBloc>().add(CryptoTopupSelectToken(token));
+                              context
+                                  .read<CryptoTopupBloc>()
+                                  .add(CryptoTopupSelectToken(token));
                             },
                           ),
                           const SizedBox(height: 16),
@@ -97,7 +100,9 @@ class InlineCryptoPayment extends StatelessWidget {
                             onTap: () {
                               if (showInternalBackButton) {
                                 // Go back within crypto flow
-                                context.read<CryptoTopupBloc>().add(const CryptoTopupGoBack());
+                                context
+                                    .read<CryptoTopupBloc>()
+                                    .add(const CryptoTopupGoBack());
                               } else if (onBackToPaymentMethods != null) {
                                 // Go back to payment method selection
                                 onBackToPaymentMethods!();
@@ -520,7 +525,8 @@ class _WalletConnectionSection extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.check_circle, color: colors.themeFgMuted, size: 20),
+                  Icon(Icons.check_circle,
+                      color: colors.themeFgMuted, size: 20),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -568,7 +574,8 @@ class _WalletConnectionSection extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.error_outline, color: colors.themeErrorDefault, size: 20),
+                  Icon(Icons.error_outline,
+                      color: colors.themeErrorDefault, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -685,7 +692,8 @@ class _WalletConnectionSection extends StatelessWidget {
               const SizedBox(height: 8),
               _QuoteRow(
                 label: 'Est. network fee',
-                value: '~\$${amountState.gasEstimateUsd?.toStringAsFixed(2) ?? '0.00'}',
+                value:
+                    '~\$${amountState.gasEstimateUsd?.toStringAsFixed(2) ?? '0.00'}',
                 colors: colors,
                 typography: typography,
                 isMuted: true,
@@ -711,7 +719,8 @@ class _WalletConnectionSection extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.warning_amber, color: colors.themeWarningFg, size: 20),
+                  Icon(Icons.warning_amber,
+                      color: colors.themeWarningFg, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -832,7 +841,9 @@ class _WalletConnectionSection extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ArDriveButton(
-              text: signatureState.isSigningMessage ? 'Signing...' : 'Sign Message',
+              text: signatureState.isSigningMessage
+                  ? 'Signing...'
+                  : 'Sign Message',
               isDisabled: signatureState.isSigningMessage,
               onPressed: () {
                 bloc.add(const CryptoTopupAOConnectSignatureRequested());
@@ -849,7 +860,8 @@ class _WalletConnectionSection extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.error_outline, color: colors.themeErrorDefault, size: 20),
+                  Icon(Icons.error_outline,
+                      color: colors.themeErrorDefault, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -912,10 +924,13 @@ class _WalletConnectionSection extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ArDriveButton(
-              text: networkState.isSwitching ? 'Switching...' : 'Switch to $requiredNetworkName',
+              text: networkState.isSwitching
+                  ? 'Switching...'
+                  : 'Switch to $requiredNetworkName',
               isDisabled: networkState.isSwitching,
               onPressed: () {
-                bloc.add(CryptoTopupNetworkSwitchRequested(networkState.requiredChainId));
+                bloc.add(CryptoTopupNetworkSwitchRequested(
+                    networkState.requiredChainId));
               },
             ),
           ),
@@ -929,7 +944,8 @@ class _WalletConnectionSection extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.error_outline, color: colors.themeErrorDefault, size: 20),
+                  Icon(Icons.error_outline,
+                      color: colors.themeErrorDefault, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(

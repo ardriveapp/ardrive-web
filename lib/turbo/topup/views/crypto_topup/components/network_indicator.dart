@@ -64,9 +64,8 @@ class NetworkIndicator extends StatelessWidget {
             : colorTokens.containerL1,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isCorrectNetwork
-              ? colorTokens.strokeLow
-              : colorTokens.strokeLow,
+          color:
+              isCorrectNetwork ? colorTokens.strokeLow : colorTokens.strokeLow,
         ),
       ),
       child: Row(
@@ -78,7 +77,8 @@ class NetworkIndicator extends StatelessWidget {
             height: 8,
             decoration: BoxDecoration(
               color: isCorrectNetwork
-                  ? getNetworkColor(currentChainId, fallbackColor: colorTokens.textMid)
+                  ? getNetworkColor(currentChainId,
+                      fallbackColor: colorTokens.textMid)
                   : colorTokens.textLow,
               shape: BoxShape.circle,
             ),

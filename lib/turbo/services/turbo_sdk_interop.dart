@@ -206,9 +206,8 @@ Future<Object> createAuthenticatedTurbo({
   final paymentServiceConfig = paymentServiceUrl != null
       ? ServiceConfigJS(url: paymentServiceUrl)
       : null;
-  final uploadServiceConfig = uploadServiceUrl != null
-      ? ServiceConfigJS(url: uploadServiceUrl)
-      : null;
+  final uploadServiceConfig =
+      uploadServiceUrl != null ? ServiceConfigJS(url: uploadServiceUrl) : null;
 
   final config = TurboAuthConfigJS(
     signer: signer,
@@ -239,9 +238,8 @@ Future<Object> createAuthenticatedTurboWithWalletAdapter({
   final paymentServiceConfig = paymentServiceUrl != null
       ? ServiceConfigJS(url: paymentServiceUrl)
       : null;
-  final uploadServiceConfig = uploadServiceUrl != null
-      ? ServiceConfigJS(url: uploadServiceUrl)
-      : null;
+  final uploadServiceConfig =
+      uploadServiceUrl != null ? ServiceConfigJS(url: uploadServiceUrl) : null;
 
   // Create the walletAdapter with getSigner function
   // The SDK expects: { getSigner: () => ethersSigner }
@@ -276,9 +274,8 @@ Future<Object> createAuthenticatedTurboWithSolanaAdapter({
   final paymentServiceConfig = paymentServiceUrl != null
       ? ServiceConfigJS(url: paymentServiceUrl)
       : null;
-  final uploadServiceConfig = uploadServiceUrl != null
-      ? ServiceConfigJS(url: uploadServiceUrl)
-      : null;
+  final uploadServiceConfig =
+      uploadServiceUrl != null ? ServiceConfigJS(url: uploadServiceUrl) : null;
 
   final config = TurboAuthConfigJS(
     walletAdapter: solanaWalletAdapter,

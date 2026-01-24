@@ -195,7 +195,10 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                       ),
                     ),
                     Container(
-                      color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeBgCanvas,
                       padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -387,10 +390,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 appLocalizationsOf(context).back,
                 style: ArDriveTypographyNew.of(context).paragraphLarge(
                   fontWeight: ArFontWeight.bold,
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeFgMuted,
+                  color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
                 ),
               ),
             ),
@@ -411,10 +411,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 appLocalizationsOf(context).back,
                 style: ArDriveTypographyNew.of(context).paragraphLarge(
                   fontWeight: ArFontWeight.bold,
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeFgMuted,
+                  color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
                 ),
               ),
             ),
@@ -657,10 +654,8 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
                 'Promo code successfully applied', // TODO: localize
                 style: ArDriveTypographyNew.of(context).paragraphNormal(
                   fontWeight: ArFontWeight.bold,
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeFgDefault,
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
                 ),
               ),
             ),
@@ -678,10 +673,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
             child: MouseRegion(
               cursor: SystemMouseCursors.click,
               child: ArDriveIcons.closeCircle(
-                color: ArDriveTheme.of(context)
-                    .themeData
-                    .colors
-                    .themeFgMuted,
+                color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
               ),
             ),
           ),
@@ -1367,7 +1359,8 @@ class QuoteRefreshWidgetState extends State<QuoteRefreshWidget> {
                                 child: Text(
                                   appLocalizationsOf(context)
                                       .unableToUpdateQuote,
-                                  style: ArDriveTypographyNew.of(context).caption(
+                                  style:
+                                      ArDriveTypographyNew.of(context).caption(
                                     fontWeight: ArFontWeight.bold,
                                     color: ArDriveTheme.of(context)
                                         .themeData

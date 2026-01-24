@@ -18,7 +18,8 @@ class EthereumWalletService {
   final Future<double> Function(CryptoToken)? _getTokenPrice;
 
   EthereumWalletState? _connectedWallet;
-  final _connectionController = StreamController<EthereumWalletState?>.broadcast();
+  final _connectionController =
+      StreamController<EthereumWalletState?>.broadcast();
   final _chainChangeController = StreamController<int>.broadcast();
 
   bool _listenersRegistered = false;
@@ -81,9 +82,11 @@ class EthereumWalletService {
   ///
   /// [provider] - Optional provider preference (metamask, coinbase, etc.)
   /// Returns the connected wallet state
-  Future<EthereumWalletState> connect({EthereumWalletProvider? provider}) async {
+  Future<EthereumWalletState> connect(
+      {EthereumWalletProvider? provider}) async {
     try {
-      final providerName = provider != null ? _providerToString(provider) : null;
+      final providerName =
+          provider != null ? _providerToString(provider) : null;
       final result =
           await _callBridgeAsync('connectEthereumWallet', [providerName]);
 
@@ -245,7 +248,8 @@ class EthereumWalletService {
 
     // Check if on correct chain
     final requiredChainId = _networkConfig.getChainIdForToken(token);
-    if (requiredChainId != null && _connectedWallet!.chainId != requiredChainId) {
+    if (requiredChainId != null &&
+        _connectedWallet!.chainId != requiredChainId) {
       return TokenBalance.error(
         token,
         'Please switch to ${_networkConfig.getChainDisplayName(token)}',

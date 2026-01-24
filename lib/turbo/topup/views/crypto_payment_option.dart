@@ -49,14 +49,11 @@ class _CryptoPaymentOptionState extends State<CryptoPaymentOption> {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: _isHovered
-                ? colors.themeBgSubtle
-                : colors.themeBgSurface,
+            color: _isHovered ? colors.themeBgSubtle : colors.themeBgSurface,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: _isHovered
-                  ? colors.themeFgMuted
-                  : colors.themeBorderDefault,
+              color:
+                  _isHovered ? colors.themeFgMuted : colors.themeBorderDefault,
               width: 1,
             ),
           ),

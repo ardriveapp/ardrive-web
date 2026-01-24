@@ -128,7 +128,8 @@ class TurboTopUpEstimationBloc
         } else if (event is FetchPriceEstimate) {
           // Only process if balance has been initialized (LoadInitialData completed)
           if (_balance == null) {
-            logger.d('Ignoring FetchPriceEstimate - balance not yet initialized');
+            logger
+                .d('Ignoring FetchPriceEstimate - balance not yet initialized');
             return;
           }
 
@@ -169,7 +170,8 @@ class TurboTopUpEstimationBloc
     // Balance must be initialized before calling this method
     final balance = _balance;
     if (balance == null) {
-      logger.e('_computeAndUpdatePriceEstimate called before balance initialized');
+      logger.e(
+          '_computeAndUpdatePriceEstimate called before balance initialized');
       emit(EstimationLoadError());
       return;
     }

@@ -261,9 +261,8 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
     if (state is CryptoTopupError) {
       return CryptoErrorView(
         key: const ValueKey('error'),
-        onRetry: state.canRetry
-            ? () => _bloc!.add(const CryptoTopupRetry())
-            : null,
+        onRetry:
+            state.canRetry ? () => _bloc!.add(const CryptoTopupRetry()) : null,
         onClose: widget.onCancel,
       );
     }

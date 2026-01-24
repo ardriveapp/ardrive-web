@@ -284,28 +284,19 @@ class _PresetAmountButton extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected
-              ? colorTokens.containerL3
-              : colorTokens.containerL1,
+          color: isSelected ? colorTokens.containerL3 : colorTokens.containerL1,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected
-                ? colorTokens.strokeHigh
-                : colorTokens.strokeLow,
+            color: isSelected ? colorTokens.strokeHigh : colorTokens.strokeLow,
           ),
         ),
         child: Center(
           child: Text(
-            isUsdMode
-                ? '\$${amount.toStringAsFixed(0)}'
-                : amount.toString(),
+            isUsdMode ? '\$${amount.toStringAsFixed(0)}' : amount.toString(),
             style: typography.paragraphNormal(
-              fontWeight: isSelected
-                  ? ArFontWeight.semiBold
-                  : ArFontWeight.book,
-              color: isSelected
-                  ? colorTokens.textHigh
-                  : colorTokens.textMid,
+              fontWeight:
+                  isSelected ? ArFontWeight.semiBold : ArFontWeight.book,
+              color: isSelected ? colorTokens.textHigh : colorTokens.textMid,
             ),
           ),
         ),
