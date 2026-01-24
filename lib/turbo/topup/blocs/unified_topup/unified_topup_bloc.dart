@@ -440,13 +440,21 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
 
         if (state is UnifiedTopupLoaded) {
           final loadedState = state as UnifiedTopupLoaded;
-          // Check if promo code provided a discount
-          final hasDiscount = estimate.estimate.adjustments.isNotEmpty;
+          // Check if promo code provided a multiplicative discount
+          // Only 'multiply' adjustments represent percentage discounts
+          // (e.g., operatorMagnitude of 0.9 = 10% discount)
+          final multiplicativeAdjustment = estimate.estimate.adjustments
+              .where((adj) => adj.operator == 'multiply')
+              .firstOrNull;
+          final hasDiscount = multiplicativeAdjustment != null;
           int? discountPercent;
           if (hasDiscount) {
-            // Extract discount percentage from adjustments
-            final adjustment = estimate.estimate.adjustments.first;
-            discountPercent = ((1 - adjustment.operatorMagnitude) * 100).round();
+            // Use the adjustment's discountPercentage getter
+            discountPercent = multiplicativeAdjustment.discountPercentage.round();
+            // Ensure we don't show negative or invalid percentages
+            if (discountPercent <= 0) {
+              discountPercent = null;
+            }
           }
 
           final newBalanceStorage = await _calculateNewBalanceStorage(

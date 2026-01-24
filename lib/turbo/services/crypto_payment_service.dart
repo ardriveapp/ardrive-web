@@ -722,7 +722,8 @@ class CryptoPaymentService {
       );
 
       final data = jsonDecode(result.data);
-      final winc = BigInt.parse(data['winc']);
+      // API may return winc as string or int, so convert to string before parsing
+      final winc = BigInt.parse(data['winc'].toString());
       // API may return these as strings or ints, so parse safely
       final actualPaymentAmount = data['actualPaymentAmount'] != null
           ? int.tryParse(data['actualPaymentAmount'].toString())
@@ -798,7 +799,8 @@ class CryptoPaymentService {
       );
 
       final data = jsonDecode(result.data);
-      final winc = BigInt.parse(data['winc']);
+      // API may return winc as string or int, so convert to string before parsing
+      final winc = BigInt.parse(data['winc'].toString());
       // API may return these as strings or ints, so parse safely
       final actualPaymentAmount = data['actualPaymentAmount'] != null
           ? int.tryParse(data['actualPaymentAmount'].toString())
@@ -855,7 +857,8 @@ class CryptoPaymentService {
       );
 
       final data = jsonDecode(result.data);
-      _wincPerGiB = BigInt.parse(data['winc']);
+      // API may return winc as string or int, so convert to string before parsing
+      _wincPerGiB = BigInt.parse(data['winc'].toString());
       _wincPerGiBCacheTime = DateTime.now();
 
       return _wincPerGiB!;
@@ -892,14 +895,12 @@ class CryptoPaymentService {
     await _priceService.refreshPrices();
   }
 
+  /// Convert token amount to BigInt for storage/comparison.
+  ///
+  /// Uses decimal-safe string manipulation to avoid floating-point precision loss.
   BigInt _tokenAmountToBigInt(CryptoToken token, double amount) {
-    final multiplier = switch (token.decimals) {
-      6 => 1e6,
-      9 => 1e9,
-      18 => 1e18,
-      _ => 1e6,
-    };
-    return BigInt.from((amount * multiplier).toInt());
+    final smallestUnitStr = _toSmallestUnit(amount, token.decimals);
+    return BigInt.parse(smallestUnitStr);
   }
 
   Object _convertTokenAmountForSDK(CryptoToken token, double amount) {
@@ -913,14 +914,41 @@ class CryptoPaymentService {
       CryptoToken.arioBase ||
       CryptoToken.usdcBase ||
       CryptoToken.usdcEth =>
-        // 6 decimals: multiply by 1e6
-        _createBigIntJS((amount * 1e6).toInt()),
+        // 6 decimals - use decimal-safe conversion
+        _createBigIntJSFromString(_toSmallestUnit(amount, 6)),
       CryptoToken.ethBase || CryptoToken.ethL1 => convertETHToTokenAmount(amount),
       CryptoToken.sol => convertSOLToTokenAmount(amount),
     };
   }
 
-  Object _createBigIntJS(int value) {
+  /// Convert a decimal amount to smallest unit string without floating-point errors.
+  ///
+  /// Example: _toSmallestUnit(1.234567, 6) => "1234567"
+  /// Example: _toSmallestUnit(0.5, 6) => "500000"
+  String _toSmallestUnit(double amount, int decimals) {
+    // Format to fixed decimals to get a clean string representation
+    final formatted = amount.toStringAsFixed(decimals);
+
+    // Split on decimal point
+    final parts = formatted.split('.');
+    final integerPart = parts[0];
+    final decimalPart = parts.length > 1 ? parts[1] : '';
+
+    // Pad decimal part to required decimals (should already be correct from toStringAsFixed)
+    final paddedDecimal = decimalPart.padRight(decimals, '0');
+
+    // Combine and remove leading zeros (but keep at least one digit)
+    final combined = '$integerPart$paddedDecimal';
+    final result = combined.replaceFirst(RegExp(r'^0+(?=\d)'), '');
+
+    return result.isEmpty ? '0' : result;
+  }
+
+  /// Create a BigInt in JavaScript from a string.
+  ///
+  /// This avoids precision loss for large integers that exceed JS's
+  /// safe integer limit (2^53).
+  Object _createBigIntJSFromString(String value) {
     return callConstructor(
       getProperty(_globalThis, 'BigInt'),
       [value],

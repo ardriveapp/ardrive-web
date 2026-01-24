@@ -45,9 +45,17 @@ extension CryptoPaymentStatusX on CryptoPaymentStatus {
         _ => true,
       };
 
-  /// Whether this status represents a final state
+  /// Whether this status represents a final state (no further state changes expected)
   bool get isFinal => switch (this) {
-        CryptoPaymentStatus.success || CryptoPaymentStatus.failed => true,
+        CryptoPaymentStatus.success ||
+        CryptoPaymentStatus.failed ||
+        CryptoPaymentStatus.userRejected ||
+        CryptoPaymentStatus.insufficientFunds ||
+        CryptoPaymentStatus.wrongNetwork ||
+        CryptoPaymentStatus.quoteExpired ||
+        CryptoPaymentStatus.confirmationTimeout =>
+          true,
+        // Non-final: pending, networkError, insufficientGas (retryable)
         _ => false,
       };
 

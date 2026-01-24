@@ -121,13 +121,7 @@ class _TokenIcon extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(size / 2),
         child: isSvg
-            ? SvgPicture.asset(
-                token.logoAsset,
-                width: size,
-                height: size,
-                fit: BoxFit.cover,
-                placeholderBuilder: (context) => _buildFallbackIcon(context),
-              )
+            ? _buildSvgWithErrorHandling(context)
             : Image.asset(
                 token.logoAsset,
                 width: size,
@@ -137,6 +131,39 @@ class _TokenIcon extends StatelessWidget {
                     _buildFallbackIcon(context),
               ),
       ),
+    );
+  }
+
+  /// Build SVG with error handling using FutureBuilder.
+  ///
+  /// Loads the SVG asset string first to detect malformed files,
+  /// then renders with SvgPicture.string on success or shows fallback on error.
+  Widget _buildSvgWithErrorHandling(BuildContext context) {
+    return FutureBuilder<String>(
+      future: DefaultAssetBundle.of(context).loadString(token.logoAsset),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          // SVG failed to load - show fallback
+          return _buildFallbackIcon(context);
+        }
+        if (snapshot.connectionState == ConnectionState.done &&
+            snapshot.hasData) {
+          // SVG loaded successfully - render it
+          try {
+            return SvgPicture.string(
+              snapshot.data!,
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+            );
+          } catch (e) {
+            // SVG parsing failed - show fallback
+            return _buildFallbackIcon(context);
+          }
+        }
+        // Still loading - show fallback as placeholder
+        return _buildFallbackIcon(context);
+      },
     );
   }
 

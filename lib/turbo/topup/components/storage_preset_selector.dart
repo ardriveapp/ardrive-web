@@ -52,7 +52,7 @@ class StoragePreset {
 }
 
 /// Default storage presets: 500 MiB, 1 GiB, 5 GiB, 10 GiB, 100 GiB
-final List<StoragePreset> defaultStoragePresets = [
+const List<StoragePreset> defaultStoragePresets = [
   StoragePreset(500, FileSizeUnit.megabytes),
   StoragePreset(1, FileSizeUnit.gigabytes),
   StoragePreset(5, FileSizeUnit.gigabytes),
@@ -72,16 +72,16 @@ class StoragePresetSelector extends StatefulWidget {
   final void Function(double value, FileSizeUnit unit) onCustomAmountChanged;
   final void Function(FileSizeUnit unit) onUnitChanged;
 
-  StoragePresetSelector({
+  const StoragePresetSelector({
     super.key,
-    List<StoragePreset>? presets,
+    this.presets = defaultStoragePresets,
     this.selectedPreset,
     this.customValue,
     this.customUnit = FileSizeUnit.gigabytes,
     required this.onPresetSelected,
     required this.onCustomAmountChanged,
     required this.onUnitChanged,
-  }) : presets = presets ?? defaultStoragePresets;
+  });
 
   @override
   State<StoragePresetSelector> createState() => _StoragePresetSelectorState();

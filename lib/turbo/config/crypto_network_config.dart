@@ -67,9 +67,8 @@ class CryptoNetworkConfig {
       ? 'https://api.devnet.solana.com'
       : 'https://damp-stylish-sheet.solana-mainnet.quiknode.pro/b3dd2ce1c4f1a06d5fb6c42b80d6848796dd6408/';
 
-  /// Solana block explorer URL
-  String get solanaExplorerUrl =>
-      isTestnet ? 'https://solscan.io?cluster=devnet' : 'https://solscan.io';
+  /// Solana block explorer base URL (without cluster param)
+  String get solanaExplorerUrl => 'https://solscan.io';
 
   // ============================================
   // Arweave / AO Configuration
@@ -171,8 +170,8 @@ class CryptoNetworkConfig {
       CryptoToken.ethL1 =>
         '$ethereumExplorerUrl/tx/$txId',
       CryptoToken.sol => isTestnet
-          ? '$solanaExplorerUrl/tx/$txId'
-          : 'https://solscan.io/tx/$txId',
+          ? '$solanaExplorerUrl/tx/$txId?cluster=devnet'
+          : '$solanaExplorerUrl/tx/$txId',
     };
   }
 

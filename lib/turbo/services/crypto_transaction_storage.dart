@@ -11,26 +11,47 @@ import 'package:uuid/uuid.dart';
 /// Uses SharedPreferences (localStorage on web) to persist:
 /// - Pending transactions for recovery
 /// - Session locks for cross-tab coordination
+///
+/// This class is a singleton to ensure only one tab ID exists per page load.
+/// Use [CryptoTransactionStorage.getInstance()] to get the singleton instance.
 class CryptoTransactionStorage {
   static const _pendingTxKey = 'pending_crypto_transactions';
   static const _sessionLockKey = 'ardrive_topup_session_lock';
 
+  /// Singleton instance
+  static CryptoTransactionStorage? _instance;
+
+  /// Tab ID is generated once per page load and stored in the singleton
+  static final String _tabId = const Uuid().v4();
+
   final SharedPreferences _prefs;
-  late final String _tabId;
 
-  CryptoTransactionStorage(this._prefs) {
-    _tabId = _getOrCreateTabId();
+  /// Private constructor for singleton pattern
+  CryptoTransactionStorage._internal(this._prefs);
+
+  /// Get the singleton instance of CryptoTransactionStorage.
+  ///
+  /// This ensures only one tab ID exists per page load, which is critical
+  /// for session lock comparisons to work correctly.
+  static Future<CryptoTransactionStorage> getInstance() async {
+    if (_instance == null) {
+      final prefs = await SharedPreferences.getInstance();
+      _instance = CryptoTransactionStorage._internal(prefs);
+    }
+    return _instance!;
   }
 
-  /// Current tab's unique identifier
+  /// Get the singleton instance synchronously if SharedPreferences is already available.
+  ///
+  /// Use this when you already have a SharedPreferences instance.
+  /// Prefer [getInstance()] when possible.
+  factory CryptoTransactionStorage(SharedPreferences prefs) {
+    _instance ??= CryptoTransactionStorage._internal(prefs);
+    return _instance!;
+  }
+
+  /// Current tab's unique identifier (same for all instances in this page load)
   String get tabId => _tabId;
-
-  /// Get or create a unique ID for this browser tab
-  String _getOrCreateTabId() {
-    // Tab ID is stored in memory-only (not persisted)
-    // Each page load gets a new tab ID
-    return const Uuid().v4();
-  }
 
   // ============================================
   // Pending Transactions

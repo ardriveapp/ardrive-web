@@ -97,6 +97,7 @@ class EthereumWalletCubit extends Cubit<EthereumWalletCubitState> {
       address: currentState.address,
       currentChainId: currentState.chainId,
       targetChainId: chainId,
+      provider: currentState.provider,
     ));
 
     try {
@@ -187,11 +188,11 @@ class EthereumWalletCubit extends Cubit<EthereumWalletCubitState> {
         if (currentState is EthereumWalletConnectedState) {
           emit(currentState.copyWith(chainId: chainId));
         } else if (currentState is EthereumWalletSwitchingNetwork) {
-          // Network switch completed
+          // Network switch completed - preserve the provider from switching state
           emit(EthereumWalletConnectedState(
             address: currentState.address,
             chainId: chainId,
-            provider: EthereumWalletProvider.metamask, // Default
+            provider: currentState.provider,
           ));
         }
       },

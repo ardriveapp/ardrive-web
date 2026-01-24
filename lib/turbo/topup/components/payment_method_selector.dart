@@ -1,13 +1,9 @@
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
+import 'package:ardrive/turbo/topup/models/payment_method.dart';
+export 'package:ardrive/turbo/topup/models/payment_method.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-
-/// Payment method options
-enum PaymentMethod {
-  card,
-  crypto,
-}
 
 /// Selector for choosing between card and crypto payment methods.
 ///

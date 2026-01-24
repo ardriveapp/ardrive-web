@@ -1,3 +1,4 @@
+import 'package:ardrive/turbo/config/crypto_network_config.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -61,6 +62,7 @@ class TransactionStatusDisplay extends StatelessWidget {
   final String? txId;
   final CryptoToken token;
   final String? message;
+  final CryptoNetworkConfig? networkConfig;
 
   const TransactionStatusDisplay({
     super.key,
@@ -68,6 +70,7 @@ class TransactionStatusDisplay extends StatelessWidget {
     this.txId,
     required this.token,
     this.message,
+    this.networkConfig,
   });
 
   @override
@@ -109,7 +112,11 @@ class TransactionStatusDisplay extends StatelessWidget {
           // Transaction link
           if (txId != null) ...[
             const SizedBox(height: 16),
-            _TransactionLink(txId: txId!, token: token),
+            _TransactionLink(
+              txId: txId!,
+              token: token,
+              networkConfig: networkConfig,
+            ),
           ],
         ],
       ),
@@ -160,10 +167,12 @@ class _StatusIndicator extends StatelessWidget {
 class _TransactionLink extends StatelessWidget {
   final String txId;
   final CryptoToken token;
+  final CryptoNetworkConfig? networkConfig;
 
   const _TransactionLink({
     required this.txId,
     required this.token,
+    this.networkConfig,
   });
 
   @override
@@ -223,6 +232,12 @@ class _TransactionLink extends StatelessWidget {
   }
 
   String? _getExplorerUrl(String txId, CryptoToken token) {
+    // Use environment-aware config if available
+    if (networkConfig != null) {
+      return networkConfig!.getExplorerTxUrl(token, txId);
+    }
+
+    // Fallback to hardcoded mainnet URLs if no config provided
     switch (token.blockchain) {
       case Blockchain.ethereum:
         return 'https://etherscan.io/tx/$txId';
@@ -250,6 +265,7 @@ class TransactionSuccessView extends StatelessWidget {
   final String? newBalance;
   final CryptoToken token;
   final VoidCallback? onDone;
+  final CryptoNetworkConfig? networkConfig;
 
   const TransactionSuccessView({
     super.key,
@@ -258,6 +274,7 @@ class TransactionSuccessView extends StatelessWidget {
     this.newBalance,
     required this.token,
     this.onDone,
+    this.networkConfig,
   });
 
   @override
@@ -336,7 +353,11 @@ class TransactionSuccessView extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Transaction link
-          _TransactionLink(txId: txId, token: token),
+          _TransactionLink(
+            txId: txId,
+            token: token,
+            networkConfig: networkConfig,
+          ),
           const SizedBox(height: 24),
 
           // Done button
@@ -362,6 +383,7 @@ class TransactionErrorView extends StatelessWidget {
   final bool canRetry;
   final VoidCallback? onRetry;
   final VoidCallback? onCancel;
+  final CryptoNetworkConfig? networkConfig;
 
   const TransactionErrorView({
     super.key,
@@ -371,6 +393,7 @@ class TransactionErrorView extends StatelessWidget {
     this.canRetry = true,
     this.onRetry,
     this.onCancel,
+    this.networkConfig,
   });
 
   @override
@@ -422,7 +445,11 @@ class TransactionErrorView extends StatelessWidget {
           // Transaction link if available
           if (txId != null && token != null) ...[
             const SizedBox(height: 16),
-            _TransactionLink(txId: txId!, token: token!),
+            _TransactionLink(
+              txId: txId!,
+              token: token!,
+              networkConfig: networkConfig,
+            ),
           ],
           const SizedBox(height: 24),
 

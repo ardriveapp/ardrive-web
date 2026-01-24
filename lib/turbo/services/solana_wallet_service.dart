@@ -198,11 +198,19 @@ class SolanaWalletService {
     });
 
     try {
-      final response = await http.post(
-        Uri.parse(rpcUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: requestBody,
-      );
+      final response = await http
+          .post(
+            Uri.parse(rpcUrl),
+            headers: {'Content-Type': 'application/json'},
+            body: requestBody,
+          )
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () => throw TimeoutException(
+              'Solana RPC request timed out',
+              const Duration(seconds: 15),
+            ),
+          );
 
       if (response.statusCode != 200) {
         throw Exception('Solana RPC request failed: ${response.statusCode}');

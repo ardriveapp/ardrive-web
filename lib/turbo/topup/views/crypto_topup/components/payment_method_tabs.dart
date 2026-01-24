@@ -1,11 +1,6 @@
+import 'package:ardrive/turbo/topup/models/payment_method.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
-
-/// Payment method selection for the topup flow
-enum PaymentMethod {
-  card,
-  crypto,
-}
 
 extension PaymentMethodExtension on PaymentMethod {
   String get displayName {

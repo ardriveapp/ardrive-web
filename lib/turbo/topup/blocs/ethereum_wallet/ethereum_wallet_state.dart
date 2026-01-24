@@ -67,15 +67,17 @@ class EthereumWalletSwitchingNetwork extends EthereumWalletCubitState {
   final String address;
   final int currentChainId;
   final int targetChainId;
+  final EthereumWalletProvider provider;
 
   const EthereumWalletSwitchingNetwork({
     required this.address,
     required this.currentChainId,
     required this.targetChainId,
+    required this.provider,
   });
 
   @override
-  List<Object?> get props => [address, currentChainId, targetChainId];
+  List<Object?> get props => [address, currentChainId, targetChainId, provider];
 }
 
 /// Wallet error state

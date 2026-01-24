@@ -274,6 +274,9 @@ class WalletSignerCache {
   }
 
   /// Derive public key from signature using ethers.js
+  ///
+  /// Returns the recovered public key as a hex string with 0x prefix.
+  /// Throws [SignerCacheException] on any failure.
   Future<String> _derivePublicKey(String message, String signature) async {
     try {
       // Use ethers.js to recover the public key
@@ -287,22 +290,34 @@ class WalletSignerCache {
 
       // Get the SigningKey class
       final signingKey = getProperty(ethers, 'SigningKey');
+      if (signingKey == null) {
+        throw SignerCacheException('ethers.SigningKey not available');
+      }
 
-      // Recover the public key
+      // Recover the public key - returns hex string with 0x prefix
       final recoveredKey = callMethod(
         signingKey,
         'recoverPublicKey',
         [messageHash, signature],
       );
 
-      // Get bytes representation
-      final publicKeyBytes = callMethod(ethers, 'getBytes', [recoveredKey]);
+      // The recovered key is already a hex string with 0x prefix
+      final publicKeyHex = recoveredKey.toString();
 
-      return publicKeyBytes.toString();
+      // Validate it looks like a hex public key
+      if (!publicKeyHex.startsWith('0x')) {
+        throw SignerCacheException(
+          'Invalid public key format: expected 0x prefix',
+        );
+      }
+
+      return publicKeyHex;
     } catch (e) {
       logger.e('Error deriving public key: $e');
-      // Return the signature as fallback - actual derivation may need JS implementation
-      return signature;
+      if (e is SignerCacheException) {
+        rethrow;
+      }
+      throw SignerCacheException('Failed to derive public key: $e');
     }
   }
 }

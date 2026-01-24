@@ -116,8 +116,13 @@ class _CryptoPaymentOptionState extends State<CryptoPaymentOption> {
     final navigator = Navigator.of(context);
     final themeColors = ArDriveTheme.of(context).themeData.colors;
 
-    // Close the current modal first
-    navigator.pop();
+    // Call onBeforeOpen callback if provided (e.g., to notify parent)
+    widget.onBeforeOpen?.call();
+
+    // Close the current modal first (only if we can pop)
+    if (navigator.canPop()) {
+      navigator.pop();
+    }
 
     // Small delay to let the modal close animation complete
     await Future.delayed(const Duration(milliseconds: 100));

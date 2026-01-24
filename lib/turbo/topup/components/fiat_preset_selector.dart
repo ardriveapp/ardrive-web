@@ -172,6 +172,8 @@ class _FiatPresetSelectorState extends State<FiatPresetSelector> {
       setState(() {
         _validationMessage = null;
       });
+      // Notify parent that the custom amount was cleared (0 disables checkout)
+      widget.onCustomAmountChanged(0);
       return;
     }
 

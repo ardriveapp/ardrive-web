@@ -224,20 +224,41 @@ class TurboSDKService {
       CryptoToken.ethBase || CryptoToken.ethL1 => convertETHToTokenAmount(amount),
       CryptoToken.sol => convertSOLToTokenAmount(amount),
       CryptoToken.usdcBase || CryptoToken.usdcEth =>
-        // USDC uses 6 decimals, multiply by 1e6
-        _createBigIntJS((amount * 1e6).toInt()),
+        // USDC uses 6 decimals - use decimal-safe conversion
+        _createBigIntJSFromString(_toSmallestUnit(amount, 6)),
     };
   }
 
   /// Convert token amount to BigInt for storage/comparison.
+  ///
+  /// Uses decimal-safe string manipulation to avoid floating-point precision loss.
   BigInt _tokenAmountToBigInt(CryptoToken token, double amount) {
-    final multiplier = switch (token.decimals) {
-      6 => 1e6,
-      9 => 1e9,
-      18 => 1e18,
-      _ => 1e6,
-    };
-    return BigInt.from((amount * multiplier).toInt());
+    final decimals = token.decimals;
+    final smallestUnitStr = _toSmallestUnit(amount, decimals);
+    return BigInt.parse(smallestUnitStr);
+  }
+
+  /// Convert a decimal amount to smallest unit string without floating-point errors.
+  ///
+  /// Example: _toSmallestUnit(1.234567, 6) => "1234567"
+  /// Example: _toSmallestUnit(0.5, 6) => "500000"
+  String _toSmallestUnit(double amount, int decimals) {
+    // Format to fixed decimals to get a clean string representation
+    final formatted = amount.toStringAsFixed(decimals);
+
+    // Split on decimal point
+    final parts = formatted.split('.');
+    final integerPart = parts[0];
+    final decimalPart = parts.length > 1 ? parts[1] : '';
+
+    // Pad decimal part to required decimals (should already be correct from toStringAsFixed)
+    final paddedDecimal = decimalPart.padRight(decimals, '0');
+
+    // Combine and remove leading zeros (but keep at least one digit)
+    final combined = '$integerPart$paddedDecimal';
+    final result = combined.replaceFirst(RegExp(r'^0+(?=\d)'), '');
+
+    return result.isEmpty ? '0' : result;
   }
 
   /// Estimate USD value for a token amount.
@@ -261,9 +282,12 @@ class TurboSDKService {
     return amount * approximateUsdPrice;
   }
 
-  /// Create a BigInt in JavaScript.
-  Object _createBigIntJS(int value) {
-    // Use dart:js_util to call BigInt constructor
+  /// Create a BigInt in JavaScript from a string.
+  ///
+  /// This avoids precision loss for large integers that exceed JS's
+  /// safe integer limit (2^53).
+  Object _createBigIntJSFromString(String value) {
+    // Use dart:js_util to call BigInt constructor with string
     return callConstructor(
       getProperty(jsGlobalThis, 'BigInt'),
       [value],

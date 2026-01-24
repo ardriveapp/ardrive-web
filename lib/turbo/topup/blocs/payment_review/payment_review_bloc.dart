@@ -110,9 +110,8 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
       _currentBalance = balance;
 
       // Get credits to receive from payment model
-      _creditsWinc = BigInt.from(
-        int.parse(_paymentModel!.topUpQuote.winstonCreditAmount),
-      );
+      // Parse directly to BigInt to avoid int overflow on web (JS has 53-bit int limit)
+      _creditsWinc = BigInt.parse(_paymentModel!.topUpQuote.winstonCreditAmount);
 
       // Calculate storage estimates using winc per GiB
       // 1 GiB = approximately 1073741824 winc (varies based on pricing)

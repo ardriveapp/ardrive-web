@@ -37,15 +37,20 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
 
   @override
   initState() {
+    super.initState();
     wallet =
         (context.read<ProfileCubit>().state as ProfileLoggedIn).user.wallet;
-    super.initState();
+    paymentBloc = context.read<TurboTopUpEstimationBloc>();
+
+    // Trigger initial data load after the first frame to avoid
+    // dispatching events during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      paymentBloc.add(LoadInitialData());
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final paymentBloc = context.read<TurboTopUpEstimationBloc>();
-
     return BlocBuilder<TurboTopUpEstimationBloc, TopupEstimationState>(
       bloc: paymentBloc,
       builder: (context, state) {
@@ -109,8 +114,7 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
             },
           );
         } else if (state is EstimationInitial) {
-          // Initial state - trigger data load
-          paymentBloc.add(LoadInitialData());
+          // Initial state - data load is triggered in initState
           return const SizedBox(
             height: 575,
             child: Center(
