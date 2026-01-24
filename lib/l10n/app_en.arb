@@ -1674,6 +1674,18 @@
   "@pay": {},
   "paymentDetails": "Payment Details",
   "@paymentDetails": {},
+  "paymentMethod": "Payment Method",
+  "@paymentMethod": {
+    "description": "Label for payment method selection"
+  },
+  "paymentMethodCard": "Credit/Debit Card",
+  "@paymentMethodCard": {
+    "description": "Card payment option label"
+  },
+  "paymentMethodCrypto": "Crypto",
+  "@paymentMethodCrypto": {
+    "description": "Cryptocurrency payment option label"
+  },
   "paymentSuccessful": "Payment Successful!",
   "@paymentSuccessful": {},
   "payPerFileEmphasized": "PAY PER FILE",
@@ -2161,6 +2173,10 @@
   "tryOnAnotherDevice": "Please try on another device or stay updated for our upcoming mobile app by subscribing to our newsletter below.",
   "@tryOnAnotherDevice": {
     "description": "Screen not supported page"
+  },
+  "noTurboFee": "No Turbo Fee",
+  "@noTurboFee": {
+    "description": "Label indicating no turbo fee for certain crypto payments"
   },
   "turboAddCreditsBlurb": "Add Credits using your card for faster uploads.",
   "@turboAddCreditsBlurb": {

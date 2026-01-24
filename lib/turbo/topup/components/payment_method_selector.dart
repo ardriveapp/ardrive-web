@@ -1,5 +1,6 @@
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/models/payment_method.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 export 'package:ardrive/turbo/topup/models/payment_method.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -31,7 +32,7 @@ class PaymentMethodSelector extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Payment Method',
+          appLocalizationsOf(context).paymentMethod,
           style: typography.paragraphNormal(
             fontWeight: ArFontWeight.semiBold,
             color: colors.themeFgDefault,
@@ -49,7 +50,7 @@ class PaymentMethodSelector extends StatelessWidget {
               Expanded(
                 child: _PaymentTab(
                   icon: Icons.credit_card,
-                  label: 'Credit/Debit Card',
+                  label: appLocalizationsOf(context).paymentMethodCard,
                   isSelected: selectedMethod == PaymentMethod.card,
                   onTap: () => onMethodChanged(PaymentMethod.card),
                   isFirst: true,
@@ -192,7 +193,8 @@ class _CryptoPaymentTab extends StatelessWidget {
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
-                  selectedToken?.displayName ?? 'Crypto',
+                  selectedToken?.displayName ??
+                      appLocalizationsOf(context).paymentMethodCrypto,
                   style: typography.paragraphSmall(
                     fontWeight: ArFontWeight.semiBold,
                     color: isSelected
@@ -257,7 +259,7 @@ class _CryptoPaymentTab extends StatelessWidget {
                         border: Border.all(color: colors.themeBorderDefault),
                       ),
                       child: Text(
-                        'No Turbo Fee',
+                        appLocalizationsOf(context).noTurboFee,
                         style: typography.caption(
                           fontWeight: ArFontWeight.semiBold,
                           color: colors.themeFgMuted,
