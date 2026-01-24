@@ -109,8 +109,10 @@ class _StoragePresetSelectorState extends State<StoragePresetSelector> {
   }
 
   void _onPresetSelected(StoragePreset preset) {
-    _customAmountController.clear();
-    _validationMessage = null;
+    setState(() {
+      _customAmountController.clear();
+      _validationMessage = null;
+    });
     widget.onPresetSelected(preset);
   }
 

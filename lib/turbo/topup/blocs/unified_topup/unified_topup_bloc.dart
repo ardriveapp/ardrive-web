@@ -388,7 +388,12 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
     emit(currentState.copyWith(displayUnit: event.unit));
 
     // Recalculate storage estimates with new unit
-    if (currentState.fiatAmount > 0) {
+    // For crypto payments, use usdEquivalent; for card payments, use fiatAmount
+    final isCrypto = currentState.paymentMethod == PaymentMethod.crypto;
+    final amountForEstimate =
+        isCrypto ? currentState.usdEquivalent : currentState.fiatAmount;
+
+    if (amountForEstimate != null && amountForEstimate > 0) {
       try {
         final balanceStorage = await turbo.computeStorageEstimateForCredits(
           credits: currentState.currentBalance,
@@ -396,7 +401,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
         );
 
         final estimate = await turbo.computePriceEstimate(
-          currentAmount: currentState.fiatAmount,
+          currentAmount: amountForEstimate,
           currentCurrency: 'usd',
           currentDataUnit: event.unit,
           promoCode: turbo.promoCode,
@@ -438,10 +443,15 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
     ));
 
     // Refresh estimate with promo code
-    if (currentState.fiatAmount > 0) {
+    // For crypto payments, use usdEquivalent; for card payments, use fiatAmount
+    final isCrypto = currentState.paymentMethod == PaymentMethod.crypto;
+    final amountForEstimate =
+        isCrypto ? currentState.usdEquivalent : currentState.fiatAmount;
+
+    if (amountForEstimate != null && amountForEstimate > 0) {
       try {
         final estimate = await turbo.computePriceEstimate(
-          currentAmount: currentState.fiatAmount,
+          currentAmount: amountForEstimate,
           currentCurrency: 'usd',
           currentDataUnit: currentState.displayUnit,
           promoCode: event.code,

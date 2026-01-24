@@ -280,11 +280,11 @@ class _CryptoPaymentTab extends StatelessWidget {
 /// Token icon widget
 class _TokenIcon extends StatelessWidget {
   final CryptoToken token;
-  final double size;
+
+  static const double _size = 32;
 
   const _TokenIcon({
     required this.token,
-    this.size = 32,
   });
 
   @override
@@ -293,26 +293,26 @@ class _TokenIcon extends StatelessWidget {
     final isSvg = token.logoAsset.endsWith('.svg');
 
     return Container(
-      width: size,
-      height: size,
+      width: _size,
+      height: _size,
       decoration: BoxDecoration(
         color: colors.themeBgSubtle,
-        borderRadius: BorderRadius.circular(size / 2),
+        borderRadius: BorderRadius.circular(_size / 2),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(size / 2),
+        borderRadius: BorderRadius.circular(_size / 2),
         child: isSvg
             ? SvgPicture.asset(
                 token.logoAsset,
-                width: size,
-                height: size,
+                width: _size,
+                height: _size,
                 fit: BoxFit.cover,
                 placeholderBuilder: (context) => _buildFallbackIcon(context),
               )
             : Image.asset(
                 token.logoAsset,
-                width: size,
-                height: size,
+                width: _size,
+                height: _size,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) =>
                     _buildFallbackIcon(context),
@@ -326,8 +326,8 @@ class _TokenIcon extends StatelessWidget {
       child: Text(
         token.symbol
             .substring(0, token.symbol.length > 2 ? 2 : token.symbol.length),
-        style: TextStyle(
-          fontSize: size * 0.35,
+        style: const TextStyle(
+          fontSize: _size * 0.35,
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),

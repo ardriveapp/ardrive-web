@@ -24,6 +24,7 @@ class AOConnectSignatureView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<CryptoTopupBloc, CryptoTopupState>(
       buildWhen: (previous, current) =>
+          previous is CryptoTopupAOConnectSignature ||
           current is CryptoTopupAOConnectSignature,
       builder: (context, state) {
         if (state is! CryptoTopupAOConnectSignature) {

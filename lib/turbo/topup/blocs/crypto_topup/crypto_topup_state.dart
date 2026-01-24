@@ -264,11 +264,21 @@ class CryptoTopupAmountEntry extends CryptoTopupState {
       return hasSufficientBalance;
     }
     if (!token.isNativeToken) {
+      // For non-native tokens, gas is paid in the native token
+      // so we only check if we have enough of the payment token
       return hasSufficientBalance;
     }
     // For native tokens, balance must cover payment + gas
-    // Gas is in USD, so we need to convert (simplified check)
-    return hasSufficientBalance;
+    // Convert gas from USD to token units
+    if (gasEstimateUsd == null || gasEstimateUsd == 0 || quote!.usdValue == 0) {
+      return hasSufficientBalance;
+    }
+    // Gas in token units = gasEstimateUsd * (tokenAmount / usdValue)
+    final gasInTokenUnits = BigInt.from(
+      (gasEstimateUsd! * quote!.tokenAmount.toDouble() / quote!.usdValue)
+          .ceil(),
+    );
+    return balance.isSufficientWithGas(quote!.tokenAmount, gasInTokenUnits);
   }
 
   CryptoTopupAmountEntry copyWith({

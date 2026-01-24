@@ -115,7 +115,7 @@ class _CryptoAmountInputState extends State<CryptoAmountInput> {
                       ),
                       inputFormatters: [
                         FilteringTextInputFormatter.allow(
-                          RegExp(r'^\d*\.?\d{0,8}'),
+                          RegExp(r'^\d*\.?\d{0,8}$'),
                         ),
                       ],
                       onChanged: (value) {
@@ -217,7 +217,14 @@ class _CryptoAmountInputState extends State<CryptoAmountInput> {
   void _setMaxAmount() {
     if (widget.balance == null) return;
 
-    final maxAmount = widget.balance!.balance;
+    // Use USD value when in USD mode, otherwise use token balance
+    final double maxAmount;
+    if (widget.isUsdMode && widget.balance!.usdValue != null) {
+      maxAmount = widget.balance!.usdValue!;
+    } else {
+      maxAmount = widget.balance!.balance;
+    }
+
     _controller.text = maxAmount.toString();
     widget.onAmountChanged(maxAmount);
   }
@@ -337,6 +344,19 @@ class _PromoCodeInputState extends State<PromoCodeInput> {
     super.initState();
     _controller = TextEditingController(text: widget.currentCode ?? '');
     _isExpanded = widget.currentCode != null && widget.currentCode!.isNotEmpty;
+  }
+
+  @override
+  void didUpdateWidget(PromoCodeInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // React to external changes of currentCode
+    if (oldWidget.currentCode != widget.currentCode) {
+      _controller.text = widget.currentCode ?? '';
+      setState(() {
+        _isExpanded =
+            widget.currentCode != null && widget.currentCode!.isNotEmpty;
+      });
+    }
   }
 
   @override

@@ -37,15 +37,15 @@ enum CryptoPaymentStatus {
 /// Extension methods for [CryptoPaymentStatus]
 extension CryptoPaymentStatusX on CryptoPaymentStatus {
   /// Whether this status allows the user to retry
+  /// Note: insufficientGas is retryable (user can add gas funds and retry)
   bool get canRetry => switch (this) {
         CryptoPaymentStatus.success || CryptoPaymentStatus.pending => false,
-        CryptoPaymentStatus.insufficientFunds ||
-        CryptoPaymentStatus.insufficientGas =>
-          false,
+        CryptoPaymentStatus.insufficientFunds => false,
         _ => true,
       };
 
   /// Whether this status represents a final state (no further state changes expected)
+  /// Note: insufficientGas is non-final since user can add funds and retry
   bool get isFinal => switch (this) {
         CryptoPaymentStatus.success ||
         CryptoPaymentStatus.failed ||
@@ -55,7 +55,7 @@ extension CryptoPaymentStatusX on CryptoPaymentStatus {
         CryptoPaymentStatus.quoteExpired ||
         CryptoPaymentStatus.confirmationTimeout =>
           true,
-        // Non-final: pending, networkError, insufficientGas (retryable)
+        // Non-final: pending, networkError, insufficientGas (user can retry)
         _ => false,
       };
 
