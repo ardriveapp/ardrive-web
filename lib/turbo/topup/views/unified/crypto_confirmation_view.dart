@@ -110,8 +110,9 @@ class CryptoConfirmationView extends StatelessWidget {
                             },
                           ),
 
-                          // Network status (for EVM tokens only)
-                          if (state.token.requiresGasEstimation) ...[
+                          // Network status (for EVM tokens, only when not correct)
+                          if (state.token.requiresGasEstimation &&
+                              state.networkState != NetworkState.correct) ...[
                             const SizedBox(height: 12),
                             _NetworkStatusBanner(
                               networkState: state.networkState,
@@ -674,22 +675,10 @@ class _NetworkStatusBanner extends StatelessWidget {
     final colors = ArDriveTheme.of(context).themeData.colors;
     final typography = ArDriveTypographyNew.of(context);
 
-    // Only show for non-correct states or when checking
+    // Only show banner for non-correct states (checking, switching, needsSwitch)
+    // When correct, the token name already indicates the network
     if (networkState == NetworkState.correct) {
-      // Show a subtle success indicator
-      return Row(
-        children: [
-          Icon(Icons.check_circle_outline,
-              color: colors.themeSuccessDefault, size: 16),
-          const SizedBox(width: 6),
-          Text(
-            'Connected to ${token.networkDisplayName}',
-            style: typography.paragraphSmall(
-              color: colors.themeFgMuted,
-            ),
-          ),
-        ],
-      );
+      return const SizedBox.shrink();
     }
 
     if (networkState == NetworkState.checking) {
