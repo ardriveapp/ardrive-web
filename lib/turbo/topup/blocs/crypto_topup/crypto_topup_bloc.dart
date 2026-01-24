@@ -956,6 +956,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     } else if (currentState is CryptoTopupNetworkSwitch) {
       // Return to confirmation
       if (_selectedToken != null && _currentQuote != null) {
+        final balance = await _getTokenBalance(_selectedToken!);
         final storageValues = _calculateStorageValues(_currentQuote!);
         emit(CryptoTopupConfirmation(
           token: _selectedToken!,
@@ -968,6 +969,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
           currentTurboBalance: currentTurboBalance,
           currentBalanceStorage: storageValues.currentStorage,
           newBalanceStorage: storageValues.newStorage,
+          tokenBalance: balance.balanceDisplay,
         ));
       }
     } else if (currentState is CryptoTopupWalletConnection && _selectedToken != null) {
@@ -1060,6 +1062,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       if (_selectedToken != null &&
           chainId == _selectedToken!.chainId &&
           _currentQuote != null) {
+        final balance = await _getTokenBalance(_selectedToken!);
         final storageValues = _calculateStorageValues(_currentQuote!);
         emit(CryptoTopupConfirmation(
           token: _selectedToken!,
@@ -1072,6 +1075,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
           currentTurboBalance: currentTurboBalance,
           currentBalanceStorage: storageValues.currentStorage,
           newBalanceStorage: storageValues.newStorage,
+          tokenBalance: balance.balanceDisplay,
         ));
       } else {
         // Still wrong network

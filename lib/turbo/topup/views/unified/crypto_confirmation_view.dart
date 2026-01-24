@@ -86,6 +86,8 @@ class CryptoConfirmationView extends StatelessWidget {
                             discountPercent: state.quote.hasDiscount
                                 ? state.quote.discountPercentage.round()
                                 : null,
+                            tokenBalance: state.tokenBalance,
+                            tokenBalanceAfter: state.tokenBalanceAfter,
                           ),
                           const SizedBox(height: 16),
 
@@ -258,6 +260,8 @@ class _PayingWithSection extends StatelessWidget {
   final double? usdEquivalent;
   final String? promoCode;
   final int? discountPercent;
+  final double? tokenBalance;
+  final double? tokenBalanceAfter;
 
   const _PayingWithSection({
     required this.token,
@@ -266,6 +270,8 @@ class _PayingWithSection extends StatelessWidget {
     this.usdEquivalent,
     this.promoCode,
     this.discountPercent,
+    this.tokenBalance,
+    this.tokenBalanceAfter,
   });
 
   @override
@@ -394,6 +400,49 @@ class _PayingWithSection extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          ],
+
+          // Wallet balance (before → after)
+          if (tokenBalance != null) ...[
+            const SizedBox(height: 16),
+            Divider(color: colors.themeBorderDefault, height: 1),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Wallet balance',
+                  style: typography.paragraphSmall(
+                    color: colors.themeFgMuted,
+                  ),
+                ),
+                Row(
+                  children: [
+                    Text(
+                      '${_formatAmount(tokenBalance!)} ${token.symbol}',
+                      style: typography.paragraphSmall(
+                        color: colors.themeFgMuted,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: Icon(
+                        Icons.arrow_forward,
+                        size: 12,
+                        color: colors.themeFgMuted,
+                      ),
+                    ),
+                    Text(
+                      '${_formatAmount(tokenBalanceAfter ?? 0)} ${token.symbol}',
+                      style: typography.paragraphSmall(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colors.themeFgDefault,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ],
         ],
