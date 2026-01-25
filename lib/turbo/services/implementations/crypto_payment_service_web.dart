@@ -308,40 +308,21 @@ class CryptoPaymentService {
       // Wait 3 seconds for block inclusion (as per spec)
       await Future.delayed(const Duration(seconds: 3));
 
-      // Get the appropriate signer for the token type
-      Object? signer;
-      if (pendingTx.token.walletType == WalletType.ethereum &&
-          ethereumWallet != null) {
-        final chainId = _networkConfig.getChainIdForToken(pendingTx.token);
-        if (chainId != null) {
-          signer = await _signerCache.getOrCreateEthereumSigner(
-              ethereumWallet, chainId);
-        }
-      } else if (pendingTx.token.walletType == WalletType.solana &&
-          solanaWallet != null) {
-        signer = await _signerCache.getOrCreateSolanaSigner(solanaWallet);
-      } else if (pendingTx.token.walletType == WalletType.arweave) {
-        final arweaveWallet = getProperty(_globalThis, 'arweaveWallet');
-        if (arweaveWallet != null) {
-          signer = ArconnectSignerJS(arweaveWallet);
-        }
-      }
+      // Create the appropriate Turbo client for the token type
+      final turbo = await _createTurboClientForPendingTx(
+        pendingTx,
+        ethereumWallet: ethereumWallet,
+        solanaWallet: solanaWallet,
+      );
 
-      if (signer == null) {
+      if (turbo == null) {
         return CryptoPaymentResult.failure(
           status: CryptoPaymentStatus.failed,
           transactionId: pendingTx.transactionId,
-          errorMessage: 'Could not get wallet signer for retry',
+          errorMessage: 'Could not create Turbo client for retry',
           token: pendingTx.token,
         );
       }
-
-      // Create authenticated Turbo client and submit the transaction
-      final turbo = await createAuthenticatedTurbo(
-        signer: signer,
-        paymentServiceUrl: _paymentUrl,
-        token: pendingTx.token.turboTokenType,
-      );
 
       await submitFundTransaction(turbo, pendingTx.transactionId);
 
@@ -377,6 +358,97 @@ class CryptoPaymentService {
         errorMessage: e.toString(),
         token: pendingTx.token,
       );
+    }
+  }
+
+  /// Create the appropriate Turbo client for a pending transaction.
+  ///
+  /// This helper properly handles token-specific client creation:
+  /// - ARIO on AO: Uses ArconnectSignerJS
+  /// - ARIO on AO via ETH: Uses InjectedEthereumSignerJS with AO signature
+  /// - Solana: Uses createAuthenticatedTurboWithSolanaAdapter
+  /// - EVM tokens: Uses createAuthenticatedTurboWithWalletAdapter
+  Future<Object?> _createTurboClientForPendingTx(
+    PendingCryptoTransaction pendingTx, {
+    EthereumWalletService? ethereumWallet,
+    SolanaWalletService? solanaWallet,
+  }) async {
+    switch (pendingTx.token) {
+      case CryptoToken.arioAO:
+        // Use ArConnect signer
+        final arweaveWallet = getProperty(_globalThis, 'arweaveWallet');
+        if (arweaveWallet == null) {
+          logger.e('ArConnect wallet not available for pending tx retry');
+          return null;
+        }
+        final signer = ArconnectSignerJS(arweaveWallet);
+        return createAuthenticatedTurbo(
+          signer: signer,
+          paymentServiceUrl: _paymentUrl,
+          token: 'ario',
+        );
+
+      case CryptoToken.arioAOViaEth:
+        // Use InjectedEthereumSigner with AO signature
+        if (ethereumWallet == null || !ethereumWallet.isConnected) {
+          logger.e('Ethereum wallet not connected for ARIO via ETH retry');
+          return null;
+        }
+        final aoSignature =
+            await _signerCache.signAndCacheAOConnect(ethereumWallet);
+        final bridge = getProperty(_globalThis, 'CryptoWalletBridge');
+        final provider = callMethod(bridge, 'getEthereumProvider', [null]);
+        final signer = InjectedEthereumSignerJS(provider);
+        final ethers = getProperty(_globalThis, 'ethers');
+        final publicKeyBytes =
+            callMethod(ethers, 'getBytes', [aoSignature.publicKey]);
+        signer.publicKey = publicKeyBytes;
+        return createAuthenticatedTurbo(
+          signer: signer,
+          paymentServiceUrl: _paymentUrl,
+          token: 'ario',
+        );
+
+      case CryptoToken.sol:
+        // Use Solana wallet adapter
+        if (solanaWallet == null || !solanaWallet.isConnected) {
+          logger.e('Solana wallet not connected for SOL retry');
+          return null;
+        }
+        final walletAdapter =
+            await _signerCache.getOrCreateSolanaSigner(solanaWallet);
+        return createAuthenticatedTurboWithSolanaAdapter(
+          solanaWalletAdapter: walletAdapter,
+          paymentServiceUrl: _paymentUrl,
+          gatewayUrl: _networkConfig.solanaRpcUrl,
+        );
+
+      case CryptoToken.arioBase:
+      case CryptoToken.usdcBase:
+      case CryptoToken.ethBase:
+      case CryptoToken.usdcEth:
+      case CryptoToken.ethL1:
+        // Use EVM wallet adapter
+        if (ethereumWallet == null || !ethereumWallet.isConnected) {
+          logger.e('Ethereum wallet not connected for EVM token retry');
+          return null;
+        }
+        final chainId = _networkConfig.getChainIdForToken(pendingTx.token);
+        if (chainId == null) {
+          logger.e('Could not get chain ID for token: ${pendingTx.token}');
+          return null;
+        }
+        final ethersSigner = await _signerCache.getOrCreateEthereumSigner(
+          ethereumWallet,
+          chainId,
+        );
+        final gatewayUrl = _networkConfig.getRpcUrlForToken(pendingTx.token);
+        return createAuthenticatedTurboWithWalletAdapter(
+          ethersSigner: ethersSigner,
+          gatewayUrl: gatewayUrl,
+          paymentServiceUrl: _paymentUrl,
+          token: pendingTx.token.turboTokenType,
+        );
     }
   }
 
