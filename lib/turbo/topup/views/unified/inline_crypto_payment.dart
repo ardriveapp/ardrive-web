@@ -1,5 +1,6 @@
 import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
+import 'package:ardrive/turbo/topup/views/crypto_topup/components/network_indicator.dart';
 import 'package:ardrive/turbo/topup/views/crypto_topup/components/wallet_selector_modal.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -889,8 +890,8 @@ class _WalletConnectionSection extends StatelessWidget {
     ArdriveTypographyNew typography,
   ) {
     final bloc = context.read<CryptoTopupBloc>();
-    final requiredNetworkName = _getNetworkName(networkState.requiredChainId);
-    final currentNetworkName = _getNetworkName(networkState.currentChainId);
+    final requiredNetworkName = getNetworkName(networkState.requiredChainId);
+    final currentNetworkName = getNetworkName(networkState.currentChainId);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -962,17 +963,6 @@ class _WalletConnectionSection extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _getNetworkName(int chainId) {
-    switch (chainId) {
-      case 1:
-        return 'Ethereum Mainnet';
-      case 8453:
-        return 'Base';
-      default:
-        return 'Chain $chainId';
-    }
   }
 
   String _truncateAddress(String address) {

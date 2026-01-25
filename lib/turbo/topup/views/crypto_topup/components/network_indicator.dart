@@ -53,7 +53,9 @@ class NetworkIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final themeData = ArDriveTheme.of(context).themeData;
+    final colorTokens = themeData.colorTokens;
+    final colors = themeData.colors;
     final typography = ArDriveTypographyNew.of(context);
 
     return Container(
@@ -61,11 +63,12 @@ class NetworkIndicator extends StatelessWidget {
       decoration: BoxDecoration(
         color: isCorrectNetwork
             ? colorTokens.containerL1
-            : colorTokens.containerL1,
+            : colors.themeWarningSubtle,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color:
-              isCorrectNetwork ? colorTokens.strokeLow : colorTokens.strokeLow,
+          color: isCorrectNetwork
+              ? colorTokens.strokeLow
+              : colors.themeWarningMuted,
         ),
       ),
       child: Row(
