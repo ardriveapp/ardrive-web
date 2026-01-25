@@ -116,7 +116,12 @@ class _ConfirmationContentState extends State<_ConfirmationContent> {
 
           // Promo code applied
           if (state.promoCode != null) ...[
-            _PromoCodeApplied(code: state.promoCode!),
+            _PromoCodeApplied(
+              code: state.promoCode!,
+              discountPercentage: state.quote.hasDiscount
+                  ? state.quote.discountPercentage
+                  : null,
+            ),
             const SizedBox(height: 24),
           ],
 
@@ -334,12 +339,29 @@ class _PaymentSummary extends StatelessWidget {
                   color: colorTokens.textMid,
                 ),
               ),
-              Text(
-                state.quote.formattedCredits,
-                style: typography.heading5(
-                  fontWeight: ArFontWeight.bold,
-                  color: colorTokens.textHigh,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Show original credits with strikethrough if there's a discount
+                  if (state.quote.hasDiscount &&
+                      state.quote.originalCreditsDisplay != null) ...[
+                    Text(
+                      '${state.quote.originalCreditsDisplay!.toStringAsFixed(3)} Credits',
+                      style: typography.paragraphSmall(
+                        color: colorTokens.textLow,
+                      ).copyWith(
+                        decoration: TextDecoration.lineThrough,
+                      ),
+                    ),
+                  ],
+                  Text(
+                    state.quote.formattedCredits,
+                    style: typography.heading5(
+                      fontWeight: ArFontWeight.bold,
+                      color: colorTokens.textHigh,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -459,18 +481,27 @@ class _DetailRow extends StatelessWidget {
 
 class _PromoCodeApplied extends StatelessWidget {
   final String code;
+  final double? discountPercentage;
 
-  const _PromoCodeApplied({required this.code});
+  const _PromoCodeApplied({
+    required this.code,
+    this.discountPercentage,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final themeColors = ArDriveTheme.of(context).themeData.colors;
     final typography = ArDriveTypographyNew.of(context);
+
+    // Format the display text
+    final displayText = discountPercentage != null && discountPercentage! > 0
+        ? '$code (${discountPercentage!.toStringAsFixed(0)}% off)'
+        : 'Promo code applied: $code';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: colorTokens.containerL1,
+        color: themeColors.themeSuccessSubtle,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -479,13 +510,14 @@ class _PromoCodeApplied extends StatelessWidget {
           Icon(
             Icons.local_offer,
             size: 14,
-            color: colorTokens.textHigh,
+            color: themeColors.themeSuccessDefault,
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 6),
           Text(
-            'Promo code applied: $code',
+            displayText,
             style: typography.paragraphSmall(
-              color: colorTokens.textMid,
+              fontWeight: ArFontWeight.semiBold,
+              color: themeColors.themeSuccessDefault,
             ),
           ),
         ],

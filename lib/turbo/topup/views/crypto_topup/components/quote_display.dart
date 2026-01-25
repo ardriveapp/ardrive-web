@@ -67,11 +67,16 @@ class QuoteDisplay extends StatelessWidget {
           ),
           const SizedBox(height: 8),
 
-          // You receive
-          _QuoteRow(
+          // You receive (with discount info if applicable)
+          _QuoteRowWithDiscount(
             label: 'You receive',
             value: quote.formattedCredits,
-            valueColor: colorTokens.textHigh,
+            originalValue: quote.hasDiscount &&
+                    quote.originalCreditsDisplay != null
+                ? '${quote.originalCreditsDisplay!.toStringAsFixed(3)} Credits'
+                : null,
+            discountPercentage:
+                quote.hasDiscount ? quote.discountPercentage : null,
           ),
           const SizedBox(height: 8),
 
@@ -118,13 +123,11 @@ class _QuoteRow extends StatelessWidget {
   final String label;
   final String value;
   final String? subValue;
-  final Color? valueColor;
 
   const _QuoteRow({
     required this.label,
     required this.value,
     this.subValue,
-    this.valueColor,
   });
 
   @override
@@ -148,7 +151,7 @@ class _QuoteRow extends StatelessWidget {
               value,
               style: typography.paragraphNormal(
                 fontWeight: ArFontWeight.semiBold,
-                color: valueColor ?? colorTokens.textHigh,
+                color: colorTokens.textHigh,
               ),
             ),
             if (subValue != null)
@@ -158,6 +161,93 @@ class _QuoteRow extends StatelessWidget {
                   color: colorTokens.textMid,
                 ),
               ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Quote row with discount display (original price strikethrough + discount badge)
+class _QuoteRowWithDiscount extends StatelessWidget {
+  final String label;
+  final String value;
+  final String? originalValue;
+  final double? discountPercentage;
+
+  const _QuoteRowWithDiscount({
+    required this.label,
+    required this.value,
+    this.originalValue,
+    this.discountPercentage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final themeColors = ArDriveTheme.of(context).themeData.colors;
+    final typography = ArDriveTypographyNew.of(context);
+
+    final hasDiscount = originalValue != null &&
+        discountPercentage != null &&
+        discountPercentage! > 0;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: typography.paragraphSmall(
+                color: colorTokens.textMid,
+              ),
+            ),
+            // Discount badge
+            if (hasDiscount) ...[
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: themeColors.themeSuccessSubtle,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '${discountPercentage!.toStringAsFixed(0)}% off',
+                  style: typography.paragraphSmall(
+                    fontWeight: ArFontWeight.semiBold,
+                    color: themeColors.themeSuccessDefault,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            // Original value with strikethrough
+            if (hasDiscount)
+              Text(
+                originalValue!,
+                style: typography
+                    .paragraphSmall(
+                      color: colorTokens.textLow,
+                    )
+                    .copyWith(
+                      decoration: TextDecoration.lineThrough,
+                    ),
+              ),
+            // Current (discounted) value
+            Text(
+              value,
+              style: typography.paragraphNormal(
+                fontWeight: ArFontWeight.semiBold,
+                color: colorTokens.textHigh,
+              ),
+            ),
           ],
         ),
       ],
