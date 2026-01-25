@@ -449,11 +449,15 @@ class CryptoPaymentService {
           logger.e('Could not get chain ID for token: ${pendingTx.token}');
           return null;
         }
+        final gatewayUrl = _networkConfig.getRpcUrlForToken(pendingTx.token);
+        if (gatewayUrl == null || gatewayUrl.isEmpty) {
+          logger.e('Missing RPC URL for token: ${pendingTx.token}');
+          return null;
+        }
         final ethersSigner = await _signerCache.getOrCreateEthereumSigner(
           ethereumWallet,
           chainId,
         );
-        final gatewayUrl = _networkConfig.getRpcUrlForToken(pendingTx.token);
         return createAuthenticatedTurboWithWalletAdapter(
           ethersSigner: ethersSigner,
           gatewayUrl: gatewayUrl,
