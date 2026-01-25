@@ -32,7 +32,7 @@ class StoragePreset {
       case FileSizeUnit.bytes:
         return '$formattedValue B';
       case FileSizeUnit.kilobytes:
-        return '$formattedValue KB';
+        return '$formattedValue KiB';
       case FileSizeUnit.megabytes:
         return '$formattedValue MiB';
       case FileSizeUnit.gigabytes:

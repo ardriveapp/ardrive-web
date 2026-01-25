@@ -62,9 +62,7 @@ class _CryptoAmountInputState extends State<CryptoAmountInput> {
 
   @override
   Widget build(BuildContext context) {
-    final themeData = ArDriveTheme.of(context).themeData;
-    final colorTokens = themeData.colorTokens;
-    final colors = themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Column(
@@ -78,7 +76,7 @@ class _CryptoAmountInputState extends State<CryptoAmountInput> {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: widget.error != null
-                  ? colors.themeErrorMuted
+                  ? colorTokens.strokeRed
                   : colorTokens.strokeLow,
             ),
           ),
