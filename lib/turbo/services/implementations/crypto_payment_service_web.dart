@@ -394,12 +394,23 @@ class CryptoPaymentService {
           logger.e('Ethereum wallet not connected for ARIO via ETH retry');
           return null;
         }
+
+        // Validate required JS globals are available
+        final bridge = getProperty(_globalThis, 'CryptoWalletBridge');
+        if (bridge == null) {
+          logger.e('CryptoWalletBridge not available for ARIO via ETH retry');
+          return null;
+        }
+        final ethers = getProperty(_globalThis, 'ethers');
+        if (ethers == null) {
+          logger.e('ethers.js not available for ARIO via ETH retry');
+          return null;
+        }
+
         final aoSignature =
             await _signerCache.signAndCacheAOConnect(ethereumWallet);
-        final bridge = getProperty(_globalThis, 'CryptoWalletBridge');
         final provider = callMethod(bridge, 'getEthereumProvider', [null]);
         final signer = InjectedEthereumSignerJS(provider);
-        final ethers = getProperty(_globalThis, 'ethers');
         final publicKeyBytes =
             callMethod(ethers, 'getBytes', [aoSignature.publicKey]);
         signer.publicKey = publicKeyBytes;
@@ -577,7 +588,7 @@ class CryptoPaymentService {
 
       if (token.walletType == WalletType.solana) {
         // Solana fees are typically very low (~$0.001)
-        return 0.01;
+        return 0.001;
       }
 
       return 0;
@@ -672,19 +683,31 @@ class CryptoPaymentService {
     String arweaveAddress,
     EthereumWalletService ethereumWallet,
   ) async {
+    // Validate required JS globals are available
+    final bridge = getProperty(_globalThis, 'CryptoWalletBridge');
+    if (bridge == null) {
+      throw CryptoPaymentException(
+        'CryptoWalletBridge not loaded. Please refresh the page and try again.',
+      );
+    }
+    final ethers = getProperty(_globalThis, 'ethers');
+    if (ethers == null) {
+      throw CryptoPaymentException(
+        'ethers.js not loaded. Please refresh the page and try again.',
+      );
+    }
+
     // Get or create the AO signature
     final aoSignature =
         await _signerCache.signAndCacheAOConnect(ethereumWallet);
 
     // Get ethers provider and signer
-    final bridge = getProperty(_globalThis, 'CryptoWalletBridge');
     final provider = callMethod(bridge, 'getEthereumProvider', [null]);
 
     // Create InjectedEthereumSigner with the derived public key
     final signer = InjectedEthereumSignerJS(provider);
 
     // Set the public key (derived from signature)
-    final ethers = getProperty(_globalThis, 'ethers');
     final publicKeyBytes =
         callMethod(ethers, 'getBytes', [aoSignature.publicKey]);
     signer.publicKey = publicKeyBytes;
