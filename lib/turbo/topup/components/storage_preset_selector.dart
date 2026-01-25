@@ -70,7 +70,7 @@ class StoragePresetSelector extends StatefulWidget {
   final double? customValue;
   final FileSizeUnit customUnit;
   final ValueChanged<StoragePreset> onPresetSelected;
-  final void Function(double value, FileSizeUnit unit) onCustomAmountChanged;
+  final void Function(double? value, FileSizeUnit unit) onCustomAmountChanged;
   final void Function(FileSizeUnit unit) onUnitChanged;
 
   const StoragePresetSelector({
@@ -134,8 +134,8 @@ class _StoragePresetSelectorState extends State<StoragePresetSelector> {
       setState(() {
         _validationMessage = null;
       });
-      // Notify parent that the custom amount was cleared (0 disables checkout)
-      widget.onCustomAmountChanged(0, widget.customUnit);
+      // Notify parent that the custom amount was cleared
+      widget.onCustomAmountChanged(null, widget.customUnit);
       return;
     }
 

@@ -47,9 +47,9 @@ class UnifiedTopupAmountSelected extends UnifiedTopupEvent {
   List<Object?> get props => [amount];
 }
 
-/// Storage size selected
+/// Storage size selected (null clears the custom amount)
 class UnifiedTopupStorageSizeSelected extends UnifiedTopupEvent {
-  final double size;
+  final double? size;
   final FileSizeUnit unit;
 
   const UnifiedTopupStorageSizeSelected({

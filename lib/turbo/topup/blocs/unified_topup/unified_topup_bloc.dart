@@ -233,9 +233,10 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
     final currentState = state;
     if (currentState is! UnifiedTopupLoaded) return;
 
-    if (event.size <= 0) {
+    // Handle null or zero size (custom amount cleared)
+    if (event.size == null || event.size! <= 0) {
       emit(currentState.copyWith(
-        storageSize: 0,
+        clearStorageSize: true,
         storageUnit: event.unit,
         fiatAmount: 0,
         creditsToReceive: BigInt.zero,
@@ -254,7 +255,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
 
     try {
       // Convert storage size to GB for pricing
-      final sizeInGB = _storageSizeToGB(event.size, event.unit);
+      final sizeInGB = _storageSizeToGB(event.size!, event.unit);
 
       // Get the cost of 1 GB in winc
       final costOfOneGbInWinc = await turbo.getCostOfOneGB();
@@ -297,8 +298,8 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
             storageUnit: event.unit,
             fiatAmount: priceInUsd,
             creditsToReceive: BigInt.zero,
-            estimatedStorage: event.size.toStringAsFixed(
-              event.size == event.size.roundToDouble() ? 0 : 2,
+            estimatedStorage: event.size!.toStringAsFixed(
+              event.size == event.size!.roundToDouble() ? 0 : 2,
             ),
             isLoadingQuote: false,
             errorMessage:
