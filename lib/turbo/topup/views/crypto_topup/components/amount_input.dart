@@ -60,6 +60,15 @@ class _CryptoAmountInputState extends State<CryptoAmountInput> {
     super.dispose();
   }
 
+  /// Builds a regex pattern for decimal input based on current mode.
+  /// USD mode uses 2 decimal places, token mode uses token's native decimals
+  /// (clamped to max 18 for safety).
+  String _buildDecimalPattern() {
+    final allowedDecimals =
+        widget.isUsdMode ? 2 : widget.token.decimals.clamp(0, 18);
+    return r'^\d*\.?\d{0,' + allowedDecimals.toString() + r'}$';
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
@@ -115,7 +124,7 @@ class _CryptoAmountInputState extends State<CryptoAmountInput> {
                       ),
                       inputFormatters: [
                         FilteringTextInputFormatter.allow(
-                          RegExp(r'^\d*\.?\d{0,8}$'),
+                          RegExp(_buildDecimalPattern()),
                         ),
                       ],
                       onChanged: (value) {

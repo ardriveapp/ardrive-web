@@ -104,8 +104,10 @@ class _StoragePresetSelectorState extends State<StoragePresetSelector> {
   @override
   void didUpdateWidget(StoragePresetSelector oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Sync controller when customValue changes externally
-    if (widget.customValue != oldWidget.customValue) {
+    // Sync controller when customValue changes externally, but only if the
+    // field is not focused to avoid clobbering in-progress user edits
+    if (widget.customValue != oldWidget.customValue &&
+        !_customAmountFocus.hasFocus) {
       final newText = widget.customValue?.toString() ?? '';
       if (_customAmountController.text != newText) {
         _customAmountController.text = newText;
@@ -143,6 +145,8 @@ class _StoragePresetSelectorState extends State<StoragePresetSelector> {
       setState(() {
         _validationMessage = 'Please enter a valid amount';
       });
+      // Notify parent that the custom amount is invalid (clear selection)
+      widget.onCustomAmountChanged(null, widget.customUnit);
       return;
     }
 
