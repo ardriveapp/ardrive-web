@@ -347,11 +347,13 @@ class _PaymentSummary extends StatelessWidget {
                       state.quote.originalCreditsDisplay != null) ...[
                     Text(
                       '${state.quote.originalCreditsDisplay!.toStringAsFixed(3)} Credits',
-                      style: typography.paragraphSmall(
-                        color: colorTokens.textLow,
-                      ).copyWith(
-                        decoration: TextDecoration.lineThrough,
-                      ),
+                      style: typography
+                          .paragraphSmall(
+                            color: colorTokens.textLow,
+                          )
+                          .copyWith(
+                            decoration: TextDecoration.lineThrough,
+                          ),
                     ),
                   ],
                   Text(
