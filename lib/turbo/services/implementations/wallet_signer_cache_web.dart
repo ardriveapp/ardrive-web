@@ -305,10 +305,19 @@ class WalletSignerCache {
       // The recovered key is already a hex string with 0x prefix
       final publicKeyHex = recoveredKey.toString();
 
-      // Validate it looks like a hex public key
-      if (!publicKeyHex.startsWith('0x')) {
+      // Validate uncompressed public key format:
+      // - Must start with '0x04' (0x prefix + 04 uncompressed point indicator)
+      // - Must be 132 chars total (0x + 130 hex chars for 65-byte uncompressed key)
+      if (!publicKeyHex.startsWith('0x04')) {
         throw SignerCacheException(
-          'Invalid public key format: expected 0x prefix',
+          'Invalid public key format: expected uncompressed key starting with 0x04',
+        );
+      }
+
+      if (publicKeyHex.length != 132) {
+        throw SignerCacheException(
+          'Invalid public key length: expected 132 characters (0x + 130 hex chars '
+          'for 65-byte uncompressed key), got ${publicKeyHex.length}',
         );
       }
 
