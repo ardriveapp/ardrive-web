@@ -614,12 +614,32 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     final currentState = state;
     if (currentState is! CryptoTopupAmountEntry) return;
 
-    _currentAmountUsd = event.isUsd ? event.amount : 0;
+    final amount = event.amount;
+
+    // Handle null/invalid amount - clear the quote
+    if (amount == null || amount <= 0) {
+      _currentAmountUsd = 0;
+      // Emit a new state without a quote by creating fresh state
+      emit(CryptoTopupAmountEntry(
+        token: currentState.token,
+        walletAddress: currentState.walletAddress,
+        balance: currentState.balance,
+        quote: null,
+        currentAmount: 0,
+        isLoadingQuote: false,
+        isUsdMode: currentState.isUsdMode,
+        promoCodeState: currentState.promoCodeState,
+        promoCode: currentState.promoCode,
+      ));
+      return;
+    }
+
+    _currentAmountUsd = event.isUsd ? amount : 0;
 
     // Show loading state
     emit(currentState.copyWith(
       isLoadingQuote: true,
-      currentAmount: event.amount,
+      currentAmount: amount,
     ));
 
     // Fetch quote (debounced in UI layer)
@@ -628,14 +648,14 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       if (event.isUsd) {
         quote = await _paymentService.getQuote(
           token: _selectedToken!,
-          usdAmount: event.amount,
+          usdAmount: amount,
           promoCode: _promoCode,
           destinationAddress: arweaveWalletAddress,
         );
       } else {
         quote = await _paymentService.getQuoteByTokenAmount(
           token: _selectedToken!,
-          tokenAmount: event.amount,
+          tokenAmount: amount,
           promoCode: _promoCode,
           destinationAddress: arweaveWalletAddress,
         );
@@ -650,7 +670,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       emit(currentState.copyWith(
         quote: quote,
         isLoadingQuote: false,
-        currentAmount: event.amount,
+        currentAmount: amount,
         quoteExpiresAt: quote.expiresAt,
       ));
     } catch (e) {
@@ -1525,7 +1545,8 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
   ) {
     // Store the amount for later use when entering amount entry
     // Store raw value - we'll handle USD vs token conversion in the handler
-    _currentAmountUsd = event.amount;
+    // Treat null as 0 for storage
+    _currentAmountUsd = event.amount ?? 0;
     _isCurrentAmountInTokens = !event.isUsd;
 
     final currentState = state;

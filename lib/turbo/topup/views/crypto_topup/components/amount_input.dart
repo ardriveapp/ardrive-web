@@ -12,7 +12,7 @@ class CryptoAmountInput extends StatefulWidget {
   final TokenBalance? balance;
   final bool isLoading;
   final String? error;
-  final ValueChanged<double> onAmountChanged;
+  final ValueChanged<double?> onAmountChanged;
   final VoidCallback? onToggleMode;
 
   const CryptoAmountInput({
@@ -128,7 +128,8 @@ class _CryptoAmountInputState extends State<CryptoAmountInput> {
                         ),
                       ],
                       onChanged: (value) {
-                        final amount = double.tryParse(value) ?? 0;
+                        // Pass null for invalid/empty input, parsed value otherwise
+                        final amount = double.tryParse(value);
                         widget.onAmountChanged(amount);
                       },
                     ),
@@ -409,7 +410,7 @@ class _PromoCodeInputState extends State<PromoCodeInput> {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: widget.error != null
-              ? colorTokens.strokeLow
+              ? colorTokens.strokeRed
               : widget.isValid
                   ? colorTokens.strokeHigh
                   : colorTokens.strokeLow,

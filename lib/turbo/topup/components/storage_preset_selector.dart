@@ -268,12 +268,18 @@ class _StoragePresetSelectorState extends State<StoragePresetSelector> {
               selectedUnit: widget.customUnit,
               onChanged: (unit) {
                 widget.onUnitChanged(unit);
-                if (_customAmountController.text.isNotEmpty) {
-                  final numValue =
-                      double.tryParse(_customAmountController.text);
-                  if (numValue != null) {
-                    widget.onCustomAmountChanged(numValue, unit);
-                  }
+                // Reuse the same validation logic as _onCustomAmountChanged
+                final text = _customAmountController.text;
+                if (text.isEmpty) {
+                  widget.onCustomAmountChanged(null, unit);
+                  return;
+                }
+                final numValue = double.tryParse(text);
+                if (numValue == null || numValue <= 0) {
+                  // Invalid input - clear the custom amount
+                  widget.onCustomAmountChanged(null, unit);
+                } else {
+                  widget.onCustomAmountChanged(numValue, unit);
                 }
               },
             ),

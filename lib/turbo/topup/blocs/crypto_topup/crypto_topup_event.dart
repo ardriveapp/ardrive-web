@@ -144,9 +144,9 @@ class CryptoTopupAOConnectSignatureFailed extends CryptoTopupEvent {
 // Amount Entry Events
 // ============================================
 
-/// User changed the payment amount
+/// User changed the payment amount (null indicates invalid/empty input)
 class CryptoTopupAmountChanged extends CryptoTopupEvent {
-  final double amount;
+  final double? amount;
   final bool isUsd;
 
   const CryptoTopupAmountChanged({
@@ -405,9 +405,9 @@ class CryptoTopupGoBack extends CryptoTopupEvent {
   const CryptoTopupGoBack();
 }
 
-/// Update payment amount
+/// Update payment amount (null clears the amount/indicates invalid input)
 class CryptoTopupUpdateAmount extends CryptoTopupEvent {
-  final double amount;
+  final double? amount;
 
   /// Whether the amount is in USD. If false, amount is in token units.
   /// Defaults to true for backwards compatibility.
