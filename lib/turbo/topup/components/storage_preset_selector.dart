@@ -102,6 +102,18 @@ class _StoragePresetSelectorState extends State<StoragePresetSelector> {
   }
 
   @override
+  void didUpdateWidget(StoragePresetSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Sync controller when customValue changes externally
+    if (widget.customValue != oldWidget.customValue) {
+      final newText = widget.customValue?.toString() ?? '';
+      if (_customAmountController.text != newText) {
+        _customAmountController.text = newText;
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _customAmountController.dispose();
     _customAmountFocus.dispose();
@@ -122,6 +134,8 @@ class _StoragePresetSelectorState extends State<StoragePresetSelector> {
       setState(() {
         _validationMessage = null;
       });
+      // Notify parent that the custom amount was cleared (0 disables checkout)
+      widget.onCustomAmountChanged(0, widget.customUnit);
       return;
     }
 

@@ -302,13 +302,7 @@ class _TokenIcon extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(_size / 2),
         child: isSvg
-            ? SvgPicture.asset(
-                token.logoAsset,
-                width: _size,
-                height: _size,
-                fit: BoxFit.cover,
-                placeholderBuilder: (context) => _buildFallbackIcon(context),
-              )
+            ? _buildSvgWithFallback(context)
             : Image.asset(
                 token.logoAsset,
                 width: _size,
@@ -318,6 +312,26 @@ class _TokenIcon extends StatelessWidget {
                     _buildFallbackIcon(context),
               ),
       ),
+    );
+  }
+
+  /// Builds an SVG image with proper error handling using FutureBuilder.
+  /// placeholderBuilder only fires during loading, not on errors, so we use
+  /// FutureBuilder to handle asset loading failures gracefully.
+  Widget _buildSvgWithFallback(BuildContext context) {
+    return FutureBuilder<String>(
+      future: DefaultAssetBundle.of(context).loadString(token.logoAsset),
+      builder: (context, snapshot) {
+        if (snapshot.hasError || !snapshot.hasData) {
+          return _buildFallbackIcon(context);
+        }
+        return SvgPicture.string(
+          snapshot.data!,
+          width: _size,
+          height: _size,
+          fit: BoxFit.cover,
+        );
+      },
     );
   }
 

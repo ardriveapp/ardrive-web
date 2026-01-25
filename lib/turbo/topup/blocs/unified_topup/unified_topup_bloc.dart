@@ -525,10 +525,15 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
     ));
 
     // Refresh estimate without promo code
-    if (currentState.fiatAmount > 0) {
+    // For crypto payments, use usdEquivalent; for card payments, use fiatAmount
+    final isCrypto = currentState.paymentMethod == PaymentMethod.crypto;
+    final amountForEstimate =
+        isCrypto ? (currentState.usdEquivalent ?? 0) : currentState.fiatAmount;
+
+    if (amountForEstimate > 0) {
       try {
         final estimate = await turbo.computePriceEstimate(
-          currentAmount: currentState.fiatAmount,
+          currentAmount: amountForEstimate,
           currentCurrency: 'usd',
           currentDataUnit: currentState.displayUnit,
           promoCode: null,
