@@ -751,15 +751,26 @@ class CryptoPaymentService {
     // Ensure we're on the correct chain
     await ethereumWallet.ensureCorrectChain(token);
 
+    // Validate chain configuration before proceeding
+    final chainId = _networkConfig.getChainIdForToken(token);
+    if (chainId == null) {
+      throw CryptoPaymentException(
+        'Missing chainId for token ${token.symbol} (${token.name})',
+      );
+    }
+
+    final gatewayUrl = _networkConfig.getRpcUrlForToken(token);
+    if (gatewayUrl == null || gatewayUrl.isEmpty) {
+      throw CryptoPaymentException(
+        'Missing RPC URL for token ${token.symbol} (${token.name})',
+      );
+    }
+
     // Get ethers.js signer for the wallet adapter
-    final chainId = _networkConfig.getChainIdForToken(token)!;
     final ethersSigner = await _signerCache.getOrCreateEthereumSigner(
       ethereumWallet,
       chainId,
     );
-
-    // Get the RPC URL for the token's network (required by SDK to identify chain)
-    final gatewayUrl = _networkConfig.getRpcUrlForToken(token);
 
     // Create authenticated Turbo client with wallet adapter pattern
     // EVM payments use walletAdapter: { getSigner: () => signer }
