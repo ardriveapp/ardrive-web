@@ -1060,24 +1060,46 @@ class CryptoPaymentService {
     };
   }
 
-  /// Convert a decimal amount to smallest unit string without floating-point errors.
+  /// Convert a decimal amount to smallest unit string using truncation (never rounds up).
   ///
+  /// Uses truncation instead of rounding to ensure users are never overcharged.
   /// Example: _toSmallestUnit(1.234567, 6) => "1234567"
   /// Example: _toSmallestUnit(0.5, 6) => "500000"
+  /// Example: _toSmallestUnit(1.9999999, 6) => "1999999" (not "2000000")
   String _toSmallestUnit(double amount, int decimals) {
-    // Format to fixed decimals to get a clean string representation
-    final formatted = amount.toStringAsFixed(decimals);
+    // Handle edge cases
+    if (amount <= 0) {
+      return '0';
+    }
 
-    // Split on decimal point
-    final parts = formatted.split('.');
-    final integerPart = parts[0];
-    final decimalPart = parts.length > 1 ? parts[1] : '';
+    // Get integer part via truncation (not rounding)
+    final integerPart = amount.truncate();
 
-    // Pad decimal part to required decimals (should already be correct from toStringAsFixed)
-    final paddedDecimal = decimalPart.padRight(decimals, '0');
+    // Get fractional part and convert to smallest units
+    // Multiply first, then truncate to avoid rounding up
+    final fractionalPart = amount - integerPart;
 
-    // Combine and remove leading zeros (but keep at least one digit)
-    final combined = '$integerPart$paddedDecimal';
+    // Compute 10^decimals without importing dart:math
+    double multiplier = 1.0;
+    for (int i = 0; i < decimals; i++) {
+      multiplier *= 10.0;
+    }
+
+    // Truncate the fractional units (never round up)
+    final fractionalUnits = (fractionalPart * multiplier).truncate();
+
+    // Format the decimal part with proper zero padding
+    final decimalPart = fractionalUnits.toString().padLeft(decimals, '0');
+
+    // Take only first `decimals` digits if somehow longer (safety check)
+    final truncatedDecimal = decimalPart.length > decimals
+        ? decimalPart.substring(0, decimals)
+        : decimalPart;
+
+    // Combine integer and decimal parts
+    final combined = '$integerPart$truncatedDecimal';
+
+    // Remove leading zeros but keep at least one digit
     final result = combined.replaceFirst(RegExp(r'^0+(?=\d)'), '');
 
     return result.isEmpty ? '0' : result;
