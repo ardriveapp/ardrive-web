@@ -438,7 +438,8 @@ class CryptoPaymentService {
       case CryptoToken.usdcBase:
       case CryptoToken.ethBase:
       case CryptoToken.usdcEth:
-        // Use EVM wallet adapter for ERC-20 tokens
+      case CryptoToken.ethL1:
+        // Use EVM wallet adapter
         if (ethereumWallet == null || !ethereumWallet.isConnected) {
           logger.e('Ethereum wallet not connected for EVM token retry');
           return null;
@@ -463,36 +464,6 @@ class CryptoPaymentService {
           paymentServiceUrl: _paymentUrl,
           token: pendingTx.token.turboTokenType,
         );
-
-      case CryptoToken.ethL1:
-        // Native ETH on L1 requires InjectedEthereumSigner, NOT walletAdapter
-        if (ethereumWallet == null || !ethereumWallet.isConnected) {
-          logger.e('Ethereum wallet not connected for ETH L1 retry');
-          return null;
-        }
-        try {
-          final bridge = getProperty(_globalThis, 'CryptoWalletBridge');
-          final ethers = getProperty(_globalThis, 'ethers');
-          if (bridge == null || ethers == null) {
-            logger.e('Required JS globals not available for ETH L1 retry');
-            return null;
-          }
-          final aoSignature =
-              await _signerCache.signAndCacheAOConnect(ethereumWallet);
-          final provider = callMethod(bridge, 'getEthereumProvider', [null]);
-          final signer = InjectedEthereumSignerJS(provider);
-          final publicKeyBytes =
-              callMethod(ethers, 'getBytes', [aoSignature.publicKey]);
-          signer.publicKey = publicKeyBytes;
-          return createAuthenticatedTurbo(
-            signer: signer,
-            paymentServiceUrl: _paymentUrl,
-            token: 'ethereum',
-          );
-        } catch (e) {
-          logger.e('Error creating ETH L1 signer for retry: $e');
-          return null;
-        }
     }
   }
 
@@ -657,18 +628,11 @@ class CryptoPaymentService {
       case CryptoToken.usdcBase:
       case CryptoToken.ethBase:
       case CryptoToken.usdcEth:
+      case CryptoToken.ethL1:
         if (ethereumWallet == null) {
           throw CryptoPaymentException('Ethereum wallet required');
         }
         return _executeEvmPayment(token, quote, arweaveAddress, ethereumWallet);
-
-      case CryptoToken.ethL1:
-        // Native ETH on L1 requires InjectedEthereumSigner, NOT walletAdapter
-        // Using walletAdapter with 'ethereum' token causes SDK to use WETH (ERC20)
-        if (ethereumWallet == null) {
-          throw CryptoPaymentException('Ethereum wallet required');
-        }
-        return _executeEthL1Payment(quote, arweaveAddress, ethereumWallet);
 
       case CryptoToken.sol:
         if (solanaWallet == null) {
@@ -761,76 +725,6 @@ class CryptoPaymentService {
 
     // Convert token amount
     final tokenAmount = convertARIOToTokenAmount(quote.tokenAmountDisplay);
-
-    // Execute top-up with destination address
-    final result = await topUpWithTokens(
-      turbo,
-      tokenAmount,
-      destinationAddress: arweaveAddress,
-    );
-    final txId = getProperty(result, 'id')?.toString();
-
-    if (txId == null || txId.isEmpty) {
-      throw CryptoPaymentException('No transaction ID returned');
-    }
-
-    return txId;
-  }
-
-  /// Execute native ETH payment on Ethereum L1.
-  ///
-  /// IMPORTANT: Native ETH on L1 requires InjectedEthereumSigner pattern,
-  /// NOT the walletAdapter pattern used for ERC-20 tokens.
-  /// Using walletAdapter with token: 'ethereum' causes the SDK to treat it
-  /// as WETH (wrapped ETH), which is an ERC-20 token and will fail with
-  /// "ERC20: transfer amount exceeds balance" if user has ETH but no WETH.
-  Future<String> _executeEthL1Payment(
-    CryptoQuote quote,
-    String arweaveAddress,
-    EthereumWalletService ethereumWallet,
-  ) async {
-    // Ensure we're on Ethereum mainnet
-    await ethereumWallet.ensureCorrectChain(CryptoToken.ethL1);
-
-    // Validate required JS globals are available
-    final bridge = getProperty(_globalThis, 'CryptoWalletBridge');
-    if (bridge == null) {
-      throw CryptoPaymentException(
-        'CryptoWalletBridge not loaded. Please refresh the page and try again.',
-      );
-    }
-    final ethers = getProperty(_globalThis, 'ethers');
-    if (ethers == null) {
-      throw CryptoPaymentException(
-        'ethers.js not loaded. Please refresh the page and try again.',
-      );
-    }
-
-    // Get the AO signature for public key derivation
-    // (reuses cached signature if available)
-    final aoSignature =
-        await _signerCache.signAndCacheAOConnect(ethereumWallet);
-
-    // Get ethers provider
-    final provider = callMethod(bridge, 'getEthereumProvider', [null]);
-
-    // Create InjectedEthereumSigner with the derived public key
-    final signer = InjectedEthereumSignerJS(provider);
-
-    // Set the public key (derived from signature)
-    final publicKeyBytes =
-        callMethod(ethers, 'getBytes', [aoSignature.publicKey]);
-    signer.publicKey = publicKeyBytes;
-
-    // Create authenticated Turbo client with signer (NOT walletAdapter)
-    final turbo = await createAuthenticatedTurbo(
-      signer: signer,
-      paymentServiceUrl: _paymentUrl,
-      token: 'ethereum',
-    );
-
-    // Convert ETH amount to wei
-    final tokenAmount = convertETHToTokenAmount(quote.tokenAmountDisplay);
 
     // Execute top-up with destination address
     final result = await topUpWithTokens(
