@@ -273,7 +273,8 @@ Future<void> showCryptoTopupModal(BuildContext context) async {
   );
 }
 
-/// Session expired view - renders inside the modal with proper styling
+/// Session expired view - renders inside the modal
+/// Note: Does not include its own card/red line since it's inside ArDriveModal
 class _SessionExpiredView extends StatelessWidget {
   final VoidCallback onClose;
 
@@ -285,97 +286,58 @@ class _SessionExpiredView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colors;
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
-    return Stack(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Red top line
-            Container(
-              height: 6,
-              decoration: BoxDecoration(
-                color: colorTokens.containerRed,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(8),
-                  topRight: Radius.circular(8),
-                ),
-              ),
-            ),
-            // Content
-            Expanded(
-              child: Container(
-                color: colors.themeBgCanvas,
-                padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title
-                    Text(
-                      'Session Expired',
-                      style: typography.heading5(
-                        fontWeight: ArFontWeight.bold,
-                        color: colors.themeFgDefault,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    // Icon and message
-                    Expanded(
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.timer_off_outlined,
-                              size: 64,
-                              color: colors.themeWarningFg,
-                            ),
-                            const SizedBox(height: 24),
-                            Text(
-                              'Your session has expired due to inactivity.',
-                              style: typography.paragraphLarge(
-                                color: colors.themeFgDefault,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Please start a new payment to continue.',
-                              style: typography.paragraphNormal(
-                                color: colors.themeFgMuted,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    // Close button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ArDriveButton(
-                        text: 'Close',
-                        onPressed: onClose,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+        // Title - left aligned per modal design standard
+        Text(
+          'Session Expired',
+          style: typography.heading5(
+            fontWeight: ArFontWeight.bold,
+            color: colors.themeFgDefault,
+          ),
         ),
-        // Close button in top right
-        Positioned(
-          right: 20,
-          top: 20,
-          child: ArDriveClickArea(
-            child: GestureDetector(
-              onTap: onClose,
-              child: ArDriveIcons.x(),
+        const SizedBox(height: 24),
+        // Icon and message - centered
+        Expanded(
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.timer_off_outlined,
+                  size: 64,
+                  color: colors.themeWarningFg,
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Your session has expired due to inactivity.',
+                  style: typography.paragraphLarge(
+                    color: colors.themeFgDefault,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Please start a new payment to continue.',
+                  style: typography.paragraphNormal(
+                    color: colors.themeFgMuted,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
+          ),
+        ),
+        // Close button
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ArDriveButton(
+            text: 'Close',
+            onPressed: onClose,
           ),
         ),
       ],
