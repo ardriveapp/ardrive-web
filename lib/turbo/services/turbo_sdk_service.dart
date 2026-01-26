@@ -290,12 +290,13 @@ class TurboSDKService {
   ///
   /// This avoids precision loss for large integers that exceed JS's
   /// safe integer limit (2^53).
+  ///
+  /// Note: BigInt in JavaScript is a function, NOT a constructor.
+  /// Must use BigInt("123"), not new BigInt("123").
   Object _createBigIntJSFromString(String value) {
-    // Use dart:js_util to call BigInt constructor with string
-    return callConstructor(
-      getProperty(jsGlobalThis, 'BigInt'),
-      [value],
-    );
+    // Use callMethod to call BigInt as a function (not callConstructor)
+    // globalThis.BigInt(value) is equivalent to BigInt(value)
+    return callMethod(jsGlobalThis, 'BigInt', [value]);
   }
 }
 
