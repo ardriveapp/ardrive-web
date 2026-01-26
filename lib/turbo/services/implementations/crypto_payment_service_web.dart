@@ -752,9 +752,6 @@ class CryptoPaymentService {
     String arweaveAddress,
     EthereumWalletService ethereumWallet,
   ) async {
-    // Ensure we're on the correct chain
-    await ethereumWallet.ensureCorrectChain(token);
-
     // Validate chain configuration before proceeding
     final chainId = _networkConfig.getChainIdForToken(token);
     if (chainId == null) {
@@ -770,7 +767,19 @@ class CryptoPaymentService {
       );
     }
 
-    // Get ethers.js signer for the wallet adapter
+    // Ensure we're on the correct chain
+    await ethereumWallet.ensureCorrectChain(token);
+
+    // After chain switch, clear any cached signer for this chain to ensure
+    // we get a fresh signer that's properly connected to the new chain.
+    // This prevents issues where a stale cached signer causes transactions
+    // to fail with errors like "ERC20: transfer amount exceeds balance".
+    final walletAddress = ethereumWallet.connectedWallet?.address;
+    if (walletAddress != null) {
+      _signerCache.clearEthereumSignerForChain(walletAddress, chainId);
+    }
+
+    // Get ethers.js signer for the wallet adapter (will create fresh after cache clear)
     final ethersSigner = await _signerCache.getOrCreateEthereumSigner(
       ethereumWallet,
       chainId,

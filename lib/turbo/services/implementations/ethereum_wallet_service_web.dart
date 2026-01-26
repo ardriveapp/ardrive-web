@@ -164,9 +164,21 @@ class EthereumWalletService {
   }
 
   /// Switch to a different chain
+  ///
+  /// Note: Includes a delay after switching to allow the wallet (e.g., MetaMask)
+  /// to fully update its internal state. This prevents issues where signers
+  /// are created from a stale provider state.
   Future<void> switchChain(int chainId) async {
     try {
       await _callBridgeAsync('switchEthereumChain', [chainId]);
+
+      // Wait for wallet to fully update its internal state after chain switch.
+      // This is crucial - without this delay, creating a signer immediately
+      // after switching may use the old chain's context, causing transaction
+      // failures like "ERC20: transfer amount exceeds balance" when the
+      // transaction is sent to the wrong network.
+      // Using 1500ms to match turbo-app's handling (they use 1000-1500ms).
+      await Future.delayed(const Duration(milliseconds: 1500));
 
       // Update local state
       if (_connectedWallet != null) {

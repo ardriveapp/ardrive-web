@@ -207,6 +207,17 @@ class WalletSignerCache {
   // Cache Invalidation
   // ============================================
 
+  /// Clear signer cache for a specific Ethereum address and chain ID.
+  ///
+  /// Call this after switching chains to ensure a fresh signer is created
+  /// that's properly connected to the new chain.
+  void clearEthereumSignerForChain(String address, int chainId) {
+    final cacheKey = _buildEthereumCacheKey(address, chainId);
+    if (_ethereumSignerCache.remove(cacheKey) != null) {
+      logger.d('Cleared Ethereum signer cache for $cacheKey');
+    }
+  }
+
   /// Clear all caches for a specific Ethereum address
   void clearEthereumAddress(String address) {
     final addressLower = address.toLowerCase();
