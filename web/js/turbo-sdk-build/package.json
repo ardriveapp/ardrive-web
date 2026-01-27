@@ -1,0 +1,16 @@
+{
+  "name": "turbo-sdk-bundle",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Builds @ardrive/turbo-sdk for browser usage in ArDrive web app",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "dependencies": {
+    "@ardrive/turbo-sdk": "1.39.2",
+    "@ar.io/sdk": "^3.4.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.20.0"
+  }
+}

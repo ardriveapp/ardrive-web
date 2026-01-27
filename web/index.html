@@ -62,9 +62,10 @@
     <script>
       // Load Turbo SDK after page loads to avoid interfering with Flutter init
       window.addEventListener('load', function() {
-        // Note: 1.38.0 is the last version with bundles/web.bundle.min.js - later versions removed the bundle
-        const TURBO_SDK_VERSION = '1.38.0';
-        const SDK_URL = 'https://unpkg.com/@ardrive/turbo-sdk@' + TURBO_SDK_VERSION + '/bundles/web.bundle.min.js';
+        // Local bundle built from @ardrive/turbo-sdk v1.39.2
+        // To rebuild: cd web/js/turbo-sdk-build && npm install && npm run build
+        const TURBO_SDK_VERSION = '1.39.2';
+        const SDK_URL = 'js/turbo-sdk.bundle.min.js';
 
         import(SDK_URL).then(function(turboModule) {
           window.TurboFactory = turboModule.TurboFactory;
@@ -72,7 +73,7 @@
           window.ARIOToTokenAmount = turboModule.ARIOToTokenAmount;
           window.ETHToTokenAmount = turboModule.ETHToTokenAmount;
           window.SOLToTokenAmount = turboModule.SOLToTokenAmount;
-          // Signers for wallet integration
+          window.POLToTokenAmount = turboModule.POLToTokenAmount;
           window.ArconnectSigner = turboModule.ArconnectSigner;
           window.InjectedEthereumSigner = turboModule.InjectedEthereumSigner;
           window.TurboSDKLoaded = true;
