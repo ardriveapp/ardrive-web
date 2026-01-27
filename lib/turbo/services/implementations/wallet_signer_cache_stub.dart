@@ -68,6 +68,9 @@ class WalletSignerCache {
         'Wallet signer cache is only available on web platforms');
   }
 
+  /// Clear Ethereum signer cache for a specific chain
+  void clearEthereumSignerForChain(String address, int chainId) {}
+
   /// Clear all caches for a specific Ethereum address
   void clearEthereumAddress(String address) {}
 

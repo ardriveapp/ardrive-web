@@ -36,7 +36,10 @@ class WalletSignerCache {
   // Ethereum Signer Caching
   // ============================================
 
-  /// Get or create an Ethereum signer for the given wallet state
+  /// Get or create an Ethereum signer for the given wallet state.
+  ///
+  /// Validates that the wallet is on the requested chain before returning
+  /// or caching a signer to prevent wrong-network transaction errors.
   Future<Object> getOrCreateEthereumSigner(
     EthereumWalletService walletService,
     int chainId,
@@ -44,6 +47,23 @@ class WalletSignerCache {
     final wallet = walletService.connectedWallet;
     if (wallet == null) {
       throw SignerCacheException('Ethereum wallet not connected');
+    }
+
+    // Verify the wallet is on the correct chain before returning/caching signer
+    final currentChainId = await walletService.getChainId();
+    if (currentChainId != chainId) {
+      logger.w(
+        'Wallet on chain $currentChainId but requested $chainId, switching...',
+      );
+      try {
+        await walletService.switchChain(chainId);
+      } catch (e) {
+        throw SignerCacheException(
+          'Failed to switch to chain $chainId: $e',
+        );
+      }
+      // Clear any cached signer for this chain since we just switched
+      clearEthereumSignerForChain(wallet.address, chainId);
     }
 
     final cacheKey = _buildEthereumCacheKey(wallet.address, chainId);

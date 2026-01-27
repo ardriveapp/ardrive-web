@@ -100,9 +100,12 @@ class TurboSDKService {
       final result = callMethod(client, 'getFiatRates', []);
       final ratesResult = await promiseToFuture(result);
 
-      // Extract winc per GiB
-      final wincPerGiB = getProperty(ratesResult, 'winc').toString();
-      return BigInt.parse(wincPerGiB);
+      // Extract winc per GiB with null check
+      final wincValue = getProperty(ratesResult, 'winc');
+      if (wincValue == null) {
+        throw Exception('SDK returned null winc value from getFiatRates');
+      }
+      return BigInt.parse(wincValue.toString());
     } catch (e) {
       logger.e('Error getting winc for 1 GiB: $e');
       rethrow;

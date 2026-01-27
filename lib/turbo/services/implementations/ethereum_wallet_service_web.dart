@@ -490,6 +490,7 @@ class EthereumWalletService {
   EthereumWalletProvider _stringToProvider(String type) {
     return switch (type) {
       'metamask' => EthereumWalletProvider.metamask,
+      'brave' => EthereumWalletProvider.metamask, // Brave uses MetaMask interface
       'coinbase' => EthereumWalletProvider.coinbaseWallet,
       'rainbow' => EthereumWalletProvider.rainbow,
       _ => EthereumWalletProvider.metamask, // Default
@@ -521,6 +522,10 @@ class EthereumProviderDetection {
   List<EthereumWalletProvider> get availableProviders {
     final providers = <EthereumWalletProvider>[];
     if (hasMetaMask) providers.add(EthereumWalletProvider.metamask);
+    // Brave uses MetaMask interface - add if Brave detected but MetaMask isn't
+    if (hasBrave && !hasMetaMask) {
+      providers.add(EthereumWalletProvider.metamask);
+    }
     if (hasCoinbaseWallet) providers.add(EthereumWalletProvider.coinbaseWallet);
     if (hasRainbow) providers.add(EthereumWalletProvider.rainbow);
     // Always show WalletConnect as an option for mobile

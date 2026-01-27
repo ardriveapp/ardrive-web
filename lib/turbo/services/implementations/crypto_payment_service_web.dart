@@ -83,8 +83,10 @@ class CryptoPaymentService {
       // Get winc per GiB for storage calculation
       final wincPerGiB = await _getWincPerGiB();
 
-      // Calculate storage estimate
-      final storageGiB = priceResult.winc.toDouble() / wincPerGiB.toDouble();
+      // Calculate storage estimate (guard against zero divisor)
+      final wincPerGiBDouble = wincPerGiB.toDouble();
+      final storageGiB =
+          wincPerGiBDouble > 0 ? priceResult.winc.toDouble() / wincPerGiBDouble : 0.0;
 
       // Parse adjustment if present
       Adjustment? adjustment;
@@ -147,8 +149,10 @@ class CryptoPaymentService {
       // Get winc per GiB for storage calculation
       final wincPerGiB = await _getWincPerGiB();
 
-      // Calculate storage estimate
-      final storageGiB = priceResult.winc.toDouble() / wincPerGiB.toDouble();
+      // Calculate storage estimate (guard against zero divisor)
+      final wincPerGiBDouble = wincPerGiB.toDouble();
+      final storageGiB =
+          wincPerGiBDouble > 0 ? priceResult.winc.toDouble() / wincPerGiBDouble : 0.0;
 
       // Parse adjustment if present
       Adjustment? adjustment;
@@ -285,11 +289,11 @@ class CryptoPaymentService {
         errorMessage: e.userMessage,
         token: token,
       );
-    } catch (e) {
-      logger.e('Error executing payment: $e');
+    } catch (e, stackTrace) {
+      logger.e('Unexpected error executing payment: $e\n$stackTrace');
       return CryptoPaymentResult.failure(
         status: CryptoPaymentStatus.failed,
-        errorMessage: e.toString(),
+        errorMessage: 'An unexpected error occurred while processing the payment',
         token: token,
       );
     }
