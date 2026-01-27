@@ -95,14 +95,14 @@ class CryptoPaymentService {
       }
 
       // Calculate original credits display with division-by-zero guard
+      // Both values must use same units (cents) for correct calculation
       double? originalCreditsDisplay;
       if (adjustment != null) {
-        final denom = priceResult.actualPaymentAmount ?? (usdAmount * 100);
-        if (denom != 0) {
+        final quotedCents = priceResult.quotedPaymentAmount ?? (usdAmount * 100);
+        final actualCents = priceResult.actualPaymentAmount ?? (usdAmount * 100);
+        if (actualCents != 0) {
           originalCreditsDisplay =
-              (priceResult.quotedPaymentAmount ?? usdAmount) *
-                  (priceResult.winc.toDouble() / denom) /
-                  1e12;
+              quotedCents * (priceResult.winc.toDouble() / actualCents) / 1e12;
         }
       }
 

@@ -50,7 +50,7 @@ class WalletSignerCache {
     }
 
     // Verify the wallet is on the correct chain before returning/caching signer
-    final currentChainId = await walletService.getChainId();
+    var currentChainId = await walletService.getChainId();
     if (currentChainId != chainId) {
       logger.w(
         'Wallet on chain $currentChainId but requested $chainId, switching...',
@@ -62,6 +62,15 @@ class WalletSignerCache {
           'Failed to switch to chain $chainId: $e',
         );
       }
+
+      // Verify the switch actually worked
+      currentChainId = await walletService.getChainId();
+      if (currentChainId != chainId) {
+        throw SignerCacheException(
+          'Chain switch failed: wallet still on chain $currentChainId, expected $chainId',
+        );
+      }
+
       // Clear any cached signer for this chain since we just switched
       clearEthereumSignerForChain(wallet.address, chainId);
     }
