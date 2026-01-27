@@ -68,6 +68,15 @@
         const SDK_URL = 'js/turbo-sdk.bundle.min.js';
 
         import(SDK_URL).then(function(turboModule) {
+          // Validate required exports exist
+          var required = ['TurboFactory', 'ARToTokenAmount', 'ARIOToTokenAmount',
+                          'ETHToTokenAmount', 'SOLToTokenAmount', 'ArconnectSigner',
+                          'InjectedEthereumSigner'];
+          var missing = required.filter(function(name) { return !turboModule[name]; });
+          if (missing.length > 0) {
+            throw new Error('Missing SDK exports: ' + missing.join(', '));
+          }
+
           window.TurboFactory = turboModule.TurboFactory;
           window.ARToTokenAmount = turboModule.ARToTokenAmount;
           window.ARIOToTokenAmount = turboModule.ARIOToTokenAmount;
