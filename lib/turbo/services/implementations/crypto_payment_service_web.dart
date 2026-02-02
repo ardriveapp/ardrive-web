@@ -68,6 +68,15 @@ class CryptoPaymentService {
     String? promoCode,
     String? destinationAddress,
   }) async {
+    // Validate usdAmount to avoid invalid quotes
+    if (usdAmount <= 0) {
+      throw ArgumentError.value(
+        usdAmount,
+        'usdAmount',
+        'must be greater than zero',
+      );
+    }
+
     try {
       // Get price in winc for the USD amount
       final priceResult = await _getPriceForFiat(
