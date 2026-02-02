@@ -146,6 +146,15 @@ class CryptoPaymentService {
       // Convert display amount to smallest unit (e.g., mARIO, wei, lamports)
       final tokenAmountSmallestUnit = _tokenAmountToBigInt(token, tokenAmount);
 
+      // Validate converted amount to prevent invalid pricing requests
+      if (tokenAmountSmallestUnit <= BigInt.zero) {
+        throw ArgumentError.value(
+          tokenAmount,
+          'tokenAmount',
+          'must result in a positive smallest-unit value',
+        );
+      }
+
       // Use token-specific pricing endpoint for accurate pricing
       // This properly accounts for token-specific benefits (e.g., ARIO no fees)
       final priceResult = await _getPriceForToken(
