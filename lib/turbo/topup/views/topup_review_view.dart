@@ -226,37 +226,41 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                 ),
                 const SizedBox(height: 12),
 
-                // Terms notice
-                Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: 'By continuing, you agree to the ',
-                        style: typography.paragraphSmall(
-                          color: colors.themeFgMuted,
+                // Terms notice (left aligned)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'By continuing, you agree to the ',
+                          style: typography.paragraphSmall(
+                            color: colors.themeFgMuted,
+                          ),
                         ),
-                      ),
-                      TextSpan(
-                        text: 'Terms of Service',
-                        style: typography
-                            .paragraphSmall(
-                              color: colors.themeFgMuted,
-                            )
-                            .copyWith(
-                              decoration: TextDecoration.underline,
-                            ),
-                        recognizer: TapGestureRecognizer()
-                          ..onTap = () => openUrl(
-                                url: Resources.agreementLink,
+                        TextSpan(
+                          text: 'Terms of Service',
+                          style: typography
+                              .paragraphSmall(
+                                color: colors.themeFgMuted,
+                              )
+                              .copyWith(
+                                decoration: TextDecoration.underline,
                               ),
-                      ),
-                      TextSpan(
-                        text: '.',
-                        style: typography.paragraphSmall(
-                          color: colors.themeFgMuted,
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () => openUrl(
+                                  url: Resources.agreementLink,
+                                ),
                         ),
-                      ),
-                    ],
+                        TextSpan(
+                          text: '.',
+                          style: typography.paragraphSmall(
+                            color: colors.themeFgMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                    textAlign: TextAlign.left,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -284,7 +288,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
               builder: (context, state) {
                 return ArDriveButton(
                   maxHeight: 48,
-                  text: appLocalizationsOf(context).pay,
+                  text: 'Confirm & Pay',
                   fontStyle: typography.paragraphLarge(
                     fontWeight: ArFontWeight.bold,
                     color: Colors.white,
@@ -350,7 +354,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
             builder: (context, state) {
               return ArDriveButton(
                 maxHeight: 48,
-                text: appLocalizationsOf(context).pay,
+                text: 'Confirm & Pay',
                 fontStyle: typography.paragraphLarge(
                   fontWeight: ArFontWeight.bold,
                   color: Colors.white,

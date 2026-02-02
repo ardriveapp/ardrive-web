@@ -149,7 +149,7 @@ class CryptoConfirmationView extends StatelessWidget {
                         TextSpan(
                           children: [
                             TextSpan(
-                              text: 'By confirming, you agree to the ',
+                              text: 'By continuing, you agree to the ',
                               style: typography.paragraphSmall(
                                 color: colors.themeFgMuted,
                               ),
@@ -190,7 +190,7 @@ class CryptoConfirmationView extends StatelessWidget {
                                   'Back',
                                   style: typography.paragraphLarge(
                                     fontWeight: ArFontWeight.bold,
-                                    color: colors.themeAccentDisabled,
+                                    color: colors.themeFgMuted,
                                   ),
                                 ),
                               ),
@@ -495,94 +495,92 @@ class _YoullReceiveSection extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: colors.themeBgSubtle,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: colors.themeBorderDefault),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          // Section label
-          Text(
-            "YOU'LL RECEIVE",
-            style: typography.paragraphSmall(
-              fontWeight: ArFontWeight.semiBold,
-              color: colors.themeFgMuted,
+          // Credits to receive (left side)
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "YOU'LL RECEIVE",
+                  style: typography.paragraphSmall(
+                    fontWeight: ArFontWeight.semiBold,
+                    color: colors.themeFgMuted,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      convertWinstonToLiteralString(creditsToReceive),
+                      style: typography.heading5(
+                        fontWeight: ArFontWeight.bold,
+                        color: colors.themeSuccessDefault,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'credits',
+                      style: typography.paragraphSmall(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colors.themeFgMuted,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  storageEstimate,
+                  style: typography.paragraphSmall(
+                    color: colors.themeFgMuted,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
-
-          // Credits amount (big and prominent)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    convertWinstonToLiteralString(creditsToReceive),
-                    style: typography.heading4(
-                      fontWeight: ArFontWeight.bold,
-                      color: colors.themeSuccessDefault,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'credits',
-                    style: typography.paragraphNormal(
-                      fontWeight: ArFontWeight.semiBold,
-                      color: colors.themeFgMuted,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 2),
-              Text(
-                storageEstimate,
-                style: typography.paragraphSmall(
-                  color: colors.themeFgMuted,
-                ),
-              ),
-            ],
+          // Vertical divider
+          Container(
+            width: 1,
+            height: 50,
+            color: colors.themeBorderDefault,
+            margin: const EdgeInsets.symmetric(horizontal: 12),
           ),
-          const SizedBox(height: 16),
-
-          // Divider
-          Divider(color: colors.themeBorderDefault, height: 1),
-          const SizedBox(height: 12),
-
-          // New balance row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'New balance',
-                style: typography.paragraphSmall(
-                  color: colors.themeFgMuted,
+          // New balance (right side)
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'NEW BALANCE',
+                  style: typography.paragraphSmall(
+                    fontWeight: ArFontWeight.semiBold,
+                    color: colors.themeFgMuted,
+                  ),
                 ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '${convertWinstonToLiteralString(newBalance)} credits',
-                    style: typography.paragraphSmall(
-                      fontWeight: ArFontWeight.semiBold,
-                      color: colors.themeFgDefault,
-                    ),
+                const SizedBox(height: 4),
+                Text(
+                  '${convertWinstonToLiteralString(newBalance)} credits',
+                  style: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.semiBold,
+                    color: colors.themeFgDefault,
                   ),
-                  Text(
-                    newBalanceStorage,
-                    style: typography.paragraphSmall(
-                      color: colors.themeFgMuted,
-                    ),
+                ),
+                Text(
+                  newBalanceStorage,
+                  style: typography.paragraphSmall(
+                    color: colors.themeFgMuted,
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
