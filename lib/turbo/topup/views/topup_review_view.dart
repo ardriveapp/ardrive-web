@@ -146,140 +146,124 @@ class _TurboReviewViewState extends State<TurboReviewView> {
           final loadedState = state as PaymentReviewPaymentModelLoaded;
 
           return TurboTopupScaffold(
-            child: Stack(
+            title: 'Confirm Payment',
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 32),
-                      // Header
-                      Text(
-                        'Confirm Payment',
-                        style: typography.heading5(
-                          fontWeight: ArFontWeight.bold,
-                          color: colors.themeFgDefault,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
+                // Scrollable content area
+                Flexible(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 500),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Section 1: Paying With
+                          _PayingWithSection(
+                            total: loadedState.total,
+                            subTotal: loadedState.subTotal,
+                            promoDiscount: loadedState.promoDiscount,
+                          ),
+                          const SizedBox(height: 16),
 
-                      // Section 1: Paying With
-                      _PayingWithSection(
-                        total: loadedState.total,
-                        subTotal: loadedState.subTotal,
-                        promoDiscount: loadedState.promoDiscount,
-                      ),
-                      const SizedBox(height: 16),
+                          // Section 2: You'll Receive
+                          _YoullReceiveSection(
+                            creditsToReceive: loadedState.creditsWinc,
+                            storageEstimate: loadedState.storageEstimate,
+                            newBalance: loadedState.newBalance,
+                            newBalanceStorage: loadedState.newBalanceStorage,
+                          ),
+                          const SizedBox(height: 16),
 
-                      // Section 2: You'll Receive
-                      _YoullReceiveSection(
-                        creditsToReceive: loadedState.creditsWinc,
-                        storageEstimate: loadedState.storageEstimate,
-                        newBalance: loadedState.newBalance,
-                        newBalanceStorage: loadedState.newBalanceStorage,
-                      ),
-                      const SizedBox(height: 16),
+                          // Quote timer (less prominent, centered)
+                          BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
+                            builder: (context, state) {
+                              if (state is PaymentReviewPaymentModelLoaded) {
+                                return _QuoteTimerBar(
+                                  expirationDate: state.quoteExpirationDate,
+                                  isLoading: state is PaymentReviewLoadingQuote,
+                                  onRefresh: () {
+                                    context
+                                        .read<PaymentReviewBloc>()
+                                        .add(PaymentReviewRefreshQuote());
+                                  },
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            },
+                          ),
+                          const SizedBox(height: 20),
 
-                      // Quote timer (less prominent, centered)
-                      BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
-                        builder: (context, state) {
-                          if (state is PaymentReviewPaymentModelLoaded) {
-                            return _QuoteTimerBar(
-                              expirationDate: state.quoteExpirationDate,
-                              isLoading: state is PaymentReviewLoadingQuote,
-                              onRefresh: () {
-                                context
-                                    .read<PaymentReviewBloc>()
-                                    .add(PaymentReviewRefreshQuote());
-                              },
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        },
+                          // Email section
+                          _EmailSection(
+                            textTheme: textTheme,
+                            emailController: _emailController,
+                            emailIsValid: _emailIsValid,
+                            emailChecked: _emailChecked,
+                            onEmailValidChanged: (valid) {
+                              setState(() {
+                                _emailIsValid = valid;
+                                if (!valid) _emailChecked = false;
+                              });
+                            },
+                            onEmailChanged: () {
+                              if (!_hasAutomaticChecked && _emailIsValid) {
+                                setState(() {
+                                  _emailChecked = true;
+                                  _hasAutomaticChecked = true;
+                                });
+                              }
+                            },
+                            onCheckChanged: (checked) {
+                              setState(() {
+                                _emailChecked = checked;
+                              });
+                            },
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 20),
-
-                      // Email section
-                      _EmailSection(
-                        textTheme: textTheme,
-                        emailController: _emailController,
-                        emailIsValid: _emailIsValid,
-                        emailChecked: _emailChecked,
-                        onEmailValidChanged: (valid) {
-                          setState(() {
-                            _emailIsValid = valid;
-                            if (!valid) _emailChecked = false;
-                          });
-                        },
-                        onEmailChanged: () {
-                          if (!_hasAutomaticChecked && _emailIsValid) {
-                            setState(() {
-                              _emailChecked = true;
-                              _hasAutomaticChecked = true;
-                            });
-                          }
-                        },
-                        onCheckChanged: (checked) {
-                          setState(() {
-                            _emailChecked = checked;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Terms notice
-                      Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(
-                              text: 'By continuing, you agree to the ',
-                              style: typography.paragraphSmall(
-                                color: colors.themeFgMuted,
-                              ),
-                            ),
-                            TextSpan(
-                              text: 'Terms of Service',
-                              style: typography
-                                  .paragraphSmall(
-                                    color: colors.themeFgMuted,
-                                  )
-                                  .copyWith(
-                                    decoration: TextDecoration.underline,
-                                  ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () => openUrl(
-                                      url: Resources.agreementLink,
-                                    ),
-                            ),
-                            TextSpan(
-                              text: '.',
-                              style: typography.paragraphSmall(
-                                color: colors.themeFgMuted,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Buttons
-                      _buildFooterButtons(context),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                ),
-                // Close button in top right
-                Positioned(
-                  right: 20,
-                  top: 20,
-                  child: ArDriveClickArea(
-                    child: GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: ArDriveIcons.x(),
                     ),
                   ),
                 ),
+                const SizedBox(height: 16),
+
+                // Terms notice (fixed at bottom)
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: 'By continuing, you agree to the ',
+                        style: typography.paragraphSmall(
+                          color: colors.themeFgMuted,
+                        ),
+                      ),
+                      TextSpan(
+                        text: 'Terms of Service',
+                        style: typography
+                            .paragraphSmall(
+                              color: colors.themeFgMuted,
+                            )
+                            .copyWith(
+                              decoration: TextDecoration.underline,
+                            ),
+                        recognizer: TapGestureRecognizer()
+                          ..onTap = () => openUrl(
+                                url: Resources.agreementLink,
+                              ),
+                      ),
+                      TextSpan(
+                        text: '.',
+                        style: typography.paragraphSmall(
+                          color: colors.themeFgMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Buttons (fixed at bottom)
+                _buildFooterButtons(context),
               ],
             ),
           );
@@ -465,12 +449,13 @@ class _PayingWithSection extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1A1F71), // Visa blue
+                  color: colors.themeBgSurface,
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: colors.themeBorderDefault),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.credit_card,
-                  color: Colors.white,
+                  color: colors.themeFgDefault,
                   size: 24,
                 ),
               ),
@@ -506,12 +491,12 @@ class _PayingWithSection extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Amount (big and prominent)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(
                     '\$${NumberFormat('#,##0.00').format(double.tryParse(total) ?? 0)}',
@@ -520,26 +505,27 @@ class _PayingWithSection extends StatelessWidget {
                       color: colors.themeFgDefault,
                     ),
                   ),
-                  if (subTotal != null && discountPercent != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      'was \$${NumberFormat('#,##0.00').format(double.tryParse(subTotal!) ?? 0)}',
-                      style: typography
-                          .paragraphSmall(
-                            color: colors.themeFgMuted,
-                          )
-                          .copyWith(decoration: TextDecoration.lineThrough),
+                  const SizedBox(width: 6),
+                  Text(
+                    'USD',
+                    style: typography.paragraphNormal(
+                      fontWeight: ArFontWeight.semiBold,
+                      color: colors.themeFgMuted,
                     ),
-                  ],
+                  ),
                 ],
               ),
-              Text(
-                'USD',
-                style: typography.heading4(
-                  fontWeight: ArFontWeight.bold,
-                  color: colors.themeFgMuted,
+              if (subTotal != null && discountPercent != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  'was \$${NumberFormat('#,##0.00').format(double.tryParse(subTotal!) ?? 0)}',
+                  style: typography
+                      .paragraphSmall(
+                        color: colors.themeFgMuted,
+                      )
+                      .copyWith(decoration: TextDecoration.lineThrough),
                 ),
-              ),
+              ],
             ],
           ),
 
@@ -621,12 +607,12 @@ class _YoullReceiveSection extends StatelessWidget {
           const SizedBox(height: 12),
 
           // Credits amount (big and prominent)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(
                     convertWinstonToLiteralString(creditsToReceive),
@@ -635,19 +621,20 @@ class _YoullReceiveSection extends StatelessWidget {
                       color: colors.themeSuccessDefault,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(width: 6),
                   Text(
-                    storageEstimate,
-                    style: typography.paragraphSmall(
+                    'credits',
+                    style: typography.paragraphNormal(
+                      fontWeight: ArFontWeight.semiBold,
                       color: colors.themeFgMuted,
                     ),
                   ),
                 ],
               ),
+              const SizedBox(height: 2),
               Text(
-                'credits',
-                style: typography.heading4(
-                  fontWeight: ArFontWeight.bold,
+                storageEstimate,
+                style: typography.paragraphSmall(
                   color: colors.themeFgMuted,
                 ),
               ),

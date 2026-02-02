@@ -530,18 +530,18 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
         label: appLocalizationsOf(context).nameOnCard,
         isFieldRequired: true,
         useErrorMessageOffset: true,
-        validator: (s) {
-          String valid = s?.replaceAll(RegExp(r'[^a-zA-Z\s]'), '') ?? '';
-          _nameController.text = valid;
-          _nameController.selection =
-              TextSelection.collapsed(offset: valid.length);
-
+        inputFormatters: [
+          // Only allow letters and spaces for name
+          FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
+        ],
+        onChanged: (_) {
+          // Trigger rebuild to update button state
           setState(() {});
-
-          if (valid.isEmpty) {
+        },
+        validator: (s) {
+          if (s == null || s.isEmpty) {
             return appLocalizationsOf(context).validationRequired;
           }
-
           return null;
         },
       ),
