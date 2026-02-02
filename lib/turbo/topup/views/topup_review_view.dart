@@ -146,88 +146,87 @@ class _TurboReviewViewState extends State<TurboReviewView> {
           final loadedState = state as PaymentReviewPaymentModelLoaded;
 
           return TurboTopupScaffold(
-            title: 'Confirm Payment',
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Scrollable content area
-                Flexible(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 500),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Section 1: Paying With
-                          _PayingWithSection(
-                            total: loadedState.total,
-                            subTotal: loadedState.subTotal,
-                            promoDiscount: loadedState.promoDiscount,
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Section 2: You'll Receive
-                          _YoullReceiveSection(
-                            creditsToReceive: loadedState.creditsWinc,
-                            storageEstimate: loadedState.storageEstimate,
-                            newBalance: loadedState.newBalance,
-                            newBalanceStorage: loadedState.newBalanceStorage,
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Quote timer (less prominent, centered)
-                          BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
-                            builder: (context, state) {
-                              if (state is PaymentReviewPaymentModelLoaded) {
-                                return _QuoteTimerBar(
-                                  expirationDate: state.quoteExpirationDate,
-                                  isLoading: state is PaymentReviewLoadingQuote,
-                                  onRefresh: () {
-                                    context
-                                        .read<PaymentReviewBloc>()
-                                        .add(PaymentReviewRefreshQuote());
-                                  },
-                                );
-                              }
-                              return const SizedBox.shrink();
-                            },
-                          ),
-                          const SizedBox(height: 20),
-
-                          // Email section
-                          _EmailSection(
-                            textTheme: textTheme,
-                            emailController: _emailController,
-                            emailIsValid: _emailIsValid,
-                            emailChecked: _emailChecked,
-                            onEmailValidChanged: (valid) {
-                              setState(() {
-                                _emailIsValid = valid;
-                                if (!valid) _emailChecked = false;
-                              });
-                            },
-                            onEmailChanged: () {
-                              if (!_hasAutomaticChecked && _emailIsValid) {
-                                setState(() {
-                                  _emailChecked = true;
-                                  _hasAutomaticChecked = true;
-                                });
-                              }
-                            },
-                            onCheckChanged: (checked) {
-                              setState(() {
-                                _emailChecked = checked;
-                              });
-                            },
-                          ),
-                        ],
+                // Header with timer
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Confirm Payment',
+                      style: typography.heading5(
+                        fontWeight: ArFontWeight.bold,
+                        color: colors.themeFgDefault,
                       ),
                     ),
-                  ),
+                    BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
+                      builder: (context, state) {
+                        if (state is PaymentReviewPaymentModelLoaded) {
+                          return _QuoteTimerBar(
+                            expirationDate: state.quoteExpirationDate,
+                            isLoading: state is PaymentReviewLoadingQuote,
+                            onRefresh: () {
+                              context
+                                  .read<PaymentReviewBloc>()
+                                  .add(PaymentReviewRefreshQuote());
+                            },
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
 
-                // Terms notice (fixed at bottom)
+                // Section 1: Paying With
+                _PayingWithSection(
+                  total: loadedState.total,
+                  subTotal: loadedState.subTotal,
+                  promoDiscount: loadedState.promoDiscount,
+                ),
+                const SizedBox(height: 12),
+
+                // Section 2: You'll Receive
+                _YoullReceiveSection(
+                  creditsToReceive: loadedState.creditsWinc,
+                  storageEstimate: loadedState.storageEstimate,
+                  newBalance: loadedState.newBalance,
+                  newBalanceStorage: loadedState.newBalanceStorage,
+                ),
+                const SizedBox(height: 12),
+
+                // Email section
+                _EmailSection(
+                  textTheme: textTheme,
+                  emailController: _emailController,
+                  emailIsValid: _emailIsValid,
+                  emailChecked: _emailChecked,
+                  onEmailValidChanged: (valid) {
+                    setState(() {
+                      _emailIsValid = valid;
+                      if (!valid) _emailChecked = false;
+                    });
+                  },
+                  onEmailChanged: () {
+                    if (!_hasAutomaticChecked && _emailIsValid) {
+                      setState(() {
+                        _emailChecked = true;
+                        _hasAutomaticChecked = true;
+                      });
+                    }
+                  },
+                  onCheckChanged: (checked) {
+                    setState(() {
+                      _emailChecked = checked;
+                    });
+                  },
+                ),
+                const SizedBox(height: 12),
+
+                // Terms notice
                 Text.rich(
                   TextSpan(
                     children: [
@@ -422,7 +421,7 @@ class _PayingWithSection extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: colors.themeBgSubtle,
         borderRadius: BorderRadius.circular(12),
@@ -431,23 +430,13 @@ class _PayingWithSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section label
-          Text(
-            'PAYING WITH',
-            style: typography.paragraphSmall(
-              fontWeight: ArFontWeight.semiBold,
-              color: colors.themeFgMuted,
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Credit card info row
+          // Credit card info row with label
           Row(
             children: [
               // Card icon
               Container(
-                width: 40,
-                height: 40,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: colors.themeBgSurface,
                   borderRadius: BorderRadius.circular(8),
@@ -456,10 +445,10 @@ class _PayingWithSection extends StatelessWidget {
                 child: Icon(
                   Icons.credit_card,
                   color: colors.themeFgDefault,
-                  size: 24,
+                  size: 20,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               // Card type
               Expanded(
                 child: Column(
@@ -472,7 +461,6 @@ class _PayingWithSection extends StatelessWidget {
                         color: colors.themeFgDefault,
                       ),
                     ),
-                    const SizedBox(height: 2),
                     Text(
                       'Secure payment via Stripe',
                       style: typography.paragraphSmall(
@@ -482,50 +470,42 @@ class _PayingWithSection extends StatelessWidget {
                   ],
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Divider
-          Divider(color: colors.themeBorderDefault, height: 1),
-          const SizedBox(height: 16),
-
-          // Amount (big and prominent)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
+              // Amount on the right
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    '\$${NumberFormat('#,##0.00').format(double.tryParse(total) ?? 0)}',
-                    style: typography.heading4(
-                      fontWeight: ArFontWeight.bold,
-                      color: colors.themeFgDefault,
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        '\$${NumberFormat('#,##0.00').format(double.tryParse(total) ?? 0)}',
+                        style: typography.heading5(
+                          fontWeight: ArFontWeight.bold,
+                          color: colors.themeFgDefault,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'USD',
+                        style: typography.paragraphSmall(
+                          fontWeight: ArFontWeight.semiBold,
+                          color: colors.themeFgMuted,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'USD',
-                    style: typography.paragraphNormal(
-                      fontWeight: ArFontWeight.semiBold,
-                      color: colors.themeFgMuted,
+                  if (subTotal != null && discountPercent != null)
+                    Text(
+                      'was \$${NumberFormat('#,##0.00').format(double.tryParse(subTotal!) ?? 0)}',
+                      style: typography
+                          .paragraphSmall(
+                            color: colors.themeFgMuted,
+                          )
+                          .copyWith(decoration: TextDecoration.lineThrough),
                     ),
-                  ),
                 ],
               ),
-              if (subTotal != null && discountPercent != null) ...[
-                const SizedBox(height: 2),
-                Text(
-                  'was \$${NumberFormat('#,##0.00').format(double.tryParse(subTotal!) ?? 0)}',
-                  style: typography
-                      .paragraphSmall(
-                        color: colors.themeFgMuted,
-                      )
-                      .copyWith(decoration: TextDecoration.lineThrough),
-                ),
-              ],
             ],
           ),
 
@@ -587,94 +567,92 @@ class _YoullReceiveSection extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: colors.themeBgSubtle,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: colors.themeBorderDefault),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          // Section label
-          Text(
-            "YOU'LL RECEIVE",
-            style: typography.paragraphSmall(
-              fontWeight: ArFontWeight.semiBold,
-              color: colors.themeFgMuted,
+          // Credits to receive (left side)
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "YOU'LL RECEIVE",
+                  style: typography.paragraphSmall(
+                    fontWeight: ArFontWeight.semiBold,
+                    color: colors.themeFgMuted,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      convertWinstonToLiteralString(creditsToReceive),
+                      style: typography.heading5(
+                        fontWeight: ArFontWeight.bold,
+                        color: colors.themeSuccessDefault,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'credits',
+                      style: typography.paragraphSmall(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colors.themeFgMuted,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  storageEstimate,
+                  style: typography.paragraphSmall(
+                    color: colors.themeFgMuted,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
-
-          // Credits amount (big and prominent)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    convertWinstonToLiteralString(creditsToReceive),
-                    style: typography.heading4(
-                      fontWeight: ArFontWeight.bold,
-                      color: colors.themeSuccessDefault,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'credits',
-                    style: typography.paragraphNormal(
-                      fontWeight: ArFontWeight.semiBold,
-                      color: colors.themeFgMuted,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 2),
-              Text(
-                storageEstimate,
-                style: typography.paragraphSmall(
-                  color: colors.themeFgMuted,
-                ),
-              ),
-            ],
+          // Vertical divider
+          Container(
+            width: 1,
+            height: 50,
+            color: colors.themeBorderDefault,
+            margin: const EdgeInsets.symmetric(horizontal: 12),
           ),
-          const SizedBox(height: 16),
-
-          // Divider
-          Divider(color: colors.themeBorderDefault, height: 1),
-          const SizedBox(height: 12),
-
-          // New balance row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'New balance',
-                style: typography.paragraphSmall(
-                  color: colors.themeFgMuted,
+          // New balance (right side)
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'NEW BALANCE',
+                  style: typography.paragraphSmall(
+                    fontWeight: ArFontWeight.semiBold,
+                    color: colors.themeFgMuted,
+                  ),
                 ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '${convertWinstonToLiteralString(newBalance)} credits',
-                    style: typography.paragraphSmall(
-                      fontWeight: ArFontWeight.semiBold,
-                      color: colors.themeFgDefault,
-                    ),
+                const SizedBox(height: 4),
+                Text(
+                  '${convertWinstonToLiteralString(newBalance)} credits',
+                  style: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.semiBold,
+                    color: colors.themeFgDefault,
                   ),
-                  Text(
-                    newBalanceStorage,
-                    style: typography.paragraphSmall(
-                      color: colors.themeFgMuted,
-                    ),
+                ),
+                Text(
+                  newBalanceStorage,
+                  style: typography.paragraphSmall(
+                    color: colors.themeFgMuted,
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ],
       ),

@@ -65,16 +65,29 @@ class CryptoConfirmationView extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(height: 32),
-                          // Header
-                          Text(
-                            'Confirm Payment',
-                            style: typography.heading5(
-                              fontWeight: ArFontWeight.bold,
-                              color: colors.themeFgDefault,
-                            ),
+                          const SizedBox(height: 24),
+                          // Header with timer
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Confirm Payment',
+                                style: typography.heading5(
+                                  fontWeight: ArFontWeight.bold,
+                                  color: colors.themeFgDefault,
+                                ),
+                              ),
+                              _QuoteTimerBar(
+                                expiresAt: state.quote.expiresAt,
+                                isLoading: state.isRefreshingQuote,
+                                onRefresh: () {
+                                  bloc.add(
+                                      const CryptoTopupQuoteRefreshRequested());
+                                },
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 16),
 
                           // Section 1: Paying With
                           _PayingWithSection(
@@ -98,17 +111,7 @@ class CryptoConfirmationView extends StatelessWidget {
                             newBalance: state.newTurboBalance,
                             newBalanceStorage: state.newBalanceStorage,
                           ),
-                          const SizedBox(height: 16),
-
-                          // Quote timer (less prominent)
-                          _QuoteTimerBar(
-                            expiresAt: state.quote.expiresAt,
-                            isLoading: state.isRefreshingQuote,
-                            onRefresh: () {
-                              bloc.add(
-                                  const CryptoTopupQuoteRefreshRequested());
-                            },
-                          ),
+                          const SizedBox(height: 12),
 
                           // Network status (for EVM tokens, only when not correct)
                           if (state.token.requiresGasEstimation &&
@@ -338,12 +341,12 @@ class _PayingWithSection extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Amount (big and prominent)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(
                     _formatAmount(amount),
@@ -352,24 +355,25 @@ class _PayingWithSection extends StatelessWidget {
                       color: colors.themeFgDefault,
                     ),
                   ),
-                  if (usdEquivalent != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      '~\$${NumberFormat('#,##0.00').format(usdEquivalent)}',
-                      style: typography.paragraphSmall(
-                        color: colors.themeFgMuted,
-                      ),
+                  const SizedBox(width: 6),
+                  Text(
+                    token.symbol,
+                    style: typography.paragraphNormal(
+                      fontWeight: ArFontWeight.semiBold,
+                      color: colors.themeFgMuted,
                     ),
-                  ],
+                  ),
                 ],
               ),
-              Text(
-                token.symbol,
-                style: typography.heading4(
-                  fontWeight: ArFontWeight.bold,
-                  color: colors.themeFgMuted,
+              if (usdEquivalent != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  '~\$${NumberFormat('#,##0.00').format(usdEquivalent)}',
+                  style: typography.paragraphSmall(
+                    color: colors.themeFgMuted,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
 
@@ -511,12 +515,12 @@ class _YoullReceiveSection extends StatelessWidget {
           const SizedBox(height: 12),
 
           // Credits amount (big and prominent)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(
                     convertWinstonToLiteralString(creditsToReceive),
@@ -525,19 +529,20 @@ class _YoullReceiveSection extends StatelessWidget {
                       color: colors.themeSuccessDefault,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(width: 6),
                   Text(
-                    storageEstimate,
-                    style: typography.paragraphSmall(
+                    'credits',
+                    style: typography.paragraphNormal(
+                      fontWeight: ArFontWeight.semiBold,
                       color: colors.themeFgMuted,
                     ),
                   ),
                 ],
               ),
+              const SizedBox(height: 2),
               Text(
-                'credits',
-                style: typography.heading4(
-                  fontWeight: ArFontWeight.bold,
+                storageEstimate,
+                style: typography.paragraphSmall(
                   color: colors.themeFgMuted,
                 ),
               ),
