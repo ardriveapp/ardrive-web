@@ -399,12 +399,7 @@ class CryptoPaymentService {
           return null;
         }
 
-        // Validate required JS globals are available
-        final bridge = getProperty(_globalThis, 'CryptoWalletBridge');
-        if (bridge == null) {
-          logger.e('CryptoWalletBridge not available for ARIO via ETH retry');
-          return null;
-        }
+        // Validate ethers.js is loaded (needed for public key derivation)
         final ethers = getProperty(_globalThis, 'ethers');
         if (ethers == null) {
           logger.e('ethers.js not available for ARIO via ETH retry');
@@ -413,8 +408,33 @@ class CryptoPaymentService {
 
         final aoSignature =
             await _signerCache.signAndCacheAOConnect(ethereumWallet);
-        final provider = callMethod(bridge, 'getEthereumProvider', [null]);
-        final signer = InjectedEthereumSignerJS(provider);
+
+        // Get ethers.js signer for message signing
+        final ethersSigner = await _signerCache.getOrCreateEthereumSigner(
+          ethereumWallet,
+          1, // Chain ID doesn't matter for message signing
+        );
+
+        // Get the wallet address
+        final ethAddress =
+            await promiseToFuture(callMethod(ethersSigner, 'getAddress', []));
+
+        // Create the injected provider wrapper that InjectedEthereumSigner expects
+        // The SDK requires: { getSigner: () => { signMessage, getAddress } }
+        final injectedProvider = jsify({
+          'getSigner': allowInterop(() => jsify({
+            'signMessage': allowInterop((dynamic message) {
+              final messageArg = message is String
+                  ? message
+                  : getProperty(message, 'raw') ?? message;
+              return callMethod(ethersSigner, 'signMessage', [messageArg]);
+            }),
+            'getAddress': allowInterop(() => Future.value(ethAddress)),
+          })),
+        });
+
+        // Create InjectedEthereumSigner with the provider wrapper
+        final signer = InjectedEthereumSignerJS(injectedProvider);
         final publicKeyBytes =
             callMethod(ethers, 'getBytes', [aoSignature.publicKey]);
         signer.publicKey = publicKeyBytes;
