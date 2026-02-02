@@ -1,20 +1,25 @@
 /**
- * Entry point for bundling @ardrive/turbo-sdk for browser usage.
+ * Unified entry point for @ardrive/turbo-sdk and @ar.io/sdk for browser usage.
  *
- * This file re-exports the SDK functions needed by ArDrive web app.
- * The /web export is the browser-compatible version of the SDK.
+ * This bundles BOTH SDKs together so they share the same Buffer polyfill,
+ * avoiding type mismatches when passing signer objects to TurboFactory.
+ *
+ * This matches how turbo-app imports these SDKs.
  */
 
-// Turbo SDK exports
+// Turbo SDK exports (including ArconnectSigner which turbo-sdk re-exports)
 export {
   TurboFactory,
+  ArconnectSigner,
   ARToTokenAmount,
   ARIOToTokenAmount,
   ETHToTokenAmount,
   SOLToTokenAmount,
   POLToTokenAmount,
-  ArconnectSigner,
+  tokenToBaseMap,
 } from '@ardrive/turbo-sdk/web';
 
-// InjectedEthereumSigner from @ar.io/sdk (used for ARIO on AO via ETH wallet)
-export { InjectedEthereumSigner } from '@ar.io/sdk/web';
+// AR.IO SDK exports (InjectedEthereumSigner for ARIO via ETH wallets)
+export {
+  InjectedEthereumSigner,
+} from '@ar.io/sdk/web';

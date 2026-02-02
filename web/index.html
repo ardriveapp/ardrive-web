@@ -58,41 +58,24 @@
     <!-- Crypto Wallet Bridge (custom JS for wallet connections) -->
     <script defer src="js/crypto_wallet_bridge.js"></script>
 
-    <!-- Turbo SDK for Crypto Payments (loaded after Flutter initializes) -->
-    <script>
-      // Load Turbo SDK after page loads to avoid interfering with Flutter init
-      window.addEventListener('load', function() {
-        // Local bundle built from @ardrive/turbo-sdk v1.39.2
-        // To rebuild: cd web/js/turbo-sdk-build && npm install && npm run build
-        const TURBO_SDK_VERSION = '1.39.2';
-        const SDK_URL = 'js/turbo-sdk.bundle.min.js';
+    <!-- Turbo SDK for Crypto Payments -->
+    <!-- Using type="module" to load ESM bundle without conflicting with Flutter's requirejs -->
+    <script type="module">
+      // Local bundle built from @ardrive/turbo-sdk v1.39.2
+      // To rebuild: cd web/js/turbo-sdk-build && npm install && npm run build
+      import * as turboModule from './js/turbo-sdk.bundle.min.js';
 
-        import(SDK_URL).then(function(turboModule) {
-          // Validate required exports exist
-          var required = ['TurboFactory', 'ARToTokenAmount', 'ARIOToTokenAmount',
-                          'ETHToTokenAmount', 'SOLToTokenAmount', 'ArconnectSigner',
-                          'InjectedEthereumSigner'];
-          var missing = required.filter(function(name) { return !turboModule[name]; });
-          if (missing.length > 0) {
-            throw new Error('Missing SDK exports: ' + missing.join(', '));
-          }
-
-          window.TurboFactory = turboModule.TurboFactory;
-          window.ARToTokenAmount = turboModule.ARToTokenAmount;
-          window.ARIOToTokenAmount = turboModule.ARIOToTokenAmount;
-          window.ETHToTokenAmount = turboModule.ETHToTokenAmount;
-          window.SOLToTokenAmount = turboModule.SOLToTokenAmount;
-          window.POLToTokenAmount = turboModule.POLToTokenAmount;
-          window.ArconnectSigner = turboModule.ArconnectSigner;
-          window.InjectedEthereumSigner = turboModule.InjectedEthereumSigner;
-          window.TurboSDKLoaded = true;
-          console.log('Turbo SDK loaded successfully (v' + TURBO_SDK_VERSION + ')');
-        }).catch(function(e) {
-          console.error('Failed to load Turbo SDK:', e);
-          window.TurboSDKLoaded = false;
-          window.TurboSDKError = e.message;
-        });
-      });
+      window.TurboFactory = turboModule.TurboFactory;
+      window.ARToTokenAmount = turboModule.ARToTokenAmount;
+      window.ARIOToTokenAmount = turboModule.ARIOToTokenAmount;
+      window.ETHToTokenAmount = turboModule.ETHToTokenAmount;
+      window.SOLToTokenAmount = turboModule.SOLToTokenAmount;
+      window.POLToTokenAmount = turboModule.POLToTokenAmount;
+      window.ArconnectSigner = turboModule.ArconnectSigner;
+      window.InjectedEthereumSigner = turboModule.InjectedEthereumSigner;
+      window.tokenToBaseMap = turboModule.tokenToBaseMap;
+      window.TurboSDKLoaded = true;
+      console.log('Turbo SDK loaded successfully (v1.39.2)');
     </script>
 
     <!-- End Plausible Web Analytics -->

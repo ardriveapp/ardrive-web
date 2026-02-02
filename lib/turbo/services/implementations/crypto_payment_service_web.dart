@@ -354,12 +354,12 @@ class CryptoPaymentService {
         errorMessage: 'Failed to verify transaction',
         token: pendingTx.token,
       );
-    } catch (e) {
-      logger.e('Error submitting pending transaction: $e');
+    } catch (e, stackTrace) {
+      logger.e('Error submitting pending transaction: $e\n$stackTrace');
       return CryptoPaymentResult.failure(
         status: CryptoPaymentStatus.networkError,
         transactionId: pendingTx.transactionId,
-        errorMessage: e.toString(),
+        errorMessage: 'Unable to verify transaction. Please try again later.',
         token: pendingTx.token,
       );
     }
@@ -686,18 +686,15 @@ class CryptoPaymentService {
   }
 
   /// Execute ARIO on AO payment via Ethereum wallet (InjectedEthereumSigner).
+  ///
+  /// This uses InjectedEthereumSigner from @ar.io/sdk to sign AO data items
+  /// using an Ethereum wallet (MetaMask, etc.) instead of ArConnect.
   Future<String> _executeArioAOViaEthPayment(
     CryptoQuote quote,
     String arweaveAddress,
     EthereumWalletService ethereumWallet,
   ) async {
-    // Validate required JS globals are available
-    final bridge = getProperty(_globalThis, 'CryptoWalletBridge');
-    if (bridge == null) {
-      throw CryptoPaymentException(
-        'CryptoWalletBridge not loaded. Please refresh the page and try again.',
-      );
-    }
+    // Validate ethers.js is loaded (needed for public key derivation)
     final ethers = getProperty(_globalThis, 'ethers');
     if (ethers == null) {
       throw CryptoPaymentException(
@@ -705,15 +702,33 @@ class CryptoPaymentService {
       );
     }
 
-    // Get or create the AO signature
+    // Get or create the AO signature (this signs a message to derive public key)
     final aoSignature =
         await _signerCache.signAndCacheAOConnect(ethereumWallet);
 
-    // Get ethers provider and signer
-    final provider = callMethod(bridge, 'getEthereumProvider', [null]);
+    // Get ethers.js signer for message signing
+    final ethersSigner = await _signerCache.getOrCreateEthereumSigner(
+      ethereumWallet,
+      1, // Chain ID doesn't matter for message signing
+    );
 
-    // Create InjectedEthereumSigner with the derived public key
-    final signer = InjectedEthereumSignerJS(provider);
+    // Get the wallet address
+    final ethAddress = await promiseToFuture(callMethod(ethersSigner, 'getAddress', []));
+
+    // Create the injected provider wrapper that InjectedEthereumSigner expects
+    // The SDK requires: { getSigner: () => { signMessage, getAddress } }
+    final injectedProvider = jsify({
+      'getSigner': allowInterop(() => jsify({
+        'signMessage': allowInterop((dynamic message) {
+          final messageArg = message is String ? message : getProperty(message, 'raw') ?? message;
+          return callMethod(ethersSigner, 'signMessage', [messageArg]);
+        }),
+        'getAddress': allowInterop(() => Future.value(ethAddress)),
+      })),
+    });
+
+    // Create InjectedEthereumSigner with the provider wrapper
+    final signer = InjectedEthereumSignerJS(injectedProvider);
 
     // Set the public key (derived from signature)
     final publicKeyBytes =

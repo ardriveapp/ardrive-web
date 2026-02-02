@@ -120,36 +120,39 @@ class CryptoSuccessView extends StatelessWidget {
                       // Transaction ID as clickable link
                       if (txId.isNotEmpty) ...[
                         const SizedBox(height: 16),
-                        GestureDetector(
-                          onTap: () async {
-                            final url = Uri.parse(token.getExplorerUrl(txId));
-                            if (await canLaunchUrl(url)) {
-                              await launchUrl(url,
-                                  mode: LaunchMode.externalApplication);
-                            }
-                          },
-                          child: Row(
-                            children: [
-                              Text(
-                                'Transaction: ',
-                                style: typography.paragraphSmall(
-                                  color: colors.themeFgMuted,
-                                ),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  _truncateTxId(txId),
+                        MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            onTap: () async {
+                              final url = Uri.parse(token.getExplorerUrl(txId));
+                              if (await canLaunchUrl(url)) {
+                                await launchUrl(url,
+                                    mode: LaunchMode.externalApplication);
+                              }
+                            },
+                            child: Row(
+                              children: [
+                                Text(
+                                  'Transaction: ',
                                   style: typography.paragraphSmall(
-                                    fontWeight: ArFontWeight.semiBold,
-                                    color: colors.themeAccentDefault,
+                                    color: colors.themeFgMuted,
                                   ),
                                 ),
-                              ),
-                              ArDriveIcons.newWindow(
-                                size: 14,
-                                color: colors.themeAccentDefault,
-                              ),
-                            ],
+                                Expanded(
+                                  child: Text(
+                                    _truncateTxId(txId),
+                                    style: typography.paragraphSmall(
+                                      fontWeight: ArFontWeight.semiBold,
+                                      color: colors.themeAccentDefault,
+                                    ),
+                                  ),
+                                ),
+                                ArDriveIcons.newWindow(
+                                  size: 14,
+                                  color: colors.themeAccentDefault,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
