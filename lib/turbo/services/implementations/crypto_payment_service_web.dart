@@ -548,9 +548,9 @@ class CryptoPaymentService {
           }
           return solanaWallet.getTokenBalance();
       }
-    } catch (e) {
-      logger.e('Error getting token balance: $e');
-      return TokenBalance.error(token, e.toString());
+    } catch (e, stackTrace) {
+      logger.e('Error getting token balance: $e', e, stackTrace);
+      return TokenBalance.error(token, 'Unable to fetch token balance');
     }
   }
 
@@ -609,9 +609,9 @@ class CryptoPaymentService {
         rawBalance: balance,
         lastUpdated: DateTime.now(),
       );
-    } catch (e) {
-      logger.e('Error getting ARIO balance: $e');
-      return TokenBalance.error(CryptoToken.arioAO, e.toString());
+    } catch (e, stackTrace) {
+      logger.e('Error getting ARIO balance: $e', e, stackTrace);
+      return TokenBalance.error(CryptoToken.arioAO, 'Unable to fetch token balance');
     }
   }
 
