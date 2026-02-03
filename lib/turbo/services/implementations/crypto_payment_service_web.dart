@@ -212,6 +212,14 @@ class CryptoPaymentService {
     required double usdAmount,
     String? destinationAddress,
   }) async {
+    // Validate amount before making API call
+    if (usdAmount <= 0) {
+      return PromoCodeValidation(
+        isValid: false,
+        errorMessage: 'Amount must be greater than 0',
+      );
+    }
+
     try {
       final result = await _getPriceForFiat(
         amount: usdAmount,
