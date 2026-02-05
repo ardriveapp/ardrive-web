@@ -78,6 +78,18 @@ class PaymentReviewPaymentModelLoaded extends PaymentReviewState {
   /// New balance after purchase
   BigInt get newBalance => currentBalance + creditsWinc;
 
+  /// New balance formatted as credits (e.g., "0.75 Credits")
+  String get newBalanceCredits {
+    final creditValue = newBalance.toDouble() / 1e12;
+    if (creditValue >= 1) {
+      return '${creditValue.toStringAsFixed(2)} Credits';
+    } else if (creditValue >= 0.01) {
+      return '${creditValue.toStringAsFixed(4)} Credits';
+    } else {
+      return '${creditValue.toStringAsFixed(6)} Credits';
+    }
+  }
+
   PaymentReviewPaymentModelLoaded copyWith({
     String? total,
     String? subTotal,

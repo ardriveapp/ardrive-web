@@ -48,6 +48,9 @@ class TurboTopupFlowShowingSuccessView extends TurboTopupFlowState {
   /// Storage estimate for credits received (e.g., "2.5 GB")
   final String? storageEstimate;
 
+  /// New balance after purchase (formatted credits, e.g., "0.75 Credits")
+  final String? newBalanceCredits;
+
   /// New balance after purchase (formatted storage, e.g., "7.5 GB")
   final String? newBalanceStorage;
 
@@ -56,6 +59,7 @@ class TurboTopupFlowShowingSuccessView extends TurboTopupFlowState {
     this.amountPaid,
     this.creditsReceived,
     this.storageEstimate,
+    this.newBalanceCredits,
     this.newBalanceStorage,
   }) : super(isMovingForward);
 
@@ -65,6 +69,7 @@ class TurboTopupFlowShowingSuccessView extends TurboTopupFlowState {
         amountPaid ?? '',
         creditsReceived ?? '',
         storageEstimate ?? '',
+        newBalanceCredits ?? '',
         newBalanceStorage ?? '',
       ];
 }

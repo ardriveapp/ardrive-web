@@ -166,6 +166,7 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
             amountPaid: state.amountPaid,
             creditsReceived: state.creditsReceived,
             storageEstimate: state.storageEstimate,
+            newBalanceCredits: state.newBalanceCredits,
             newBalanceStorage: state.newBalanceStorage,
           );
         } else if (state is TurboTopupFlowShowingErrorView) {
@@ -434,21 +435,21 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
     String? amountPaid,
     String? creditsReceived,
     String? storageEstimate,
+    String? newBalanceCredits,
     String? newBalanceStorage,
   }) {
     // Use parentContext since the current context is invalid after pop()
+    // TurboSuccessView has its own modal structure, so we don't wrap it
     showArDriveDialog(
       widget.parentContext,
-      content: ArDriveStandardModal(
+      content: SizedBox(
         width: 575,
-        content: Hero(
-          tag: 'turbo_success',
-          child: TurboSuccessView(
-            amountPaid: amountPaid,
-            creditsReceived: creditsReceived,
-            storageEstimate: storageEstimate,
-            newBalanceStorage: newBalanceStorage,
-          ),
+        child: TurboSuccessView(
+          amountPaid: amountPaid,
+          creditsReceived: creditsReceived,
+          storageEstimate: storageEstimate,
+          newBalanceCredits: newBalanceCredits,
+          newBalanceStorage: newBalanceStorage,
         ),
       ),
       barrierDismissible: false,

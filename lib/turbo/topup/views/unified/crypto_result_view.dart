@@ -96,10 +96,11 @@ class CryptoSuccessView extends StatelessWidget {
                             Divider(
                                 color: colors.themeBorderDefault, height: 1),
                             const SizedBox(height: 12),
-                            // Credits added
+                            // Credits added (with storage estimate)
                             _SummaryRow(
                               label: 'Credits added',
                               value: _formatCredits(state.creditsAdded),
+                              subValue: state.storageEstimate,
                             ),
                             // New balance (if available)
                             if (state.newBalance != null) ...[
@@ -110,6 +111,9 @@ class CryptoSuccessView extends StatelessWidget {
                               _SummaryRow(
                                 label: 'New balance',
                                 value: _formatCredits(state.newBalance!),
+                                subValue: state.newBalanceStorage != null
+                                    ? '~${state.newBalanceStorage}'
+                                    : null,
                                 isHighlighted: true,
                               ),
                             ],
