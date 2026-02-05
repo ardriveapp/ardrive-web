@@ -61,6 +61,7 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
         final txId = state.txId;
 
         return Stack(
+          clipBehavior: Clip.none,
           children: [
             Column(
               mainAxisSize: MainAxisSize.min,
@@ -77,25 +78,31 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
                     ),
                   ),
                 ),
-                // Confetti (positioned at top)
+                // Confetti (positioned at top, blasting downward into content)
                 Row(
                   mainAxisSize: MainAxisSize.max,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     ConfettiWidget(
-                      numberOfParticles: 10,
-                      blastDirection: -pi / 2,
+                      numberOfParticles: 15,
+                      blastDirection: pi / 4, // Down and to the right
                       blastDirectionality: BlastDirectionality.explosive,
                       confettiController: _confettiController1,
-                      maxBlastForce: 40,
+                      maxBlastForce: 30,
+                      minBlastForce: 10,
+                      gravity: 0.2,
+                      emissionFrequency: 0.05,
                       child: const SizedBox(height: 0, width: 0),
                     ),
                     ConfettiWidget(
-                      numberOfParticles: 10,
-                      blastDirection: pi / 2,
+                      numberOfParticles: 15,
+                      blastDirection: 3 * pi / 4, // Down and to the left
                       blastDirectionality: BlastDirectionality.explosive,
                       confettiController: _confettiController2,
-                      maxBlastForce: 40,
+                      maxBlastForce: 30,
+                      minBlastForce: 10,
+                      gravity: 0.2,
+                      emissionFrequency: 0.05,
                       child: const SizedBox(height: 0, width: 0),
                     ),
                   ],
