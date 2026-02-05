@@ -293,8 +293,22 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
             currentBalanceStorage: state.currentBalanceStorage,
             creditsToReceive: state.creditsToReceive,
             newBalanceStorage: state.newBalanceStorage,
-            onSuccess: () {
+            onSuccessWithData: ({
+              String? amountPaid,
+              String? creditsReceived,
+              String? storageEstimate,
+              String? newBalanceCredits,
+              String? newBalanceStorage,
+            }) {
+              // Pop the modal and show success dialog (same as credit card flow)
               Navigator.of(context).pop();
+              _showSuccessDialog(
+                amountPaid: amountPaid,
+                creditsReceived: creditsReceived,
+                storageEstimate: storageEstimate,
+                newBalanceCredits: newBalanceCredits,
+                newBalanceStorage: newBalanceStorage,
+              );
             },
             onCancel: () {
               Navigator.of(context).pop();

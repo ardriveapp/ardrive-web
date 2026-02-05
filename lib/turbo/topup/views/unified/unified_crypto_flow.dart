@@ -48,8 +48,18 @@ class UnifiedCryptoFlow extends StatefulWidget {
   /// New balance storage estimate (e.g., "7.3 GB")
   final String newBalanceStorage;
 
-  /// Callback when payment is successful
+  /// Callback when payment is successful (simple, no data)
   final VoidCallback? onSuccess;
+
+  /// Callback when payment is successful with formatted data for success dialog
+  /// Parameters: amountPaid, creditsReceived, storageEstimate, newBalanceCredits, newBalanceStorage
+  final void Function({
+    String? amountPaid,
+    String? creditsReceived,
+    String? storageEstimate,
+    String? newBalanceCredits,
+    String? newBalanceStorage,
+  })? onSuccessWithData;
 
   /// Callback when user cancels or closes
   final VoidCallback? onCancel;
@@ -66,6 +76,7 @@ class UnifiedCryptoFlow extends StatefulWidget {
     BigInt? creditsToReceive,
     this.newBalanceStorage = '0 GB',
     this.onSuccess,
+    this.onSuccessWithData,
     this.onCancel,
     this.onBack,
   })  : currentTurboBalance = currentTurboBalance ?? BigInt.zero,
@@ -249,6 +260,32 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
 
     // Success state
     if (state is CryptoTopupSuccess) {
+      // If onSuccessWithData is provided, call it with formatted data
+      // This allows the parent to show a separate success dialog (like credit card flow)
+      if (widget.onSuccessWithData != null) {
+        // Format the data for the success dialog
+        final amountPaid = _formatAmountPaid(state);
+        final creditsReceived = _formatCredits(state.creditsAdded);
+        final newBalanceCredits = state.newBalance != null
+            ? _formatCredits(state.newBalance!)
+            : null;
+
+        // Schedule the callback after the build
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          widget.onSuccessWithData!(
+            amountPaid: amountPaid,
+            creditsReceived: creditsReceived,
+            storageEstimate: state.storageEstimate,
+            newBalanceCredits: newBalanceCredits,
+            newBalanceStorage: state.newBalanceStorage,
+          );
+        });
+
+        // Show a brief loading indicator while transitioning
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      // Fallback: render CryptoSuccessView inline (old behavior)
       return CryptoSuccessView(
         key: const ValueKey('success'),
         onDone: () {
@@ -269,6 +306,39 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
 
     // Default loading
     return const Center(child: CircularProgressIndicator());
+  }
+
+  /// Format amount paid for display (e.g., "100 ARIO ($25.00)")
+  String _formatAmountPaid(CryptoTopupSuccess state) {
+    final tokenAmount = state.tokenAmountSpent;
+    final symbol = state.token.symbol;
+    final usdValue = state.usdValue;
+
+    String tokenStr;
+    if (tokenAmount >= 1000) {
+      tokenStr = '${tokenAmount.toStringAsFixed(0)} $symbol';
+    } else if (tokenAmount >= 1) {
+      tokenStr = '${tokenAmount.toStringAsFixed(2)} $symbol';
+    } else {
+      tokenStr = '${tokenAmount.toStringAsFixed(4)} $symbol';
+    }
+
+    if (usdValue != null) {
+      return '$tokenStr (\$${usdValue.toStringAsFixed(2)})';
+    }
+    return tokenStr;
+  }
+
+  /// Format credits for display (e.g., "0.25 Credits")
+  String _formatCredits(BigInt credits) {
+    final creditValue = credits.toDouble() / 1e12;
+    if (creditValue >= 1) {
+      return '${creditValue.toStringAsFixed(2)} Credits';
+    } else if (creditValue >= 0.01) {
+      return '${creditValue.toStringAsFixed(4)} Credits';
+    } else {
+      return '${creditValue.toStringAsFixed(6)} Credits';
+    }
   }
 }
 
