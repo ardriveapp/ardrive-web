@@ -6,7 +6,10 @@ enum FileSizeUnit {
 }
 
 extension FileSizeUnitExtension on FileSizeUnit {
-  String get name {
+  /// Returns the abbreviated display name for the unit (e.g., "GB", "MB").
+  /// Note: This was renamed from `name` to `abbreviation` because Dart's
+  /// built-in enum `.name` property shadows extension getters.
+  String get abbreviation {
     switch (this) {
       case FileSizeUnit.bytes:
         return 'bytes';

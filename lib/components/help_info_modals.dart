@@ -169,6 +169,14 @@ Future<void> showKeyfileInfoModal({
 Future<void> showAppLimitsInfoModal({
   required BuildContext context,
 }) async {
+  // Redirect to the new Turbo info modal which includes limits
+  return showTurboInfoModal(context: context);
+}
+
+/// Shows a modal explaining Turbo and its benefits
+Future<void> showTurboInfoModal({
+  required BuildContext context,
+}) async {
   final typography = ArDriveTypographyNew.of(context);
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
@@ -176,7 +184,7 @@ Future<void> showAppLimitsInfoModal({
     context,
     content: ArDriveStandardModalNew(
       hasCloseButton: true,
-      title: 'Upload & Download Limits',
+      title: 'About Turbo',
       content: SizedBox(
         width: 480,
         child: SingleChildScrollView(
@@ -184,33 +192,46 @@ Future<void> showAppLimitsInfoModal({
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // What is Turbo
               Text(
-                'Upload Size Limits',
+                'Turbo is the fastest, most reliable way to upload data to Arweave.',
                 style: typography.paragraphNormal(
-                  fontWeight: ArFontWeight.bold,
-                  color: colorTokens.textHigh,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _buildTable(
-                context,
-                headers: ['Browser', 'Direct (AR)', 'Turbo'],
-                rows: [
-                  ['Chrome/Edge/Brave', '65 GiB', '10 GiB'],
-                  ['Safari', '65 GiB', '500 MiB'],
-                  ['Firefox', '65 GiB', '500 MiB'],
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'File Count: Chrome/Brave (1,500 files), Firefox (10,000 files)',
-                style: typography.paragraphSmall(
-                  color: colorTokens.textLow,
+                  color: colorTokens.textMid,
                 ),
               ),
               const SizedBox(height: 20),
+
+              // Benefits
               Text(
-                'Download Size Limits',
+                'Benefits',
+                style: typography.paragraphNormal(
+                  fontWeight: ArFontWeight.bold,
+                  color: colorTokens.textHigh,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildBulletPoint(
+                context,
+                'Flexible payments',
+                'Pay with card or crypto (ETH, SOL, USDC, ARIO)',
+              ),
+              const SizedBox(height: 8),
+              _buildBulletPoint(
+                context,
+                'Instant uploads',
+                'No waiting for blockchain confirmations',
+              ),
+              const SizedBox(height: 8),
+              _buildBulletPoint(
+                context,
+                'Same value as AR',
+                'Turbo Credits have identical storage purchasing power',
+              ),
+              const SizedBox(height: 20),
+
+              // Upload limits section
+              Text(
+                'Upload Limits by Browser',
                 style: typography.paragraphNormal(
                   fontWeight: ArFontWeight.bold,
                   color: colorTokens.textHigh,
@@ -219,12 +240,19 @@ Future<void> showAppLimitsInfoModal({
               const SizedBox(height: 12),
               _buildTable(
                 context,
-                headers: ['Browser', 'Max Size'],
+                headers: ['Browser', 'Max File Size'],
                 rows: [
-                  ['Chrome/Edge/Brave', '15 GiB'],
-                  ['Safari', '1 GiB'],
-                  ['Firefox', '15 GiB'],
+                  ['Chrome/Edge/Brave', '10 GiB'],
+                  ['Safari', '500 MiB'],
+                  ['Firefox', '500 MiB'],
                 ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'For larger files, use Chrome, Edge, or Brave browsers.',
+                style: typography.paragraphSmall(
+                  color: colorTokens.textLow,
+                ),
               ),
             ],
           ),

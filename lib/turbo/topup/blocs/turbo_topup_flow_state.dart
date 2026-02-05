@@ -39,8 +39,34 @@ class TurboTopupFlowShowingPaymentReviewView extends TurboTopupFlowState {
 }
 
 class TurboTopupFlowShowingSuccessView extends TurboTopupFlowState {
-  const TurboTopupFlowShowingSuccessView({bool isMovingForward = true})
-      : super(isMovingForward);
+  /// Amount paid (formatted, e.g., "$25.00")
+  final String? amountPaid;
+
+  /// Credits received (formatted, e.g., "0.25 AR")
+  final String? creditsReceived;
+
+  /// Storage estimate for credits received (e.g., "2.5 GB")
+  final String? storageEstimate;
+
+  /// New balance after purchase (formatted storage, e.g., "7.5 GB")
+  final String? newBalanceStorage;
+
+  const TurboTopupFlowShowingSuccessView({
+    bool isMovingForward = true,
+    this.amountPaid,
+    this.creditsReceived,
+    this.storageEstimate,
+    this.newBalanceStorage,
+  }) : super(isMovingForward);
+
+  @override
+  List<Object> get props => [
+        isMovingForward,
+        amountPaid ?? '',
+        creditsReceived ?? '',
+        storageEstimate ?? '',
+        newBalanceStorage ?? '',
+      ];
 }
 
 class TurboTopupFlowShowingErrorView extends TurboTopupFlowState {
@@ -54,6 +80,44 @@ class TurboTopupFlowShowingErrorView extends TurboTopupFlowState {
 class TurboTopUpShowingSessionExpiredView extends TurboTopupFlowState {
   const TurboTopUpShowingSessionExpiredView({bool isMovingForward = true})
       : super(isMovingForward);
+}
+
+class TurboTopupFlowShowingCryptoView extends TurboTopupFlowState {
+  final CryptoToken token;
+  final double amount;
+
+  /// Current Turbo balance (in winc) for display on checkout
+  final BigInt currentTurboBalance;
+
+  /// Current balance storage estimate (e.g., "5.2 GB")
+  final String currentBalanceStorage;
+
+  /// Credits to receive (in winc) for calculating new balance
+  final BigInt creditsToReceive;
+
+  /// New balance storage estimate (e.g., "7.3 GB")
+  final String newBalanceStorage;
+
+  const TurboTopupFlowShowingCryptoView({
+    bool isMovingForward = true,
+    required this.token,
+    required this.amount,
+    required this.currentTurboBalance,
+    required this.currentBalanceStorage,
+    required this.creditsToReceive,
+    required this.newBalanceStorage,
+  }) : super(isMovingForward);
+
+  @override
+  List<Object> get props => [
+        isMovingForward,
+        token,
+        amount,
+        currentTurboBalance,
+        currentBalanceStorage,
+        creditsToReceive,
+        newBalanceStorage,
+      ];
 }
 
 enum TurboErrorType {

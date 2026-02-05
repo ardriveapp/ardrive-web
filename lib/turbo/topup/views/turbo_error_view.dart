@@ -36,13 +36,141 @@ class TurboErrorView extends StatelessWidget {
     }
   }
 
+  String _getErrorTitleForErrorType(BuildContext context) {
+    switch (errorType) {
+      case TurboErrorType.sessionExpired:
+        return appLocalizationsOf(context).turboSessionExpiredTitle;
+      default:
+        return appLocalizationsOf(context).theresBeenAProblem;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Use different view for session expired (not an error, just a state)
+    if (errorType == TurboErrorType.sessionExpired) {
+      return SessionExpiredView(
+        onRefresh: () => onTryAgain(),
+        onDismiss: () => onDismiss(),
+      );
+    }
+
     return ErrorView(
       errorMessage: _getErrorMessageForErrorType(context),
-      errorTitle: appLocalizationsOf(context).theresBeenAProblem,
+      errorTitle: _getErrorTitleForErrorType(context),
       onDismiss: () => onDismiss(),
       onTryAgain: () => onTryAgain(),
+    );
+  }
+}
+
+/// A view specifically for session expiration - less alarming than error view.
+class SessionExpiredView extends StatelessWidget {
+  const SessionExpiredView({
+    super.key,
+    required this.onRefresh,
+    required this.onDismiss,
+  });
+
+  final VoidCallback onRefresh;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final themeData = ArDriveTheme.of(context).themeData;
+    final colors = themeData.colors;
+    final colorTokens = themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
+
+    return ArDriveCard(
+      contentPadding: EdgeInsets.zero,
+      content: Stack(
+        children: [
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Red top line (ArDrive modal pattern)
+              Container(
+                height: 6,
+                decoration: BoxDecoration(
+                  color: colorTokens.containerRed,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(8),
+                    topRight: Radius.circular(8),
+                  ),
+                ),
+              ),
+              // Content
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title - left aligned
+                    Text(
+                      appLocalizationsOf(context).turboSessionExpiredTitle,
+                      style: typography.heading5(
+                        fontWeight: ArFontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Icon and message
+                    Row(
+                      children: [
+                        ArDriveIcons.refresh(
+                          size: 32,
+                          color: colors.themeFgMuted,
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            appLocalizationsOf(context)
+                                .turboErrorMessageSessionExpired,
+                            style: typography.paragraphNormal(
+                              color: colors.themeFgMuted,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    // Action button
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: ArDriveButton(
+                        maxHeight: 44,
+                        maxWidth: 160,
+                        text: appLocalizationsOf(context).refresh,
+                        fontStyle: typography.paragraphLarge(
+                          fontWeight: ArFontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        onPressed: onRefresh,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          // Close button in top right
+          Positioned(
+            right: 20,
+            top: 20,
+            child: ArDriveClickArea(
+              child: GestureDetector(
+                onTap: () {
+                  onDismiss();
+                  Navigator.pop(context);
+                },
+                child: ArDriveIcons.x(),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -63,65 +191,95 @@ class ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeData = ArDriveTheme.of(context).themeData;
+    final colors = themeData.colors;
+    final colorTokens = themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
+
     return ArDriveCard(
-      height: 513,
       contentPadding: EdgeInsets.zero,
-      content: Column(
+      content: Stack(
         children: [
-          Flexible(
-            child: Align(
-              alignment: Alignment.topRight,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 26, right: 26),
-                child: ArDriveClickArea(
-                  child: GestureDetector(
-                    onTap: () {
-                      onDismiss();
-                      Navigator.pop(context);
-                    },
-                    child: ArDriveIcons.x(),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Red top line (ArDrive modal pattern)
+              Container(
+                height: 6,
+                decoration: BoxDecoration(
+                  color: colorTokens.containerRed,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(8),
+                    topRight: Radius.circular(8),
                   ),
                 ),
               ),
-            ),
+              // Content
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title - left aligned
+                    Text(
+                      errorTitle,
+                      style: typography.heading5(
+                        fontWeight: ArFontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Icon and message
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ArDriveIcons.triangle(
+                          size: 32,
+                          color: colors.themeErrorDefault,
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            errorMessage,
+                            style: typography.paragraphNormal(
+                              color: colors.themeFgMuted,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    // Action button
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: ArDriveButton(
+                        maxHeight: 44,
+                        maxWidth: 143,
+                        text: appLocalizationsOf(context).tryAgain,
+                        fontStyle: typography.paragraphLarge(
+                          fontWeight: ArFontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        onPressed: onTryAgain,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          Flexible(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ArDriveIcons.triangle(
-                  size: 50,
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeErrorDefault,
-                ),
-                Text(errorTitle, style: ArDriveTypography.body.leadBold()),
-                const SizedBox(height: 16),
-                Text(
-                  errorMessage,
-                  textAlign: TextAlign.center,
-                  style: ArDriveTypography.body.buttonNormalBold(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDefault,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Flexible(
-            child: Align(
-              alignment: Alignment.center,
-              child: ArDriveButton(
-                maxHeight: 44,
-                maxWidth: 143,
-                text: appLocalizationsOf(context).tryAgain,
-                fontStyle: ArDriveTypography.body.buttonLargeBold(
-                  color: Colors.white,
-                ),
-                onPressed: onTryAgain,
+          // Close button in top right
+          Positioned(
+            right: 20,
+            top: 20,
+            child: ArDriveClickArea(
+              child: GestureDetector(
+                onTap: () {
+                  onDismiss();
+                  Navigator.pop(context);
+                },
+                child: ArDriveIcons.x(),
               ),
             ),
           ),

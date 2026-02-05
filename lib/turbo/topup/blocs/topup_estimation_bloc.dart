@@ -9,7 +9,8 @@ part 'topup_estimation_event.dart';
 part 'topup_estimation_state.dart';
 
 const presetAmounts = [10, 25, 50, 75];
-const minAmount = 5;
+const minAmount = 1; // Minimum for any payment
+const minCardAmount = 5; // Minimum for credit/debit card payments
 const maxAmount = 10000; // 10,000
 final supportedCurrencies = ['usd'];
 
@@ -24,7 +25,7 @@ class TurboTopUpEstimationBloc
   String get currentCurrency => _currentCurrency;
   double get currentAmount => _currentAmount;
   FileSizeUnit get currentDataUnit => _currentDataUnit;
-  late BigInt _balance;
+  BigInt? _balance;
 
   TurboTopUpEstimationBloc({
     required this.turbo,
@@ -43,14 +44,28 @@ class TurboTopUpEstimationBloc
                 .i('initializing the estimation view and getting the balance');
             await _getBalance();
 
-            logger.i('getting the price estimate');
-            await _computeAndUpdatePriceEstimate(
-              emit,
-              currentAmount: 0,
-              currentCurrency: currentCurrency,
-              currentDataUnit: currentDataUnit,
-              promoCode: turbo.promoCode,
-              shouldRethrow: true,
+            // Emit initial state without computing price estimate
+            // This avoids race condition with UnifiedTopupBloc which also
+            // calls turbo.computePriceEstimate. Price estimate will be
+            // computed when user selects an amount.
+            final balance = _balance!;
+            final estimatedStorageForBalance =
+                await turbo.computeStorageEstimateForCredits(
+              credits: balance,
+              outputDataUnit: currentDataUnit,
+            );
+
+            emit(
+              EstimationLoaded(
+                balance: balance,
+                estimatedStorageForBalance:
+                    estimatedStorageForBalance.toStringAsFixed(2),
+                selectedAmount: 0,
+                creditsForSelectedAmount: BigInt.zero,
+                estimatedStorageForSelectedAmount: '0',
+                currencyUnit: currentCurrency,
+                dataUnit: currentDataUnit,
+              ),
             );
           } catch (e, s) {
             logger.e('error initializing the estimation view', e, s);
@@ -111,15 +126,23 @@ class TurboTopUpEstimationBloc
             ));
           }
         } else if (event is FetchPriceEstimate) {
+          // Only process if balance has been initialized (LoadInitialData completed)
+          if (_balance == null) {
+            logger
+                .d('Ignoring FetchPriceEstimate - balance not yet initialized');
+            return;
+          }
+
+          final balance = _balance!;
           final estimatedStorageForBalance =
               await turbo.computeStorageEstimateForCredits(
-            credits: _balance,
+            credits: balance,
             outputDataUnit: currentDataUnit,
           );
 
           emit(
             EstimationLoaded(
-              balance: _balance,
+              balance: balance,
               estimatedStorageForBalance:
                   estimatedStorageForBalance.toStringAsFixed(2),
               selectedAmount: event.priceEstimate.priceInCurrency,
@@ -144,6 +167,15 @@ class TurboTopUpEstimationBloc
     required String? promoCode,
     bool shouldRethrow = false,
   }) async {
+    // Balance must be initialized before calling this method
+    final balance = _balance;
+    if (balance == null) {
+      logger.e(
+          '_computeAndUpdatePriceEstimate called before balance initialized');
+      emit(EstimationLoadError());
+      return;
+    }
+
     try {
       emit(EstimationLoading());
       final priceEstimate = await turbo.computePriceEstimate(
@@ -155,7 +187,7 @@ class TurboTopUpEstimationBloc
 
       final estimatedStorageForBalance =
           await turbo.computeStorageEstimateForCredits(
-        credits: _balance,
+        credits: balance,
         outputDataUnit: currentDataUnit,
       );
 
@@ -163,7 +195,7 @@ class TurboTopUpEstimationBloc
 
       emit(
         EstimationLoaded(
-          balance: _balance,
+          balance: balance,
           estimatedStorageForBalance:
               estimatedStorageForBalance.toStringAsFixed(2),
           selectedAmount: priceEstimate.priceInCurrency,
@@ -189,19 +221,27 @@ class TurboTopUpEstimationBloc
     Emitter emit, {
     required String? promoCode,
   }) async {
+    // Balance must be initialized before calling this method
+    final balance = _balance;
+    if (balance == null) {
+      logger.e('_refreshEstimate called before balance initialized');
+      emit(EstimationLoadError());
+      return;
+    }
+
     emit(EstimationLoading());
 
     final priceEstimate = turbo.currentPriceEstimate;
 
     final estimatedStorageForBalance =
         await turbo.computeStorageEstimateForCredits(
-      credits: _balance,
+      credits: balance,
       outputDataUnit: currentDataUnit,
     );
 
     emit(
       EstimationLoaded(
-        balance: _balance,
+        balance: balance,
         estimatedStorageForBalance:
             estimatedStorageForBalance.toStringAsFixed(2),
         selectedAmount: priceEstimate.priceInCurrency,

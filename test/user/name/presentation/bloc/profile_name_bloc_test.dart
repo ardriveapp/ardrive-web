@@ -86,8 +86,10 @@ void main() {
     blocTest<ProfileNameBloc, ProfileNameState>(
       'emits [ProfileNameLoading, ProfileNameLoadedWithWalletAddress] when getPrimaryName throws PrimaryNameNotFoundException',
       build: () {
-        when(() =>
-                arnsRepository.getPrimaryName(testWalletAddress, update: false))
+        when(() => profileLogoRepository.getProfileLogoTxId(testWalletAddress))
+            .thenAnswer((_) async => null);
+        when(() => arnsRepository.getPrimaryName(testWalletAddress,
+                update: false, getLogo: true))
             .thenThrow(PrimaryNameNotFoundException('Test error'));
         return ProfileNameBloc(arnsRepository, profileLogoRepository, auth);
       },
@@ -101,8 +103,10 @@ void main() {
     blocTest<ProfileNameBloc, ProfileNameState>(
       'emits [ProfileNameLoading, ProfileNameLoadedWithWalletAddress] when getPrimaryName throws general error',
       build: () {
-        when(() =>
-                arnsRepository.getPrimaryName(testWalletAddress, update: false))
+        when(() => profileLogoRepository.getProfileLogoTxId(testWalletAddress))
+            .thenAnswer((_) async => null);
+        when(() => arnsRepository.getPrimaryName(testWalletAddress,
+                update: false, getLogo: true))
             .thenThrow(Exception('Test error'));
         return ProfileNameBloc(arnsRepository, profileLogoRepository, auth);
       },

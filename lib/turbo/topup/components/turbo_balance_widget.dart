@@ -1,5 +1,5 @@
+import 'package:ardrive/components/help_info_modals.dart';
 import 'package:ardrive/components/turbo_logo.dart';
-import 'package:ardrive/cookie_policy_consent/views/cookie_policy_consent_modal.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_balance/turbo_balance_cubit.dart';
@@ -31,6 +31,7 @@ class TurboBalance extends StatefulWidget {
 
 class _TurboBalanceState extends State<TurboBalance> {
   late TurboBalanceCubit _turboBalanceCubit;
+  bool _isInfoModalOpen = false;
 
   @override
   void initState() {
@@ -39,6 +40,14 @@ class _TurboBalanceState extends State<TurboBalance> {
       paymentService: widget.paymentService,
       wallet: widget.wallet,
     )..getBalance();
+  }
+
+  void _showInfoModal() {
+    if (_isInfoModalOpen) return;
+    _isInfoModalOpen = true;
+    showTurboInfoModal(context: context).then((_) {
+      _isInfoModalOpen = false;
+    });
   }
 
   Widget addButton(BuildContext context) {
@@ -58,10 +67,8 @@ class _TurboBalanceState extends State<TurboBalance> {
               ),
               borderRadius: 20,
               onPressed: () {
-                showCookiePolicyConsentModal(context, (context) {
-                  showTurboTopupModal(context);
-                });
-
+                // Go directly to topup modal - cookie consent moved to card payment phase
+                showTurboTopupModal(context);
                 widget.onTapAddButton?.call();
               },
             ),
@@ -78,7 +85,21 @@ class _TurboBalanceState extends State<TurboBalance> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          turboLogo(context, height: 15),
+          Row(
+            children: [
+              turboLogo(context, height: 15),
+              const SizedBox(width: 4),
+              ArDriveClickArea(
+                child: GestureDetector(
+                  onTap: _showInfoModal,
+                  child: ArDriveIcons.info(
+                    size: 14,
+                    color: colorTokens.textLow,
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 8),
           BlocBuilder<TurboBalanceCubit, TurboBalanceState>(
             bloc: _turboBalanceCubit,
@@ -133,13 +154,13 @@ class _TurboBalanceState extends State<TurboBalance> {
                   children: [
                     Text(
                       appLocalizationsOf(context).error,
-                      style: ArDriveTypography.body.captionRegular().copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeErrorDefault,
-                          ),
+                      style: typography.caption(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeErrorDefault,
+                      ),
                     ),
                     ArDriveIconButton(
                       icon: ArDriveIcons.refresh(),

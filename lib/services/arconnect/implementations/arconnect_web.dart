@@ -32,7 +32,7 @@ external Uint8List _getSignature(Uint8List message);
 
 @JS('signDataItem')
 external Uint8List _signDataItem(
-    Uint8List data, List<Tag> tags, String owner, String target, String anchor);
+    Uint8List data, dynamic tags, String owner, String target, String anchor);
 
 @JS('getWalletVersion')
 external String _getWalletVersion();
@@ -66,8 +66,16 @@ Future<Uint8List> getSignature(Uint8List message) async {
 }
 
 Future<Uint8List> signDataItem(DataItem dataItem) async {
+  // Convert Dart Tag objects to JS-compatible plain objects
+  // This is necessary because Dart objects don't expose properties to JS in release mode
+  final tagsList = dataItem.tags.map((tag) => <String, String>{
+    'name': tag.name,
+    'value': tag.value,
+  }).toList();
+  final jsTags = jsify(tagsList);
+
   return await promiseToFuture<Uint8List>(_signDataItem(dataItem.data,
-      dataItem.tags, dataItem.owner, dataItem.target, dataItem.nonce));
+      jsTags, dataItem.owner, dataItem.target, dataItem.nonce));
 }
 
 Future<String> getWalletVersion() async {

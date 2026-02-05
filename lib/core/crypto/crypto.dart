@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ardrive/entities/drive_signature.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entity.dart';
 import 'package:ardrive/services/services.dart';
@@ -74,14 +75,24 @@ class ArDriveCrypto {
           Uint8List.fromList(utf8.encode('drive') + Uuid.parse(driveId));
 
       if (signatureType == DriveSignatureType.v1) {
-        walletSignature = await wallet.sign(message);
+        logger.d('Signing with v1 signature (wallet.sign)');
+        try {
+          walletSignature = await wallet.sign(message);
+          logger.d('v1 signing successful');
+        } catch (e, stackTrace) {
+          logger.e('v1 signing failed', e, stackTrace);
+          rethrow;
+        }
       } else if (signatureType == DriveSignatureType.v2) {
+        logger.d('Signing with v2 signature (wallet.signDataItem)');
         final owner = await wallet.getOwner();
         final dataItem = DataItem.withBlobData(data: message, owner: owner);
         dataItem.addTag('Action', 'Drive-Signature-V2');
         try {
           walletSignature = await wallet.signDataItem(dataItem);
-        } catch (e) {
+          logger.d('v2 signing successful');
+        } catch (e, stackTrace) {
+          logger.e('v2 signing failed', e, stackTrace);
           throw Exception('Failed to sign data item: $e');
         }
       } else {
