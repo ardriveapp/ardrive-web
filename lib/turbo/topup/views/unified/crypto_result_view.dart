@@ -1,18 +1,48 @@
+import 'dart:math';
+
 import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Success view shown after successful crypto payment.
-class CryptoSuccessView extends StatelessWidget {
+class CryptoSuccessView extends StatefulWidget {
   final VoidCallback? onDone;
 
   const CryptoSuccessView({
     super.key,
     this.onDone,
   });
+
+  @override
+  State<CryptoSuccessView> createState() => _CryptoSuccessViewState();
+}
+
+class _CryptoSuccessViewState extends State<CryptoSuccessView> {
+  final ConfettiController _confettiController1 = ConfettiController(
+    duration: const Duration(seconds: 5),
+  );
+
+  final ConfettiController _confettiController2 = ConfettiController(
+    duration: const Duration(seconds: 5),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _confettiController1.play();
+    _confettiController2.play();
+  }
+
+  @override
+  void dispose() {
+    _confettiController1.dispose();
+    _confettiController2.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +76,29 @@ class CryptoSuccessView extends StatelessWidget {
                       topRight: Radius.circular(8),
                     ),
                   ),
+                ),
+                // Confetti (positioned at top)
+                Row(
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    ConfettiWidget(
+                      numberOfParticles: 10,
+                      blastDirection: -pi / 2,
+                      blastDirectionality: BlastDirectionality.explosive,
+                      confettiController: _confettiController1,
+                      maxBlastForce: 40,
+                      child: const SizedBox(height: 0, width: 0),
+                    ),
+                    ConfettiWidget(
+                      numberOfParticles: 10,
+                      blastDirection: pi / 2,
+                      blastDirectionality: BlastDirectionality.explosive,
+                      confettiController: _confettiController2,
+                      maxBlastForce: 40,
+                      child: const SizedBox(height: 0, width: 0),
+                    ),
+                  ],
                 ),
                 // Main content
                 Container(
@@ -173,7 +226,7 @@ class CryptoSuccessView extends StatelessWidget {
                             fontWeight: ArFontWeight.bold,
                             color: Colors.white,
                           ),
-                          onPressed: onDone,
+                          onPressed: widget.onDone,
                         ),
                       ),
                     ],
@@ -187,7 +240,7 @@ class CryptoSuccessView extends StatelessWidget {
               top: 20,
               child: ArDriveClickArea(
                 child: GestureDetector(
-                  onTap: onDone,
+                  onTap: widget.onDone,
                   child: ArDriveIcons.x(),
                 ),
               ),
