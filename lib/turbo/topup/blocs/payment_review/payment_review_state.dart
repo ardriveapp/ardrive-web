@@ -79,14 +79,29 @@ class PaymentReviewPaymentModelLoaded extends PaymentReviewState {
   BigInt get newBalance => currentBalance + creditsWinc;
 
   /// New balance formatted as credits (e.g., "0.75 Credits")
+  /// Uses BigInt-safe integer division to preserve precision for large balances.
   String get newBalanceCredits {
-    final creditValue = newBalance.toDouble() / 1e12;
-    if (creditValue >= 1) {
-      return '${creditValue.toStringAsFixed(2)} Credits';
-    } else if (creditValue >= 0.01) {
-      return '${creditValue.toStringAsFixed(4)} Credits';
+    // 1 Credit = 10^12 winc
+    final divisor = BigInt.from(1000000000000);
+    final wholeCredits = newBalance ~/ divisor;
+    final remainder = newBalance % divisor;
+
+    // Determine decimal places based on magnitude
+    if (wholeCredits >= BigInt.one) {
+      // >= 1 credit: show 2 decimal places
+      final scaledRemainder = (remainder * BigInt.from(100)) ~/ divisor;
+      final fractionalPart = scaledRemainder.toString().padLeft(2, '0');
+      return '$wholeCredits.$fractionalPart Credits';
+    } else if (remainder >= BigInt.from(10000000000)) {
+      // >= 0.01 credits: show 4 decimal places
+      final scaledRemainder = (remainder * BigInt.from(10000)) ~/ divisor;
+      final fractionalPart = scaledRemainder.toString().padLeft(4, '0');
+      return '0.$fractionalPart Credits';
     } else {
-      return '${creditValue.toStringAsFixed(6)} Credits';
+      // < 0.01 credits: show 6 decimal places
+      final scaledRemainder = (remainder * BigInt.from(1000000)) ~/ divisor;
+      final fractionalPart = scaledRemainder.toString().padLeft(6, '0');
+      return '0.$fractionalPart Credits';
     }
   }
 
