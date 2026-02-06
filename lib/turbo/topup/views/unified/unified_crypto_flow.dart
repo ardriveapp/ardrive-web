@@ -1,6 +1,7 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/turbo/config/crypto_network_config.dart';
+import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/turbo/services/crypto_payment_service.dart';
 import 'package:ardrive/turbo/services/crypto_price_service.dart';
 import 'package:ardrive/turbo/services/crypto_transaction_storage.dart';
@@ -342,16 +343,8 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
   }
 
   /// Format credits for display (e.g., "0.25 Credits")
-  String _formatCredits(BigInt credits) {
-    final creditValue = credits.toDouble() / 1e12;
-    if (creditValue >= 1) {
-      return '${creditValue.toStringAsFixed(2)} Credits';
-    } else if (creditValue >= 0.01) {
-      return '${creditValue.toStringAsFixed(4)} Credits';
-    } else {
-      return '${creditValue.toStringAsFixed(6)} Credits';
-    }
-  }
+  /// Uses BigInt-safe formatting to preserve precision for large balances.
+  String _formatCredits(BigInt credits) => formatCreditsFromWinc(credits);
 }
 
 /// A full-screen modal wrapper for the unified crypto flow.

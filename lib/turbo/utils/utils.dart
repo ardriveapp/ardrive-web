@@ -9,6 +9,40 @@ double convertWinstonToAr(BigInt winston) {
   return winston / BigInt.from(1000000000000);
 }
 
+/// Formats a BigInt winc (winston credits) value as a human-readable credits string.
+///
+/// Uses BigInt-safe integer division to preserve precision for large balances.
+/// Automatically selects decimal places based on magnitude:
+/// - >= 1 credit: 2 decimal places (e.g., "1.50 Credits")
+/// - >= 0.01 credits: 4 decimal places (e.g., "0.0500 Credits")
+/// - < 0.01 credits: 6 decimal places (e.g., "0.005000 Credits")
+///
+/// 1 Credit = 10^12 winc (winston credits)
+String formatCreditsFromWinc(BigInt winc) {
+  // 1 Credit = 10^12 winc
+  final divisor = BigInt.from(1000000000000);
+  final wholeCredits = winc ~/ divisor;
+  final remainder = winc % divisor;
+
+  // Determine decimal places based on magnitude
+  if (wholeCredits >= BigInt.one) {
+    // >= 1 credit: show 2 decimal places
+    final scaledRemainder = (remainder * BigInt.from(100)) ~/ divisor;
+    final fractionalPart = scaledRemainder.toString().padLeft(2, '0');
+    return '$wholeCredits.$fractionalPart Credits';
+  } else if (remainder >= BigInt.from(10000000000)) {
+    // >= 0.01 credits: show 4 decimal places
+    final scaledRemainder = (remainder * BigInt.from(10000)) ~/ divisor;
+    final fractionalPart = scaledRemainder.toString().padLeft(4, '0');
+    return '0.$fractionalPart Credits';
+  } else {
+    // < 0.01 credits: show 6 decimal places
+    final scaledRemainder = (remainder * BigInt.from(1000000)) ~/ divisor;
+    final fractionalPart = scaledRemainder.toString().padLeft(6, '0');
+    return '0.$fractionalPart Credits';
+  }
+}
+
 /// Truncates a blockchain address for display.
 ///
 /// Shows the first [prefix] and last [suffix] characters with ellipsis.
