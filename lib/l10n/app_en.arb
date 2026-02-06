@@ -1688,6 +1688,18 @@
   },
   "paymentSuccessful": "Payment Successful!",
   "@paymentSuccessful": {},
+  "paymentSummaryPaid": "Paid",
+  "@paymentSummaryPaid": {
+    "description": "Label for the amount paid in payment summary"
+  },
+  "paymentSummaryCreditsAdded": "Credits added",
+  "@paymentSummaryCreditsAdded": {
+    "description": "Label for credits added in payment summary"
+  },
+  "paymentSummaryNewBalance": "New balance",
+  "@paymentSummaryNewBalance": {
+    "description": "Label for new balance in payment summary"
+  },
   "payPerFileEmphasized": "PAY PER FILE",
   "@payPerFileEmphasized": {
     "description": "Payment philosophy. Emphasized with upper case"

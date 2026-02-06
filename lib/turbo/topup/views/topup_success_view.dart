@@ -280,7 +280,7 @@ class _SuccessViewState extends State<SuccessView> {
                           if (widget.amountPaid != null)
                             _buildDetailRow(
                               context,
-                              'Paid',
+                              appLocalizationsOf(context).paymentSummaryPaid,
                               widget.amountPaid!,
                               colors,
                             ),
@@ -293,7 +293,8 @@ class _SuccessViewState extends State<SuccessView> {
                             const SizedBox(height: 12),
                             _buildDetailRowWithSubvalue(
                               context,
-                              'Credits added',
+                              appLocalizationsOf(context)
+                                  .paymentSummaryCreditsAdded,
                               widget.creditsReceived ?? '',
                               widget.storageEstimate != null
                                   ? _formatStorageSubvalue(
@@ -311,7 +312,8 @@ class _SuccessViewState extends State<SuccessView> {
                             const SizedBox(height: 12),
                             _buildDetailRowWithSubvalue(
                               context,
-                              'New balance',
+                              appLocalizationsOf(context)
+                                  .paymentSummaryNewBalance,
                               widget.newBalanceCredits ??
                                   widget.newBalanceStorage!,
                               widget.newBalanceCredits != null &&
