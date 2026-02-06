@@ -2,8 +2,11 @@ import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/config/crypto_network_config.dart';
+import 'package:ardrive/turbo/services/crypto_payment_service.dart';
 import 'package:ardrive/turbo/services/crypto_price_service.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
+import 'package:ardrive/turbo/services/wallet_signer_cache.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dart';
@@ -32,6 +35,9 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
   final activityTracker = context.read<ActivityTracker>();
   final sessionManager = TurboSessionManager();
   final appConfig = context.read<ConfigService>().config;
+
+  // Shared signer cache for the modal session
+  final signerCache = WalletSignerCache();
 
   final costCalculator = TurboCostCalculator(
     paymentService: context.read<PaymentService>(),
@@ -88,10 +94,27 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
           )..add(LoadInitialData()),
         ),
         BlocProvider(
-          create: (context) => UnifiedTopupBloc(
-            turbo: context.read<Turbo>(),
-            priceService: CryptoPriceService(httpClient: ArDriveHTTP()),
-          )..add(const UnifiedTopupStarted()),
+          create: (context) {
+            final httpClient = ArDriveHTTP();
+            final priceService = CryptoPriceService(httpClient: httpClient);
+            final configService = context.read<ConfigService>();
+            final environment = configService.config.useTurboUpload
+                ? 'production'
+                : 'development';
+            final networkConfig =
+                CryptoNetworkConfig.fromEnvironment(environment);
+
+            return UnifiedTopupBloc(
+              turbo: context.read<Turbo>(),
+              priceService: priceService,
+              cryptoPaymentService: CryptoPaymentService(
+                networkConfig: networkConfig,
+                httpClient: httpClient,
+                signerCache: signerCache,
+                priceService: priceService,
+              ),
+            )..add(const UnifiedTopupStarted());
+          },
         ),
       ],
       child: TurboModal(parentContext: modalContext),
@@ -166,6 +189,7 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
             amountPaid: state.amountPaid,
             creditsReceived: state.creditsReceived,
             storageEstimate: state.storageEstimate,
+            newBalanceCredits: state.newBalanceCredits,
             newBalanceStorage: state.newBalanceStorage,
           );
         } else if (state is TurboTopupFlowShowingErrorView) {
@@ -292,8 +316,22 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
             currentBalanceStorage: state.currentBalanceStorage,
             creditsToReceive: state.creditsToReceive,
             newBalanceStorage: state.newBalanceStorage,
-            onSuccess: () {
+            onSuccessWithData: ({
+              String? amountPaid,
+              String? creditsReceived,
+              String? storageEstimate,
+              String? newBalanceCredits,
+              String? newBalanceStorage,
+            }) {
+              // Pop the modal and show success dialog (same as credit card flow)
               Navigator.of(context).pop();
+              _showSuccessDialog(
+                amountPaid: amountPaid,
+                creditsReceived: creditsReceived,
+                storageEstimate: storageEstimate,
+                newBalanceCredits: newBalanceCredits,
+                newBalanceStorage: newBalanceStorage,
+              );
             },
             onCancel: () {
               Navigator.of(context).pop();
@@ -434,21 +472,21 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
     String? amountPaid,
     String? creditsReceived,
     String? storageEstimate,
+    String? newBalanceCredits,
     String? newBalanceStorage,
   }) {
     // Use parentContext since the current context is invalid after pop()
+    // TurboSuccessView has its own modal structure, so we don't wrap it
     showArDriveDialog(
       widget.parentContext,
-      content: ArDriveStandardModal(
+      content: SizedBox(
         width: 575,
-        content: Hero(
-          tag: 'turbo_success',
-          child: TurboSuccessView(
-            amountPaid: amountPaid,
-            creditsReceived: creditsReceived,
-            storageEstimate: storageEstimate,
-            newBalanceStorage: newBalanceStorage,
-          ),
+        child: TurboSuccessView(
+          amountPaid: amountPaid,
+          creditsReceived: creditsReceived,
+          storageEstimate: storageEstimate,
+          newBalanceCredits: newBalanceCredits,
+          newBalanceStorage: newBalanceStorage,
         ),
       ),
       barrierDismissible: false,

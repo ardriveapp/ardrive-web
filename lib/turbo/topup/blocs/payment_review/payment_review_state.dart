@@ -78,6 +78,10 @@ class PaymentReviewPaymentModelLoaded extends PaymentReviewState {
   /// New balance after purchase
   BigInt get newBalance => currentBalance + creditsWinc;
 
+  /// New balance formatted as credits (e.g., "0.75 Credits")
+  /// Uses BigInt-safe integer division to preserve precision for large balances.
+  String get newBalanceCredits => formatCreditsFromWinc(newBalance);
+
   PaymentReviewPaymentModelLoaded copyWith({
     String? total,
     String? subTotal,

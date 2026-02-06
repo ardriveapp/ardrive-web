@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/turbo/services/crypto_payment_service.dart';
 import 'package:ardrive/turbo/services/crypto_price_service.dart';
 import 'package:ardrive/turbo/topup/components/amount_mode_toggle.dart';
 import 'package:ardrive/turbo/topup/components/fiat_preset_selector.dart';
@@ -30,6 +31,7 @@ const double defaultFiatAmount = 0;
 class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
   final Turbo turbo;
   final CryptoPriceService priceService;
+  final CryptoPaymentService? cryptoPaymentService;
 
   StreamSubscription<PriceEstimate>? _priceEstimateSubscription;
 
@@ -39,6 +41,7 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
   UnifiedTopupBloc({
     required this.turbo,
     required this.priceService,
+    this.cryptoPaymentService,
   }) : super(const UnifiedTopupInitial()) {
     // Listen to price estimate changes from Turbo service
     _priceEstimateSubscription =
@@ -168,7 +171,21 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
     ));
 
     try {
-      // For crypto payments, convert token amount to USD first
+      // For crypto payments with cryptoPaymentService available,
+      // use token-specific pricing to avoid USD rounding issues
+      if (currentState.paymentMethod == PaymentMethod.crypto &&
+          currentState.selectedToken != null &&
+          cryptoPaymentService != null) {
+        await _handleCryptoAmountSelected(
+          currentState,
+          currentState.selectedToken!,
+          event.amount,
+          emit,
+        );
+        return;
+      }
+
+      // For crypto without cryptoPaymentService, convert token amount to USD
       double usdAmount;
       double? usdEquivalent;
 
@@ -212,6 +229,53 @@ class UnifiedTopupBloc extends Bloc<UnifiedTopupEvent, UnifiedTopupState> {
       }
     } catch (e, s) {
       logger.e('Error computing price estimate', e, s);
+      if (state is UnifiedTopupLoaded) {
+        emit((state as UnifiedTopupLoaded).copyWith(
+          isLoadingQuote: false,
+          errorMessage: 'Failed to get price estimate',
+        ));
+      }
+    }
+  }
+
+  /// Handles crypto amount selection using token-specific pricing.
+  /// This avoids USD rounding issues for low-value tokens like ARIO.
+  Future<void> _handleCryptoAmountSelected(
+    UnifiedTopupLoaded currentState,
+    CryptoToken token,
+    double tokenAmount,
+    Emitter<UnifiedTopupState> emit,
+  ) async {
+    try {
+      // Get quote using token-specific pricing (no USD conversion/rounding)
+      final quote = await cryptoPaymentService!.getQuoteByTokenAmount(
+        token: token,
+        tokenAmount: tokenAmount,
+        promoCode: turbo.promoCode,
+        destinationAddress: null,
+      );
+
+      // Check if state is still valid
+      if (state is UnifiedTopupLoaded) {
+        final loadedState = state as UnifiedTopupLoaded;
+        final newBalanceStorage = await _calculateNewBalanceStorage(
+          loadedState.currentBalance,
+          quote.wincAmount,
+          loadedState.displayUnit,
+        );
+        emit(loadedState.copyWith(
+          fiatAmount: tokenAmount,
+          usdEquivalent: quote.usdValue,
+          creditsToReceive: quote.wincAmount,
+          estimatedStorage: formatStorageWithDynamicUnit(
+              quote.estimatedStorageGiB,
+              includeApprox: false),
+          newBalanceStorage: newBalanceStorage,
+          isLoadingQuote: false,
+        ));
+      }
+    } catch (e, s) {
+      logger.e('Error getting crypto quote', e, s);
       if (state is UnifiedTopupLoaded) {
         emit((state as UnifiedTopupLoaded).copyWith(
           isLoadingQuote: false,

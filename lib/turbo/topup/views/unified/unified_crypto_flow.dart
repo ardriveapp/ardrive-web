@@ -1,6 +1,7 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/turbo/config/crypto_network_config.dart';
+import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/turbo/services/crypto_payment_service.dart';
 import 'package:ardrive/turbo/services/crypto_price_service.dart';
 import 'package:ardrive/turbo/services/crypto_transaction_storage.dart';
@@ -48,8 +49,18 @@ class UnifiedCryptoFlow extends StatefulWidget {
   /// New balance storage estimate (e.g., "7.3 GB")
   final String newBalanceStorage;
 
-  /// Callback when payment is successful
+  /// Callback when payment is successful (simple, no data)
   final VoidCallback? onSuccess;
+
+  /// Callback when payment is successful with formatted data for success dialog
+  /// Parameters: amountPaid, creditsReceived, storageEstimate, newBalanceCredits, newBalanceStorage
+  final void Function({
+    String? amountPaid,
+    String? creditsReceived,
+    String? storageEstimate,
+    String? newBalanceCredits,
+    String? newBalanceStorage,
+  })? onSuccessWithData;
 
   /// Callback when user cancels or closes
   final VoidCallback? onCancel;
@@ -66,6 +77,7 @@ class UnifiedCryptoFlow extends StatefulWidget {
     BigInt? creditsToReceive,
     this.newBalanceStorage = '0 GB',
     this.onSuccess,
+    this.onSuccessWithData,
     this.onCancel,
     this.onBack,
   })  : currentTurboBalance = currentTurboBalance ?? BigInt.zero,
@@ -80,6 +92,7 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
   EthereumWalletService? _ethereumWalletService;
   SolanaWalletService? _solanaWalletService;
   bool _isInitialized = false;
+  bool _successCallbackScheduled = false;
 
   @override
   void initState() {
@@ -178,6 +191,12 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
   }
 
   Widget _buildContent(BuildContext context, CryptoTopupState state) {
+    // Reset success callback flag when not in success state
+    // This ensures the callback can be scheduled again for a new flow
+    if (state is! CryptoTopupSuccess) {
+      _successCallbackScheduled = false;
+    }
+
     // When token is preselected, show streamlined wallet connection flow
     // (skips the InlineCryptoPayment which has redundant token selection)
     if (widget.preselectedToken != null) {
@@ -249,6 +268,37 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
 
     // Success state
     if (state is CryptoTopupSuccess) {
+      // If onSuccessWithData is provided, call it with formatted data
+      // This allows the parent to show a separate success dialog (like credit card flow)
+      if (widget.onSuccessWithData != null) {
+        // Only schedule callback once per success to avoid multiple invocations
+        if (!_successCallbackScheduled) {
+          _successCallbackScheduled = true;
+
+          // Format the data for the success dialog
+          final amountPaid = _formatAmountPaid(state);
+          final creditsReceived = _formatCredits(state.creditsAdded);
+          final newBalanceCredits = state.newBalance != null
+              ? _formatCredits(state.newBalance!)
+              : null;
+
+          // Schedule the callback after the build
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            widget.onSuccessWithData!(
+              amountPaid: amountPaid,
+              creditsReceived: creditsReceived,
+              storageEstimate: state.storageEstimate,
+              newBalanceCredits: newBalanceCredits,
+              newBalanceStorage: state.newBalanceStorage,
+            );
+          });
+        }
+
+        // Show a brief loading indicator while transitioning
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      // Fallback: render CryptoSuccessView inline (old behavior)
       return CryptoSuccessView(
         key: const ValueKey('success'),
         onDone: () {
@@ -270,6 +320,31 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
     // Default loading
     return const Center(child: CircularProgressIndicator());
   }
+
+  /// Format amount paid for display (e.g., "100 ARIO ($25.00)")
+  String _formatAmountPaid(CryptoTopupSuccess state) {
+    final tokenAmount = state.tokenAmountSpent;
+    final symbol = state.token.symbol;
+    final usdValue = state.usdValue;
+
+    String tokenStr;
+    if (tokenAmount >= 1000) {
+      tokenStr = '${tokenAmount.toStringAsFixed(0)} $symbol';
+    } else if (tokenAmount >= 1) {
+      tokenStr = '${tokenAmount.toStringAsFixed(2)} $symbol';
+    } else {
+      tokenStr = '${tokenAmount.toStringAsFixed(4)} $symbol';
+    }
+
+    if (usdValue != null) {
+      return '$tokenStr (\$${usdValue.toStringAsFixed(2)})';
+    }
+    return tokenStr;
+  }
+
+  /// Format credits for display (e.g., "0.25 Credits")
+  /// Uses BigInt-safe formatting to preserve precision for large balances.
+  String _formatCredits(BigInt credits) => formatCreditsFromWinc(credits);
 }
 
 /// A full-screen modal wrapper for the unified crypto flow.

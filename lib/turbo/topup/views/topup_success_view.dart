@@ -15,6 +15,9 @@ class TurboSuccessView extends StatelessWidget {
   /// Storage estimate for credits received (e.g., "2.5 GB")
   final String? storageEstimate;
 
+  /// New balance after purchase (formatted credits, e.g., "0.75 Credits")
+  final String? newBalanceCredits;
+
   /// New balance after purchase (formatted storage, e.g., "7.5 GB")
   final String? newBalanceStorage;
 
@@ -23,6 +26,7 @@ class TurboSuccessView extends StatelessWidget {
     this.amountPaid,
     this.creditsReceived,
     this.storageEstimate,
+    this.newBalanceCredits,
     this.newBalanceStorage,
   });
 
@@ -37,6 +41,7 @@ class TurboSuccessView extends StatelessWidget {
       amountPaid: amountPaid,
       creditsReceived: creditsReceived,
       storageEstimate: storageEstimate,
+      newBalanceCredits: newBalanceCredits,
       newBalanceStorage: newBalanceStorage,
     );
   }
@@ -57,6 +62,9 @@ class SuccessView extends StatefulWidget {
   /// Storage estimate for credits received (e.g., "2.5 GB")
   final String? storageEstimate;
 
+  /// New balance after purchase (formatted credits, e.g., "0.75 Credits")
+  final String? newBalanceCredits;
+
   /// New balance after purchase (formatted storage, e.g., "7.5 GB")
   final String? newBalanceStorage;
 
@@ -69,6 +77,7 @@ class SuccessView extends StatefulWidget {
     this.amountPaid,
     this.creditsReceived,
     this.storageEstimate,
+    this.newBalanceCredits,
     this.newBalanceStorage,
   });
 
@@ -99,6 +108,14 @@ class _SuccessViewState extends State<SuccessView> {
       widget.storageEstimate != null ||
       widget.newBalanceStorage != null;
 
+  /// Formats storage value for display, adding ~ prefix only if not already present
+  String _formatStorageSubvalue(String storage) {
+    if (storage.startsWith('~')) {
+      return storage;
+    }
+    return '~$storage';
+  }
+
   Widget _buildDetailRow(
     BuildContext context,
     String label,
@@ -121,6 +138,48 @@ class _SuccessViewState extends State<SuccessView> {
             fontWeight: isBold ? ArFontWeight.bold : ArFontWeight.semiBold,
             color: colors.themeFgDefault,
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDetailRowWithSubvalue(
+    BuildContext context,
+    String label,
+    String value,
+    String? subvalue,
+    ArDriveColors colors, {
+    bool isHighlighted = false,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: ArDriveTypographyNew.of(context).paragraphSmall(
+            color: colors.themeFgMuted,
+          ),
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              value,
+              style: ArDriveTypographyNew.of(context).paragraphSmall(
+                fontWeight: ArFontWeight.semiBold,
+                color: isHighlighted
+                    ? colors.themeSuccessDefault
+                    : colors.themeFgDefault,
+              ),
+            ),
+            if (subvalue != null)
+              Text(
+                subvalue,
+                style: ArDriveTypographyNew.of(context).paragraphSmall(
+                  color: colors.themeFgMuted,
+                ),
+              ),
+          ],
         ),
       ],
     );
@@ -217,30 +276,53 @@ class _SuccessViewState extends State<SuccessView> {
                       ),
                       child: Column(
                         children: [
+                          // Amount paid
                           if (widget.amountPaid != null)
                             _buildDetailRow(
                               context,
-                              'Amount Paid',
+                              appLocalizationsOf(context).paymentSummaryPaid,
                               widget.amountPaid!,
                               colors,
                             ),
-                          if (widget.storageEstimate != null) ...[
-                            const SizedBox(height: 8),
-                            _buildDetailRow(
+                          // Credits added (with storage estimate)
+                          if (widget.creditsReceived != null ||
+                              widget.storageEstimate != null) ...[
+                            const SizedBox(height: 12),
+                            Divider(
+                                color: colors.themeBorderDefault, height: 1),
+                            const SizedBox(height: 12),
+                            _buildDetailRowWithSubvalue(
                               context,
-                              'Storage Added',
-                              widget.storageEstimate!,
+                              appLocalizationsOf(context)
+                                  .paymentSummaryCreditsAdded,
+                              widget.creditsReceived ?? '',
+                              widget.storageEstimate != null
+                                  ? _formatStorageSubvalue(
+                                      widget.storageEstimate!)
+                                  : null,
                               colors,
                             ),
                           ],
-                          if (widget.newBalanceStorage != null) ...[
-                            const SizedBox(height: 8),
-                            _buildDetailRow(
+                          // New balance (credits with storage as subvalue)
+                          if (widget.newBalanceCredits != null ||
+                              widget.newBalanceStorage != null) ...[
+                            const SizedBox(height: 12),
+                            Divider(
+                                color: colors.themeBorderDefault, height: 1),
+                            const SizedBox(height: 12),
+                            _buildDetailRowWithSubvalue(
                               context,
-                              'New Balance',
-                              widget.newBalanceStorage!,
+                              appLocalizationsOf(context)
+                                  .paymentSummaryNewBalance,
+                              widget.newBalanceCredits ??
+                                  widget.newBalanceStorage!,
+                              widget.newBalanceCredits != null &&
+                                      widget.newBalanceStorage != null
+                                  ? _formatStorageSubvalue(
+                                      widget.newBalanceStorage!)
+                                  : null,
                               colors,
-                              isBold: true,
+                              isHighlighted: true,
                             ),
                           ],
                         ],

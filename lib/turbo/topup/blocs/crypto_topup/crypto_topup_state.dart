@@ -581,6 +581,12 @@ class CryptoTopupSuccess extends CryptoTopupState {
   /// USD equivalent at time of purchase
   final double? usdValue;
 
+  /// Storage estimate for credits added (e.g., "2.5 GB")
+  final String? storageEstimate;
+
+  /// New balance storage estimate (e.g., "7.5 GB")
+  final String? newBalanceStorage;
+
   const CryptoTopupSuccess({
     required this.txId,
     required this.creditsAdded,
@@ -588,11 +594,21 @@ class CryptoTopupSuccess extends CryptoTopupState {
     required this.token,
     required this.tokenAmountSpent,
     this.usdValue,
+    this.storageEstimate,
+    this.newBalanceStorage,
   });
 
   @override
-  List<Object?> get props =>
-      [txId, creditsAdded, newBalance, token, tokenAmountSpent, usdValue];
+  List<Object?> get props => [
+        txId,
+        creditsAdded,
+        newBalance,
+        token,
+        tokenAmountSpent,
+        usdValue,
+        storageEstimate,
+        newBalanceStorage,
+      ];
 }
 
 // ============================================

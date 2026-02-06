@@ -1214,6 +1214,18 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     // Calculate new balance from current + credits added
     final newBalance = currentTurboBalance + event.creditsAdded;
 
+    // Get storage estimates from the quote
+    String? storageEstimate;
+    String? newBalanceStorageEstimate;
+
+    if (_currentQuote != null) {
+      storageEstimate = _currentQuote!.formattedStorage;
+
+      // Calculate new balance storage using the same method as confirmation
+      final storageValues = _calculateStorageValues(_currentQuote!);
+      newBalanceStorageEstimate = storageValues.newStorage;
+    }
+
     emit(CryptoTopupSuccess(
       txId: event.txId,
       creditsAdded: event.creditsAdded,
@@ -1221,6 +1233,8 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       tokenAmountSpent: _currentQuote?.tokenAmountDisplay ?? 0,
       usdValue: _currentQuote?.usdValue,
       newBalance: newBalance,
+      storageEstimate: storageEstimate,
+      newBalanceStorage: newBalanceStorageEstimate,
     ));
   }
 

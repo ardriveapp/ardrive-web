@@ -40,6 +40,7 @@ class TurboTopupFlowBloc
               amountPaid: event.amountPaid,
               creditsReceived: event.creditsReceived,
               storageEstimate: event.storageEstimate,
+              newBalanceCredits: event.newBalanceCredits,
               newBalanceStorage: event.newBalanceStorage,
             ),
           );

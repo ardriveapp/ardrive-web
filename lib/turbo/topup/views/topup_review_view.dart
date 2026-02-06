@@ -66,6 +66,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                 amountPaid: '\$${state.total}',
                 creditsReceived: state.credits,
                 storageEstimate: state.storageEstimate,
+                newBalanceCredits: state.newBalanceCredits,
                 newBalanceStorage: state.newBalanceStorage,
               ));
         } else if (state is PaymentReviewPaymentError) {
