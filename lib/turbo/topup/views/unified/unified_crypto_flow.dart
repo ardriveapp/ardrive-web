@@ -91,6 +91,7 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
   EthereumWalletService? _ethereumWalletService;
   SolanaWalletService? _solanaWalletService;
   bool _isInitialized = false;
+  bool _successCallbackScheduled = false;
 
   @override
   void initState() {
@@ -189,6 +190,12 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
   }
 
   Widget _buildContent(BuildContext context, CryptoTopupState state) {
+    // Reset success callback flag when not in success state
+    // This ensures the callback can be scheduled again for a new flow
+    if (state is! CryptoTopupSuccess) {
+      _successCallbackScheduled = false;
+    }
+
     // When token is preselected, show streamlined wallet connection flow
     // (skips the InlineCryptoPayment which has redundant token selection)
     if (widget.preselectedToken != null) {
@@ -263,23 +270,28 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
       // If onSuccessWithData is provided, call it with formatted data
       // This allows the parent to show a separate success dialog (like credit card flow)
       if (widget.onSuccessWithData != null) {
-        // Format the data for the success dialog
-        final amountPaid = _formatAmountPaid(state);
-        final creditsReceived = _formatCredits(state.creditsAdded);
-        final newBalanceCredits = state.newBalance != null
-            ? _formatCredits(state.newBalance!)
-            : null;
+        // Only schedule callback once per success to avoid multiple invocations
+        if (!_successCallbackScheduled) {
+          _successCallbackScheduled = true;
 
-        // Schedule the callback after the build
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          widget.onSuccessWithData!(
-            amountPaid: amountPaid,
-            creditsReceived: creditsReceived,
-            storageEstimate: state.storageEstimate,
-            newBalanceCredits: newBalanceCredits,
-            newBalanceStorage: state.newBalanceStorage,
-          );
-        });
+          // Format the data for the success dialog
+          final amountPaid = _formatAmountPaid(state);
+          final creditsReceived = _formatCredits(state.creditsAdded);
+          final newBalanceCredits = state.newBalance != null
+              ? _formatCredits(state.newBalance!)
+              : null;
+
+          // Schedule the callback after the build
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            widget.onSuccessWithData!(
+              amountPaid: amountPaid,
+              creditsReceived: creditsReceived,
+              storageEstimate: state.storageEstimate,
+              newBalanceCredits: newBalanceCredits,
+              newBalanceStorage: state.newBalanceStorage,
+            );
+          });
+        }
 
         // Show a brief loading indicator while transitioning
         return const Center(child: CircularProgressIndicator());
