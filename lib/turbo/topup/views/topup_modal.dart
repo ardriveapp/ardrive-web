@@ -36,6 +36,9 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
   final sessionManager = TurboSessionManager();
   final appConfig = context.read<ConfigService>().config;
 
+  // Shared signer cache for the modal session
+  final signerCache = WalletSignerCache();
+
   final costCalculator = TurboCostCalculator(
     paymentService: context.read<PaymentService>(),
   );
@@ -107,7 +110,7 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
               cryptoPaymentService: CryptoPaymentService(
                 networkConfig: networkConfig,
                 httpClient: httpClient,
-                signerCache: WalletSignerCache(),
+                signerCache: signerCache,
                 priceService: priceService,
               ),
             )..add(const UnifiedTopupStarted());
