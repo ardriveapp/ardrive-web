@@ -108,6 +108,14 @@ class _SuccessViewState extends State<SuccessView> {
       widget.storageEstimate != null ||
       widget.newBalanceStorage != null;
 
+  /// Formats storage value for display, adding ~ prefix only if not already present
+  String _formatStorageSubvalue(String storage) {
+    if (storage.startsWith('~')) {
+      return storage;
+    }
+    return '~$storage';
+  }
+
   Widget _buildDetailRow(
     BuildContext context,
     String label,
@@ -288,7 +296,8 @@ class _SuccessViewState extends State<SuccessView> {
                               'Credits added',
                               widget.creditsReceived ?? '',
                               widget.storageEstimate != null
-                                  ? '~${widget.storageEstimate}'
+                                  ? _formatStorageSubvalue(
+                                      widget.storageEstimate!)
                                   : null,
                               colors,
                             ),
@@ -307,7 +316,8 @@ class _SuccessViewState extends State<SuccessView> {
                                   widget.newBalanceStorage!,
                               widget.newBalanceCredits != null &&
                                       widget.newBalanceStorage != null
-                                  ? '~${widget.newBalanceStorage}'
+                                  ? _formatStorageSubvalue(
+                                      widget.newBalanceStorage!)
                                   : null,
                               colors,
                               isHighlighted: true,

@@ -2,8 +2,11 @@ import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/config/crypto_network_config.dart';
+import 'package:ardrive/turbo/services/crypto_payment_service.dart';
 import 'package:ardrive/turbo/services/crypto_price_service.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
+import 'package:ardrive/turbo/services/wallet_signer_cache.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_form/payment_form_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dart';
@@ -88,10 +91,27 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
           )..add(LoadInitialData()),
         ),
         BlocProvider(
-          create: (context) => UnifiedTopupBloc(
-            turbo: context.read<Turbo>(),
-            priceService: CryptoPriceService(httpClient: ArDriveHTTP()),
-          )..add(const UnifiedTopupStarted()),
+          create: (context) {
+            final httpClient = ArDriveHTTP();
+            final priceService = CryptoPriceService(httpClient: httpClient);
+            final configService = context.read<ConfigService>();
+            final environment = configService.config.useTurboUpload
+                ? 'production'
+                : 'development';
+            final networkConfig =
+                CryptoNetworkConfig.fromEnvironment(environment);
+
+            return UnifiedTopupBloc(
+              turbo: context.read<Turbo>(),
+              priceService: priceService,
+              cryptoPaymentService: CryptoPaymentService(
+                networkConfig: networkConfig,
+                httpClient: httpClient,
+                signerCache: WalletSignerCache(),
+                priceService: priceService,
+              ),
+            )..add(const UnifiedTopupStarted());
+          },
         ),
       ],
       child: TurboModal(parentContext: modalContext),
