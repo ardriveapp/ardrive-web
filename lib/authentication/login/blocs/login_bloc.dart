@@ -19,6 +19,7 @@ import 'package:ardrive/services/ethereum/provider/ethereum_provider_wallet.dart
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -925,6 +926,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   String _getGatewayUrl() {
-    return _configService.config.defaultArweaveGatewayUrl ?? 'undefined';
+    return _configService.config.defaultArweaveGatewayUrl ?? graphqlGateway;
   }
 }

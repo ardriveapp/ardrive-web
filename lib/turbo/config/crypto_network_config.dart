@@ -1,4 +1,5 @@
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
+import 'package:ardrive/utils/constants.dart';
 
 /// Network configuration for cryptocurrency payments.
 ///
@@ -75,13 +76,13 @@ class CryptoNetworkConfig {
   // ============================================
 
   /// Arweave gateway URL (no testnet distinction)
-  String get arweaveGatewayUrl => 'https://arweave.net';
+  String get arweaveGatewayUrl => arnsResolverUrl;
 
   /// AO gateway URL
-  String get aoGatewayUrl => 'https://ao.arweave.net';
+  String get aoGatewayUrl => resolveArnsNameUrl('ao');
 
   /// AO block explorer URL
-  String get aoExplorerUrl => 'https://scan.ar.io';
+  String get aoExplorerUrl => resolveArnsNameUrl('scan');
 
   // ============================================
   // Contract Addresses
@@ -161,7 +162,7 @@ class CryptoNetworkConfig {
     return switch (token) {
       CryptoToken.arioAO ||
       CryptoToken.arioAOViaEth =>
-        'https://scan.ar.io/#/message/$txId',
+        '$aoExplorerUrl/#/message/$txId',
       CryptoToken.arioBase ||
       CryptoToken.usdcBase ||
       CryptoToken.ethBase =>

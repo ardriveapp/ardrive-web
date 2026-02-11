@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:ardrive_crypto/ardrive_crypto.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive_uploader/src/constants.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
@@ -87,7 +88,7 @@ class _UploadFormState extends State<UploadForm> {
 
   void _uploadFile() async {
     final uploader = ArDriveUploader(
-      turboUploadUri: Uri.parse('https://arfs.arweave.net'),
+      turboUploadUri: Uri.parse(resolveArnsNameUrl('arfs')),
     );
 
     setState(() {

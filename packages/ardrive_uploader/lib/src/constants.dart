@@ -12,3 +12,10 @@ const List<String> supportedImageTypesForThumbnails = [
   'image/webp',
   'image/bmp',
 ];
+
+/// Arweave.net host for building resolver URLs (e.g. arfs.arweave.net).
+const String arweaveNetHost = 'arweave.net';
+
+/// Builds https://<name>.arweave.net from ARNS resolver name [name].
+String resolveArnsNameUrl(String name) =>
+    'https://$name.$arweaveNetHost';

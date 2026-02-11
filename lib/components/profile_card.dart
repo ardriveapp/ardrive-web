@@ -16,6 +16,7 @@ import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/services/config/config_service.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/components/turbo_balance_widget.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
@@ -593,7 +594,8 @@ class _ProfileCardState extends State<ProfileCard> {
       context,
       builder: (context) => GraphQLEndpointDialog(
         initialEndpoint:
-            context.read<ConfigService>().config.defaultArweaveGatewayUrl ?? '',
+            context.read<ConfigService>().config.defaultArweaveGatewayUrl ??
+                graphqlGateway,
         onSave: (newEndpoint) {
           const graphqlSuffix = '/graphql';
           final normalizedEndpoint = newEndpoint.endsWith(graphqlSuffix)

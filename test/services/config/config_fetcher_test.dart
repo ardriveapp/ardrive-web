@@ -4,6 +4,7 @@ import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/services/config/selected_gateway.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -176,9 +177,9 @@ void main() {
         stripePublishableKey: 'key',
         defaultArweaveGatewayUrl: 'url',
         allowedDataItemSizeForTurbo: 100,
-        defaultArweaveGatewayForDataRequest: const SelectedGateway(
+        defaultArweaveGatewayForDataRequest: SelectedGateway(
           label: 'Arweave.net',
-          url: 'https://arweave.net',
+          url: arnsResolverUrl,
         ),
       );
 

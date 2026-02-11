@@ -4,6 +4,7 @@ import 'package:ardrive/gar/presentation/widgets/gateway_input_modal.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -86,7 +87,7 @@ class SettingsSubmenu extends StatelessWidget {
   void _showGraphQLEndpointDialog(BuildContext context) {
     final configService = context.read<ConfigService>();
     final currentEndpoint =
-        configService.config.defaultArweaveGatewayUrl ?? 'https://arweave.net';
+        configService.config.defaultArweaveGatewayUrl ?? graphqlGateway;
 
     showArDriveDialog(
       context,
