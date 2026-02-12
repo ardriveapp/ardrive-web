@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:ardrive_crypto/ardrive_crypto.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
-import 'package:ardrive_uploader/src/constants.dart';
 import 'package:ardrive_uploader/src/cost_calculator.dart';
 import 'package:ardrive_uploader/src/utils/data_bundler_utils.dart';
 import 'package:ardrive_uploader/src/utils/logger.dart';

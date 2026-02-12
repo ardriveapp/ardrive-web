@@ -177,8 +177,8 @@ void main() {
         stripePublishableKey: 'key',
         defaultArweaveGatewayUrl: 'url',
         allowedDataItemSizeForTurbo: 100,
-        defaultArweaveGatewayForDataRequest: SelectedGateway(
-          label: 'Arweave.net',
+        defaultArweaveGatewayForDataRequest: const SelectedGateway(
+          label: 'ArDrive.net',
           url: arnsResolverUrl,
         ),
       );
