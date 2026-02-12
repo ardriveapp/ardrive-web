@@ -85,6 +85,7 @@ abstract class ArDriveUploader {
 
     final streamedUploadFactory = StreamedUploadFactory(
       turboUploadUri: turboUploadUri,
+      arweaveForD2n: arweave,
     );
 
     return _ArDriveUploader(

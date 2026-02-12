@@ -193,11 +193,20 @@ class AppState extends State<App> {
   Widget build(BuildContext context) {
     return MultiRepositoryProvider(
       providers: repositoryProviders,
-      child: ArDriveDevToolsShortcuts(
-        child: KeyboardHandler(
-          child: MultiBlocProvider(
-            providers: blocProviders,
-            child: BlocConsumer<ThemeSwitcherBloc, ThemeSwitcherState>(
+      child: Consumer<ConfigService>(
+        builder: (context, configService, child) {
+          return MultiRepositoryProvider(
+            key: ValueKey(
+                configService.config.defaultArweaveGatewayForDataRequest.url),
+            providers: gatewayDependentRepositoryProviders(context),
+            child: child!,
+          );
+        },
+        child: ArDriveDevToolsShortcuts(
+          child: KeyboardHandler(
+            child: MultiBlocProvider(
+              providers: blocProviders,
+              child: BlocConsumer<ThemeSwitcherBloc, ThemeSwitcherState>(
               listener: (context, state) {
                 if (state is ThemeSwitcherDarkTheme) {
                   ArDriveUIThemeSwitcher.changeTheme(ArDriveThemes.dark);
@@ -216,6 +225,7 @@ class AppState extends State<App> {
                   ),
                 );
               },
+              ),
             ),
           ),
         ),
@@ -388,7 +398,7 @@ class AppState extends State<App> {
           ),
         ),
         RepositoryProvider<ArweaveService>(create: (_) => arweave),
-        RepositoryProvider<ConfigService>(
+        ChangeNotifierProvider<ConfigService>(
           create: (_) => configService,
         ),
         RepositoryProvider<TurboUploadService>(
@@ -498,21 +508,31 @@ class AppState extends State<App> {
             ioFileAdapter: IOFileAdapter(),
           ),
         ),
-        // ArDriveUploader
+        RepositoryProvider(
+          create: (context) => ProfileLogoRepository(
+            localKeyValueStore,
+          ),
+        ),
+      ];
+
+  /// Providers that depend on the selected gateway. When the user changes
+  /// gateway from the menu, these are recreated so they use the new client.
+  List<SingleChildWidget> gatewayDependentRepositoryProviders(
+          BuildContext context) =>
+      [
         RepositoryProvider(
           create: (_) => ArDriveUploader(
-            arweave: arweave.client,
-            turboUploadUri:
-                Uri.parse(configService.config.defaultTurboUploadUrl!),
+            arweave: context.read<ArweaveService>().client,
+            turboUploadUri: Uri.parse(
+                context.read<ConfigService>().config.defaultTurboUploadUrl!),
             metadataGenerator: ARFSUploadMetadataGenerator(
               tagsGenerator: ARFSTagsGenetator(
                 appInfoServices: AppInfoServices(),
               ),
             ),
-            pstService: _.read<PstService>(),
+            pstService: context.read<PstService>(),
           ),
         ),
-
         RepositoryProvider(
           create: (context) => ThumbnailRepository(
             arDriveDownloader: ArDriveDownloader(
@@ -524,6 +544,7 @@ class AppState extends State<App> {
             arweaveService: context.read<ArweaveService>(),
             arDriveAuth: context.read<ArDriveAuth>(),
             arDriveUploader: ArDriveUploader(
+              arweave: context.read<ArweaveService>().client,
               turboUploadUri: Uri.parse(
                   context.read<ConfigService>().config.defaultTurboUploadUrl!),
             ),
@@ -535,11 +556,6 @@ class AppState extends State<App> {
         ),
         RepositoryProvider(
           create: (context) => createUploadRepository(context),
-        ),
-        RepositoryProvider(
-          create: (context) => ProfileLogoRepository(
-            localKeyValueStore,
-          ),
         ),
       ];
 }

@@ -112,6 +112,8 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
                 httpClient: httpClient,
                 signerCache: signerCache,
                 priceService: priceService,
+                arweaveGatewayUrl:
+                    configService.config.defaultArweaveGatewayForDataRequest.url,
               ),
             )..add(const UnifiedTopupStarted());
           },

@@ -19,12 +19,17 @@ import 'package:js/js.dart';
 /// - Managing balances
 class TurboSDKService {
   final CryptoNetworkConfig _networkConfig;
+  /// Arweave gateway URL for Turbo SDK (tx_anchor, price). When set, used instead of networkConfig.arweaveGatewayUrl.
+  final String? _arweaveGatewayUrl;
 
   /// Cached unauthenticated clients per token type
   final Map<String, Object> _unauthenticatedClients = {};
 
-  TurboSDKService({required CryptoNetworkConfig networkConfig})
-      : _networkConfig = networkConfig;
+  TurboSDKService({
+    required CryptoNetworkConfig networkConfig,
+    String? arweaveGatewayUrl,
+  })  : _networkConfig = networkConfig,
+        _arweaveGatewayUrl = arweaveGatewayUrl;
 
   /// Check if the Turbo SDK is available
   bool get isSDKAvailable => isTurboSDKLoaded;
@@ -198,6 +203,7 @@ class TurboSDKService {
     }
 
     final client = await createUnauthenticatedTurbo(
+      gatewayUrl: _arweaveGatewayUrl ?? _networkConfig.arweaveGatewayUrl,
       paymentServiceUrl: _networkConfig.turboPaymentUrl,
       uploadServiceUrl: _networkConfig.turboUploadUrl,
       token: tokenType,
@@ -212,6 +218,7 @@ class TurboSDKService {
       CryptoToken token, Object signer) async {
     return await createAuthenticatedTurbo(
       signer: signer,
+      gatewayUrl: _arweaveGatewayUrl ?? _networkConfig.arweaveGatewayUrl,
       paymentServiceUrl: _networkConfig.turboPaymentUrl,
       uploadServiceUrl: _networkConfig.turboUploadUrl,
       token: token.turboTokenType,

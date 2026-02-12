@@ -32,6 +32,8 @@ class CryptoPaymentService {
   final ArDriveHTTP _httpClient;
   final WalletSignerCache _signerCache;
   final CryptoPriceService _priceService;
+  /// Arweave gateway URL for Turbo SDK (tx_anchor, price). Uses app config when set.
+  final String? _arweaveGatewayUrl;
 
   /// Cached winc per GiB for storage calculations
   BigInt? _wincPerGiB;
@@ -43,11 +45,13 @@ class CryptoPaymentService {
     required ArDriveHTTP httpClient,
     required WalletSignerCache signerCache,
     CryptoPriceService? priceService,
+    String? arweaveGatewayUrl,
   })  : _networkConfig = networkConfig,
         _httpClient = httpClient,
         _signerCache = signerCache,
         _priceService =
-            priceService ?? CryptoPriceService(httpClient: httpClient);
+            priceService ?? CryptoPriceService(httpClient: httpClient),
+        _arweaveGatewayUrl = arweaveGatewayUrl;
 
   /// Payment service URL
   String get _paymentUrl => _networkConfig.turboPaymentUrl;
@@ -414,6 +418,7 @@ class CryptoPaymentService {
         final signer = ArconnectSignerJS(arweaveWallet);
         return createAuthenticatedTurbo(
           signer: signer,
+          gatewayUrl: _arweaveGatewayUrl ?? _networkConfig.arweaveGatewayUrl,
           paymentServiceUrl: _paymentUrl,
           token: 'ario',
         );
@@ -466,6 +471,7 @@ class CryptoPaymentService {
         signer.publicKey = publicKeyBytes;
         return createAuthenticatedTurbo(
           signer: signer,
+          gatewayUrl: _arweaveGatewayUrl ?? _networkConfig.arweaveGatewayUrl,
           paymentServiceUrl: _paymentUrl,
           token: 'ario',
         );
@@ -709,6 +715,7 @@ class CryptoPaymentService {
     // Create authenticated Turbo client
     final turbo = await createAuthenticatedTurbo(
       signer: signer,
+      gatewayUrl: _arweaveGatewayUrl ?? _networkConfig.arweaveGatewayUrl,
       paymentServiceUrl: _paymentUrl,
       token: 'ario',
     );
@@ -784,6 +791,7 @@ class CryptoPaymentService {
     // Create authenticated Turbo client
     final turbo = await createAuthenticatedTurbo(
       signer: signer,
+      gatewayUrl: _arweaveGatewayUrl ?? _networkConfig.arweaveGatewayUrl,
       paymentServiceUrl: _paymentUrl,
       token: 'ario',
     );

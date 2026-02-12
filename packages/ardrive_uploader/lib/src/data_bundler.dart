@@ -42,11 +42,13 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
   final ARFSUploadMetadataGenerator metadataGenerator;
   final UploadCostEstimateCalculatorForAR costCalculator;
   final PstService pstService;
+  final Arweave arweaveService;
 
   DataTransactionBundler(
     this.metadataGenerator,
     this.costCalculator,
     this.pstService,
+    this.arweaveService,
   );
 
   @override
@@ -232,6 +234,7 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
           dataSize: size,
           tags: bundledDataItemTags,
           target: target.toString(),
+          arweave: arweaveService,
         );
       },
     );

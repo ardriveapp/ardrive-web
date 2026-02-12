@@ -35,6 +35,7 @@ class _DataBundlerFactory implements DataBundlerFactory {
             pstService: pstService,
           ),
           pstService,
+          arweaveService,
         );
       default:
         throw Exception('Invalid upload type');
@@ -98,16 +99,18 @@ class _UploadFileStrategyFactory implements UploadFileStrategyFactory {
 
 class StreamedUploadFactory {
   final Uri turboUploadUri;
+  final Arweave? arweaveForD2n;
 
   StreamedUploadFactory({
     required this.turboUploadUri,
+    this.arweaveForD2n,
   });
 
   Future<StreamedUpload> fromUploadType(
     UploadTask task,
   ) async {
     if (task.type == UploadType.d2n) {
-      return D2NStreamedUpload();
+      return D2NStreamedUpload(arweave: arweaveForD2n);
     } else if (task.type == UploadType.turbo) {
       bool useMultipart;
 

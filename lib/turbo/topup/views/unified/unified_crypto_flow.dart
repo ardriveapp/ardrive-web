@@ -118,6 +118,8 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
       httpClient: httpClient,
       signerCache: signerCache,
       priceService: priceService,
+      arweaveGatewayUrl:
+          configService.config.defaultArweaveGatewayForDataRequest.url,
     );
 
     _ethereumWalletService = EthereumWalletService(

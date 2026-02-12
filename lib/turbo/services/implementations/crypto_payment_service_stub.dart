@@ -21,6 +21,7 @@ class CryptoPaymentService {
     required ArDriveHTTP httpClient,
     required WalletSignerCache signerCache,
     CryptoPriceService? priceService,
+    String? arweaveGatewayUrl,
   });
 
   /// Get a quote for a cryptocurrency top-up.
