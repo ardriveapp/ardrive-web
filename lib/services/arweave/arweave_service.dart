@@ -13,6 +13,7 @@ import 'package:ardrive/services/arweave/get_segmented_transaction_from_drive_st
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
 import 'package:ardrive/utils/arfs_txs_filter.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
 import 'package:ardrive/utils/internet_checker.dart';
@@ -57,9 +58,12 @@ class ArweaveService {
     ArtemisClient? artemisClient,
   }) : _gql = artemisClient ??
             ArtemisClient(
-                '${configService.config.defaultArweaveGatewayUrl}/graphql') {
+                '${configService.config.defaultArweaveGatewayUrl ?? graphqlGateway}/graphql') {
+    final graphqlUrl =
+        '${configService.config.defaultArweaveGatewayUrl ?? graphqlGateway}/graphql';
     graphQLRetry = GraphQLRetry(
       _gql,
+      primaryGraphqlUrl: graphqlUrl,
       internetChecker: InternetChecker(
         connectivity: Connectivity(),
       ),
@@ -95,9 +99,12 @@ class ArweaveService {
   /// Updates the GraphQL endpoint used by the Artemis client and retry helper.
   void updateGraphQLEndpoint(String gatewayUrl) {
     final previousClient = _gql;
-    _gql = ArtemisClient('$gatewayUrl/graphql');
+    final graphqlUrl =
+        gatewayUrl.endsWith('/graphql') ? gatewayUrl : '$gatewayUrl/graphql';
+    _gql = ArtemisClient(graphqlUrl);
     graphQLRetry = GraphQLRetry(
       _gql,
+      primaryGraphqlUrl: graphqlUrl,
       internetChecker: InternetChecker(
         connectivity: Connectivity(),
       ),

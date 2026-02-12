@@ -157,11 +157,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "28e8f7f066c86f35412308cd9ebee30528f21985"
-      resolved-ref: "28e8f7f066c86f35412308cd9ebee30528f21985"
+      ref: "v3.11.0"
+      resolved-ref: "2cd9222835b4d5f507d379fcbfd7e59950df5cf1"
       url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
-    version: "3.9.0"
+    version: "3.11.0"
   async:
     dependency: "direct main"
     description:

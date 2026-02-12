@@ -11,13 +11,17 @@ import 'package:retry/retry.dart';
 /// Retry every GraphQL query for `ArtemisClient`
 class GraphQLRetry {
   GraphQLRetry(this._client,
-      {required InternetChecker internetChecker, ArioSDK? arioSDK})
+      {required InternetChecker internetChecker,
+      ArioSDK? arioSDK,
+      String? primaryGraphqlUrl})
       : _internetChecker = internetChecker,
-        _arioSDK = arioSDK;
+        _arioSDK = arioSDK,
+        _primaryGraphqlUrl = primaryGraphqlUrl;
 
   ArtemisClient _client;
   final InternetChecker _internetChecker;
   final ArioSDK? _arioSDK;
+  final String? _primaryGraphqlUrl;
 
   int currentGatewayIndex = 0;
 
@@ -38,14 +42,20 @@ class GraphQLRetry {
         maxAttempts: maxAttempts,
         onRetry: (exception) async {
           if (exception.toString().contains('429')) {
-            final gateways = await _arioSDK?.getGateways();
+            // Prefer the user's custom GraphQL URL when set
+            final primary = _primaryGraphqlUrl;
+            if (primary != null && primary.isNotEmpty) {
+              _client = ArtemisClient(primary);
+            } else {
+              final gateways = await _arioSDK?.getGateways();
 
-            if (gateways != null && gateways.isNotEmpty) {
-              _client = ArtemisClient(
-                'https://${gateways[currentGatewayIndex].settings.fqdn}/graphql',
-              );
+              if (gateways != null && gateways.isNotEmpty) {
+                _client = ArtemisClient(
+                  'https://${gateways[currentGatewayIndex].settings.fqdn}/graphql',
+                );
 
-              ++currentGatewayIndex;
+                ++currentGatewayIndex;
+              }
             }
           }
 

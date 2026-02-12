@@ -86,6 +86,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
           cipherIvString,
           (await arweave.download(
             txId: dataTx.id,
+            gatewayHost: _arweave.client.api.gatewayUrl.host,
             onProgress: (progress, speed) => logger.d(progress.toString()),
           ))
               .$1,
@@ -222,6 +223,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
 
     final streamDownloadResponse = await arweave.download(
       txId: dataTx.id,
+      gatewayHost: _arweave.client.api.gatewayUrl.host,
       onProgress: (progress, speed) => logger.d(progress.toString()),
       verifyDownload: verifyDownload,
     );
