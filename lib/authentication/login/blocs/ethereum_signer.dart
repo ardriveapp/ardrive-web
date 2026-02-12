@@ -12,7 +12,7 @@ class EthereumSigner implements Signer {
   SignatureConfig get signatureConfig => SignatureConfig.ethereum;
 
   @override
-  Future<Uint8List> sign(Uint8List message) {
+  Future<Uint8List> sign(Uint8List message, [String? context]) {
     return credentialsWithKnownAddress.signPersonalMessage(message);
   }
 }

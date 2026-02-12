@@ -20,7 +20,7 @@ class ArConnectWallet extends Wallet {
   }
 
   @override
-  Future<Uint8List> sign(Uint8List message) async {
+  Future<Uint8List> sign(Uint8List message, [String? context]) async {
     logger.d('ArConnectWallet.sign() called with ${message.length} bytes');
     try {
       final result = await arConnectService.getSignature(message);
@@ -32,7 +32,7 @@ class ArConnectWallet extends Wallet {
     }
   }
 
-  @override
+  /// Signs a [DataItem] via ArConnect. Not part of the arweave [Wallet] interface.
   Future<Uint8List> signDataItem(DataItem dataItem) async {
     logger.d('ArConnectWallet.signDataItem() called with ${dataItem.data.length} bytes');
     try {
