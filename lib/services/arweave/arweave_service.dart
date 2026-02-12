@@ -50,20 +50,19 @@ class ArweaveService {
   final DriveDao _driveDao;
   late ArtemisClient _gql;
 
+  static String _graphqlUrlFromGateway(String gatewayUrl) =>
+      gatewayUrl.endsWith('/graphql') ? gatewayUrl : '$gatewayUrl/graphql';
+
   ArweaveService(
     this.client,
     this._crypto,
     this._driveDao,
     ConfigService configService, {
     ArtemisClient? artemisClient,
-  }) : _gql = artemisClient ??
-            ArtemisClient(
-                '${configService.config.defaultArweaveGatewayUrl ?? graphqlGateway}/graphql') {
-    final graphqlUrl =
-        '${configService.config.defaultArweaveGatewayUrl ?? graphqlGateway}/graphql';
+  }) : _gql = artemisClient ?? ArtemisClient(_graphqlUrlFromGateway(
+            configService.config.defaultArweaveGatewayUrl ?? graphqlGateway)) {
     graphQLRetry = GraphQLRetry(
       _gql,
-      primaryGraphqlUrl: graphqlUrl,
       internetChecker: InternetChecker(
         connectivity: Connectivity(),
       ),
@@ -99,12 +98,10 @@ class ArweaveService {
   /// Updates the GraphQL endpoint used by the Artemis client and retry helper.
   void updateGraphQLEndpoint(String gatewayUrl) {
     final previousClient = _gql;
-    final graphqlUrl =
-        gatewayUrl.endsWith('/graphql') ? gatewayUrl : '$gatewayUrl/graphql';
+    final graphqlUrl = _graphqlUrlFromGateway(gatewayUrl);
     _gql = ArtemisClient(graphqlUrl);
     graphQLRetry = GraphQLRetry(
       _gql,
-      primaryGraphqlUrl: graphqlUrl,
       internetChecker: InternetChecker(
         connectivity: Connectivity(),
       ),

@@ -2,7 +2,7 @@
   "configVersion": 2,
   "defaultArweaveGatewayUrl": "https://ardrive.net",
   "defaultArweaveGatewayForDataRequest": {
-    "label": "Ardrive.net",
+    "label": "ArDrive.net",
     "url": "https://ardrive.net"
   },
   "useTurboUpload": true,

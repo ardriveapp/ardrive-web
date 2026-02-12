@@ -12,16 +12,13 @@ import 'package:retry/retry.dart';
 class GraphQLRetry {
   GraphQLRetry(this._client,
       {required InternetChecker internetChecker,
-      ArioSDK? arioSDK,
-      String? primaryGraphqlUrl})
+      ArioSDK? arioSDK})
       : _internetChecker = internetChecker,
-        _arioSDK = arioSDK,
-        _primaryGraphqlUrl = primaryGraphqlUrl;
+        _arioSDK = arioSDK;
 
   ArtemisClient _client;
   final InternetChecker _internetChecker;
   final ArioSDK? _arioSDK;
-  final String? _primaryGraphqlUrl;
 
   int currentGatewayIndex = 0;
 
@@ -42,20 +39,15 @@ class GraphQLRetry {
         maxAttempts: maxAttempts,
         onRetry: (exception) async {
           if (exception.toString().contains('429')) {
-            // Prefer the user's custom GraphQL URL when set
-            final primary = _primaryGraphqlUrl;
-            if (primary != null && primary.isNotEmpty) {
-              _client = ArtemisClient(primary);
-            } else {
-              final gateways = await _arioSDK?.getGateways();
-
-              if (gateways != null && gateways.isNotEmpty) {
-                _client = ArtemisClient(
-                  'https://${gateways[currentGatewayIndex].settings.fqdn}/graphql',
-                );
-
-                ++currentGatewayIndex;
-              }
+            // On 429, rotate to a different gateway to avoid the rate-limited URL.
+            // when available.
+            final gateways = await _arioSDK?.getGateways();
+            if (gateways != null && gateways.isNotEmpty) {
+              final index = currentGatewayIndex % gateways.length;
+              _client = ArtemisClient(
+                'https://${gateways[index].settings.fqdn}/graphql',
+              );
+              ++currentGatewayIndex;
             }
           }
 
