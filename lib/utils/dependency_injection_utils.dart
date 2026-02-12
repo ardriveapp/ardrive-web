@@ -19,7 +19,6 @@ import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:arweave/arweave.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pst/pst.dart';
@@ -95,10 +94,8 @@ UploadRepository createUploadRepository(BuildContext context) {
           appInfoServices: AppInfoServices(),
         ),
       ),
-      arweave: Arweave(
-        gatewayUrl: Uri.parse(
-            context.read<ConfigService>().config.defaultArweaveGatewayForDataRequest.url),
-      ),
+      arweave: context.read<ArweaveService>().client,
+      getArweave: () => context.read<ArweaveService>().client,
       pstService: context.read<PstService>(),
     ),
     driveDao: context.read<DriveDao>(),
