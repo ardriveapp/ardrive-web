@@ -72,7 +72,7 @@ abstract class ArDriveUploader {
       ),
     );
 
-    arweave ??= Arweave();
+    arweave ??= Arweave(api: ArweaveApi());
     pstService ??= PstService(
       communityOracle: CommunityOracle(
         ArDriveContractOracle([

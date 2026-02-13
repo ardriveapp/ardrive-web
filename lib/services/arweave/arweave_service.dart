@@ -92,7 +92,7 @@ class ArweaveService {
 
   /// Sets the gateway to use for all Data requests. No GraphQL requests are made with the new gateway.
   void setGateway(Gateway gateway) {
-    client = Arweave(gatewayUrl: getGatewayUri(gateway));
+    client = Arweave(api: ArweaveApi(gatewayUrl: getGatewayUri(gateway)));
   }
 
   /// Updates the GraphQL endpoint used by the Artemis client and retry helper.

@@ -40,10 +40,9 @@ class _DownloadService implements DownloadService {
       return Stream.fromIterable([data.toList()]);
     }
 
-    final gatewayHost = _arweave.client.api.gatewayUrl.host;
     final downloadResponse = await arweave.download(
       txId: fileTxId,
-      gatewayHost: gatewayHost,
+      arweave: _arweave.client,
     );
 
     return downloadResponse.$1;

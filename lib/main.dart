@@ -138,7 +138,9 @@ Future<void> _initializeServices() async {
 
   arweave = ArweaveService(
     Arweave(
-      gatewayUrl: Uri.parse(config.defaultArweaveGatewayForDataRequest.url),
+      api: ArweaveApi(
+        gatewayUrl: Uri.parse(config.defaultArweaveGatewayForDataRequest.url),
+      ),
     ),
     ArDriveCrypto(),
     db.driveDao,
