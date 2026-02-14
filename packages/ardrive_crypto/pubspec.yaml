@@ -11,7 +11,9 @@ dependencies:
   flutter:
     sdk: flutter
   arweave:
-    path: ../../arweave-dart
+    git:
+      url: https://github.com/ardriveapp/arweave-dart.git
+      ref: master
   ardrive_utils:
     path: ../ardrive_utils
   uuid: ^4.4.0
