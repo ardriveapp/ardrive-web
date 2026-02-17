@@ -390,7 +390,7 @@ class AppState extends State<App> {
           ),
         ),
         RepositoryProvider<ArweaveService>(create: (_) => arweave),
-        ChangeNotifierProvider<ConfigService>(
+        Provider<ConfigService>(
           create: (_) => configService,
         ),
         RepositoryProvider<TurboUploadService>(

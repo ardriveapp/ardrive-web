@@ -1,12 +1,10 @@
-import 'package:flutter/foundation.dart';
-
 import 'package:ardrive/services/config/config_fetcher.dart';
 import 'package:ardrive/utils/app_flavors.dart';
 import 'package:ardrive/utils/logger.dart';
 
 import 'config.dart';
 
-class ConfigService extends ChangeNotifier {
+class ConfigService {
   ConfigService({
     required ConfigFetcher configFetcher,
     required AppFlavors appFlavors,
@@ -60,7 +58,6 @@ class ConfigService extends ChangeNotifier {
   Future<void> updateAppConfig(AppConfig newConfig) async {
     await _configFetcher.saveConfigOnDevToolsPrefs(newConfig);
     _config = newConfig;
-    notifyListeners();
   }
 
   Future<void> resetDevToolsPrefs() async {
