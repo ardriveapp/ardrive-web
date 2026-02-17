@@ -9,6 +9,7 @@ import 'package:ardrive/turbo/services/solana_wallet_service.dart';
 import 'package:ardrive/turbo/services/wallet_signer_cache.dart';
 import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
 import 'package:ardrive/turbo/topup/views/crypto_topup/crypto_topup.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -139,13 +140,15 @@ class _CryptoPaymentOptionState extends State<CryptoPaymentOption> {
     final priceService = CryptoPriceService(httpClient: httpClient);
 
     // Create the crypto topup services
+    final gatewayUrl =
+        configService.config.arweaveGatewayUrl ?? defaultGraphqlGateway;
     final cryptoPaymentService = CryptoPaymentService(
       networkConfig: networkConfig,
       httpClient: httpClient,
       signerCache: signerCache,
       priceService: priceService,
-      arweaveGatewayUrl:
-          configService.config.arweaveGatewayForDataRequest.url,
+      arweaveGatewayUrl: gatewayUrl,
+      arnsResolverUrl: gatewayUrl,
     );
 
     final ethereumWalletService = EthereumWalletService(
@@ -292,13 +295,15 @@ Future<void> showCryptoTopupModalStandalone(
   final priceService = CryptoPriceService(httpClient: httpClient);
 
   // Create the crypto topup services
+  final gatewayUrl =
+      configService.config.arweaveGatewayUrl ?? defaultGraphqlGateway;
   final cryptoPaymentService = CryptoPaymentService(
     networkConfig: networkConfig,
     httpClient: httpClient,
     signerCache: signerCache,
     priceService: priceService,
-    arweaveGatewayUrl:
-        configService.config.arweaveGatewayForDataRequest.url,
+    arweaveGatewayUrl: gatewayUrl,
+    arnsResolverUrl: gatewayUrl,
   );
 
   final ethereumWalletService = EthereumWalletService(

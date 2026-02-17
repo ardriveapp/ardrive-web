@@ -22,6 +22,7 @@ import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
 import 'package:ardrive/turbo/topup/views/unified/unified_crypto_flow.dart';
 import 'package:ardrive/turbo/topup/views/unified_pay_view.dart';
 import 'package:ardrive/turbo/turbo.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
@@ -112,8 +113,10 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
                 httpClient: httpClient,
                 signerCache: signerCache,
                 priceService: priceService,
-                arweaveGatewayUrl:
-                    configService.config.arweaveGatewayForDataRequest.url,
+                arweaveGatewayUrl: configService.config.arweaveGatewayUrl ??
+                    defaultGraphqlGateway,
+                arnsResolverUrl: configService.config.arweaveGatewayUrl ??
+                    defaultGraphqlGateway,
               ),
             )..add(const UnifiedTopupStarted());
           },
