@@ -37,7 +37,7 @@ void main() {
       stripePublishableKey: 'new-key',
       allowedDataItemSizeForTurbo: 200,
       arweaveGatewayUrl: 'new-gateway',
-      defaultArweaveGatewayForDataRequest: const SelectedGateway(
+      arweaveGatewayForDataRequest: const SelectedGateway(
         label: 'new',
         url: 'new',
       ),
@@ -52,7 +52,7 @@ void main() {
         stripePublishableKey: 'stored-key',
         allowedDataItemSizeForTurbo: 100,
         arweaveGatewayUrl: 'stored-gateway',
-        defaultArweaveGatewayForDataRequest: const SelectedGateway(
+        arweaveGatewayForDataRequest: const SelectedGateway(
           label: 'stored',
           url: 'stored',
         ),
@@ -98,7 +98,7 @@ void main() {
         stripePublishableKey: 'old-key',
         allowedDataItemSizeForTurbo: 100,
         arweaveGatewayUrl: 'old-gateway',
-        defaultArweaveGatewayForDataRequest: const SelectedGateway(
+        arweaveGatewayForDataRequest: const SelectedGateway(
           label: 'old',
           url: 'old',
         ),
@@ -129,7 +129,7 @@ void main() {
         stripePublishableKey: 'old-key',
         allowedDataItemSizeForTurbo: 100,
         arweaveGatewayUrl: 'old-gateway',
-        defaultArweaveGatewayForDataRequest: const SelectedGateway(
+        arweaveGatewayForDataRequest: const SelectedGateway(
           label: 'old',
           url: 'old',
         ),
@@ -177,7 +177,7 @@ void main() {
         stripePublishableKey: 'key',
         arweaveGatewayUrl: 'url',
         allowedDataItemSizeForTurbo: 100,
-        defaultArweaveGatewayForDataRequest: const SelectedGateway(
+        arweaveGatewayForDataRequest: const SelectedGateway(
           label: 'ArDrive.net',
           url: arnsResolverUrl,
         ),

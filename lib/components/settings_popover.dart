@@ -64,7 +64,7 @@ class SettingsSubmenu extends StatelessWidget {
 
   void _showGatewayInputDialog(BuildContext context) {
     final configService = context.read<ConfigService>();
-    final currentGateway = configService.config.defaultArweaveGatewayForDataRequest.url;
+    final currentGateway = configService.config.arweaveGatewayForDataRequest.url;
 
     showGatewayInputModal(
       context,

@@ -145,7 +145,7 @@ class _CryptoPaymentOptionState extends State<CryptoPaymentOption> {
       signerCache: signerCache,
       priceService: priceService,
       arweaveGatewayUrl:
-          configService.config.defaultArweaveGatewayForDataRequest.url,
+          configService.config.arweaveGatewayForDataRequest.url,
     );
 
     final ethereumWalletService = EthereumWalletService(
@@ -298,7 +298,7 @@ Future<void> showCryptoTopupModalStandalone(
     signerCache: signerCache,
     priceService: priceService,
     arweaveGatewayUrl:
-        configService.config.defaultArweaveGatewayForDataRequest.url,
+        configService.config.arweaveGatewayForDataRequest.url,
   );
 
   final ethereumWalletService = EthereumWalletService(

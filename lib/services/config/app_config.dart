@@ -9,7 +9,7 @@ class AppConfig {
   @JsonKey(name: 'defaultArweaveGatewayUrl')
   final String? arweaveGatewayUrl;
   @JsonKey(name: 'defaultArweaveGatewayForDataRequest')
-  final SelectedGateway defaultArweaveGatewayForDataRequest;
+  final SelectedGateway arweaveGatewayForDataRequest;
   final bool useTurboUpload;
   final bool useTurboPayment;
   final String? defaultTurboUploadUrl;
@@ -24,7 +24,7 @@ class AppConfig {
 
   AppConfig({
     this.arweaveGatewayUrl,
-    this.defaultArweaveGatewayForDataRequest = const SelectedGateway(
+    this.arweaveGatewayForDataRequest = const SelectedGateway(
       label: 'ArDrive Turbo Gateway',
       url: 'https://ardrive.net',
     ),
@@ -43,7 +43,7 @@ class AppConfig {
 
   AppConfig copyWith({
     String? arweaveGatewayUrl,
-    SelectedGateway? defaultArweaveGatewayForDataRequest,
+    SelectedGateway? arweaveGatewayForDataRequest,
     bool? useTurboUpload,
     bool? useTurboPayment,
     String? defaultTurboUploadUrl,
@@ -59,9 +59,8 @@ class AppConfig {
     return AppConfig(
       arweaveGatewayUrl:
           arweaveGatewayUrl ?? this.arweaveGatewayUrl,
-      defaultArweaveGatewayForDataRequest:
-          defaultArweaveGatewayForDataRequest ??
-              this.defaultArweaveGatewayForDataRequest,
+      arweaveGatewayForDataRequest:
+          arweaveGatewayForDataRequest ?? this.arweaveGatewayForDataRequest,
       useTurboUpload: useTurboUpload ?? this.useTurboUpload,
       useTurboPayment: useTurboPayment ?? this.useTurboPayment,
       defaultTurboUploadUrl:
@@ -82,7 +81,7 @@ class AppConfig {
   }
 
   String getGatewayDomain() {
-    return defaultArweaveGatewayForDataRequest.url.split('://').last;
+    return arweaveGatewayForDataRequest.url.split('://').last;
   }
 
   String diff(AppConfig other) {

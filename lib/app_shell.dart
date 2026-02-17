@@ -478,7 +478,7 @@ class AppShellState extends State<AppShell> {
                                 bottom: 0,
                                 right: 20,
                                 child: Text(
-                                  'Using gateway: ${context.read<ConfigService>().config.defaultArweaveGatewayForDataRequest.url}',
+                                  'Using gateway: ${context.read<ConfigService>().config.arweaveGatewayForDataRequest.url}',
                                   style: ArDriveTypographyNew.of(context)
                                       .paragraphLarge(
                                     fontWeight: ArFontWeight.semiBold,

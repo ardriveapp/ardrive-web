@@ -340,7 +340,7 @@ class _ProfileCardState extends State<ProfileCard> {
                         ),
                         Text(
                           configService
-                              .config.defaultArweaveGatewayForDataRequest.url,
+                              .config.arweaveGatewayForDataRequest.url,
                           style: typography.paragraphNormal(
                             fontWeight: ArFontWeight.bold,
                           ),
@@ -580,7 +580,7 @@ class _ProfileCardState extends State<ProfileCard> {
       {required Function(String) onSave}) {
     final configService = context.read<ConfigService>();
     final currentGateway =
-        configService.config.defaultArweaveGatewayForDataRequest.url;
+        configService.config.arweaveGatewayForDataRequest.url;
 
     showGatewayInputModal(
       context,

@@ -354,7 +354,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       final dataTxId = item.dataTxId;
       state = state.copyWith(
           selectedFilePreviewUrl:
-              '${_configService.config.defaultArweaveGatewayForDataRequest.url}/$dataTxId');
+              '${_configService.config.arweaveGatewayForDataRequest.url}/$dataTxId');
     }
 
     _selectedItem = item;
@@ -454,7 +454,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   }
 
   Future<void> launchPreview(TxID dataTxId) => openUrl(
-      url: '${_configService.config.defaultArweaveGatewayForDataRequest.url}/$dataTxId');
+      url: '${_configService.config.arweaveGatewayForDataRequest.url}/$dataTxId');
 
   void sortFolder({
     DriveOrder contentOrderBy = DriveOrder.name,

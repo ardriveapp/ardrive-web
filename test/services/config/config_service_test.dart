@@ -28,7 +28,7 @@ void main() {
         (_) async => AppConfig(
           stripePublishableKey: '',
           allowedDataItemSizeForTurbo: 100,
-          defaultArweaveGatewayForDataRequest: const SelectedGateway(
+          arweaveGatewayForDataRequest: const SelectedGateway(
             label: 'ArDrive Turbo Gateway',
             url: 'https://ardrive.net',
           ),
@@ -75,7 +75,7 @@ void main() {
       final config = AppConfig(
         stripePublishableKey: '',
         allowedDataItemSizeForTurbo: 100,
-        defaultArweaveGatewayForDataRequest: const SelectedGateway(
+        arweaveGatewayForDataRequest: const SelectedGateway(
           label: 'ArDrive Turbo Gateway',
           url: 'https://ardrive.net',
         ),
@@ -100,7 +100,7 @@ void main() {
           .thenAnswer((_) async => AppConfig(
                 stripePublishableKey: '',
                 allowedDataItemSizeForTurbo: 100,
-                defaultArweaveGatewayForDataRequest: const SelectedGateway(
+                arweaveGatewayForDataRequest: const SelectedGateway(
                   label: 'ArDrive Turbo Gateway',
                   url: 'https://ardrive.net',
                 ),
@@ -127,7 +127,7 @@ void main() {
           .thenAnswer((_) async => AppConfig(
                 stripePublishableKey: '',
                 allowedDataItemSizeForTurbo: 100,
-                defaultArweaveGatewayForDataRequest: const SelectedGateway(
+                arweaveGatewayForDataRequest: const SelectedGateway(
                   label: 'ArDrive Turbo Gateway',
                   url: 'https://ardrive.net',
                 ),
@@ -150,7 +150,7 @@ void main() {
           .thenAnswer((_) async => AppConfig(
                 allowedDataItemSizeForTurbo: 100,
                 stripePublishableKey: '',
-                defaultArweaveGatewayForDataRequest: const SelectedGateway(
+                arweaveGatewayForDataRequest: const SelectedGateway(
                   label: 'ArDrive Turbo Gateway',
                   url: 'https://ardrive.net',
                 ),

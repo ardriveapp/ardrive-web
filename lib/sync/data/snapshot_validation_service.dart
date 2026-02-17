@@ -24,7 +24,7 @@ class SnapshotValidationService {
         final snapshotValidation = await http
             .head(
           Uri.parse(
-              '${appConfig.defaultArweaveGatewayForDataRequest.url}/${snapshotItem.txId}'),
+              '${appConfig.arweaveGatewayForDataRequest.url}/${snapshotItem.txId}'),
         )
             .timeout(
           validationTimeout,
