@@ -85,14 +85,15 @@ class ArDriveCrypto {
           rethrow;
         }
       } else if (signatureType == DriveSignatureType.v2) {
-        logger.d('Signing with v2 signature (wallet.signDataItem or DataItem.sign)');
         final owner = await wallet.getOwner();
         final dataItem = DataItem.withBlobData(data: message, owner: owner);
         dataItem.addTag('Action', 'Drive-Signature-V2');
         try {
           if (wallet is ArConnectWallet) {
+            logger.d('Signing with v2 signature (wallet.signDataItem)');
             walletSignature = await wallet.signDataItem(dataItem);
           } else {
+            logger.d('Signing with v2 signature (DataItem.sign)');
             await dataItem.sign(ArweaveSigner(wallet));
             walletSignature = utils.decodeBase64ToBytes(dataItem.signature);
           }
