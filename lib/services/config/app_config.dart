@@ -6,7 +6,8 @@ part 'app_config.g.dart';
 
 @JsonSerializable()
 class AppConfig {
-  final String? defaultArweaveGatewayUrl;
+  @JsonKey(name: 'defaultArweaveGatewayUrl')
+  final String? arweaveGatewayUrl;
   @JsonKey(name: 'defaultArweaveGatewayForDataRequest')
   final SelectedGateway defaultArweaveGatewayForDataRequest;
   final bool useTurboUpload;
@@ -22,7 +23,7 @@ class AppConfig {
   final int? configVersion;
 
   AppConfig({
-    this.defaultArweaveGatewayUrl,
+    this.arweaveGatewayUrl,
     this.defaultArweaveGatewayForDataRequest = const SelectedGateway(
       label: 'ArDrive Turbo Gateway',
       url: 'https://ardrive.net',
@@ -41,7 +42,7 @@ class AppConfig {
   });
 
   AppConfig copyWith({
-    String? defaultArweaveGatewayUrl,
+    String? arweaveGatewayUrl,
     SelectedGateway? defaultArweaveGatewayForDataRequest,
     bool? useTurboUpload,
     bool? useTurboPayment,
@@ -56,8 +57,8 @@ class AppConfig {
     int? configVersion,
   }) {
     return AppConfig(
-      defaultArweaveGatewayUrl:
-          defaultArweaveGatewayUrl ?? this.defaultArweaveGatewayUrl,
+      arweaveGatewayUrl:
+          arweaveGatewayUrl ?? this.arweaveGatewayUrl,
       defaultArweaveGatewayForDataRequest:
           defaultArweaveGatewayForDataRequest ??
               this.defaultArweaveGatewayForDataRequest,

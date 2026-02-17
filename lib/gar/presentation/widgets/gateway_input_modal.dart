@@ -142,7 +142,7 @@ class _GatewayInputModalState extends State<GatewayInputModal> {
             ArDriveTextFieldNew(
               controller: _gatewayController,
               label: 'Gateway URL',
-              hintText: graphqlGateway,
+              hintText: defaultGraphqlGateway,
               suffixIcon: _isLoading
                   ? const SizedBox(
                       width: 20,

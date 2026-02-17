@@ -926,6 +926,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   String _getGatewayUrl() {
-    return _configService.config.defaultArweaveGatewayUrl ?? graphqlGateway;
+    return _configService.config.arweaveGatewayUrl ?? defaultGraphqlGateway;
   }
 }

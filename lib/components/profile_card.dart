@@ -372,7 +372,7 @@ class _ProfileCardState extends State<ProfileCard> {
                           ),
                         ),
                         Text(
-                          configService.config.defaultArweaveGatewayUrl ??
+                          configService.config.arweaveGatewayUrl ??
                               'Not set',
                           style: typography.paragraphNormal(
                             fontWeight: ArFontWeight.bold,
@@ -594,8 +594,8 @@ class _ProfileCardState extends State<ProfileCard> {
       context,
       builder: (context) => GraphQLEndpointDialog(
         initialEndpoint:
-            context.read<ConfigService>().config.defaultArweaveGatewayUrl ??
-                graphqlGateway,
+            context.read<ConfigService>().config.arweaveGatewayUrl ??
+                defaultGraphqlGateway,
         onSave: (newEndpoint) {
           const graphqlSuffix = '/graphql';
           final normalizedEndpoint = newEndpoint.endsWith(graphqlSuffix)
@@ -605,7 +605,7 @@ class _ProfileCardState extends State<ProfileCard> {
           final configService = context.read<ConfigService>();
           configService.updateAppConfig(
             configService.config.copyWith(
-              defaultArweaveGatewayUrl: normalizedEndpoint,
+              arweaveGatewayUrl: normalizedEndpoint,
             ),
           );
           context

@@ -60,7 +60,7 @@ class ArweaveService {
     ConfigService configService, {
     ArtemisClient? artemisClient,
   }) : _gql = artemisClient ?? ArtemisClient(_graphqlUrlFromGateway(
-            configService.config.defaultArweaveGatewayUrl ?? graphqlGateway)) {
+            configService.config.arweaveGatewayUrl ?? defaultGraphqlGateway)) {
     graphQLRetry = GraphQLRetry(
       _gql,
       internetChecker: InternetChecker(

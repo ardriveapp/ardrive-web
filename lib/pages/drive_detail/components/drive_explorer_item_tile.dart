@@ -706,7 +706,7 @@ Future<void> handleMarkdownFileEdit(
     if (!context.mounted) return;
 
     // Get gateway URL and build data URL (GraphQL setting used for same gateway)
-    final gatewayUrl = configService.config.defaultArweaveGatewayUrl ??
+    final gatewayUrl = configService.config.arweaveGatewayUrl ??
         configService.config.defaultArweaveGatewayForDataRequest.url;
     final dataUrl = '$gatewayUrl/${fileItem.dataTxId}';
 

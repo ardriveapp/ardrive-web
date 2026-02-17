@@ -57,11 +57,11 @@ const String hasAcceptedCookiePolicyKey = 'hasAcceptedCookiePolicy';
 
 /// Default Arweave GraphQL gateway base URL. Used as fallback when config has no
 /// gateway and for any hardcoded arweave.net references.
-const String graphqlGateway = 'https://arweave.net';
+const String defaultGraphqlGateway = 'https://arweave.net';
 
 /// Default Arweave ARNS resolver base URL (e.g. name.arweave.net). Use for
 /// ARNS resolver or gateway host references.
-const String arnsResolverUrl = graphqlGateway;
+const String arnsResolverUrl = defaultGraphqlGateway;
 
 /// Arweave.net host for building resolver URLs (e.g. ao.arweave.net, arfs.arweave.net).
 const String arweaveNetHost = 'arweave.net';

@@ -87,7 +87,7 @@ class SettingsSubmenu extends StatelessWidget {
   void _showGraphQLEndpointDialog(BuildContext context) {
     final configService = context.read<ConfigService>();
     final currentEndpoint =
-        configService.config.defaultArweaveGatewayUrl ?? graphqlGateway;
+        configService.config.arweaveGatewayUrl ?? defaultGraphqlGateway;
 
     showArDriveDialog(
       context,
@@ -102,7 +102,7 @@ class SettingsSubmenu extends StatelessWidget {
 
           configService.updateAppConfig(
             configService.config.copyWith(
-              defaultArweaveGatewayUrl: normalizedEndpoint,
+              arweaveGatewayUrl: normalizedEndpoint,
             ),
           );
 
