@@ -50,8 +50,21 @@ class ArweaveService {
   final DriveDao _driveDao;
   late ArtemisClient _gql;
 
-  static String _graphqlUrlFromGateway(String gatewayUrl) =>
-      gatewayUrl.endsWith('/graphql') ? gatewayUrl : '$gatewayUrl/graphql';
+  static String _graphqlUrlFromGateway(String gatewayUrl) {
+    final uri = Uri.parse(gatewayUrl);
+    if (uri.path.endsWith('/graphql')) return gatewayUrl;
+
+    final path = uri.path;
+    String newPath;
+    if (path.isEmpty || path == '/') {
+      newPath = '/graphql';
+    } else if (path.endsWith('/')) {
+      newPath = '${path}graphql';
+    } else {
+      newPath = '$path/graphql';
+    }
+    return uri.replace(path: newPath).toString();
+  }
 
   ArweaveService(
     this.client,
