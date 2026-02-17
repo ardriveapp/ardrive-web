@@ -21,7 +21,8 @@ class ArConnectWallet extends Wallet {
 
   @override
   Future<Uint8List> sign(Uint8List message, [String? context]) async {
-    logger.d('ArConnectWallet.sign() called with ${message.length} bytes');
+    logger.d('ArConnectWallet.sign() called with ${message.length} bytes'
+        '${context != null ? ' (context: $context)' : ''}');
     try {
       final result = await arConnectService.getSignature(message);
       logger.d('ArConnectWallet.sign() successful, got ${result.length} bytes');
