@@ -59,3 +59,13 @@ const String hasAcceptedCookiePolicyKey = 'hasAcceptedCookiePolicy';
 /// gateway and for any hardcoded arweave.net references.
 const String defaultGraphqlGateway = 'https://arweave.net';
 
+/// Default Arweave ARNS resolver base URL (e.g. name.arweave.net). Use for
+/// ARNS resolver or gateway host references.
+const String arnsResolverUrl = 'https://ar.io';
+
+/// Builds the ARNS resolver URL for [name] using [arnsResolverUrl] as the base
+/// (e.g. name "ao" with base https://ar.io → https://ao.ar.io).
+String resolveArnsNameUrl(String name) {
+  final base = Uri.parse(arnsResolverUrl);
+  return base.replace(host: '$name.${base.host}').toString();
+}
