@@ -102,8 +102,12 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
             final environment = configService.config.useTurboUpload
                 ? 'production'
                 : 'development';
-            final networkConfig =
-                CryptoNetworkConfig.fromEnvironment(environment);
+            final gatewayUrl = configService.config.arweaveGatewayUrl ??
+                defaultGraphqlGateway;
+            final networkConfig = CryptoNetworkConfig.fromEnvironment(
+              environment,
+              arweaveGatewayUrl: gatewayUrl,
+            );
 
             return UnifiedTopupBloc(
               turbo: context.read<Turbo>(),
@@ -113,10 +117,8 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
                 httpClient: httpClient,
                 signerCache: signerCache,
                 priceService: priceService,
-                arweaveGatewayUrl: configService.config.arweaveGatewayUrl ??
-                    defaultGraphqlGateway,
-                arnsResolverUrl: configService.config.arweaveGatewayUrl ??
-                    defaultGraphqlGateway,
+                arweaveGatewayUrl: gatewayUrl,
+                arnsResolverUrl: arnsResolverUrl,
               ),
             )..add(const UnifiedTopupStarted());
           },

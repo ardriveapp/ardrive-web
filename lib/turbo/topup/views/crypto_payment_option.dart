@@ -128,7 +128,12 @@ class _CryptoPaymentOptionState extends State<CryptoPaymentOption> {
     // Determine environment for network config
     final environment =
         configService.config.useTurboUpload ? 'production' : 'development';
-    final networkConfig = CryptoNetworkConfig.fromEnvironment(environment);
+    final gatewayUrl =
+        configService.config.arweaveGatewayUrl ?? defaultGraphqlGateway;
+    final networkConfig = CryptoNetworkConfig.fromEnvironment(
+      environment,
+      arweaveGatewayUrl: gatewayUrl,
+    );
 
     // Create the HTTP client
     final httpClient = ArDriveHTTP();
@@ -140,8 +145,6 @@ class _CryptoPaymentOptionState extends State<CryptoPaymentOption> {
     final priceService = CryptoPriceService(httpClient: httpClient);
 
     // Create the crypto topup services
-    final gatewayUrl =
-        configService.config.arweaveGatewayUrl ?? defaultGraphqlGateway;
     final cryptoPaymentService = CryptoPaymentService(
       networkConfig: networkConfig,
       httpClient: httpClient,
@@ -283,7 +286,12 @@ Future<void> showCryptoTopupModalStandalone(
   // Determine environment for network config
   final environment =
       configService.config.useTurboUpload ? 'production' : 'development';
-  final networkConfig = CryptoNetworkConfig.fromEnvironment(environment);
+  final gatewayUrl =
+      configService.config.arweaveGatewayUrl ?? defaultGraphqlGateway;
+  final networkConfig = CryptoNetworkConfig.fromEnvironment(
+    environment,
+    arweaveGatewayUrl: gatewayUrl,
+  );
 
   // Create the HTTP client
   final httpClient = ArDriveHTTP();
@@ -295,8 +303,6 @@ Future<void> showCryptoTopupModalStandalone(
   final priceService = CryptoPriceService(httpClient: httpClient);
 
   // Create the crypto topup services
-  final gatewayUrl =
-      configService.config.arweaveGatewayUrl ?? defaultGraphqlGateway;
   final cryptoPaymentService = CryptoPaymentService(
     networkConfig: networkConfig,
     httpClient: httpClient,

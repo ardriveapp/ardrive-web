@@ -9,15 +9,30 @@ class CryptoNetworkConfig {
   /// Whether to use testnet configuration
   final bool isTestnet;
 
-  CryptoNetworkConfig({required this.isTestnet});
+  /// Arweave gateway URL from config (e.g. [ConfigService.config.arweaveGatewayUrl]).
+  final String _arweaveGatewayUrl;
+
+  CryptoNetworkConfig({
+    required this.isTestnet,
+    required String arweaveGatewayUrl,
+  }) : _arweaveGatewayUrl = arweaveGatewayUrl;
 
   /// Factory for creating config based on environment
   ///
   /// - Development: testnet by default (can toggle via debug menu)
   /// - Staging/Production: mainnet
-  factory CryptoNetworkConfig.fromEnvironment(String environment) {
+  ///
+  /// [arweaveGatewayUrl] must be from config (e.g. [ConfigService.config.arweaveGatewayUrl]
+  /// with a fallback like [defaultGraphqlGateway] at the call site).
+  factory CryptoNetworkConfig.fromEnvironment(
+    String environment, {
+    required String arweaveGatewayUrl,
+  }) {
     final isTestnet = environment == 'development';
-    return CryptoNetworkConfig(isTestnet: isTestnet);
+    return CryptoNetworkConfig(
+      isTestnet: isTestnet,
+      arweaveGatewayUrl: arweaveGatewayUrl,
+    );
   }
 
   // ============================================
@@ -75,8 +90,9 @@ class CryptoNetworkConfig {
   // Arweave / AO Configuration
   // ============================================
 
-  /// Arweave gateway URL (no testnet distinction)
-  String get arweaveGatewayUrl => arnsResolverUrl;
+  /// Arweave gateway URL (no testnet distinction).
+  /// Set from config service at construction.
+  String get arweaveGatewayUrl => _arweaveGatewayUrl;
 
   /// AO gateway URL
   String get aoGatewayUrl => resolveArnsNameUrl('ao');

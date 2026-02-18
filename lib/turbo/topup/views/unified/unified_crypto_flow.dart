@@ -108,14 +108,17 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
     // Determine environment for network config
     final environment =
         configService.config.useTurboUpload ? 'production' : 'development';
-    final networkConfig = CryptoNetworkConfig.fromEnvironment(environment);
+    final gatewayUrl =
+        configService.config.arweaveGatewayUrl ?? defaultGraphqlGateway;
+    final networkConfig = CryptoNetworkConfig.fromEnvironment(
+      environment,
+      arweaveGatewayUrl: gatewayUrl,
+    );
 
     // Create services
     final httpClient = ArDriveHTTP();
     final signerCache = WalletSignerCache();
     final priceService = CryptoPriceService(httpClient: httpClient);
-    final gatewayUrl =
-        configService.config.arweaveGatewayUrl ?? defaultGraphqlGateway;
     final cryptoPaymentService = CryptoPaymentService(
       networkConfig: networkConfig,
       httpClient: httpClient,
