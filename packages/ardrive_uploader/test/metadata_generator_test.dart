@@ -11,12 +11,12 @@ import 'package:test/test.dart';
 
 class MockAppInfoServices extends Mock implements AppInfoServices {}
 
-class MockARFSTagsGenetator extends Mock implements ARFSTagsGenetator {}
+class MockARFSTagsGenerator extends Mock implements ARFSTagsGenerator {}
 
 void main() {
   late MockAppInfoServices mockAppInfoServices;
-  late MockARFSTagsGenetator mockARFSTagsGenetator;
-  late ARFSTagsGenetator tagsGenerator;
+  late MockARFSTagsGenerator mockARFSTagsGenerator;
+  late ARFSTagsGenerator tagsGenerator;
   late ARFSUploadMetadataGenerator metadataGenerator;
   late AppInfo appInfo; // Assuming AppInfo is a class you have defined
 
@@ -33,10 +33,10 @@ void main() {
 
   setUp(() {
     mockAppInfoServices = MockAppInfoServices();
-    tagsGenerator = ARFSTagsGenetator(appInfoServices: mockAppInfoServices);
-    mockARFSTagsGenetator = MockARFSTagsGenetator();
+    tagsGenerator = ARFSTagsGenerator(appInfoServices: mockAppInfoServices);
+    mockARFSTagsGenerator = MockARFSTagsGenerator();
     metadataGenerator = ARFSUploadMetadataGenerator(
-      tagsGenerator: mockARFSTagsGenetator,
+      tagsGenerator: mockARFSTagsGenerator,
     );
 
     // Mock AppInfo
@@ -99,7 +99,7 @@ void main() {
           parentFolderId: 'parentFolderId',
         );
 
-        when(() => mockARFSTagsGenetator.generateTags(argsForD2NWithUTags))
+        when(() => mockARFSTagsGenerator.generateTags(argsForD2NWithUTags))
             .thenReturn({
           'data-item': [
             Tag('data-item-tag-name', 'data-item-tag-value'),
@@ -146,8 +146,8 @@ void main() {
         expect(metadata.metadataTxId, 'metadataTxId');
 
         /// We are verifying if the $U tags are being passed when using the
-        /// ARFSTagsGenetator uploading to D2N
-        verify(() => mockARFSTagsGenetator.generateTags(argsForD2NWithUTags));
+        /// ARFSTagsGenerator uploading to D2N
+        verify(() => mockARFSTagsGenerator.generateTags(argsForD2NWithUTags));
       });
 
       test('generates metadata for standard private file input for D2N',
@@ -161,7 +161,7 @@ void main() {
           parentFolderId: 'parentFolderId',
         );
 
-        when(() => mockARFSTagsGenetator.generateTags(any())).thenReturn({
+        when(() => mockARFSTagsGenerator.generateTags(any())).thenReturn({
           'data-item': [
             Tag('data-item-tag-name', 'data-item-tag-value'),
           ],
@@ -207,9 +207,9 @@ void main() {
         expect(metadata.metadataTxId, 'metadataTxId');
 
         /// We are verifying if the $U tags are being passed when using the
-        /// ARFSTagsGenetator uploading to D2N
+        /// ARFSTagsGenerator uploading to D2N
         verify(() =>
-            mockARFSTagsGenetator.generateTags(argsForD2NWithUTagsPrivate));
+            mockARFSTagsGenerator.generateTags(argsForD2NWithUTagsPrivate));
       });
 
       test('generates metadata for standard public file input for Turbo',
@@ -223,7 +223,7 @@ void main() {
           parentFolderId: 'parentFolderId',
         );
 
-        when(() => mockARFSTagsGenetator.generateTags(any())).thenReturn({
+        when(() => mockARFSTagsGenerator.generateTags(any())).thenReturn({
           'data-item': [
             Tag('data-item-tag-name', 'data-item-tag-value'),
           ],
@@ -268,7 +268,7 @@ void main() {
 
         expect(metadata.metadataTxId, 'metadataTxId');
 
-        verify(() => mockARFSTagsGenetator.generateTags(argsForTurboPublic));
+        verify(() => mockARFSTagsGenerator.generateTags(argsForTurboPublic));
       });
       test('generates metadata for standard private file input for Turbo',
           () async {
@@ -281,7 +281,7 @@ void main() {
           parentFolderId: 'parentFolderId',
         );
 
-        when(() => mockARFSTagsGenetator.generateTags(any())).thenReturn({
+        when(() => mockARFSTagsGenerator.generateTags(any())).thenReturn({
           'data-item': [
             Tag('data-item-tag-name', 'data-item-tag-value'),
           ],
@@ -326,12 +326,12 @@ void main() {
 
         expect(metadata.metadataTxId, 'metadataTxId');
 
-        verify(() => mockARFSTagsGenetator.generateTags(argsForTurboPrivate));
+        verify(() => mockARFSTagsGenerator.generateTags(argsForTurboPrivate));
       });
     });
   });
 
-  group('ARFSTagsGenetator', () {
+  group('ARFSTagsGenerator', () {
     test('Throws if driveId is null when creating a file', () {
       // Define standard ARFSTagsArgs
       var args = ARFSTagsArgs(

@@ -509,7 +509,7 @@ class AppState extends State<App> {
                     configService.config.defaultTurboUploadUrl!),
                 getArweaveForD2n: () => arweaveService.client,
                 metadataGenerator: ARFSUploadMetadataGenerator(
-                  tagsGenerator: ARFSTagsGenetator(
+                  tagsGenerator: ARFSTagsGenerator(
                     appInfoServices: AppInfoServices(),
                   ),
                 ),

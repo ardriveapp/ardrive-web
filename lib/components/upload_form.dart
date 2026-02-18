@@ -76,7 +76,7 @@ Future<void> promptToUpload(
       turboUploadUri: Uri.parse(configService.config.defaultTurboUploadUrl!),
       getArweaveForD2n: () => context.read<ArweaveService>().client,
       metadataGenerator: ARFSUploadMetadataGenerator(
-        tagsGenerator: ARFSTagsGenetator(
+        tagsGenerator: ARFSTagsGenerator(
           appInfoServices: AppInfoServices(),
         ),
       ),

@@ -63,7 +63,7 @@ abstract class ArDriveUploader {
     PstService? pstService,
   }) {
     metadataGenerator ??= ARFSUploadMetadataGenerator(
-      tagsGenerator: ARFSTagsGenetator(
+      tagsGenerator: ARFSTagsGenerator(
         appInfoServices: AppInfoServices(),
       ),
     );
