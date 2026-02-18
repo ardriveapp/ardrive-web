@@ -59,7 +59,7 @@ abstract class ArDriveUploader {
   factory ArDriveUploader({
     ARFSUploadMetadataGenerator? metadataGenerator,
     required Uri turboUploadUri,
-    Arweave? arweave,
+    required Arweave Function() getArweaveForD2n,
     PstService? pstService,
   }) {
     metadataGenerator ??= ARFSUploadMetadataGenerator(
@@ -68,7 +68,6 @@ abstract class ArDriveUploader {
       ),
     );
 
-    arweave ??= Arweave(api: ArweaveApi());
     pstService ??= PstService(
       communityOracle: CommunityOracle(
         ArDriveContractOracle([
@@ -78,14 +77,14 @@ abstract class ArDriveUploader {
     );
 
     final dataBundlerFactory = DataBundlerFactory(
-      arweaveService: arweave,
+      arweaveService: getArweaveForD2n(),
       pstService: pstService,
       metadataGenerator: metadataGenerator,
     );
 
     final streamedUploadFactory = StreamedUploadFactory(
       turboUploadUri: turboUploadUri,
-      arweaveForD2n: arweave,
+      getArweaveForD2n: getArweaveForD2n,
     );
 
     return _ArDriveUploader(

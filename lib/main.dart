@@ -508,9 +508,9 @@ class AppState extends State<App> {
               builder: (context, _) {
                 return RepositoryProvider<ArDriveUploader>.value(
                   value: ArDriveUploader(
-                    arweave: arweaveService.client,
                     turboUploadUri: Uri.parse(
                         configService.config.defaultTurboUploadUrl!),
+                    getArweaveForD2n: () => arweaveService.client,
                     metadataGenerator: ARFSUploadMetadataGenerator(
                       tagsGenerator: ARFSTagsGenetator(
                         appInfoServices: AppInfoServices(),

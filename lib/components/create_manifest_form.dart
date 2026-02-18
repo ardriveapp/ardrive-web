@@ -63,12 +63,12 @@ Future<void> promptToCreateManifest(
               ArDriveUploader(
                 turboUploadUri:
                     Uri.parse(configService.config.defaultTurboUploadUrl!),
+                getArweaveForD2n: () => context.read<ArweaveService>().client,
                 metadataGenerator: ARFSUploadMetadataGenerator(
                   tagsGenerator: ARFSTagsGenetator(
                     appInfoServices: AppInfoServices(),
                   ),
                 ),
-                arweave: context.read<ArweaveService>().client,
                 pstService: pst,
               ),
               context.read<FolderRepository>(),

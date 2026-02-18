@@ -6,9 +6,9 @@ import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:arweave/arweave.dart';
 
 class D2NStreamedUpload implements StreamedUpload<UploadItem> {
-  D2NStreamedUpload({required Arweave arweave}) : _arweave = arweave;
+  D2NStreamedUpload({required Arweave Function() getArweave}) : _getArweave = getArweave;
 
-  final Arweave _arweave;
+  final Arweave Function() _getArweave;
   UploadAborter? _aborter;
 
   @override
@@ -31,7 +31,7 @@ class D2NStreamedUpload implements StreamedUpload<UploadItem> {
 
     final progressStreamTask = await uploadTransaction(
       (uploadItem).data,
-      _arweave,
+      _getArweave(),
     ).run();
     Completer<StreamedUploadResult> upload = Completer<StreamedUploadResult>();
 

@@ -99,18 +99,18 @@ class _UploadFileStrategyFactory implements UploadFileStrategyFactory {
 
 class StreamedUploadFactory {
   final Uri turboUploadUri;
-  final Arweave arweaveForD2n;
+  final Arweave Function() getArweaveForD2n;
 
   StreamedUploadFactory({
     required this.turboUploadUri,
-    required this.arweaveForD2n,
+    required this.getArweaveForD2n,
   });
 
   Future<StreamedUpload> fromUploadType(
     UploadTask task,
   ) async {
     if (task.type == UploadType.d2n) {
-      return D2NStreamedUpload(arweave: arweaveForD2n);
+      return D2NStreamedUpload(getArweave: getArweaveForD2n);
     } else if (task.type == UploadType.turbo) {
       bool useMultipart;
 

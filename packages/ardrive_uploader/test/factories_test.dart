@@ -103,7 +103,7 @@ void main() {
       mockArweave = MockArweave();
       uploadFactory = StreamedUploadFactory(
         turboUploadUri: mockUri,
-        arweaveForD2n: mockArweave,
+        getArweaveForD2n: () => mockArweave,
       );
     });
 
