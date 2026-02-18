@@ -151,7 +151,7 @@ class _CryptoPaymentOptionState extends State<CryptoPaymentOption> {
       signerCache: signerCache,
       priceService: priceService,
       arweaveGatewayUrl: gatewayUrl,
-      arnsResolverUrl: gatewayUrl,
+      arnsResolverUrl: arnsResolverUrl,
     );
 
     final ethereumWalletService = EthereumWalletService(
@@ -309,7 +309,7 @@ Future<void> showCryptoTopupModalStandalone(
     signerCache: signerCache,
     priceService: priceService,
     arweaveGatewayUrl: gatewayUrl,
-    arnsResolverUrl: gatewayUrl,
+    arnsResolverUrl: arnsResolverUrl,
   );
 
   final ethereumWalletService = EthereumWalletService(

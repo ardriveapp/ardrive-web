@@ -125,7 +125,7 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
       signerCache: signerCache,
       priceService: priceService,
       arweaveGatewayUrl: gatewayUrl,
-      arnsResolverUrl: gatewayUrl,
+      arnsResolverUrl: arnsResolverUrl,
     );
 
     _ethereumWalletService = EthereumWalletService(
