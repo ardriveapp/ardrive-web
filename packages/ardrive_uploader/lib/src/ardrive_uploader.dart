@@ -61,10 +61,6 @@ abstract class ArDriveUploader {
     required Uri turboUploadUri,
     Arweave? arweave,
     PstService? pstService,
-    /// When set, the current Arweave client is read at use time (e.g. when
-    /// creating a bundle or D2N upload). Use this so gateway changes apply
-    /// without recreating the uploader (avoids sign-out).
-    Arweave? Function()? getArweave,
   }) {
     metadataGenerator ??= ARFSUploadMetadataGenerator(
       tagsGenerator: ARFSTagsGenetator(
@@ -85,13 +81,11 @@ abstract class ArDriveUploader {
       arweaveService: arweave,
       pstService: pstService,
       metadataGenerator: metadataGenerator,
-      arweaveGetter: getArweave,
     );
 
     final streamedUploadFactory = StreamedUploadFactory(
       turboUploadUri: turboUploadUri,
       arweaveForD2n: arweave,
-      arweaveGetter: getArweave,
     );
 
     return _ArDriveUploader(

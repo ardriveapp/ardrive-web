@@ -14,17 +14,12 @@ class _DataBundlerFactory implements DataBundlerFactory {
   final ARFSUploadMetadataGenerator metadataGenerator;
   final Arweave arweaveService;
   final PstService pstService;
-  final Arweave? Function()? arweaveGetter;
 
   _DataBundlerFactory({
     required this.metadataGenerator,
     required this.arweaveService,
     required this.pstService,
-    this.arweaveGetter,
   });
-
-  Arweave get _currentArweave =>
-      (arweaveGetter != null ? arweaveGetter!() : null) ?? arweaveService;
 
   @override
   DataBundler createDataBundler(UploadType type) {
@@ -32,16 +27,15 @@ class _DataBundlerFactory implements DataBundlerFactory {
       case UploadType.turbo:
         return BDIDataBundler(metadataGenerator);
       case UploadType.d2n:
-        final arweave = _currentArweave;
         return DataTransactionBundler(
           metadataGenerator,
           UploadCostEstimateCalculatorForAR(
             arCostToUsd: ConvertArToUSD(),
-            arweaveService: arweave,
+            arweaveService: arweaveService,
             pstService: pstService,
           ),
           pstService,
-          arweave,
+          arweaveService,
         );
       default:
         throw Exception('Invalid upload type');
@@ -56,13 +50,11 @@ abstract class DataBundlerFactory {
     required Arweave arweaveService,
     required PstService pstService,
     required ARFSUploadMetadataGenerator metadataGenerator,
-    Arweave? Function()? arweaveGetter,
   }) {
     return _DataBundlerFactory(
       metadataGenerator: metadataGenerator,
       arweaveService: arweaveService,
       pstService: pstService,
-      arweaveGetter: arweaveGetter,
     );
   }
 }
@@ -108,22 +100,17 @@ class _UploadFileStrategyFactory implements UploadFileStrategyFactory {
 class StreamedUploadFactory {
   final Uri turboUploadUri;
   final Arweave? arweaveForD2n;
-  final Arweave? Function()? arweaveGetter;
 
   StreamedUploadFactory({
     required this.turboUploadUri,
     this.arweaveForD2n,
-    this.arweaveGetter,
   });
-
-  Arweave? get _currentArweaveForD2n =>
-      arweaveGetter != null ? arweaveGetter!() : arweaveForD2n;
 
   Future<StreamedUpload> fromUploadType(
     UploadTask task,
   ) async {
     if (task.type == UploadType.d2n) {
-      return D2NStreamedUpload(arweave: _currentArweaveForD2n);
+      return D2NStreamedUpload(arweave: arweaveForD2n);
     } else if (task.type == UploadType.turbo) {
       bool useMultipart;
 

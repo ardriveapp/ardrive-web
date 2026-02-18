@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:ardrive/entities/drive_signature.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -49,6 +50,10 @@ class ArweaveService {
   final ArDriveCrypto _crypto;
   final DriveDao _driveDao;
   late ArtemisClient _gql;
+
+  /// Notifier that increments when the gateway changes. Listen to this to rebuild
+  /// dependents (e.g. [ArDriveUploader]) so they use the new gateway.
+  final ValueNotifier<int> uploaderRebuildTrigger = ValueNotifier(0);
 
   static String _graphqlUrlFromGateway(String gatewayUrl) {
     final uri = Uri.parse(gatewayUrl);
@@ -108,7 +113,18 @@ class ArweaveService {
     client = Arweave(api: ArweaveApi(gatewayUrl: getGatewayUri(gateway)));
   }
 
-  /// Updates the GraphQL endpoint used by the Artemis client and retry helper.
+  static Uri _baseGatewayUriFromUrl(String gatewayUrl) {
+    final uri = Uri.parse(gatewayUrl);
+    final path = uri.path;
+    if (path.endsWith('/graphql')) {
+      final basePath = path.substring(0, path.length - 8);
+      return uri.replace(path: basePath.isEmpty ? '/' : basePath);
+    }
+    return uri;
+  }
+
+  /// Updates the GraphQL endpoint and Arweave API client to use [gatewayUrl],
+  /// then notifies so uploader and other dependents can rebuild.
   void updateGraphQLEndpoint(String gatewayUrl) {
     final previousClient = _gql;
     final graphqlUrl = _graphqlUrlFromGateway(gatewayUrl);
@@ -121,6 +137,11 @@ class ArweaveService {
       arioSDK: ArioSDKFactory().create(),
     );
     previousClient.dispose();
+
+    client = Arweave(
+      api: ArweaveApi(gatewayUrl: _baseGatewayUriFromUrl(gatewayUrl)),
+    );
+    uploaderRebuildTrigger.value++;
   }
 
   int bytesToChunks(int bytes) {

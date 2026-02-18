@@ -500,46 +500,51 @@ class AppState extends State<App> {
             ioFileAdapter: IOFileAdapter(),
           ),
         ),
-        // ArDriveUploader - getArweave so gateway changes (select gateway menu)
-        // apply without recreating providers (avoids sign-out).
-        RepositoryProvider(
-          create: (_) => ArDriveUploader(
-            arweave: arweave.client,
-            getArweave: () => arweave.client,
-            turboUploadUri:
-                Uri.parse(configService.config.defaultTurboUploadUrl!),
-            metadataGenerator: ARFSUploadMetadataGenerator(
-              tagsGenerator: ARFSTagsGenetator(
-                appInfoServices: AppInfoServices(),
-              ),
-            ),
-            pstService: _.read<PstService>(),
-          ),
-        ),
-        RepositoryProvider(
-          create: (context) => ThumbnailRepository(
-            arDriveDownloader: ArDriveDownloader(
-              arweave: context.read<ArweaveService>(),
-              ardriveIo: ArDriveIO(),
-              ioFileAdapter: IOFileAdapter(),
-            ),
-            driveDao: context.read<DriveDao>(),
-            arweaveService: context.read<ArweaveService>(),
-            arDriveAuth: context.read<ArDriveAuth>(),
-            arDriveUploader: ArDriveUploader(
-              arweave: context.read<ArweaveService>().client,
-              getArweave: () => context.read<ArweaveService>().client,
-              turboUploadUri: Uri.parse(
-                  context.read<ConfigService>().config.defaultTurboUploadUrl!),
-            ),
-            turboUploadService: context.read<TurboUploadService>(),
-          ),
-        ),
-        RepositoryProvider(
-          create: (context) => createArDriveUploadPreparationManager(context),
-        ),
-        RepositoryProvider(
-          create: (context) => createUploadRepository(context),
+        SingleChildBuilder(
+          builder: (context, child) {
+            final arweaveService = context.read<ArweaveService>();
+            return ListenableBuilder(
+              listenable: arweaveService.uploaderRebuildTrigger,
+              builder: (context, _) {
+                return RepositoryProvider<ArDriveUploader>.value(
+                  value: ArDriveUploader(
+                    arweave: arweaveService.client,
+                    turboUploadUri: Uri.parse(
+                        configService.config.defaultTurboUploadUrl!),
+                    metadataGenerator: ARFSUploadMetadataGenerator(
+                      tagsGenerator: ARFSTagsGenetator(
+                        appInfoServices: AppInfoServices(),
+                      ),
+                    ),
+                    pstService: context.read<PstService>(),
+                  ),
+                  child: RepositoryProvider(
+                    create: (context) => ThumbnailRepository(
+                      arDriveDownloader: ArDriveDownloader(
+                        arweave: context.read<ArweaveService>(),
+                        ardriveIo: ArDriveIO(),
+                        ioFileAdapter: IOFileAdapter(),
+                      ),
+                      driveDao: context.read<DriveDao>(),
+                      arweaveService: context.read<ArweaveService>(),
+                      arDriveAuth: context.read<ArDriveAuth>(),
+                      arDriveUploader: context.read<ArDriveUploader>(),
+                      turboUploadService: context.read<TurboUploadService>(),
+                    ),
+                    child: RepositoryProvider(
+                      create: (context) =>
+                          createArDriveUploadPreparationManager(context),
+                      child: RepositoryProvider(
+                        create: (context) =>
+                            createUploadRepository(context),
+                        child: child,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          },
         ),
         RepositoryProvider(
           create: (context) => ProfileLogoRepository(
