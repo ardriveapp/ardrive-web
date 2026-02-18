@@ -50,10 +50,6 @@ class ArweaveService {
   final DriveDao _driveDao;
   late ArtemisClient _gql;
 
-  /// Notifier that increments when the gateway changes. Listen to this to rebuild
-  /// dependents (e.g. [ArDriveUploader]) so they use the new gateway.
-  final ValueNotifier<int> uploaderRebuildTrigger = ValueNotifier(0);
-
   static String _graphqlUrlFromGateway(String gatewayUrl) {
     final uri = Uri.parse(gatewayUrl);
     if (uri.path.endsWith('/graphql')) return gatewayUrl;
@@ -140,7 +136,6 @@ class ArweaveService {
     client = Arweave(
       api: ArweaveApi(gatewayUrl: _baseGatewayUriFromUrl(gatewayUrl)),
     );
-    uploaderRebuildTrigger.value++;
   }
 
   int bytesToChunks(int bytes) {

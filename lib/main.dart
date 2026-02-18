@@ -503,46 +503,41 @@ class AppState extends State<App> {
         SingleChildBuilder(
           builder: (context, child) {
             final arweaveService = context.read<ArweaveService>();
-            return ListenableBuilder(
-              listenable: arweaveService.uploaderRebuildTrigger,
-              builder: (context, _) {
-                return RepositoryProvider<ArDriveUploader>.value(
-                  value: ArDriveUploader(
-                    turboUploadUri: Uri.parse(
-                        configService.config.defaultTurboUploadUrl!),
-                    getArweaveForD2n: () => arweaveService.client,
-                    metadataGenerator: ARFSUploadMetadataGenerator(
-                      tagsGenerator: ARFSTagsGenetator(
-                        appInfoServices: AppInfoServices(),
-                      ),
-                    ),
-                    pstService: context.read<PstService>(),
+            return RepositoryProvider<ArDriveUploader>.value(
+              value: ArDriveUploader(
+                turboUploadUri: Uri.parse(
+                    configService.config.defaultTurboUploadUrl!),
+                getArweaveForD2n: () => arweaveService.client,
+                metadataGenerator: ARFSUploadMetadataGenerator(
+                  tagsGenerator: ARFSTagsGenetator(
+                    appInfoServices: AppInfoServices(),
                   ),
+                ),
+                pstService: context.read<PstService>(),
+              ),
+              child: RepositoryProvider(
+                create: (context) => ThumbnailRepository(
+                  arDriveDownloader: ArDriveDownloader(
+                    arweave: context.read<ArweaveService>(),
+                    ardriveIo: ArDriveIO(),
+                    ioFileAdapter: IOFileAdapter(),
+                  ),
+                  driveDao: context.read<DriveDao>(),
+                  arweaveService: context.read<ArweaveService>(),
+                  arDriveAuth: context.read<ArDriveAuth>(),
+                  arDriveUploader: context.read<ArDriveUploader>(),
+                  turboUploadService: context.read<TurboUploadService>(),
+                ),
+                child: RepositoryProvider(
+                  create: (context) =>
+                      createArDriveUploadPreparationManager(context),
                   child: RepositoryProvider(
-                    create: (context) => ThumbnailRepository(
-                      arDriveDownloader: ArDriveDownloader(
-                        arweave: context.read<ArweaveService>(),
-                        ardriveIo: ArDriveIO(),
-                        ioFileAdapter: IOFileAdapter(),
-                      ),
-                      driveDao: context.read<DriveDao>(),
-                      arweaveService: context.read<ArweaveService>(),
-                      arDriveAuth: context.read<ArDriveAuth>(),
-                      arDriveUploader: context.read<ArDriveUploader>(),
-                      turboUploadService: context.read<TurboUploadService>(),
-                    ),
-                    child: RepositoryProvider(
-                      create: (context) =>
-                          createArDriveUploadPreparationManager(context),
-                      child: RepositoryProvider(
-                        create: (context) =>
-                            createUploadRepository(context),
-                        child: child,
-                      ),
-                    ),
+                    create: (context) =>
+                        createUploadRepository(context),
+                    child: child,
                   ),
-                );
-              },
+                ),
+              ),
             );
           },
         ),
