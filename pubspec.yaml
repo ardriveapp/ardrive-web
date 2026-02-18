@@ -53,7 +53,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: 4.0.0
+      ref: v4.0.0
   ario_sdk:
     path: ./packages/ario_sdk
   cryptography: ^2.0.5
@@ -167,7 +167,7 @@ dependency_overrides:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: 4.0.0
+      ref: v4.0.0
 
   ardrive_io:
     path: ./packages/ardrive_io
