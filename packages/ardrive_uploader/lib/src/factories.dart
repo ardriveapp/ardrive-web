@@ -99,11 +99,11 @@ class _UploadFileStrategyFactory implements UploadFileStrategyFactory {
 
 class StreamedUploadFactory {
   final Uri turboUploadUri;
-  final Arweave? arweaveForD2n;
+  final Arweave arweaveForD2n;
 
   StreamedUploadFactory({
     required this.turboUploadUri,
-    this.arweaveForD2n,
+    required this.arweaveForD2n,
   });
 
   Future<StreamedUpload> fromUploadType(
