@@ -13,9 +13,14 @@ const List<String> supportedImageTypesForThumbnails = [
   'image/bmp',
 ];
 
-/// Arweave.net host for building resolver URLs (e.g. arfs.arweave.net).
-const String arweaveNetHost = 'arweave.net';
+/// ARNS resolver base URL (e.g. https://ar.io). Use for building resolver URLs
+/// (e.g. https://ao.ar.io).
+const String arnsResolverUrl = 'https://ar.io';
 
-/// Builds https://<name>.arweave.net from ARNS resolver name [name].
-String resolveArnsNameUrl(String name) =>
-    'https://$name.$arweaveNetHost';
+/// Builds the ARNS resolver URL for [name] using [arnsResolverUrl] as the base
+/// (e.g. name "ao" with base https://ar.io → https://ao.ar.io).
+/// Uses URI parsing for safe construction.
+String resolveArnsNameUrl(String name) {
+  final base = Uri.parse(arnsResolverUrl);
+  return base.replace(host: '$name.${base.host}').toString();
+}
