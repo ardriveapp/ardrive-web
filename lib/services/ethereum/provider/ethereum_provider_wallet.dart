@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:ardrive/utils/logger.dart';
 import 'package:arweave/arweave.dart';
 import 'package:webthree/credentials.dart';
 
@@ -14,6 +15,7 @@ class EthereumProviderWallet extends EthereumWallet {
 
   @override
   Future<Uint8List> sign(Uint8List message, [String? context]) async {
+    logger.d('Ethereum signPersonalMessage, context: $context');
     final signature = await credentials.signPersonalMessage(message);
     return signature;
   }
