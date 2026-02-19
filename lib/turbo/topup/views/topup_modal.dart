@@ -22,6 +22,7 @@ import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
 import 'package:ardrive/turbo/topup/views/unified/unified_crypto_flow.dart';
 import 'package:ardrive/turbo/topup/views/unified_pay_view.dart';
 import 'package:ardrive/turbo/turbo.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
@@ -101,8 +102,12 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
             final environment = configService.config.useTurboUpload
                 ? 'production'
                 : 'development';
-            final networkConfig =
-                CryptoNetworkConfig.fromEnvironment(environment);
+            final gatewayUrl = configService.config.arweaveGatewayUrl ??
+                defaultGraphqlGateway;
+            final networkConfig = CryptoNetworkConfig.fromEnvironment(
+              environment,
+              arweaveGatewayUrl: gatewayUrl,
+            );
 
             return UnifiedTopupBloc(
               turbo: context.read<Turbo>(),
@@ -112,6 +117,8 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
                 httpClient: httpClient,
                 signerCache: signerCache,
                 priceService: priceService,
+                arweaveGatewayUrl: gatewayUrl,
+                arnsResolverUrl: arnsResolverUrl,
               ),
             )..add(const UnifiedTopupStarted());
           },

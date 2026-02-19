@@ -1,4 +1,5 @@
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
+import 'package:ardrive/utils/constants.dart';
 
 /// Network configuration for cryptocurrency payments.
 ///
@@ -8,15 +9,30 @@ class CryptoNetworkConfig {
   /// Whether to use testnet configuration
   final bool isTestnet;
 
-  CryptoNetworkConfig({required this.isTestnet});
+  /// Arweave gateway URL from config (e.g. [ConfigService.config.arweaveGatewayUrl]).
+  final String _arweaveGatewayUrl;
+
+  CryptoNetworkConfig({
+    required this.isTestnet,
+    required String arweaveGatewayUrl,
+  }) : _arweaveGatewayUrl = arweaveGatewayUrl;
 
   /// Factory for creating config based on environment
   ///
   /// - Development: testnet by default (can toggle via debug menu)
   /// - Staging/Production: mainnet
-  factory CryptoNetworkConfig.fromEnvironment(String environment) {
+  ///
+  /// [arweaveGatewayUrl] must be from config (e.g. [ConfigService.config.arweaveGatewayUrl]
+  /// with a fallback like [defaultGraphqlGateway] at the call site).
+  factory CryptoNetworkConfig.fromEnvironment(
+    String environment, {
+    required String arweaveGatewayUrl,
+  }) {
     final isTestnet = environment == 'development';
-    return CryptoNetworkConfig(isTestnet: isTestnet);
+    return CryptoNetworkConfig(
+      isTestnet: isTestnet,
+      arweaveGatewayUrl: arweaveGatewayUrl,
+    );
   }
 
   // ============================================
@@ -74,14 +90,15 @@ class CryptoNetworkConfig {
   // Arweave / AO Configuration
   // ============================================
 
-  /// Arweave gateway URL (no testnet distinction)
-  String get arweaveGatewayUrl => 'https://arweave.net';
+  /// Arweave gateway URL (no testnet distinction).
+  /// Set from config service at construction.
+  String get arweaveGatewayUrl => _arweaveGatewayUrl;
 
   /// AO gateway URL
-  String get aoGatewayUrl => 'https://ao.arweave.net';
+  String get aoGatewayUrl => resolveArnsNameUrl('ao');
 
   /// AO block explorer URL
-  String get aoExplorerUrl => 'https://scan.ar.io';
+  String get aoExplorerUrl => resolveArnsNameUrl('scan');
 
   // ============================================
   // Contract Addresses
@@ -161,7 +178,7 @@ class CryptoNetworkConfig {
     return switch (token) {
       CryptoToken.arioAO ||
       CryptoToken.arioAOViaEth =>
-        'https://scan.ar.io/#/message/$txId',
+        '$aoExplorerUrl/#/message/$txId',
       CryptoToken.arioBase ||
       CryptoToken.usdcBase ||
       CryptoToken.ethBase =>

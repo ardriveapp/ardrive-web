@@ -86,7 +86,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       final fileExtension = contentType.split('/').last;
       final previewType = contentType.split('/').first;
       final previewUrl =
-          '${_configService.config.defaultArweaveGatewayForDataRequest.url}/${file.dataTxId}';
+          '${_configService.config.arweaveGatewayForDataRequest.url}/${file.dataTxId}';
 
       if (!_supportedExtension(previewType, fileExtension)) {
         emit(FsEntryPreviewUnavailable());
@@ -213,7 +213,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             final fileExtension = contentType.split('/').last;
             final previewType = contentType.split('/').first;
             final previewUrl =
-                '${_configService.config.defaultArweaveGatewayForDataRequest.url}/${file.dataTxId}';
+                '${_configService.config.arweaveGatewayForDataRequest.url}/${file.dataTxId}';
 
             if (!_supportedExtension(previewType, fileExtension)) {
               emit(FsEntryPreviewUnavailable());
@@ -299,7 +299,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     }
     final fileExtension = contentType.split('/').last;
     final previewType = contentType.split('/').first;
-    final previewUrl = '${_configService.config.defaultArweaveGatewayForDataRequest.url}/${fileItem.dataTxId}';
+    final previewUrl = '${_configService.config.arweaveGatewayForDataRequest.url}/${fileItem.dataTxId}';
 
     if (!_supportedExtension(previewType, fileExtension)) {
       return; // Will be handled by the subscription
@@ -552,7 +552,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       // For manifest files, use the /raw/ endpoint to get the actual JSON content
       String dataUrl = previewUrl;
       if (selectedItem.contentType == 'application/x.arweave-manifest+json') {
-        dataUrl = '${_configService.config.defaultArweaveGatewayForDataRequest.url}/raw/${selectedItem.dataTxId}';
+        dataUrl = '${_configService.config.arweaveGatewayForDataRequest.url}/raw/${selectedItem.dataTxId}';
       }
       
       // Fetch the document content using cache

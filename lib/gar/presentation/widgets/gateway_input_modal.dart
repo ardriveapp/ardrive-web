@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/gar/presentation/widgets/gar_modal.dart';
 import 'package:ardrive/gar/utils/gateway_validator.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ario_sdk/ario_sdk.dart';
@@ -141,7 +142,7 @@ class _GatewayInputModalState extends State<GatewayInputModal> {
             ArDriveTextFieldNew(
               controller: _gatewayController,
               label: 'Gateway URL',
-              hintText: 'https://arweave.net',
+              hintText: defaultGraphqlGateway,
               suffixIcon: _isLoading
                   ? const SizedBox(
                       width: 20,

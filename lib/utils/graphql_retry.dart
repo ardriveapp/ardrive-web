@@ -11,7 +11,8 @@ import 'package:retry/retry.dart';
 /// Retry every GraphQL query for `ArtemisClient`
 class GraphQLRetry {
   GraphQLRetry(this._client,
-      {required InternetChecker internetChecker, ArioSDK? arioSDK})
+      {required InternetChecker internetChecker,
+      ArioSDK? arioSDK})
       : _internetChecker = internetChecker,
         _arioSDK = arioSDK;
 
@@ -38,13 +39,14 @@ class GraphQLRetry {
         maxAttempts: maxAttempts,
         onRetry: (exception) async {
           if (exception.toString().contains('429')) {
+            // On 429, rotate to a different gateway to avoid the rate-limited URL.
+            // when available.
             final gateways = await _arioSDK?.getGateways();
-
             if (gateways != null && gateways.isNotEmpty) {
+              final index = currentGatewayIndex % gateways.length;
               _client = ArtemisClient(
-                'https://${gateways[currentGatewayIndex].settings.fqdn}/graphql',
+                'https://${gateways[index].settings.fqdn}/graphql',
               );
-
               ++currentGatewayIndex;
             }
           }

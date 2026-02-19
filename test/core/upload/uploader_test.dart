@@ -999,7 +999,7 @@ AppConfig getFakeConfig() => AppConfig(
       stripePublishableKey: '',
       useTurboUpload: true,
       useTurboPayment: true,
-      defaultArweaveGatewayForDataRequest: const SelectedGateway(
+      arweaveGatewayForDataRequest: const SelectedGateway(
         label: 'ArDrive Turbo Gateway',
         url: 'https://ardrive.net',
       ),
@@ -1010,7 +1010,7 @@ AppConfig getFakeConfigForDisabledTurbo() => AppConfig(
       stripePublishableKey: '',
       useTurboUpload: false,
       useTurboPayment: false,
-      defaultArweaveGatewayForDataRequest: const SelectedGateway(
+      arweaveGatewayForDataRequest: const SelectedGateway(
         label: 'ArDrive Turbo Gateway',
         url: 'https://ardrive.net',
       ),

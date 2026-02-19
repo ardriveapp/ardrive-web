@@ -26,7 +26,7 @@ jobs:
           flutter-version: ${{ steps.get-flutter-version.outputs.version }}
 
       - name: Build storybook
-        working-directory: ./storybook
+        working-directory: ./packages/ardrive_ui/storybook
         run: |
           flutter clean && flutter pub get
           flutter build web --release

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
-import 'package:ardrive_uploader/src/constants.dart';
 import 'package:ardrive_uploader/src/upload_dispatcher.dart';
 import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -60,16 +59,15 @@ abstract class ArDriveUploader {
   factory ArDriveUploader({
     ARFSUploadMetadataGenerator? metadataGenerator,
     required Uri turboUploadUri,
-    Arweave? arweave,
+    required Arweave Function() getArweaveForD2n,
     PstService? pstService,
   }) {
     metadataGenerator ??= ARFSUploadMetadataGenerator(
-      tagsGenerator: ARFSTagsGenetator(
+      tagsGenerator: ARFSTagsGenerator(
         appInfoServices: AppInfoServices(),
       ),
     );
 
-    arweave ??= Arweave();
     pstService ??= PstService(
       communityOracle: CommunityOracle(
         ArDriveContractOracle([
@@ -79,13 +77,14 @@ abstract class ArDriveUploader {
     );
 
     final dataBundlerFactory = DataBundlerFactory(
-      arweaveService: arweave,
+      arweaveService: getArweaveForD2n(),
       pstService: pstService,
       metadataGenerator: metadataGenerator,
     );
 
     final streamedUploadFactory = StreamedUploadFactory(
       turboUploadUri: turboUploadUri,
+      getArweaveForD2n: getArweaveForD2n,
     );
 
     return _ArDriveUploader(

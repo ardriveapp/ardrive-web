@@ -4,6 +4,7 @@ import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/services/config/selected_gateway.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -35,8 +36,8 @@ void main() {
       configVersion: 2,
       stripePublishableKey: 'new-key',
       allowedDataItemSizeForTurbo: 200,
-      defaultArweaveGatewayUrl: 'new-gateway',
-      defaultArweaveGatewayForDataRequest: const SelectedGateway(
+      arweaveGatewayUrl: 'new-gateway',
+      arweaveGatewayForDataRequest: const SelectedGateway(
         label: 'new',
         url: 'new',
       ),
@@ -50,8 +51,8 @@ void main() {
         configVersion: 2,
         stripePublishableKey: 'stored-key',
         allowedDataItemSizeForTurbo: 100,
-        defaultArweaveGatewayUrl: 'stored-gateway',
-        defaultArweaveGatewayForDataRequest: const SelectedGateway(
+        arweaveGatewayUrl: 'stored-gateway',
+        arweaveGatewayForDataRequest: const SelectedGateway(
           label: 'stored',
           url: 'stored',
         ),
@@ -96,8 +97,8 @@ void main() {
         configVersion: 1,
         stripePublishableKey: 'old-key',
         allowedDataItemSizeForTurbo: 100,
-        defaultArweaveGatewayUrl: 'old-gateway',
-        defaultArweaveGatewayForDataRequest: const SelectedGateway(
+        arweaveGatewayUrl: 'old-gateway',
+        arweaveGatewayForDataRequest: const SelectedGateway(
           label: 'old',
           url: 'old',
         ),
@@ -127,8 +128,8 @@ void main() {
         // No configVersion
         stripePublishableKey: 'old-key',
         allowedDataItemSizeForTurbo: 100,
-        defaultArweaveGatewayUrl: 'old-gateway',
-        defaultArweaveGatewayForDataRequest: const SelectedGateway(
+        arweaveGatewayUrl: 'old-gateway',
+        arweaveGatewayForDataRequest: const SelectedGateway(
           label: 'old',
           url: 'old',
         ),
@@ -174,11 +175,11 @@ void main() {
       final config = AppConfig(
         configVersion: 2,
         stripePublishableKey: 'key',
-        defaultArweaveGatewayUrl: 'url',
+        arweaveGatewayUrl: 'url',
         allowedDataItemSizeForTurbo: 100,
-        defaultArweaveGatewayForDataRequest: const SelectedGateway(
-          label: 'Arweave.net',
-          url: 'https://arweave.net',
+        arweaveGatewayForDataRequest: const SelectedGateway(
+          label: 'ArDrive.net',
+          url: arnsResolverUrl,
         ),
       );
 

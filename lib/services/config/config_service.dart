@@ -4,6 +4,7 @@ import 'package:ardrive/utils/logger.dart';
 
 import 'config.dart';
 
+// TODO: Add arnsResolverUrl to AppConfig for configurable ARNS resolver base URL.
 class ConfigService {
   ConfigService({
     required ConfigFetcher configFetcher,

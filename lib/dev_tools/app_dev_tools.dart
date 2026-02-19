@@ -103,17 +103,17 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
 
     const graphqlSuffix = '/graphql';
 
-    final ArDriveDevToolOption defaultArweaveGatewayUrlOption =
+    final ArDriveDevToolOption arweaveGatewayUrlOption =
         ArDriveDevToolOption(
-      name: 'defaultArweaveGatewayUrl',
-      value: config.defaultArweaveGatewayUrl,
+      name: 'arweaveGatewayUrl',
+      value: config.arweaveGatewayUrl,
       onChange: (value) {
         setState(() {
           final normalizedValue = value != null && value.endsWith(graphqlSuffix)
               ? value.substring(0, value.length - graphqlSuffix.length)
               : value;
           configService.updateAppConfig(
-            config.copyWith(defaultArweaveGatewayUrl: normalizedValue),
+            config.copyWith(arweaveGatewayUrl: normalizedValue),
           );
           if (normalizedValue != null && normalizedValue.isNotEmpty) {
             context
@@ -261,7 +261,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       enableSyncFromSnapshotOption,
       stripePublishableKey,
       allowedDataItemSizeForTurboOption,
-      defaultArweaveGatewayUrlOption,
+      arweaveGatewayUrlOption,
       defaultTurboUrlOption,
       autoSyncIntervalInSecondsOption,
       reloadOption,

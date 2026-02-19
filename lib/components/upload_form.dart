@@ -70,16 +70,16 @@ Future<void> promptToUpload(
   bool autoReplaceConflicts = false,
 }) async {
   final driveDetailCubit = context.read<DriveDetailCubit>();
-  final manifestRepository = ManifestRepositoryImpl(
+  final manifestRepository =     ManifestRepositoryImpl(
     context.read<DriveDao>(),
     ArDriveUploader(
       turboUploadUri: Uri.parse(configService.config.defaultTurboUploadUrl!),
+      getArweaveForD2n: () => context.read<ArweaveService>().client,
       metadataGenerator: ARFSUploadMetadataGenerator(
-        tagsGenerator: ARFSTagsGenetator(
+        tagsGenerator: ARFSTagsGenerator(
           appInfoServices: AppInfoServices(),
         ),
       ),
-      arweave: context.read<ArweaveService>().client,
       pstService: context.read<PstService>(),
     ),
     context.read<FolderRepository>(),

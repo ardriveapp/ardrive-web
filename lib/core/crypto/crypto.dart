@@ -5,6 +5,7 @@ import 'package:ardrive/entities/drive_signature.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entity.dart';
+import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -84,12 +85,18 @@ class ArDriveCrypto {
           rethrow;
         }
       } else if (signatureType == DriveSignatureType.v2) {
-        logger.d('Signing with v2 signature (wallet.signDataItem)');
         final owner = await wallet.getOwner();
         final dataItem = DataItem.withBlobData(data: message, owner: owner);
         dataItem.addTag('Action', 'Drive-Signature-V2');
         try {
-          walletSignature = await wallet.signDataItem(dataItem);
+          if (wallet is ArConnectWallet) {
+            logger.d('Signing with v2 signature (wallet.signDataItem)');
+            walletSignature = await wallet.signDataItem(dataItem);
+          } else {
+            logger.d('Signing with v2 signature (DataItem.sign)');
+            await dataItem.sign(ArweaveSigner(wallet));
+            walletSignature = utils.decodeBase64ToBytes(dataItem.signature);
+          }
           logger.d('v2 signing successful');
         } catch (e, stackTrace) {
           logger.e('v2 signing failed', e, stackTrace);

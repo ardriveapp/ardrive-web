@@ -1155,7 +1155,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                                     child: _TxIdTextLink(
                                       txId: file.importSource!,
                                       customUrl:
-                                          '${configService.config.defaultArweaveGatewayForDataRequest.url}/raw/${file.importSource}',
+                                          '${configService.config.arweaveGatewayForDataRequest.url}/raw/${file.importSource}',
                                       isBold: true,
                                     ),
                                   ),
@@ -1763,7 +1763,6 @@ class _ArnsNameDisplay extends StatelessWidget {
             final (address, arAddress) = getAddressesFromArns(
               domain: state.undername.domain,
               undername: state.undername.name,
-              configService: context.read<ConfigService>(),
             );
 
             return Row(

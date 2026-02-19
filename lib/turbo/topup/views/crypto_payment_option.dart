@@ -9,6 +9,7 @@ import 'package:ardrive/turbo/services/solana_wallet_service.dart';
 import 'package:ardrive/turbo/services/wallet_signer_cache.dart';
 import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
 import 'package:ardrive/turbo/topup/views/crypto_topup/crypto_topup.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -127,7 +128,12 @@ class _CryptoPaymentOptionState extends State<CryptoPaymentOption> {
     // Determine environment for network config
     final environment =
         configService.config.useTurboUpload ? 'production' : 'development';
-    final networkConfig = CryptoNetworkConfig.fromEnvironment(environment);
+    final gatewayUrl =
+        configService.config.arweaveGatewayUrl ?? defaultGraphqlGateway;
+    final networkConfig = CryptoNetworkConfig.fromEnvironment(
+      environment,
+      arweaveGatewayUrl: gatewayUrl,
+    );
 
     // Create the HTTP client
     final httpClient = ArDriveHTTP();
@@ -144,6 +150,8 @@ class _CryptoPaymentOptionState extends State<CryptoPaymentOption> {
       httpClient: httpClient,
       signerCache: signerCache,
       priceService: priceService,
+      arweaveGatewayUrl: gatewayUrl,
+      arnsResolverUrl: arnsResolverUrl,
     );
 
     final ethereumWalletService = EthereumWalletService(
@@ -278,7 +286,12 @@ Future<void> showCryptoTopupModalStandalone(
   // Determine environment for network config
   final environment =
       configService.config.useTurboUpload ? 'production' : 'development';
-  final networkConfig = CryptoNetworkConfig.fromEnvironment(environment);
+  final gatewayUrl =
+      configService.config.arweaveGatewayUrl ?? defaultGraphqlGateway;
+  final networkConfig = CryptoNetworkConfig.fromEnvironment(
+    environment,
+    arweaveGatewayUrl: gatewayUrl,
+  );
 
   // Create the HTTP client
   final httpClient = ArDriveHTTP();
@@ -295,6 +308,8 @@ Future<void> showCryptoTopupModalStandalone(
     httpClient: httpClient,
     signerCache: signerCache,
     priceService: priceService,
+    arweaveGatewayUrl: gatewayUrl,
+    arnsResolverUrl: arnsResolverUrl,
   );
 
   final ethereumWalletService = EthereumWalletService(

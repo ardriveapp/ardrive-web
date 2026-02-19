@@ -95,11 +95,16 @@ void main() {
   });
   group('StreamedUploadFactory', () {
     late Uri mockUri;
+    late MockArweave mockArweave;
     late StreamedUploadFactory uploadFactory;
 
     setUp(() {
       mockUri = Uri.parse('https://example.com');
-      uploadFactory = StreamedUploadFactory(turboUploadUri: mockUri);
+      mockArweave = MockArweave();
+      uploadFactory = StreamedUploadFactory(
+        turboUploadUri: mockUri,
+        getArweaveForD2n: () => mockArweave,
+      );
     });
 
     test('should return D2NStreamedUpload for UploadType.d2n', () async {

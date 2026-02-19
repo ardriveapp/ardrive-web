@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:ardrive/entities/drive_signature.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -13,6 +14,7 @@ import 'package:ardrive/services/arweave/get_segmented_transaction_from_drive_st
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
 import 'package:ardrive/utils/arfs_txs_filter.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
 import 'package:ardrive/utils/internet_checker.dart';
@@ -27,7 +29,6 @@ import 'package:arweave/arweave.dart';
 import 'package:collection/collection.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:drift/drift.dart';
 import 'package:http/http.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:retry/retry.dart';
@@ -49,15 +50,30 @@ class ArweaveService {
   final DriveDao _driveDao;
   late ArtemisClient _gql;
 
+  static String _graphqlUrlFromGateway(String gatewayUrl) {
+    final uri = Uri.parse(gatewayUrl);
+    if (uri.path.endsWith('/graphql')) return gatewayUrl;
+
+    final path = uri.path;
+    String newPath;
+    if (path.isEmpty || path == '/') {
+      newPath = '/graphql';
+    } else if (path.endsWith('/')) {
+      newPath = '${path}graphql';
+    } else {
+      newPath = '$path/graphql';
+    }
+    return uri.replace(path: newPath).toString();
+  }
+
   ArweaveService(
     this.client,
     this._crypto,
     this._driveDao,
     ConfigService configService, {
     ArtemisClient? artemisClient,
-  }) : _gql = artemisClient ??
-            ArtemisClient(
-                '${configService.config.defaultArweaveGatewayUrl}/graphql') {
+  }) : _gql = artemisClient ?? ArtemisClient(_graphqlUrlFromGateway(
+            configService.config.arweaveGatewayUrl ?? defaultGraphqlGateway)) {
     graphQLRetry = GraphQLRetry(
       _gql,
       internetChecker: InternetChecker(
@@ -89,13 +105,25 @@ class ArweaveService {
 
   /// Sets the gateway to use for all Data requests. No GraphQL requests are made with the new gateway.
   void setGateway(Gateway gateway) {
-    client = Arweave(gatewayUrl: getGatewayUri(gateway));
+    client = Arweave(api: ArweaveApi(gatewayUrl: getGatewayUri(gateway)));
   }
 
-  /// Updates the GraphQL endpoint used by the Artemis client and retry helper.
+  static Uri _baseGatewayUriFromUrl(String gatewayUrl) {
+    final uri = Uri.parse(gatewayUrl);
+    final path = uri.path;
+    if (path.endsWith('/graphql')) {
+      final basePath = path.substring(0, path.length - 8);
+      return uri.replace(path: basePath.isEmpty ? '/' : basePath);
+    }
+    return uri;
+  }
+
+  /// Updates the GraphQL endpoint and Arweave API client to use [gatewayUrl],
+  /// then notifies so uploader and other dependents can rebuild.
   void updateGraphQLEndpoint(String gatewayUrl) {
     final previousClient = _gql;
-    _gql = ArtemisClient('$gatewayUrl/graphql');
+    final graphqlUrl = _graphqlUrlFromGateway(gatewayUrl);
+    _gql = ArtemisClient(graphqlUrl);
     graphQLRetry = GraphQLRetry(
       _gql,
       internetChecker: InternetChecker(
@@ -104,6 +132,10 @@ class ArweaveService {
       arioSDK: ArioSDKFactory().create(),
     );
     previousClient.dispose();
+
+    client = Arweave(
+      api: ArweaveApi(gatewayUrl: _baseGatewayUriFromUrl(gatewayUrl)),
+    );
   }
 
   int bytesToChunks(int bytes) {

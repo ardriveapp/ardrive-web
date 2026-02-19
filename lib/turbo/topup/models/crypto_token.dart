@@ -1,3 +1,4 @@
+import 'package:ardrive/utils/constants.dart';
 import 'package:equatable/equatable.dart';
 
 /// Supported cryptocurrency tokens for Turbo top-up payments.
@@ -258,7 +259,8 @@ extension CryptoTokenX on CryptoToken {
 
   /// Base URL for the block explorer for this token's network
   String get explorerBaseUrl => switch (this) {
-        CryptoToken.arioAO || CryptoToken.arioAOViaEth => 'https://scan.ar.io',
+        CryptoToken.arioAO || CryptoToken.arioAOViaEth =>
+          resolveArnsNameUrl('scan'),
         CryptoToken.arioBase ||
         CryptoToken.usdcBase ||
         CryptoToken.ethBase =>
@@ -271,7 +273,7 @@ extension CryptoTokenX on CryptoToken {
   String getExplorerUrl(String txId) => switch (this) {
         CryptoToken.arioAO ||
         CryptoToken.arioAOViaEth =>
-          'https://scan.ar.io/#/message/$txId',
+          '${resolveArnsNameUrl('scan')}/#/message/$txId',
         CryptoToken.arioBase ||
         CryptoToken.usdcBase ||
         CryptoToken.ethBase =>
@@ -284,7 +286,8 @@ extension CryptoTokenX on CryptoToken {
 
   /// Name of the block explorer for this token's network
   String get explorerName => switch (this) {
-        CryptoToken.arioAO || CryptoToken.arioAOViaEth => 'scan.ar.io',
+        CryptoToken.arioAO || CryptoToken.arioAOViaEth =>
+          Uri.parse(resolveArnsNameUrl('scan')).host,
         CryptoToken.arioBase ||
         CryptoToken.usdcBase ||
         CryptoToken.ethBase =>
