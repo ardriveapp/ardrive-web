@@ -1,7 +1,6 @@
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/arns/utils/arns_address_utils.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
-import 'package:ardrive/main.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ario_sdk/ario_sdk.dart';
@@ -76,11 +75,15 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
 
     on<LoadUndernames>(
       (event, emit) async {
+        // Local for null promotion; set by SelectName before this runs.
+        final nameModel = _selectedNameModel;
+        if (nameModel == null) return;
+
         if (state is UndernamesLoaded) {
           final undernames = await _arnsRepository.getARNSUndernames(
             ANTRecord(
-              domain: _selectedNameModel!.name,
-              processId: _selectedNameModel!.processId,
+              domain: nameModel.name,
+              processId: nameModel.processId,
             ),
           );
 
@@ -91,7 +94,7 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
           emit(
             UndernamesLoaded(
               nameModels: (state as UndernamesLoaded).nameModels,
-              selectedName: _selectedNameModel!,
+              selectedName: nameModel,
               undernames: undernames,
               selectedUndername: null,
             ),
@@ -105,8 +108,8 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
 
         final undernames = await _arnsRepository.getARNSUndernames(
           ANTRecord(
-            domain: _selectedNameModel!.name,
-            processId: _selectedNameModel!.processId,
+            domain: nameModel.name,
+            processId: nameModel.processId,
           ),
         );
 
@@ -117,7 +120,7 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
         emit(
           UndernamesLoaded(
             nameModels: names,
-            selectedName: _selectedNameModel!,
+            selectedName: nameModel,
             undernames: undernames,
             selectedUndername: null,
           ),
@@ -144,18 +147,25 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
           throw StateError('File data table item is null');
         }
 
+        // Locals for null promotion; both set by the time user confirms.
+        final nameModel = _selectedNameModel;
+        final und = _selectedUndername;
+        if (nameModel == null) {
+          throw StateError('Selected name model is null');
+        }
+
         ARNSUndername undername;
 
-        if (_selectedUndername == null) {
+        if (und == null) {
           undername = ARNSUndernameFactory.createDefaultUndername(
             transactionId: fileDataTableItem.dataTxId,
-            domain: _selectedNameModel!.name,
+            domain: nameModel.name,
           );
         } else {
           undername = ARNSUndernameFactory.create(
-            name: _selectedUndername!.name,
+            name: und.name,
             transactionId: fileDataTableItem.dataTxId,
-            domain: _selectedNameModel!.name,
+            domain: nameModel.name,
           );
         }
 
@@ -163,13 +173,12 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
           undername: undername,
           fileId: fileDataTableItem.fileId,
           driveId: fileDataTableItem.driveId,
-          processId: _selectedNameModel!.processId,
+          processId: nameModel.processId,
         );
 
         final (address, arAddress) = getAddressesFromArns(
-          domain: _selectedNameModel!.name,
-          undername: _selectedUndername?.name,
-          configService: configService,
+          domain: nameModel.name,
+          undername: und?.name,
         );
 
         emit(NameAssignedWithSuccess(
@@ -186,7 +195,6 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
       final (address, arAddress) = getAddressesFromArns(
         domain: event.undername.domain,
         undername: event.undername.name,
-        configService: configService,
       );
 
       emit(NameAssignedWithSuccess(
@@ -198,8 +206,12 @@ class AssignNameBloc extends Bloc<AssignNameEvent, AssignNameState> {
     on<ConfirmSelection>((event, emit) async {
       logger.d('ConfirmSelection');
 
+      // Local for null promotion; set by SelectName before confirm.
+      final nameModel = _selectedNameModel;
+      if (nameModel == null) return;
+
       emit(SelectionConfirmed(
-        selectedName: _selectedNameModel!,
+        selectedName: nameModel,
         selectedUndername: _selectedUndername,
       ));
     });

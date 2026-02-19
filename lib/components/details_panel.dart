@@ -1763,7 +1763,6 @@ class _ArnsNameDisplay extends StatelessWidget {
             final (address, arAddress) = getAddressesFromArns(
               domain: state.undername.domain,
               undername: state.undername.name,
-              configService: context.read<ConfigService>(),
             );
 
             return Row(

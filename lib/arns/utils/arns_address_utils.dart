@@ -1,33 +1,26 @@
-import 'package:ardrive/services/config/config_service.dart';
+import 'package:ardrive/utils/constants.dart';
 
 /// Generates the HTTP and Arweave addresses for an ArNS name
 ///
 /// This function takes a domain and an optional undername to construct
 /// the full ArNS addresses. It returns a tuple containing:
-/// 1. The HTTP address (https://<undername>_<domain>.ar-io.dev)
-/// 2. The Arweave address (ar://<undername>_<domain>)
+/// 1. The HTTP address (via [resolveArnsNameUrl], e.g. https://<name>.ar.io)
+/// 2. The Arweave address (ar://<name>)
 ///
-/// If no undername is provided, it constructs the addresses using only the domain.
+/// If no undername is provided, or undername is [@] or empty, it constructs
+/// the addresses using only the domain.
 (String, String) getAddressesFromArns({
   required String domain,
   String? undername,
-  required ConfigService configService,
 }) {
-  String address = 'https://';
-  String arAddress = 'ar://';
+  final name = (undername != null &&
+          undername != '@' &&
+          undername.isNotEmpty)
+      ? '${undername}_$domain'
+      : domain;
 
-  final gateway = configService.config.getGatewayDomain();
-
-  if (undername != null && undername != '@') {
-    address = '$address${undername}_';
-    arAddress = '$arAddress${undername}_';
-  }
-
-  address = address + domain;
-  arAddress = arAddress + domain;
-
-  address = '$address.$gateway';
-  arAddress = '$arAddress.$gateway';
+  final address = resolveArnsNameUrl(name);
+  final arAddress = 'ar://$name';
 
   return (address, arAddress);
 }
