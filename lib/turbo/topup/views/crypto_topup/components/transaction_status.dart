@@ -1,5 +1,6 @@
 import 'package:ardrive/turbo/config/crypto_network_config.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -246,7 +247,7 @@ class _TransactionLink extends StatelessWidget {
       case Blockchain.solana:
         return 'https://solscan.io/tx/$txId';
       case Blockchain.ao:
-        return 'https://scan.ar.io/#/message/$txId';
+        return '${resolveArnsNameUrl('scan')}/#/message/$txId';
     }
   }
 

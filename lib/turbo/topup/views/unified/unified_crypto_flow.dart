@@ -1,5 +1,6 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/services/config/config_service.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/turbo/config/crypto_network_config.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/turbo/services/crypto_payment_service.dart';
@@ -107,7 +108,12 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
     // Determine environment for network config
     final environment =
         configService.config.useTurboUpload ? 'production' : 'development';
-    final networkConfig = CryptoNetworkConfig.fromEnvironment(environment);
+    final gatewayUrl =
+        configService.config.arweaveGatewayUrl ?? defaultGraphqlGateway;
+    final networkConfig = CryptoNetworkConfig.fromEnvironment(
+      environment,
+      arweaveGatewayUrl: gatewayUrl,
+    );
 
     // Create services
     final httpClient = ArDriveHTTP();
@@ -118,6 +124,8 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
       httpClient: httpClient,
       signerCache: signerCache,
       priceService: priceService,
+      arweaveGatewayUrl: gatewayUrl,
+      arnsResolverUrl: arnsResolverUrl,
     );
 
     _ethereumWalletService = EthereumWalletService(

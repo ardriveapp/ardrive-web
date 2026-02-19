@@ -34,10 +34,10 @@ class ARFSUploadMetadataGenerator
         UploadMetadataGenerator<ARFSUploadMetadata, ARFSUploadMetadataArgs>,
         ARFSDriveUploadMetadataGenerator {
   ARFSUploadMetadataGenerator({
-    required ARFSTagsGenetator tagsGenerator,
+    required ARFSTagsGenerator tagsGenerator,
   }) : _tagsGenerator = tagsGenerator;
 
-  final ARFSTagsGenetator _tagsGenerator;
+  final ARFSTagsGenerator _tagsGenerator;
 
   @override
   Future<ARFSUploadMetadata> generateMetadata(
@@ -259,11 +259,11 @@ class ARFSUploadMetadataArgs extends Equatable {
       ];
 }
 
-class ARFSTagsGenetator implements TagsGenerator<ARFSTagsArgs> {
+class ARFSTagsGenerator implements TagsGenerator<ARFSTagsArgs> {
   final AppInfoServices _appInfoServices;
 
   // constructor
-  ARFSTagsGenetator({
+  ARFSTagsGenerator({
     required AppInfoServices appInfoServices,
   }) : _appInfoServices = appInfoServices;
 

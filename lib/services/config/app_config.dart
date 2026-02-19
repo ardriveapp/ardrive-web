@@ -6,9 +6,10 @@ part 'app_config.g.dart';
 
 @JsonSerializable()
 class AppConfig {
-  final String? defaultArweaveGatewayUrl;
+  @JsonKey(name: 'defaultArweaveGatewayUrl')
+  final String? arweaveGatewayUrl;
   @JsonKey(name: 'defaultArweaveGatewayForDataRequest')
-  final SelectedGateway defaultArweaveGatewayForDataRequest;
+  final SelectedGateway arweaveGatewayForDataRequest;
   final bool useTurboUpload;
   final bool useTurboPayment;
   final String? defaultTurboUploadUrl;
@@ -22,8 +23,8 @@ class AppConfig {
   final int? configVersion;
 
   AppConfig({
-    this.defaultArweaveGatewayUrl,
-    this.defaultArweaveGatewayForDataRequest = const SelectedGateway(
+    this.arweaveGatewayUrl,
+    this.arweaveGatewayForDataRequest = const SelectedGateway(
       label: 'ArDrive Turbo Gateway',
       url: 'https://ardrive.net',
     ),
@@ -41,8 +42,8 @@ class AppConfig {
   });
 
   AppConfig copyWith({
-    String? defaultArweaveGatewayUrl,
-    SelectedGateway? defaultArweaveGatewayForDataRequest,
+    String? arweaveGatewayUrl,
+    SelectedGateway? arweaveGatewayForDataRequest,
     bool? useTurboUpload,
     bool? useTurboPayment,
     String? defaultTurboUploadUrl,
@@ -56,11 +57,10 @@ class AppConfig {
     int? configVersion,
   }) {
     return AppConfig(
-      defaultArweaveGatewayUrl:
-          defaultArweaveGatewayUrl ?? this.defaultArweaveGatewayUrl,
-      defaultArweaveGatewayForDataRequest:
-          defaultArweaveGatewayForDataRequest ??
-              this.defaultArweaveGatewayForDataRequest,
+      arweaveGatewayUrl:
+          arweaveGatewayUrl ?? this.arweaveGatewayUrl,
+      arweaveGatewayForDataRequest:
+          arweaveGatewayForDataRequest ?? this.arweaveGatewayForDataRequest,
       useTurboUpload: useTurboUpload ?? this.useTurboUpload,
       useTurboPayment: useTurboPayment ?? this.useTurboPayment,
       defaultTurboUploadUrl:
@@ -81,7 +81,7 @@ class AppConfig {
   }
 
   String getGatewayDomain() {
-    return defaultArweaveGatewayForDataRequest.url.split('://').last;
+    return arweaveGatewayForDataRequest.url.split('://').last;
   }
 
   String diff(AppConfig other) {

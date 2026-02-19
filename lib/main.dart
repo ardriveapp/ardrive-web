@@ -138,7 +138,9 @@ Future<void> _initializeServices() async {
 
   arweave = ArweaveService(
     Arweave(
-      gatewayUrl: Uri.parse(config.defaultArweaveGatewayForDataRequest.url),
+      api: ArweaveApi(
+        gatewayUrl: Uri.parse(config.arweaveGatewayForDataRequest.url),
+      ),
     ),
     ArDriveCrypto(),
     db.driveDao,
@@ -388,7 +390,7 @@ class AppState extends State<App> {
           ),
         ),
         RepositoryProvider<ArweaveService>(create: (_) => arweave),
-        RepositoryProvider<ConfigService>(
+        Provider<ConfigService>(
           create: (_) => configService,
         ),
         RepositoryProvider<TurboUploadService>(
@@ -498,43 +500,46 @@ class AppState extends State<App> {
             ioFileAdapter: IOFileAdapter(),
           ),
         ),
-        // ArDriveUploader
-        RepositoryProvider(
-          create: (_) => ArDriveUploader(
-            arweave: arweave.client,
-            turboUploadUri:
-                Uri.parse(configService.config.defaultTurboUploadUrl!),
-            metadataGenerator: ARFSUploadMetadataGenerator(
-              tagsGenerator: ARFSTagsGenetator(
-                appInfoServices: AppInfoServices(),
+        SingleChildBuilder(
+          builder: (context, child) {
+            final arweaveService = context.read<ArweaveService>();
+            return RepositoryProvider<ArDriveUploader>.value(
+              value: ArDriveUploader(
+                turboUploadUri: Uri.parse(
+                    configService.config.defaultTurboUploadUrl!),
+                getArweaveForD2n: () => arweaveService.client,
+                metadataGenerator: ARFSUploadMetadataGenerator(
+                  tagsGenerator: ARFSTagsGenerator(
+                    appInfoServices: AppInfoServices(),
+                  ),
+                ),
+                pstService: context.read<PstService>(),
               ),
-            ),
-            pstService: _.read<PstService>(),
-          ),
-        ),
-
-        RepositoryProvider(
-          create: (context) => ThumbnailRepository(
-            arDriveDownloader: ArDriveDownloader(
-              arweave: context.read<ArweaveService>(),
-              ardriveIo: ArDriveIO(),
-              ioFileAdapter: IOFileAdapter(),
-            ),
-            driveDao: context.read<DriveDao>(),
-            arweaveService: context.read<ArweaveService>(),
-            arDriveAuth: context.read<ArDriveAuth>(),
-            arDriveUploader: ArDriveUploader(
-              turboUploadUri: Uri.parse(
-                  context.read<ConfigService>().config.defaultTurboUploadUrl!),
-            ),
-            turboUploadService: context.read<TurboUploadService>(),
-          ),
-        ),
-        RepositoryProvider(
-          create: (context) => createArDriveUploadPreparationManager(context),
-        ),
-        RepositoryProvider(
-          create: (context) => createUploadRepository(context),
+              child: RepositoryProvider(
+                create: (context) => ThumbnailRepository(
+                  arDriveDownloader: ArDriveDownloader(
+                    arweave: context.read<ArweaveService>(),
+                    ardriveIo: ArDriveIO(),
+                    ioFileAdapter: IOFileAdapter(),
+                  ),
+                  driveDao: context.read<DriveDao>(),
+                  arweaveService: context.read<ArweaveService>(),
+                  arDriveAuth: context.read<ArDriveAuth>(),
+                  arDriveUploader: context.read<ArDriveUploader>(),
+                  turboUploadService: context.read<TurboUploadService>(),
+                ),
+                child: RepositoryProvider(
+                  create: (context) =>
+                      createArDriveUploadPreparationManager(context),
+                  child: RepositoryProvider(
+                    create: (context) =>
+                        createUploadRepository(context),
+                    child: child,
+                  ),
+                ),
+              ),
+            );
+          },
         ),
         RepositoryProvider(
           create: (context) => ProfileLogoRepository(

@@ -86,8 +86,10 @@ class _UploadFormState extends State<UploadForm> {
   static const keyByteLength = 256 ~/ 8;
 
   void _uploadFile() async {
+    final arweave = Arweave(api: ArweaveApi());
     final uploader = ArDriveUploader(
-      turboUploadUri: Uri.parse('https://arfs.arweave.net'),
+      turboUploadUri: Uri.parse(resolveArnsNameUrl('arfs')),
+      getArweaveForD2n: () => arweave,
     );
 
     setState(() {

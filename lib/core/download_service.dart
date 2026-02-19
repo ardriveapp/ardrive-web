@@ -40,7 +40,10 @@ class _DownloadService implements DownloadService {
       return Stream.fromIterable([data.toList()]);
     }
 
-    final downloadResponse = await arweave.download(txId: fileTxId);
+    final downloadResponse = await arweave.download(
+      txId: fileTxId,
+      arweave: _arweave.client,
+    );
 
     return downloadResponse.$1;
   }

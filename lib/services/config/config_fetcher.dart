@@ -34,7 +34,7 @@ class ConfigFetcher {
       if (detectedGateway != null) {
         // Use detected AR.IO gateway for data requests
         configToUse = defaultConfig.copyWith(
-          defaultArweaveGatewayForDataRequest: detectedGateway,
+          arweaveGatewayForDataRequest: detectedGateway,
         );
         logger.i('Using detected AR.IO gateway: ${detectedGateway.url}');
       }

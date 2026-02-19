@@ -18,8 +18,6 @@ import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
-import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:arweave/arweave.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pst/pst.dart';
@@ -87,20 +85,7 @@ ArDriveUploadPreparationManager createArDriveUploadPreparationManager(
 UploadRepository createUploadRepository(BuildContext context) {
   return UploadRepository(
     ardriveIO: ArDriveIO(),
-    ardriveUploader: ArDriveUploader(
-      turboUploadUri: Uri.parse(
-          context.read<ConfigService>().config.defaultTurboUploadUrl!),
-      metadataGenerator: ARFSUploadMetadataGenerator(
-        tagsGenerator: ARFSTagsGenetator(
-          appInfoServices: AppInfoServices(),
-        ),
-      ),
-      arweave: Arweave(
-        gatewayUrl: Uri.parse(
-            context.read<ConfigService>().config.defaultArweaveGatewayForDataRequest.url),
-      ),
-      pstService: context.read<PstService>(),
-    ),
+    ardriveUploader: context.read<ArDriveUploader>(),
     driveDao: context.read<DriveDao>(),
     auth: context.read<ArDriveAuth>(),
     licenseService: context.read<LicenseService>(),

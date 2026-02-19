@@ -46,7 +46,7 @@ class GarRepositoryImpl implements GarRepository {
   @override
   Future<Gateway> getSelectedGateway() async {
     final currentGatewayUrl =
-        configService.config.defaultArweaveGatewayForDataRequest;
+        configService.config.arweaveGatewayForDataRequest;
     final currentGatewayDomain = Uri.parse(currentGatewayUrl.url).host;
 
     final currentGateway = _gateways.firstWhereOrNull(
@@ -74,7 +74,7 @@ class GarRepositoryImpl implements GarRepository {
   Future<void> updateGateway(Gateway gateway) async {
     await configService.updateAppConfig(
       configService.config.copyWith(
-        defaultArweaveGatewayForDataRequest: SelectedGateway(
+        arweaveGatewayForDataRequest: SelectedGateway(
           label: gateway.settings.label,
           url: 'https://${gateway.settings.fqdn}',
         ),
@@ -117,7 +117,7 @@ class GarRepositoryImpl implements GarRepository {
     
     await configService.updateAppConfig(
       configService.config.copyWith(
-        defaultArweaveGatewayForDataRequest: SelectedGateway(
+        arweaveGatewayForDataRequest: SelectedGateway(
           label: GatewayValidator.generateLabel(cleanedUrl),
           url: cleanedUrl,
         ),

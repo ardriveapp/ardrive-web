@@ -70,7 +70,7 @@ class NetworkFileIdResolver implements FileIdResolver {
 
     if (metadataTxInfo.type == null) {
       final uri = Uri.parse(
-        '${configService.config.defaultArweaveGatewayForDataRequest.url}/$dataTxId',
+        '${configService.config.arweaveGatewayForDataRequest.url}/$dataTxId',
       );
       final response = await retry(
         () => httpClient.head(uri),

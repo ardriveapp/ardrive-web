@@ -47,7 +47,7 @@ void main() {
     registerFallbackValue(AppConfig(
       allowedDataItemSizeForTurbo: 1,
       stripePublishableKey: '',
-      defaultArweaveGatewayForDataRequest: const SelectedGateway(
+      arweaveGatewayForDataRequest: const SelectedGateway(
         label: 'ArDrive Turbo Gateway',
         url: 'https://ardrive.net',
       ),
@@ -132,7 +132,7 @@ void main() {
           when(() => configService.config).thenReturn(AppConfig(
             allowedDataItemSizeForTurbo: 1,
             stripePublishableKey: '',
-            defaultArweaveGatewayForDataRequest: const SelectedGateway(
+            arweaveGatewayForDataRequest: const SelectedGateway(
               label: 'ArDrive Turbo Gateway',
               url: 'https://ardrive.net',
             ),
@@ -166,7 +166,7 @@ void main() {
           when(() => configService.config).thenReturn(AppConfig(
             allowedDataItemSizeForTurbo: 1,
             stripePublishableKey: '',
-            defaultArweaveGatewayForDataRequest: const SelectedGateway(
+            arweaveGatewayForDataRequest: const SelectedGateway(
               label: 'ArDrive Turbo Gateway',
               url: 'https://not.in.list.com',
             ),
@@ -201,7 +201,7 @@ void main() {
             when(() => configService.config).thenReturn(AppConfig(
               allowedDataItemSizeForTurbo: 1,
               stripePublishableKey: '',
-              defaultArweaveGatewayForDataRequest: const SelectedGateway(
+              arweaveGatewayForDataRequest: const SelectedGateway(
                 label: 'ArDrive Turbo Gateway',
                 url: 'https://ardrive.net',
               ),

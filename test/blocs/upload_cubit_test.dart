@@ -121,7 +121,7 @@ void main() {
       allowedDataItemSizeForTurbo: 1,
       stripePublishableKey: 'stripePublishableKey',
       defaultTurboUploadUrl: 'defaultTurboUploadUrl',
-      defaultArweaveGatewayForDataRequest: const SelectedGateway(
+      arweaveGatewayForDataRequest: const SelectedGateway(
         label: 'ArDrive Turbo Gateway',
         url: 'https://ardrive.net',
       ),
