@@ -1,4 +1,4 @@
-import { ANT, ANT_REGISTRY_ID, ANTRegistry, AOProcess, ArconnectSigner, ARIO, ArNSEventEmitter, ArweaveSigner, mARIOToken } from '@ar.io/sdk';
+import { ANT, ANT_REGISTRY_ID, ANTRegistry, AOProcess, ArconnectSigner, ARIO, ArNSEventEmitter, ArweaveSigner, mARIOToken, InjectedEthereumSigner } from '@ar.io/sdk';
 import { connect } from '@permaweb/aoconnect';
 
 window.ario = {
@@ -10,6 +10,10 @@ window.ario = {
   getARNSRecordsForWallet,
   getPrimaryNameAndLogo,
 };
+
+// Export signers for use by turbo payments (avoids bundling separate @ar.io/sdk)
+window.ArioArconnectSigner = ArconnectSigner;
+window.ArioInjectedEthereumSigner = InjectedEthereumSigner;
 
 const ario = ARIO.init({
   process: new AOProcess({

@@ -1,4 +1,5 @@
 import 'package:ardrive/turbo/models/payment_user_information.dart';
+import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/models/price_estimate.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -36,6 +37,11 @@ class TurboTopupFlowBloc
           emit(
             TurboTopupFlowShowingSuccessView(
               isMovingForward: _currentStep <= event.stepNumber,
+              amountPaid: event.amountPaid,
+              creditsReceived: event.creditsReceived,
+              storageEstimate: event.storageEstimate,
+              newBalanceCredits: event.newBalanceCredits,
+              newBalanceStorage: event.newBalanceStorage,
             ),
           );
         } else if (event is TurboTopUpShowPaymentReviewView) {
@@ -51,12 +57,6 @@ class TurboTopupFlowBloc
               priceEstimate: turbo.currentPriceEstimate,
             ),
           );
-        } else if (event is TurboTopUpShowSuccessView) {
-          emit(
-            TurboTopupFlowShowingSuccessView(
-              isMovingForward: _currentStep <= event.stepNumber,
-            ),
-          );
         } else if (event is TurboTopUpShowSessionExpiredView) {
           emit(
             TurboTopupFlowShowingErrorView(
@@ -69,6 +69,18 @@ class TurboTopupFlowBloc
             TurboTopupFlowShowingErrorView(
               isMovingForward: _currentStep <= event.stepNumber,
               errorType: event.errorType,
+            ),
+          );
+        } else if (event is TurboTopUpShowCryptoView) {
+          emit(
+            TurboTopupFlowShowingCryptoView(
+              isMovingForward: _currentStep <= event.stepNumber,
+              token: event.token,
+              amount: event.amount,
+              currentTurboBalance: event.currentTurboBalance,
+              currentBalanceStorage: event.currentBalanceStorage,
+              creditsToReceive: event.creditsToReceive,
+              newBalanceStorage: event.newBalanceStorage,
             ),
           );
         }

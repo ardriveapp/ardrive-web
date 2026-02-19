@@ -6,7 +6,29 @@ import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 
 class TurboSuccessView extends StatelessWidget {
-  const TurboSuccessView({super.key});
+  /// Amount paid (formatted, e.g., "$25.00")
+  final String? amountPaid;
+
+  /// Credits received (formatted, e.g., "0.25 AR")
+  final String? creditsReceived;
+
+  /// Storage estimate for credits received (e.g., "2.5 GB")
+  final String? storageEstimate;
+
+  /// New balance after purchase (formatted credits, e.g., "0.75 Credits")
+  final String? newBalanceCredits;
+
+  /// New balance after purchase (formatted storage, e.g., "7.5 GB")
+  final String? newBalanceStorage;
+
+  const TurboSuccessView({
+    super.key,
+    this.amountPaid,
+    this.creditsReceived,
+    this.storageEstimate,
+    this.newBalanceCredits,
+    this.newBalanceStorage,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -15,6 +37,12 @@ class TurboSuccessView extends StatelessWidget {
       detailMessage:
           appLocalizationsOf(context).yourCreditsWillBeAddedToYourAccount,
       closeButtonLabel: appLocalizationsOf(context).close,
+      showConfetti: true,
+      amountPaid: amountPaid,
+      creditsReceived: creditsReceived,
+      storageEstimate: storageEstimate,
+      newBalanceCredits: newBalanceCredits,
+      newBalanceStorage: newBalanceStorage,
     );
   }
 }
@@ -25,12 +53,32 @@ class SuccessView extends StatefulWidget {
   final String closeButtonLabel;
   final bool showConfetti;
 
+  /// Amount paid (formatted, e.g., "$25.00")
+  final String? amountPaid;
+
+  /// Credits received (formatted, e.g., "0.25 AR")
+  final String? creditsReceived;
+
+  /// Storage estimate for credits received (e.g., "2.5 GB")
+  final String? storageEstimate;
+
+  /// New balance after purchase (formatted credits, e.g., "0.75 Credits")
+  final String? newBalanceCredits;
+
+  /// New balance after purchase (formatted storage, e.g., "7.5 GB")
+  final String? newBalanceStorage;
+
   const SuccessView({
     super.key,
     required this.successMessage,
     required this.detailMessage,
     required this.closeButtonLabel,
     this.showConfetti = false,
+    this.amountPaid,
+    this.creditsReceived,
+    this.storageEstimate,
+    this.newBalanceCredits,
+    this.newBalanceStorage,
   });
 
   @override
@@ -55,103 +103,266 @@ class _SuccessViewState extends State<SuccessView> {
     }
   }
 
+  bool get _hasPaymentDetails =>
+      widget.amountPaid != null ||
+      widget.storageEstimate != null ||
+      widget.newBalanceStorage != null;
+
+  /// Formats storage value for display, adding ~ prefix only if not already present
+  String _formatStorageSubvalue(String storage) {
+    if (storage.startsWith('~')) {
+      return storage;
+    }
+    return '~$storage';
+  }
+
+  Widget _buildDetailRow(
+    BuildContext context,
+    String label,
+    String value,
+    ArDriveColors colors, {
+    bool isBold = false,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: ArDriveTypographyNew.of(context).paragraphSmall(
+            color: colors.themeFgMuted,
+          ),
+        ),
+        Text(
+          value,
+          style: ArDriveTypographyNew.of(context).paragraphSmall(
+            fontWeight: isBold ? ArFontWeight.bold : ArFontWeight.semiBold,
+            color: colors.themeFgDefault,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDetailRowWithSubvalue(
+    BuildContext context,
+    String label,
+    String value,
+    String? subvalue,
+    ArDriveColors colors, {
+    bool isHighlighted = false,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: ArDriveTypographyNew.of(context).paragraphSmall(
+            color: colors.themeFgMuted,
+          ),
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              value,
+              style: ArDriveTypographyNew.of(context).paragraphSmall(
+                fontWeight: ArFontWeight.semiBold,
+                color: isHighlighted
+                    ? colors.themeSuccessDefault
+                    : colors.themeFgDefault,
+              ),
+            ),
+            if (subvalue != null)
+              Text(
+                subvalue,
+                style: ArDriveTypographyNew.of(context).paragraphSmall(
+                  color: colors.themeFgMuted,
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ArDriveCard(
-      height: 513,
-      contentPadding: EdgeInsets.zero,
-      content: Column(
-        children: [
-          if (widget.showConfetti)
-            Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                ConfettiWidget(
-                  numberOfParticles: 10,
-                  blastDirection: -pi / 2,
-                  blastDirectionality: BlastDirectionality.explosive,
-                  confettiController: confettiController1!,
-                  maxBlastForce: 40,
-                  child: const SizedBox(
-                    height: 0,
-                    width: 0,
-                  ),
-                ),
-                ConfettiWidget(
-                  numberOfParticles: 10,
-                  blastDirection: pi / 2,
-                  blastDirectionality: BlastDirectionality.explosive,
-                  confettiController: confettiController2!,
-                  maxBlastForce: 40,
-                  child: const SizedBox(
-                    height: 0,
-                    width: 0,
-                  ),
-                ),
-              ],
-            ),
-          Flexible(
-            flex: 1,
-            child: Align(
-              alignment: Alignment.topRight,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 26, right: 26),
-                child: ArDriveClickArea(
-                  child: GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: ArDriveIcons.x()),
+    final themeData = ArDriveTheme.of(context).themeData;
+    final colors = themeData.colors;
+    final colorTokens = themeData.colorTokens;
+
+    final typography = ArDriveTypographyNew.of(context);
+
+    return Stack(
+      children: [
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Red top line (ArDrive modal pattern)
+            Container(
+              height: 6,
+              decoration: BoxDecoration(
+                color: colorTokens.containerRed,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(8),
+                  topRight: Radius.circular(8),
                 ),
               ),
             ),
-          ),
-          Flexible(
-            flex: 1,
-            child: Column(
-              children: [
-                ArDriveIcons.checkCirle(
-                  size: 40,
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeSuccessDefault,
-                ),
-                Text(widget.successMessage,
-                    style: ArDriveTypography.body.leadBold()),
-                const SizedBox(height: 16),
-                Text(
-                  widget.detailMessage,
-                  style: ArDriveTypography.body
-                      .buttonNormalRegular(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDefault,
-                      )
-                      .copyWith(fontWeight: FontWeight.w700),
-                ),
-              ],
-            ),
-          ),
-          Flexible(
-            flex: 1,
-            child: Align(
-              alignment: Alignment.center,
-              child: ArDriveButton(
-                maxHeight: 44,
-                maxWidth: 143,
-                text: widget.closeButtonLabel,
-                fontStyle: ArDriveTypography.body.buttonLargeBold(
-                  color: Colors.white,
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
+            // Confetti (positioned at top)
+            if (widget.showConfetti)
+              Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ConfettiWidget(
+                    numberOfParticles: 10,
+                    blastDirection: -pi / 2,
+                    blastDirectionality: BlastDirectionality.explosive,
+                    confettiController: confettiController1!,
+                    maxBlastForce: 40,
+                    child: const SizedBox(height: 0, width: 0),
+                  ),
+                  ConfettiWidget(
+                    numberOfParticles: 10,
+                    blastDirection: pi / 2,
+                    blastDirectionality: BlastDirectionality.explosive,
+                    confettiController: confettiController2!,
+                    maxBlastForce: 40,
+                    child: const SizedBox(height: 0, width: 0),
+                  ),
+                ],
+              ),
+            // Main content
+            Container(
+              color: colors.themeBgCanvas,
+              padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title - left aligned
+                  Row(
+                    children: [
+                      ArDriveIcons.checkCirle(
+                        size: 28,
+                        color: colors.themeSuccessDefault,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        widget.successMessage,
+                        style: typography.heading5(
+                          fontWeight: ArFontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    widget.detailMessage,
+                    style: typography.paragraphNormal(
+                      color: colors.themeFgMuted,
+                    ),
+                  ),
+                  // Purchase details
+                  if (_hasPaymentDetails) ...[
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: colors.themeBgSubtle,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        children: [
+                          // Amount paid
+                          if (widget.amountPaid != null)
+                            _buildDetailRow(
+                              context,
+                              appLocalizationsOf(context).paymentSummaryPaid,
+                              widget.amountPaid!,
+                              colors,
+                            ),
+                          // Credits added (with storage estimate)
+                          if (widget.creditsReceived != null ||
+                              widget.storageEstimate != null) ...[
+                            const SizedBox(height: 12),
+                            Divider(
+                                color: colors.themeBorderDefault, height: 1),
+                            const SizedBox(height: 12),
+                            _buildDetailRowWithSubvalue(
+                              context,
+                              appLocalizationsOf(context)
+                                  .paymentSummaryCreditsAdded,
+                              widget.creditsReceived ?? '',
+                              widget.storageEstimate != null
+                                  ? _formatStorageSubvalue(
+                                      widget.storageEstimate!)
+                                  : null,
+                              colors,
+                            ),
+                          ],
+                          // New balance (credits with storage as subvalue)
+                          if (widget.newBalanceCredits != null ||
+                              widget.newBalanceStorage != null) ...[
+                            const SizedBox(height: 12),
+                            Divider(
+                                color: colors.themeBorderDefault, height: 1),
+                            const SizedBox(height: 12),
+                            _buildDetailRowWithSubvalue(
+                              context,
+                              appLocalizationsOf(context)
+                                  .paymentSummaryNewBalance,
+                              widget.newBalanceCredits ??
+                                  widget.newBalanceStorage!,
+                              widget.newBalanceCredits != null &&
+                                      widget.newBalanceStorage != null
+                                  ? _formatStorageSubvalue(
+                                      widget.newBalanceStorage!)
+                                  : null,
+                              colors,
+                              isHighlighted: true,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  // Close button - right aligned
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ArDriveButton(
+                      maxHeight: 44,
+                      maxWidth: 143,
+                      text: widget.closeButtonLabel,
+                      fontStyle: typography.paragraphLarge(
+                        fontWeight: ArFontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
+          ],
+        ),
+        // Close button in top right
+        Positioned(
+          right: 20,
+          top: 20,
+          child: ArDriveClickArea(
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: ArDriveIcons.x(),
+            ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

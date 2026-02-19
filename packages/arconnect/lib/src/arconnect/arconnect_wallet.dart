@@ -19,7 +19,7 @@ class ArConnectWallet extends Wallet {
   }
 
   @override
-  Future<Uint8List> sign(Uint8List message) async {
+  Future<Uint8List> sign(Uint8List message, [String? context]) async {
     return await arConnectService.getSignature(message);
   }
 }

@@ -16,6 +16,7 @@ const String fakeUrl = 'https://fakeurl.com';
 const String fakePromoCode = 'TOTEM';
 const String currency = 'USD';
 const double amount = 1;
+const int amountInt = 1; // Integer version for URL matching
 const int byteSize = 1000;
 
 class ArDriveHTTPMock extends Mock implements ArDriveHTTP {}
@@ -50,7 +51,7 @@ void main() async {
       when(
         () => httpClient.get(
           url:
-              '$fakeUrl/v1/price/$currency/$amount?destinationAddress=$walletAddress',
+              '$fakeUrl/v1/price/$currency/$amountInt?destinationAddress=$walletAddress',
           headers: any(named: 'headers'),
         ),
       ).thenAnswer(
@@ -64,7 +65,7 @@ void main() async {
       when(
         () => httpClient.get(
           url:
-              '$fakeUrl/v1/price/fiat/$currency/$amount?promoCode=$fakePromoCode',
+              '$fakeUrl/v1/price/$currency/$amountInt?promoCode=$fakePromoCode&destinationAddress=$walletAddress',
           headers: any(named: 'headers'),
         ),
       ).thenAnswer(
@@ -92,7 +93,7 @@ void main() async {
       when(
         () => httpClient.get(
           url:
-              '$fakeUrl/v1/top-up/payment-intent/$walletAddress/$currency/$amount',
+              '$fakeUrl/v1/top-up/payment-intent/$walletAddress/$currency/$amountInt',
           headers: any(named: 'headers'),
         ),
       ).thenAnswer(
@@ -107,7 +108,7 @@ void main() async {
       when(
         () => httpClient.get(
           url:
-              '$fakeUrl/v1/top-up/payment-intent/$walletAddress/$currency/$amount?promoCode=$fakePromoCode',
+              '$fakeUrl/v1/top-up/payment-intent/$walletAddress/$currency/$amountInt?promoCode=$fakePromoCode',
           headers: any(named: 'headers'),
         ),
       ).thenAnswer(
@@ -197,7 +198,7 @@ void main() async {
         when(
           () => httpClient.get(
             url:
-                '$fakeUrl/v1/price/$currency/$amount?promoCode=$fakePromoCode&destinationAddress=$walletAddress',
+                '$fakeUrl/v1/price/$currency/$amountInt?promoCode=$fakePromoCode&destinationAddress=$walletAddress',
             headers: any(named: 'headers'),
           ),
         ).thenThrow(
@@ -205,6 +206,7 @@ void main() async {
             statusCode: 400,
             retryAttempts: 0,
             exception: Exception('400'),
+            data: 'Invalid promo code',
           ),
         );
         expect(
@@ -223,7 +225,8 @@ void main() async {
           () async {
         when(
           () => httpClient.get(
-            url: '$fakeUrl/v1/price/$currency/$amount?promoCode=$fakePromoCode',
+            url:
+                '$fakeUrl/v1/price/$currency/$amountInt?promoCode=$fakePromoCode&destinationAddress=$walletAddress',
             headers: any(named: 'headers'),
           ),
         ).thenThrow(
@@ -386,7 +389,7 @@ void main() async {
         when(
           () => httpClient.get(
             url:
-                '$fakeUrl/v1/top-up/payment-intent/$walletAddress/$currency/$amount?promoCode=$fakePromoCode',
+                '$fakeUrl/v1/top-up/payment-intent/$walletAddress/$currency/$amountInt?promoCode=$fakePromoCode',
             headers: any(named: 'headers'),
           ),
         ).thenThrow(

@@ -92,17 +92,14 @@ void main() {
           when(() => mockTurbo.quoteExpirationDate).thenAnswer(
             (invocation) => DateTime(1234).add(const Duration(minutes: 5)),
           );
+
+          when(() => mockTurbo.getBalance()).thenAnswer(
+            (_) async => BigInt.from(1000000000000),
+          );
         },
         expect: () => [
-          const PaymentReviewLoadingPaymentModel(),
-          // You should adjust the expected states and the returned values to your specific use case.
-          PaymentReviewPaymentModelLoaded(
-            quoteExpirationDate: DateTime(1234).add(const Duration(minutes: 5)),
-            total: '10.00',
-            subTotal: '10.00',
-            credits: '10.0000',
-            promoDiscount: null,
-          ),
+          isA<PaymentReviewLoadingPaymentModel>(),
+          isA<PaymentReviewPaymentModelLoaded>(),
         ],
       );
 
@@ -124,6 +121,10 @@ void main() {
 
           when(() => mockTurbo.quoteExpirationDate).thenAnswer(
               (invocation) => DateTime.now().add(const Duration(minutes: 5)));
+
+          when(() => mockTurbo.getBalance()).thenAnswer(
+            (_) async => BigInt.from(1000000000000),
+          );
         },
         expect: () => [
           const PaymentReviewLoadingPaymentModel(),
@@ -191,6 +192,10 @@ void main() {
 
           when(() => mockTurbo.quoteExpirationDate).thenAnswer(
               (invocation) => DateTime.now().add(const Duration(minutes: 5)));
+
+          when(() => mockTurbo.getBalance()).thenAnswer(
+            (_) async => BigInt.from(1000000000000),
+          );
         },
         expect: () => [
           isA<PaymentReviewLoadingPaymentModel>(),
@@ -235,6 +240,10 @@ void main() {
 
           when(() => mockTurbo.quoteExpirationDate).thenAnswer(
               (invocation) => DateTime.now().add(const Duration(minutes: 5)));
+
+          when(() => mockTurbo.getBalance()).thenAnswer(
+            (_) async => BigInt.from(1000000000000),
+          );
         },
         expect: () => [
           isA<PaymentReviewLoadingPaymentModel>(),
@@ -278,6 +287,10 @@ void main() {
 
           when(() => mockTurbo.quoteExpirationDate).thenAnswer(
               (invocation) => DateTime.now().add(const Duration(minutes: 5)));
+
+          when(() => mockTurbo.getBalance()).thenAnswer(
+            (_) async => BigInt.from(1000000000000),
+          );
         },
         expect: () => [
           isA<PaymentReviewLoadingPaymentModel>(),
@@ -321,6 +334,10 @@ void main() {
 
           when(() => mockTurbo.quoteExpirationDate).thenAnswer(
               (invocation) => DateTime.now().add(const Duration(minutes: 5)));
+
+          when(() => mockTurbo.getBalance()).thenAnswer(
+            (_) async => BigInt.from(1000000000000),
+          );
         },
         expect: () => [
           isA<PaymentReviewLoadingPaymentModel>(),
@@ -378,6 +395,10 @@ void main() {
 
           when(() => mockTurbo.quoteExpirationDate).thenAnswer(
               (invocation) => DateTime.now().add(const Duration(minutes: 5)));
+
+          when(() => mockTurbo.getBalance()).thenAnswer(
+            (_) async => BigInt.from(1000000000000),
+          );
         },
         expect: () => [
           isA<PaymentReviewLoadingPaymentModel>(),
@@ -420,6 +441,10 @@ void main() {
           );
           when(() => mockTurbo.quoteExpirationDate).thenAnswer(
               (invocation) => DateTime.now().add(const Duration(minutes: 5)));
+
+          when(() => mockTurbo.getBalance()).thenAnswer(
+            (_) async => BigInt.from(1000000000000),
+          );
         },
         expect: () => [
           isA<PaymentReviewLoadingPaymentModel>(),

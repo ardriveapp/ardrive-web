@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:ardrive/services/arconnect/arconnect.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:arweave/arweave.dart';
 
 class ArConnectWallet extends Wallet {
@@ -20,11 +21,27 @@ class ArConnectWallet extends Wallet {
 
   @override
   Future<Uint8List> sign(Uint8List message) async {
-    return await arConnectService.getSignature(message);
+    logger.d('ArConnectWallet.sign() called with ${message.length} bytes');
+    try {
+      final result = await arConnectService.getSignature(message);
+      logger.d('ArConnectWallet.sign() successful, got ${result.length} bytes');
+      return result;
+    } catch (e, stackTrace) {
+      logger.e('ArConnectWallet.sign() failed', e, stackTrace);
+      rethrow;
+    }
   }
 
   @override
   Future<Uint8List> signDataItem(DataItem dataItem) async {
-    return await arConnectService.signDataItem(dataItem);
+    logger.d('ArConnectWallet.signDataItem() called with ${dataItem.data.length} bytes');
+    try {
+      final result = await arConnectService.signDataItem(dataItem);
+      logger.d('ArConnectWallet.signDataItem() successful, got ${result.length} bytes');
+      return result;
+    } catch (e, stackTrace) {
+      logger.e('ArConnectWallet.signDataItem() failed', e, stackTrace);
+      rethrow;
+    }
   }
 }

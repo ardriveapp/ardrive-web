@@ -1674,8 +1674,32 @@
   "@pay": {},
   "paymentDetails": "Payment Details",
   "@paymentDetails": {},
+  "paymentMethod": "Payment Method",
+  "@paymentMethod": {
+    "description": "Label for payment method selection"
+  },
+  "paymentMethodCard": "Credit/Debit Card",
+  "@paymentMethodCard": {
+    "description": "Card payment option label"
+  },
+  "paymentMethodCrypto": "Crypto",
+  "@paymentMethodCrypto": {
+    "description": "Cryptocurrency payment option label"
+  },
   "paymentSuccessful": "Payment Successful!",
   "@paymentSuccessful": {},
+  "paymentSummaryPaid": "Paid",
+  "@paymentSummaryPaid": {
+    "description": "Label for the amount paid in payment summary"
+  },
+  "paymentSummaryCreditsAdded": "Credits added",
+  "@paymentSummaryCreditsAdded": {
+    "description": "Label for credits added in payment summary"
+  },
+  "paymentSummaryNewBalance": "New balance",
+  "@paymentSummaryNewBalance": {
+    "description": "Label for new balance in payment summary"
+  },
   "payPerFileEmphasized": "PAY PER FILE",
   "@payPerFileEmphasized": {
     "description": "Payment philosophy. Emphasized with upper case"
@@ -2162,6 +2186,10 @@
   "@tryOnAnotherDevice": {
     "description": "Screen not supported page"
   },
+  "noTurboFee": "No Turbo Fee",
+  "@noTurboFee": {
+    "description": "Label indicating no turbo fee for certain crypto payments"
+  },
   "turboAddCreditsBlurb": "Add Credits using your card for faster uploads.",
   "@turboAddCreditsBlurb": {
     "description": "text placeholder for turbo balance when no user"
@@ -2188,8 +2216,10 @@
   "@turboErrorMessageNetwork": {},
   "turboErrorMessageServer": "The payment was not successful. Please check your card information and try again.",
   "@turboErrorMessageServer": {},
-  "turboErrorMessageSessionExpired": "Your Turbo session has expired. Please try again.",
+  "turboErrorMessageSessionExpired": "Your session has expired. Please refresh to continue.",
   "@turboErrorMessageSessionExpired": {},
+  "turboSessionExpiredTitle": "Session Expired",
+  "@turboSessionExpiredTitle": {},
   "turboErrorMessageUnknown": "The payment was not successful. Please check your card information and try again.",
   "@turboErrorMessageUnknown": {},
   "turboModalBrowserLimit": "Upload sizes are limited by browsers and other factors. Learn more.",
