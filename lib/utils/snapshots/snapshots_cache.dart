@@ -46,10 +46,11 @@ class SnapshotsCache {
     // Check if already exists
     if (entry.snapshots.any((s) => s.txId == snapshot.txId)) return;
 
-    // Add to beginning of list
+    // Add to beginning of list and refresh timestamp so newly added
+    // pending snapshot isn't evicted immediately if cache was near TTL expiry
     _cache[driveId] = _CacheEntry(
       snapshots: [snapshot, ...entry.snapshots],
-      timestamp: entry.timestamp,
+      timestamp: DateTime.now(),
     );
   }
 

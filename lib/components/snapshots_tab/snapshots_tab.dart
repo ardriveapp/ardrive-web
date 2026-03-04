@@ -1,7 +1,5 @@
 import 'package:ardrive/blocs/fs_entry_snapshots/fs_entry_snapshots_cubit.dart';
 import 'package:ardrive/blocs/fs_entry_snapshots/models/snapshot_display_item.dart';
-import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
-import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/components/create_snapshot_dialog.dart';
 import 'package:ardrive/components/snapshots_tab/snapshot_list_item.dart';
 import 'package:ardrive/models/database/database.dart';
@@ -302,10 +300,7 @@ class SnapshotsTab extends StatelessWidget {
   }
 
   void _launchCreateSnapshotDialog(BuildContext context) {
-    // Notify the PromptToSnapshotBloc that we're snapshotting
-    final promptToSnapshotBloc = context.read<PromptToSnapshotBloc>();
-    promptToSnapshotBloc.add(DriveSnapshotting(driveId: drive.id));
-
+    // promptToCreateSnapshot already dispatches DriveSnapshotting
     promptToCreateSnapshot(context, drive);
   }
 }

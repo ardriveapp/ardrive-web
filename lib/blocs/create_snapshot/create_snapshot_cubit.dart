@@ -604,35 +604,45 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         await _arweave.postTx(_preparedTx!);
       }
 
-      final drive =
-          await _driveDao.driveById(driveId: _driveId).getSingleOrNull();
-      final drivePrivacy = drive?.privacy == DrivePrivacyTag.public
-          ? DrivePrivacy.public
-          : DrivePrivacy.private;
-      PlausibleEventTracker.trackSnapshotCreation(
-        drivePrivacy: drivePrivacy,
-      );
-
-      // Track transaction for confirmation via sync process
       final txId = _useTurboUpload ? _preparedDataItem!.id : _preparedTx!.id;
-      await _driveDao.writeToTransaction(
-        NetworkTransactionsCompanion.insert(
-          id: txId,
-          status: const Value(TransactionStatus.pending),
-        ),
-      );
 
-      // Emit optimistic update event for the Snapshots tab
-      SnapshotEventBus.instance.emitSnapshotCreated(
-        SnapshotDisplayItem(
-          txId: txId,
-          driveId: _driveId,
-          blockStart: _range.start,
-          blockEnd: _range.end,
-          createdAt: DateTime.now(),
-          status: TransactionStatus.pending,
-        ),
-      );
+      // Non-critical bookkeeping should not flip upload success into failure.
+      // Wrap in try-catch so DB/event-bus errors don't mislead users into
+      // retrying a snapshot that already went through.
+      try {
+        final drive =
+            await _driveDao.driveById(driveId: _driveId).getSingleOrNull();
+        final drivePrivacy = drive?.privacy == DrivePrivacyTag.public
+            ? DrivePrivacy.public
+            : DrivePrivacy.private;
+        PlausibleEventTracker.trackSnapshotCreation(
+          drivePrivacy: drivePrivacy,
+        );
+
+        // Track transaction for confirmation via sync process
+        await _driveDao.writeToTransaction(
+          NetworkTransactionsCompanion.insert(
+            id: txId,
+            status: const Value(TransactionStatus.pending),
+          ),
+        );
+
+        // Emit optimistic update event for the Snapshots tab
+        SnapshotEventBus.instance.emitSnapshotCreated(
+          SnapshotDisplayItem(
+            txId: txId,
+            driveId: _driveId,
+            blockStart: _range.start,
+            blockEnd: _range.end,
+            createdAt: DateTime.now(),
+            status: TransactionStatus.pending,
+          ),
+        );
+      } catch (bookkeepingErr) {
+        logger.w(
+          'Snapshot uploaded successfully, but post-upload bookkeeping failed: $bookkeepingErr',
+        );
+      }
 
       emit(SnapshotUploadSuccess());
     } catch (err, stacktrace) {
