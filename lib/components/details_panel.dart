@@ -5,6 +5,7 @@ import 'package:ardrive/arns/presentation/verify_name_bloc/verify_name_bloc.dart
 import 'package:ardrive/arns/utils/arns_address_utils.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
+import 'package:ardrive/components/snapshots_tab/snapshots_tab.dart';
 import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/dotted_line.dart';
@@ -208,7 +209,31 @@ class _DetailsPanelState extends State<DetailsPanel> {
             },
           ),
         ),
-      )
+      ),
+      // Snapshots tab - only shown for drives (not files/folders) and not on share page
+      if (widget.item is DriveDataItem &&
+          !isSharePage &&
+          widget.currentDrive != null)
+        ArDriveTab(
+          Tab(
+            child: Text(
+              appLocalizationsOf(context).snapshotsEmphasized,
+              style: typography.paragraphNormal(
+                fontWeight: ArFontWeight.bold,
+              ),
+            ),
+          ),
+          BlocProvider(
+            create: (context) {
+              return FsEntrySnapshotsCubit(
+                driveId: widget.item.driveId,
+                ownerAddress: widget.currentDrive!.ownerAddress,
+                arweaveService: context.read<ArweaveService>(),
+              );
+            },
+            child: const SnapshotsTab(),
+          ),
+        ),
     ];
 
     return [
@@ -734,7 +759,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
     String? pinnedDataOwnerAddress = item.pinnedDataOwnerAddress;
 
     final typography = ArDriveTypographyNew.of(context);
-    
+
     // Get owner address from state if available
     String? ownerAddress;
     if (state is FsEntryFileInfoSuccess) {
@@ -1361,7 +1386,6 @@ class DetailsPanelItem extends StatelessWidget {
     );
   }
 }
-
 
 class _DownloadOrPreview extends StatelessWidget {
   const _DownloadOrPreview({

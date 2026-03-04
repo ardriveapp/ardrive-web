@@ -10,6 +10,9 @@ import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/models/daos/daos.dart';
+import 'package:ardrive/models/database/database.dart';
+import 'package:ardrive/models/enums.dart';
+import 'package:drift/drift.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
@@ -17,6 +20,8 @@ import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/metadata_cache.dart';
+import 'package:ardrive/utils/snapshot_events.dart';
+import 'package:ardrive/blocs/fs_entry_snapshots/models/snapshot_display_item.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
@@ -606,6 +611,27 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
           : DrivePrivacy.private;
       PlausibleEventTracker.trackSnapshotCreation(
         drivePrivacy: drivePrivacy,
+      );
+
+      // Track transaction for confirmation via sync process
+      final txId = _useTurboUpload ? _preparedDataItem!.id : _preparedTx!.id;
+      await _driveDao.writeToTransaction(
+        NetworkTransactionsCompanion.insert(
+          id: txId,
+          status: const Value(TransactionStatus.pending),
+        ),
+      );
+
+      // Emit optimistic update event for the Snapshots tab
+      SnapshotEventBus.instance.emitSnapshotCreated(
+        SnapshotDisplayItem(
+          txId: txId,
+          driveId: _driveId,
+          blockStart: _range.start,
+          blockEnd: _range.end,
+          createdAt: DateTime.now(),
+          status: TransactionStatus.pending,
+        ),
       );
 
       emit(SnapshotUploadSuccess());
