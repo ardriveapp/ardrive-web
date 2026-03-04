@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/fs_entry_snapshots/models/snapshot_display_item.dart';
+import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/snapshot_events.dart';
@@ -60,6 +61,15 @@ class FsEntrySnapshotsCubit extends Cubit<FsEntrySnapshotsState> {
     }
   }
 
+  /// Checks if the drive would benefit from a snapshot.
+  /// Uses the same threshold (1000 transactions) as PromptToSnapshotBloc.
+  bool _shouldRecommendSnapshot() {
+    return CountOfTxsSyncedWithGql.wouldDriveBenefitFromSnapshot(
+      driveId,
+      defaultNumberOfTxsBeforeSnapshot,
+    );
+  }
+
   void _addPendingSnapshot(SnapshotDisplayItem snapshot) {
     if (isClosed) return;
 
@@ -75,7 +85,10 @@ class FsEntrySnapshotsCubit extends Cubit<FsEntrySnapshotsState> {
     // Update cache
     SnapshotsCache.instance.addPending(driveId, snapshot);
 
-    emit(FsEntrySnapshotsSuccess(snapshots: List.unmodifiable(_snapshots)));
+    emit(FsEntrySnapshotsSuccess(
+      snapshots: List.unmodifiable(_snapshots),
+      shouldRecommendSnapshot: _shouldRecommendSnapshot(),
+    ));
   }
 
   Future<void> _loadSnapshots({bool forceRefresh = false}) async {
@@ -86,7 +99,10 @@ class FsEntrySnapshotsCubit extends Cubit<FsEntrySnapshotsState> {
       final cached = SnapshotsCache.instance.get(driveId);
       if (cached != null) {
         _snapshots = List.from(cached);
-        emit(FsEntrySnapshotsSuccess(snapshots: List.unmodifiable(_snapshots)));
+        emit(FsEntrySnapshotsSuccess(
+          snapshots: List.unmodifiable(_snapshots),
+          shouldRecommendSnapshot: _shouldRecommendSnapshot(),
+        ));
         return;
       }
     }
@@ -163,7 +179,10 @@ class FsEntrySnapshotsCubit extends Cubit<FsEntrySnapshotsState> {
       SnapshotsCache.instance.set(driveId, _snapshots);
 
       if (isClosed) return;
-      emit(FsEntrySnapshotsSuccess(snapshots: List.unmodifiable(_snapshots)));
+      emit(FsEntrySnapshotsSuccess(
+        snapshots: List.unmodifiable(_snapshots),
+        shouldRecommendSnapshot: _shouldRecommendSnapshot(),
+      ));
     } catch (e, stackTrace) {
       logger.e('Failed to load snapshots for drive $driveId', e, stackTrace);
       if (isClosed) return;

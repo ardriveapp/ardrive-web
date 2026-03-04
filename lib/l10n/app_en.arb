@@ -2014,6 +2014,10 @@
   "@snapshotRecommendedBody": {
     "description": "Explains how the snapshots improves the syncing time of a drive"
   },
+  "createNewSnapshotRecommendation": "Your drive has grown since the last snapshot. Creating a new one will help keep sync times fast.",
+  "@createNewSnapshotRecommendation": {
+    "description": "Recommends creating a new snapshot when drive has grown"
+  },
   "snapshotRecommendedDontAskAgain": "You can always create a snapshot under the Advanced section of the New menu in the future.",
   "@snapshotRecommendedDontAskAgain": {
     "description": "Explains where you can make a snapshot."

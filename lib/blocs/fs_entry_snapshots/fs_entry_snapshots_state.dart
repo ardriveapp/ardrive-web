@@ -14,10 +14,17 @@ class FsEntrySnapshotsLoading extends FsEntrySnapshotsState {}
 class FsEntrySnapshotsSuccess extends FsEntrySnapshotsState {
   final List<SnapshotDisplayItem> snapshots;
 
-  const FsEntrySnapshotsSuccess({required this.snapshots});
+  /// Whether the drive would benefit from creating a (new) snapshot.
+  /// Based on the 1000 transaction threshold from PromptToSnapshotBloc.
+  final bool shouldRecommendSnapshot;
+
+  const FsEntrySnapshotsSuccess({
+    required this.snapshots,
+    this.shouldRecommendSnapshot = false,
+  });
 
   @override
-  List<Object?> get props => [snapshots];
+  List<Object?> get props => [snapshots, shouldRecommendSnapshot];
 }
 
 class FsEntrySnapshotsFailure extends FsEntrySnapshotsState {

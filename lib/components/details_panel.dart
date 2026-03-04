@@ -231,7 +231,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 arweaveService: context.read<ArweaveService>(),
               );
             },
-            child: const SnapshotsTab(),
+            child: SnapshotsTab(drive: widget.currentDrive!),
           ),
         ),
     ];
