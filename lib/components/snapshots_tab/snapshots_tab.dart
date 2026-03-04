@@ -193,44 +193,109 @@ class SnapshotsTab extends StatelessWidget {
             color: colorTokens.strokeMid,
           ),
         ),
-        child: Row(
-          children: [
-            ArDriveIcons.info(
-              size: 20,
-              color: colorTokens.textMid,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Use vertical layout on narrow screens (mobile)
+            final isNarrow = constraints.maxWidth < 400;
+
+            if (isNarrow) {
+              return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    appLocalizationsOf(context).snapshotRecommended,
-                    style: typography.paragraphSmall(
-                      fontWeight: ArFontWeight.semiBold,
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: ArDriveIcons.info(
+                          size: 20,
+                          color: colorTokens.textMid,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              appLocalizationsOf(context).snapshotRecommended,
+                              style: typography.paragraphSmall(
+                                fontWeight: ArFontWeight.semiBold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              appLocalizationsOf(context)
+                                  .createNewSnapshotRecommendation,
+                              style: typography.paragraphSmall(
+                                color: colorTokens.textLow,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    appLocalizationsOf(context).createNewSnapshotRecommendation,
-                    style: typography.paragraphSmall(
-                      color: colorTokens.textLow,
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ArDriveButton(
+                      text: appLocalizationsOf(context).createSnapshot,
+                      style: ArDriveButtonStyle.secondary,
+                      maxHeight: 36,
+                      fontStyle: typography.paragraphSmall(
+                        fontWeight: ArFontWeight.semiBold,
+                      ),
+                      onPressed: () => _launchCreateSnapshotDialog(context),
                     ),
                   ),
                 ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            ArDriveButton(
-              text: appLocalizationsOf(context).createSnapshot,
-              style: ArDriveButtonStyle.secondary,
-              maxHeight: 36,
-              fontStyle: typography.paragraphSmall(
-                fontWeight: ArFontWeight.semiBold,
-              ),
-              onPressed: () => _launchCreateSnapshotDialog(context),
-            ),
-          ],
+              );
+            }
+
+            // Desktop/wide layout
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                ArDriveIcons.info(
+                  size: 20,
+                  color: colorTokens.textMid,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        appLocalizationsOf(context).snapshotRecommended,
+                        style: typography.paragraphSmall(
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        appLocalizationsOf(context)
+                            .createNewSnapshotRecommendation,
+                        style: typography.paragraphSmall(
+                          color: colorTokens.textLow,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ArDriveButton(
+                  text: appLocalizationsOf(context).createSnapshot,
+                  style: ArDriveButtonStyle.secondary,
+                  maxHeight: 36,
+                  fontStyle: typography.paragraphSmall(
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                  onPressed: () => _launchCreateSnapshotDialog(context),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

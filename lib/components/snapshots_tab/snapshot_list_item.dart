@@ -76,7 +76,7 @@ class SnapshotListItem extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (snapshot.isConfirmed) ...[
+              if (snapshot.isConfirmed)
                 ArDriveClickArea(
                   child: GestureDetector(
                     onTap: () {
@@ -98,9 +98,20 @@ class SnapshotListItem extends StatelessWidget {
                       ),
                     ),
                   ),
+                )
+              else
+                ArDriveTooltip(
+                  message: snapshot.txId,
+                  child: Text(
+                    truncateString(
+                      snapshot.txId,
+                      offsetStart: 4,
+                      offsetEnd: 4,
+                    ),
+                    style: typography.paragraphNormal(),
+                  ),
                 ),
-                const SizedBox(width: 8),
-              ],
+              const SizedBox(width: 8),
               CopyButton(text: snapshot.txId),
             ],
           ),
