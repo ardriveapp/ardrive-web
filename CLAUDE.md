@@ -93,7 +93,7 @@ Dependencies are injected via constructor. Streams are combined using `Rx.combin
 
 ### Main Directory Structure
 
-```
+```text
 lib/
 ├── main.dart              # Entry point, DI setup
 ├── app_shell.dart         # Root shell with nav, sidebar, layout
