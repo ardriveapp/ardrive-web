@@ -21,52 +21,40 @@ class SnapshotListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header row with status dot and title
+        // Header row with status dot and date as title
         Row(
           children: [
-            // Status indicator dot (same as files)
-            _buildStatusDot(context, colors),
+            // Status indicator dot with tooltip
+            _buildStatusDot(context, colors, colorTokens),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                appLocalizationsOf(context).snapshot,
+                formatDateToUtcString(snapshot.createdAt),
                 style: typography.paragraphNormal(
                   fontWeight: ArFontWeight.bold,
                 ),
               ),
             ),
+            // Block range info icon with tooltip
+            ArDriveTooltip(
+              message: appLocalizationsOf(context).blockRangeTooltip(
+                snapshot.blockStart.toString(),
+                snapshot.blockEnd.toString(),
+              ),
+              child: ArDriveIcons.info(
+                size: 16,
+                color: colorTokens.textLow,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 12),
-
-        // Created date
-        _buildInfoRow(
-          context,
-          typography,
-          appLocalizationsOf(context).dateCreated,
-          Text(
-            formatDateToUtcString(snapshot.createdAt),
-            style: typography.paragraphNormal(),
-          ),
-        ),
-        const SizedBox(height: 8),
-
-        // Block range
-        _buildInfoRow(
-          context,
-          typography,
-          appLocalizationsOf(context).blockRange,
-          Text(
-            '${snapshot.blockStart} - ${snapshot.blockEnd}',
-            style: typography.paragraphNormal(),
-          ),
-        ),
-        const SizedBox(height: 8),
 
         // Transaction ID
         _buildInfoRow(
@@ -126,21 +114,29 @@ class SnapshotListItem extends StatelessWidget {
     );
   }
 
-  /// Builds a colored status dot indicator (same pattern as file status).
-  Widget _buildStatusDot(BuildContext context, ArDriveColors colors) {
+  /// Builds a colored status dot indicator with tooltip (same pattern as file status).
+  Widget _buildStatusDot(
+    BuildContext context,
+    ArDriveColors colors,
+    ArDriveColorTokens colorTokens,
+  ) {
     Color indicatorColor;
+    String? tooltipMessage;
 
     if (snapshot.isPending) {
       indicatorColor = colors.themeWarningFg;
+      tooltipMessage = appLocalizationsOf(context).snapshotPendingTooltip;
     } else if (snapshot.isConfirmed) {
       indicatorColor = colors.themeSuccessFb;
+      tooltipMessage = appLocalizationsOf(context).snapshotConfirmedTooltip;
     } else if (snapshot.isFailed) {
       indicatorColor = colors.themeErrorFg;
+      tooltipMessage = appLocalizationsOf(context).snapshotFailedTooltip;
     } else {
       indicatorColor = Colors.transparent;
     }
 
-    return Container(
+    final dot = Container(
       width: 8,
       height: 8,
       decoration: BoxDecoration(
@@ -148,6 +144,15 @@ class SnapshotListItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
     );
+
+    if (tooltipMessage != null) {
+      return ArDriveTooltip(
+        message: tooltipMessage,
+        child: dot,
+      );
+    }
+
+    return dot;
   }
 
   Widget _buildInfoRow(

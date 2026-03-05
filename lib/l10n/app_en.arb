@@ -2052,43 +2052,41 @@
   "@transactionId": {
     "description": "Label for transaction ID"
   },
-  "restoreFromSnapshot": "Restore from Snapshot",
-  "@restoreFromSnapshot": {
-    "description": "Button text to restore from a snapshot"
+  "blockRangeTooltip": "Arweave blocks {start} - {end}",
+  "@blockRangeTooltip": {
+    "description": "Tooltip showing block range for a snapshot",
+    "placeholders": {
+      "start": {
+        "type": "String",
+        "example": "1500000"
+      },
+      "end": {
+        "type": "String",
+        "example": "1550000"
+      }
+    }
   },
-  "restoreSnapshotExplanation": "This will create a new snapshot using the same block range as the source snapshot. This can help restore sync performance if the original snapshot data is no longer accessible.",
-  "@restoreSnapshotExplanation": {
-    "description": "Explains what restoring from a snapshot does"
+  "snapshotPendingTooltip": "Confirming on Arweave (usually 5-10 minutes)",
+  "@snapshotPendingTooltip": {
+    "description": "Tooltip for pending snapshot status"
   },
-  "sourceSnapshot": "Source Snapshot",
-  "@sourceSnapshot": {
-    "description": "Label for the source snapshot being restored from"
+  "snapshotConfirmedTooltip": "Confirmed on Arweave",
+  "@snapshotConfirmedTooltip": {
+    "description": "Tooltip for confirmed snapshot status"
   },
-  "snapshotRestoreSucceeded": "Snapshot Restored",
-  "@snapshotRestoreSucceeded": {
-    "description": "Title when snapshot restore succeeds"
+  "snapshotFailedTooltip": "Transaction failed",
+  "@snapshotFailedTooltip": {
+    "description": "Tooltip for failed snapshot status"
   },
-  "snapshotRestoreSucceededDescription": "A new snapshot has been created successfully using the source snapshot's block range.",
-  "@snapshotRestoreSucceededDescription": {
-    "description": "Description when snapshot restore succeeds"
+  "createSnapshotAnyway": "Create one anyway",
+  "@createSnapshotAnyway": {
+    "description": "Subtle link to create snapshot for small drives"
   },
-  "snapshotRestoreFailed": "Restore Failed",
-  "@snapshotRestoreFailed": {
-    "description": "Title when snapshot restore fails"
-  },
-  "snapshotRestoreFailedDescription": "Failed to create the snapshot. You have not been charged for this failed attempt.",
-  "@snapshotRestoreFailedDescription": {
-    "description": "Description when snapshot restore fails"
-  },
-  "pendingConfirmation": "Pending confirmation...",
-  "@pendingConfirmation": {
-    "description": "Status text for snapshots awaiting blockchain confirmation"
-  },
-  "noSnapshotsFound": "No snapshots found for this drive.",
+  "noSnapshotsFound": "No snapshots yet",
   "@noSnapshotsFound": {
     "description": "Empty state message when no snapshots exist"
   },
-  "snapshotsHelpSyncSpeed": "Snapshots help speed up drive sync.",
+  "snapshotsHelpSyncSpeed": "Snapshots help other devices sync this drive faster.",
   "@snapshotsHelpSyncSpeed": {
     "description": "Explanation of what snapshots do"
   },

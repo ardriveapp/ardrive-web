@@ -136,13 +136,25 @@ class SnapshotsTab extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            if (shouldRecommendSnapshot) ...[
-              const SizedBox(height: 16),
+            const SizedBox(height: 16),
+            if (shouldRecommendSnapshot)
               ArDriveButton(
                 text: appLocalizationsOf(context).createSnapshot,
                 onPressed: () => _launchCreateSnapshotDialog(context),
+              )
+            else
+              // Subtle link for small drives
+              GestureDetector(
+                onTap: () => _launchCreateSnapshotDialog(context),
+                child: Text(
+                  appLocalizationsOf(context).createSnapshotAnyway,
+                  style: typography.paragraphSmall(
+                    color: colorTokens.textLow,
+                  ).copyWith(
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
               ),
-            ],
           ],
         ),
       ),
