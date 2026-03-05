@@ -111,6 +111,16 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     await _folderSubscription?.cancel();
 
+    // If the drive info panel is open (selectedItem is a DriveDataItem),
+    // keep it open and let openFolder update it to the new drive.
+    // Otherwise, clear the selected item to avoid showing stale file/folder data.
+    if (_selectedItem is! DriveDataItem) {
+      _selectedItem = null;
+    } else {
+      // Enable refresh so the subscription callback updates the drive info
+      _refreshSelectedItem = true;
+    }
+
     _driveId = driveId;
 
     openFolder(folderId: drive.rootFolderId);
