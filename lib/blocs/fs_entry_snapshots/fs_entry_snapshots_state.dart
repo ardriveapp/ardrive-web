@@ -7,9 +7,13 @@ abstract class FsEntrySnapshotsState extends Equatable {
   List<Object?> get props => [];
 }
 
-class FsEntrySnapshotsInitial extends FsEntrySnapshotsState {}
+class FsEntrySnapshotsInitial extends FsEntrySnapshotsState {
+  const FsEntrySnapshotsInitial();
+}
 
-class FsEntrySnapshotsLoading extends FsEntrySnapshotsState {}
+class FsEntrySnapshotsLoading extends FsEntrySnapshotsState {
+  const FsEntrySnapshotsLoading();
+}
 
 class FsEntrySnapshotsSuccess extends FsEntrySnapshotsState {
   final List<SnapshotDisplayItem> snapshots;

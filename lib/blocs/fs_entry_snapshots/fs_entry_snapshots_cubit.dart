@@ -29,7 +29,7 @@ class FsEntrySnapshotsCubit extends Cubit<FsEntrySnapshotsState> {
     required this.ownerAddress,
     required ArweaveService arweaveService,
   })  : _arweaveService = arweaveService,
-        super(FsEntrySnapshotsInitial()) {
+        super(const FsEntrySnapshotsInitial()) {
     _init();
   }
 
@@ -107,7 +107,7 @@ class FsEntrySnapshotsCubit extends Cubit<FsEntrySnapshotsState> {
       }
     }
 
-    emit(FsEntrySnapshotsLoading());
+    emit(const FsEntrySnapshotsLoading());
 
     try {
       final snapshots = <SnapshotDisplayItem>[];
