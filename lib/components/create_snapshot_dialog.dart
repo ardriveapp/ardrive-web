@@ -179,6 +179,8 @@ Widget _loadingDialog(
       : false;
 
   final createSnapshotCubit = context.read<CreateSnapshotCubit>();
+  final typography = ArDriveTypographyNew.of(context);
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
   final onDismiss = state is ComputingSnapshotData
       ? () {
           Navigator.of(context).pop();
@@ -187,11 +189,14 @@ Widget _loadingDialog(
       : null;
 
   return ProgressDialog(
+    useNewArDriveUI: true,
     title: _loadingDialogTitle(context, state),
     progressDescription: Center(
       child: Text(
         _loadingDialogDescription(context, state, isArConnectProfile),
-        style: ArDriveTypography.body.buttonNormalRegular(),
+        style: typography.paragraphNormal(
+          color: colorTokens.textMid,
+        ),
       ),
     ),
     actions: [

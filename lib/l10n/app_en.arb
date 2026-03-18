@@ -2014,6 +2014,10 @@
   "@snapshotRecommendedBody": {
     "description": "Explains how the snapshots improves the syncing time of a drive"
   },
+  "createNewSnapshotRecommendation": "Your drive has grown since the last snapshot. Creating a new one will help keep sync times fast.",
+  "@createNewSnapshotRecommendation": {
+    "description": "Recommends creating a new snapshot when drive has grown"
+  },
   "snapshotRecommendedDontAskAgain": "You can always create a snapshot under the Advanced section of the New menu in the future.",
   "@snapshotRecommendedDontAskAgain": {
     "description": "Explains where you can make a snapshot."
@@ -2031,6 +2035,64 @@
   "snapshotSuceeded": "Success",
   "@snapshotSuceeded": {
     "description": "Snapshot Succeeded"
+  },
+  "snapshotsEmphasized": "SNAPSHOTS",
+  "@snapshotsEmphasized": {
+    "description": "Snapshots tab title emphasized with upper case"
+  },
+  "snapshot": "Snapshot",
+  "@snapshot": {
+    "description": "A single snapshot item"
+  },
+  "blockRange": "Block Range",
+  "@blockRange": {
+    "description": "Label for snapshot block range"
+  },
+  "transactionId": "Transaction ID",
+  "@transactionId": {
+    "description": "Label for transaction ID"
+  },
+  "blockRangeTooltip": "Arweave blocks {start} - {end}",
+  "@blockRangeTooltip": {
+    "description": "Tooltip showing block range for a snapshot",
+    "placeholders": {
+      "start": {
+        "type": "String",
+        "example": "1500000"
+      },
+      "end": {
+        "type": "String",
+        "example": "1550000"
+      }
+    }
+  },
+  "snapshotPendingTooltip": "Confirming on Arweave (usually 5-10 minutes)",
+  "@snapshotPendingTooltip": {
+    "description": "Tooltip for pending snapshot status"
+  },
+  "snapshotConfirmedTooltip": "Confirmed on Arweave",
+  "@snapshotConfirmedTooltip": {
+    "description": "Tooltip for confirmed snapshot status"
+  },
+  "snapshotFailedTooltip": "Transaction failed",
+  "@snapshotFailedTooltip": {
+    "description": "Tooltip for failed snapshot status"
+  },
+  "createSnapshotAnyway": "Create one anyway",
+  "@createSnapshotAnyway": {
+    "description": "Subtle link to create snapshot for small drives"
+  },
+  "noSnapshotsFound": "No snapshots yet",
+  "@noSnapshotsFound": {
+    "description": "Empty state message when no snapshots exist"
+  },
+  "snapshotsHelpSyncSpeed": "Snapshots help other devices sync this drive faster.",
+  "@snapshotsHelpSyncSpeed": {
+    "description": "Explanation of what snapshots do"
+  },
+  "errorLoadingSnapshots": "Error loading snapshots",
+  "@errorLoadingSnapshots": {
+    "description": "Error message when snapshots fail to load"
   },
   "sorryLoginFailed": "Sorry, login failed. Please try again.",
   "@sorryLoginFailed": {
