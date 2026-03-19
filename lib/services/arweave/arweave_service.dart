@@ -1442,6 +1442,24 @@ class ArweaveService {
         dryRun: dryRun,
       );
 
+  /// Uploads a transaction using the same chunked flow as file data uploads:
+  /// header then chunks with [maxConcurrentUploadCount] (default 1) to avoid
+  /// gateway 400s from data_root propagation when many chunk requests hit
+  /// before the tx is indexed.
+  Future<void> uploadTx(
+    Transaction transaction, {
+    int maxConcurrentUploadCount = 1,
+    bool dryRun = false,
+  }) async {
+    await client.transactions
+        .upload(
+          transaction,
+          maxConcurrentUploadCount: maxConcurrentUploadCount,
+          dryRun: dryRun,
+        )
+        .drain();
+  }
+
   // TODO: replace with the method on ardrive_utils
   Future<double?> getArUsdConversionRateOrNull() async {
     try {
