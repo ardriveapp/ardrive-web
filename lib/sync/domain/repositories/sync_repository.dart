@@ -179,6 +179,7 @@ class _SyncRepository implements SyncRepository {
     if (drives.isEmpty) {
       yield SyncProgress.emptySyncCompleted();
       _lastSync = DateTime.now();
+      return;
     }
 
     final numberOfDrivesToSync = drives.length;
@@ -851,176 +852,89 @@ class _SyncRepository implements SyncRepository {
           arweave: _arweave,
         ).toList();
 
-        List<SnapshotItem> snapshotsVerified =
-            await _snapshotValidationService.validateSnapshotItems(snapshotItems);
+        List<SnapshotItem> snapshotsVerified = await _snapshotValidationService
+            .validateSnapshotItems(snapshotItems);
 
         snapshotItems = snapshotsVerified;
       }
 
       final SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
-      items: snapshotItems,
-    );
+        items: snapshotItems,
+      );
 
-    final totalRangeToQueryFor = HeightRange(
-      rangeSegments: [
-        Range(
-          start: lastBlockHeight,
-          end: currentBlockHeight,
-        ),
-      ],
-    );
+      final totalRangeToQueryFor = HeightRange(
+        rangeSegments: [
+          Range(
+            start: lastBlockHeight,
+            end: currentBlockHeight,
+          ),
+        ],
+      );
 
-    final HeightRange gqlDriveHistorySubRanges = HeightRange.difference(
-      totalRangeToQueryFor,
-      snapshotDriveHistory.subRanges,
-    );
+      final HeightRange gqlDriveHistorySubRanges = HeightRange.difference(
+        totalRangeToQueryFor,
+        snapshotDriveHistory.subRanges,
+      );
 
-    final GQLDriveHistory gqlDriveHistory = GQLDriveHistory(
-      subRanges: gqlDriveHistorySubRanges,
-      arweave: _arweave,
-      driveId: driveId,
-      ownerAddress: ownerAddress,
-    );
-
-    logger.d('Total range to query for: ${totalRangeToQueryFor.rangeSegments}\n'
-        'Sub ranges in snapshots (DRIVE ID: $driveId): ${snapshotDriveHistory.subRanges.rangeSegments}\n'
-        'Sub ranges in GQL (DRIVE ID: $driveId): ${gqlDriveHistorySubRanges.rangeSegments}');
-
-    final DriveHistoryComposite driveHistory = DriveHistoryComposite(
-      subRanges: totalRangeToQueryFor,
-      gqlDriveHistory: gqlDriveHistory,
-      snapshotDriveHistory: snapshotDriveHistory,
-    );
-
-    final transactionsStream = driveHistory.getNextStream();
-
-    /// The first block height of this drive.
-    int? firstBlockHeight;
-
-    /// In order to measure the sync progress by the block height, we use the difference
-    /// between the first block and the `currentBlockHeight`
-    late int totalBlockHeightDifference;
-
-    /// This percentage is based on block heights.
-    var fetchPhasePercentage = 0.0;
-
-    /// Streaming phase: fetch and parse in chunks to reduce memory usage
-    await for (DriveEntityHistoryTransactionModel t in transactionsStream) {
-      // Check for cancellation periodically
-      token.checkCancellation();
-
-      /// Initialize only once `firstBlockHeight` and `totalBlockHeightDifference`
-      if (firstBlockHeight == null) {
-        final block = t.transactionCommonMixin.block;
-        if (block != null) {
-          firstBlockHeight = block.height;
-          totalBlockHeightDifference = currentBlockHeight - firstBlockHeight;
-          logger.d(
-            'First height: $firstBlockHeight, totalHeightDiff: $totalBlockHeightDifference',
-          );
-        } else {
-          logger.d(
-            'The transaction block is null. Transaction node id: ${t.transactionCommonMixin.id}',
-          );
-        }
-      }
-
-      // Add transaction to buffer
-      transactionBuffer.add(t);
-      totalTransactionsReceived++;
-
-      // Process chunk when buffer is full
-      if (transactionBuffer.length >= kStreamTransactionChunkSize) {
-        await _processTransactionChunk(
-          transactions: List.from(transactionBuffer),
-          drive: drive,
-          driveKey: driveKey?.key,
-          currentBlockHeight: currentBlockHeight,
-          lastBlockHeight: lastBlockHeight,
-          transactionParseBatchSize: transactionParseBatchSize,
-          snapshotDriveHistory: snapshotDriveHistory,
-          ownerAddress: ownerAddress,
-        );
-
-        totalTransactionsProcessed += transactionBuffer.length;
-        transactionBuffer.clear();
-
-        logger.d(
-            'Processed $totalTransactionsProcessed / $totalTransactionsReceived transactions');
-      }
-
-      // Calculate and yield progress based on block heights
-      if (firstBlockHeight != null && totalBlockHeightDifference > 0) {
-        final block = t.transactionCommonMixin.block;
-        if (block != null) {
-          fetchPhasePercentage =
-              1 - ((currentBlockHeight - block.height) / totalBlockHeightDifference);
-        }
-
-        // Yield progress (80% for streaming, 20% reserved for final operations)
-        final streamProgress = fetchPhasePercentage * 0.8;
-        yield streamProgress;
-      }
-    }
-
-    // Process remaining transactions in buffer
-    if (transactionBuffer.isNotEmpty) {
-      logger.d(
-          'Processing final chunk of ${transactionBuffer.length} transactions');
-
-      try {
-        await _processTransactionChunk(
-          transactions: transactionBuffer,
-          drive: drive,
-          driveKey: driveKey?.key,
-          currentBlockHeight: currentBlockHeight,
-          lastBlockHeight: lastBlockHeight,
-          transactionParseBatchSize: transactionParseBatchSize,
-          snapshotDriveHistory: snapshotDriveHistory,
-          ownerAddress: ownerAddress,
-        );
-
-        totalTransactionsProcessed += transactionBuffer.length;
-        transactionBuffer.clear();
-      } catch (e) {
-        logger.e('[Sync Drive] Error while parsing final transaction chunk', e);
-        rethrow;
-      }
-    }
-
-    logger.d(
-        'Done processing all $totalTransactionsProcessed transactions - ${gqlDriveHistory.driveId}');
-
-    txFechedCallback?.call(drive.id, gqlDriveHistory.txCount);
-
-    final fetchPhaseTotalTime =
-        DateTime.now().difference(fetchPhaseStartDT).inMilliseconds;
-
-    logger.d(
-        'Duration of streaming phase for ${drive.name}: $fetchPhaseTotalTime ms. Processed $totalTransactionsProcessed transactions');
-
-    // Fetch pending (unmined) transactions to show Turbo uploads immediately
-    // This is best-effort: errors here should not fail the drive sync
-    logger.d('Fetching pending transactions for drive ${drive.id}');
-    int pendingTransactionCount = 0;
-
-    try {
-      await for (final pendingTxBatch
-          in _arweave.getPendingTransactionsForDrive(
-        driveId,
+      final GQLDriveHistory gqlDriveHistory = GQLDriveHistory(
+        subRanges: gqlDriveHistorySubRanges,
+        arweave: _arweave,
+        driveId: driveId,
         ownerAddress: ownerAddress,
-      )) {
-        // Check for cancellation before processing each batch
-        if (token.isCancelled) {
-          logger.d('Pending transactions fetch cancelled for drive ${drive.id}');
-          break;
+      );
+
+      logger.d(
+          'Total range to query for: ${totalRangeToQueryFor.rangeSegments}\n'
+          'Sub ranges in snapshots (DRIVE ID: $driveId): ${snapshotDriveHistory.subRanges.rangeSegments}\n'
+          'Sub ranges in GQL (DRIVE ID: $driveId): ${gqlDriveHistorySubRanges.rangeSegments}');
+
+      final DriveHistoryComposite driveHistory = DriveHistoryComposite(
+        subRanges: totalRangeToQueryFor,
+        gqlDriveHistory: gqlDriveHistory,
+        snapshotDriveHistory: snapshotDriveHistory,
+      );
+
+      final transactionsStream = driveHistory.getNextStream();
+
+      /// The first block height of this drive.
+      int? firstBlockHeight;
+
+      /// In order to measure the sync progress by the block height, we use the difference
+      /// between the first block and the `currentBlockHeight`
+      late int totalBlockHeightDifference;
+
+      /// This percentage is based on block heights.
+      var fetchPhasePercentage = 0.0;
+
+      /// Streaming phase: fetch and parse in chunks to reduce memory usage
+      await for (DriveEntityHistoryTransactionModel t in transactionsStream) {
+        // Check for cancellation periodically
+        token.checkCancellation();
+
+        /// Initialize only once `firstBlockHeight` and `totalBlockHeightDifference`
+        if (firstBlockHeight == null) {
+          final block = t.transactionCommonMixin.block;
+          if (block != null) {
+            firstBlockHeight = block.height;
+            totalBlockHeightDifference = currentBlockHeight - firstBlockHeight;
+            logger.d(
+              'First height: $firstBlockHeight, totalHeightDiff: $totalBlockHeightDifference',
+            );
+          } else {
+            logger.d(
+              'The transaction block is null. Transaction node id: ${t.transactionCommonMixin.id}',
+            );
+          }
         }
 
-        if (pendingTxBatch.isNotEmpty) {
-          logger.d('Processing ${pendingTxBatch.length} pending transactions');
+        // Add transaction to buffer
+        transactionBuffer.add(t);
+        totalTransactionsReceived++;
 
+        // Process chunk when buffer is full
+        if (transactionBuffer.length >= kStreamTransactionChunkSize) {
           await _processTransactionChunk(
-            transactions: pendingTxBatch,
+            transactions: List.from(transactionBuffer),
             drive: drive,
             driveKey: driveKey?.key,
             currentBlockHeight: currentBlockHeight,
@@ -1030,17 +944,111 @@ class _SyncRepository implements SyncRepository {
             ownerAddress: ownerAddress,
           );
 
-          pendingTransactionCount += pendingTxBatch.length;
+          totalTransactionsProcessed += transactionBuffer.length;
+          transactionBuffer.clear();
+
+          logger.d(
+              'Processed $totalTransactionsProcessed / $totalTransactionsReceived transactions');
+        }
+
+        // Calculate and yield progress based on block heights
+        if (firstBlockHeight != null && totalBlockHeightDifference > 0) {
+          final block = t.transactionCommonMixin.block;
+          if (block != null) {
+            fetchPhasePercentage = 1 -
+                ((currentBlockHeight - block.height) /
+                    totalBlockHeightDifference);
+          }
+
+          // Yield progress (80% for streaming, 20% reserved for final operations)
+          final streamProgress = fetchPhasePercentage * 0.8;
+          yield streamProgress;
         }
       }
-    } catch (e) {
-      // Log but don't rethrow - pending tx fetch is best-effort
-      logger.w('Error fetching pending transactions for drive ${drive.id}: $e');
-    }
 
-    if (pendingTransactionCount > 0) {
-      logger.i('Processed $pendingTransactionCount pending transactions for drive ${drive.name}');
-    }
+      // Process remaining transactions in buffer
+      if (transactionBuffer.isNotEmpty) {
+        logger.d(
+            'Processing final chunk of ${transactionBuffer.length} transactions');
+
+        try {
+          await _processTransactionChunk(
+            transactions: transactionBuffer,
+            drive: drive,
+            driveKey: driveKey?.key,
+            currentBlockHeight: currentBlockHeight,
+            lastBlockHeight: lastBlockHeight,
+            transactionParseBatchSize: transactionParseBatchSize,
+            snapshotDriveHistory: snapshotDriveHistory,
+            ownerAddress: ownerAddress,
+          );
+
+          totalTransactionsProcessed += transactionBuffer.length;
+          transactionBuffer.clear();
+        } catch (e) {
+          logger.e(
+              '[Sync Drive] Error while parsing final transaction chunk', e);
+          rethrow;
+        }
+      }
+
+      logger.d(
+          'Done processing all $totalTransactionsProcessed transactions - ${gqlDriveHistory.driveId}');
+
+      txFechedCallback?.call(drive.id, gqlDriveHistory.txCount);
+
+      final fetchPhaseTotalTime =
+          DateTime.now().difference(fetchPhaseStartDT).inMilliseconds;
+
+      logger.d(
+          'Duration of streaming phase for ${drive.name}: $fetchPhaseTotalTime ms. Processed $totalTransactionsProcessed transactions');
+
+      // Fetch pending (unmined) transactions to show Turbo uploads immediately
+      // This is best-effort: errors here should not fail the drive sync
+      logger.d('Fetching pending transactions for drive ${drive.id}');
+      int pendingTransactionCount = 0;
+
+      try {
+        await for (final pendingTxBatch
+            in _arweave.getPendingTransactionsForDrive(
+          driveId,
+          ownerAddress: ownerAddress,
+        )) {
+          // Check for cancellation before processing each batch
+          if (token.isCancelled) {
+            logger.d(
+                'Pending transactions fetch cancelled for drive ${drive.id}');
+            break;
+          }
+
+          if (pendingTxBatch.isNotEmpty) {
+            logger
+                .d('Processing ${pendingTxBatch.length} pending transactions');
+
+            await _processTransactionChunk(
+              transactions: pendingTxBatch,
+              drive: drive,
+              driveKey: driveKey?.key,
+              currentBlockHeight: currentBlockHeight,
+              lastBlockHeight: lastBlockHeight,
+              transactionParseBatchSize: transactionParseBatchSize,
+              snapshotDriveHistory: snapshotDriveHistory,
+              ownerAddress: ownerAddress,
+            );
+
+            pendingTransactionCount += pendingTxBatch.length;
+          }
+        }
+      } catch (e) {
+        // Log but don't rethrow - pending tx fetch is best-effort
+        logger
+            .w('Error fetching pending transactions for drive ${drive.id}: $e');
+      }
+
+      if (pendingTransactionCount > 0) {
+        logger.i(
+            'Processed $pendingTransactionCount pending transactions for drive ${drive.name}');
+      }
 
       // Yield final progress before cleanup
       yield 0.8;
@@ -1048,7 +1056,8 @@ class _SyncRepository implements SyncRepository {
       final syncDriveTotalTime =
           DateTime.now().difference(startSyncDT).inMilliseconds;
 
-      final averageBetweenFetchAndGet = fetchPhaseTotalTime / syncDriveTotalTime;
+      final averageBetweenFetchAndGet =
+          fetchPhaseTotalTime / syncDriveTotalTime;
 
       logger.i(
           'Drive ${drive.name} completed parse phase. Progress by block height: $fetchPhasePercentage%. Starting parse phase. Sync duration: $syncDriveTotalTime ms. Fetching used ${(averageBetweenFetchAndGet * 100).toStringAsFixed(2)}% of drive sync process');
@@ -1173,8 +1182,8 @@ class _SyncRepository implements SyncRepository {
     }
 
     // Insert all licenses in a single transaction to minimize database exports
-    final totalLicenses =
-        allLicenseAssertionCompanions.length + allLicenseComposedCompanions.length;
+    final totalLicenses = allLicenseAssertionCompanions.length +
+        allLicenseComposedCompanions.length;
     final totalSkipped = skippedLicenseAssertions + skippedLicenseComposed;
 
     if (totalLicenses > 0) {
