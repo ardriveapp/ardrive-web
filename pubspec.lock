@@ -157,8 +157,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: fix-chunked-uploads
-      resolved-ref: "1227db4b701f51039a99d196ecdbc9bd9dc126c2"
+      ref: "v4.0.1"
+      resolved-ref: "0a55ea0358fb82f14abafc9182a121686735ba2b"
       url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
     version: "4.0.1"
