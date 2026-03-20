@@ -35,7 +35,6 @@ import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
@@ -214,7 +213,6 @@ class _UploadFormState extends State<UploadForm> {
               if (!_isShowingCancelDialog) {
                 Navigator.pop(context);
                 context.read<ActivityTracker>().setUploading(false);
-                context.read<SyncCubit>().startSync();
               }
 
               widget.driveDetailCubit.refreshDriveDataTable();
