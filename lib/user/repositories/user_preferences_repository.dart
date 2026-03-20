@@ -14,6 +14,7 @@ abstract class UserPreferencesRepository {
   Future<void> saveShowHiddenFiles(bool showHiddenFiles);
   Future<void> clear();
   Future<void> saveUserHasHiddenItem(bool userHasHiddenDrive);
+  Future<void> saveSyncAllDrivesOnLogin(bool syncAllDrivesOnLogin);
 
   factory UserPreferencesRepository({
     LocalKeyValueStore? store,
@@ -65,12 +66,15 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
         _themeDetector.getOSDefaultTheme().name;
     final lastSelectedDriveId = _store!.getString('lastSelectedDriveId');
     final showHiddenFiles = _store!.getBool('showHiddenFiles') ?? false;
+    final syncAllDrivesOnLogin =
+        _store!.getBool('syncAllDrivesOnLogin') ?? true;
 
     _currentUserPreferences = UserPreferences(
       currentTheme: _parseThemeFromLocalStorage(currentTheme),
       lastSelectedDriveId: lastSelectedDriveId,
       showHiddenFiles: showHiddenFiles,
       userHasHiddenDrive: _store!.getBool('userHasHiddenDrive') ?? false,
+      syncAllDrivesOnLogin: syncAllDrivesOnLogin,
     );
 
     _userPreferencesController.sink.add(_currentUserPreferences!);
@@ -118,6 +122,16 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
     );
   }
 
+  @override
+  Future<void> saveSyncAllDrivesOnLogin(bool syncAllDrivesOnLogin) async {
+    await _updatePreference(
+      key: 'syncAllDrivesOnLogin',
+      value: syncAllDrivesOnLogin,
+      updateFunction: (value) =>
+          _currentUserPreferences!.copyWith(syncAllDrivesOnLogin: value),
+    );
+  }
+
   Future<LocalKeyValueStore> _getStore() async {
     _store ??= await LocalKeyValueStore.getInstance();
 
@@ -129,11 +143,13 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
     (await _getStore()).remove('lastSelectedDriveId');
     (await _getStore()).remove('showHiddenFiles');
     (await _getStore()).remove('userHasHiddenDrive');
+    (await _getStore()).remove('syncAllDrivesOnLogin');
 
     _currentUserPreferences = _currentUserPreferences!.copyWith(
       lastSelectedDriveId: null,
       showHiddenFiles: false,
       userHasHiddenDrive: false,
+      syncAllDrivesOnLogin: true,
     );
 
     _userPreferencesController.sink.add(_currentUserPreferences!);

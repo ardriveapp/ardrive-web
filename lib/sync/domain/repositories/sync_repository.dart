@@ -59,6 +59,18 @@ abstract class SyncRepository {
     Function(String driveId, int txCount)? txFechedCallback,
   });
 
+  /// Syncs a single drive by its ID, with optional deep sync.
+  /// Returns a stream of SyncProgress that can be used to track progress.
+  Stream<SyncProgress> syncSingleDrive({
+    required String driveId,
+    bool syncDeep = false,
+    Wallet? wallet,
+    String? password,
+    SecretKey? cipherKey,
+    SyncCancellationToken? cancellationToken,
+    Function(String driveId, int txCount)? txFechedCallback,
+  });
+
   Stream<SyncProgress> syncAllDrives({
     bool syncDeep = false,
     Wallet? wallet,
@@ -523,6 +535,384 @@ class _SyncRepository implements SyncRepository {
       transactionParseBatchSize: 200,
       txFechedCallback: txFechedCallback,
     );
+  }
+
+  @override
+  Stream<SyncProgress> syncSingleDrive({
+    required String driveId,
+    bool syncDeep = false,
+    Wallet? wallet,
+    String? password,
+    SecretKey? cipherKey,
+    SyncCancellationToken? cancellationToken,
+    Function(String driveId, int txCount)? txFechedCallback,
+  }) async* {
+    final token = cancellationToken ?? SyncCancellationToken();
+
+    // Get the specific drive
+    final drive =
+        await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+    if (drive == null) {
+      yield SyncProgress.emptySyncCompleted();
+      return;
+    }
+
+    SyncProgress syncProgress =
+        SyncProgress.initial().copyWith(drivesCount: 1);
+    yield syncProgress;
+
+    final currentBlockHeight = await retry(
+      () async => await _arweave.getCurrentBlockHeight(),
+      onRetry: (exception) => logger.w(
+        'Retrying for get the current block height',
+      ),
+    );
+
+    final StreamController<SyncProgress> syncProgressController =
+        StreamController<SyncProgress>.broadcast();
+
+    // Store ghost folders for this drive only
+    final driveGhostFolders = <String, GhostFolder>{};
+
+    // Start the async work
+    Future.microtask(() async {
+      try {
+        // Check for cancellation before starting
+        token.checkCancellation();
+
+        final driveSyncProgress = _syncDrive(
+          drive.id,
+          cipherKey: cipherKey,
+          lastBlockHeight: syncDeep
+              ? 0
+              : _calculateSyncLastBlockHeight(drive.lastBlockHeight!),
+          currentBlockHeight: currentBlockHeight,
+          transactionParseBatchSize: 200,
+          ownerAddress: drive.ownerAddress,
+          txFechedCallback: txFechedCallback,
+          cancellationToken: token,
+        );
+
+        await for (var driveProgress in driveSyncProgress) {
+          // Check for cancellation during sync
+          token.checkCancellation();
+
+          // Reserve 10% for post-sync operations (cap drive sync at 90%)
+          final currentProgress = driveProgress * 0.9;
+          if (currentProgress > syncProgress.progress) {
+            syncProgress = syncProgress.copyWith(progress: currentProgress);
+          }
+          syncProgressController.add(syncProgress);
+        }
+
+        syncProgress = syncProgress.copyWith(
+          drivesSynced: 1,
+          progress: 0.9,
+        );
+        syncProgressController.add(syncProgress);
+
+        // Copy ghost folders for this drive only
+        for (final entry in _ghostFolders.entries) {
+          if (entry.value.driveId == driveId) {
+            driveGhostFolders[entry.key] = entry.value;
+          }
+        }
+
+        // Check for cancellation before ghost creation
+        token.checkCancellation();
+
+        // Update progress to 92% for ghost creation
+        syncProgress = syncProgress.copyWith(
+          progress: 0.92,
+          statusMessage: 'Creating ghost folders...',
+        );
+        syncProgressController.add(syncProgress);
+
+        logger.i('Creating ghosts for single drive sync...');
+
+        await createGhosts(
+          driveDao: _driveDao,
+          ownerAddress: await wallet?.getAddress(),
+          ghostFolders: driveGhostFolders,
+        );
+
+        // Remove processed ghost folders from the main map
+        for (final key in driveGhostFolders.keys) {
+          _ghostFolders.remove(key);
+        }
+
+        logger.i('Ghosts created for single drive...');
+
+        // Check for cancellation before license sync
+        token.checkCancellation();
+
+        // Update progress to 94% for license sync
+        syncProgress = syncProgress.copyWith(
+          progress: 0.94,
+          statusMessage: 'Syncing licenses...',
+        );
+        syncProgressController.add(syncProgress);
+
+        logger.i('Syncing licenses for single drive...');
+
+        try {
+          final licenseTxIds = <String>{};
+          // Filter to only revisions for this drive
+          final revisionsToSyncLicense = (await _driveDao
+              .allFileRevisionsWithLicenseReferencedButNotSynced()
+              .get())
+            ..retainWhere((rev) =>
+                rev.driveId == driveId && licenseTxIds.add(rev.licenseTxId!));
+
+          logger.d(
+              'Found ${revisionsToSyncLicense.length} licenses to sync for drive $driveId');
+
+          await _updateLicenses(
+            revisionsToSyncLicense: revisionsToSyncLicense,
+          );
+        } catch (e) {
+          if (e is SyncCancelledException) {
+            rethrow;
+          }
+          logger.e('Error syncing licenses for single drive. Proceeding.', e);
+        }
+
+        logger.i('Licenses synced for single drive');
+
+        // Check for cancellation before transaction status updates
+        token.checkCancellation();
+
+        // Update progress to 96% for transaction status updates
+        syncProgress = syncProgress.copyWith(
+          progress: 0.96,
+          statusMessage: 'Updating transaction statuses...',
+        );
+        syncProgressController.add(syncProgress);
+
+        logger.i('Updating transaction statuses for single drive...');
+
+        // Get file revisions for this specific drive to scope transaction updates
+        final driveFileRevisions =
+            await _driveDao.db.fileRevisions.select().get();
+        final driveDataTxIds = driveFileRevisions
+            .where((r) => r.driveId == driveId)
+            .map((r) => r.dataTxId)
+            .toSet();
+
+        final metadataTxsFromSnapshots =
+            await SnapshotItemOnChain.getAllCachedTransactionIds();
+        final confirmedFileTxIds = driveFileRevisions
+            .where((file) =>
+                file.driveId == driveId &&
+                metadataTxsFromSnapshots.contains(file.metadataTxId))
+            .map((file) => file.dataTxId)
+            .toList();
+
+        // Clear cached transaction IDs for this drive
+        SnapshotItemOnChain.clearAllCachedTransactionIds();
+
+        // Check for hidden items in this drive and update preferences
+        final hasHiddenItems = await _driveDao.hasHiddenItems().getSingle();
+        await _userPreferencesRepository.saveUserHasHiddenItem(hasHiddenItems);
+        await _userPreferencesRepository.load();
+
+        try {
+          await _updateTransactionStatusesForDrive(
+            driveDao: _driveDao,
+            arweave: _arweave,
+            driveDataTxIds: driveDataTxIds,
+            txsIdsToSkip: confirmedFileTxIds,
+            cancellationToken: token,
+          ).timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              token.checkCancellation();
+              logger.w(
+                  'Transaction status update timed out after 10 seconds for single drive');
+              syncProgress = syncProgress.copyWith(
+                statusMessage: 'Completing sync...',
+              );
+              syncProgressController.add(syncProgress);
+            },
+          );
+        } catch (e) {
+          if (e is SyncCancelledException) {
+            rethrow;
+          }
+          logger.w(
+              'Failed to update transaction statuses for single drive, continuing: $e');
+        }
+
+        _lastSync = DateTime.now();
+
+        // Update progress to 100% when truly complete
+        syncProgress = syncProgress.copyWith(
+          progress: 1.0,
+          statusMessage: 'Sync complete',
+        );
+        syncProgressController.add(syncProgress);
+
+        logger.d('Single drive sync completed successfully, closing controller');
+        await syncProgressController.close();
+      } catch (e) {
+        if (e is SyncCancelledException) {
+          logger.i('Single drive sync cancelled');
+          driveGhostFolders.clear();
+          syncProgressController.addError(e);
+          await syncProgressController.close();
+          return;
+        }
+
+        // Track the failure
+        logger.e('Failed to sync drive $driveId', e);
+
+        final updatedErrorMessages =
+            Map<String, String>.from(syncProgress.errorMessages)
+              ..putIfAbsent(driveId, () => _extractErrorMessage(e));
+
+        syncProgress = syncProgress.copyWith(
+          drivesSynced: 1,
+          progress: 1.0,
+          failedQueries: 1,
+          failedDriveIds: [driveId],
+          errorMessages: updatedErrorMessages,
+        );
+        syncProgressController.add(syncProgress);
+        await syncProgressController.close();
+      }
+    }).catchError((error) async {
+      driveGhostFolders.clear();
+      logger.d('Single drive sync failed with error, closing controller: $error');
+      if (!syncProgressController.isClosed) {
+        syncProgressController.addError(error);
+        await syncProgressController.close();
+      }
+    });
+
+    // Yield from the stream while the sync is happening
+    yield* syncProgressController.stream;
+  }
+
+  /// Updates transaction statuses scoped to a specific drive's transactions
+  Future<void> _updateTransactionStatusesForDrive({
+    required DriveDao driveDao,
+    required ArweaveService arweave,
+    required Set<String> driveDataTxIds,
+    List<TxID> txsIdsToSkip = const [],
+    SyncCancellationToken? cancellationToken,
+  }) async {
+    cancellationToken?.checkCancellation();
+
+    // Load all pending transactions and filter to this drive
+    final allPendingTxs = await driveDao.pendingTransactions().get();
+    final drivePendingTxs = allPendingTxs
+        .where((tx) => driveDataTxIds.contains(tx.id))
+        .toList();
+
+    logger.i(
+        'Loaded ${drivePendingTxs.length} pending transactions for drive (from ${allPendingTxs.length} total)');
+
+    final pendingTxMap = <String, NetworkTransaction>{
+      for (final tx in drivePendingTxs) tx.id: tx,
+    };
+
+    // Remove transactions to skip
+    for (final txId in txsIdsToSkip) {
+      pendingTxMap.remove(txId);
+    }
+
+    final length = pendingTxMap.length;
+    final list = pendingTxMap.keys.toList();
+    const page = 5000;
+
+    for (var i = 0; i < length / page; i++) {
+      cancellationToken?.checkCancellation();
+
+      final confirmations = <String?, int>{};
+      final currentPage = <String>[];
+
+      for (var j = i * page; j < ((i + 1) * page); j++) {
+        if (j >= length) {
+          break;
+        }
+        currentPage.add(list[j]);
+      }
+
+      cancellationToken?.checkCancellation();
+
+      final map = await arweave
+          .getTransactionConfirmations(currentPage.toList())
+          .timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          logger.w('Individual transaction confirmation timeout');
+          return <String, int>{};
+        },
+      );
+
+      map.forEach((key, value) {
+        confirmations.putIfAbsent(key, () => value);
+      });
+
+      await driveDao.transaction(() async {
+        for (final txId in currentPage) {
+          cancellationToken?.checkCancellation();
+          final txConfirmed =
+              confirmations[txId]! >= kRequiredTxConfirmationCount;
+          final txNotFound = confirmations[txId]! < 0;
+
+          String? txStatus;
+          DateTime? transactionDateCreated;
+
+          if (pendingTxMap[txId]!.transactionDateCreated != null) {
+            transactionDateCreated =
+                pendingTxMap[txId]!.transactionDateCreated!;
+          } else {
+            transactionDateCreated = await _getDateCreatedByDataTx(
+              driveDao: driveDao,
+              dataTx: txId,
+            );
+          }
+
+          if (txConfirmed) {
+            txStatus = TransactionStatus.confirmed;
+          } else if (txNotFound) {
+            final abovePendingThreshold = DateTime.now()
+                    .difference(pendingTxMap[txId]!.dateCreated)
+                    .inMinutes >
+                kRequiredTxConfirmationPendingThreshold;
+
+            if (abovePendingThreshold ||
+                _isOverThePendingTime(transactionDateCreated)) {
+              txStatus = TransactionStatus.failed;
+            }
+          }
+          if (txStatus != null) {
+            await driveDao.writeToTransaction(
+              NetworkTransactionsCompanion(
+                transactionDateCreated: Value(transactionDateCreated),
+                id: Value(txId),
+                status: Value(txStatus),
+              ),
+            );
+          }
+        }
+      });
+
+      await Future.delayed(const Duration(milliseconds: 200));
+    }
+
+    // Mark skipped transactions as confirmed
+    await driveDao.transaction(() async {
+      for (final txId in txsIdsToSkip) {
+        await driveDao.writeToTransaction(
+          NetworkTransactionsCompanion(
+            id: Value(txId),
+            status: const Value(TransactionStatus.confirmed),
+          ),
+        );
+      }
+    });
   }
 
   @override

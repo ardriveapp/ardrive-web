@@ -6,12 +6,14 @@ class UserPreferences extends Equatable {
   final String? lastSelectedDriveId;
   final bool showHiddenFiles;
   final bool userHasHiddenDrive;
+  final bool syncAllDrivesOnLogin;
 
   const UserPreferences({
     required this.currentTheme,
     required this.lastSelectedDriveId,
     this.showHiddenFiles = false,
     this.userHasHiddenDrive = false,
+    this.syncAllDrivesOnLogin = true,
   });
 
   @override
@@ -20,6 +22,7 @@ class UserPreferences extends Equatable {
         lastSelectedDriveId,
         showHiddenFiles,
         userHasHiddenDrive,
+        syncAllDrivesOnLogin,
       ];
 
   UserPreferences copyWith({
@@ -27,12 +30,14 @@ class UserPreferences extends Equatable {
     String? lastSelectedDriveId,
     bool? showHiddenFiles,
     bool? userHasHiddenDrive,
+    bool? syncAllDrivesOnLogin,
   }) {
     return UserPreferences(
       currentTheme: currentTheme ?? this.currentTheme,
       lastSelectedDriveId: lastSelectedDriveId ?? this.lastSelectedDriveId,
       showHiddenFiles: showHiddenFiles ?? this.showHiddenFiles,
       userHasHiddenDrive: userHasHiddenDrive ?? this.userHasHiddenDrive,
+      syncAllDrivesOnLogin: syncAllDrivesOnLogin ?? this.syncAllDrivesOnLogin,
     );
   }
 }

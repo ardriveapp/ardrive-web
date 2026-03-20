@@ -298,6 +298,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                         promptToSnapshotBloc:
                             context.read<PromptToSnapshotBloc>(),
                         tabVisibility: TabVisibilitySingleton(),
+                        userPreferencesRepository:
+                            context.read<UserPreferencesRepository>(),
                       ),
                     ),
                     BlocProvider(

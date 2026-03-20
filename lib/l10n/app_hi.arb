@@ -366,6 +366,18 @@
       }
     }
   },
+  "syncThisDrive": "इस ड्राइव को सिंक करें",
+  "@syncThisDrive": {
+    "description": "Menu option to sync only the current drive"
+  },
+  "deepSyncThisDrive": "इस ड्राइव को डीप सिंक करें",
+  "@deepSyncThisDrive": {
+    "description": "Menu option to deep sync only the current drive"
+  },
+  "syncAllDrivesOnLogin": "लॉगिन पर सभी ड्राइव सिंक करें",
+  "@syncAllDrivesOnLogin": {
+    "description": "Toggle to enable/disable syncing all drives when logging in"
+  },
   "creatingDriveEmphasized": "ड्राइव बनाया जा रहा है...",
   "@creatingDriveEmphasized": {
     "description": "The drive is being created. Emphasized with upper case"

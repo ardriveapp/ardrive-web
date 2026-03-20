@@ -366,6 +366,18 @@
       }
     }
   },
+  "syncThisDrive": "このドライブを同期",
+  "@syncThisDrive": {
+    "description": "Menu option to sync only the current drive"
+  },
+  "deepSyncThisDrive": "このドライブをディープ同期",
+  "@deepSyncThisDrive": {
+    "description": "Menu option to deep sync only the current drive"
+  },
+  "syncAllDrivesOnLogin": "ログイン時にすべてのドライブを同期",
+  "@syncAllDrivesOnLogin": {
+    "description": "Toggle to enable/disable syncing all drives when logging in"
+  },
   "creatingDriveEmphasized": "ドライブを作成中…",
   "@creatingDriveEmphasized": {
     "description": "The drive is being created. Emphasized with upper case"

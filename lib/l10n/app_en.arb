@@ -390,6 +390,18 @@
       }
     }
   },
+  "syncThisDrive": "Sync This Drive",
+  "@syncThisDrive": {
+    "description": "Menu option to sync only the current drive"
+  },
+  "deepSyncThisDrive": "Deep Sync This Drive",
+  "@deepSyncThisDrive": {
+    "description": "Menu option to deep sync only the current drive"
+  },
+  "syncAllDrivesOnLogin": "Sync All Drives on Login",
+  "@syncAllDrivesOnLogin": {
+    "description": "Toggle to enable/disable syncing all drives when logging in"
+  },
   "creatingDriveEmphasized": "CREATING DRIVE...",
   "@creatingDriveEmphasized": {
     "description": "The drive is being created. Emphasized with upper case"

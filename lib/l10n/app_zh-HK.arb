@@ -366,6 +366,18 @@
       }
     }
   },
+  "syncThisDrive": "同步此磁碟機",
+  "@syncThisDrive": {
+    "description": "Menu option to sync only the current drive"
+  },
+  "deepSyncThisDrive": "深度同步此磁碟機",
+  "@deepSyncThisDrive": {
+    "description": "Menu option to deep sync only the current drive"
+  },
+  "syncAllDrivesOnLogin": "登入時同步所有磁碟機",
+  "@syncAllDrivesOnLogin": {
+    "description": "Toggle to enable/disable syncing all drives when logging in"
+  },
   "creatingDriveEmphasized": "正在建立檔案盤",
   "@creatingDriveEmphasized": {
     "description": "The drive is being created. Emphasized with upper case"

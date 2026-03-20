@@ -366,6 +366,18 @@
       }
     }
   },
+  "syncThisDrive": "同步此驱动器",
+  "@syncThisDrive": {
+    "description": "Menu option to sync only the current drive"
+  },
+  "deepSyncThisDrive": "深度同步此驱动器",
+  "@deepSyncThisDrive": {
+    "description": "Menu option to deep sync only the current drive"
+  },
+  "syncAllDrivesOnLogin": "登录时同步所有驱动器",
+  "@syncAllDrivesOnLogin": {
+    "description": "Toggle to enable/disable syncing all drives when logging in"
+  },
   "creatingDriveEmphasized": "创建网盘中...",
   "@creatingDriveEmphasized": {
     "description": "The drive is being created. Emphasized with upper case"

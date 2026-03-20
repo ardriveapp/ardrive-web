@@ -520,6 +520,42 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                             ),
                                           ),
                                         ),
+                                        ArDriveDropdownItem(
+                                          onClick: () {
+                                            context
+                                                .read<SyncCubit>()
+                                                .startSyncForDrive(
+                                                  driveId: driveDetailState
+                                                      .currentDrive.id,
+                                                  deepSync: false,
+                                                );
+                                          },
+                                          content: ArDriveDropdownItemTile(
+                                            name: appLocalizationsOf(context)
+                                                .syncThisDrive,
+                                            icon: ArDriveIcons.refresh(
+                                              size: defaultIconSize,
+                                            ),
+                                          ),
+                                        ),
+                                        ArDriveDropdownItem(
+                                          onClick: () {
+                                            context
+                                                .read<SyncCubit>()
+                                                .startSyncForDrive(
+                                                  driveId: driveDetailState
+                                                      .currentDrive.id,
+                                                  deepSync: true,
+                                                );
+                                          },
+                                          content: ArDriveDropdownItemTile(
+                                            name: appLocalizationsOf(context)
+                                                .deepSyncThisDrive,
+                                            icon: ArDriveIcons.cloudSync(
+                                              size: defaultIconSize,
+                                            ),
+                                          ),
+                                        ),
                                         if (isDriveOwner)
                                           ArDriveDropdownItem(
                                             onClick: () {
@@ -1207,6 +1243,34 @@ class MobileFolderNavigation extends StatelessWidget {
                         ),
                       ),
                     ],
+                    ArDriveDropdownItem(
+                      onClick: () {
+                        context.read<SyncCubit>().startSyncForDrive(
+                              driveId: state.currentDrive.id,
+                              deepSync: false,
+                            );
+                      },
+                      content: ArDriveDropdownItemTile(
+                        name: appLocalizationsOf(context).syncThisDrive,
+                        icon: ArDriveIcons.refresh(
+                          size: defaultIconSize,
+                        ),
+                      ),
+                    ),
+                    ArDriveDropdownItem(
+                      onClick: () {
+                        context.read<SyncCubit>().startSyncForDrive(
+                              driveId: state.currentDrive.id,
+                              deepSync: true,
+                            );
+                      },
+                      content: ArDriveDropdownItemTile(
+                        name: appLocalizationsOf(context).deepSyncThisDrive,
+                        icon: ArDriveIcons.cloudSync(
+                          size: defaultIconSize,
+                        ),
+                      ),
+                    ),
                     ArDriveDropdownItem(
                       onClick: () {
                         promptToShareDrive(
