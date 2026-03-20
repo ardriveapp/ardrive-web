@@ -11,7 +11,7 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 const Duration defaultDurationBeforePrompting = Duration(seconds: 20);
-const int defaultNumberOfTxsBeforeSnapshot = 1000;
+const int defaultNumberOfTxsBeforeSnapshot = 200;
 
 class PromptToSnapshotBloc
     extends Bloc<PromptToSnapshotEvent, PromptToSnapshotState> {
