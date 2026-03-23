@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 
 Future<void> showProgressDialog(
   BuildContext context, {
@@ -55,14 +57,15 @@ class ProgressDialog extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 32),
-              child: SizedBox(
-                width: 74,
-                height: 74,
-                child: CircularProgressIndicator(
-                  strokeWidth: 8,
-                ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              child: LottieBuilder.asset(
+                Resources.images.login.ardriveLoader,
+                filterQuality: FilterQuality.high,
+                frameRate: FrameRate.max,
+                addRepaintBoundary: true,
+                height: 75,
+                width: 75,
               ),
             ),
             if (progressDescription != null)

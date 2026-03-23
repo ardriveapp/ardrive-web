@@ -369,37 +369,22 @@ class DriveDetailUnsyncedCard extends StatelessWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 66),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                child: Column(
                   children: [
-                    ArDriveImage(
-                      image: AssetImage(Resources.images.login.confetti),
-                    ),
-                    Flexible(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            appLocalizationsOf(context).driveNotSynced,
-                            style: typography.display(
-                              fontWeight: ArFontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            appLocalizationsOf(context)
-                                .driveNotSyncedDescription,
-                            style: typography.heading5(
-                              color: colorTokens.textLow,
-                              fontWeight: ArFontWeight.semiBold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+                    Text(
+                      appLocalizationsOf(context).driveNotSynced,
+                      style: typography.display(
+                        fontWeight: ArFontWeight.bold,
                       ),
                     ),
-                    ArDriveImage(
-                      image: AssetImage(Resources.images.login.confetti),
+                    const SizedBox(height: 10),
+                    Text(
+                      appLocalizationsOf(context).driveNotSyncedDescription,
+                      style: typography.heading5(
+                        color: colorTokens.textLow,
+                        fontWeight: ArFontWeight.semiBold,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
