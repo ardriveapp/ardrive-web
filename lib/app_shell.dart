@@ -101,6 +101,28 @@ class AppShellState extends State<AppShell> {
                   builder: (context, syncState) {
                     return Stack(children: [
                       scaffold,
+                      // Show loading modal for metadata-only sync
+                      if (syncState is SyncLoadingDrives)
+                        Stack(
+                          children: [
+                            SizedBox.expand(
+                              child: Container(
+                                color: Colors.black.withOpacity(0.5),
+                              ),
+                            ),
+                            Align(
+                              alignment: Alignment.center,
+                              child: Material(
+                                borderRadius: BorderRadius.circular(8),
+                                child: ProgressDialog(
+                                  useNewArDriveUI: true,
+                                  title: appLocalizationsOf(context)
+                                      .loadingYourDrives,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       if (syncState is SyncInProgress ||
                           syncState is SyncCancelled ||
                           syncState is SyncCompleteWithErrors)

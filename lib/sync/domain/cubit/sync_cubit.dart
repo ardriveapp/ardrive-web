@@ -190,14 +190,14 @@ class SyncCubit extends Cubit<SyncState> {
 
   /// Fetches only drive metadata without full content sync.
   /// Used when syncAllDrivesOnLogin is disabled to populate the sidebar.
-  /// This runs silently without emitting SyncInProgress to avoid blocking
-  /// code that waits for sync via waitCurrentSync().
+  /// Emits SyncLoadingDrives for UI feedback but doesn't block waitCurrentSync().
   Future<void> syncMetadataOnly() async {
     logger.d('Starting metadata-only sync');
     final profile = _profileCubit.state;
     if (profile is ProfileLoggedIn) {
-      // Don't emit SyncInProgress - this is a lightweight background operation
-      // and we don't want to block waitCurrentSync() callers
+      // Emit SyncLoadingDrives for UI feedback (shows "Loading your drives...")
+      // This is separate from SyncInProgress so it doesn't block waitCurrentSync()
+      emit(SyncLoadingDrives());
       try {
         await _syncRepository.updateUserDrives(
           wallet: profile.user.wallet,
@@ -208,6 +208,7 @@ class SyncCubit extends Cubit<SyncState> {
       } catch (e, stackTrace) {
         logger.e('Error fetching drive metadata', e, stackTrace);
       }
+      emit(SyncIdle());
     } else {
       logger.d('Profile not logged in yet, skipping metadata sync');
     }

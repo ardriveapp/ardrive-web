@@ -1600,6 +1600,14 @@
   "@newStringEmphasized": {
     "description": "New entity (folder, file, drive, manifest, attached drive). Emphasized with upper case"
   },
+  "createNew": "Create New",
+  "@createNew": {
+    "description": "Tooltip for the New button to create new items"
+  },
+  "userProfile": "User Profile",
+  "@userProfile": {
+    "description": "Tooltip for the user profile button"
+  },
   "next": "Next",
   "@next": {
     "description": "Action of going to the next page"
@@ -2163,6 +2171,10 @@
   "syncingAllDrives": "Syncing All Drives",
   "@syncingAllDrives": {
     "description": "Title shown when syncing all user drives"
+  },
+  "loadingYourDrives": "Loading your drives...",
+  "@loadingYourDrives": {
+    "description": "Title shown when loading drive metadata on login"
   },
   "syncingSingleDrive": "Syncing Drive",
   "@syncingSingleDrive": {

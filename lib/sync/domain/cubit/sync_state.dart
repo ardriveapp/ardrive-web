@@ -8,6 +8,11 @@ abstract class SyncState extends Equatable {
 
 class SyncIdle extends SyncState {}
 
+/// Loading drive metadata only (not full sync).
+/// Used when syncAllDrivesOnLogin is disabled.
+/// This is a lightweight UI-only state that doesn't block waitCurrentSync().
+class SyncLoadingDrives extends SyncState {}
+
 class SyncInProgress extends SyncState {}
 
 class SyncFailure extends SyncState {
