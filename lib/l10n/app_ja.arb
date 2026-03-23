@@ -527,6 +527,14 @@
   "@syncThisDriveDescription": {
     "description": "Description for the sync drive action card"
   },
+  "syncAllDrives": "すべてのドライブを同期",
+  "@syncAllDrives": {
+    "description": "Button and title text for syncing all drives"
+  },
+  "syncAllDrivesDescription": "すべてのドライブを一度に同期して、すべてのコンテンツを最新の状態に保ちます。",
+  "@syncAllDrivesDescription": {
+    "description": "Description for the sync all drives action card"
+  },
   "driveID": "ドライブID",
   "@driveID": {
     "description": "The Drive-ID tag"

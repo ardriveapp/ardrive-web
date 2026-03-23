@@ -613,6 +613,29 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     }
   }
 
+  /// Shows the drive info panel for an unsynced drive.
+  void selectDriveInfoForUnsyncedDrive(ArDriveDataTableItem driveItem) {
+    final state = this.state;
+    if (state is DriveDetailLoadUnsynced) {
+      emit(state.copyWith(
+        showDriveInfo: true,
+        selectedItem: driveItem,
+      ));
+    }
+  }
+
+  /// Hides the drive info panel for an unsynced drive.
+  void closeDriveInfoForUnsyncedDrive() {
+    final state = this.state;
+    if (state is DriveDetailLoadUnsynced) {
+      emit(DriveDetailLoadUnsynced(
+        drive: state.drive,
+        showDriveInfo: false,
+        selectedItem: null,
+      ));
+    }
+  }
+
   @override
   Future<void> close() {
     _folderSubscription?.cancel();

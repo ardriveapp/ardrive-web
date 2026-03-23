@@ -527,6 +527,14 @@
   "@syncThisDriveDescription": {
     "description": "Description for the sync drive action card"
   },
+  "syncAllDrives": "सभी ड्राइव सिंक करें",
+  "@syncAllDrives": {
+    "description": "Button and title text for syncing all drives"
+  },
+  "syncAllDrivesDescription": "सभी सामग्री अप-टू-डेट रखने के लिए अपनी सभी ड्राइव एक साथ सिंक करें।",
+  "@syncAllDrivesDescription": {
+    "description": "Description for the sync all drives action card"
+  },
   "driveID": "ड्राइव ID",
   "@driveID": {
     "description": "The Drive-ID tag"

@@ -272,38 +272,86 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                           ),
                         ],
                         child: ScreenTypeLayout.builder(
-                          mobile: (context) => Scaffold(
-                            drawerScrimColor: Colors.transparent,
-                            drawer: const AppSideBar(),
-                            appBar: const MobileAppBar(),
-                            body: _UnsyncedDriveMobileView(
-                              drive: driveDetailState.drive,
-                              isOwner: isOwner,
-                            ),
-                          ),
+                          mobile: (context) {
+                            // Show full-screen DetailsPanel on mobile when drive info is selected
+                            if (driveDetailState.showDriveInfo &&
+                                driveDetailState.selectedItem != null) {
+                              return Material(
+                                child: PopScope(
+                                  canPop: false,
+                                  onPopInvoked: (didPop) {
+                                    context
+                                        .read<DriveDetailCubit>()
+                                        .closeDriveInfoForUnsyncedDrive();
+                                  },
+                                  child: DetailsPanel(
+                                    currentDrive: driveDetailState.drive,
+                                    isSharePage: false,
+                                    drivePrivacy:
+                                        driveDetailState.drive.privacy,
+                                    item: driveDetailState.selectedItem!,
+                                    canNavigateThroughImages: false,
+                                  ),
+                                ),
+                              );
+                            }
+                            return Scaffold(
+                              drawerScrimColor: Colors.transparent,
+                              drawer: const AppSideBar(),
+                              appBar: const MobileAppBar(),
+                              body: _UnsyncedDriveMobileView(
+                                drive: driveDetailState.drive,
+                                isOwner: isOwner,
+                              ),
+                            );
+                          },
                           desktop: (context) => Column(
                             children: [
                               const AppTopBar(),
                               Expanded(
-                                child: Padding(
-                                  padding:
-                                      const EdgeInsets.fromLTRB(0, 0, 16, 0),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      _UnsyncedDriveHeader(
-                                        drive: driveDetailState.drive,
-                                        isOwner: isOwner,
-                                      ),
-                                      const SizedBox(height: 30),
-                                      Expanded(
-                                        child: DriveDetailUnsyncedCard(
-                                          drive: driveDetailState.drive,
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                            0, 0, 16, 0),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            _UnsyncedDriveHeader(
+                                              drive: driveDetailState.drive,
+                                              isOwner: isOwner,
+                                            ),
+                                            const SizedBox(height: 30),
+                                            Expanded(
+                                              child: DriveDetailUnsyncedCard(
+                                                drive: driveDetailState.drive,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                    // Details panel for unsynced drive
+                                    if (driveDetailState.showDriveInfo &&
+                                        driveDetailState.selectedItem != null)
+                                      ConstrainedBox(
+                                        constraints: const BoxConstraints(
+                                          maxWidth: 420,
+                                          minWidth: 310,
+                                        ),
+                                        child: DetailsPanel(
+                                          item: driveDetailState.selectedItem!,
+                                          isSharePage: false,
+                                          drivePrivacy:
+                                              driveDetailState.drive.privacy,
+                                          canNavigateThroughImages: false,
+                                          currentDrive: driveDetailState.drive,
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ),
                             ],

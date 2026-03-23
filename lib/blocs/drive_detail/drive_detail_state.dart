@@ -142,11 +142,29 @@ class DriveDetailLoadNotFound extends DriveDetailState {}
 /// has not been synced yet (lastBlockHeight == 0 or null).
 class DriveDetailLoadUnsynced extends DriveDetailState {
   final Drive drive;
+  final bool showDriveInfo;
+  final ArDriveDataTableItem? selectedItem;
 
-  DriveDetailLoadUnsynced({required this.drive});
+  DriveDetailLoadUnsynced({
+    required this.drive,
+    this.showDriveInfo = false,
+    this.selectedItem,
+  });
+
+  DriveDetailLoadUnsynced copyWith({
+    Drive? drive,
+    bool? showDriveInfo,
+    ArDriveDataTableItem? selectedItem,
+  }) {
+    return DriveDetailLoadUnsynced(
+      drive: drive ?? this.drive,
+      showDriveInfo: showDriveInfo ?? this.showDriveInfo,
+      selectedItem: selectedItem ?? this.selectedItem,
+    );
+  }
 
   @override
-  List<Object?> get props => [drive];
+  List<Object?> get props => [drive, showDriveInfo, selectedItem];
 }
 
 class DriveDetailLoadEmpty extends DriveDetailState {}

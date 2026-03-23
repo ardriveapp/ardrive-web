@@ -126,7 +126,7 @@ class _UnsyncedDriveHeader extends StatelessWidget {
       ArDriveDropdownItem(
         onClick: () {
           final bloc = context.read<DriveDetailCubit>();
-          bloc.selectDataItem(
+          bloc.selectDriveInfoForUnsyncedDrive(
             DriveDataTableItemMapper.fromDrive(
               drive,
               (_) => null,
@@ -267,7 +267,7 @@ class _UnsyncedDriveMobileView extends StatelessWidget {
       ArDriveDropdownItem(
         onClick: () {
           final bloc = context.read<DriveDetailCubit>();
-          bloc.selectDataItem(
+          bloc.selectDriveInfoForUnsyncedDrive(
             DriveDataTableItemMapper.fromDrive(
               drive,
               (_) => null,
@@ -301,6 +301,7 @@ class _UnsyncedDriveMobileView extends StatelessWidget {
 }
 
 /// Content card shown for drives that haven't been synced yet.
+/// Matches the sleek design of DriveDetailFolderEmptyCard.
 class DriveDetailUnsyncedCard extends StatelessWidget {
   final Drive drive;
 
@@ -322,21 +323,18 @@ class DriveDetailUnsyncedCard extends StatelessWidget {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(height: 40),
-            ArDriveIcons.cloudSync(size: 48, color: colorTokens.textMid),
-            const SizedBox(height: 24),
-            Text(
-              appLocalizationsOf(context).driveNotSynced,
-              style: typography.heading4(fontWeight: ArFontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            Text(
+      child: Column(
+        children: [
+          const SizedBox(height: 40),
+          Text(
+            appLocalizationsOf(context).driveNotSynced,
+            style: typography.heading4(fontWeight: ArFontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
               appLocalizationsOf(context).driveNotSyncedDescription,
               style: typography.paragraphLarge(
                 color: colorTokens.textLow,
@@ -344,10 +342,13 @@ class DriveDetailUnsyncedCard extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
-            _buildSyncActionCard(context),
-          ],
-        ),
+          ),
+          const SizedBox(height: 20),
+          _buildSyncThisDriveCard(context),
+          const SizedBox(height: 20),
+          _buildSyncAllDrivesCard(context),
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }
@@ -364,33 +365,52 @@ class DriveDetailUnsyncedCard extends StatelessWidget {
           width: double.infinity,
           backgroundColor: colorTokens.containerL1,
           content: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 66),
-                child: Column(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    ArDriveIcons.cloudSync(size: 48, color: colorTokens.textMid),
-                    const SizedBox(height: 24),
-                    Text(
-                      appLocalizationsOf(context).driveNotSynced,
-                      style: typography.display(fontWeight: ArFontWeight.bold),
-                      textAlign: TextAlign.center,
+                    ArDriveImage(
+                      image: AssetImage(Resources.images.login.confetti),
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      appLocalizationsOf(context).driveNotSyncedDescription,
-                      style: typography.heading5(
-                        color: colorTokens.textLow,
-                        fontWeight: ArFontWeight.semiBold,
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            appLocalizationsOf(context).driveNotSynced,
+                            style: typography.display(
+                              fontWeight: ArFontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            appLocalizationsOf(context)
+                                .driveNotSyncedDescription,
+                            style: typography.heading5(
+                              color: colorTokens.textLow,
+                              fontWeight: ArFontWeight.semiBold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
-                      textAlign: TextAlign.center,
+                    ),
+                    ArDriveImage(
+                      image: AssetImage(Resources.images.login.confetti),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 40),
-              _buildSyncActionCard(context),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildSyncThisDriveCard(context),
+                  _buildSyncAllDrivesCard(context),
+                ],
+              ),
             ],
           ),
         ),
@@ -398,8 +418,8 @@ class DriveDetailUnsyncedCard extends StatelessWidget {
     );
   }
 
-  /// Builds a sync action card matching the style of other action cards in the app.
-  Widget _buildSyncActionCard(BuildContext context) {
+  /// Builds the "Sync This Drive" action card.
+  Widget _buildSyncThisDriveCard(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
@@ -414,7 +434,8 @@ class DriveDetailUnsyncedCard extends StatelessWidget {
           ArDriveIcons.refresh(size: 25),
           Text(
             appLocalizationsOf(context).syncThisDrive,
-            style: typography.paragraphXLarge(fontWeight: ArFontWeight.semiBold),
+            style:
+                typography.paragraphXLarge(fontWeight: ArFontWeight.semiBold),
           ),
           const SizedBox(height: 10),
           Text(
@@ -433,6 +454,48 @@ class DriveDetailUnsyncedCard extends StatelessWidget {
               context.read<DriveDetailCubit>().syncCurrentDrive();
             },
             variant: ButtonVariant.primary,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds the "Sync All Drives" action card.
+  Widget _buildSyncAllDrivesCard(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return ArDriveCard(
+      width: 283,
+      height: 283,
+      backgroundColor: colorTokens.containerL2,
+      contentPadding: const EdgeInsets.all(31),
+      content: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          ArDriveIcons.cloudSync(size: 25),
+          Text(
+            appLocalizationsOf(context).syncAllDrives,
+            style:
+                typography.paragraphXLarge(fontWeight: ArFontWeight.semiBold),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            appLocalizationsOf(context).syncAllDrivesDescription,
+            style: typography.paragraphNormal(
+              color: colorTokens.textMid,
+              fontWeight: ArFontWeight.semiBold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          ArDriveButtonNew(
+            text: appLocalizationsOf(context).syncAllDrives,
+            typography: typography,
+            onPressed: () {
+              context.read<SyncCubit>().startSync();
+            },
+            variant: ButtonVariant.secondary,
           ),
         ],
       ),
