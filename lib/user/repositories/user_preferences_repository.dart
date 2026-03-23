@@ -9,6 +9,7 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 abstract class UserPreferencesRepository {
   Future<UserPreferences> load();
   Stream<UserPreferences> watch();
+  UserPreferences? get currentPreferences;
   Future<void> saveTheme(ArDriveThemes theme);
   Future<void> saveLastSelectedDriveId(String driveId);
   Future<void> saveShowHiddenFiles(bool showHiddenFiles);
@@ -52,6 +53,9 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
   UserPreferences? _currentUserPreferences;
   final StreamController<UserPreferences> _userPreferencesController =
       StreamController.broadcast();
+
+  @override
+  UserPreferences? get currentPreferences => _currentUserPreferences;
 
   @override
   Stream<UserPreferences> watch() {
@@ -143,13 +147,14 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
     (await _getStore()).remove('lastSelectedDriveId');
     (await _getStore()).remove('showHiddenFiles');
     (await _getStore()).remove('userHasHiddenDrive');
-    (await _getStore()).remove('syncAllDrivesOnLogin');
+    // Note: syncAllDrivesOnLogin is NOT cleared - it's a global preference
+    // that should persist across sessions and logins
 
     _currentUserPreferences = _currentUserPreferences!.copyWith(
       lastSelectedDriveId: null,
       showHiddenFiles: false,
       userHasHiddenDrive: false,
-      syncAllDrivesOnLogin: true,
+      // Keep syncAllDrivesOnLogin unchanged
     );
 
     _userPreferencesController.sink.add(_currentUserPreferences!);
@@ -181,6 +186,11 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
       await store.putBool(key, value as bool);
     } else {
       throw ArgumentError('Unsupported type for preference value');
+    }
+
+    // Notify listeners after save completes
+    if (_currentUserPreferences != null) {
+      _userPreferencesController.sink.add(_currentUserPreferences!);
     }
   }
 }

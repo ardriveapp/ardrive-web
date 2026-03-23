@@ -1589,6 +1589,8 @@ class DetailsPanelToolbar extends StatelessWidget {
                 );
               },
             ),
+          // Note: Sync/Deep Sync/Snapshot actions are in the drive kebab menu
+          // to avoid redundant UI elements
           const Spacer(),
           _buildActionIcon(
             tooltip: appLocalizationsOf(context).close,

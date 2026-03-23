@@ -16,11 +16,20 @@ class GlobalHideBloc extends Bloc<GlobalHideEvent, GlobalHideState> {
   })  : _userPreferencesRepository = userPreferencesRepository,
         _driveDao = driveDao,
         super(const GlobalHideInitial(userHasHiddenDrive: false)) {
+    // Listen to preferences stream to update state when preferences change.
+    // Note: We only update local state here, NOT save back to preferences.
+    // Saving is done only in response to user actions (ToggleShowHiddenFiles).
     _userPreferencesRepository.watch().listen((userPreferences) async {
       if (userPreferences.showHiddenFiles) {
-        add(ShowItems(userHasHiddenItems: userPreferences.userHasHiddenDrive));
+        add(SyncShowHiddenState(
+          showHidden: true,
+          userHasHiddenItems: userPreferences.userHasHiddenDrive,
+        ));
       } else {
-        add(HideItems(userHasHiddenItems: userPreferences.userHasHiddenDrive));
+        add(SyncShowHiddenState(
+          showHidden: false,
+          userHasHiddenItems: userPreferences.userHasHiddenDrive,
+        ));
       }
     });
 
@@ -33,6 +42,13 @@ class GlobalHideBloc extends Bloc<GlobalHideEvent, GlobalHideState> {
       } else if (event is HideItems) {
         emit(HiddingItems(userHasHiddenDrive: event.userHasHiddenItems));
         await _userPreferencesRepository.saveShowHiddenFiles(false);
+      } else if (event is SyncShowHiddenState) {
+        // Only update local state from stream updates, don't save back
+        if (event.showHidden) {
+          emit(ShowingHiddenItems(userHasHiddenDrive: event.userHasHiddenItems));
+        } else {
+          emit(HiddingItems(userHasHiddenDrive: event.userHasHiddenItems));
+        }
       } else if (event is RefreshOptions) {
         final hasHiddenItems = await _driveDao.userHasHiddenItems();
         emit(state.copyWith(userHasHiddenDrive: hasHiddenItems));

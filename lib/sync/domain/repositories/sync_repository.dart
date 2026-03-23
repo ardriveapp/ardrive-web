@@ -557,8 +557,11 @@ class _SyncRepository implements SyncRepository {
       return;
     }
 
-    SyncProgress syncProgress =
-        SyncProgress.initial().copyWith(drivesCount: 1);
+    SyncProgress syncProgress = SyncProgress.initial().copyWith(
+      drivesCount: 1,
+      isSingleDriveSync: true,
+      driveName: drive.name,
+    );
     yield syncProgress;
 
     final currentBlockHeight = await retry(

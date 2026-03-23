@@ -515,6 +515,18 @@
   },
   "driveDoingInitialSetupMessage": "你的驱动正在进行初始设置。这可能需要几分钟。请在采取任何动作之前先等待。",
   "@driveDoingInitialSetupMessage": {},
+  "driveNotSynced": "驱动器未同步",
+  "@driveNotSynced": {
+    "description": "Title shown when a drive has metadata but content has not been synced"
+  },
+  "driveNotSyncedDescription": "此驱动器需要同步后才能查看其内容。立即同步以查看您的文件和文件夹。",
+  "@driveNotSyncedDescription": {
+    "description": "Description shown when a drive has not been synced yet"
+  },
+  "syncThisDriveDescription": "获取此驱动器的最新文件和文件夹。",
+  "@syncThisDriveDescription": {
+    "description": "Description for the sync drive action card"
+  },
   "driveID": "网盘ID",
   "@driveID": {
     "description": "The Drive-ID tag"
@@ -1698,9 +1710,31 @@
   "@sync": {
     "description": "Sync button tooltip"
   },
+  "syncNow": "立即同步",
+  "@syncNow": {
+    "description": "Button text to sync an unsynced drive"
+  },
   "syncingOnlyOneDrive": "同步你的网盘中...",
   "@syncingOnlyOneDrive": {
     "description": "Show the message when the user has only one drive"
+  },
+  "syncingDriveWithName": "正在同步'{driveName}'...",
+  "@syncingDriveWithName": {
+    "description": "Show the message when syncing a specific drive by name",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "My Drive"
+      }
+    }
+  },
+  "syncingAllDrives": "正在同步所有驱动器",
+  "@syncingAllDrives": {
+    "description": "Title shown when syncing all user drives"
+  },
+  "syncingSingleDrive": "正在同步驱动器",
+  "@syncingSingleDrive": {
+    "description": "Title shown when syncing a single drive"
   },
   "syncingPleaseRemainOnThisTab": "同步中... 请留在本页面.",
   "@syncingPleaseRemainOnThisTab": {

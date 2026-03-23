@@ -444,7 +444,7 @@
   "@deepResync": {
     "description": "Deep Sync Button Text"
   },
-  "deepResyncTooltip": "Empty cache & refresh all drives",
+  "deepResyncTooltip": "Empty cache & resync all drives",
   "@deepResyncTooltip": {
     "description": "Deep Sync Tooltip Text"
   },
@@ -551,6 +551,18 @@
   },
   "driveDoingInitialSetupMessage": "Your drive is doing it's initial setup. This may take a few minutes. Please wait before taking any action.",
   "@driveDoingInitialSetupMessage": {},
+  "driveNotSynced": "Drive Not Synced",
+  "@driveNotSynced": {
+    "description": "Title shown when a drive has metadata but content has not been synced"
+  },
+  "driveNotSyncedDescription": "This drive needs to be synced before you can view its contents. Sync now to see your files and folders.",
+  "@driveNotSyncedDescription": {
+    "description": "Description shown when a drive has not been synced yet"
+  },
+  "syncThisDriveDescription": "Fetch the latest files and folders from this drive.",
+  "@syncThisDriveDescription": {
+    "description": "Description for the sync drive action card"
+  },
   "driveID": "Drive ID",
   "@driveID": {
     "description": "The Drive-ID tag"
@@ -1882,7 +1894,7 @@
   "@resync": {
     "description": "Sync button Text"
   },
-  "resyncTooltip": "Refresh All Drives",
+  "resyncTooltip": "Drive Synchronization",
   "@resyncTooltip": {
     "description": "resync tooltip text"
   },
@@ -2122,9 +2134,31 @@
   "@sync": {
     "description": "Sync button tooltip"
   },
+  "syncNow": "Sync Now",
+  "@syncNow": {
+    "description": "Button text to sync an unsynced drive"
+  },
   "syncingOnlyOneDrive": "Syncing your drive...",
   "@syncingOnlyOneDrive": {
     "description": "Show the message when the user has only one drive"
+  },
+  "syncingDriveWithName": "Syncing '{driveName}'...",
+  "@syncingDriveWithName": {
+    "description": "Show the message when syncing a specific drive by name",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "My Drive"
+      }
+    }
+  },
+  "syncingAllDrives": "Syncing All Drives",
+  "@syncingAllDrives": {
+    "description": "Title shown when syncing all user drives"
+  },
+  "syncingSingleDrive": "Syncing Drive",
+  "@syncingSingleDrive": {
+    "description": "Title shown when syncing a single drive"
   },
   "syncingPleaseRemainOnThisTab": "Syncing... Please remain on this tab.",
   "@syncingPleaseRemainOnThisTab": {

@@ -515,6 +515,18 @@
   },
   "driveDoingInitialSetupMessage": "आपका ड्राइव इसका इनिशियल सेटअप कर रहा है. इसमें कुछ मिनट्स लग सकते हैं. कोई एक्शन लेने से पहले कृप्या इंतज़ार करें. ",
   "@driveDoingInitialSetupMessage": {},
+  "driveNotSynced": "ड्राइव सिंक नहीं हुई",
+  "@driveNotSynced": {
+    "description": "Title shown when a drive has metadata but content has not been synced"
+  },
+  "driveNotSyncedDescription": "इस ड्राइव की सामग्री देखने से पहले इसे सिंक करना आवश्यक है। अपनी फ़ाइलें और फ़ोल्डर देखने के लिए अभी सिंक करें।",
+  "@driveNotSyncedDescription": {
+    "description": "Description shown when a drive has not been synced yet"
+  },
+  "syncThisDriveDescription": "इस ड्राइव से नवीनतम फ़ाइलें और फ़ोल्डर प्राप्त करें।",
+  "@syncThisDriveDescription": {
+    "description": "Description for the sync drive action card"
+  },
   "driveID": "ड्राइव ID",
   "@driveID": {
     "description": "The Drive-ID tag"
@@ -1698,9 +1710,31 @@
   "@sync": {
     "description": "Sync button tooltip"
   },
+  "syncNow": "अभी सिंक करें",
+  "@syncNow": {
+    "description": "Button text to sync an unsynced drive"
+  },
   "syncingOnlyOneDrive": "आपकी ड्राइव सिंक हो रही है...",
   "@syncingOnlyOneDrive": {
     "description": "Show the message when the user has only one drive"
+  },
+  "syncingDriveWithName": "'{driveName}' सिंक हो रहा है...",
+  "@syncingDriveWithName": {
+    "description": "Show the message when syncing a specific drive by name",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "My Drive"
+      }
+    }
+  },
+  "syncingAllDrives": "सभी ड्राइव सिंक हो रही हैं",
+  "@syncingAllDrives": {
+    "description": "Title shown when syncing all user drives"
+  },
+  "syncingSingleDrive": "ड्राइव सिंक हो रही है",
+  "@syncingSingleDrive": {
+    "description": "Title shown when syncing a single drive"
   },
   "syncingPleaseRemainOnThisTab": "सिंक हो रही है... कृपया इस टैब पर बने रहें।",
   "@syncingPleaseRemainOnThisTab": {

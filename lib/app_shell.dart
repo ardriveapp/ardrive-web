@@ -375,21 +375,10 @@ class AppShellState extends State<AppShell> {
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 Text(
-                                                  syncProgress.drivesCount == 0
-                                                      ? ''
-                                                      : syncProgress
-                                                                  .drivesCount >
-                                                              1
-                                                          ? appLocalizationsOf(
-                                                                  context)
-                                                              .driveSyncedOfDrivesCount(
-                                                                  syncProgress
-                                                                      .drivesSynced,
-                                                                  syncProgress
-                                                                      .drivesCount)
-                                                          : appLocalizationsOf(
-                                                                  context)
-                                                              .syncingOnlyOneDrive,
+                                                  _getSyncProgressDescription(
+                                                    context,
+                                                    syncProgress,
+                                                  ),
                                                   style: typography
                                                       .paragraphNormal(
                                                     fontWeight:
@@ -449,11 +438,19 @@ class AppShellState extends State<AppShell> {
                                               ],
                                             ),
                                           ),
-                                          title: isCurrentProfileArConnect
-                                              ? appLocalizationsOf(context)
-                                                  .syncingPleaseRemainOnThisTab
-                                              : appLocalizationsOf(context)
-                                                  .syncingPleaseWait,
+                                          titleWidget: _syncStreamBuilder(
+                                            builderWithData: (syncProgress) =>
+                                                Text(
+                                              _getSyncTitle(
+                                                context,
+                                                syncProgress,
+                                                isCurrentProfileArConnect,
+                                              ),
+                                              style: typography.heading5(
+                                                fontWeight: ArFontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
                                           actions: [
                                             ModalAction(
                                               action: () {
@@ -674,9 +671,56 @@ class AppShellState extends State<AppShell> {
   }) =>
       StreamBuilder<SyncProgress>(
         stream: context.read<SyncCubit>().syncProgressController.stream,
+        // Use current sync progress as initial data to prevent empty state flash
+        initialData: context.read<SyncCubit>().syncProgress,
         builder: (context, snapshot) =>
             snapshot.hasData ? builderWithData(snapshot.data!) : Container(),
       );
+
+  /// Returns the appropriate title for the sync modal based on sync type.
+  String _getSyncTitle(
+    BuildContext context,
+    SyncProgress syncProgress,
+    bool isArConnect,
+  ) {
+    if (syncProgress.isSingleDriveSync) {
+      // For single drive sync, show "Syncing Drive" or with ArConnect warning
+      return isArConnect
+          ? appLocalizationsOf(context).syncingPleaseRemainOnThisTab
+          : appLocalizationsOf(context).syncingSingleDrive;
+    } else {
+      // For all drives sync, show "Syncing All Drives" or with ArConnect warning
+      return isArConnect
+          ? appLocalizationsOf(context).syncingPleaseRemainOnThisTab
+          : appLocalizationsOf(context).syncingAllDrives;
+    }
+  }
+
+  /// Returns the appropriate progress description for the sync modal.
+  String _getSyncProgressDescription(
+    BuildContext context,
+    SyncProgress syncProgress,
+  ) {
+    if (syncProgress.drivesCount == 0) {
+      return '';
+    }
+
+    if (syncProgress.isSingleDriveSync && syncProgress.driveName != null) {
+      // Single drive sync with name - show "Syncing 'Drive Name'..."
+      return appLocalizationsOf(context).syncingDriveWithName(
+        syncProgress.driveName!,
+      );
+    } else if (syncProgress.drivesCount > 1) {
+      // Multiple drives - show "X of Y Drives Synced"
+      return appLocalizationsOf(context).driveSyncedOfDrivesCount(
+        syncProgress.drivesSynced,
+        syncProgress.drivesCount,
+      );
+    } else {
+      // Fallback for single drive without name
+      return appLocalizationsOf(context).syncingOnlyOneDrive;
+    }
+  }
 
   void toggleProfileOverlay() =>
       setState(() => _showProfileOverlay = !_showProfileOverlay);

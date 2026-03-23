@@ -109,6 +109,14 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       return;
     }
 
+    // Check if drive content has been synced (lastBlockHeight > 0 means synced)
+    if (drive.lastBlockHeight == null || drive.lastBlockHeight == 0) {
+      await _folderSubscription?.cancel();
+      _driveId = driveId;
+      emit(DriveDetailLoadUnsynced(drive: drive));
+      return;
+    }
+
     await _folderSubscription?.cancel();
 
     // If the drive info panel is open (selectedItem is a DriveDataItem),
@@ -589,6 +597,20 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   Future<LocalKeyValueStore> _store() async {
     return LocalKeyValueStore.getInstance();
+  }
+
+  /// Syncs the current unsynced drive and then opens it.
+  Future<void> syncCurrentDrive() async {
+    final state = this.state;
+    if (state is DriveDetailLoadUnsynced) {
+      emit(DriveDetailLoadInProgress());
+      await _syncCubit.startSyncForDrive(
+        driveId: state.drive.id,
+        deepSync: false,
+      );
+      // After sync completes, open the drive's root folder
+      openFolder(folderId: state.drive.rootFolderId);
+    }
   }
 
   @override

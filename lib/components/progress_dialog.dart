@@ -23,20 +23,28 @@ Future<void> showProgressDialog(
 class ProgressDialog extends StatelessWidget {
   const ProgressDialog({
     super.key,
-    required this.title,
+    this.title,
+    this.titleWidget,
     this.actions = const [],
     this.progressDescription,
     this.progressBar,
     this.percentageDetails,
     this.useNewArDriveUI = false,
-  });
+  }) : assert(title != null || titleWidget != null,
+            'Either title or titleWidget must be provided');
 
-  final String title;
+  /// The title text. If [titleWidget] is provided, this is ignored.
+  final String? title;
+
+  /// A widget to display as the title. Takes precedence over [title].
+  final Widget? titleWidget;
+
   final List<ModalAction> actions;
   final Widget? progressDescription;
   final Widget? progressBar;
   final Widget? percentageDetails;
   final bool useNewArDriveUI;
+
   @override
   Widget build(BuildContext context) {
     final content = Padding(
@@ -74,14 +82,15 @@ class ProgressDialog extends StatelessWidget {
 
     if (useNewArDriveUI) {
       return ArDriveStandardModalNew(
-        title: title,
+        title: title ?? '',
+        titleWidget: titleWidget,
         content: content,
         actions: actions,
       );
     }
 
     return ArDriveStandardModal(
-      title: title,
+      title: title ?? '',
       content: content,
       actions: actions,
     );

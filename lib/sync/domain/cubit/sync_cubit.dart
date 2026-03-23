@@ -96,7 +96,8 @@ class SyncCubit extends Cubit<SyncState> {
       // avoiding race conditions with tab visibility checks.
       startSync();
     } else {
-      logger.d('Skipping initial sync: syncAllDrivesOnLogin is disabled');
+      logger.d('Skipping full sync: syncAllDrivesOnLogin is disabled');
+      syncMetadataOnly();
     }
 
     // Cancel any existing subscription before creating a new one
@@ -187,6 +188,31 @@ class SyncCubit extends Cubit<SyncState> {
 
   var ghostFolders = <FolderID, GhostFolder>{};
 
+  /// Fetches only drive metadata without full content sync.
+  /// Used when syncAllDrivesOnLogin is disabled to populate the sidebar.
+  /// This runs silently without emitting SyncInProgress to avoid blocking
+  /// code that waits for sync via waitCurrentSync().
+  Future<void> syncMetadataOnly() async {
+    logger.d('Starting metadata-only sync');
+    final profile = _profileCubit.state;
+    if (profile is ProfileLoggedIn) {
+      // Don't emit SyncInProgress - this is a lightweight background operation
+      // and we don't want to block waitCurrentSync() callers
+      try {
+        await _syncRepository.updateUserDrives(
+          wallet: profile.user.wallet,
+          password: profile.user.password,
+          cipherKey: profile.user.cipherKey,
+        );
+        logger.d('Metadata-only sync completed successfully');
+      } catch (e, stackTrace) {
+        logger.e('Error fetching drive metadata', e, stackTrace);
+      }
+    } else {
+      logger.d('Profile not logged in yet, skipping metadata sync');
+    }
+  }
+
   Future<void> startSync({bool deepSync = false}) async {
     logger.i('Starting Sync');
 
@@ -210,6 +236,10 @@ class SyncCubit extends Cubit<SyncState> {
       _initSync = DateTime.now();
 
       emit(SyncInProgress());
+      // Emit initial progress AFTER SyncInProgress so the modal is already
+      // listening to the stream when we emit
+      syncProgressController.add(_syncProgress);
+
       // Only sync in drives owned by the user if they're logged in.
       logger.d('Checking if user is logged in...');
 
@@ -339,7 +369,11 @@ class SyncCubit extends Cubit<SyncState> {
       return;
     }
 
-    _syncProgress = SyncProgress.initial();
+    // Mark as single drive sync from the start so the UI shows the right title
+    _syncProgress = SyncProgress.initial().copyWith(
+      isSingleDriveSync: true,
+      drivesCount: 1,
+    );
 
     // Create a new cancellation token for this sync
     _currentSyncToken?.dispose();
@@ -354,6 +388,9 @@ class SyncCubit extends Cubit<SyncState> {
       _initSync = DateTime.now();
 
       emit(SyncInProgress());
+      // Emit initial progress AFTER SyncInProgress so the modal is already
+      // listening to the stream when we emit
+      syncProgressController.add(_syncProgress);
 
       if (profile is ProfileLoggedIn) {
         wallet = profile.user.wallet;

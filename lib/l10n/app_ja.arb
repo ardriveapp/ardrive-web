@@ -515,6 +515,18 @@
   },
   "driveDoingInitialSetupMessage": "ドライブが初期設定を行っています。数分かかる場合があります。操作を行う前にしばらくお待ちください。",
   "@driveDoingInitialSetupMessage": {},
+  "driveNotSynced": "ドライブ未同期",
+  "@driveNotSynced": {
+    "description": "Title shown when a drive has metadata but content has not been synced"
+  },
+  "driveNotSyncedDescription": "このドライブのコンテンツを表示するには同期が必要です。今すぐ同期してファイルとフォルダを表示してください。",
+  "@driveNotSyncedDescription": {
+    "description": "Description shown when a drive has not been synced yet"
+  },
+  "syncThisDriveDescription": "このドライブから最新のファイルとフォルダを取得します。",
+  "@syncThisDriveDescription": {
+    "description": "Description for the sync drive action card"
+  },
   "driveID": "ドライブID",
   "@driveID": {
     "description": "The Drive-ID tag"
@@ -1698,9 +1710,31 @@
   "@sync": {
     "description": "Sync button tooltip"
   },
+  "syncNow": "今すぐ同期",
+  "@syncNow": {
+    "description": "Button text to sync an unsynced drive"
+  },
   "syncingOnlyOneDrive": "ドライブの同期中…",
   "@syncingOnlyOneDrive": {
     "description": "Show the message when the user has only one drive"
+  },
+  "syncingDriveWithName": "'{driveName}'を同期中...",
+  "@syncingDriveWithName": {
+    "description": "Show the message when syncing a specific drive by name",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "My Drive"
+      }
+    }
+  },
+  "syncingAllDrives": "すべてのドライブを同期中",
+  "@syncingAllDrives": {
+    "description": "Title shown when syncing all user drives"
+  },
+  "syncingSingleDrive": "ドライブを同期中",
+  "@syncingSingleDrive": {
+    "description": "Title shown when syncing a single drive"
   },
   "syncingPleaseRemainOnThisTab": "同期中... このタブにとどまっていてください。",
   "@syncingPleaseRemainOnThisTab": {

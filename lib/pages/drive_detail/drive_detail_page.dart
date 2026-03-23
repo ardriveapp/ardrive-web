@@ -76,6 +76,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 part 'components/drive_detail_breadcrumb_row.dart';
 part 'components/drive_detail_data_list.dart';
 part 'components/drive_detail_folder_empty_card.dart';
+part 'components/drive_detail_unsynced_card.dart';
 part 'components/fs_entry_preview_widget.dart';
 
 class DriveDetailPage extends StatefulWidget {
@@ -186,7 +187,22 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                             widget.anonymouslyShowDriveDetail,
                       );
                     } else if (driveDetailState is DriveDetailLoadInProgress) {
-                      return const Center(child: CircularProgressIndicator());
+                      return ScreenTypeLayout.builder(
+                        mobile: (context) => const Scaffold(
+                          drawerScrimColor: Colors.transparent,
+                          drawer: AppSideBar(),
+                          appBar: MobileAppBar(),
+                          body: Center(child: CircularProgressIndicator()),
+                        ),
+                        desktop: (context) => const Column(
+                          children: [
+                            AppTopBar(),
+                            Expanded(
+                              child: Center(child: CircularProgressIndicator()),
+                            ),
+                          ],
+                        ),
+                      );
                     } else if (driveDetailState is DriveInitialLoading) {
                       return ArDriveDevToolsShortcuts(
                         customShortcuts: [
@@ -235,6 +251,62 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                 ),
                               ],
                             ),
+                          ),
+                        ),
+                      );
+                    } else if (driveDetailState is DriveDetailLoadUnsynced) {
+                      final isOwner = isDriveOwner(
+                        context.read<ArDriveAuth>(),
+                        driveDetailState.drive.ownerAddress,
+                      );
+
+                      return ArDriveDevToolsShortcuts(
+                        customShortcuts: [
+                          Shortcut(
+                            modifier: LogicalKeyboardKey.shiftLeft,
+                            key: LogicalKeyboardKey.keyH,
+                            action: () {
+                              ArDriveDevTools.instance
+                                  .showDevTools(optionalContext: context);
+                            },
+                          ),
+                        ],
+                        child: ScreenTypeLayout.builder(
+                          mobile: (context) => Scaffold(
+                            drawerScrimColor: Colors.transparent,
+                            drawer: const AppSideBar(),
+                            appBar: const MobileAppBar(),
+                            body: _UnsyncedDriveMobileView(
+                              drive: driveDetailState.drive,
+                              isOwner: isOwner,
+                            ),
+                          ),
+                          desktop: (context) => Column(
+                            children: [
+                              const AppTopBar(),
+                              Expanded(
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.fromLTRB(0, 0, 16, 0),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      _UnsyncedDriveHeader(
+                                        drive: driveDetailState.drive,
+                                        isOwner: isOwner,
+                                      ),
+                                      const SizedBox(height: 30),
+                                      Expanded(
+                                        child: DriveDetailUnsyncedCard(
+                                          drive: driveDetailState.drive,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       );
