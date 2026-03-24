@@ -407,6 +407,24 @@ class AppShellState extends State<AppShell> {
                                                         ArFontWeight.bold,
                                                   ),
                                                 ),
+                                                if (isCurrentProfileArConnect) ...[
+                                                  const SizedBox(height: 8),
+                                                  Text(
+                                                    appLocalizationsOf(context)
+                                                        .syncingPleaseRemainOnThisTab,
+                                                    style: typography
+                                                        .paragraphSmall(
+                                                      fontWeight:
+                                                          ArFontWeight.semiBold,
+                                                      color: ArDriveTheme.of(
+                                                              context)
+                                                          .themeData
+                                                          .colorTokens
+                                                          .textLow,
+                                                    ),
+                                                    textAlign: TextAlign.center,
+                                                  ),
+                                                ],
                                                 if (syncProgress.hasErrors) ...[
                                                   const SizedBox(height: 8),
                                                   Container(
@@ -700,21 +718,17 @@ class AppShellState extends State<AppShell> {
       );
 
   /// Returns the appropriate title for the sync modal based on sync type.
+  /// ArConnect warning is handled separately in the modal content.
   String _getSyncTitle(
     BuildContext context,
     SyncProgress syncProgress,
     bool isArConnect,
   ) {
+    // Always show sync-specific title regardless of ArConnect status
     if (syncProgress.isSingleDriveSync) {
-      // For single drive sync, show "Syncing Drive" or with ArConnect warning
-      return isArConnect
-          ? appLocalizationsOf(context).syncingPleaseRemainOnThisTab
-          : appLocalizationsOf(context).syncingSingleDrive;
+      return appLocalizationsOf(context).syncingSingleDrive;
     } else {
-      // For all drives sync, show "Syncing All Drives" or with ArConnect warning
-      return isArConnect
-          ? appLocalizationsOf(context).syncingPleaseRemainOnThisTab
-          : appLocalizationsOf(context).syncingAllDrives;
+      return appLocalizationsOf(context).syncingAllDrives;
     }
   }
 
@@ -723,24 +737,27 @@ class AppShellState extends State<AppShell> {
     BuildContext context,
     SyncProgress syncProgress,
   ) {
-    if (syncProgress.drivesCount == 0) {
-      return '';
-    }
-
-    if (syncProgress.isSingleDriveSync && syncProgress.driveName != null) {
-      // Single drive sync with name - show "Syncing 'Drive Name'..."
-      return appLocalizationsOf(context).syncingDriveWithName(
-        syncProgress.driveName!,
-      );
+    if (syncProgress.isSingleDriveSync) {
+      // Single drive sync - show drive name if available, otherwise fallback
+      if (syncProgress.driveName != null) {
+        return appLocalizationsOf(context).syncingDriveWithName(
+          syncProgress.driveName!,
+        );
+      } else {
+        return appLocalizationsOf(context).syncingOnlyOneDrive;
+      }
     } else if (syncProgress.drivesCount > 1) {
       // Multiple drives - show "X of Y Drives Synced"
       return appLocalizationsOf(context).driveSyncedOfDrivesCount(
         syncProgress.drivesSynced,
         syncProgress.drivesCount,
       );
-    } else {
-      // Fallback for single drive without name
+    } else if (syncProgress.drivesCount == 1) {
+      // Single drive in all-drives sync
       return appLocalizationsOf(context).syncingOnlyOneDrive;
+    } else {
+      // drivesCount == 0, initial state
+      return '';
     }
   }
 
