@@ -92,9 +92,10 @@ class SyncCubit extends Cubit<SyncState> {
     final preferences = await _userPreferencesRepository.load();
     if (preferences.syncAllDrivesOnLogin) {
       // Start initial sync immediately without waiting for async operations.
-      // This ensures sync runs while the tab is still focused after login,
-      // avoiding race conditions with tab visibility checks.
-      startSync();
+      // Skip tab visibility check for initial sync because the user just logged in
+      // (which requires wallet interaction, proving they're active). The wallet popup
+      // may cause the browser to consider the tab unfocused momentarily.
+      startSync(skipTabVisibilityCheck: true);
     } else {
       logger.d('Skipping full sync: syncAllDrivesOnLogin is disabled');
       syncMetadataOnly();
@@ -214,7 +215,10 @@ class SyncCubit extends Cubit<SyncState> {
     }
   }
 
-  Future<void> startSync({bool deepSync = false}) async {
+  Future<void> startSync({
+    bool deepSync = false,
+    bool skipTabVisibilityCheck = false,
+  }) async {
     logger.i('Starting Sync');
 
     if (state is SyncInProgress) {
@@ -258,7 +262,11 @@ class SyncCubit extends Cubit<SyncState> {
         // For ArConnect users, check tab visibility before any operations
         // that require signing. If tab is not focused, skip sync entirely
         // and let the next periodic sync or manual sync handle it.
-        if (isArConnect && !_tabVisibility.isTabFocused()) {
+        // Skip this check for initial sync after login since wallet interaction
+        // may momentarily cause the browser to consider the tab unfocused.
+        if (isArConnect &&
+            !skipTabVisibilityCheck &&
+            !_tabVisibility.isTabFocused()) {
           logger.d('Tab hidden for ArConnect user, skipping sync...');
           emit(SyncIdle());
           return;
