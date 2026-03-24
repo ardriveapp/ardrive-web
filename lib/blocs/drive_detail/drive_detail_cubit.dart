@@ -247,13 +247,22 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           orderingMode: contentOrderingMode,
           folderId: folderId,
         )
-            .handleError((error, stack) {
+            .handleError((error, stack) async {
           logger.e('Error watching folder contents', error, stack);
           if (error is DriveNotFoundException) {
             emit(DriveDetailLoadNotFound());
+          } else if (error is FolderNotFoundInDriveException) {
+            // Check if the drive is unsynced (metadata only, no content)
+            final drive = await _driveDao
+                .driveById(driveId: error.driveId)
+                .getSingleOrNull();
+            if (drive != null &&
+                (drive.lastBlockHeight == null || drive.lastBlockHeight == 0)) {
+              emit(DriveDetailLoadUnsynced(drive: drive));
+            } else {
+              emit(DriveInitialLoading());
+            }
           }
-
-          return null;
         }),
         _profileCubit.stream.startWith(ProfileCheckingAvailability()),
         (drive, folderContents, _) async {
@@ -391,9 +400,19 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       logger.e('An error occured mouting the drive explorer', e, stacktrace);
     }
 
-    _folderSubscription?.onError((e) {
+    _folderSubscription?.onError((e) async {
       if (e is FolderNotFoundInDriveException) {
-        emit(DriveInitialLoading());
+        // Check if the drive is unsynced (metadata only, no content)
+        final drive =
+            await _driveDao.driveById(driveId: e.driveId).getSingleOrNull();
+        if (drive != null &&
+            (drive.lastBlockHeight == null || drive.lastBlockHeight == 0)) {
+          // Drive exists but content hasn't been synced - show sync options
+          emit(DriveDetailLoadUnsynced(drive: drive));
+        } else {
+          // Drive is being set up or has an issue
+          emit(DriveInitialLoading());
+        }
         return;
       }
 
