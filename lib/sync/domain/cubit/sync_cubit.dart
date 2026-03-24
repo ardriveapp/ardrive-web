@@ -84,6 +84,13 @@ class SyncCubit extends Cubit<SyncState> {
   void createSyncStream() async {
     logger.d('Creating sync stream to periodically call sync automatically');
 
+    // Start initial sync immediately without waiting for async operations.
+    // Skip tab visibility check for initial sync because the user just logged in
+    // (which requires wallet interaction, proving they're active). The wallet popup
+    // may cause the browser to consider the tab unfocused momentarily.
+    startSync(skipTabVisibilityCheck: true);
+
+    // Cancel any existing subscription before creating a new one
     await _syncSub?.cancel();
 
     _syncSub = Stream.periodic(
@@ -97,8 +104,6 @@ class SyncCubit extends Cubit<SyncState> {
     }).listen((_) {
       logger.d('Listening to startSync periodic stream');
     });
-
-    startSync();
   }
 
   void restartSyncOnFocus() {
@@ -173,7 +178,10 @@ class SyncCubit extends Cubit<SyncState> {
 
   var ghostFolders = <FolderID, GhostFolder>{};
 
-  Future<void> startSync({bool deepSync = false}) async {
+  Future<void> startSync({
+    bool deepSync = false,
+    bool skipTabVisibilityCheck = false,
+  }) async {
     logger.i('Starting Sync');
 
     if (state is SyncInProgress) {
@@ -182,7 +190,7 @@ class SyncCubit extends Cubit<SyncState> {
     }
 
     _syncProgress = SyncProgress.initial();
-    
+
     // Create a new cancellation token for this sync
     _currentSyncToken?.dispose(); // Clean up any previous token
     _currentSyncToken = SyncCancellationToken();
@@ -202,19 +210,23 @@ class SyncCubit extends Cubit<SyncState> {
       if (profile is ProfileLoggedIn) {
         logger.d('User is logged in');
 
-        //Check if profile is ArConnect to skip sync while tab is hidden
         wallet = profile.user.wallet;
         password = profile.user.password;
         cipherKey = profile.user.cipherKey;
 
         logger.d('Checking if user is from arconnect...');
-
         final isArConnect = await _profileCubit.isCurrentProfileArConnect();
-
         logger.d('User using arconnect: $isArConnect');
 
-        if (isArConnect && !_tabVisibility.isTabFocused()) {
-          logger.d('Tab hidden, skipping sync...');
+        // For ArConnect users, check tab visibility before any operations
+        // that require signing. If tab is not focused, skip sync entirely
+        // and let the next periodic sync or manual sync handle it.
+        // Skip this check for initial sync after login since wallet interaction
+        // may momentarily cause the browser to consider the tab unfocused.
+        if (isArConnect &&
+            !skipTabVisibilityCheck &&
+            !_tabVisibility.isTabFocused()) {
+          logger.d('Tab hidden for ArConnect user, skipping sync...');
           emit(SyncIdle());
           return;
         }
@@ -225,6 +237,8 @@ class SyncCubit extends Cubit<SyncState> {
           return;
         }
 
+        // Update user drives to discover all drives owned by the user.
+        // This must complete before syncAllDrives so drives exist in DB.
         await _syncRepository.updateUserDrives(
           wallet: wallet,
           password: password,
@@ -264,7 +278,7 @@ class SyncCubit extends Cubit<SyncState> {
         // Clean up the cancellation token
         _currentSyncToken?.dispose();
         _currentSyncToken = null;
-        
+
         emit(SyncCancelled(
           drivesCompleted: _syncProgress.drivesSynced,
           totalDrives: _syncProgress.drivesCount,
@@ -344,21 +358,21 @@ class SyncCubit extends Cubit<SyncState> {
       _currentSyncToken!.cancel();
     }
   }
-  
+
   /// Clear the cancelled state and return to idle
   void clearCancelledState() {
     if (state is SyncCancelled) {
       emit(SyncIdle());
     }
   }
-  
+
   /// Clear the error state and return to idle
   void clearErrorState() {
     if (state is SyncCompleteWithErrors) {
       emit(SyncIdle());
     }
   }
-  
+
   /// Get the current sync progress
   SyncProgress get syncProgress => _syncProgress;
 
