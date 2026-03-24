@@ -601,7 +601,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
           dataItem: _preparedDataItem!,
         );
       } else {
-        await _arweave.postTx(_preparedTx!);
+        await _arweave.uploadTx(_preparedTx!, maxConcurrentUploadCount: 1);
       }
 
       final txId = _useTurboUpload ? _preparedDataItem!.id : _preparedTx!.id;

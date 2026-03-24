@@ -215,6 +215,7 @@ class SyncCubit extends Cubit<SyncState> {
     }
   }
 
+
   Future<void> startSync({
     bool deepSync = false,
     bool skipTabVisibilityCheck = false,
