@@ -38,6 +38,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   final DriveRepository _driveRepository;
 
   StreamSubscription? _folderSubscription;
+  StreamSubscription? _syncSubscription;
+  bool _initialLoadComplete = false;
   final _defaultAvailableRowsPerPage = [25, 50, 75, 100];
 
   List<ArDriveDataTableItem> _selectedItems = [];
@@ -84,18 +86,77 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
         openFolder(folderId: folder?.id);
         // The empty string here is required to open the root folder
+      }).whenComplete(() {
+        _initialLoadComplete = true;
       });
     } else {
       Future.microtask(() async {
+        // Wait for any current sync to complete before checking drive state
+        await _syncCubit.waitCurrentSync();
+
         final drive =
             await _driveDao.driveById(driveId: driveId).getSingleOrNull();
-        openFolder(folderId: drive?.rootFolderId);
+
+        // Check if drive exists and has been content-synced
+        if (drive == null) {
+          emit(DriveDetailLoadNotFound());
+          return;
+        }
+
+        // If drive has only metadata (not content-synced), show unsynced state
+        if (drive.lastBlockHeight == null || drive.lastBlockHeight == 0) {
+          emit(DriveDetailLoadUnsynced(drive: drive));
+          return;
+        }
+
+        openFolder(folderId: drive.rootFolderId);
+      }).whenComplete(() {
+        _initialLoadComplete = true;
       });
+    }
+
+    // Listen for sync completion to auto-refresh if we're in an unsynced/loading state
+    _syncSubscription = _syncCubit.stream.listen((syncState) {
+      if (syncState is SyncIdle && _initialLoadComplete) {
+        _onSyncCompleted();
+      }
+    });
+  }
+
+  /// Called when sync completes. Re-checks drive state if we're showing
+  /// unsynced or loading state, and loads the drive content if now available.
+  Future<void> _onSyncCompleted() async {
+    if (isClosed) return;
+
+    final currentState = state;
+    if (currentState is DriveDetailLoadUnsynced) {
+      final drive =
+          await _driveDao.driveById(driveId: _driveId).getSingleOrNull();
+
+      if (isClosed) return;
+
+      if (drive == null) {
+        emit(DriveDetailLoadNotFound());
+        return;
+      }
+
+      // If drive is now synced, open it
+      if (drive.lastBlockHeight != null && drive.lastBlockHeight! > 0) {
+        openFolder(folderId: drive.rootFolderId);
+      }
     }
   }
 
   void showEmptyDriveDetail() async {
     await _syncCubit.waitCurrentSync();
+
+    // Check if state has already changed (e.g., drives were loaded during sync)
+    // Don't overwrite a more specific state with the empty state
+    if (state is DriveDetailLoadSuccess ||
+        state is DriveDetailLoadUnsynced ||
+        state is DriveDetailLoadInProgress) {
+      return;
+    }
 
     emit(DriveDetailLoadEmpty());
   }
@@ -607,13 +668,33 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   Future<void> syncCurrentDrive() async {
     final state = this.state;
     if (state is DriveDetailLoadUnsynced) {
+      final driveId = state.drive.id;
+      final rootFolderId = state.drive.rootFolderId;
+
       emit(DriveDetailLoadInProgress());
       await _syncCubit.startSyncForDrive(
-        driveId: state.drive.id,
+        driveId: driveId,
         deepSync: false,
       );
-      // After sync completes, open the drive's root folder
-      openFolder(folderId: state.drive.rootFolderId);
+
+      // Guard: Only proceed if sync completed successfully and we're still
+      // viewing the same drive (user hasn't navigated away during sync)
+      final syncState = _syncCubit.state;
+      final currentState = this.state;
+
+      // Check if sync was cancelled or had errors
+      if (syncState is SyncCancelled || syncState is SyncFailure) {
+        // Sync was cancelled or failed, don't navigate
+        return;
+      }
+
+      // Check if we're still on the same drive (user might have navigated away)
+      if (currentState is! DriveDetailLoadInProgress || _driveId != driveId) {
+        return;
+      }
+
+      // Sync completed successfully and we're still on the same drive
+      openFolder(folderId: rootFolderId);
     }
   }
 
@@ -643,6 +724,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   @override
   Future<void> close() {
     _folderSubscription?.cancel();
+    _syncSubscription?.cancel();
     _allImagesOfCurrentFolder = null;
     return super.close();
   }
