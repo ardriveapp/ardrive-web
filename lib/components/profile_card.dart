@@ -265,8 +265,11 @@ class _ProfileCardState extends State<ProfileCard> {
                           .read<UserPreferencesRepository>()
                           .watch(),
                       builder: (context, snapshot) {
+                        final repo = context.read<UserPreferencesRepository>();
                         final syncAllDrivesOnLogin =
-                            snapshot.data?.syncAllDrivesOnLogin ?? true;
+                            snapshot.data?.syncAllDrivesOnLogin ??
+                                repo.currentPreferences?.syncAllDrivesOnLogin ??
+                                true;
                         return ArDriveToggleSwitch(
                           alignRight: true,
                           value: syncAllDrivesOnLogin,

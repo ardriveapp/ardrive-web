@@ -32,13 +32,15 @@ class ProgressDialog extends StatelessWidget {
     this.progressBar,
     this.percentageDetails,
     this.useNewArDriveUI = false,
-  }) : assert(title != null || titleWidget != null,
-            'Either title or titleWidget must be provided');
+  })  : assert(title != null || titleWidget != null,
+            'Either title or titleWidget must be provided'),
+        assert(!(title != null && titleWidget != null),
+            'Provide only one of title or titleWidget, not both');
 
-  /// The title text. If [titleWidget] is provided, this is ignored.
+  /// The title text. Must not be provided if [titleWidget] is provided.
   final String? title;
 
-  /// A widget to display as the title. Takes precedence over [title].
+  /// A widget to display as the title. Must not be provided if [title] is provided.
   final Widget? titleWidget;
 
   final List<ModalAction> actions;
@@ -85,14 +87,15 @@ class ProgressDialog extends StatelessWidget {
 
     if (useNewArDriveUI) {
       return ArDriveStandardModalNew(
-        // Pass null if titleWidget is provided, otherwise use title or empty string
-        title: titleWidget != null ? title : (title ?? ''),
+        // title and titleWidget are mutually exclusive per constructor assertion
+        title: title,
         titleWidget: titleWidget,
         content: content,
         actions: actions,
       );
     }
 
+    // Legacy UI only supports title (not titleWidget)
     return ArDriveStandardModal(
       title: title ?? '',
       content: content,

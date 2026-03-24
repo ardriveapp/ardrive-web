@@ -237,7 +237,7 @@ class _SyncRepository implements SyncRepository {
             cipherKey: cipherKey,
             lastBlockHeight: syncDeep
                 ? 0
-                : _calculateSyncLastBlockHeight(drive.lastBlockHeight!),
+                : _calculateSyncLastBlockHeight(drive.lastBlockHeight ?? 0),
             currentBlockHeight: currentBlockHeight,
             transactionParseBatchSize:
                 200 ~/ (syncProgress.drivesCount - syncProgress.drivesSynced),
@@ -588,7 +588,7 @@ class _SyncRepository implements SyncRepository {
           cipherKey: cipherKey,
           lastBlockHeight: syncDeep
               ? 0
-              : _calculateSyncLastBlockHeight(drive.lastBlockHeight!),
+              : _calculateSyncLastBlockHeight(drive.lastBlockHeight ?? 0),
           currentBlockHeight: currentBlockHeight,
           transactionParseBatchSize: 200,
           ownerAddress: drive.ownerAddress,
@@ -760,7 +760,11 @@ class _SyncRepository implements SyncRepository {
       } catch (e) {
         if (e is SyncCancelledException) {
           logger.i('Single drive sync cancelled');
+          // Clear per-sync state to prevent leaking into subsequent runs
           driveGhostFolders.clear();
+          _folderIds.clear();
+          // Remove any ghost folders for this drive from the instance map
+          _ghostFolders.removeWhere((_, v) => v.driveId == driveId);
           syncProgressController.addError(e);
           await syncProgressController.close();
           return;
@@ -768,6 +772,12 @@ class _SyncRepository implements SyncRepository {
 
         // Track the failure
         logger.e('Failed to sync drive $driveId', e);
+
+        // Clear per-sync state on error to prevent leaking into subsequent runs
+        driveGhostFolders.clear();
+        _folderIds.clear();
+        // Remove any ghost folders for this drive from the instance map
+        _ghostFolders.removeWhere((_, v) => v.driveId == driveId);
 
         final updatedErrorMessages =
             Map<String, String>.from(syncProgress.errorMessages)
@@ -784,7 +794,11 @@ class _SyncRepository implements SyncRepository {
         await syncProgressController.close();
       }
     }).catchError((error) async {
+      // Clear per-sync state on error to prevent leaking into subsequent runs
       driveGhostFolders.clear();
+      _folderIds.clear();
+      // Remove any ghost folders for this drive from the instance map
+      _ghostFolders.removeWhere((_, v) => v.driveId == driveId);
       logger.d('Single drive sync failed with error, closing controller: $error');
       if (!syncProgressController.isClosed) {
         syncProgressController.addError(error);

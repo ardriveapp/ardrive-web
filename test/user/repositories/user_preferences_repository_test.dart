@@ -20,10 +20,25 @@ void main() {
     late MockThemeDetector mockThemeDetector;
     late MockArDriveAuth mockAuth;
 
+    /// Helper to set up default stubs that are needed when auth emits a user
+    /// (which triggers load() in the repository constructor)
+    void setUpDefaultStubs() {
+      when(() => mockStore.getString('currentTheme')).thenReturn(null);
+      when(() => mockStore.getString('lastSelectedDriveId')).thenReturn(null);
+      when(() => mockStore.getBool('showHiddenFiles')).thenReturn(false);
+      when(() => mockStore.getBool('userHasHiddenDrive')).thenReturn(false);
+      when(() => mockStore.getBool('syncAllDrivesOnLogin')).thenReturn(null);
+      when(() => mockThemeDetector.getOSDefaultTheme())
+          .thenReturn(ArDriveThemes.light);
+    }
+
     setUp(() {
       mockStore = MockLocalKeyValueStore();
       mockThemeDetector = MockThemeDetector();
       mockAuth = MockArDriveAuth();
+      // Set up default stubs BEFORE creating repository, since auth listener
+      // triggers load() when user is emitted
+      setUpDefaultStubs();
       when(() => mockAuth.onAuthStateChanged())
           .thenAnswer((_) => Stream.value(getFakeUser()));
       repository = UserPreferencesRepository(

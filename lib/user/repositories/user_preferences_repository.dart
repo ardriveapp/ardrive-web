@@ -35,6 +35,9 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
   final ThemeDetector _themeDetector;
   final ArDriveAuth _auth;
 
+  /// Serializes auth state operations to prevent race conditions
+  Future<void>? _authStateWork;
+
   _UserPreferencesRepository({
     LocalKeyValueStore? store,
     required ThemeDetector themeDetector,
@@ -44,12 +47,15 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
         _auth = auth,
         super() {
     _auth.onAuthStateChanged().listen((user) {
-      if (user == null) {
-        clear();
-      } else {
-        // When user logs in, reload preferences to emit current values to stream
-        load();
-      }
+      // Chain auth state operations to ensure ordered execution
+      _authStateWork = (_authStateWork ?? Future.value()).then((_) {
+        if (user == null) {
+          return clear();
+        } else {
+          // When user logs in, reload preferences to emit current values to stream
+          return load();
+        }
+      });
     });
   }
 
