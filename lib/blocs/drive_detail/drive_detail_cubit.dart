@@ -113,6 +113,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     if (drive.lastBlockHeight == null || drive.lastBlockHeight == 0) {
       await _folderSubscription?.cancel();
       _driveId = driveId;
+      // Clear selection state to avoid stale data leaking into sync/openFolder
+      _selectedItem = null;
+      _selectedItems.clear();
+      _refreshSelectedItem = false;
       emit(DriveDetailLoadUnsynced(drive: drive));
       return;
     }
