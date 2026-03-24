@@ -88,6 +88,13 @@ class SyncCubit extends Cubit<SyncState> {
   void createSyncStream() async {
     logger.d('Creating sync stream to periodically call sync automatically');
 
+    // Emit SyncLoadingDrives immediately to prevent race conditions where
+    // DriveDetailCubit's waitCurrentSync() returns early before sync starts.
+    // This ensures any code waiting for sync to complete will actually wait.
+    // Using SyncLoadingDrives (not SyncInProgress) to avoid triggering the
+    // abort guard in startSync().
+    emit(SyncLoadingDrives());
+
     // Check if syncAllDrivesOnLogin preference is enabled before initial sync
     final preferences = await _userPreferencesRepository.load();
     if (preferences.syncAllDrivesOnLogin) {
