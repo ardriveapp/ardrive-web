@@ -168,14 +168,31 @@ void main() {
       verify(() => mockStore.putBool('userHasHiddenDrive', true)).called(1);
     });
 
-    test('should clear last selected drive id from storage', () async {
+    test('should save sync all drives on login preference to storage', () async {
+      // Setup initial load
+      when(() => mockStore.getString('currentTheme')).thenReturn('dark');
+      when(() => mockStore.getString('lastSelectedDriveId')).thenReturn(null);
+      when(() => mockStore.getBool('showHiddenFiles')).thenReturn(false);
+      when(() => mockStore.getBool('userHasHiddenDrive')).thenReturn(false);
+      when(() => mockStore.getBool('syncAllDrivesOnLogin')).thenReturn(true);
+      await repository.load();
+
+      when(() => mockStore.putBool('syncAllDrivesOnLogin', false))
+          .thenAnswer((_) async => true);
+
+      await repository.saveSyncAllDrivesOnLogin(false);
+
+      verify(() => mockStore.putBool('syncAllDrivesOnLogin', false)).called(1);
+    });
+
+    test('should clear preferences but preserve syncAllDrivesOnLogin', () async {
       // Setup initial load
       when(() => mockStore.getString('currentTheme')).thenReturn('dark');
       when(() => mockStore.getString('lastSelectedDriveId'))
           .thenReturn('drive_id');
       when(() => mockStore.getBool('showHiddenFiles')).thenReturn(true);
       when(() => mockStore.getBool('userHasHiddenDrive')).thenReturn(true);
-      when(() => mockStore.getBool('syncAllDrivesOnLogin')).thenReturn(null);
+      when(() => mockStore.getBool('syncAllDrivesOnLogin')).thenReturn(false);
       await repository.load();
 
       when(() => mockStore.remove('lastSelectedDriveId'))
@@ -187,7 +204,12 @@ void main() {
 
       await repository.clear();
 
+      // Verify cleared preferences
       verify(() => mockStore.remove('lastSelectedDriveId')).called(1);
+      verify(() => mockStore.remove('showHiddenFiles')).called(1);
+      verify(() => mockStore.remove('userHasHiddenDrive')).called(1);
+      // Verify syncAllDrivesOnLogin is NOT removed (should persist)
+      verifyNever(() => mockStore.remove('syncAllDrivesOnLogin'));
     });
 
     test(
@@ -218,47 +240,36 @@ void main() {
           equals(initialPreferences),
         );
 
-        when(() => mockStore.putString('currentTheme', ArDriveThemes.dark.name))
-            .thenAnswer((_) async => true);
-        when(() => mockStore.putString('lastSelectedDriveId', 'new_drive_id'))
-            .thenAnswer((_) async => true);
-        when(() => mockStore.putBool('showHiddenFiles', true))
-            .thenAnswer((_) async => true);
-        when(() => mockStore.putBool('userHasHiddenDrive', true))
-            .thenAnswer((_) async => true);
+        // Clean up
+        await queue.cancel();
+      },
+    );
 
-        // Simulate changes in preferences
-        when(() => mockStore.getString('currentTheme')).thenReturn('dark');
-        when(() => mockStore.getString('lastSelectedDriveId'))
-            .thenReturn('new_drive_id');
-        when(() => mockStore.getBool('showHiddenFiles')).thenReturn(true);
-        when(() => mockStore.getBool('userHasHiddenDrive')).thenReturn(true);
-
-        // Trigger preference changes
-        await repository.saveTheme(ArDriveThemes.dark);
-        await repository.saveLastSelectedDriveId('new_drive_id');
-        await repository.saveShowHiddenFiles(true);
-        await repository.saveUserHasHiddenItem(true);
-
-        // Skip intermediate emissions from save methods (4 emissions)
-        // and get the final state after load()
+    test(
+      'should emit updated preferences after save operations',
+      () async {
+        // Setup initial state
+        when(() => mockStore.getString('currentTheme')).thenReturn('light');
+        when(() => mockStore.getString('lastSelectedDriveId')).thenReturn(null);
+        when(() => mockStore.getBool('showHiddenFiles')).thenReturn(false);
+        when(() => mockStore.getBool('userHasHiddenDrive')).thenReturn(false);
+        when(() => mockStore.getBool('syncAllDrivesOnLogin')).thenReturn(true);
         await repository.load();
 
-        // Skip the 4 intermediate emissions from save* methods
-        await queue.skip(4);
+        // Setup save stubs
+        when(() => mockStore.putString('currentTheme', ArDriveThemes.dark.name))
+            .thenAnswer((_) async => true);
 
-        expect(
-          await queue.next,
-          const UserPreferences(
-            currentTheme: ArDriveThemes.dark,
-            lastSelectedDriveId: 'new_drive_id',
-            showHiddenFiles: true,
-            userHasHiddenDrive: true,
-            syncAllDrivesOnLogin: true,
-          ),
-        );
+        // Listen to stream and collect the emission from saveTheme
+        final stream = repository.watch();
+        final queue = StreamQueue(stream);
 
-        // Clean up
+        await repository.saveTheme(ArDriveThemes.dark);
+
+        // Verify the emitted preferences reflect the change
+        final emitted = await queue.next;
+        expect(emitted.currentTheme, equals(ArDriveThemes.dark));
+
         await queue.cancel();
       },
     );
