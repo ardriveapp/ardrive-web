@@ -69,34 +69,26 @@ class SettingsSubmenu extends StatelessWidget {
                   streamSnapshot.data?.syncAllDrivesOnLogin ??
                       repo.currentPreferences?.syncAllDrivesOnLogin ??
                       true;
-              return GestureDetector(
-                onTap: () {
-                  repo.saveSyncAllDrivesOnLogin(!syncAllDrivesOnLogin);
-                },
-                child: ArDriveHoverWidget(
-                  hoverColor: ArDriveTheme.of(context)
-                      .themeData
-                      .dropdownTheme
-                      .hoverColor,
-                  defaultColor: ArDriveTheme.of(context)
-                      .themeData
-                      .dropdownTheme
-                      .backgroundColor,
-                  child: SizedBox(
-                    height: 48,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 18.0),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            appLocalizationsOf(context).syncAllDrivesOnLogin,
-                            style: ArDriveTypography.body.buttonNormalBold(),
-                          ),
-                          const SizedBox(width: 12),
-                          _SyncToggle(value: syncAllDrivesOnLogin),
-                        ],
-                      ),
+              return ArDriveHoverWidget(
+                hoverColor: ArDriveTheme.of(context)
+                    .themeData
+                    .dropdownTheme
+                    .hoverColor,
+                defaultColor: ArDriveTheme.of(context)
+                    .themeData
+                    .dropdownTheme
+                    .backgroundColor,
+                child: SizedBox(
+                  height: 48,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 18.0),
+                    child: ArDriveToggleSwitch(
+                      value: syncAllDrivesOnLogin,
+                      text: appLocalizationsOf(context).syncAllDrivesOnLogin,
+                      textStyle: ArDriveTypography.body.buttonNormalBold(),
+                      onChanged: (value) {
+                        repo.saveSyncAllDrivesOnLogin(value);
+                      },
                     ),
                   ),
                 ),
@@ -157,40 +149,6 @@ class SettingsSubmenu extends StatelessWidget {
               .read<ArweaveService>()
               .updateGraphQLEndpoint(normalizedEndpoint);
         },
-      ),
-    );
-  }
-}
-
-/// A simple toggle widget matching the ArDrive design
-class _SyncToggle extends StatelessWidget {
-  final bool value;
-
-  const _SyncToggle({required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = ArDriveTheme.of(context).themeData.toggleTheme;
-    return Container(
-      width: 36,
-      height: 20,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        color: value ? theme.backgroundOnColor : theme.backgroundOffColor,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2),
-        child: Align(
-          alignment: value ? Alignment.centerRight : Alignment.centerLeft,
-          child: Container(
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              color: value ? theme.indicatorColorOn : theme.indicatorColorOff,
-              borderRadius: BorderRadius.circular(90),
-            ),
-          ),
-        ),
       ),
     );
   }

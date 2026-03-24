@@ -141,8 +141,13 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                   state.sharedDrives.isNotEmpty) {
                 final driveDetailState = context.read<DriveDetailCubit>().state;
 
+                // Don't re-trigger changeDrive if we're already viewing this drive
                 if (driveDetailState is DriveDetailLoadSuccess &&
                     driveDetailState.currentDrive.id == state.selectedDriveId) {
+                  return;
+                }
+                if (driveDetailState is DriveDetailLoadUnsynced &&
+                    driveDetailState.drive.id == state.selectedDriveId) {
                   return;
                 }
 
