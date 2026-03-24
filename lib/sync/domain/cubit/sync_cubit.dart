@@ -65,7 +65,9 @@ class SyncCubit extends Cubit<SyncState> {
         _tabVisibility = tabVisibility,
         _syncRepository = syncRepository,
         _userPreferencesRepository = userPreferencesRepository,
-        super(SyncIdle()) {
+        // Initialize with SyncLoadingDrives (not SyncIdle) to prevent race conditions
+        // where DriveDetailCubit's waitCurrentSync() returns early before sync starts.
+        super(SyncLoadingDrives()) {
     // Sync the user's drives on start and periodically.
     createSyncStream();
     restartSyncOnFocus();
@@ -88,12 +90,8 @@ class SyncCubit extends Cubit<SyncState> {
   void createSyncStream() async {
     logger.d('Creating sync stream to periodically call sync automatically');
 
-    // Emit SyncLoadingDrives immediately to prevent race conditions where
-    // DriveDetailCubit's waitCurrentSync() returns early before sync starts.
-    // This ensures any code waiting for sync to complete will actually wait.
-    // Using SyncLoadingDrives (not SyncInProgress) to avoid triggering the
-    // abort guard in startSync().
-    emit(SyncLoadingDrives());
+    // Note: Initial state is already SyncLoadingDrives (set in constructor)
+    // to prevent race conditions with waitCurrentSync()
 
     // Check if syncAllDrivesOnLogin preference is enabled before initial sync
     final preferences = await _userPreferencesRepository.load();
