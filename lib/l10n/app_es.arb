@@ -1298,6 +1298,14 @@
   "@newStringEmphasized": {
     "description": "New entity (folder, file, drive, manifest, attached drive). Emphasized with upper case"
   },
+  "createNew": "Crear Nuevo",
+  "@createNew": {
+    "description": "Tooltip for the New button to create new items"
+  },
+  "userProfile": "Perfil de Usuario",
+  "@userProfile": {
+    "description": "Tooltip for the user profile button"
+  },
   "next": "Siguiente",
   "@next": {
     "description": "Action of going to the next page"

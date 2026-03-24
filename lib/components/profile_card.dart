@@ -75,6 +75,7 @@ class _ProfileCardState extends State<ProfileCard> {
 
   Widget _loggedInView(BuildContext context) {
     return ArDriveClickArea(
+      tooltip: appLocalizationsOf(context).userProfile,
       child: ScreenTypeLayout.builder(
         mobile: (context) => _buildLoggedInViewForPlatform(
           context,
