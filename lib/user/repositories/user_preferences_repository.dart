@@ -46,6 +46,9 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
     _auth.onAuthStateChanged().listen((user) {
       if (user == null) {
         clear();
+      } else {
+        // When user logs in, reload preferences to emit current values to stream
+        load();
       }
     });
   }
@@ -183,6 +186,11 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
     required T value,
     required UserPreferences Function(T) updateFunction,
   }) async {
+    // Ensure preferences are loaded before updating
+    if (_currentUserPreferences == null) {
+      await load();
+    }
+
     _currentUserPreferences = updateFunction(value);
 
     final store = await _getStore();
