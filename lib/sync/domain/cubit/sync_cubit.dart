@@ -80,7 +80,11 @@ class SyncCubit extends Cubit<SyncState> {
   Future<void> waitCurrentSync() async {
     if (state is! SyncIdle) {
       await for (var state in stream) {
-        if (state is SyncIdle || state is SyncFailure) {
+        // Break on any terminal state (sync finished, failed, cancelled, or completed with errors)
+        if (state is SyncIdle ||
+            state is SyncFailure ||
+            state is SyncCancelled ||
+            state is SyncCompleteWithErrors) {
           break;
         }
       }
@@ -217,6 +221,8 @@ class SyncCubit extends Cubit<SyncState> {
       emit(SyncIdle());
     } else {
       logger.d('Profile not logged in yet, skipping metadata sync');
+      // Still emit SyncIdle so waitCurrentSync() doesn't hang
+      emit(SyncIdle());
     }
   }
 
