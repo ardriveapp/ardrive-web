@@ -82,8 +82,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         final folder = await _driveDao
             .folderById(folderId: initialFolderId)
             .getSingleOrNull();
-        // Open the root folder if the deep-linked folder could not be found.
 
+        // Abort if user switched drives during the async operation
+        if (_driveId != driveId) return;
+
+        // Open the root folder if the deep-linked folder could not be found.
         openFolder(folderId: folder?.id);
         // The empty string here is required to open the root folder
       }).whenComplete(() {
@@ -94,8 +97,14 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         // Wait for any current sync to complete before checking drive state
         await _syncCubit.waitCurrentSync();
 
+        // Abort if user switched drives during sync wait
+        if (_driveId != driveId) return;
+
         final drive =
             await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+
+        // Abort if user switched drives during the async operation
+        if (_driveId != driveId) return;
 
         // Check if drive exists and has been content-synced
         if (drive == null) {
@@ -130,10 +139,20 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     final currentState = state;
     if (currentState is DriveDetailLoadUnsynced) {
+      // Capture the drive ID before awaiting to detect if user switches drives
+      final capturedDriveId = currentState.drive.id;
+
       final drive =
-          await _driveDao.driveById(driveId: _driveId).getSingleOrNull();
+          await _driveDao.driveById(driveId: capturedDriveId).getSingleOrNull();
 
       if (isClosed) return;
+
+      // Re-check state after await - user may have switched drives
+      final newState = state;
+      if (newState is! DriveDetailLoadUnsynced ||
+          newState.drive.id != capturedDriveId) {
+        return;
+      }
 
       if (drive == null) {
         emit(DriveDetailLoadNotFound());
@@ -142,7 +161,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
       // If drive is now synced, open it
       if (drive.lastBlockHeight != null && drive.lastBlockHeight! > 0) {
-        openFolder(folderId: drive.rootFolderId);
+        openFolder(folderId: drive.rootFolderId, otherDriveId: capturedDriveId);
       }
     }
   }
@@ -693,7 +712,25 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         return;
       }
 
-      // Sync completed successfully and we're still on the same drive
+      // Verify the drive was actually synced by checking lastBlockHeight
+      final drive =
+          await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+
+      // Re-check state after the async operation
+      if (isClosed || _driveId != driveId) return;
+
+      if (drive == null) {
+        emit(DriveDetailLoadNotFound());
+        return;
+      }
+
+      if (drive.lastBlockHeight == null || drive.lastBlockHeight == 0) {
+        // Sync reported success but drive content wasn't actually synced
+        emit(DriveDetailLoadUnsynced(drive: drive));
+        return;
+      }
+
+      // Sync completed successfully and drive is verified synced
       openFolder(folderId: rootFolderId);
     }
   }
