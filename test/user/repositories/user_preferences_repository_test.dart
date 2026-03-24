@@ -20,7 +20,7 @@ void main() {
     late MockThemeDetector mockThemeDetector;
     late MockArDriveAuth mockAuth;
 
-    setUpAll(() {
+    setUp(() {
       mockStore = MockLocalKeyValueStore();
       mockThemeDetector = MockThemeDetector();
       mockAuth = MockArDriveAuth();
@@ -36,10 +36,12 @@ void main() {
     test('should return default OS theme if no theme is saved in storage',
         () async {
       when(() => mockStore.getString('currentTheme')).thenReturn(null);
+      when(() => mockStore.getString('lastSelectedDriveId')).thenReturn(null);
       when(() => mockThemeDetector.getOSDefaultTheme())
           .thenReturn(ArDriveThemes.light);
       when(() => mockStore.getBool('showHiddenFiles')).thenReturn(false);
       when(() => mockStore.getBool('userHasHiddenDrive')).thenReturn(false);
+      when(() => mockStore.getBool('syncAllDrivesOnLogin')).thenReturn(null);
 
       final result = await repository.load();
 
@@ -50,15 +52,16 @@ void main() {
             lastSelectedDriveId: null,
             showHiddenFiles: false,
             userHasHiddenDrive: false,
+            syncAllDrivesOnLogin: true,
           ));
     });
 
     test('should return saved theme from storage', () async {
       when(() => mockStore.getString('currentTheme')).thenReturn('dark');
+      when(() => mockStore.getString('lastSelectedDriveId')).thenReturn(null);
       when(() => mockStore.getBool('showHiddenFiles')).thenReturn(false);
       when(() => mockStore.getBool('userHasHiddenDrive')).thenReturn(false);
-      when(() => mockAuth.onAuthStateChanged())
-          .thenAnswer((_) => Stream.value(getFakeUser()));
+      when(() => mockStore.getBool('syncAllDrivesOnLogin')).thenReturn(null);
 
       final result = await repository.load();
 
@@ -69,10 +72,19 @@ void main() {
             lastSelectedDriveId: null,
             showHiddenFiles: false,
             userHasHiddenDrive: false,
+            syncAllDrivesOnLogin: true,
           ));
     });
 
     test('should save theme to storage', () async {
+      // Setup initial load
+      when(() => mockStore.getString('currentTheme')).thenReturn('dark');
+      when(() => mockStore.getString('lastSelectedDriveId')).thenReturn(null);
+      when(() => mockStore.getBool('showHiddenFiles')).thenReturn(false);
+      when(() => mockStore.getBool('userHasHiddenDrive')).thenReturn(false);
+      when(() => mockStore.getBool('syncAllDrivesOnLogin')).thenReturn(null);
+      await repository.load();
+
       when(() => mockStore.putString('currentTheme', ArDriveThemes.light.name))
           .thenAnswer((_) async => true);
 
@@ -84,6 +96,14 @@ void main() {
     });
 
     test('should save last selected drive id to storage', () async {
+      // Setup initial load
+      when(() => mockStore.getString('currentTheme')).thenReturn('dark');
+      when(() => mockStore.getString('lastSelectedDriveId')).thenReturn(null);
+      when(() => mockStore.getBool('showHiddenFiles')).thenReturn(false);
+      when(() => mockStore.getBool('userHasHiddenDrive')).thenReturn(false);
+      when(() => mockStore.getBool('syncAllDrivesOnLogin')).thenReturn(null);
+      await repository.load();
+
       when(() => mockStore.putString('lastSelectedDriveId', 'drive_id'))
           .thenAnswer((_) async => true);
 
@@ -99,6 +119,7 @@ void main() {
       when(() => mockStore.getString('currentTheme')).thenReturn('dark');
       when(() => mockStore.getBool('showHiddenFiles')).thenReturn(false);
       when(() => mockStore.getBool('userHasHiddenDrive')).thenReturn(false);
+      when(() => mockStore.getBool('syncAllDrivesOnLogin')).thenReturn(null);
 
       final result = await repository.load();
 
@@ -109,10 +130,19 @@ void main() {
             lastSelectedDriveId: 'drive_id',
             showHiddenFiles: false,
             userHasHiddenDrive: false,
+            syncAllDrivesOnLogin: true,
           ));
     });
 
     test('should save show hidden files preference to storage', () async {
+      // Setup initial load
+      when(() => mockStore.getString('currentTheme')).thenReturn('dark');
+      when(() => mockStore.getString('lastSelectedDriveId')).thenReturn(null);
+      when(() => mockStore.getBool('showHiddenFiles')).thenReturn(false);
+      when(() => mockStore.getBool('userHasHiddenDrive')).thenReturn(false);
+      when(() => mockStore.getBool('syncAllDrivesOnLogin')).thenReturn(null);
+      await repository.load();
+
       when(() => mockStore.putBool('showHiddenFiles', true))
           .thenAnswer((_) async => true);
 
@@ -122,6 +152,14 @@ void main() {
     });
 
     test('should save user has hidden item preference to storage', () async {
+      // Setup initial load
+      when(() => mockStore.getString('currentTheme')).thenReturn('dark');
+      when(() => mockStore.getString('lastSelectedDriveId')).thenReturn(null);
+      when(() => mockStore.getBool('showHiddenFiles')).thenReturn(false);
+      when(() => mockStore.getBool('userHasHiddenDrive')).thenReturn(false);
+      when(() => mockStore.getBool('syncAllDrivesOnLogin')).thenReturn(null);
+      await repository.load();
+
       when(() => mockStore.putBool('userHasHiddenDrive', true))
           .thenAnswer((_) async => true);
 
@@ -131,6 +169,15 @@ void main() {
     });
 
     test('should clear last selected drive id from storage', () async {
+      // Setup initial load
+      when(() => mockStore.getString('currentTheme')).thenReturn('dark');
+      when(() => mockStore.getString('lastSelectedDriveId'))
+          .thenReturn('drive_id');
+      when(() => mockStore.getBool('showHiddenFiles')).thenReturn(true);
+      when(() => mockStore.getBool('userHasHiddenDrive')).thenReturn(true);
+      when(() => mockStore.getBool('syncAllDrivesOnLogin')).thenReturn(null);
+      await repository.load();
+
       when(() => mockStore.remove('lastSelectedDriveId'))
           .thenAnswer((_) async => true);
       when(() => mockStore.remove('showHiddenFiles'))
@@ -151,12 +198,14 @@ void main() {
           lastSelectedDriveId: null,
           showHiddenFiles: false,
           userHasHiddenDrive: false,
+          syncAllDrivesOnLogin: true,
         );
 
         when(() => mockStore.getString('currentTheme')).thenReturn('light');
         when(() => mockStore.getString('lastSelectedDriveId')).thenReturn(null);
         when(() => mockStore.getBool('showHiddenFiles')).thenReturn(false);
         when(() => mockStore.getBool('userHasHiddenDrive')).thenReturn(false);
+        when(() => mockStore.getBool('syncAllDrivesOnLogin')).thenReturn(true);
 
         final stream = repository.watch();
         // Use a StreamQueue to easily work with the stream in tests
@@ -191,7 +240,12 @@ void main() {
         await repository.saveShowHiddenFiles(true);
         await repository.saveUserHasHiddenItem(true);
 
+        // Skip intermediate emissions from save methods (4 emissions)
+        // and get the final state after load()
         await repository.load();
+
+        // Skip the 4 intermediate emissions from save* methods
+        await queue.skip(4);
 
         expect(
           await queue.next,
@@ -200,6 +254,7 @@ void main() {
             lastSelectedDriveId: 'new_drive_id',
             showHiddenFiles: true,
             userHasHiddenDrive: true,
+            syncAllDrivesOnLogin: true,
           ),
         );
 
