@@ -141,11 +141,15 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                   state.sharedDrives.isNotEmpty) {
                 final cubit = context.read<DriveDetailCubit>();
 
+                logger.d('[BlocListener] DrivesLoadSuccess: selectedDriveId=${state.selectedDriveId}, cubit.currentDriveId=${cubit.currentDriveId}');
+
                 // Don't re-trigger changeDrive if we're already viewing/loading this drive
                 if (cubit.currentDriveId == state.selectedDriveId) {
+                  logger.d('[BlocListener] Skipping changeDrive - already handling this driveId');
                   return;
                 }
 
+                logger.d('[BlocListener] Calling changeDrive(${state.selectedDriveId})');
                 cubit.changeDrive(state.selectedDriveId!);
               } else {
                 context.read<DriveDetailCubit>().showEmptyDriveDetail();
