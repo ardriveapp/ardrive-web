@@ -860,9 +860,16 @@ class _SyncRepository implements SyncRepository {
       await driveDao.transaction(() async {
         for (final txId in currentPage) {
           cancellationToken?.checkCancellation();
+
+          // Skip if confirmation data is missing (e.g., timeout or partial response)
+          final confirmationCount = confirmations[txId];
+          if (confirmationCount == null) {
+            continue;
+          }
+
           final txConfirmed =
-              confirmations[txId]! >= kRequiredTxConfirmationCount;
-          final txNotFound = confirmations[txId]! < 0;
+              confirmationCount >= kRequiredTxConfirmationCount;
+          final txNotFound = confirmationCount < 0;
 
           String? txStatus;
           DateTime? transactionDateCreated;
@@ -1096,9 +1103,16 @@ class _SyncRepository implements SyncRepository {
         for (final txId in currentPage) {
           // Check cancellation for each transaction
           cancellationToken?.checkCancellation();
+
+          // Skip if confirmation data is missing (e.g., timeout or partial response)
+          final confirmationCount = confirmations[txId];
+          if (confirmationCount == null) {
+            continue;
+          }
+
           final txConfirmed =
-              confirmations[txId]! >= kRequiredTxConfirmationCount;
-          final txNotFound = confirmations[txId]! < 0;
+              confirmationCount >= kRequiredTxConfirmationCount;
+          final txNotFound = confirmationCount < 0;
 
           String? txStatus;
 
