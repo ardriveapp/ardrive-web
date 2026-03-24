@@ -150,6 +150,12 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
     // Note: syncAllDrivesOnLogin is NOT cleared - it's a global preference
     // that should persist across sessions and logins
 
+    // If preferences haven't been loaded yet, load them first
+    if (_currentUserPreferences == null) {
+      await load();
+      return; // load() already emits to stream
+    }
+
     _currentUserPreferences = _currentUserPreferences!.copyWith(
       lastSelectedDriveId: null,
       showHiddenFiles: false,
