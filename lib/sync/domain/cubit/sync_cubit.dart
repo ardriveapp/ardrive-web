@@ -281,11 +281,23 @@ class SyncCubit extends Cubit<SyncState> {
 
         // Update user drives to discover all drives owned by the user.
         // This must complete before syncAllDrives so drives exist in DB.
+        // Emit status message so user sees feedback during this phase
+        _syncProgress = _syncProgress.copyWith(
+          statusMessage: 'Discovering your drives...',
+        );
+        syncProgressController.add(_syncProgress);
+
         await _syncRepository.updateUserDrives(
           wallet: wallet,
           password: password,
           cipherKey: profile.user.cipherKey,
         );
+
+        // Clear status message after discovery completes
+        _syncProgress = _syncProgress.copyWith(
+          statusMessage: null,
+        );
+        syncProgressController.add(_syncProgress);
       }
 
       _promptToSnapshotBloc.add(const SyncRunning(isRunning: true));
