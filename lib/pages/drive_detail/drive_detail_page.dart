@@ -139,21 +139,14 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
             if (state is DrivesLoadSuccess) {
               if (state.userDrives.isNotEmpty ||
                   state.sharedDrives.isNotEmpty) {
-                final driveDetailState = context.read<DriveDetailCubit>().state;
+                final cubit = context.read<DriveDetailCubit>();
 
-                // Don't re-trigger changeDrive if we're already viewing this drive
-                if (driveDetailState is DriveDetailLoadSuccess &&
-                    driveDetailState.currentDrive.id == state.selectedDriveId) {
-                  return;
-                }
-                if (driveDetailState is DriveDetailLoadUnsynced &&
-                    driveDetailState.drive.id == state.selectedDriveId) {
+                // Don't re-trigger changeDrive if we're already viewing/loading this drive
+                if (cubit.currentDriveId == state.selectedDriveId) {
                   return;
                 }
 
-                context
-                    .read<DriveDetailCubit>()
-                    .changeDrive(state.selectedDriveId!);
+                cubit.changeDrive(state.selectedDriveId!);
               } else {
                 context.read<DriveDetailCubit>().showEmptyDriveDetail();
               }

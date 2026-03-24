@@ -27,6 +27,9 @@ part 'drive_detail_state.dart';
 
 class DriveDetailCubit extends Cubit<DriveDetailState> {
   String _driveId;
+
+  /// The ID of the drive currently being viewed or loaded.
+  String get currentDriveId => _driveId;
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
   final ConfigService _configService;
