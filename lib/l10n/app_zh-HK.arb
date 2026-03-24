@@ -1752,6 +1752,10 @@
   "@syncingSingleDrive": {
     "description": "Title shown when syncing a single drive"
   },
+  "loadingYourDrives": "正在載入您的磁碟機...",
+  "@loadingYourDrives": {
+    "description": "Title shown when loading drive metadata on login"
+  },
   "syncingPleaseRemainOnThisTab": "正在同步處理, 請停留在現處頁介面。",
   "@syncingPleaseRemainOnThisTab": {
     "description": "Syncing drives"

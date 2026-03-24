@@ -1752,6 +1752,10 @@
   "@syncingSingleDrive": {
     "description": "Title shown when syncing a single drive"
   },
+  "loadingYourDrives": "आपकी ड्राइव लोड हो रही हैं...",
+  "@loadingYourDrives": {
+    "description": "Title shown when loading drive metadata on login"
+  },
   "syncingPleaseRemainOnThisTab": "सिंक हो रही है... कृपया इस टैब पर बने रहें।",
   "@syncingPleaseRemainOnThisTab": {
     "description": "Syncing drives"

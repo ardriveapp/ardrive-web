@@ -1752,6 +1752,10 @@
   "@syncingSingleDrive": {
     "description": "Title shown when syncing a single drive"
   },
+  "loadingYourDrives": "Cargando tus unidades...",
+  "@loadingYourDrives": {
+    "description": "Title shown when loading drive metadata on login"
+  },
   "syncingPleaseRemainOnThisTab": "Sincronizando... Por favor, permanece en esta pestaña.",
   "@syncingPleaseRemainOnThisTab": {
     "description": "Syncing drives"

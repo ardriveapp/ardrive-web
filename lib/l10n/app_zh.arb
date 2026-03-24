@@ -1752,6 +1752,10 @@
   "@syncingSingleDrive": {
     "description": "Title shown when syncing a single drive"
   },
+  "loadingYourDrives": "正在加载您的驱动器...",
+  "@loadingYourDrives": {
+    "description": "Title shown when loading drive metadata on login"
+  },
   "syncingPleaseRemainOnThisTab": "同步中... 请留在本页面.",
   "@syncingPleaseRemainOnThisTab": {
     "description": "Syncing drives"
