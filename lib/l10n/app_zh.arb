@@ -366,15 +366,15 @@
       }
     }
   },
-  "syncThisDrive": "同步此驱动器",
+  "syncThisDrive": "同步此网盘",
   "@syncThisDrive": {
     "description": "Menu option to sync only the current drive"
   },
-  "deepSyncThisDrive": "深度同步此驱动器",
+  "deepSyncThisDrive": "深度同步此网盘",
   "@deepSyncThisDrive": {
     "description": "Menu option to deep sync only the current drive"
   },
-  "syncAllDrivesOnLogin": "登录时同步所有驱动器",
+  "syncAllDrivesOnLogin": "登录时同步所有网盘",
   "@syncAllDrivesOnLogin": {
     "description": "Toggle to enable/disable syncing all drives when logging in"
   },
@@ -515,23 +515,23 @@
   },
   "driveDoingInitialSetupMessage": "你的驱动正在进行初始设置。这可能需要几分钟。请在采取任何动作之前先等待。",
   "@driveDoingInitialSetupMessage": {},
-  "driveNotSynced": "驱动器未同步",
+  "driveNotSynced": "网盘未同步",
   "@driveNotSynced": {
     "description": "Title shown when a drive has metadata but content has not been synced"
   },
-  "driveNotSyncedDescription": "此驱动器需要同步后才能查看其内容。立即同步以查看您的文件和文件夹。",
+  "driveNotSyncedDescription": "此网盘需要同步后才能查看其内容。立即同步以查看您的文件和文件夹。",
   "@driveNotSyncedDescription": {
     "description": "Description shown when a drive has not been synced yet"
   },
-  "syncThisDriveDescription": "获取此驱动器的最新文件和文件夹。",
+  "syncThisDriveDescription": "获取此网盘的最新文件和文件夹。",
   "@syncThisDriveDescription": {
     "description": "Description for the sync drive action card"
   },
-  "syncAllDrives": "同步所有驱动器",
+  "syncAllDrives": "同步所有网盘",
   "@syncAllDrives": {
     "description": "Button and title text for syncing all drives"
   },
-  "syncAllDrivesDescription": "一次同步所有驱动器，确保所有内容都是最新的。",
+  "syncAllDrivesDescription": "一次同步所有网盘，确保所有内容都是最新的。",
   "@syncAllDrivesDescription": {
     "description": "Description for the sync all drives action card"
   },
@@ -1744,15 +1744,15 @@
       }
     }
   },
-  "syncingAllDrives": "正在同步所有驱动器",
+  "syncingAllDrives": "正在同步所有网盘",
   "@syncingAllDrives": {
     "description": "Title shown when syncing all user drives"
   },
-  "syncingSingleDrive": "正在同步驱动器",
+  "syncingSingleDrive": "正在同步网盘",
   "@syncingSingleDrive": {
     "description": "Title shown when syncing a single drive"
   },
-  "loadingYourDrives": "正在加载您的驱动器...",
+  "loadingYourDrives": "正在加载您的网盘...",
   "@loadingYourDrives": {
     "description": "Title shown when loading drive metadata on login"
   },
