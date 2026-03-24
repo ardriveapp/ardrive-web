@@ -85,7 +85,8 @@ class ProgressDialog extends StatelessWidget {
 
     if (useNewArDriveUI) {
       return ArDriveStandardModalNew(
-        title: title ?? '',
+        // Pass null if titleWidget is provided, otherwise use title or empty string
+        title: titleWidget != null ? title : (title ?? ''),
         titleWidget: titleWidget,
         content: content,
         actions: actions,

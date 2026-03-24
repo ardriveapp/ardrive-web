@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
+import 'package:ardrive/user/user_preferences.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -9,6 +12,7 @@ part 'global_hide_state.dart';
 class GlobalHideBloc extends Bloc<GlobalHideEvent, GlobalHideState> {
   final UserPreferencesRepository _userPreferencesRepository;
   final DriveDao _driveDao;
+  StreamSubscription<UserPreferences>? _prefsSubscription;
 
   GlobalHideBloc({
     required UserPreferencesRepository userPreferencesRepository,
@@ -19,7 +23,8 @@ class GlobalHideBloc extends Bloc<GlobalHideEvent, GlobalHideState> {
     // Listen to preferences stream to update state when preferences change.
     // Note: We only update local state here, NOT save back to preferences.
     // Saving is done only in response to user actions (ToggleShowHiddenFiles).
-    _userPreferencesRepository.watch().listen((userPreferences) async {
+    _prefsSubscription =
+        _userPreferencesRepository.watch().listen((userPreferences) async {
       if (userPreferences.showHiddenFiles) {
         add(SyncShowHiddenState(
           showHidden: true,
@@ -54,5 +59,11 @@ class GlobalHideBloc extends Bloc<GlobalHideEvent, GlobalHideState> {
         emit(state.copyWith(userHasHiddenDrive: hasHiddenItems));
       }
     });
+  }
+
+  @override
+  Future<void> close() async {
+    await _prefsSubscription?.cancel();
+    return super.close();
   }
 }

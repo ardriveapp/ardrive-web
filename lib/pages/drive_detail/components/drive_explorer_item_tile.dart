@@ -928,7 +928,7 @@ class EntityActionsMenu extends StatelessWidget {
                 size: defaultIconSize,
               ),
             )),
-        if (isOwner)
+        if (isOwner && drive != null)
           ArDriveDropdownItem(
             onClick: () {
               promptToRenameDrive(
@@ -944,7 +944,7 @@ class EntityActionsMenu extends StatelessWidget {
               ),
             ),
           ),
-        if (isOwner)
+        if (isOwner && drive != null)
           ArDriveDropdownItem(
             onClick: () {
               promptToCreateSnapshot(context, drive!);
@@ -956,34 +956,36 @@ class EntityActionsMenu extends StatelessWidget {
               ),
             ),
           ),
-        ArDriveDropdownItem(
-          onClick: () {
-            context.read<SyncCubit>().startSyncForDrive(
-                  driveId: drive!.id,
-                  deepSync: false,
-                );
-          },
-          content: ArDriveDropdownItemTile(
-            name: appLocalizationsOf(context).syncThisDrive,
-            icon: ArDriveIcons.refresh(
-              size: defaultIconSize,
+        if (drive != null)
+          ArDriveDropdownItem(
+            onClick: () {
+              context.read<SyncCubit>().startSyncForDrive(
+                    driveId: drive!.id,
+                    deepSync: false,
+                  );
+            },
+            content: ArDriveDropdownItemTile(
+              name: appLocalizationsOf(context).syncThisDrive,
+              icon: ArDriveIcons.refresh(
+                size: defaultIconSize,
+              ),
             ),
           ),
-        ),
-        ArDriveDropdownItem(
-          onClick: () {
-            context.read<SyncCubit>().startSyncForDrive(
-                  driveId: drive!.id,
-                  deepSync: true,
-                );
-          },
-          content: ArDriveDropdownItemTile(
-            name: appLocalizationsOf(context).deepSyncThisDrive,
-            icon: ArDriveIcons.cloudSync(
-              size: defaultIconSize,
+        if (drive != null)
+          ArDriveDropdownItem(
+            onClick: () {
+              context.read<SyncCubit>().startSyncForDrive(
+                    driveId: drive!.id,
+                    deepSync: true,
+                  );
+            },
+            content: ArDriveDropdownItemTile(
+              name: appLocalizationsOf(context).deepSyncThisDrive,
+              icon: ArDriveIcons.cloudSync(
+                size: defaultIconSize,
+              ),
             ),
           ),
-        ),
         if (isOwner)
           ArDriveDropdownItem(
             onClick: () {
