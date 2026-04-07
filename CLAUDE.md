@@ -7,11 +7,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Required Flutter version: 3.19.6** - Run `scr check-flutter` to verify.
 
 ```bash
-# First-time setup: install lefthook for git hooks
+# First-time setup: install lefthook for git hooks (https://github.com/evilmartians/lefthook)
 lefthook install
 
 # Activate script_runner globally (needed for scr commands)
 flutter pub global activate script_runner
+# Ensure scr is in your PATH (add via export if needed)
 
 # Initial setup (clean, get deps, run code generation)
 scr setup
@@ -80,6 +81,7 @@ PR titles must follow the pattern `PE-{number}: {description}` (enforced by CI).
 
 - Use single quotes for strings (`prefer_single_quotes` lint rule is enabled)
 - Generated files (`**.g.dart`) and GraphQL files (`lib/services/arweave/graphql/`) are excluded from analysis
+- Platform-specific directories (`macos/`, `ios/`, `android/`, `web/`) are also excluded from analysis
 
 ## Architecture Overview
 
@@ -130,6 +132,8 @@ lib/
 | `flutter_file_picker` | File picker fork |
 | `build` | Build utilities |
 
+Note: The `ario_sdk` package requires separate code generation - `scr setup` handles this automatically.
+
 ### Database (Drift ORM)
 
 - Main database: `lib/models/database/database.dart`
@@ -175,7 +179,14 @@ The app supports multiple languages via ARB files in `lib/l10n/`: English, Spani
 - Unit tests use `mocktail` for mocking
 - BLoC tests use `bloc_test` package
 - Test utilities in `test/test_utils/`
-- `scr test` runs `flutter pub get`, `flutter analyze`, and `flutter test` for main app + all packages with test directories
+- `scr test` runs main app tests (`flutter test`) plus all packages with test directories
+
+### CI Pipeline
+CI runs `scr setup` → `flutter analyze` → `scr test`. Ensure these all pass locally before pushing.
+
+### Git Hooks (Lefthook)
+- **Pre-commit**: Validates Flutter version matches 3.19.6
+- **Pre-push**: Validates database schema version is incremented when `.drift` files change
 
 ## Deployment
 
@@ -190,3 +201,5 @@ For testing with a custom Arweave gateway, set in browser console:
 localStorage.setItem('flutter.arweaveGatewayUrl', '"https://my.custom.url"');
 // Remove with: localStorage.removeItem('flutter.arweaveGatewayUrl');
 ```
+
+Reload the page after changing the gateway URL.

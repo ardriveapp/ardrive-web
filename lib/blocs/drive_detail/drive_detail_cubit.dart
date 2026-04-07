@@ -97,49 +97,36 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       });
     } else {
       Future.microtask(() async {
-        logger.d('[DriveDetailCubit] Constructor microtask starting for driveId: $driveId');
-        logger.d('[DriveDetailCubit] SyncCubit state before wait: ${_syncCubit.state}');
-
         // Wait for any current sync to complete before checking drive state
         await _syncCubit.waitCurrentSync();
 
-        logger.d('[DriveDetailCubit] waitCurrentSync returned, SyncCubit state: ${_syncCubit.state}');
-
         // Abort if user switched drives during sync wait
         if (_driveId != driveId) {
-          logger.d('[DriveDetailCubit] Aborting: driveId changed from $driveId to $_driveId');
           return;
         }
 
         final drive =
             await _driveDao.driveById(driveId: driveId).getSingleOrNull();
 
-        logger.d('[DriveDetailCubit] Drive query result: ${drive?.name}, lastBlockHeight: ${drive?.lastBlockHeight}');
-
         // Abort if user switched drives during the async operation
         if (_driveId != driveId) {
-          logger.d('[DriveDetailCubit] Aborting: driveId changed during query');
           return;
         }
 
         // Check if drive exists and has been content-synced
         if (drive == null) {
-          logger.d('[DriveDetailCubit] Drive is null, emitting DriveDetailLoadNotFound');
           emit(DriveDetailLoadNotFound());
           return;
         }
 
         // If drive has only metadata (not content-synced), show unsynced state
         if (drive.lastBlockHeight == null || drive.lastBlockHeight == 0) {
-          logger.d('[DriveDetailCubit] Drive not synced (lastBlockHeight=${drive.lastBlockHeight}), emitting DriveDetailLoadUnsynced');
           emit(DriveDetailLoadUnsynced(drive: drive));
           return;
         }
 
-        logger.d('[DriveDetailCubit] Drive synced, calling openFolder with rootFolderId: ${drive.rootFolderId}');
         openFolder(folderId: drive.rootFolderId);
       }).whenComplete(() {
-        logger.d('[DriveDetailCubit] Constructor microtask completed, _initialLoadComplete = true');
         _initialLoadComplete = true;
       });
     }
@@ -201,12 +188,19 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   }
 
   Future<void> changeDrive(String driveId) async {
-    logger.d('[DriveDetailCubit] changeDrive called with driveId: $driveId (current: $_driveId)');
-    final drive = await _driveDao.driveById(driveId: driveId).getSingleOrNull();
-    logger.d('[DriveDetailCubit] changeDrive: drive=${drive?.name}, lastBlockHeight=${drive?.lastBlockHeight}');
+    // First check current drive state before waiting for sync
+    var drive = await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+
+    // If drive isn't synced yet, wait for sync to complete then re-check
+    if (drive == null || drive.lastBlockHeight == null || drive.lastBlockHeight == 0) {
+      emit(DriveDetailLoadInProgress());
+      await _syncCubit.waitCurrentSync();
+
+      // Re-query drive after sync completes
+      drive = await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+    }
 
     if (drive == null) {
-      await _syncCubit.waitCurrentSync();
       emit(DriveDetailLoadNotFound());
       return;
     }
