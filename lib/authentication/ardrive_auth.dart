@@ -359,20 +359,21 @@ class ArDriveAuthImpl implements ArDriveAuth {
   }
 
   void _updateBalance() {
-    _userRepository.getARIOTokens(currentUser.wallet).then((value) {
-      _currentUser = _currentUser!.copyWith(
-        ioTokens: value,
-        errorFetchingIOTokens: false,
-      );
-      _userStreamController.add(_currentUser);
-    }).catchError((e) {
-      _currentUser = _currentUser!.copyWith(
-        errorFetchingIOTokens: true,
-      );
-      _userStreamController.add(_currentUser);
-      logger.e('Error fetching ARIOTokens', e);
-      return Future.value(null);
-    });
+    // TODO(solana-migration): Re-enable ARIO token balance fetch once migrated to Solana
+    // _userRepository.getARIOTokens(currentUser.wallet).then((value) {
+    //   _currentUser = _currentUser!.copyWith(
+    //     ioTokens: value,
+    //     errorFetchingIOTokens: false,
+    //   );
+    //   _userStreamController.add(_currentUser);
+    // }).catchError((e) {
+    //   _currentUser = _currentUser!.copyWith(
+    //     errorFetchingIOTokens: true,
+    //   );
+    //   _userStreamController.add(_currentUser);
+    //   logger.e('Error fetching ARIOTokens', e);
+    //   return Future.value(null);
+    // });
     _userRepository.getBalance(currentUser.wallet).then((value) {
       _currentUser = _currentUser!.copyWith(walletBalance: value);
       _userStreamController.add(_currentUser);
@@ -433,11 +434,11 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
   @override
   Future<void> refreshBalance() async {
-    _currentUser = _currentUser!.copyWith(
-      errorFetchingIOTokens: false,
-    );
-
-    _userStreamController.add(_currentUser);
+    // TODO(solana-migration): Re-enable IO token refresh once migrated to Solana
+    // _currentUser = _currentUser!.copyWith(
+    //   errorFetchingIOTokens: false,
+    // );
+    // _userStreamController.add(_currentUser);
 
     _updateBalance();
   }

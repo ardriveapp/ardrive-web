@@ -229,8 +229,9 @@ class _TokenSelector extends StatelessWidget {
             ),
             itemBuilder: (context) => [
               // ARIO options (no fees)
-              _buildTokenMenuItem(context, CryptoToken.arioAO),
-              _buildTokenMenuItem(context, CryptoToken.arioAOViaEth),
+              // TODO(solana-migration): Re-enable ARIO on AO options once migrated to Solana
+              // _buildTokenMenuItem(context, CryptoToken.arioAO),
+              // _buildTokenMenuItem(context, CryptoToken.arioAOViaEth),
               _buildTokenMenuItem(context, CryptoToken.arioBase),
               // Base L2 tokens (fast, low fees)
               _buildTokenMenuItem(context, CryptoToken.ethBase),

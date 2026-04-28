@@ -137,6 +137,7 @@ lib/
 - DAOs: `DriveDao`, `ProfileDao`, `ARNSDao`
 - After schema changes: bump `schemaVersion` in `database.dart` and run code generation
 - Pre-push hook validates schema version is incremented when `.drift` files change
+- Pre-commit hook validates the correct Flutter version is installed
 
 ### Key Services
 

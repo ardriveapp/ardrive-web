@@ -167,8 +167,9 @@ class _ProfileCardState extends State<ProfileCard> {
                   endIndent: 16,
                 ),
                 _buildBalanceRow(context, state),
-                if (isArioSDKSupportedOnPlatform())
-                  _buildIOTokenRow(context, state),
+                // TODO(solana-migration): Re-enable ARIO balance once migrated to Solana
+                // if (isArioSDKSupportedOnPlatform())
+                //   _buildIOTokenRow(context, state),
                 if (context.read<PaymentService>().useTurboPayment) ...[
                   Padding(
                     padding: const EdgeInsets.only(top: 20.0),
@@ -494,6 +495,7 @@ class _ProfileCardState extends State<ProfileCard> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildIOTokenRow(BuildContext context, ProfileLoggedIn state) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
