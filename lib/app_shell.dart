@@ -594,7 +594,7 @@ class AppShellState extends State<AppShell> {
                 children: [
                   const TextSpan(
                     text:
-                        'Ar.io is migrating to Solana! Register before the May 15, 2026 snapshot! Manage your ArNS names at arns.ar.io. ',
+                        'Ar.io is migrating to Solana! Register before the June 1, 2026 snapshot! Manage your ArNS names at arns.ar.io. ',
                   ),
                   TextSpan(
                     text: 'Learn More',
