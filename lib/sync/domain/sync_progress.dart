@@ -2,6 +2,9 @@ abstract class LinearProgress {
   double get progress;
 }
 
+/// Sentinel used by copyWith to distinguish "not provided" from "explicitly null".
+const _absent = Object();
+
 class SyncProgress extends LinearProgress {
   SyncProgress({
     required this.numberOfEntities,
@@ -85,9 +88,9 @@ class SyncProgress extends LinearProgress {
     int? failedQueries,
     List<String>? failedDriveIds,
     Map<String, String>? errorMessages,
-    String? statusMessage,
+    Object? statusMessage = _absent,
     bool? isSingleDriveSync,
-    String? driveName,
+    Object? driveName = _absent,
   }) {
     return SyncProgress(
       numberOfEntities: numberOfEntities ?? this.numberOfEntities,
@@ -100,9 +103,12 @@ class SyncProgress extends LinearProgress {
       failedQueries: failedQueries ?? this.failedQueries,
       failedDriveIds: failedDriveIds ?? this.failedDriveIds,
       errorMessages: errorMessages ?? this.errorMessages,
-      statusMessage: statusMessage ?? this.statusMessage,
+      statusMessage: statusMessage == _absent
+          ? this.statusMessage
+          : statusMessage as String?,
       isSingleDriveSync: isSingleDriveSync ?? this.isSingleDriveSync,
-      driveName: driveName ?? this.driveName,
+      driveName:
+          driveName == _absent ? this.driveName : driveName as String?,
     );
   }
 }

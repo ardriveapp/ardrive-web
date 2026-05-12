@@ -154,12 +154,14 @@ class DriveDetailLoadUnsynced extends DriveDetailState {
   DriveDetailLoadUnsynced copyWith({
     Drive? drive,
     bool? showDriveInfo,
-    ArDriveDataTableItem? selectedItem,
+    Object? selectedItem = _driveDetailAbsent,
   }) {
     return DriveDetailLoadUnsynced(
       drive: drive ?? this.drive,
       showDriveInfo: showDriveInfo ?? this.showDriveInfo,
-      selectedItem: selectedItem ?? this.selectedItem,
+      selectedItem: identical(selectedItem, _driveDetailAbsent)
+          ? this.selectedItem
+          : selectedItem as ArDriveDataTableItem?,
     );
   }
 

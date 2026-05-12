@@ -225,6 +225,13 @@ void main() {
       verify(() => mockStore.remove('userHasHiddenDrive')).called(1);
       // Verify syncAllDrivesOnLogin is NOT removed (should persist)
       verifyNever(() => mockStore.remove('syncAllDrivesOnLogin'));
+
+      // Verify the actual preferences object has correct values
+      final prefs = repository.currentPreferences!;
+      expect(prefs.lastSelectedDriveId, isNull);
+      expect(prefs.showHiddenFiles, false);
+      expect(prefs.userHasHiddenDrive, false);
+      expect(prefs.syncAllDrivesOnLogin, false);
     });
 
     test(

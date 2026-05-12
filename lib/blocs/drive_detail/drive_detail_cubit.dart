@@ -25,6 +25,9 @@ import 'package:rxdart/rxdart.dart';
 
 part 'drive_detail_state.dart';
 
+/// Sentinel used by copyWith to distinguish "not provided" from "explicitly null".
+const _driveDetailAbsent = Object();
+
 class DriveDetailCubit extends Cubit<DriveDetailState> {
   String _driveId;
 
@@ -43,6 +46,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   StreamSubscription? _folderSubscription;
   StreamSubscription? _syncSubscription;
   bool _initialLoadComplete = false;
+  bool _isExplicitSync = false;
   final _defaultAvailableRowsPerPage = [25, 50, 75, 100];
 
   List<ArDriveDataTableItem> _selectedItems = [];
@@ -142,7 +146,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   /// Called when sync completes. Re-checks drive state if we're showing
   /// unsynced or loading state, and loads the drive content if now available.
   Future<void> _onSyncCompleted() async {
-    if (isClosed) return;
+    if (isClosed || _isExplicitSync) return;
 
     final currentState = state;
     if (currentState is DriveDetailLoadUnsynced) {
@@ -263,21 +267,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           orderingMode: contentOrderingMode,
           folderId: folderId,
         )
-            .handleError((error, stack) async {
+            .handleError((error, stack) {
           logger.e('Error watching folder contents', error, stack);
           if (error is DriveNotFoundException) {
             emit(DriveDetailLoadNotFound());
           } else if (error is FolderNotFoundInDriveException) {
-            // Check if the drive is unsynced (metadata only, no content)
-            final drive = await _driveDao
-                .driveById(driveId: error.driveId)
-                .getSingleOrNull();
-            if (drive != null &&
-                (drive.lastBlockHeight == null || drive.lastBlockHeight == 0)) {
-              emit(DriveDetailLoadUnsynced(drive: drive));
-            } else {
-              emit(DriveInitialLoading());
-            }
+            _handleFolderNotFound(error.driveId);
           }
         }),
         _profileCubit.stream.startWith(ProfileCheckingAvailability()),
@@ -725,11 +720,13 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       final driveId = state.drive.id;
       final rootFolderId = state.drive.rootFolderId;
 
+      _isExplicitSync = true;
       emit(DriveDetailLoadInProgress());
       await _syncCubit.startSyncForDrive(
         driveId: driveId,
         deepSync: false,
       );
+      _isExplicitSync = false;
 
       // Guard: Only proceed if sync completed successfully and we're still
       // viewing the same drive (user hasn't navigated away during sync)
@@ -790,6 +787,18 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         showDriveInfo: false,
         selectedItem: null,
       ));
+    }
+  }
+
+  Future<void> _handleFolderNotFound(String driveId) async {
+    final drive =
+        await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+    if (isClosed) return;
+    if (drive != null &&
+        (drive.lastBlockHeight == null || drive.lastBlockHeight == 0)) {
+      emit(DriveDetailLoadUnsynced(drive: drive));
+    } else {
+      emit(DriveInitialLoading());
     }
   }
 

@@ -46,7 +46,7 @@ class SyncCubit extends Cubit<SyncState> {
       StreamController<SyncProgress>.broadcast();
   DateTime? _lastSync;
   late DateTime _initSync;
-  late SyncProgress _syncProgress;
+  SyncProgress _syncProgress = SyncProgress.initial();
   SyncCancellationToken? _currentSyncToken;
 
   SyncCubit({
@@ -77,14 +77,15 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   /// Waits for the current sync to finish.
+  /// SyncLoadingDrives is treated as non-blocking (metadata-only loading).
   Future<void> waitCurrentSync() async {
-    if (state is! SyncIdle) {
+    if (state is! SyncIdle && state is! SyncLoadingDrives) {
       await for (var state in stream) {
-        // Break on any terminal state (sync finished, failed, cancelled, or completed with errors)
         if (state is SyncIdle ||
             state is SyncFailure ||
             state is SyncCancelled ||
-            state is SyncCompleteWithErrors) {
+            state is SyncCompleteWithErrors ||
+            state is SyncLoadingDrives) {
           break;
         }
       }
@@ -444,6 +445,13 @@ class SyncCubit extends Cubit<SyncState> {
           emit(SyncIdle());
           return;
         }
+
+        // Load drive keys so private drives can be decrypted
+        await _syncRepository.updateUserDrives(
+          wallet: wallet,
+          password: password,
+          cipherKey: cipherKey,
+        );
       }
 
       _promptToSnapshotBloc.add(const SyncRunning(isRunning: true));

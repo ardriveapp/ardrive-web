@@ -174,6 +174,11 @@ class _SyncRepository implements SyncRepository {
     Function(String driveId, int txCount)? txFechedCallback,
   }) async* {
     final token = cancellationToken ?? SyncCancellationToken();
+
+    // Clear shared state from any previous sync to prevent stale data
+    _ghostFolders.clear();
+    _folderIds.clear();
+
     if (wallet != null) {
       final address = await wallet.getAddress();
 
@@ -548,6 +553,10 @@ class _SyncRepository implements SyncRepository {
     Function(String driveId, int txCount)? txFechedCallback,
   }) async* {
     final token = cancellationToken ?? SyncCancellationToken();
+
+    // Clear shared state from any previous sync to prevent stale data
+    _ghostFolders.clear();
+    _folderIds.clear();
 
     // Get the specific drive
     final drive =

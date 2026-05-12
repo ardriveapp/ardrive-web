@@ -20,6 +20,7 @@ import 'package:ardrive/components/license/view_license_definition.dart';
 import 'package:ardrive/components/license_details_popover.dart';
 import 'package:ardrive/components/progress_dialog.dart';
 import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
@@ -213,6 +214,7 @@ class _UploadFormState extends State<UploadForm> {
               if (!_isShowingCancelDialog) {
                 Navigator.pop(context);
                 context.read<ActivityTracker>().setUploading(false);
+                context.read<SyncCubit>().startSync();
               }
 
               widget.driveDetailCubit.refreshDriveDataTable();
