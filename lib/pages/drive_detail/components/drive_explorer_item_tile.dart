@@ -1,7 +1,8 @@
 import 'dart:convert';
 
 import 'package:ardrive/arns/presentation/ant_icon.dart';
-import 'package:ardrive/arns/presentation/assign_name_modal.dart';
+// TODO(solana-migration): Re-enable when ArNS assignment is restored
+// import 'package:ardrive/arns/presentation/assign_name_modal.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/components.dart';
@@ -624,23 +625,24 @@ class _DriveExplorerItemTileTrailingState
               height: height,
             ),
           ),
-        if (widget.drive.isPublic && AppPlatform.isWeb())
-          ArDriveDropdownItem(
-            onClick: () {
-              showAssignArNSNameModal(
-                context,
-                file: item as FileDataTableItem,
-                driveDetailCubit: context.read<DriveDetailCubit>(),
-              );
-            },
-            content: _buildItem(
-              'Assign ArNS name',
-              ArDriveIcons.addArnsName(
-                size: defaultIconSize,
-              ),
-              height: height,
-            ),
-          ),
+        // TODO(solana-migration): Re-enable ArNS name assignment once migrated to Solana
+        // if (widget.drive.isPublic && AppPlatform.isWeb())
+        //   ArDriveDropdownItem(
+        //     onClick: () {
+        //       showAssignArNSNameModal(
+        //         context,
+        //         file: item as FileDataTableItem,
+        //         driveDetailCubit: context.read<DriveDetailCubit>(),
+        //       );
+        //     },
+        //     content: _buildItem(
+        //       'Assign ArNS name',
+        //       ArDriveIcons.addArnsName(
+        //         size: defaultIconSize,
+        //       ),
+        //       height: height,
+        //     ),
+        //   ),
         hideFileDropdownItem(context, item),
       ],
       ArDriveDropdownItem(

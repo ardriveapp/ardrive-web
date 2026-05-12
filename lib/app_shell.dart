@@ -14,6 +14,7 @@ import 'package:ardrive/shared/blocs/private_drive_migration/private_drive_migra
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -501,6 +502,7 @@ class AppShellState extends State<AppShell> {
                   builder: (context, state) {
                     return Column(
                       children: [
+                        _buildSolanaMigrationBanner(context),
                         _buildAnnouncementBanner(
                         context,
                         message: '', // Configure message when enabling banner
@@ -540,6 +542,7 @@ class AppShellState extends State<AppShell> {
                 builder: (context, state) {
                   return Column(
                     children: [
+                      _buildSolanaMigrationBanner(context),
                       _buildAnnouncementBanner(
                         context,
                         message: '', // Configure message when enabling banner
@@ -568,6 +571,66 @@ class AppShellState extends State<AppShell> {
           );
         },
       );
+
+  Widget _buildSolanaMigrationBanner(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
+
+    return Container(
+      width: double.maxFinite,
+      color: colorTokens.containerL3,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Flexible(
+            child: RichText(
+              textAlign: TextAlign.center,
+              text: TextSpan(
+                style: typography.paragraphNormal(
+                  fontWeight: ArFontWeight.semiBold,
+                  color: colorTokens.textHigh,
+                ),
+                children: [
+                  const TextSpan(
+                    text:
+                        'Ar.io is migrating to Solana! Register before the June 1, 2026 snapshot! Manage your ArNS names at arns.ar.io. ',
+                  ),
+                  TextSpan(
+                    text: 'Learn More',
+                    style: typography
+                        .paragraphNormal(
+                          fontWeight: ArFontWeight.semiBold,
+                          color: colorTokens.textHigh,
+                        )
+                        .copyWith(
+                          decoration: TextDecoration.underline,
+                        ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () => openUrl(
+                            url: 'https://ar.io/solana-migration',
+                            webOnlyWindowName: '_blank',
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () => openUrl(
+              url: 'https://ar.io/solana-migration',
+              webOnlyWindowName: '_blank',
+            ),
+            child: ArDriveIcons.newWindow(
+              size: 16,
+              color: colorTokens.textHigh,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildAnnouncementBanner(
     BuildContext context, {
