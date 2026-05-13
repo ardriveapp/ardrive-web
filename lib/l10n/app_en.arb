@@ -2180,9 +2180,9 @@
   "@syncingSingleDrive": {
     "description": "Title shown when syncing a single drive"
   },
-  "syncingPleaseRemainOnThisTab": "Syncing... Please remain on this tab.",
+  "syncingPleaseRemainOnThisTab": "Please remain on this tab.",
   "@syncingPleaseRemainOnThisTab": {
-    "description": "Syncing drives"
+    "description": "Warning for ArConnect users to keep tab focused during sync"
   },
   "syncingPleaseWait": "Syncing... Please wait.",
   "@syncingPleaseWait": {

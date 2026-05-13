@@ -137,7 +137,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     // Listen for sync completion to auto-refresh if we're in an unsynced/loading state
     _syncSubscription = _syncCubit.stream.listen((syncState) {
-      if (syncState is SyncIdle && _initialLoadComplete) {
+      if (_initialLoadComplete &&
+          (syncState is SyncIdle || syncState is SyncCompleteWithErrors)) {
         _onSyncCompleted();
       }
     });
@@ -150,7 +151,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     final currentState = state;
     if (currentState is DriveDetailLoadUnsynced) {
-      // Capture the drive ID before awaiting to detect if user switches drives
       final capturedDriveId = currentState.drive.id;
 
       final drive =
@@ -158,7 +158,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
       if (isClosed) return;
 
-      // Re-check state after await - user may have switched drives
       final newState = state;
       if (newState is! DriveDetailLoadUnsynced ||
           newState.drive.id != capturedDriveId) {
@@ -170,7 +169,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         return;
       }
 
-      // If drive is now synced, open it
       if (drive.lastBlockHeight != null && drive.lastBlockHeight! > 0) {
         openFolder(folderId: drive.rootFolderId, otherDriveId: capturedDriveId);
       }
@@ -711,6 +709,37 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   Future<LocalKeyValueStore> _store() async {
     return LocalKeyValueStore.getInstance();
+  }
+
+  /// Syncs all drives and then refreshes the current drive view.
+  Future<void> syncAllAndRefreshCurrentDrive() async {
+    final currentState = state;
+    if (currentState is DriveDetailLoadUnsynced) {
+      final driveId = currentState.drive.id;
+      final rootFolderId = currentState.drive.rootFolderId;
+
+      _isExplicitSync = true;
+      await _syncCubit.startSync();
+      _isExplicitSync = false;
+
+      if (isClosed || _driveId != driveId) return;
+
+      final drive =
+          await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+
+      if (isClosed || _driveId != driveId) return;
+
+      if (drive == null) {
+        emit(DriveDetailLoadNotFound());
+        return;
+      }
+
+      if (drive.lastBlockHeight != null && drive.lastBlockHeight! > 0) {
+        openFolder(folderId: rootFolderId, otherDriveId: driveId);
+      } else {
+        emit(DriveDetailLoadUnsynced(drive: drive));
+      }
+    }
   }
 
   /// Syncs the current unsynced drive and then opens it.

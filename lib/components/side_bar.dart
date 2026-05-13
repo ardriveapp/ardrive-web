@@ -449,10 +449,18 @@ class DriveListTile extends StatelessWidget {
     return GestureDetector(
       key: key,
       onTap: onTap,
-      child: Padding(
+      child: Container(
+        decoration: isSelected
+            ? BoxDecoration(
+                color: colorTokens.containerL1,
+                borderRadius: BorderRadius.circular(4),
+              )
+            : null,
         padding: const EdgeInsets.only(
           left: 10.0,
           right: 8.0,
+          top: 2.0,
+          bottom: 2.0,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
