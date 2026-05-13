@@ -137,7 +137,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     // Listen for sync completion to auto-refresh if we're in an unsynced/loading state
     _syncSubscription = _syncCubit.stream.listen((syncState) {
-      if (syncState is SyncIdle && _initialLoadComplete) {
+      if (_initialLoadComplete &&
+          (syncState is SyncIdle || syncState is SyncCompleteWithErrors)) {
         _onSyncCompleted();
       }
     });
