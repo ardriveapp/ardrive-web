@@ -9,9 +9,11 @@ import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/fs_entry_license_form.dart';
+import 'package:ardrive/components/create_snapshot_dialog.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/pin_indicator.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
@@ -928,21 +930,64 @@ class EntityActionsMenu extends StatelessWidget {
                 size: defaultIconSize,
               ),
             )),
-        ArDriveDropdownItem(
-          onClick: () {
-            promptToRenameDrive(
-              context,
-              driveId: drive!.id,
-              driveName: drive!.name,
-            );
-          },
-          content: ArDriveDropdownItemTile(
-            name: appLocalizationsOf(context).renameDrive,
-            icon: ArDriveIcons.edit(
-              size: defaultIconSize,
+        if (isOwner && drive != null)
+          ArDriveDropdownItem(
+            onClick: () {
+              promptToRenameDrive(
+                context,
+                driveId: drive!.id,
+                driveName: drive!.name,
+              );
+            },
+            content: ArDriveDropdownItemTile(
+              name: appLocalizationsOf(context).renameDrive,
+              icon: ArDriveIcons.edit(
+                size: defaultIconSize,
+              ),
             ),
           ),
-        ),
+        if (isOwner && drive != null)
+          ArDriveDropdownItem(
+            onClick: () {
+              promptToCreateSnapshot(context, drive!);
+            },
+            content: ArDriveDropdownItemTile(
+              name: appLocalizationsOf(context).createSnapshot,
+              icon: ArDriveIcons.iconCreateSnapshot(
+                size: defaultIconSize,
+              ),
+            ),
+          ),
+        if (drive != null)
+          ArDriveDropdownItem(
+            onClick: () {
+              context.read<SyncCubit>().startSyncForDrive(
+                    driveId: drive!.id,
+                    deepSync: false,
+                  );
+            },
+            content: ArDriveDropdownItemTile(
+              name: appLocalizationsOf(context).syncThisDrive,
+              icon: ArDriveIcons.refresh(
+                size: defaultIconSize,
+              ),
+            ),
+          ),
+        if (drive != null)
+          ArDriveDropdownItem(
+            onClick: () {
+              context.read<SyncCubit>().startSyncForDrive(
+                    driveId: drive!.id,
+                    deepSync: true,
+                  );
+            },
+            content: ArDriveDropdownItemTile(
+              name: appLocalizationsOf(context).deepSyncThisDrive,
+              icon: ArDriveIcons.cloudSync(
+                size: defaultIconSize,
+              ),
+            ),
+          ),
         if (isOwner)
           ArDriveDropdownItem(
             onClick: () {

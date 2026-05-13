@@ -23,6 +23,8 @@ import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/user/balance/user_balance_bloc.dart';
 import 'package:ardrive/user/download_wallet/download_wallet_modal.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
+import 'package:ardrive/user/repositories/user_preferences_repository.dart';
+import 'package:ardrive/user/user_preferences.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
@@ -73,6 +75,7 @@ class _ProfileCardState extends State<ProfileCard> {
 
   Widget _loggedInView(BuildContext context) {
     return ArDriveClickArea(
+      tooltip: appLocalizationsOf(context).userProfile,
       child: ScreenTypeLayout.builder(
         mobile: (context) => _buildLoggedInViewForPlatform(
           context,
@@ -252,6 +255,36 @@ class _ProfileCardState extends State<ProfileCard> {
                                 autoSync: value,
                               ),
                             );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16.0, right: 16),
+                    child: StreamBuilder<UserPreferences>(
+                      stream: context
+                          .read<UserPreferencesRepository>()
+                          .watch(),
+                      builder: (context, snapshot) {
+                        final repo = context.read<UserPreferencesRepository>();
+                        final syncAllDrivesOnLogin =
+                            snapshot.data?.syncAllDrivesOnLogin ??
+                                repo.currentPreferences?.syncAllDrivesOnLogin ??
+                                true;
+                        return ArDriveToggleSwitch(
+                          alignRight: true,
+                          value: syncAllDrivesOnLogin,
+                          text: appLocalizationsOf(context).syncAllDrivesOnLogin,
+                          textStyle: typography.paragraphNormal(
+                            fontWeight: ArFontWeight.semiBold,
+                            color: colorTokens.textMid,
+                          ),
+                          onChanged: (value) {
+                            context
+                                .read<UserPreferencesRepository>()
+                                .saveSyncAllDrivesOnLogin(value);
+                          },
+                        );
                       },
                     ),
                   ),

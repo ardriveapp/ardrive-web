@@ -102,6 +102,28 @@ class AppShellState extends State<AppShell> {
                   builder: (context, syncState) {
                     return Stack(children: [
                       scaffold,
+                      // Show loading modal for metadata-only sync
+                      if (syncState is SyncLoadingDrives)
+                        Stack(
+                          children: [
+                            SizedBox.expand(
+                              child: Container(
+                                color: Colors.black.withOpacity(0.5),
+                              ),
+                            ),
+                            Align(
+                              alignment: Alignment.center,
+                              child: Material(
+                                borderRadius: BorderRadius.circular(8),
+                                child: ProgressDialog(
+                                  useNewArDriveUI: true,
+                                  title: appLocalizationsOf(context)
+                                      .loadingYourDrives,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       if (syncState is SyncInProgress ||
                           syncState is SyncCancelled ||
                           syncState is SyncCompleteWithErrors)
@@ -376,27 +398,34 @@ class AppShellState extends State<AppShell> {
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 Text(
-                                                  syncProgress.drivesCount == 0
-                                                      ? ''
-                                                      : syncProgress
-                                                                  .drivesCount >
-                                                              1
-                                                          ? appLocalizationsOf(
-                                                                  context)
-                                                              .driveSyncedOfDrivesCount(
-                                                                  syncProgress
-                                                                      .drivesSynced,
-                                                                  syncProgress
-                                                                      .drivesCount)
-                                                          : appLocalizationsOf(
-                                                                  context)
-                                                              .syncingOnlyOneDrive,
+                                                  _getSyncProgressDescription(
+                                                    context,
+                                                    syncProgress,
+                                                  ),
                                                   style: typography
                                                       .paragraphNormal(
                                                     fontWeight:
                                                         ArFontWeight.bold,
                                                   ),
                                                 ),
+                                                if (isCurrentProfileArConnect) ...[
+                                                  const SizedBox(height: 8),
+                                                  Text(
+                                                    appLocalizationsOf(context)
+                                                        .syncingPleaseRemainOnThisTab,
+                                                    style: typography
+                                                        .paragraphSmall(
+                                                      fontWeight:
+                                                          ArFontWeight.semiBold,
+                                                      color: ArDriveTheme.of(
+                                                              context)
+                                                          .themeData
+                                                          .colorTokens
+                                                          .textLow,
+                                                    ),
+                                                    textAlign: TextAlign.center,
+                                                  ),
+                                                ],
                                                 if (syncProgress.hasErrors) ...[
                                                   const SizedBox(height: 8),
                                                   Container(
@@ -450,11 +479,19 @@ class AppShellState extends State<AppShell> {
                                               ],
                                             ),
                                           ),
-                                          title: isCurrentProfileArConnect
-                                              ? appLocalizationsOf(context)
-                                                  .syncingPleaseRemainOnThisTab
-                                              : appLocalizationsOf(context)
-                                                  .syncingPleaseWait,
+                                          titleWidget: _syncStreamBuilder(
+                                            builderWithData: (syncProgress) =>
+                                                Text(
+                                              _getSyncTitle(
+                                                context,
+                                                syncProgress,
+                                                isCurrentProfileArConnect,
+                                              ),
+                                              style: typography.heading5(
+                                                fontWeight: ArFontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
                                           actions: [
                                             ModalAction(
                                               action: () {
@@ -737,9 +774,55 @@ class AppShellState extends State<AppShell> {
   }) =>
       StreamBuilder<SyncProgress>(
         stream: context.read<SyncCubit>().syncProgressController.stream,
+        // Use current sync progress as initial data to prevent empty state flash
+        initialData: context.read<SyncCubit>().syncProgress,
         builder: (context, snapshot) =>
             snapshot.hasData ? builderWithData(snapshot.data!) : Container(),
       );
+
+  /// Returns the appropriate title for the sync modal based on sync type.
+  /// ArConnect warning is handled separately in the modal content.
+  String _getSyncTitle(
+    BuildContext context,
+    SyncProgress syncProgress,
+    bool isArConnect,
+  ) {
+    // Always show sync-specific title regardless of ArConnect status
+    if (syncProgress.isSingleDriveSync) {
+      return appLocalizationsOf(context).syncingSingleDrive;
+    } else {
+      return appLocalizationsOf(context).syncingAllDrives;
+    }
+  }
+
+  /// Returns the appropriate progress description for the sync modal.
+  String _getSyncProgressDescription(
+    BuildContext context,
+    SyncProgress syncProgress,
+  ) {
+    if (syncProgress.isSingleDriveSync) {
+      // Single drive sync - show drive name if available, otherwise fallback
+      if (syncProgress.driveName != null) {
+        return appLocalizationsOf(context).syncingDriveWithName(
+          syncProgress.driveName!,
+        );
+      } else {
+        return appLocalizationsOf(context).syncingOnlyOneDrive;
+      }
+    } else if (syncProgress.drivesCount > 1) {
+      // Multiple drives - show "X of Y Drives Synced"
+      return appLocalizationsOf(context).driveSyncedOfDrivesCount(
+        syncProgress.drivesSynced,
+        syncProgress.drivesCount,
+      );
+    } else if (syncProgress.drivesCount == 1) {
+      // Single drive in all-drives sync
+      return appLocalizationsOf(context).syncingOnlyOneDrive;
+    } else {
+      // drivesCount == 0, initial state
+      return '';
+    }
+  }
 
   void toggleProfileOverlay() =>
       setState(() => _showProfileOverlay = !_showProfileOverlay);

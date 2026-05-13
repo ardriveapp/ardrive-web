@@ -124,6 +124,10 @@ class TutorialsViewState extends State<TutorialsView> {
   }
 
   void _goToPage(int page) {
+    // Bounds check to prevent RangeError on rapid clicks
+    if (page < 0 || page >= _list.length) {
+      return;
+    }
     setState(() {
       _currentPage = page;
     });

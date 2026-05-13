@@ -138,6 +138,37 @@ class DriveDetailLoadSuccess extends DriveDetailState {
 /// the user's profile.
 class DriveDetailLoadNotFound extends DriveDetailState {}
 
+/// [DriveDetailLoadUnsynced] means that the drive metadata exists but its content
+/// has not been synced yet (lastBlockHeight == 0 or null).
+class DriveDetailLoadUnsynced extends DriveDetailState {
+  final Drive drive;
+  final bool showDriveInfo;
+  final ArDriveDataTableItem? selectedItem;
+
+  DriveDetailLoadUnsynced({
+    required this.drive,
+    this.showDriveInfo = false,
+    this.selectedItem,
+  });
+
+  DriveDetailLoadUnsynced copyWith({
+    Drive? drive,
+    bool? showDriveInfo,
+    Object? selectedItem = _driveDetailAbsent,
+  }) {
+    return DriveDetailLoadUnsynced(
+      drive: drive ?? this.drive,
+      showDriveInfo: showDriveInfo ?? this.showDriveInfo,
+      selectedItem: identical(selectedItem, _driveDetailAbsent)
+          ? this.selectedItem
+          : selectedItem as ArDriveDataTableItem?,
+    );
+  }
+
+  @override
+  List<Object?> get props => [drive, showDriveInfo, selectedItem];
+}
+
 class DriveDetailLoadEmpty extends DriveDetailState {}
 
 class DriveInitialLoading extends DriveDetailState {}

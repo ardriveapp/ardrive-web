@@ -76,6 +76,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 part 'components/drive_detail_breadcrumb_row.dart';
 part 'components/drive_detail_data_list.dart';
 part 'components/drive_detail_folder_empty_card.dart';
+part 'components/drive_detail_unsynced_card.dart';
 part 'components/fs_entry_preview_widget.dart';
 
 class DriveDetailPage extends StatefulWidget {
@@ -138,16 +139,14 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
             if (state is DrivesLoadSuccess) {
               if (state.userDrives.isNotEmpty ||
                   state.sharedDrives.isNotEmpty) {
-                final driveDetailState = context.read<DriveDetailCubit>().state;
+                final cubit = context.read<DriveDetailCubit>();
 
-                if (driveDetailState is DriveDetailLoadSuccess &&
-                    driveDetailState.currentDrive.id == state.selectedDriveId) {
+                // Don't re-trigger changeDrive if we're already viewing/loading this drive
+                if (cubit.currentDriveId == state.selectedDriveId) {
                   return;
                 }
 
-                context
-                    .read<DriveDetailCubit>()
-                    .changeDrive(state.selectedDriveId!);
+                cubit.changeDrive(state.selectedDriveId!);
               } else {
                 context.read<DriveDetailCubit>().showEmptyDriveDetail();
               }
@@ -186,7 +185,22 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                             widget.anonymouslyShowDriveDetail,
                       );
                     } else if (driveDetailState is DriveDetailLoadInProgress) {
-                      return const Center(child: CircularProgressIndicator());
+                      return ScreenTypeLayout.builder(
+                        mobile: (context) => const Scaffold(
+                          drawerScrimColor: Colors.transparent,
+                          drawer: AppSideBar(),
+                          appBar: MobileAppBar(),
+                          body: Center(child: CircularProgressIndicator()),
+                        ),
+                        desktop: (context) => const Column(
+                          children: [
+                            AppTopBar(),
+                            Expanded(
+                              child: Center(child: CircularProgressIndicator()),
+                            ),
+                          ],
+                        ),
+                      );
                     } else if (driveDetailState is DriveInitialLoading) {
                       return ArDriveDevToolsShortcuts(
                         customShortcuts: [
@@ -235,6 +249,110 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                 ),
                               ],
                             ),
+                          ),
+                        ),
+                      );
+                    } else if (driveDetailState is DriveDetailLoadUnsynced) {
+                      final isOwner = isDriveOwner(
+                        context.read<ArDriveAuth>(),
+                        driveDetailState.drive.ownerAddress,
+                      );
+
+                      return ArDriveDevToolsShortcuts(
+                        customShortcuts: [
+                          Shortcut(
+                            modifier: LogicalKeyboardKey.shiftLeft,
+                            key: LogicalKeyboardKey.keyH,
+                            action: () {
+                              ArDriveDevTools.instance
+                                  .showDevTools(optionalContext: context);
+                            },
+                          ),
+                        ],
+                        child: ScreenTypeLayout.builder(
+                          mobile: (context) {
+                            // Show full-screen DetailsPanel on mobile when drive info is selected
+                            if (driveDetailState.showDriveInfo &&
+                                driveDetailState.selectedItem != null) {
+                              return Material(
+                                child: PopScope(
+                                  canPop: false,
+                                  onPopInvoked: (didPop) {
+                                    context
+                                        .read<DriveDetailCubit>()
+                                        .closeDriveInfoForUnsyncedDrive();
+                                  },
+                                  child: DetailsPanel(
+                                    currentDrive: driveDetailState.drive,
+                                    isSharePage: false,
+                                    drivePrivacy:
+                                        driveDetailState.drive.privacy,
+                                    item: driveDetailState.selectedItem!,
+                                    canNavigateThroughImages: false,
+                                  ),
+                                ),
+                              );
+                            }
+                            return Scaffold(
+                              drawerScrimColor: Colors.transparent,
+                              drawer: const AppSideBar(),
+                              appBar: const MobileAppBar(),
+                              body: _UnsyncedDriveMobileView(
+                                drive: driveDetailState.drive,
+                                isOwner: isOwner,
+                              ),
+                            );
+                          },
+                          desktop: (context) => Column(
+                            children: [
+                              const AppTopBar(),
+                              Expanded(
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                            0, 0, 16, 0),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            _UnsyncedDriveHeader(
+                                              drive: driveDetailState.drive,
+                                              isOwner: isOwner,
+                                            ),
+                                            const SizedBox(height: 30),
+                                            Expanded(
+                                              child: DriveDetailUnsyncedCard(
+                                                drive: driveDetailState.drive,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    // Details panel for unsynced drive
+                                    if (driveDetailState.showDriveInfo &&
+                                        driveDetailState.selectedItem != null)
+                                      ConstrainedBox(
+                                        constraints: const BoxConstraints(
+                                          maxWidth: 420,
+                                          minWidth: 310,
+                                        ),
+                                        child: DetailsPanel(
+                                          item: driveDetailState.selectedItem!,
+                                          isSharePage: false,
+                                          drivePrivacy:
+                                              driveDetailState.drive.privacy,
+                                          canNavigateThroughImages: false,
+                                          currentDrive: driveDetailState.drive,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       );
@@ -516,6 +634,42 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                             appLocalizationsOf(context)
                                                 .createSnapshot,
                                             ArDriveIcons.iconCreateSnapshot(
+                                              size: defaultIconSize,
+                                            ),
+                                          ),
+                                        ),
+                                        ArDriveDropdownItem(
+                                          onClick: () {
+                                            context
+                                                .read<SyncCubit>()
+                                                .startSyncForDrive(
+                                                  driveId: driveDetailState
+                                                      .currentDrive.id,
+                                                  deepSync: false,
+                                                );
+                                          },
+                                          content: ArDriveDropdownItemTile(
+                                            name: appLocalizationsOf(context)
+                                                .syncThisDrive,
+                                            icon: ArDriveIcons.refresh(
+                                              size: defaultIconSize,
+                                            ),
+                                          ),
+                                        ),
+                                        ArDriveDropdownItem(
+                                          onClick: () {
+                                            context
+                                                .read<SyncCubit>()
+                                                .startSyncForDrive(
+                                                  driveId: driveDetailState
+                                                      .currentDrive.id,
+                                                  deepSync: true,
+                                                );
+                                          },
+                                          content: ArDriveDropdownItemTile(
+                                            name: appLocalizationsOf(context)
+                                                .deepSyncThisDrive,
+                                            icon: ArDriveIcons.cloudSync(
                                               size: defaultIconSize,
                                             ),
                                           ),
@@ -1207,6 +1361,34 @@ class MobileFolderNavigation extends StatelessWidget {
                         ),
                       ),
                     ],
+                    ArDriveDropdownItem(
+                      onClick: () {
+                        context.read<SyncCubit>().startSyncForDrive(
+                              driveId: state.currentDrive.id,
+                              deepSync: false,
+                            );
+                      },
+                      content: ArDriveDropdownItemTile(
+                        name: appLocalizationsOf(context).syncThisDrive,
+                        icon: ArDriveIcons.refresh(
+                          size: defaultIconSize,
+                        ),
+                      ),
+                    ),
+                    ArDriveDropdownItem(
+                      onClick: () {
+                        context.read<SyncCubit>().startSyncForDrive(
+                              driveId: state.currentDrive.id,
+                              deepSync: true,
+                            );
+                      },
+                      content: ArDriveDropdownItemTile(
+                        name: appLocalizationsOf(context).deepSyncThisDrive,
+                        icon: ArDriveIcons.cloudSync(
+                          size: defaultIconSize,
+                        ),
+                      ),
+                    ),
                     ArDriveDropdownItem(
                       onClick: () {
                         promptToShareDrive(

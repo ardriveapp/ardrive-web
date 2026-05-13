@@ -366,6 +366,18 @@
       }
     }
   },
+  "syncThisDrive": "このドライブを同期",
+  "@syncThisDrive": {
+    "description": "Menu option to sync only the current drive"
+  },
+  "deepSyncThisDrive": "このドライブをディープ同期",
+  "@deepSyncThisDrive": {
+    "description": "Menu option to deep sync only the current drive"
+  },
+  "syncAllDrivesOnLogin": "ログイン時にすべてのドライブを同期",
+  "@syncAllDrivesOnLogin": {
+    "description": "Toggle to enable/disable syncing all drives when logging in"
+  },
   "creatingDriveEmphasized": "ドライブを作成中…",
   "@creatingDriveEmphasized": {
     "description": "The drive is being created. Emphasized with upper case"
@@ -503,6 +515,26 @@
   },
   "driveDoingInitialSetupMessage": "ドライブが初期設定を行っています。数分かかる場合があります。操作を行う前にしばらくお待ちください。",
   "@driveDoingInitialSetupMessage": {},
+  "driveNotSynced": "ドライブ未同期",
+  "@driveNotSynced": {
+    "description": "Title shown when a drive has metadata but content has not been synced"
+  },
+  "driveNotSyncedDescription": "このドライブのコンテンツを表示するには同期が必要です。今すぐ同期してファイルとフォルダを表示してください。",
+  "@driveNotSyncedDescription": {
+    "description": "Description shown when a drive has not been synced yet"
+  },
+  "syncThisDriveDescription": "このドライブから最新のファイルとフォルダを取得します。",
+  "@syncThisDriveDescription": {
+    "description": "Description for the sync drive action card"
+  },
+  "syncAllDrives": "すべてのドライブを同期",
+  "@syncAllDrives": {
+    "description": "Button and title text for syncing all drives"
+  },
+  "syncAllDrivesDescription": "すべてのドライブを一度に同期して、すべてのコンテンツを最新の状態に保ちます。",
+  "@syncAllDrivesDescription": {
+    "description": "Description for the sync all drives action card"
+  },
   "driveID": "ドライブID",
   "@driveID": {
     "description": "The Drive-ID tag"
@@ -1266,6 +1298,14 @@
   "@newStringEmphasized": {
     "description": "New entity (folder, file, drive, manifest, attached drive). Emphasized with upper case"
   },
+  "createNew": "新規作成",
+  "@createNew": {
+    "description": "Tooltip for the New button to create new items"
+  },
+  "userProfile": "ユーザープロフィール",
+  "@userProfile": {
+    "description": "Tooltip for the user profile button"
+  },
   "next": "次へ",
   "@next": {
     "description": "Action of going to the next page"
@@ -1686,9 +1726,35 @@
   "@sync": {
     "description": "Sync button tooltip"
   },
+  "syncNow": "今すぐ同期",
+  "@syncNow": {
+    "description": "Button text to sync an unsynced drive"
+  },
   "syncingOnlyOneDrive": "ドライブの同期中…",
   "@syncingOnlyOneDrive": {
     "description": "Show the message when the user has only one drive"
+  },
+  "syncingDriveWithName": "'{driveName}'を同期中...",
+  "@syncingDriveWithName": {
+    "description": "Show the message when syncing a specific drive by name",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "My Drive"
+      }
+    }
+  },
+  "syncingAllDrives": "すべてのドライブを同期中",
+  "@syncingAllDrives": {
+    "description": "Title shown when syncing all user drives"
+  },
+  "syncingSingleDrive": "ドライブを同期中",
+  "@syncingSingleDrive": {
+    "description": "Title shown when syncing a single drive"
+  },
+  "loadingYourDrives": "ドライブを読み込んでいます...",
+  "@loadingYourDrives": {
+    "description": "Title shown when loading drive metadata on login"
   },
   "syncingPleaseRemainOnThisTab": "同期中... このタブにとどまっていてください。",
   "@syncingPleaseRemainOnThisTab": {

@@ -288,12 +288,15 @@ class _DetailsPanelState extends State<DetailsPanel> {
                     children: [
                       BlocBuilder<DriveDetailCubit, DriveDetailState>(
                         builder: (context, driveDetailState) {
-                          final driveDetailLoadSuccess =
-                              driveDetailState as DriveDetailLoadSuccess;
-                          return DetailsPanelToolbar(
-                            item: widget.item,
-                            driveDetailLoadSuccess: driveDetailLoadSuccess,
-                          );
+                          if (driveDetailState is DriveDetailLoadSuccess) {
+                            return DetailsPanelToolbar(
+                              item: widget.item,
+                              driveDetailLoadSuccess: driveDetailState,
+                            );
+                          }
+                          // For DriveDetailLoadUnsynced or other states,
+                          // don't show the toolbar
+                          return const SizedBox.shrink();
                         },
                       ),
                       const SizedBox(
@@ -1589,6 +1592,8 @@ class DetailsPanelToolbar extends StatelessWidget {
                 );
               },
             ),
+          // Note: Sync/Deep Sync/Snapshot actions are in the drive kebab menu
+          // to avoid redundant UI elements
           const Spacer(),
           _buildActionIcon(
             tooltip: appLocalizationsOf(context).close,

@@ -88,17 +88,13 @@ class NewButton extends StatelessWidget {
     final subMenuChild = child ??
         Padding(
           padding: const EdgeInsets.only(top: 8),
-          child: ArDriveFAB(
+          child: _HoverableNewButton(
+            tooltip: appLocalizationsOf(context).createNew,
             onPressed: () {
               PlausibleEventTracker.trackNewButton(
                 location: NewButtonLocation.sidebar,
               );
             },
-            backgroundColor:
-                ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
-            child: ArDriveIcons.plus(
-              color: Colors.white,
-            ),
           ),
         );
 
@@ -658,4 +654,66 @@ class ArDriveNewButtonItem extends ArDriveNewButtonComponent {
 
 class ArDriveNewButtonDivider extends ArDriveNewButtonComponent {
   const ArDriveNewButtonDivider();
+}
+
+/// A hoverable FAB for the New button with visible hover effect.
+class _HoverableNewButton extends StatefulWidget {
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  const _HoverableNewButton({
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  @override
+  State<_HoverableNewButton> createState() => _HoverableNewButtonState();
+}
+
+class _HoverableNewButtonState extends State<_HoverableNewButton> {
+  bool _isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final baseColor =
+        ArDriveTheme.of(context).themeData.colors.themeAccentBrand;
+    final hoverColor = Color.lerp(baseColor, Colors.black, 0.15)!;
+
+    return ArDriveTooltip(
+      message: widget.tooltip,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovering = true),
+        onExit: (_) => setState(() => _isHovering = false),
+        cursor: SystemMouseCursors.click,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: _isHovering ? hoverColor : baseColor,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(_isHovering ? 0.3 : 0.2),
+                blurRadius: _isHovering ? 8 : 6,
+                offset: Offset(0, _isHovering ? 4 : 2),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: widget.onPressed,
+              customBorder: const CircleBorder(),
+              child: Center(
+                child: ArDriveIcons.plus(
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

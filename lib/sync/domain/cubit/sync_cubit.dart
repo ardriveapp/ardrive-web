@@ -12,6 +12,7 @@ import 'package:ardrive/sync/domain/ghost_folder.dart';
 import 'package:ardrive/sync/domain/repositories/sync_repository.dart';
 import 'package:ardrive/sync/domain/sync_cancellation_token.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
+import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -35,6 +36,7 @@ class SyncCubit extends Cubit<SyncState> {
   final TabVisibilitySingleton _tabVisibility;
   final ConfigService _configService;
   final SyncRepository _syncRepository;
+  final UserPreferencesRepository _userPreferencesRepository;
 
   StreamSubscription? _restartOnFocusStreamSubscription;
   StreamSubscription? _restartArConnectOnFocusStreamSubscription;
@@ -44,7 +46,7 @@ class SyncCubit extends Cubit<SyncState> {
       StreamController<SyncProgress>.broadcast();
   DateTime? _lastSync;
   late DateTime _initSync;
-  late SyncProgress _syncProgress;
+  SyncProgress _syncProgress = SyncProgress.initial();
   SyncCancellationToken? _currentSyncToken;
 
   SyncCubit({
@@ -55,13 +57,17 @@ class SyncCubit extends Cubit<SyncState> {
     required ConfigService configService,
     required ActivityTracker activityTracker,
     required SyncRepository syncRepository,
+    required UserPreferencesRepository userPreferencesRepository,
   })  : _profileCubit = profileCubit,
         _activityCubit = activityCubit,
         _promptToSnapshotBloc = promptToSnapshotBloc,
         _configService = configService,
         _tabVisibility = tabVisibility,
         _syncRepository = syncRepository,
-        super(SyncIdle()) {
+        _userPreferencesRepository = userPreferencesRepository,
+        // Initialize with SyncLoadingDrives (not SyncIdle) to prevent race conditions
+        // where DriveDetailCubit's waitCurrentSync() returns early before sync starts.
+        super(SyncLoadingDrives()) {
     // Sync the user's drives on start and periodically.
     createSyncStream();
     restartSyncOnFocus();
@@ -71,10 +77,15 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   /// Waits for the current sync to finish.
+  /// SyncLoadingDrives is treated as non-blocking (metadata-only loading).
   Future<void> waitCurrentSync() async {
-    if (state is! SyncIdle) {
+    if (state is! SyncIdle && state is! SyncLoadingDrives) {
       await for (var state in stream) {
-        if (state is SyncIdle || state is SyncFailure) {
+        if (state is SyncIdle ||
+            state is SyncFailure ||
+            state is SyncCancelled ||
+            state is SyncCompleteWithErrors ||
+            state is SyncLoadingDrives) {
           break;
         }
       }
@@ -84,11 +95,21 @@ class SyncCubit extends Cubit<SyncState> {
   void createSyncStream() async {
     logger.d('Creating sync stream to periodically call sync automatically');
 
-    // Start initial sync immediately without waiting for async operations.
-    // Skip tab visibility check for initial sync because the user just logged in
-    // (which requires wallet interaction, proving they're active). The wallet popup
-    // may cause the browser to consider the tab unfocused momentarily.
-    startSync(skipTabVisibilityCheck: true);
+    // Note: Initial state is already SyncLoadingDrives (set in constructor)
+    // to prevent race conditions with waitCurrentSync()
+
+    // Check if syncAllDrivesOnLogin preference is enabled before initial sync
+    final preferences = await _userPreferencesRepository.load();
+    if (preferences.syncAllDrivesOnLogin) {
+      // Start initial sync immediately without waiting for async operations.
+      // Skip tab visibility check for initial sync because the user just logged in
+      // (which requires wallet interaction, proving they're active). The wallet popup
+      // may cause the browser to consider the tab unfocused momentarily.
+      startSync(skipTabVisibilityCheck: true);
+    } else {
+      logger.d('Skipping full sync: syncAllDrivesOnLogin is disabled');
+      syncMetadataOnly();
+    }
 
     // Cancel any existing subscription before creating a new one
     await _syncSub?.cancel();
@@ -178,6 +199,35 @@ class SyncCubit extends Cubit<SyncState> {
 
   var ghostFolders = <FolderID, GhostFolder>{};
 
+  /// Fetches only drive metadata without full content sync.
+  /// Used when syncAllDrivesOnLogin is disabled to populate the sidebar.
+  /// Emits SyncLoadingDrives for UI feedback but doesn't block waitCurrentSync().
+  Future<void> syncMetadataOnly() async {
+    logger.d('Starting metadata-only sync');
+    final profile = _profileCubit.state;
+    if (profile is ProfileLoggedIn) {
+      // Emit SyncLoadingDrives for UI feedback (shows "Loading your drives...")
+      // This is separate from SyncInProgress so it doesn't block waitCurrentSync()
+      emit(SyncLoadingDrives());
+      try {
+        await _syncRepository.updateUserDrives(
+          wallet: profile.user.wallet,
+          password: profile.user.password,
+          cipherKey: profile.user.cipherKey,
+        );
+        logger.d('Metadata-only sync completed successfully');
+      } catch (e, stackTrace) {
+        logger.e('Error fetching drive metadata', e, stackTrace);
+      }
+      emit(SyncIdle());
+    } else {
+      logger.d('Profile not logged in yet, skipping metadata sync');
+      // Still emit SyncIdle so waitCurrentSync() doesn't hang
+      emit(SyncIdle());
+    }
+  }
+
+
   Future<void> startSync({
     bool deepSync = false,
     bool skipTabVisibilityCheck = false,
@@ -204,6 +254,10 @@ class SyncCubit extends Cubit<SyncState> {
       _initSync = DateTime.now();
 
       emit(SyncInProgress());
+      // Emit initial progress AFTER SyncInProgress so the modal is already
+      // listening to the stream when we emit
+      syncProgressController.add(_syncProgress);
+
       // Only sync in drives owned by the user if they're logged in.
       logger.d('Checking if user is logged in...');
 
@@ -239,11 +293,23 @@ class SyncCubit extends Cubit<SyncState> {
 
         // Update user drives to discover all drives owned by the user.
         // This must complete before syncAllDrives so drives exist in DB.
+        // Emit status message so user sees feedback during this phase
+        _syncProgress = _syncProgress.copyWith(
+          statusMessage: 'Discovering your drives...',
+        );
+        syncProgressController.add(_syncProgress);
+
         await _syncRepository.updateUserDrives(
           wallet: wallet,
           password: password,
           cipherKey: profile.user.cipherKey,
         );
+
+        // Clear status message after discovery completes
+        _syncProgress = _syncProgress.copyWith(
+          statusMessage: null,
+        );
+        syncProgressController.add(_syncProgress);
       }
 
       _promptToSnapshotBloc.add(const SyncRunning(isRunning: true));
@@ -313,6 +379,143 @@ class SyncCubit extends Cubit<SyncState> {
     // Check if sync completed with errors (only for non-cancelled syncs)
     if (_syncProgress.hasErrors) {
       logger.w('Sync completed with ${_syncProgress.failedQueries} errors');
+      emit(SyncCompleteWithErrors(
+        failedDrives: _syncProgress.failedQueries,
+        totalDrives: _syncProgress.drivesCount,
+        failedDriveIds: _syncProgress.failedDriveIds,
+        errorMessages: _syncProgress.errorMessages,
+      ));
+    } else {
+      emit(SyncIdle());
+    }
+  }
+
+  /// Syncs a single drive by its ID with optional deep sync.
+  /// Similar to startSync but only syncs the specified drive.
+  Future<void> startSyncForDrive({
+    required String driveId,
+    bool deepSync = false,
+  }) async {
+    logger.i('Starting Sync for drive: $driveId, deepSync: $deepSync');
+
+    if (state is SyncInProgress) {
+      logger.d('Sync state is SyncInProgress, aborting single drive sync...');
+      return;
+    }
+
+    // Mark as single drive sync from the start so the UI shows the right title
+    _syncProgress = SyncProgress.initial().copyWith(
+      isSingleDriveSync: true,
+      drivesCount: 1,
+    );
+
+    // Create a new cancellation token for this sync
+    _currentSyncToken?.dispose();
+    _currentSyncToken = SyncCancellationToken();
+
+    try {
+      final profile = _profileCubit.state;
+      Wallet? wallet;
+      String? password;
+      SecretKey? cipherKey;
+
+      _initSync = DateTime.now();
+
+      emit(SyncInProgress());
+      // Emit initial progress AFTER SyncInProgress so the modal is already
+      // listening to the stream when we emit
+      syncProgressController.add(_syncProgress);
+
+      if (profile is ProfileLoggedIn) {
+        wallet = profile.user.wallet;
+        password = profile.user.password;
+        cipherKey = profile.user.cipherKey;
+
+        final isArConnect = await _profileCubit.isCurrentProfileArConnect();
+
+        // For ArConnect users, check tab visibility
+        if (isArConnect && !_tabVisibility.isTabFocused()) {
+          logger.d('Tab hidden for ArConnect user, skipping single drive sync...');
+          emit(SyncIdle());
+          return;
+        }
+
+        if (_activityCubit.state is ActivityInProgress) {
+          logger.d('Uninterruptible activity in progress, skipping single drive sync...');
+          emit(SyncIdle());
+          return;
+        }
+
+        // Load drive keys so private drives can be decrypted
+        await _syncRepository.updateUserDrives(
+          wallet: wallet,
+          password: password,
+          cipherKey: cipherKey,
+        );
+      }
+
+      _promptToSnapshotBloc.add(const SyncRunning(isRunning: true));
+
+      await for (var syncProgress in _syncRepository.syncSingleDrive(
+        driveId: driveId,
+        wallet: wallet,
+        password: password,
+        cipherKey: cipherKey,
+        syncDeep: deepSync,
+        cancellationToken: _currentSyncToken,
+        txFechedCallback: (driveId, txCount) {
+          _promptToSnapshotBloc.add(
+            CountSyncedTxs(
+              driveId: driveId,
+              txsSyncedWithGqlCount: txCount,
+              wasDeepSync: deepSync,
+            ),
+          );
+        },
+      )) {
+        _syncProgress = syncProgress;
+        syncProgressController.add(_syncProgress);
+      }
+
+      if (profile is ProfileLoggedIn) {
+        _profileCubit.refreshBalance();
+      }
+
+      logger.i('Single drive sync completed');
+    } catch (err, stackTrace) {
+      if (err is SyncCancelledException) {
+        logger.i('Single drive sync cancelled by user');
+        _currentSyncToken?.dispose();
+        _currentSyncToken = null;
+
+        emit(SyncCancelled(
+          drivesCompleted: _syncProgress.drivesSynced,
+          totalDrives: _syncProgress.drivesCount,
+          cancelledAt: DateTime.now(),
+        ));
+        _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
+        return;
+      }
+      logger.e('Error syncing single drive', err, stackTrace);
+      addError(err);
+    } finally {
+      if (_currentSyncToken != null) {
+        _currentSyncToken?.dispose();
+        _currentSyncToken = null;
+      }
+    }
+
+    _lastSync = DateTime.now();
+
+    logger.i(
+      'Single drive sync finished. Sync took: ${_lastSync!.difference(_initSync).inMilliseconds}ms',
+    );
+
+    _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
+
+    // Check if sync completed with errors
+    if (_syncProgress.hasErrors) {
+      logger.w('Single drive sync completed with errors');
       emit(SyncCompleteWithErrors(
         failedDrives: _syncProgress.failedQueries,
         totalDrives: _syncProgress.drivesCount,
