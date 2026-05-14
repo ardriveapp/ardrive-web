@@ -408,24 +408,7 @@ class AppShellState extends State<AppShell> {
                                                         ArFontWeight.bold,
                                                   ),
                                                 ),
-                                                if (isCurrentProfileArConnect) ...[
-                                                  const SizedBox(height: 8),
-                                                  Text(
-                                                    appLocalizationsOf(context)
-                                                        .syncingPleaseRemainOnThisTab,
-                                                    style: typography
-                                                        .paragraphSmall(
-                                                      fontWeight:
-                                                          ArFontWeight.semiBold,
-                                                      color: ArDriveTheme.of(
-                                                              context)
-                                                          .themeData
-                                                          .colorTokens
-                                                          .textLow,
-                                                    ),
-                                                    textAlign: TextAlign.center,
-                                                  ),
-                                                ],
+                                                // ArConnect tab warning removed — unnecessary UX friction
                                                 if (syncProgress.hasErrors) ...[
                                                   const SizedBox(height: 8),
                                                   Container(

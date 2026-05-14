@@ -478,7 +478,7 @@ class DriveDetailUnsyncedCard extends StatelessWidget {
             text: appLocalizationsOf(context).syncAllDrives,
             typography: typography,
             onPressed: () {
-              context.read<SyncCubit>().startSync();
+              context.read<DriveDetailCubit>().syncAllAndRefreshCurrentDrive();
             },
             variant: ButtonVariant.secondary,
           ),
