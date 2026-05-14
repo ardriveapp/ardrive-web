@@ -20,6 +20,7 @@ import 'package:ardrive/components/license/view_license_definition.dart';
 import 'package:ardrive/components/license_details_popover.dart';
 import 'package:ardrive/components/progress_dialog.dart';
 import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
@@ -35,7 +36,6 @@ import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
@@ -273,12 +273,13 @@ class _UploadFormState extends State<UploadForm> {
                     );
                   }).toList();
 
+                  // TODO(solana-migration): Re-enable LoadAnts once migrated to Solana
                   return UploadManifestOptionsBloc(
                     manifestFiles: manifestSelections,
                     arnsRepository: context.read<ARNSRepository>(),
                     arDriveAuth: context.read<ArDriveAuth>(),
                     selectedManifestIds: selectedManifestIds,
-                  )..add(LoadAnts());
+                  );
                 },
                 child: BlocListener<UploadManifestOptionsBloc,
                     UploadManifestOptionsState>(
@@ -1864,27 +1865,28 @@ class _UploadReadyWidget extends StatelessWidget {
                     ],
                   ),
                 ),
-              if (state.showArnsCheckbox && !state.loadingArNSNames)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8, bottom: 8),
-                  child: Row(
-                    children: [
-                      ArDriveCheckBox(
-                        title: 'Assign an ArNS name',
-                        checked: state.arnsCheckboxChecked,
-                        useNewIcons: true,
-                        titleStyle: typography.paragraphNormal(
-                          fontWeight: ArFontWeight.semiBold,
-                        ),
-                        onChange: (value) {
-                          context
-                              .read<UploadCubit>()
-                              .changeShowArnsNameSelection(value);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
+              // TODO(solana-migration): Re-enable ArNS name assignment checkbox once migrated to Solana
+              // if (state.showArnsCheckbox && !state.loadingArNSNames)
+              //   Padding(
+              //     padding: const EdgeInsets.only(top: 8, bottom: 8),
+              //     child: Row(
+              //       children: [
+              //         ArDriveCheckBox(
+              //           title: 'Assign an ArNS name',
+              //           checked: state.arnsCheckboxChecked,
+              //           useNewIcons: true,
+              //           titleStyle: typography.paragraphNormal(
+              //             fontWeight: ArFontWeight.semiBold,
+              //           ),
+              //           onChange: (value) {
+              //             context
+              //                 .read<UploadCubit>()
+              //                 .changeShowArnsNameSelection(value);
+              //           },
+              //         ),
+              //       ],
+              //     ),
+              //   ),
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Column(

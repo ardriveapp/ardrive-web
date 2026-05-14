@@ -686,6 +686,7 @@ class ArDriveStandardModalNew extends StatelessWidget {
   const ArDriveStandardModalNew({
     super.key,
     this.title,
+    this.titleWidget,
     this.description,
     this.content,
     this.actions,
@@ -695,6 +696,10 @@ class ArDriveStandardModalNew extends StatelessWidget {
   });
 
   final String? title;
+
+  /// A widget to display as the title. Takes precedence over [title].
+  final Widget? titleWidget;
+
   final String? description;
   final List<ModalAction>? actions;
   final Widget? content;
@@ -726,17 +731,18 @@ class ArDriveStandardModalNew extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (title != null) ...[
+            if (title != null || titleWidget != null) ...[
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Flexible(
-                    child: Text(
-                      title!,
-                      style: typography.heading3(
-                        fontWeight: ArFontWeight.bold,
-                      ),
-                    ),
+                    child: titleWidget ??
+                        Text(
+                          title!,
+                          style: typography.heading3(
+                            fontWeight: ArFontWeight.bold,
+                          ),
+                        ),
                   ),
                   if (hasCloseButton)
                     ArDriveClickArea(

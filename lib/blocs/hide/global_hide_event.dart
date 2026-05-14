@@ -24,3 +24,18 @@ class RefreshOptions extends GlobalHideEvent {
 
   const RefreshOptions({required this.userHasHiddenItems});
 }
+
+/// Event to sync local state with preferences stream without saving back.
+/// This prevents infinite loops when the preferences stream emits updates.
+class SyncShowHiddenState extends GlobalHideEvent {
+  final bool showHidden;
+  final bool userHasHiddenItems;
+
+  const SyncShowHiddenState({
+    required this.showHidden,
+    required this.userHasHiddenItems,
+  });
+
+  @override
+  List<Object> get props => [showHidden, userHasHiddenItems];
+}

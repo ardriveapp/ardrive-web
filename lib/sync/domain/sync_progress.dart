@@ -2,6 +2,9 @@ abstract class LinearProgress {
   double get progress;
 }
 
+/// Sentinel used by copyWith to distinguish "not provided" from "explicitly null".
+const _absent = Object();
+
 class SyncProgress extends LinearProgress {
   SyncProgress({
     required this.numberOfEntities,
@@ -14,6 +17,8 @@ class SyncProgress extends LinearProgress {
     this.failedDriveIds = const [],
     this.errorMessages = const {},
     this.statusMessage,
+    this.isSingleDriveSync = false,
+    this.driveName,
   });
 
   factory SyncProgress.initial() {
@@ -28,6 +33,8 @@ class SyncProgress extends LinearProgress {
       failedDriveIds: const [],
       errorMessages: const {},
       statusMessage: null,
+      isSingleDriveSync: false,
+      driveName: null,
     );
   }
 
@@ -43,6 +50,8 @@ class SyncProgress extends LinearProgress {
       failedDriveIds: const [],
       errorMessages: const {},
       statusMessage: null,
+      isSingleDriveSync: false,
+      driveName: null,
     );
   }
 
@@ -53,13 +62,17 @@ class SyncProgress extends LinearProgress {
   final int drivesSynced;
   final int drivesCount;
   final int numberOfDrivesAtGetMetadataPhase;
-  
+
   // New fields for tracking failures
   final int failedQueries;
   final List<String> failedDriveIds;
   final Map<String, String> errorMessages; // driveId -> error message
   final String? statusMessage; // Status message for post-sync operations
-  
+
+  // Fields for distinguishing sync type
+  final bool isSingleDriveSync; // true if syncing a single drive
+  final String? driveName; // name of the drive being synced (for single drive sync)
+
   // Helper getters
   bool get hasErrors => failedQueries > 0;
   bool get isPartialSync => hasErrors && progress >= 1.0;
@@ -75,7 +88,9 @@ class SyncProgress extends LinearProgress {
     int? failedQueries,
     List<String>? failedDriveIds,
     Map<String, String>? errorMessages,
-    String? statusMessage,
+    Object? statusMessage = _absent,
+    bool? isSingleDriveSync,
+    Object? driveName = _absent,
   }) {
     return SyncProgress(
       numberOfEntities: numberOfEntities ?? this.numberOfEntities,
@@ -88,7 +103,12 @@ class SyncProgress extends LinearProgress {
       failedQueries: failedQueries ?? this.failedQueries,
       failedDriveIds: failedDriveIds ?? this.failedDriveIds,
       errorMessages: errorMessages ?? this.errorMessages,
-      statusMessage: statusMessage ?? this.statusMessage,
+      statusMessage: statusMessage == _absent
+          ? this.statusMessage
+          : statusMessage as String?,
+      isSingleDriveSync: isSingleDriveSync ?? this.isSingleDriveSync,
+      driveName:
+          driveName == _absent ? this.driveName : driveName as String?,
     );
   }
 }

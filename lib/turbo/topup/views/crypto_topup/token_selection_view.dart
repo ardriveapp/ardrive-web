@@ -111,15 +111,15 @@ class _TokenSelectionContent extends StatelessWidget {
             const SizedBox(height: 16),
           ],
 
-          // ===== RECOMMENDED SECTION =====
-          _RecommendedSection(
-            arioBalance: state.arioBalance,
-            isLoadingBalances: state.isLoadingBalances,
-            onTokenSelected: (token) {
-              bloc.add(CryptoTopupSelectToken(token));
-            },
-          ),
-          const SizedBox(height: 24),
+          // TODO(solana-migration): Re-enable ARIO on AO recommended section once migrated to Solana
+          // _RecommendedSection(
+          //   arioBalance: state.arioBalance,
+          //   isLoadingBalances: state.isLoadingBalances,
+          //   onTokenSelected: (token) {
+          //     bloc.add(CryptoTopupSelectToken(token));
+          //   },
+          // ),
+          // const SizedBox(height: 24),
 
           // ===== OTHER OPTIONS SECTION =====
           _OtherOptionsSection(
@@ -136,14 +136,17 @@ class _TokenSelectionContent extends StatelessWidget {
 }
 
 /// Recommended section featuring ARIO on AO
+// ignore: unused_element
 class _RecommendedSection extends StatelessWidget {
+  // ignore: unused_element
   final TokenBalance? arioBalance;
+  // ignore: unused_element
   final bool isLoadingBalances;
   final ValueChanged<CryptoToken> onTokenSelected;
 
   const _RecommendedSection({
-    this.arioBalance,
-    this.isLoadingBalances = false,
+    this.arioBalance, // ignore: unused_element
+    this.isLoadingBalances = false, // ignore: unused_element
     required this.onTokenSelected,
   });
 
@@ -398,7 +401,8 @@ class _OtherOptionsSection extends StatelessWidget {
           title: 'Ethereum',
           description: 'Higher fees, more liquidity',
           tokens: const [
-            CryptoToken.arioAOViaEth,
+            // TODO(solana-migration): Re-enable arioAOViaEth once migrated to Solana
+            // CryptoToken.arioAOViaEth,
             CryptoToken.ethL1,
             CryptoToken.usdcEth,
           ],

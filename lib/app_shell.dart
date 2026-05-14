@@ -14,6 +14,7 @@ import 'package:ardrive/shared/blocs/private_drive_migration/private_drive_migra
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -101,6 +102,28 @@ class AppShellState extends State<AppShell> {
                   builder: (context, syncState) {
                     return Stack(children: [
                       scaffold,
+                      // Show loading modal for metadata-only sync
+                      if (syncState is SyncLoadingDrives)
+                        Stack(
+                          children: [
+                            SizedBox.expand(
+                              child: Container(
+                                color: Colors.black.withOpacity(0.5),
+                              ),
+                            ),
+                            Align(
+                              alignment: Alignment.center,
+                              child: Material(
+                                borderRadius: BorderRadius.circular(8),
+                                child: ProgressDialog(
+                                  useNewArDriveUI: true,
+                                  title: appLocalizationsOf(context)
+                                      .loadingYourDrives,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       if (syncState is SyncInProgress ||
                           syncState is SyncCancelled ||
                           syncState is SyncCompleteWithErrors)
@@ -375,27 +398,17 @@ class AppShellState extends State<AppShell> {
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 Text(
-                                                  syncProgress.drivesCount == 0
-                                                      ? ''
-                                                      : syncProgress
-                                                                  .drivesCount >
-                                                              1
-                                                          ? appLocalizationsOf(
-                                                                  context)
-                                                              .driveSyncedOfDrivesCount(
-                                                                  syncProgress
-                                                                      .drivesSynced,
-                                                                  syncProgress
-                                                                      .drivesCount)
-                                                          : appLocalizationsOf(
-                                                                  context)
-                                                              .syncingOnlyOneDrive,
+                                                  _getSyncProgressDescription(
+                                                    context,
+                                                    syncProgress,
+                                                  ),
                                                   style: typography
                                                       .paragraphNormal(
                                                     fontWeight:
                                                         ArFontWeight.bold,
                                                   ),
                                                 ),
+                                                // ArConnect tab warning removed — unnecessary UX friction
                                                 if (syncProgress.hasErrors) ...[
                                                   const SizedBox(height: 8),
                                                   Container(
@@ -449,11 +462,19 @@ class AppShellState extends State<AppShell> {
                                               ],
                                             ),
                                           ),
-                                          title: isCurrentProfileArConnect
-                                              ? appLocalizationsOf(context)
-                                                  .syncingPleaseRemainOnThisTab
-                                              : appLocalizationsOf(context)
-                                                  .syncingPleaseWait,
+                                          titleWidget: _syncStreamBuilder(
+                                            builderWithData: (syncProgress) =>
+                                                Text(
+                                              _getSyncTitle(
+                                                context,
+                                                syncProgress,
+                                                isCurrentProfileArConnect,
+                                              ),
+                                              style: typography.heading5(
+                                                fontWeight: ArFontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
                                           actions: [
                                             ModalAction(
                                               action: () {
@@ -501,6 +522,7 @@ class AppShellState extends State<AppShell> {
                   builder: (context, state) {
                     return Column(
                       children: [
+                        _buildSolanaMigrationBanner(context),
                         _buildAnnouncementBanner(
                         context,
                         message: '', // Configure message when enabling banner
@@ -540,6 +562,7 @@ class AppShellState extends State<AppShell> {
                 builder: (context, state) {
                   return Column(
                     children: [
+                      _buildSolanaMigrationBanner(context),
                       _buildAnnouncementBanner(
                         context,
                         message: '', // Configure message when enabling banner
@@ -568,6 +591,66 @@ class AppShellState extends State<AppShell> {
           );
         },
       );
+
+  Widget _buildSolanaMigrationBanner(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
+
+    return Container(
+      width: double.maxFinite,
+      color: colorTokens.containerL3,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Flexible(
+            child: RichText(
+              textAlign: TextAlign.center,
+              text: TextSpan(
+                style: typography.paragraphNormal(
+                  fontWeight: ArFontWeight.semiBold,
+                  color: colorTokens.textHigh,
+                ),
+                children: [
+                  const TextSpan(
+                    text:
+                        'Ar.io is migrating to Solana! Register before the June 1, 2026 snapshot! Manage your ArNS names at arns.ar.io. ',
+                  ),
+                  TextSpan(
+                    text: 'Learn More',
+                    style: typography
+                        .paragraphNormal(
+                          fontWeight: ArFontWeight.semiBold,
+                          color: colorTokens.textHigh,
+                        )
+                        .copyWith(
+                          decoration: TextDecoration.underline,
+                        ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () => openUrl(
+                            url: 'https://ar.io/solana-migration',
+                            webOnlyWindowName: '_blank',
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () => openUrl(
+              url: 'https://ar.io/solana-migration',
+              webOnlyWindowName: '_blank',
+            ),
+            child: ArDriveIcons.newWindow(
+              size: 16,
+              color: colorTokens.textHigh,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildAnnouncementBanner(
     BuildContext context, {
@@ -674,9 +757,55 @@ class AppShellState extends State<AppShell> {
   }) =>
       StreamBuilder<SyncProgress>(
         stream: context.read<SyncCubit>().syncProgressController.stream,
+        // Use current sync progress as initial data to prevent empty state flash
+        initialData: context.read<SyncCubit>().syncProgress,
         builder: (context, snapshot) =>
             snapshot.hasData ? builderWithData(snapshot.data!) : Container(),
       );
+
+  /// Returns the appropriate title for the sync modal based on sync type.
+  /// ArConnect warning is handled separately in the modal content.
+  String _getSyncTitle(
+    BuildContext context,
+    SyncProgress syncProgress,
+    bool isArConnect,
+  ) {
+    // Always show sync-specific title regardless of ArConnect status
+    if (syncProgress.isSingleDriveSync) {
+      return appLocalizationsOf(context).syncingSingleDrive;
+    } else {
+      return appLocalizationsOf(context).syncingAllDrives;
+    }
+  }
+
+  /// Returns the appropriate progress description for the sync modal.
+  String _getSyncProgressDescription(
+    BuildContext context,
+    SyncProgress syncProgress,
+  ) {
+    if (syncProgress.isSingleDriveSync) {
+      // Single drive sync - show drive name if available, otherwise fallback
+      if (syncProgress.driveName != null) {
+        return appLocalizationsOf(context).syncingDriveWithName(
+          syncProgress.driveName!,
+        );
+      } else {
+        return appLocalizationsOf(context).syncingOnlyOneDrive;
+      }
+    } else if (syncProgress.drivesCount > 1) {
+      // Multiple drives - show "X of Y Drives Synced"
+      return appLocalizationsOf(context).driveSyncedOfDrivesCount(
+        syncProgress.drivesSynced,
+        syncProgress.drivesCount,
+      );
+    } else if (syncProgress.drivesCount == 1) {
+      // Single drive in all-drives sync
+      return appLocalizationsOf(context).syncingOnlyOneDrive;
+    } else {
+      // drivesCount == 0, initial state
+      return '';
+    }
+  }
 
   void toggleProfileOverlay() =>
       setState(() => _showProfileOverlay = !_showProfileOverlay);

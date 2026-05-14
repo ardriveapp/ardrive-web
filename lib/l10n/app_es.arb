@@ -366,6 +366,18 @@
       }
     }
   },
+  "syncThisDrive": "Sincronizar esta unidad",
+  "@syncThisDrive": {
+    "description": "Menu option to sync only the current drive"
+  },
+  "deepSyncThisDrive": "Sincronización profunda de esta unidad",
+  "@deepSyncThisDrive": {
+    "description": "Menu option to deep sync only the current drive"
+  },
+  "syncAllDrivesOnLogin": "Sincronizar todas las unidades al iniciar sesión",
+  "@syncAllDrivesOnLogin": {
+    "description": "Toggle to enable/disable syncing all drives when logging in"
+  },
   "creatingDriveEmphasized": "CREANDO UNIDAD...",
   "@creatingDriveEmphasized": {
     "description": "The drive is being created. Emphasized with upper case"
@@ -503,6 +515,26 @@
   },
   "driveDoingInitialSetupMessage": "Tu disco está realizando la configuración inicial. Puede tardar unos minutos. Espera antes de realizar cualquier acción.",
   "@driveDoingInitialSetupMessage": {},
+  "driveNotSynced": "Unidad No Sincronizada",
+  "@driveNotSynced": {
+    "description": "Title shown when a drive has metadata but content has not been synced"
+  },
+  "driveNotSyncedDescription": "Esta unidad necesita ser sincronizada antes de poder ver su contenido. Sincroniza ahora para ver tus archivos y carpetas.",
+  "@driveNotSyncedDescription": {
+    "description": "Description shown when a drive has not been synced yet"
+  },
+  "syncThisDriveDescription": "Obtener los archivos y carpetas más recientes de esta unidad.",
+  "@syncThisDriveDescription": {
+    "description": "Description for the sync drive action card"
+  },
+  "syncAllDrives": "Sincronizar Todas las Unidades",
+  "@syncAllDrives": {
+    "description": "Button and title text for syncing all drives"
+  },
+  "syncAllDrivesDescription": "Sincroniza todas tus unidades a la vez para asegurarte de que todo el contenido esté actualizado.",
+  "@syncAllDrivesDescription": {
+    "description": "Description for the sync all drives action card"
+  },
   "driveID": "ID de la unidad",
   "@driveID": {
     "description": "The Drive-ID tag"
@@ -1266,6 +1298,14 @@
   "@newStringEmphasized": {
     "description": "New entity (folder, file, drive, manifest, attached drive). Emphasized with upper case"
   },
+  "createNew": "Crear Nuevo",
+  "@createNew": {
+    "description": "Tooltip for the New button to create new items"
+  },
+  "userProfile": "Perfil de Usuario",
+  "@userProfile": {
+    "description": "Tooltip for the user profile button"
+  },
   "next": "Siguiente",
   "@next": {
     "description": "Action of going to the next page"
@@ -1686,9 +1726,35 @@
   "@sync": {
     "description": "Sync button tooltip"
   },
+  "syncNow": "Sincronizar Ahora",
+  "@syncNow": {
+    "description": "Button text to sync an unsynced drive"
+  },
   "syncingOnlyOneDrive": "Sincronizando la unidad...",
   "@syncingOnlyOneDrive": {
     "description": "Show the message when the user has only one drive"
+  },
+  "syncingDriveWithName": "Sincronizando '{driveName}'...",
+  "@syncingDriveWithName": {
+    "description": "Show the message when syncing a specific drive by name",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "My Drive"
+      }
+    }
+  },
+  "syncingAllDrives": "Sincronizando Todas las Unidades",
+  "@syncingAllDrives": {
+    "description": "Title shown when syncing all user drives"
+  },
+  "syncingSingleDrive": "Sincronizando Unidad",
+  "@syncingSingleDrive": {
+    "description": "Title shown when syncing a single drive"
+  },
+  "loadingYourDrives": "Cargando tus unidades...",
+  "@loadingYourDrives": {
+    "description": "Title shown when loading drive metadata on login"
   },
   "syncingPleaseRemainOnThisTab": "Sincronizando... Por favor, permanece en esta pestaña.",
   "@syncingPleaseRemainOnThisTab": {

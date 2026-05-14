@@ -46,7 +46,7 @@ class Brand {
 class Login {
   const Login();
 
-  final String ardriveLogoOnboarding = 'assets/images/brand/2x.png';
+  final String ardriveLogoOnboarding = 'assets/images/brand/ArDrive.png';
   final String wanderLogo = 'assets/images/login/wander.svg';
   final String lattice = 'assets/images/login/lattice.svg';
   final String latticeLight = 'assets/images/login/lattice_light.svg';

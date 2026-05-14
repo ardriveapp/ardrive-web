@@ -9,11 +9,13 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 abstract class UserPreferencesRepository {
   Future<UserPreferences> load();
   Stream<UserPreferences> watch();
+  UserPreferences? get currentPreferences;
   Future<void> saveTheme(ArDriveThemes theme);
   Future<void> saveLastSelectedDriveId(String driveId);
   Future<void> saveShowHiddenFiles(bool showHiddenFiles);
   Future<void> clear();
   Future<void> saveUserHasHiddenItem(bool userHasHiddenDrive);
+  Future<void> saveSyncAllDrivesOnLogin(bool syncAllDrivesOnLogin);
 
   factory UserPreferencesRepository({
     LocalKeyValueStore? store,
@@ -33,6 +35,9 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
   final ThemeDetector _themeDetector;
   final ArDriveAuth _auth;
 
+  /// Serializes auth state operations to prevent race conditions
+  Future<void>? _authStateWork;
+
   _UserPreferencesRepository({
     LocalKeyValueStore? store,
     required ThemeDetector themeDetector,
@@ -42,15 +47,24 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
         _auth = auth,
         super() {
     _auth.onAuthStateChanged().listen((user) {
-      if (user == null) {
-        clear();
-      }
+      // Chain auth state operations to ensure ordered execution
+      _authStateWork = (_authStateWork ?? Future.value()).then((_) {
+        if (user == null) {
+          return clear();
+        } else {
+          // When user logs in, reload preferences to emit current values to stream
+          return load();
+        }
+      });
     });
   }
 
   UserPreferences? _currentUserPreferences;
   final StreamController<UserPreferences> _userPreferencesController =
       StreamController.broadcast();
+
+  @override
+  UserPreferences? get currentPreferences => _currentUserPreferences;
 
   @override
   Stream<UserPreferences> watch() {
@@ -65,12 +79,15 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
         _themeDetector.getOSDefaultTheme().name;
     final lastSelectedDriveId = _store!.getString('lastSelectedDriveId');
     final showHiddenFiles = _store!.getBool('showHiddenFiles') ?? false;
+    final syncAllDrivesOnLogin =
+        _store!.getBool('syncAllDrivesOnLogin') ?? true;
 
     _currentUserPreferences = UserPreferences(
       currentTheme: _parseThemeFromLocalStorage(currentTheme),
       lastSelectedDriveId: lastSelectedDriveId,
       showHiddenFiles: showHiddenFiles,
       userHasHiddenDrive: _store!.getBool('userHasHiddenDrive') ?? false,
+      syncAllDrivesOnLogin: syncAllDrivesOnLogin,
     );
 
     _userPreferencesController.sink.add(_currentUserPreferences!);
@@ -118,6 +135,16 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
     );
   }
 
+  @override
+  Future<void> saveSyncAllDrivesOnLogin(bool syncAllDrivesOnLogin) async {
+    await _updatePreference(
+      key: 'syncAllDrivesOnLogin',
+      value: syncAllDrivesOnLogin,
+      updateFunction: (value) =>
+          _currentUserPreferences!.copyWith(syncAllDrivesOnLogin: value),
+    );
+  }
+
   Future<LocalKeyValueStore> _getStore() async {
     _store ??= await LocalKeyValueStore.getInstance();
 
@@ -129,11 +156,20 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
     (await _getStore()).remove('lastSelectedDriveId');
     (await _getStore()).remove('showHiddenFiles');
     (await _getStore()).remove('userHasHiddenDrive');
+    // Note: syncAllDrivesOnLogin is NOT cleared - it's a global preference
+    // that should persist across sessions and logins
+
+    // If preferences haven't been loaded yet, load them first
+    if (_currentUserPreferences == null) {
+      await load();
+      return; // load() already emits to stream
+    }
 
     _currentUserPreferences = _currentUserPreferences!.copyWith(
       lastSelectedDriveId: null,
       showHiddenFiles: false,
       userHasHiddenDrive: false,
+      // Keep syncAllDrivesOnLogin unchanged
     );
 
     _userPreferencesController.sink.add(_currentUserPreferences!);
@@ -156,6 +192,11 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
     required T value,
     required UserPreferences Function(T) updateFunction,
   }) async {
+    // Ensure preferences are loaded before updating
+    if (_currentUserPreferences == null) {
+      await load();
+    }
+
     _currentUserPreferences = updateFunction(value);
 
     final store = await _getStore();
@@ -165,6 +206,11 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
       await store.putBool(key, value as bool);
     } else {
       throw ArgumentError('Unsupported type for preference value');
+    }
+
+    // Notify listeners after save completes
+    if (_currentUserPreferences != null) {
+      _userPreferencesController.sink.add(_currentUserPreferences!);
     }
   }
 }

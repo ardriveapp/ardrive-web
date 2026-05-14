@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 
 Future<void> showProgressDialog(
   BuildContext context, {
@@ -23,20 +25,30 @@ Future<void> showProgressDialog(
 class ProgressDialog extends StatelessWidget {
   const ProgressDialog({
     super.key,
-    required this.title,
+    this.title,
+    this.titleWidget,
     this.actions = const [],
     this.progressDescription,
     this.progressBar,
     this.percentageDetails,
     this.useNewArDriveUI = false,
-  });
+  })  : assert(title != null || titleWidget != null,
+            'Either title or titleWidget must be provided'),
+        assert(!(title != null && titleWidget != null),
+            'Provide only one of title or titleWidget, not both');
 
-  final String title;
+  /// The title text. Must not be provided if [titleWidget] is provided.
+  final String? title;
+
+  /// A widget to display as the title. Must not be provided if [title] is provided.
+  final Widget? titleWidget;
+
   final List<ModalAction> actions;
   final Widget? progressDescription;
   final Widget? progressBar;
   final Widget? percentageDetails;
   final bool useNewArDriveUI;
+
   @override
   Widget build(BuildContext context) {
     final content = Padding(
@@ -47,14 +59,15 @@ class ProgressDialog extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 32),
-              child: SizedBox(
-                width: 74,
-                height: 74,
-                child: CircularProgressIndicator(
-                  strokeWidth: 8,
-                ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              child: LottieBuilder.asset(
+                Resources.images.login.ardriveLoader,
+                filterQuality: FilterQuality.high,
+                frameRate: FrameRate.max,
+                addRepaintBoundary: true,
+                height: 75,
+                width: 75,
               ),
             ),
             if (progressDescription != null)
@@ -74,14 +87,17 @@ class ProgressDialog extends StatelessWidget {
 
     if (useNewArDriveUI) {
       return ArDriveStandardModalNew(
+        // title and titleWidget are mutually exclusive per constructor assertion
         title: title,
+        titleWidget: titleWidget,
         content: content,
         actions: actions,
       );
     }
 
+    // Legacy UI only supports title (not titleWidget)
     return ArDriveStandardModal(
-      title: title,
+      title: title ?? '',
       content: content,
       actions: actions,
     );

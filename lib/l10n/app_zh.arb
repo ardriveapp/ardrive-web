@@ -366,6 +366,18 @@
       }
     }
   },
+  "syncThisDrive": "同步此网盘",
+  "@syncThisDrive": {
+    "description": "Menu option to sync only the current drive"
+  },
+  "deepSyncThisDrive": "深度同步此网盘",
+  "@deepSyncThisDrive": {
+    "description": "Menu option to deep sync only the current drive"
+  },
+  "syncAllDrivesOnLogin": "登录时同步所有网盘",
+  "@syncAllDrivesOnLogin": {
+    "description": "Toggle to enable/disable syncing all drives when logging in"
+  },
   "creatingDriveEmphasized": "创建网盘中...",
   "@creatingDriveEmphasized": {
     "description": "The drive is being created. Emphasized with upper case"
@@ -503,6 +515,26 @@
   },
   "driveDoingInitialSetupMessage": "你的驱动正在进行初始设置。这可能需要几分钟。请在采取任何动作之前先等待。",
   "@driveDoingInitialSetupMessage": {},
+  "driveNotSynced": "网盘未同步",
+  "@driveNotSynced": {
+    "description": "Title shown when a drive has metadata but content has not been synced"
+  },
+  "driveNotSyncedDescription": "此网盘需要同步后才能查看其内容。立即同步以查看您的文件和文件夹。",
+  "@driveNotSyncedDescription": {
+    "description": "Description shown when a drive has not been synced yet"
+  },
+  "syncThisDriveDescription": "获取此网盘的最新文件和文件夹。",
+  "@syncThisDriveDescription": {
+    "description": "Description for the sync drive action card"
+  },
+  "syncAllDrives": "同步所有网盘",
+  "@syncAllDrives": {
+    "description": "Button and title text for syncing all drives"
+  },
+  "syncAllDrivesDescription": "一次同步所有网盘，确保所有内容都是最新的。",
+  "@syncAllDrivesDescription": {
+    "description": "Description for the sync all drives action card"
+  },
   "driveID": "网盘ID",
   "@driveID": {
     "description": "The Drive-ID tag"
@@ -1266,6 +1298,14 @@
   "@newStringEmphasized": {
     "description": "New entity (folder, file, drive, manifest, attached drive). Emphasized with upper case"
   },
+  "createNew": "新建",
+  "@createNew": {
+    "description": "Tooltip for the New button to create new items"
+  },
+  "userProfile": "用户资料",
+  "@userProfile": {
+    "description": "Tooltip for the user profile button"
+  },
   "next": "下一页",
   "@next": {
     "description": "Action of going to the next page"
@@ -1686,9 +1726,35 @@
   "@sync": {
     "description": "Sync button tooltip"
   },
+  "syncNow": "立即同步",
+  "@syncNow": {
+    "description": "Button text to sync an unsynced drive"
+  },
   "syncingOnlyOneDrive": "同步你的网盘中...",
   "@syncingOnlyOneDrive": {
     "description": "Show the message when the user has only one drive"
+  },
+  "syncingDriveWithName": "正在同步'{driveName}'...",
+  "@syncingDriveWithName": {
+    "description": "Show the message when syncing a specific drive by name",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "My Drive"
+      }
+    }
+  },
+  "syncingAllDrives": "正在同步所有网盘",
+  "@syncingAllDrives": {
+    "description": "Title shown when syncing all user drives"
+  },
+  "syncingSingleDrive": "正在同步网盘",
+  "@syncingSingleDrive": {
+    "description": "Title shown when syncing a single drive"
+  },
+  "loadingYourDrives": "正在加载您的网盘...",
+  "@loadingYourDrives": {
+    "description": "Title shown when loading drive metadata on login"
   },
   "syncingPleaseRemainOnThisTab": "同步中... 请留在本页面.",
   "@syncingPleaseRemainOnThisTab": {

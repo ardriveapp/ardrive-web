@@ -366,6 +366,18 @@
       }
     }
   },
+  "syncThisDrive": "इस ड्राइव को सिंक करें",
+  "@syncThisDrive": {
+    "description": "Menu option to sync only the current drive"
+  },
+  "deepSyncThisDrive": "इस ड्राइव को डीप सिंक करें",
+  "@deepSyncThisDrive": {
+    "description": "Menu option to deep sync only the current drive"
+  },
+  "syncAllDrivesOnLogin": "लॉगिन पर सभी ड्राइव सिंक करें",
+  "@syncAllDrivesOnLogin": {
+    "description": "Toggle to enable/disable syncing all drives when logging in"
+  },
   "creatingDriveEmphasized": "ड्राइव बनाया जा रहा है...",
   "@creatingDriveEmphasized": {
     "description": "The drive is being created. Emphasized with upper case"
@@ -503,6 +515,26 @@
   },
   "driveDoingInitialSetupMessage": "आपका ड्राइव इसका इनिशियल सेटअप कर रहा है. इसमें कुछ मिनट्स लग सकते हैं. कोई एक्शन लेने से पहले कृप्या इंतज़ार करें. ",
   "@driveDoingInitialSetupMessage": {},
+  "driveNotSynced": "ड्राइव सिंक नहीं हुई",
+  "@driveNotSynced": {
+    "description": "Title shown when a drive has metadata but content has not been synced"
+  },
+  "driveNotSyncedDescription": "इस ड्राइव की सामग्री देखने से पहले इसे सिंक करना आवश्यक है। अपनी फ़ाइलें और फ़ोल्डर देखने के लिए अभी सिंक करें।",
+  "@driveNotSyncedDescription": {
+    "description": "Description shown when a drive has not been synced yet"
+  },
+  "syncThisDriveDescription": "इस ड्राइव से नवीनतम फ़ाइलें और फ़ोल्डर प्राप्त करें।",
+  "@syncThisDriveDescription": {
+    "description": "Description for the sync drive action card"
+  },
+  "syncAllDrives": "सभी ड्राइव सिंक करें",
+  "@syncAllDrives": {
+    "description": "Button and title text for syncing all drives"
+  },
+  "syncAllDrivesDescription": "सभी सामग्री अप-टू-डेट रखने के लिए अपनी सभी ड्राइव एक साथ सिंक करें।",
+  "@syncAllDrivesDescription": {
+    "description": "Description for the sync all drives action card"
+  },
   "driveID": "ड्राइव ID",
   "@driveID": {
     "description": "The Drive-ID tag"
@@ -1266,6 +1298,14 @@
   "@newStringEmphasized": {
     "description": "New entity (folder, file, drive, manifest, attached drive). Emphasized with upper case"
   },
+  "createNew": "नया बनाएं",
+  "@createNew": {
+    "description": "Tooltip for the New button to create new items"
+  },
+  "userProfile": "उपयोगकर्ता प्रोफ़ाइल",
+  "@userProfile": {
+    "description": "Tooltip for the user profile button"
+  },
   "next": "अगला",
   "@next": {
     "description": "Action of going to the next page"
@@ -1686,9 +1726,35 @@
   "@sync": {
     "description": "Sync button tooltip"
   },
+  "syncNow": "अभी सिंक करें",
+  "@syncNow": {
+    "description": "Button text to sync an unsynced drive"
+  },
   "syncingOnlyOneDrive": "आपकी ड्राइव सिंक हो रही है...",
   "@syncingOnlyOneDrive": {
     "description": "Show the message when the user has only one drive"
+  },
+  "syncingDriveWithName": "'{driveName}' सिंक हो रहा है...",
+  "@syncingDriveWithName": {
+    "description": "Show the message when syncing a specific drive by name",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "My Drive"
+      }
+    }
+  },
+  "syncingAllDrives": "सभी ड्राइव सिंक हो रही हैं",
+  "@syncingAllDrives": {
+    "description": "Title shown when syncing all user drives"
+  },
+  "syncingSingleDrive": "ड्राइव सिंक हो रही है",
+  "@syncingSingleDrive": {
+    "description": "Title shown when syncing a single drive"
+  },
+  "loadingYourDrives": "आपकी ड्राइव लोड हो रही हैं...",
+  "@loadingYourDrives": {
+    "description": "Title shown when loading drive metadata on login"
   },
   "syncingPleaseRemainOnThisTab": "सिंक हो रही है... कृपया इस टैब पर बने रहें।",
   "@syncingPleaseRemainOnThisTab": {
