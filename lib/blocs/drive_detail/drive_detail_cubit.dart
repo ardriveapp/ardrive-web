@@ -719,8 +719,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       final rootFolderId = currentState.drive.rootFolderId;
 
       _isExplicitSync = true;
-      await _syncCubit.startSync();
-      _isExplicitSync = false;
+      try {
+        await _syncCubit.startSync();
+      } finally {
+        _isExplicitSync = false;
+      }
 
       if (isClosed || _driveId != driveId) return;
 
@@ -750,12 +753,15 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       final rootFolderId = state.drive.rootFolderId;
 
       _isExplicitSync = true;
-      emit(DriveDetailLoadInProgress());
-      await _syncCubit.startSyncForDrive(
-        driveId: driveId,
-        deepSync: false,
-      );
-      _isExplicitSync = false;
+      try {
+        emit(DriveDetailLoadInProgress());
+        await _syncCubit.startSyncForDrive(
+          driveId: driveId,
+          deepSync: false,
+        );
+      } finally {
+        _isExplicitSync = false;
+      }
 
       // Guard: Only proceed if sync completed successfully and we're still
       // viewing the same drive (user hasn't navigated away during sync)
