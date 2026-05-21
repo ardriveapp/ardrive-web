@@ -965,7 +965,7 @@ void main() {
         bloc.add(const LoginWithSolana());
       },
       expect: () => [
-        LoginShowLoader(),
+        const TypeMatcher<LoginShowBlockingDialog>(),
         LoginCloseBlockingDialog(),
         const TypeMatcher<PromptPassword>(),
       ],
@@ -992,7 +992,7 @@ void main() {
         bloc.add(const LoginWithSolana());
       },
       expect: () => [
-        LoginShowLoader(),
+        const TypeMatcher<LoginShowBlockingDialog>(),
         LoginCloseBlockingDialog(),
         predicate<CreateNewPassword>((cnp) {
           return cnp.showTutorials == true && cnp.showWalletCreated == false;
@@ -1021,7 +1021,7 @@ void main() {
         bloc.add(const LoginWithSolana());
       },
       expect: () => [
-        LoginShowLoader(),
+        const TypeMatcher<LoginShowBlockingDialog>(),
         LoginCloseBlockingDialog(),
         predicate<CreateNewPassword>((cnp) {
           return cnp.showTutorials == false && cnp.showWalletCreated == false;

@@ -984,7 +984,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       }
 
       // 3. Derive wallet and check account (show themed loader)
-      emit(LoginShowLoader());
+      emit(const LoginShowBlockingDialog(
+          message: 'Setting up your account...'));
 
       final mnemonic = await deriveMnemonicFromSolanaSignature(signature);
       final wallet = await _walletFromMnemonic(mnemonic);
