@@ -153,3 +153,13 @@ class CompleteWalletGeneration extends LoginEvent {
 class LoginWithMetamask extends LoginEvent {
   const LoginWithMetamask();
 }
+
+class LoginWithSolana extends LoginEvent {
+  const LoginWithSolana({this.provider});
+
+  /// Optional provider preference: 'phantom', 'solflare', or null for auto.
+  final String? provider;
+
+  @override
+  List<Object> get props => [provider ?? ''];
+}

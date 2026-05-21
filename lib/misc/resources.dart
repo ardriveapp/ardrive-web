@@ -65,6 +65,9 @@ class Login {
   final String aboutSecurity = 'assets/images/login/about_security.png';
 
   final String metamask = 'assets/images/login/metamask_logo_flat.svg';
+  final String solana = 'assets/images/login/solana_logo.png';
+  final String phantom = 'assets/images/login/phantom_logo.svg';
+  final String solflare = 'assets/images/login/solflare_logo.png';
   final String walletUpload = 'assets/images/login/wallet_upload.svg';
 
   final BentoBox bentoBox = const BentoBox();

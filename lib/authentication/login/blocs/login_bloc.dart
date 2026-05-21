@@ -16,6 +16,8 @@ import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/services/ethereum/ethereum_wallet.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider_wallet.dart';
+import 'package:ardrive/services/solana/solana_identity.dart';
+import 'package:ardrive/services/solana/solana_provider.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
@@ -35,20 +37,28 @@ import 'package:webthree/credentials.dart' as web3credentials;
 part 'login_event.dart';
 part 'login_state.dart';
 
+typedef WalletFromMnemonic = Future<Wallet> Function(String mnemonic);
+
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
   final ArDriveAuth _arDriveAuth;
   final ArConnectService _arConnectService;
   final EthereumProviderService _ethereumProviderService;
+  final SolanaProviderService _solanaProviderService;
   final TurboUploadService _turboUploadService;
   final ArweaveService _arweaveService;
   final DownloadService _downloadService;
   final ProfileCubit _profileCubit;
   final ConfigService _configService;
+  final WalletFromMnemonic _walletFromMnemonic;
 
   bool ignoreNextWaletSwitch = false;
 
   @visibleForTesting
   String? lastKnownWalletAddress;
+
+  /// The external wallet address used for login (e.g., Solana public key).
+  /// Stored in the profile for display purposes.
+  String? _sourceWalletAddress;
 
   @visibleForTesting
   ProfileType? profileType;
@@ -60,20 +70,24 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     required ArDriveAuth arDriveAuth,
     required ArConnectService arConnectService,
     required EthereumProviderService ethereumProviderService,
+    required SolanaProviderService solanaProviderService,
     required TurboUploadService turboUploadService,
     required ArweaveService arweaveService,
     required DownloadService downloadService,
     required UserRepository userRepository,
     required ProfileCubit profileCubit,
     required ConfigService configService,
+    WalletFromMnemonic? walletFromMnemonic,
   })  : _arDriveAuth = arDriveAuth,
         _arConnectService = arConnectService,
         _ethereumProviderService = ethereumProviderService,
+        _solanaProviderService = solanaProviderService,
         _arweaveService = arweaveService,
         _turboUploadService = turboUploadService,
         _downloadService = downloadService,
         _profileCubit = profileCubit,
         _configService = configService,
+        _walletFromMnemonic = walletFromMnemonic ?? generateWalletFromMnemonic,
         super(LoginLoading()) {
     on<LoginEvent>(_onLoginEvent);
     _listenToWalletChange();
@@ -82,6 +96,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   get isArConnectAvailable => _arConnectService.isExtensionPresent();
 
   get isMetamaskAvailable => _ethereumProviderService.isExtensionPresent();
+
+  get isSolanaAvailable => _solanaProviderService.isExtensionPresent();
 
   Future<void> _onLoginEvent(LoginEvent event, Emitter<LoginState> emit) async {
     if (event is SelectLoginFlow) {
@@ -114,6 +130,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _handleCompleteWalletGenerationEvent(event, emit);
     } else if (event is LoginWithMetamask) {
       await _handleLoginWithMetamaskEvent(event, emit);
+    } else if (event is LoginWithSolana) {
+      await _handleLoginWithSolanaEvent(event, emit);
     }
   }
 
@@ -170,6 +188,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       emit(LoginLoadingIfUserAlreadyExists());
 
       profileType = ProfileType.json;
+      _sourceWalletAddress = null;
 
       final wallet =
           Wallet.fromJwk(json.decode(await event.walletFile.readAsString()));
@@ -588,6 +607,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   ) async {
     final previousState = state;
     usingSeedphrase = false;
+    _sourceWalletAddress = null;
 
     final arconnectVersionSupported =
         await _arConnectService.isWalletVersionSupported();
@@ -659,6 +679,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     }
 
     usingSeedphrase = false;
+    _sourceWalletAddress = null;
 
     emit(const LoginLanding());
   }
@@ -702,6 +723,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       wallet,
       password,
       profileType,
+      sourceWalletAddress: _sourceWalletAddress,
     );
 
     if (showTutorials) {
@@ -841,6 +863,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   Future<void> _handleLoginWithMetamaskEvent(
       LoginWithMetamask event, Emitter<LoginState> emit) async {
     profileType = ProfileType.json;
+    _sourceWalletAddress = null;
     if (!_ethereumProviderService.isExtensionPresent()) {
       emit(const LoginFailure('Metamask not available'));
       return;
@@ -922,6 +945,74 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           derivedEthWallet: derivedEthWallet,
           showTutorials: true,
           showWalletCreated: true));
+    }
+  }
+
+  Future<void> _handleLoginWithSolanaEvent(
+    LoginWithSolana event,
+    Emitter<LoginState> emit,
+  ) async {
+    final previousState = state;
+
+    if (!_solanaProviderService.isExtensionPresent()) {
+      emit(const LoginFailure(
+          'No Solana wallet detected. Please install Phantom or Solflare.'));
+      emit(previousState);
+      return;
+    }
+
+    try {
+      // 1. Connect wallet (Phantom/Solflare handles its own popup)
+      final connection =
+          await _solanaProviderService.connect(provider: event.provider);
+
+      if (connection == null) {
+        emit(previousState);
+        return;
+      }
+
+      _sourceWalletAddress = connection.address;
+
+      // 2. Sign identity message (wallet extension shows its own popup)
+      final Uint8List signature;
+      try {
+        signature = await _solanaProviderService
+            .signMessage(solanaIdentityMessage);
+      } catch (e) {
+        emit(previousState);
+        return;
+      }
+
+      // 3. Derive wallet and check account (show themed loader)
+      emit(LoginShowLoader());
+
+      final mnemonic = await deriveMnemonicFromSolanaSignature(signature);
+      final wallet = await _walletFromMnemonic(mnemonic);
+
+      // 4. From here, it's a standard JWK wallet
+      profileType = ProfileType.json;
+
+      // 5. Check if user has existing drives
+      if (await _arDriveAuth.userHasPassword(wallet)) {
+        emit(LoginCloseBlockingDialog());
+        emit(PromptPassword(wallet: wallet, showWalletCreated: false));
+      } else {
+        final hasDrives = await _arDriveAuth.isExistingUser(wallet);
+        emit(LoginCloseBlockingDialog());
+        emit(CreateNewPassword(
+          wallet: wallet,
+          showTutorials: !hasDrives,
+          showWalletCreated: false,
+        ));
+      }
+    } catch (e) {
+      emit(LoginCloseBlockingDialog());
+      if (e is AuthenticationGatewayException) {
+        emit(GatewayLoginFailure(e, _getGatewayUrl()));
+      } else {
+        emit(LoginFailure(e));
+      }
+      emit(previousState);
     }
   }
 

@@ -9,12 +9,16 @@ class TruncatedAddress extends StatelessWidget {
   final int offsetStart;
   final int offsetEnd;
 
+  /// Custom explorer URL. If null, defaults to Arweave viewblock.
+  final String? explorerUrl;
+
   const TruncatedAddress({
     super.key,
     required this.walletAddress,
     this.fontSize,
     this.offsetStart = 6,
     this.offsetEnd = 5,
+    this.explorerUrl,
   });
 
   @override
@@ -22,13 +26,14 @@ class TruncatedAddress extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
+    final url = explorerUrl ??
+        'https://viewblock.io/arweave/address/$walletAddress';
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: () {
-          openUrl(
-            url: 'https://viewblock.io/arweave/address/$walletAddress',
-          );
+          openUrl(url: url);
         },
         child: Text(
           truncateString(

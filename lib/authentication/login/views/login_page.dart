@@ -18,6 +18,7 @@ import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/authentication/biometric_permission_dialog.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider.dart';
+import 'package:ardrive/services/solana/solana_provider.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
@@ -69,6 +70,7 @@ class _LoginPageState extends State<LoginPage> {
     _loginBloc = LoginBloc(
       arConnectService: ArConnectService(),
       ethereumProviderService: EthereumProviderService(),
+      solanaProviderService: SolanaProviderService(),
       turboUploadService: context.read<TurboUploadService>(),
       arweaveService: arweaveService,
       downloadService: downloadService,
@@ -650,6 +652,7 @@ Widget _buildContent(
           key: const Key('promptWalletView'),
           isArConnectAvailable: loginBloc.isArConnectAvailable,
           isMetamaskAvailable: loginBloc.isMetamaskAvailable,
+          isSolanaAvailable: loginBloc.isSolanaAvailable,
           existingUserFlow: loginBloc.existingUserFlow,
         );
       }

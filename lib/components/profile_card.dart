@@ -94,7 +94,7 @@ class _ProfileCardState extends State<ProfileCard> {
     required bool isMobile,
   }) {
     final state = context.read<ProfileCubit>().state as ProfileLoggedIn;
-    final walletAddress = state.user.walletAddress;
+    final walletAddress = state.user.displayAddress;
 
     return ArDriveOverlay(
       onVisibleChange: (visible) {
@@ -458,7 +458,7 @@ class _ProfileCardState extends State<ProfileCard> {
   }
 
   Widget _buildWalletAddressRow(BuildContext context, ProfileLoggedIn state) {
-    final walletAddress = state.user.walletAddress;
+    final walletAddress = state.user.displayAddress;
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Padding(
@@ -473,6 +473,9 @@ class _ProfileCardState extends State<ProfileCard> {
                 TruncatedAddress(
                   walletAddress: walletAddress,
                   fontSize: 18,
+                  explorerUrl: state.user.sourceWalletAddress != null
+                      ? 'https://solscan.io/account/$walletAddress'
+                      : null,
                 ),
               const Spacer(),
               if (state.user.profileType != ProfileType.arConnect)

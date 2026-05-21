@@ -20,6 +20,7 @@ void main() {
   late ArDriveAuth mockArDriveAuth;
   late ArConnectService mockArConnectService;
   late EthereumProviderService mockEthereumProviderService;
+  late SolanaProviderService mockSolanaProviderService;
   late UserRepository mockUserRepository;
   late TurboUploadService mockTurboUploadService;
 
@@ -37,6 +38,7 @@ void main() {
       arDriveAuth: mockArDriveAuth,
       arConnectService: mockArConnectService,
       ethereumProviderService: mockEthereumProviderService,
+      solanaProviderService: mockSolanaProviderService,
       turboUploadService: mockTurboUploadService,
       arweaveService: mockArweaveService,
       downloadService: mockDownloadService,
@@ -50,6 +52,7 @@ void main() {
     mockArDriveAuth = MockArDriveAuth();
     mockArConnectService = MockArConnectService();
     mockEthereumProviderService = MockEthereumProviderService();
+    mockSolanaProviderService = MockSolanaProviderService();
     mockTurboUploadService = MockTurboUploadService();
     mockUserRepository = MockUserRepository();
     mockDownloadService = MockDownloadService();
@@ -71,6 +74,7 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          solanaProviderService: mockSolanaProviderService,
           turboUploadService: mockTurboUploadService,
           arweaveService: mockArweaveService,
           downloadService: mockDownloadService,
@@ -108,6 +112,7 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          solanaProviderService: mockSolanaProviderService,
           turboUploadService: mockTurboUploadService,
           arweaveService: mockArweaveService,
           downloadService: mockDownloadService,
@@ -147,6 +152,7 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          solanaProviderService: mockSolanaProviderService,
           turboUploadService: mockTurboUploadService,
           arweaveService: mockArweaveService,
           downloadService: mockDownloadService,
@@ -257,6 +263,7 @@ void main() {
           arDriveAuth: mockArDriveAuth,
           arConnectService: mockArConnectService,
           ethereumProviderService: mockEthereumProviderService,
+          solanaProviderService: mockSolanaProviderService,
           turboUploadService: mockTurboUploadService,
           arweaveService: mockArweaveService,
           downloadService: mockDownloadService,
@@ -910,6 +917,169 @@ void main() {
         const TypeMatcher<LoginFailure>(),
         const PromptPassword(),
       ],
+    );
+  });
+
+  group('testing LoginBloc LoginWithSolana event', () {
+    final mockSignature = Uint8List.fromList(List.filled(64, 42));
+
+    LoginBloc createSolanaBloc() {
+      return LoginBloc(
+        arDriveAuth: mockArDriveAuth,
+        arConnectService: mockArConnectService,
+        ethereumProviderService: mockEthereumProviderService,
+        solanaProviderService: mockSolanaProviderService,
+        turboUploadService: mockTurboUploadService,
+        arweaveService: mockArweaveService,
+        downloadService: mockDownloadService,
+        userRepository: mockUserRepository,
+        profileCubit: mockProfileCubit,
+        configService: mockConfigService,
+        walletFromMnemonic: (_) async => wallet,
+      );
+    }
+
+    setUp(() {
+      when(() => mockArConnectService.isExtensionPresent())
+          .thenAnswer((_) => false);
+      when(() => mockSolanaProviderService.isExtensionPresent())
+          .thenReturn(true);
+    });
+
+    blocTest(
+      'should emit prompt password when Solana user is an existing one',
+      build: () => createSolanaBloc(),
+      setUp: () {
+        when(() => mockSolanaProviderService.connect(
+                provider: any(named: 'provider')))
+            .thenAnswer((_) async => const SolanaConnection(
+                  address: 'SoLAddr123',
+                  providerType: 'phantom',
+                ));
+        when(() => mockSolanaProviderService.signMessage(any()))
+            .thenAnswer((_) async => mockSignature);
+        when(() => mockArDriveAuth.userHasPassword(any()))
+            .thenAnswer((_) async => true);
+      },
+      act: (bloc) async {
+        bloc.add(const LoginWithSolana());
+      },
+      expect: () => [
+        LoginShowLoader(),
+        LoginCloseBlockingDialog(),
+        const TypeMatcher<PromptPassword>(),
+      ],
+    );
+
+    blocTest(
+      'should emit create new password with tutorials when Solana user is brand new',
+      build: () => createSolanaBloc(),
+      setUp: () {
+        when(() => mockSolanaProviderService.connect(
+                provider: any(named: 'provider')))
+            .thenAnswer((_) async => const SolanaConnection(
+                  address: 'SoLAddr123',
+                  providerType: 'phantom',
+                ));
+        when(() => mockSolanaProviderService.signMessage(any()))
+            .thenAnswer((_) async => mockSignature);
+        when(() => mockArDriveAuth.userHasPassword(any()))
+            .thenAnswer((_) async => false);
+        when(() => mockArDriveAuth.isExistingUser(any()))
+            .thenAnswer((_) async => false);
+      },
+      act: (bloc) async {
+        bloc.add(const LoginWithSolana());
+      },
+      expect: () => [
+        LoginShowLoader(),
+        LoginCloseBlockingDialog(),
+        predicate<CreateNewPassword>((cnp) {
+          return cnp.showTutorials == true && cnp.showWalletCreated == false;
+        }),
+      ],
+    );
+
+    blocTest(
+      'should emit create new password without tutorials when Solana user has public drives',
+      build: () => createSolanaBloc(),
+      setUp: () {
+        when(() => mockSolanaProviderService.connect(
+                provider: any(named: 'provider')))
+            .thenAnswer((_) async => const SolanaConnection(
+                  address: 'SoLAddr123',
+                  providerType: 'phantom',
+                ));
+        when(() => mockSolanaProviderService.signMessage(any()))
+            .thenAnswer((_) async => mockSignature);
+        when(() => mockArDriveAuth.userHasPassword(any()))
+            .thenAnswer((_) async => false);
+        when(() => mockArDriveAuth.isExistingUser(any()))
+            .thenAnswer((_) async => true);
+      },
+      act: (bloc) async {
+        bloc.add(const LoginWithSolana());
+      },
+      expect: () => [
+        LoginShowLoader(),
+        LoginCloseBlockingDialog(),
+        predicate<CreateNewPassword>((cnp) {
+          return cnp.showTutorials == false && cnp.showWalletCreated == false;
+        }),
+      ],
+    );
+
+    blocTest(
+      'should emit failure when no Solana wallet is detected',
+      build: () => createSolanaBloc(),
+      setUp: () {
+        when(() => mockSolanaProviderService.isExtensionPresent())
+            .thenReturn(false);
+      },
+      act: (bloc) async {
+        bloc.emit(const PromptPassword());
+        bloc.add(const LoginWithSolana());
+      },
+      expect: () => [
+        const PromptPassword(),
+        const TypeMatcher<LoginFailure>(),
+        const PromptPassword(),
+      ],
+    );
+
+    blocTest(
+      'should stay on current state when user rejects wallet connection',
+      build: () => createSolanaBloc(),
+      setUp: () {
+        when(() => mockSolanaProviderService.connect(
+                provider: any(named: 'provider')))
+            .thenAnswer((_) async => null);
+      },
+      act: (bloc) async {
+        bloc.add(const LoginWithSolana());
+      },
+      // No state changes — handler silently returns to previous state
+      // (LoginLoading is the initial state, same as previous, so deduplicated)
+      expect: () => [LoginLoading()],
+    );
+
+    blocTest(
+      'should stay on current state when user rejects signature',
+      build: () => createSolanaBloc(),
+      setUp: () {
+        when(() => mockSolanaProviderService.connect(
+                provider: any(named: 'provider')))
+            .thenAnswer((_) async => const SolanaConnection(
+                  address: 'SoLAddr123',
+                  providerType: 'phantom',
+                ));
+        when(() => mockSolanaProviderService.signMessage(any()))
+            .thenThrow(Exception('User rejected signature request'));
+      },
+      act: (bloc) async {
+        bloc.add(const LoginWithSolana());
+      },
+      expect: () => [LoginLoading()],
     );
   });
 }

@@ -15,6 +15,14 @@ abstract class User with EquatableMixin {
   abstract final String? ioTokens;
   abstract final bool errorFetchingIOTokens;
 
+  /// The external wallet address that was used to derive this profile
+  /// (e.g., a Solana public key). Null for native Arweave wallets.
+  abstract final String? sourceWalletAddress;
+
+  /// Returns the user-facing address: the source wallet address (e.g. Solana)
+  /// if available, otherwise the Arweave address.
+  String get displayAddress => sourceWalletAddress ?? walletAddress;
+
   factory User({
     required String password,
     required Wallet wallet,
@@ -24,6 +32,7 @@ abstract class User with EquatableMixin {
     required ProfileType profileType,
     String? ioTokens,
     required bool errorFetchingIOTokens,
+    String? sourceWalletAddress,
   }) =>
       _User(
         password: password,
@@ -34,6 +43,7 @@ abstract class User with EquatableMixin {
         profileType: profileType,
         ioTokens: ioTokens,
         errorFetchingIOTokens: errorFetchingIOTokens,
+        sourceWalletAddress: sourceWalletAddress,
       );
 
   User copyWith({
@@ -45,6 +55,7 @@ abstract class User with EquatableMixin {
     ProfileType? profileType,
     String? ioTokens,
     bool? errorFetchingIOTokens,
+    String? sourceWalletAddress,
   });
 }
 
@@ -65,6 +76,11 @@ class _User implements User {
   final String? ioTokens;
   @override
   final bool errorFetchingIOTokens;
+  @override
+  final String? sourceWalletAddress;
+
+  @override
+  String get displayAddress => sourceWalletAddress ?? walletAddress;
 
   _User({
     required this.password,
@@ -75,6 +91,7 @@ class _User implements User {
     required this.profileType,
     this.ioTokens,
     required this.errorFetchingIOTokens,
+    this.sourceWalletAddress,
   });
 
   @override
@@ -86,6 +103,7 @@ class _User implements User {
         profileType,
         wallet,
         ioTokens,
+        sourceWalletAddress,
       ];
 
   @override
@@ -104,6 +122,7 @@ class _User implements User {
     ProfileType? profileType,
     String? ioTokens,
     bool? errorFetchingIOTokens,
+    String? sourceWalletAddress,
   }) {
     return _User(
       password: password ?? this.password,
@@ -115,6 +134,7 @@ class _User implements User {
       ioTokens: ioTokens ?? this.ioTokens,
       errorFetchingIOTokens:
           errorFetchingIOTokens ?? this.errorFetchingIOTokens,
+      sourceWalletAddress: sourceWalletAddress ?? this.sourceWalletAddress,
     );
   }
 }
