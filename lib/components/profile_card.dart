@@ -459,43 +459,59 @@ class _ProfileCardState extends State<ProfileCard> {
   }
 
   Widget _buildWalletAddressRow(BuildContext context, ProfileLoggedIn state) {
-    final walletAddress = state.user.displayAddress;
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final hasSolana = state.user.sourceWalletAddress != null;
+    final solanaAddress = state.user.sourceWalletAddress;
+    final arweaveAddress = state.user.walletAddress;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 8),
-          Row(
-            children: [
-              if (walletAddress.isNotEmpty)
+          if (hasSolana) ...[
+            _WalletAddressLine(
+              label: 'SOL',
+              address: solanaAddress!,
+              explorerUrl: 'https://solscan.io/account/$solanaAddress',
+            ),
+            const SizedBox(height: 4),
+            _WalletAddressLine(
+              label: 'AR',
+              address: arweaveAddress,
+              explorerUrl:
+                  'https://viewblock.io/arweave/address/$arweaveAddress',
+            ),
+          ] else ...[
+            Row(
+              children: [
                 TruncatedAddress(
-                  walletAddress: walletAddress,
+                  walletAddress: arweaveAddress,
                   fontSize: 18,
-                  explorerUrl: state.user.sourceWalletAddress != null
-                      ? 'https://solscan.io/account/$walletAddress'
-                      : null,
                 ),
-              const Spacer(),
-              if (state.user.profileType != ProfileType.arConnect)
-                ArDriveIconButton(
-                  icon: ArDriveIcons.download(
-                    color: colorTokens.textHigh,
-                    size: 21,
-                  ),
-                  onPressed: () {
-                    showDownloadWalletModal(context);
-                  },
+                const Spacer(),
+                CopyButton(
+                  size: 21,
+                  text: arweaveAddress,
+                  showCopyText: false,
                 ),
-              CopyButton(
-                size: 21,
-                text: walletAddress,
-                showCopyText: false,
+              ],
+            ),
+          ],
+          if (state.user.profileType != ProfileType.arConnect)
+            Align(
+              alignment: Alignment.centerRight,
+              child: ArDriveIconButton(
+                icon: ArDriveIcons.download(
+                  color: colorTokens.textHigh,
+                  size: 21,
+                ),
+                onPressed: () {
+                  showDownloadWalletModal(context);
+                },
               ),
-            ],
-          ),
+            ),
         ],
       ),
     );
@@ -1025,6 +1041,50 @@ String getTruncatedWalletAddress(
     offsetStart: offsetStart,
     offsetEnd: offsetEnd,
   );
+}
+
+class _WalletAddressLine extends StatelessWidget {
+  final String label;
+  final String address;
+  final String explorerUrl;
+
+  const _WalletAddressLine({
+    required this.label,
+    required this.address,
+    required this.explorerUrl,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return Row(
+      children: [
+        SizedBox(
+          width: 32,
+          child: Text(
+            label,
+            style: typography.paragraphSmall(
+              color: colorTokens.textLow,
+              fontWeight: ArFontWeight.bold,
+            ),
+          ),
+        ),
+        Expanded(
+          child: TruncatedAddress(
+            walletAddress: address,
+            explorerUrl: explorerUrl,
+          ),
+        ),
+        CopyButton(
+          size: 18,
+          text: address,
+          showCopyText: false,
+        ),
+      ],
+    );
+  }
 }
 
 class _WalletIndicatorDot extends StatelessWidget {
