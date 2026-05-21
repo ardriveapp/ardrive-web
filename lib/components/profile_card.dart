@@ -20,6 +20,7 @@ import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/components/turbo_balance_widget.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
+import 'package:ardrive/user/user.dart';
 import 'package:ardrive/user/balance/user_balance_bloc.dart';
 import 'package:ardrive/user/download_wallet/download_wallet_modal.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
@@ -115,7 +116,7 @@ class _ProfileCardState extends State<ProfileCard> {
         state,
         isMobile: isMobile,
       ),
-      child: _buildProfileCardHeader(context, walletAddress),
+      child: _buildProfileCardHeader(context, walletAddress, state.user),
     );
   }
 
@@ -654,9 +655,11 @@ class _ProfileCardState extends State<ProfileCard> {
     );
   }
 
-  Widget _buildProfileCardHeader(BuildContext context, String walletAddress) {
+  Widget _buildProfileCardHeader(
+      BuildContext context, String walletAddress, User user) {
     return ProfileCardHeader(
       walletAddress: walletAddress,
+      walletIndicatorColor: getWalletIndicatorColor(user),
       onPressed: () {
         setState(() {
           _showProfileCard = !_showProfileCard;
@@ -776,6 +779,9 @@ class ProfileCardHeader extends StatelessWidget {
   final Function()? onClickLogout;
   final String? logoutTooltip;
 
+  /// Colored indicator dot for wallet type.
+  final Color? walletIndicatorColor;
+
   const ProfileCardHeader({
     super.key,
     required this.walletAddress,
@@ -784,6 +790,7 @@ class ProfileCardHeader extends StatelessWidget {
     this.hasLogoutButton = false,
     this.onClickLogout,
     this.logoutTooltip,
+    this.walletIndicatorColor,
   });
 
   @override
@@ -878,6 +885,8 @@ class ProfileCardHeader extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              if (walletIndicatorColor != null)
+                _WalletIndicatorDot(color: walletIndicatorColor!),
               Flexible(
                 child: Text(
                   isExpanded ? state.walletAddress! : truncatedWalletAddress,
@@ -927,6 +936,8 @@ class ProfileCardHeader extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (walletIndicatorColor != null)
+                  _WalletIndicatorDot(color: walletIndicatorColor!),
                 if (icon != null) icon,
                 Flexible(
                   child: SizedBox(
@@ -1014,4 +1025,36 @@ String getTruncatedWalletAddress(
     offsetStart: offsetStart,
     offsetEnd: offsetEnd,
   );
+}
+
+class _WalletIndicatorDot extends StatelessWidget {
+  final Color color;
+
+  const _WalletIndicatorDot({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 6.0),
+      child: Container(
+        width: 8,
+        height: 8,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+        ),
+      ),
+    );
+  }
+}
+
+/// Returns the wallet indicator color based on the user's profile.
+/// Purple for Solana, white for Arweave-based wallets.
+Color getWalletIndicatorColor(User user) {
+  if (user.sourceWalletAddress != null) {
+    // Solana-derived wallet
+    return const Color(0xFF9945FF);
+  }
+  // Arweave (ArConnect, JSON, MetaMask-derived)
+  return const Color(0xFFFFFFFF);
 }
