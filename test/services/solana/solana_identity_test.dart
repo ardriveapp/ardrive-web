@@ -32,6 +32,17 @@ void main() {
       expect(mnemonic1, isNot(equals(mnemonic2)));
     });
 
+    test('throws ArgumentError for wrong signature length', () {
+      expect(
+        () => deriveMnemonicFromSolanaSignature(Uint8List(32)),
+        throwsArgumentError,
+      );
+      expect(
+        () => deriveMnemonicFromSolanaSignature(Uint8List(0)),
+        throwsArgumentError,
+      );
+    });
+
     test('solanaIdentityMessage contains ArDrive Identity v1', () {
       expect(solanaIdentityMessage, contains('ArDrive Identity v1'));
       expect(solanaIdentityMessage, contains('gateway you trust'));

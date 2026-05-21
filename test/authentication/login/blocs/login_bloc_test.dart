@@ -1058,8 +1058,6 @@ void main() {
       act: (bloc) async {
         bloc.add(const LoginWithSolana());
       },
-      // No state changes — handler silently returns to previous state
-      // (LoginLoading is the initial state, same as previous, so deduplicated)
       expect: () => [LoginLoading()],
     );
 

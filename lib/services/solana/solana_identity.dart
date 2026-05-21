@@ -19,6 +19,11 @@ const solanaIdentityMessage =
 /// Ed25519 signatures are deterministic (RFC 8032), so the same wallet
 /// always produces the same mnemonic → same Arweave identity.
 Future<String> deriveMnemonicFromSolanaSignature(Uint8List signature) async {
+  if (signature.length != 64) {
+    throw ArgumentError(
+      'Expected 64-byte Ed25519 signature, got ${signature.length} bytes',
+    );
+  }
   final signatureSha256 = await sha256.hash(signature);
   final halfSignature = signatureSha256.bytes.sublist(0, 16);
   return bip39.entropyToMnemonic(hex.encode(halfSignature));
