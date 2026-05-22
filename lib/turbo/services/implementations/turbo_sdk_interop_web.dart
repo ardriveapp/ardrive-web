@@ -177,7 +177,7 @@ Future<Object> createUnauthenticatedTurbo({
   String? uploadServiceUrl,
   String? token,
 }) async {
-  _ensureSDKLoaded();
+  await ensureSDKLoaded();
 
   final config = TurboConfigJS(
     gatewayUrl: gatewayUrl,
@@ -201,7 +201,7 @@ Future<Object> createAuthenticatedTurbo({
   String? uploadServiceUrl,
   String? token,
 }) async {
-  _ensureSDKLoaded();
+  await ensureSDKLoaded();
 
   // Build service config objects as expected by the SDK
   final paymentServiceConfig = paymentServiceUrl != null
@@ -233,7 +233,7 @@ Future<Object> createAuthenticatedTurboWithWalletAdapter({
   String? uploadServiceUrl,
   required String token,
 }) async {
-  _ensureSDKLoaded();
+  await ensureSDKLoaded();
 
   // Build service config objects as expected by the SDK
   final paymentServiceConfig = paymentServiceUrl != null
@@ -269,7 +269,7 @@ Future<Object> createAuthenticatedTurboWithSolanaAdapter({
   String? paymentServiceUrl,
   String? uploadServiceUrl,
 }) async {
-  _ensureSDKLoaded();
+  await ensureSDKLoaded();
 
   // Build service config objects as expected by the SDK
   final paymentServiceConfig = paymentServiceUrl != null
@@ -334,33 +334,48 @@ Future<Object> submitFundTransaction(
   return promiseToFuture(result);
 }
 
-/// Convert token amounts using SDK helpers
+/// Convert token amounts using SDK helpers.
+/// These assume ensureSDKLoaded() was already called earlier in the flow
+/// (e.g., by createAuthenticatedTurbo or createUnauthenticatedTurbo).
 Object convertARToTokenAmount(double amount) {
-  _ensureSDKLoaded();
   return arToTokenAmount(amount);
 }
 
 Object convertARIOToTokenAmount(double amount) {
-  _ensureSDKLoaded();
   return arIOToTokenAmount(amount);
 }
 
 Object convertETHToTokenAmount(double amount) {
-  _ensureSDKLoaded();
   return ethToTokenAmount(amount);
 }
 
 Object convertSOLToTokenAmount(double amount) {
-  _ensureSDKLoaded();
   return solToTokenAmount(amount);
 }
 
-/// Ensure the SDK is loaded before using it
-void _ensureSDKLoaded() {
+/// Ensure the SDK is loaded before using it.
+/// Lazily loads the Turbo SDK on first access.
+Future<void> ensureSDKLoaded() async {
+  if (isTurboSDKLoaded) return;
+
+  // Trigger lazy load via LazyLoader
+  try {
+    final lazyLoader = getProperty(globalThis, 'LazyLoader');
+    if (lazyLoader != null) {
+      final promise = callMethod(lazyLoader, 'loadTurboSDK', []);
+      await promiseToFuture(promise);
+    }
+  } catch (_) {
+    // LazyLoader may not be available (non-web or test)
+  }
+
   if (!isTurboSDKLoaded) {
     final error = turboSDKError ?? 'SDK not loaded';
     throw TurboSDKNotLoadedException(error);
   }
 }
+
+@JS('globalThis')
+external Object get globalThis;
 
 // Exceptions are defined in turbo_sdk_interop.dart

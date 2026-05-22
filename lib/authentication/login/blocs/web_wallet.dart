@@ -12,7 +12,16 @@ import 'package:js/js.dart';
 @JS('generateJWKStringFromMnemonic')
 external String _generateJWKStringFromMnemonic(String mnemonic);
 
+@JS('globalThis')
+external Object get _globalThis;
+
 Future<Wallet> generateWalletFromMnemonic(String mnemonic) async {
+  // Lazy-load arweave-wallet.js if not yet loaded
+  final lazyLoader = getProperty(_globalThis, 'LazyLoader');
+  if (lazyLoader != null) {
+    await promiseToFuture(callMethod(lazyLoader, 'loadArweaveWallet', []));
+  }
+
   var jwk = await promiseToFuture(_generateJWKStringFromMnemonic(mnemonic));
   return Wallet.fromJwk(json.decode(jwk));
 }
