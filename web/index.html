@@ -35,7 +35,7 @@
     <!-- Plausible Web Analytics (async, non-blocking) -->
     <script defer data-domain="app.ardrive.io" src="https://plausible.io/js/plausible.js"></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js" ></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js" ></script>
 
     <!-- Ethers.js for Ethereum wallet interactions -->
     <!-- Load after saving/restoring define to avoid require.js conflict in debug mode -->
@@ -176,7 +176,7 @@
     <!-- Small utility scripts needed for core operations -->
     <script defer src="js/sql-wasm.js"></script>
     <script defer src="js/sha384.js"></script>
-    <!-- ARIO SDK: loaded in background, needed soon after login for token balance -->
+    <!-- ARIO SDK: deferred, downloads in background after Flutter starts -->
     <script defer src="js/ario_sdk.min.js"></script>
     <!-- PST, EML, arweave-wallet: loaded on-demand via LazyLoader -->
   </body>
