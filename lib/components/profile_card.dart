@@ -460,8 +460,8 @@ class _ProfileCardState extends State<ProfileCard> {
 
   Widget _buildWalletAddressRow(BuildContext context, ProfileLoggedIn state) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final hasSourceWallet = state.user.sourceWalletAddress != null;
     final sourceAddress = state.user.sourceWalletAddress;
+    final hasSourceWallet = sourceAddress != null;
     final arweaveAddress = state.user.walletAddress;
 
     return Padding(
@@ -472,9 +472,9 @@ class _ProfileCardState extends State<ProfileCard> {
           const SizedBox(height: 8),
           if (hasSourceWallet) ...[
             _WalletAddressLine(
-              label: sourceAddress!.startsWith('0x') ? 'ETH' : 'SOL',
-              address: sourceAddress!,
-              explorerUrl: sourceAddress!.startsWith('0x')
+              label: sourceAddress.startsWith('0x') ? 'ETH' : 'SOL',
+              address: sourceAddress,
+              explorerUrl: sourceAddress.startsWith('0x')
                   ? 'https://etherscan.io/address/$sourceAddress'
                   : 'https://solscan.io/account/$sourceAddress',
             ),
