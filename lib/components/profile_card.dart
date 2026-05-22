@@ -867,13 +867,15 @@ class ProfileCardHeader extends StatelessWidget {
       return null;
     }
 
+    final logoUrl = state.primaryNameDetails.logo!.startsWith('http')
+        ? state.primaryNameDetails.logo!
+        : 'https://ardrive.net/${state.primaryNameDetails.logo}';
+
     return Padding(
       padding: const EdgeInsets.only(right: 8.0),
       child: ClipOval(
         child: ArDriveImage(
-          image: NetworkImage(
-            'https://ardrive.net/${state.primaryNameDetails.logo}',
-          ),
+          image: NetworkImage(logoUrl),
           width: 34,
           height: 34,
           fit: BoxFit.cover,

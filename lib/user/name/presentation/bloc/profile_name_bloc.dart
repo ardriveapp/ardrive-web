@@ -74,11 +74,14 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
       if (isUserLoggedIn) {
         final sourceAddress = _auth.currentUser.sourceWalletAddress;
         if (sourceAddress != null && !sourceAddress.startsWith('0x')) {
-          final solName =
-              await _solanaNameService.getFavoriteDomain(sourceAddress);
-          if (solName != null) {
+          final profile =
+              await _solanaNameService.getProfile(sourceAddress);
+          if (profile != null) {
             emit(ProfileNameLoaded(
-              PrimaryNameDetails(primaryName: solName),
+              PrimaryNameDetails(
+                primaryName: profile.domain,
+                logo: profile.pictureUrl,
+              ),
               walletAddress,
             ));
             return;
