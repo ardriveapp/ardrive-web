@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/services/config/ario_gateway_detector.dart';
 import 'package:ardrive/services/config/config_service.dart';
+import 'package:ardrive/services/config/selected_gateway.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:flutter/foundation.dart';
@@ -28,8 +29,9 @@ class ConfigFetcher {
     final storedConfigString = localStore.getString('config');
     if (storedConfigString == null) {
       // New user or no stored config: try to detect AR.IO gateway
-      final detectedGateway = await ArIOGatewayDetector.detectArIOGateway();
-      
+      // Cache the result so we don't re-run on every config version bump
+      final detectedGateway = await _getCachedOrDetectGateway();
+
       AppConfig configToUse = defaultConfig;
       if (detectedGateway != null) {
         // Use detected AR.IO gateway for data requests
@@ -38,7 +40,7 @@ class ConfigFetcher {
         );
         logger.i('Using detected AR.IO gateway: ${detectedGateway.url}');
       }
-      
+
       await saveConfigOnDevToolsPrefs(configToUse);
       return configToUse;
     }
@@ -87,5 +89,39 @@ class ConfigFetcher {
 
   Future<void> resetDevToolsPrefs() async {
     await localStore.remove('config');
+  }
+
+  static const _gatewayDetectionKey = 'arIOGatewayDetectionResult';
+
+  /// Returns a cached gateway detection result, or runs detection once
+  /// and caches the result for all future loads.
+  Future<SelectedGateway?> _getCachedOrDetectGateway() async {
+    final cached = localStore.getString(_gatewayDetectionKey);
+    if (cached != null) {
+      // Already ran detection before
+      if (cached.isEmpty) return null; // not a gateway
+      try {
+        final data = json.decode(cached) as Map<String, dynamic>;
+        return SelectedGateway(
+          label: data['label'] as String,
+          url: data['url'] as String,
+        );
+      } catch (_) {
+        return null;
+      }
+    }
+
+    // First time: run detection and cache result
+    final detected = await ArIOGatewayDetector.detectArIOGateway();
+    if (detected != null) {
+      await localStore.putString(
+        _gatewayDetectionKey,
+        json.encode({'label': detected.label, 'url': detected.url}),
+      );
+    } else {
+      // Cache negative result so we don't re-run
+      await localStore.putString(_gatewayDetectionKey, '');
+    }
+    return detected;
   }
 }

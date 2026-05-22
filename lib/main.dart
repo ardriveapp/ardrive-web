@@ -95,7 +95,8 @@ void main() async {
 }
 
 Future<void> _startApp() async {
-  final flavor = await configService.loadAppFlavor();
+  // Flavor is already loaded by configService.loadConfig() in _initializeServices()
+  final flavor = configService.flavor;
 
   flavor == Flavor.staging || flavor == Flavor.production
       ? _runWithSentryLogging()
@@ -113,21 +114,25 @@ Future<void> _runWithSentryLogging() async {
 }
 
 Future<void> _initializeServices() async {
-  localKeyValueStore = await LocalKeyValueStore.getInstance();
+  // Run independent initializations in parallel
+  final results = await Future.wait([
+    LocalKeyValueStore.getInstance(),
+    AppInfoServices().loadAppInfo(),
+  ]);
+  localKeyValueStore = results[0] as LocalKeyValueStore;
 
-  await AppInfoServices().loadAppInfo();
-
-  configService = ConfigService(
-    appFlavors: AppFlavors(EnvFetcher()),
-    configFetcher: ConfigFetcher(localStore: localKeyValueStore),
-  );
-
+  // Mobile UI setup (non-blocking, fire-and-forget)
   MobileStatusBar.show();
   MobileScreenOrientation.lockInPortraitUp();
   ArDriveMobileDownloader.initialize();
-
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+  );
+
+  // Config depends on localKeyValueStore
+  configService = ConfigService(
+    appFlavors: AppFlavors(EnvFetcher()),
+    configFetcher: ConfigFetcher(localStore: localKeyValueStore),
   );
 
   await configService.loadConfig();
