@@ -101,7 +101,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                           fontWeight: ArFontWeight.semiBold),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 72),
+                    const SizedBox(height: 40),
                     if (widget.isArConnectAvailable ||
                         widget.isMetamaskAvailable ||
                         widget.isSolanaAvailable) ...[
@@ -215,7 +215,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                                   .read<LoginBloc>()
                                   .add(const CreateNewWallet());
                             }),
-                    const SizedBox(height: 72),
+                    const SizedBox(height: 32),
                     // TODO:  make this into a reusable component
                     Column(
                       mainAxisSize: MainAxisSize.min,
