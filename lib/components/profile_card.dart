@@ -905,7 +905,7 @@ class ProfileCardHeader extends StatelessWidget {
                 _WalletIndicatorDot(color: walletIndicatorColor!),
               Flexible(
                 child: Text(
-                  isExpanded ? state.walletAddress! : truncatedWalletAddress,
+                  isExpanded ? walletAddress : truncatedWalletAddress,
                   softWrap: true,
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
@@ -976,7 +976,7 @@ class ProfileCardHeader extends StatelessWidget {
                         Flexible(
                           child: Text(
                             isExpanded
-                                ? state.walletAddress
+                                ? walletAddress
                                 : truncatedWalletAddress,
                             overflow: TextOverflow.ellipsis,
                             softWrap: true,

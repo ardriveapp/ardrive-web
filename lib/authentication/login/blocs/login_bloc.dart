@@ -786,6 +786,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       AddWalletFromSeedPhraseLogin event, Emitter<LoginState> emit) async {
     profileType = ProfileType.json;
     usingSeedphrase = true;
+    _sourceWalletAddress = null;
 
     emit(LoginShowLoader());
 
@@ -834,6 +835,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   ) async {
     profileType = ProfileType.json;
     usingSeedphrase = true;
+    _sourceWalletAddress = null;
     final mnemonic = bip39.generateMnemonic();
 
     emit(LoginShowLoader());
