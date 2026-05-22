@@ -50,7 +50,7 @@ void showBlockingMessageDialog(
       useRootNavigator: false,
       content: ArDriveLoginModal(
         width: 380,
-        hasCloseButton: true,
+        hasCloseButton: false,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
