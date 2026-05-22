@@ -176,11 +176,8 @@
     <!-- Small utility scripts needed for core operations -->
     <script defer src="js/sql-wasm.js"></script>
     <script defer src="js/sha384.js"></script>
-    <!-- Secondary SDKs: downloaded in background, not blocking Flutter init -->
+    <!-- ARIO SDK: loaded in background, needed soon after login for token balance -->
     <script defer src="js/ario_sdk.min.js"></script>
-    <script defer src="js/pst.min.js"></script>
-    <script defer src="js/js-base64.min.js"></script>
-    <script defer src="js/eml-parse-js.min.js"></script>
-    <script defer src="js/eml_parser.js"></script>
+    <!-- PST, EML, arweave-wallet: loaded on-demand via LazyLoader -->
   </body>
 </html>

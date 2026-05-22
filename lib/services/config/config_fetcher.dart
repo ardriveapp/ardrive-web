@@ -91,12 +91,14 @@ class ConfigFetcher {
     await localStore.remove('config');
   }
 
-  static const _gatewayDetectionKey = 'arIOGatewayDetectionResult';
-
   /// Returns a cached gateway detection result, or runs detection once
   /// and caches the result for all future loads.
+  /// Cache key includes the hostname to handle users visiting from
+  /// different domains (e.g., app.ardrive.io vs ardrive.ar.io).
   Future<SelectedGateway?> _getCachedOrDetectGateway() async {
-    final cached = localStore.getString(_gatewayDetectionKey);
+    final hostname = _getCurrentHostname();
+    final cacheKey = 'arIOGatewayDetectionResult_$hostname';
+    final cached = localStore.getString(cacheKey);
     if (cached != null) {
       // Already ran detection before
       if (cached.isEmpty) return null; // not a gateway
@@ -115,13 +117,22 @@ class ConfigFetcher {
     final detected = await ArIOGatewayDetector.detectArIOGateway();
     if (detected != null) {
       await localStore.putString(
-        _gatewayDetectionKey,
+        cacheKey,
         json.encode({'label': detected.label, 'url': detected.url}),
       );
     } else {
-      // Cache negative result so we don't re-run
-      await localStore.putString(_gatewayDetectionKey, '');
+      // Cache negative result so we don't re-run for this hostname
+      await localStore.putString(cacheKey, '');
     }
     return detected;
+  }
+
+  String _getCurrentHostname() {
+    try {
+      // ignore: avoid_web_libraries_in_flutter
+      return Uri.base.host;
+    } catch (_) {
+      return 'unknown';
+    }
   }
 }

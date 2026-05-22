@@ -9,7 +9,7 @@ import 'package:universal_html/html.dart' as html;
 /// Service to detect if the app is being served from an AR.IO gateway
 /// and automatically configure the gateway for data requests.
 class ArIOGatewayDetector {
-  static const Duration _requestTimeout = Duration(seconds: 2);
+  static const Duration _requestTimeout = Duration(seconds: 3);
 
   /// Detects if the current host is an AR.IO gateway and returns the appropriate
   /// gateway configuration for data requests.
