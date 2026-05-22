@@ -132,7 +132,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                       ],
                       if (widget.isMetamaskAvailable) ...[
                         ArDriveButtonNew(
-                          text: 'Continue with MetaMask',
+                          text: 'Continue with Ethereum',
                           hoverIcon: Container(
                             alignment: Alignment.center,
                             child: SvgPicture.asset(
