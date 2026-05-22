@@ -637,7 +637,7 @@ Widget _buildContent(
       late Widget content;
       final loginBloc = context.read<LoginBloc>();
 
-      if (loginState is LoginLoading || loginState is LoginSuccess) {
+      if (loginState is LoginSuccess) {
         content = const MaxDeviceSizesConstrainedBox(
           child: LoginCard(
             content: Center(
@@ -645,7 +645,7 @@ Widget _buildContent(
             ),
           ),
         );
-      } else if (loginState is LoginLanding) {
+      } else if (loginState is LoginLoading || loginState is LoginLanding) {
         content = const LandingView(
           key: Key('landingPageView'),
         );
