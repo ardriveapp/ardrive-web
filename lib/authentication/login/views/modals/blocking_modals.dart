@@ -32,7 +32,7 @@ void showLoaderDialog({required BuildContext context}) {
           const SizedBox(height: 16),
           Text(
             'Generating wallet...',
-            style: ArDriveTypographyNew.of(context).paragraphLarge(
+            style: ArDriveTypographyNew.of(context).paragraphNormal(
                 color: colorTokens.textLow,
                 fontWeight: ArFontWeight.semiBold),
           ),
@@ -65,7 +65,7 @@ void showBlockingMessageDialog(
             const SizedBox(height: 16),
             Text(message,
                 textAlign: TextAlign.center,
-                style: ArDriveTypographyNew.of(context).paragraphLarge(
+                style: ArDriveTypographyNew.of(context).paragraphNormal(
                     color: colorTokens.textLow,
                     fontWeight: ArFontWeight.semiBold)),
           ],

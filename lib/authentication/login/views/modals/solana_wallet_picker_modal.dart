@@ -19,6 +19,7 @@ class SolanaWalletPickerModal extends StatelessWidget {
     return SingleChildScrollView(
       child: ArDriveLoginModal(
         width: 380,
+        hasCloseButton: true,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -26,10 +27,10 @@ class SolanaWalletPickerModal extends StatelessWidget {
             Center(
               child: Image.asset(
                 Resources.images.login.solana,
-                height: 40,
+                height: 36,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Align(
               alignment: Alignment.topCenter,
               child: Text(
