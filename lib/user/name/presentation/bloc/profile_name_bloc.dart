@@ -1,5 +1,6 @@
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/services/ethereum/ethereum_name_service.dart';
 import 'package:ardrive/services/solana/solana_name_service.dart';
 import 'package:ardrive/user/name/domain/repository/profile_logo_repository.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -15,13 +16,16 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
   final ProfileLogoRepository _profileLogoRepository;
   final ArDriveAuth _auth;
   final SolanaNameService _solanaNameService;
+  final EthereumNameService _ethereumNameService;
 
   ProfileNameBloc(
     this._arnsRepository,
     this._profileLogoRepository,
     this._auth, {
     SolanaNameService? solanaNameService,
+    EthereumNameService? ethereumNameService,
   })  : _solanaNameService = solanaNameService ?? SolanaNameService(),
+        _ethereumNameService = ethereumNameService ?? EthereumNameService(),
         super(const ProfileNameInitial(null)) {
     on<LoadProfileName>((event, emit) async {
       await _loadProfileName(
@@ -70,21 +74,38 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
         emit(ProfileNameLoading(walletAddress));
       }
 
-      // Try .sol domain resolution for Solana users
+      // Try name resolution for cross-chain users
       if (isUserLoggedIn) {
         final sourceAddress = _auth.currentUser.sourceWalletAddress;
-        if (sourceAddress != null && !sourceAddress.startsWith('0x')) {
-          final profile =
-              await _solanaNameService.getProfile(sourceAddress);
-          if (profile != null) {
-            emit(ProfileNameLoaded(
-              PrimaryNameDetails(
-                primaryName: profile.domain,
-                logo: profile.pictureUrl,
-              ),
-              walletAddress,
-            ));
-            return;
+        if (sourceAddress != null) {
+          if (sourceAddress.startsWith('0x')) {
+            // Ethereum: resolve ENS name
+            final ensProfile =
+                await _ethereumNameService.getProfile(sourceAddress);
+            if (ensProfile != null) {
+              emit(ProfileNameLoaded(
+                PrimaryNameDetails(
+                  primaryName: ensProfile.domain,
+                  logo: ensProfile.avatarUrl,
+                ),
+                walletAddress,
+              ));
+              return;
+            }
+          } else {
+            // Solana: resolve .sol name
+            final solProfile =
+                await _solanaNameService.getProfile(sourceAddress);
+            if (solProfile != null) {
+              emit(ProfileNameLoaded(
+                PrimaryNameDetails(
+                  primaryName: solProfile.domain,
+                  logo: solProfile.pictureUrl,
+                ),
+                walletAddress,
+              ));
+              return;
+            }
           }
         }
       }
