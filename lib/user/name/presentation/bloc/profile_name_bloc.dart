@@ -74,7 +74,8 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
         emit(ProfileNameLoading(walletAddress));
       }
 
-      // Try name resolution for cross-chain users
+      // Name service results are cached for the session.
+      // Page reload clears the cache for fresh resolution.
       if (isUserLoggedIn) {
         final sourceAddress = _auth.currentUser.sourceWalletAddress;
         if (sourceAddress != null) {
