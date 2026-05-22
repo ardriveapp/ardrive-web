@@ -78,7 +78,7 @@ void showBlockingMessageDialog(
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 64),
+                  padding: const EdgeInsets.fromLTRB(32, 0, 32, 64),
                   child: Text(message,
                       textAlign: TextAlign.center,
                       style: ArDriveTypographyNew.of(context).paragraphLarge(
