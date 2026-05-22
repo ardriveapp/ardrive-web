@@ -109,6 +109,20 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                       fontWeight: ArFontWeight.bold),
                 ),
               ),
+              if (widget.sourceWalletAddress != null &&
+                  !showDerivedWalletNotYetCreated) ...[
+                const SizedBox(height: 8),
+                Text(
+                  widget.sourceWalletAddress!.startsWith('0x')
+                      ? 'ArDrive creates a secure storage wallet linked to your Ethereum wallet. Your password protects your private files.'
+                      : 'ArDrive creates a secure storage wallet linked to your Solana wallet. Your password protects your private files.',
+                  style: typography.paragraphNormal(
+                    color: colorTokens.textLow,
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
               const SizedBox(height: 12),
               Text(
                   showDerivedWalletNotYetCreated
