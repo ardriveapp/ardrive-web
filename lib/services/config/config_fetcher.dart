@@ -109,13 +109,12 @@ class ConfigFetcher {
           url: data['url'] as String,
         );
       } catch (_) {
-        // Malformed cache entry — clear it so detection can retry
+        // Malformed cache entry — clear and fall through to re-detect
         await localStore.remove(cacheKey);
-        return null;
       }
     }
 
-    // First time: run detection and cache result
+    // First time or cleared malformed cache: run detection and cache result
     final detected = await ArIOGatewayDetector.detectArIOGateway();
     if (detected != null) {
       await localStore.putString(

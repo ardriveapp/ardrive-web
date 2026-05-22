@@ -795,6 +795,9 @@ void main() {
       act: (bloc) async {
         bloc.add(const ForgetWallet());
       },
+      verify: (_) {
+        verify(() => mockSolanaProviderService.disconnect()).called(1);
+      },
       expect: () => [const LoginLanding()],
     );
     blocTest(
