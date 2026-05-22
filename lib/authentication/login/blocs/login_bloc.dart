@@ -889,6 +889,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       return;
     }
 
+    _sourceWalletAddress = await ethWallet.getAddress();
+
     // Sign message to verify user address and use signature to derive in-memory
     // ETH wallet
 

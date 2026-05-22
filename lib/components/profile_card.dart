@@ -460,8 +460,8 @@ class _ProfileCardState extends State<ProfileCard> {
 
   Widget _buildWalletAddressRow(BuildContext context, ProfileLoggedIn state) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final hasSolana = state.user.sourceWalletAddress != null;
-    final solanaAddress = state.user.sourceWalletAddress;
+    final hasSourceWallet = state.user.sourceWalletAddress != null;
+    final sourceAddress = state.user.sourceWalletAddress;
     final arweaveAddress = state.user.walletAddress;
 
     return Padding(
@@ -470,11 +470,13 @@ class _ProfileCardState extends State<ProfileCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 8),
-          if (hasSolana) ...[
+          if (hasSourceWallet) ...[
             _WalletAddressLine(
-              label: 'SOL',
-              address: solanaAddress!,
-              explorerUrl: 'https://solscan.io/account/$solanaAddress',
+              label: sourceAddress!.startsWith('0x') ? 'ETH' : 'SOL',
+              address: sourceAddress!,
+              explorerUrl: sourceAddress!.startsWith('0x')
+                  ? 'https://etherscan.io/address/$sourceAddress'
+                  : 'https://solscan.io/account/$sourceAddress',
             ),
             const SizedBox(height: 4),
             _WalletAddressLine(
@@ -1109,12 +1111,17 @@ class _WalletIndicatorDot extends StatelessWidget {
 }
 
 /// Returns the wallet indicator color based on the user's profile.
-/// Purple for Solana, white for Arweave-based wallets.
+/// Purple for Solana, blue for Ethereum, white for Arweave.
 Color getWalletIndicatorColor(User user) {
-  if (user.sourceWalletAddress != null) {
+  final source = user.sourceWalletAddress;
+  if (source != null) {
+    if (source.startsWith('0x')) {
+      // Ethereum-derived wallet
+      return const Color(0xFF627EEA);
+    }
     // Solana-derived wallet
     return const Color(0xFF9945FF);
   }
-  // Arweave (ArConnect, JSON, MetaMask-derived)
+  // Arweave (ArConnect, JSON file)
   return const Color(0xFFFFFFFF);
 }
