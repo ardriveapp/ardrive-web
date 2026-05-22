@@ -106,27 +106,16 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                       fontWeight: ArFontWeight.bold),
                 ),
               ),
-              if (widget.sourceWalletAddress != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  widget.sourceWalletAddress!.startsWith('0x')
-                      ? 'ArDrive creates a secure storage wallet linked to your Ethereum wallet. Your password protects your private files.'
-                      : 'ArDrive creates a secure storage wallet linked to your Solana wallet. Your password protects your private files.',
-                  style: typography.paragraphNormal(
-                    color: colorTokens.textLow,
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
               const SizedBox(height: 12),
               Text(
-                  'Please enter and confirm a password to secure your wallet.\nThis password is used to encrypt your private files, and can never be changed, reset, or recovered!\nBe sure to store it somewhere safe.',
+                  widget.sourceWalletAddress != null
+                      ? 'ArDrive creates a secure storage wallet linked to your ${widget.sourceWalletAddress!.startsWith('0x') ? 'Ethereum' : 'Solana'} wallet. Enter a password to encrypt your private files. This password can never be changed, reset, or recovered.'
+                      : 'Please enter and confirm a password to secure your wallet. This password is used to encrypt your private files, and can never be changed, reset, or recovered. Be sure to store it somewhere safe.',
                   textAlign: TextAlign.center,
                   style: typography.paragraphNormal(
                       color: colorTokens.textLow,
                       fontWeight: ArFontWeight.semiBold)),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
               if (!widget.showTutorials)
                 BlocBuilder<ProfileNameBloc, ProfileNameState>(
                   builder: (context, state) {
