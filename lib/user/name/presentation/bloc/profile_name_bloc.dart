@@ -1,5 +1,6 @@
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/services/solana/solana_name_service.dart';
 import 'package:ardrive/user/name/domain/repository/profile_logo_repository.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ario_sdk/ario_sdk.dart';
@@ -13,12 +14,15 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
   final ARNSRepository _arnsRepository;
   final ProfileLogoRepository _profileLogoRepository;
   final ArDriveAuth _auth;
+  final SolanaNameService _solanaNameService;
 
   ProfileNameBloc(
     this._arnsRepository,
     this._profileLogoRepository,
-    this._auth,
-  ) : super(const ProfileNameInitial(null)) {
+    this._auth, {
+    SolanaNameService? solanaNameService,
+  })  : _solanaNameService = solanaNameService ?? SolanaNameService(),
+        super(const ProfileNameInitial(null)) {
     on<LoadProfileName>((event, emit) async {
       await _loadProfileName(
         walletAddress: _auth.currentUser.walletAddress,
@@ -64,6 +68,22 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
       /// if we are not refreshing, we emit a loading state
       if (!refreshName) {
         emit(ProfileNameLoading(walletAddress));
+      }
+
+      // Try .sol domain resolution for Solana users
+      if (isUserLoggedIn) {
+        final sourceAddress = _auth.currentUser.sourceWalletAddress;
+        if (sourceAddress != null && !sourceAddress.startsWith('0x')) {
+          final solName =
+              await _solanaNameService.getFavoriteDomain(sourceAddress);
+          if (solName != null) {
+            emit(ProfileNameLoaded(
+              PrimaryNameDetails(primaryName: solName),
+              walletAddress,
+            ));
+            return;
+          }
+        }
       }
 
       if (!refreshLogo) {
