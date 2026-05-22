@@ -680,6 +680,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     usingSeedphrase = false;
     _sourceWalletAddress = null;
+    await _solanaProviderService.disconnect();
 
     emit(const LoginLanding());
   }
@@ -985,6 +986,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           await _solanaProviderService.connect(provider: event.provider);
 
       if (connection == null) {
+        await _solanaProviderService.disconnect();
         emit(previousState);
         return;
       }
@@ -997,6 +999,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         signature = await _solanaProviderService
             .signMessage(solanaIdentityMessage);
       } catch (e) {
+        await _solanaProviderService.disconnect();
+        _sourceWalletAddress = null;
         emit(previousState);
         return;
       }
@@ -1030,6 +1034,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         ));
       }
     } catch (e) {
+      await _solanaProviderService.disconnect();
+      _sourceWalletAddress = null;
       emit(LoginCloseBlockingDialog());
       if (e is AuthenticationGatewayException) {
         emit(GatewayLoginFailure(e, _getGatewayUrl()));
