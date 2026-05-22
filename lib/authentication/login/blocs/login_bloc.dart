@@ -942,11 +942,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       emit(PromptPassword(
           wallet: ethWallet,
           derivedEthWallet: derivedEthWallet,
+          sourceWalletAddress: _sourceWalletAddress,
           showWalletCreated: false));
     } else {
       emit(CreateNewPassword(
           wallet: ethWallet,
           derivedEthWallet: derivedEthWallet,
+          sourceWalletAddress: _sourceWalletAddress,
           showTutorials: true,
           showWalletCreated: true));
     }
@@ -1000,7 +1002,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       // 5. Check if user has existing drives
       if (await _arDriveAuth.userHasPassword(wallet)) {
         emit(LoginCloseBlockingDialog());
-        emit(PromptPassword(wallet: wallet, showWalletCreated: false));
+        emit(PromptPassword(
+          wallet: wallet,
+          showWalletCreated: false,
+          sourceWalletAddress: _sourceWalletAddress,
+        ));
       } else {
         final hasDrives = await _arDriveAuth.isExistingUser(wallet);
         emit(LoginCloseBlockingDialog());
@@ -1008,6 +1014,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           wallet: wallet,
           showTutorials: !hasDrives,
           showWalletCreated: false,
+          sourceWalletAddress: _sourceWalletAddress,
         ));
       }
     } catch (e) {

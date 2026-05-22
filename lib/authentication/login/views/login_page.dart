@@ -128,6 +128,7 @@ class _LoginPageState extends State<LoginPage> {
               derivedEthWallet: loginState.derivedEthWallet,
               alreadyLoggedIn: loginState.alreadyLoggedIn,
               isPasswordInvalid: loginState.isPasswordInvalid,
+              sourceWalletAddress: loginState.sourceWalletAddress,
             );
             return;
           } else if (loginState is CreateNewPassword) {
@@ -138,7 +139,8 @@ class _LoginPageState extends State<LoginPage> {
                 mnemonic: loginState.mnemonic,
                 showTutorials: loginState.showTutorials,
                 showWalletCreated: loginState.showWalletCreated,
-                derivedEthWallet: loginState.derivedEthWallet);
+                derivedEthWallet: loginState.derivedEthWallet,
+                sourceWalletAddress: loginState.sourceWalletAddress);
             return;
           } else if (loginState is LoginShowLoader) {
             showLoaderDialog(context: context);

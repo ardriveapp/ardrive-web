@@ -76,37 +76,49 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
 
       // Name service results are cached for the session.
       // Page reload clears the cache for fresh resolution.
-      if (isUserLoggedIn) {
-        final sourceAddress = _auth.currentUser.sourceWalletAddress;
-        if (sourceAddress != null) {
-          if (sourceAddress.startsWith('0x')) {
-            // Ethereum: resolve ENS name
-            final ensProfile =
-                await _ethereumNameService.getProfile(sourceAddress);
-            if (ensProfile != null) {
-              emit(ProfileNameLoaded(
-                PrimaryNameDetails(
-                  primaryName: ensProfile.domain,
-                  logo: ensProfile.avatarUrl,
-                ),
-                walletAddress,
-              ));
-              return;
-            }
-          } else {
-            // Solana: resolve .sol name
-            final solProfile =
-                await _solanaNameService.getProfile(sourceAddress);
-            if (solProfile != null) {
-              emit(ProfileNameLoaded(
-                PrimaryNameDetails(
-                  primaryName: solProfile.domain,
-                  logo: solProfile.pictureUrl,
-                ),
-                walletAddress,
-              ));
-              return;
-            }
+      // Resolve cross-chain names: determine source address from either
+      // the logged-in user or the walletAddress parameter itself (pre-login).
+      final sourceAddress = isUserLoggedIn
+          ? _auth.currentUser.sourceWalletAddress
+          : (walletAddress.startsWith('0x') ? walletAddress : null);
+      // For pre-login Solana: Solana addresses are base58, 32-44 chars,
+      // don't start with 0x, and aren't 43-char base64url (Arweave).
+      final isSolanaPreLogin = !isUserLoggedIn &&
+          !walletAddress.startsWith('0x') &&
+          walletAddress.length >= 32 &&
+          walletAddress.length <= 44 &&
+          !walletAddress.contains('-') &&
+          !walletAddress.contains('_');
+
+      final resolveAddress =
+          sourceAddress ?? (isSolanaPreLogin ? walletAddress : null);
+
+      if (resolveAddress != null) {
+        if (resolveAddress.startsWith('0x')) {
+          final ensProfile =
+              await _ethereumNameService.getProfile(resolveAddress);
+          if (ensProfile != null) {
+            emit(ProfileNameLoaded(
+              PrimaryNameDetails(
+                primaryName: ensProfile.domain,
+                logo: ensProfile.avatarUrl,
+              ),
+              walletAddress,
+            ));
+            return;
+          }
+        } else {
+          final solProfile =
+              await _solanaNameService.getProfile(resolveAddress);
+          if (solProfile != null) {
+            emit(ProfileNameLoaded(
+              PrimaryNameDetails(
+                primaryName: solProfile.domain,
+                logo: solProfile.pictureUrl,
+              ),
+              walletAddress,
+            ));
+            return;
           }
         }
       }

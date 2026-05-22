@@ -22,12 +22,14 @@ class SecureYourWalletWidget extends StatefulWidget {
       required this.loginBloc,
       required this.wallet,
       this.derivedEthWallet,
+      this.sourceWalletAddress,
       this.mnemonic,
       required this.showTutorials,
       required this.showWalletCreated});
 
   final Wallet wallet;
   final EthereumProviderWallet? derivedEthWallet;
+  final String? sourceWalletAddress;
   final String? mnemonic;
   final LoginBloc loginBloc;
   final bool showTutorials;
@@ -53,13 +55,20 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
       page: PlausiblePageView.createAndConfirmPasswordPage,
     );
 
-    widget.wallet.getAddress().then((walletAddress) {
-      logger.d('Loading profile name for anonymous user $walletAddress');
-
+    final displayAddress = widget.sourceWalletAddress;
+    if (displayAddress != null) {
+      logger.d('Loading profile name for source wallet $displayAddress');
       context
           .read<ProfileNameBloc>()
-          .add(LoadProfileNameBeforeLogin(walletAddress));
-    });
+          .add(LoadProfileNameBeforeLogin(displayAddress));
+    } else {
+      widget.wallet.getAddress().then((walletAddress) {
+        logger.d('Loading profile name for anonymous user $walletAddress');
+        context
+            .read<ProfileNameBloc>()
+            .add(LoadProfileNameBeforeLogin(walletAddress));
+      });
+    }
   }
 
   @override
@@ -287,6 +296,7 @@ void showSecureYourPasswordDialog(
     required LoginBloc loginBloc,
     required Wallet wallet,
     EthereumProviderWallet? derivedEthWallet,
+    String? sourceWalletAddress,
     String? mnemonic,
     required bool showTutorials,
     required bool showWalletCreated}) {
@@ -307,6 +317,7 @@ void showSecureYourPasswordDialog(
               loginBloc: loginBloc,
               wallet: wallet,
               derivedEthWallet: derivedEthWallet,
+              sourceWalletAddress: sourceWalletAddress,
               mnemonic: mnemonic,
               showTutorials: showTutorials,
               showWalletCreated: showWalletCreated);
