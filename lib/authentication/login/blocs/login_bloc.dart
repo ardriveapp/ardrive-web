@@ -291,7 +291,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     late Uint8List fullEntropy;
     emit(const LoginShowBlockingDialog(
         message:
-            'Sign the following data with Metamask to secure your wallet and sign in.'));
+            'Please approve the request in your Ethereum wallet.'));
 
     const chainId = 1; // Ethereum mainnet
     try {
@@ -534,7 +534,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     late Uint8List fullEntropy;
     emit(const LoginShowBlockingDialog(
         message:
-            'Sign the following data with Metamask to secure your wallet and sign in.'));
+            'Please approve the request in your Ethereum wallet.'));
 
     const chainId = 1; // Ethereum mainnet
     try {
@@ -884,7 +884,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       return;
     }
     emit(const LoginShowBlockingDialog(
-        message: 'Please connect your Metamask wallet'));
+        message: 'Please connect your Ethereum wallet.'));
 
     EthereumWallet? ethWallet;
     try {
@@ -911,7 +911,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     emit(const LoginShowBlockingDialog(
         message:
-            'Sign the following data with Metamask to verify your wallet address.'));
+            'Please approve the request in your Ethereum wallet.'));
 
     late EthereumProviderWallet derivedEthWallet;
     try {
@@ -963,7 +963,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           derivedEthWallet: derivedEthWallet,
           sourceWalletAddress: _sourceWalletAddress,
           showTutorials: true,
-          showWalletCreated: true));
+          showWalletCreated: false));
     }
   }
 
