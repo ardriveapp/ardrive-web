@@ -790,16 +790,23 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     emit(LoginShowLoader());
 
-    final wallet = await generateWalletFromMnemonic(event.mnemonic);
+    try {
+      final wallet = await generateWalletFromMnemonic(event.mnemonic);
 
-    emit(LoginCloseBlockingDialog());
+      emit(LoginCloseBlockingDialog());
 
-    if (await _arDriveAuth.userHasPassword(wallet)) {
-      emit(PromptPassword(wallet: wallet, showWalletCreated: true));
-    } else {
-      final hasDrives = await _arDriveAuth.isExistingUser(wallet);
-      emit(CreateNewPassword(
-          wallet: wallet, showTutorials: !hasDrives, showWalletCreated: true));
+      if (await _arDriveAuth.userHasPassword(wallet)) {
+        emit(PromptPassword(wallet: wallet, showWalletCreated: true));
+      } else {
+        final hasDrives = await _arDriveAuth.isExistingUser(wallet);
+        emit(CreateNewPassword(
+            wallet: wallet,
+            showTutorials: !hasDrives,
+            showWalletCreated: true));
+      }
+    } catch (e) {
+      emit(LoginCloseBlockingDialog());
+      emit(LoginFailure(e));
     }
   }
 
@@ -840,15 +847,20 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     emit(LoginShowLoader());
 
-    final wallet = await generateWalletFromMnemonic(mnemonic);
+    try {
+      final wallet = await generateWalletFromMnemonic(mnemonic);
 
-    emit(LoginCloseBlockingDialog());
+      emit(LoginCloseBlockingDialog());
 
-    emit(CreateNewPassword(
+      emit(CreateNewPassword(
         wallet: wallet,
         mnemonic: mnemonic,
         showTutorials: true,
         showWalletCreated: true));
+    } catch (e) {
+      emit(LoginCloseBlockingDialog());
+      emit(LoginFailure(e));
+    }
   }
 
   Future<void> _handleCompleteWalletGenerationEvent(
