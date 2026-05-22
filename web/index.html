@@ -65,19 +65,6 @@
     <script>
       // The value below is injected by flutter build, do not touch.
       var serviceWorkerVersion = null;
-
-      // Register ArDrive service worker for asset caching
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-          navigator.serviceWorker.register('./service_worker.js')
-            .then(function(registration) {
-              console.log('Service worker registered');
-            })
-            .catch(function(error) {
-              console.log('Service worker registration failed:', error);
-            });
-        });
-      }
     </script>
       <!-- This script adds the flutter initialization JS code -->
     <script src="flutter.js" defer></script>
