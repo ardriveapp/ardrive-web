@@ -358,6 +358,8 @@ Object convertSOLToTokenAmount(double amount) {
 Future<void> ensureSDKLoaded() async {
   if (isTurboSDKLoaded) return;
 
+  Object? loadError;
+
   // Trigger lazy load via LazyLoader
   try {
     final lazyLoader = getProperty(globalThis, 'LazyLoader');
@@ -365,12 +367,13 @@ Future<void> ensureSDKLoaded() async {
       final promise = callMethod(lazyLoader, 'loadTurboSDK', []);
       await promiseToFuture(promise);
     }
-  } catch (_) {
+  } catch (e) {
+    loadError = e;
     // LazyLoader may not be available (non-web or test)
   }
 
   if (!isTurboSDKLoaded) {
-    final error = turboSDKError ?? 'SDK not loaded';
+    final error = turboSDKError ?? loadError?.toString() ?? 'SDK not loaded';
     throw TurboSDKNotLoadedException(error);
   }
 }

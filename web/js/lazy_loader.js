@@ -46,10 +46,18 @@
     _loading[url] = import(url).then((module) => {
       if (exportMap) {
         for (const [windowKey, moduleKey] of Object.entries(exportMap)) {
-          window[windowKey] = module[moduleKey] || module.default?.[moduleKey];
+          const value = module[moduleKey] || module.default?.[moduleKey];
+          if (value === undefined) {
+            throw new Error('Missing export: ' + moduleKey + ' from ' + url);
+          }
+          window[windowKey] = value;
         }
       }
       _loaded[url] = true;
+    }).catch((error) => {
+      // Allow retry on next call
+      throw error;
+    }).finally(() => {
       delete _loading[url];
     });
 

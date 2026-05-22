@@ -109,6 +109,8 @@ class ConfigFetcher {
           url: data['url'] as String,
         );
       } catch (_) {
+        // Malformed cache entry — clear it so detection can retry
+        await localStore.remove(cacheKey);
         return null;
       }
     }
