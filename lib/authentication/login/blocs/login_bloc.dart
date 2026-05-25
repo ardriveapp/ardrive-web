@@ -930,6 +930,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       return;
     }
 
+    emit(LoginCloseBlockingDialog());
+    emit(const LoginShowBlockingDialog(
+        message: 'Setting up your account...'));
+
     final arweaveNativeAddressForEth =
         await ownerToAddress(await derivedEthWallet.getOwner());
 
