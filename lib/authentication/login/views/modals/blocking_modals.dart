@@ -42,15 +42,15 @@ void showLoaderDialog({required BuildContext context}) {
   );
 }
 
-void showBlockingMessageDialog(
+Future<void> showBlockingMessageDialog(
     {required BuildContext context, required String message}) {
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-  showArDriveDialog(context,
+  return showArDriveDialog(context,
       barrierDismissible: false,
       useRootNavigator: false,
       content: ArDriveLoginModal(
         width: 380,
-        hasCloseButton: false,
+        hasCloseButton: true,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
