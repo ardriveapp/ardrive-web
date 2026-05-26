@@ -15,7 +15,6 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:responsive_builder/responsive_builder.dart';
 
 class EnterYourPasswordWidget extends StatefulWidget {
   const EnterYourPasswordWidget({
@@ -93,22 +92,10 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
         widget.derivedEthWallet != null && !widget.loginBloc.existingUserFlow;
 
     return SingleChildScrollView(
-      child: ScreenTypeLayout.builder(
-        mobile: (context) => _buildContent(
-          width: 450,
-          context: context,
-          showDerivedWalletAlreadyCreated: showDerivedWalletAlreadyCreated,
-        ),
-        tablet: (context) => _buildContent(
-          width: 450,
-          context: context,
-          showDerivedWalletAlreadyCreated: showDerivedWalletAlreadyCreated,
-        ),
-        desktop: (context) => _buildContent(
-          width: 500,
-          context: context,
-          showDerivedWalletAlreadyCreated: showDerivedWalletAlreadyCreated,
-        ),
+      child: _buildContent(
+        width: 450,
+        context: context,
+        showDerivedWalletAlreadyCreated: showDerivedWalletAlreadyCreated,
       ),
     );
   }

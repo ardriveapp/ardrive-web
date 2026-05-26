@@ -76,6 +76,11 @@ void main() {
         () async {
       // Arrange
       when(() => localStore.getString('config')).thenReturn(null);
+      // Gateway detection cache: no cached result, detection returns null (not web)
+      when(() => localStore.getString(any(that: startsWith('arIOGateway'))))
+          .thenReturn(null);
+      when(() => localStore.putString(any(that: startsWith('arIOGateway')), any()))
+          .thenAnswer((_) async => true);
       when(() => assetBundle.loadString(any()))
           .thenAnswer((_) async => newConfigString);
       when(() => localStore.putString('config', any()))

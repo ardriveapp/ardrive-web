@@ -76,9 +76,6 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
-    final showDerivedWalletNotYetCreated =
-        widget.derivedEthWallet != null && widget.loginBloc.existingUserFlow;
-
     return SingleChildScrollView(
       child: ArDriveLoginModal(
         width: 450,
@@ -111,14 +108,14 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
               ),
               const SizedBox(height: 12),
               Text(
-                  showDerivedWalletNotYetCreated
-                      ? 'We could not find a wallet for that Ethereum address, but you can create one now by entering a password to secure the new wallet.'
-                      : 'Please enter and confirm a password to secure your wallet.\nThis password is used to encrypt your private files, and can never be changed, reset, or recovered!\nBe sure to store it somewhere safe.',
+                  widget.sourceWalletAddress != null
+                      ? 'ArDrive creates a secure storage wallet linked to your ${widget.sourceWalletAddress!.startsWith('0x') ? 'Ethereum' : 'Solana'} wallet. Enter a password to encrypt your private files. This password can never be changed, reset, or recovered.'
+                      : 'Please enter and confirm a password to secure your wallet. This password is used to encrypt your private files, and can never be changed, reset, or recovered. Be sure to store it somewhere safe.',
                   textAlign: TextAlign.center,
                   style: typography.paragraphNormal(
                       color: colorTokens.textLow,
                       fontWeight: ArFontWeight.semiBold)),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
               if (!widget.showTutorials)
                 BlocBuilder<ProfileNameBloc, ProfileNameState>(
                   builder: (context, state) {

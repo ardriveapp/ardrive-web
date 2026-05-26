@@ -501,7 +501,8 @@ class _ProfileCardState extends State<ProfileCard> {
               ],
             ),
           ],
-          if (state.user.profileType != ProfileType.arConnect)
+          if (state.user.profileType != ProfileType.arConnect &&
+              state.user.sourceWalletAddress == null)
             Align(
               alignment: Alignment.centerRight,
               child: ArDriveIconButton(

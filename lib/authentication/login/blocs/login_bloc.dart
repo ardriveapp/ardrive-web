@@ -291,7 +291,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     late Uint8List fullEntropy;
     emit(const LoginShowBlockingDialog(
         message:
-            'Sign the following data with Metamask to secure your wallet and sign in.'));
+            'Please approve the request in your Ethereum wallet.'));
 
     const chainId = 1; // Ethereum mainnet
     try {
@@ -534,7 +534,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     late Uint8List fullEntropy;
     emit(const LoginShowBlockingDialog(
         message:
-            'Sign the following data with Metamask to secure your wallet and sign in.'));
+            'Please approve the request in your Ethereum wallet.'));
 
     const chainId = 1; // Ethereum mainnet
     try {
@@ -680,6 +680,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     usingSeedphrase = false;
     _sourceWalletAddress = null;
+    await _solanaProviderService.disconnect();
 
     emit(const LoginLanding());
   }
@@ -790,16 +791,23 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     emit(LoginShowLoader());
 
-    final wallet = await generateWalletFromMnemonic(event.mnemonic);
+    try {
+      final wallet = await generateWalletFromMnemonic(event.mnemonic);
 
-    emit(LoginCloseBlockingDialog());
+      emit(LoginCloseBlockingDialog());
 
-    if (await _arDriveAuth.userHasPassword(wallet)) {
-      emit(PromptPassword(wallet: wallet, showWalletCreated: true));
-    } else {
-      final hasDrives = await _arDriveAuth.isExistingUser(wallet);
-      emit(CreateNewPassword(
-          wallet: wallet, showTutorials: !hasDrives, showWalletCreated: true));
+      if (await _arDriveAuth.userHasPassword(wallet)) {
+        emit(PromptPassword(wallet: wallet, showWalletCreated: true));
+      } else {
+        final hasDrives = await _arDriveAuth.isExistingUser(wallet);
+        emit(CreateNewPassword(
+            wallet: wallet,
+            showTutorials: !hasDrives,
+            showWalletCreated: true));
+      }
+    } catch (e) {
+      emit(LoginCloseBlockingDialog());
+      emit(LoginFailure(e));
     }
   }
 
@@ -840,15 +848,20 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     emit(LoginShowLoader());
 
-    final wallet = await generateWalletFromMnemonic(mnemonic);
+    try {
+      final wallet = await generateWalletFromMnemonic(mnemonic);
 
-    emit(LoginCloseBlockingDialog());
+      emit(LoginCloseBlockingDialog());
 
-    emit(CreateNewPassword(
+      emit(CreateNewPassword(
         wallet: wallet,
         mnemonic: mnemonic,
         showTutorials: true,
         showWalletCreated: true));
+    } catch (e) {
+      emit(LoginCloseBlockingDialog());
+      emit(LoginFailure(e));
+    }
   }
 
   Future<void> _handleCompleteWalletGenerationEvent(
@@ -871,7 +884,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       return;
     }
     emit(const LoginShowBlockingDialog(
-        message: 'Please connect your Metamask wallet'));
+        message: 'Please connect your Ethereum wallet.'));
 
     EthereumWallet? ethWallet;
     try {
@@ -898,7 +911,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     emit(const LoginShowBlockingDialog(
         message:
-            'Sign the following data with Metamask to verify your wallet address.'));
+            'Please approve the request in your Ethereum wallet.'));
 
     late EthereumProviderWallet derivedEthWallet;
     try {
@@ -916,6 +929,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       emit(LoginFailure(e));
       return;
     }
+
+    emit(LoginCloseBlockingDialog());
+    emit(const LoginShowBlockingDialog(
+        message: 'Setting up your account...'));
 
     final arweaveNativeAddressForEth =
         await ownerToAddress(await derivedEthWallet.getOwner());
@@ -950,7 +967,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           derivedEthWallet: derivedEthWallet,
           sourceWalletAddress: _sourceWalletAddress,
           showTutorials: true,
-          showWalletCreated: true));
+          showWalletCreated: false));
     }
   }
 
@@ -973,6 +990,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           await _solanaProviderService.connect(provider: event.provider);
 
       if (connection == null) {
+        await _solanaProviderService.disconnect();
         emit(previousState);
         return;
       }
@@ -985,6 +1003,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         signature = await _solanaProviderService
             .signMessage(solanaIdentityMessage);
       } catch (e) {
+        await _solanaProviderService.disconnect();
+        _sourceWalletAddress = null;
         emit(previousState);
         return;
       }
@@ -1018,6 +1038,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         ));
       }
     } catch (e) {
+      await _solanaProviderService.disconnect();
+      _sourceWalletAddress = null;
       emit(LoginCloseBlockingDialog());
       if (e is AuthenticationGatewayException) {
         emit(GatewayLoginFailure(e, _getGatewayUrl()));

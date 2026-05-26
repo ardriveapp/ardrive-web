@@ -1,3 +1,4 @@
+import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
@@ -14,34 +15,26 @@ void showLoaderDialog({required BuildContext context}) {
     context,
     barrierDismissible: false,
     useRootNavigator: false,
-    content: Container(
-      clipBehavior: Clip.hardEdge,
-      decoration: BoxDecoration(
-        color: colorTokens.containerL3,
-        borderRadius: BorderRadius.circular(9),
-      ),
-      child: Column(
+    content: ArDriveLoginModal(
+      width: 380,
+      hasCloseButton: false,
+      content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(64, 64, 64, 16),
-            child: LottieBuilder.asset(
-              Resources.images.login.ardriveLoader,
-              filterQuality: FilterQuality.high,
-              frameRate: FrameRate.max,
-              addRepaintBoundary: true,
-              height: 75,
-              width: 75,
-            ),
+          LottieBuilder.asset(
+            Resources.images.login.ardriveLoader,
+            filterQuality: FilterQuality.high,
+            frameRate: FrameRate.max,
+            addRepaintBoundary: true,
+            height: 75,
+            width: 75,
           ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 64),
-            child: Text(
-              'Generating wallet...',
-              style: ArDriveTypographyNew.of(context).paragraphLarge(
-                  color: colorTokens.textLow,
-                  fontWeight: ArFontWeight.semiBold),
-            ),
+          const SizedBox(height: 16),
+          Text(
+            'Generating wallet...',
+            style: ArDriveTypographyNew.of(context).paragraphNormal(
+                color: colorTokens.textLow,
+                fontWeight: ArFontWeight.semiBold),
           ),
         ],
       ),
@@ -49,58 +42,32 @@ void showLoaderDialog({required BuildContext context}) {
   );
 }
 
-void showBlockingMessageDialog(
+Future<void> showBlockingMessageDialog(
     {required BuildContext context, required String message}) {
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-  showArDriveDialog(context,
+  return showArDriveDialog(context,
       barrierDismissible: false,
       useRootNavigator: false,
-      content: Container(
-        clipBehavior: Clip.hardEdge,
-        decoration: BoxDecoration(
-          color: colorTokens.containerL3,
-          borderRadius: BorderRadius.circular(9),
-        ),
-        child: Stack(
+      content: ArDriveLoginModal(
+        width: 380,
+        hasCloseButton: true,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(64, 64, 64, 16),
-                  child: LottieBuilder.asset(
-                    Resources.images.login.ardriveLoader,
-                    filterQuality: FilterQuality.high,
-                    frameRate: FrameRate.max,
-                    addRepaintBoundary: true,
-                    height: 75,
-                    width: 75,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 64),
-                  child: Text(message,
-                      textAlign: TextAlign.center,
-                      style: ArDriveTypographyNew.of(context).paragraphLarge(
-                          color: colorTokens.textLow,
-                          fontWeight: ArFontWeight.semiBold)),
-                ),
-              ],
+            LottieBuilder.asset(
+              Resources.images.login.ardriveLoader,
+              filterQuality: FilterQuality.high,
+              frameRate: FrameRate.max,
+              addRepaintBoundary: true,
+              height: 75,
+              width: 75,
             ),
-            Positioned(
-              right: 8,
-              top: 8,
-              child: ArDriveClickArea(
-                child: GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: Icon(
-                    Icons.close,
+            const SizedBox(height: 16),
+            Text(message,
+                textAlign: TextAlign.center,
+                style: ArDriveTypographyNew.of(context).paragraphNormal(
                     color: colorTokens.textLow,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ),
+                    fontWeight: ArFontWeight.semiBold)),
           ],
         ),
       ));

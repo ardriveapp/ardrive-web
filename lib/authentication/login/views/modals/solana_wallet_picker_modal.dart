@@ -19,6 +19,7 @@ class SolanaWalletPickerModal extends StatelessWidget {
     return SingleChildScrollView(
       child: ArDriveLoginModal(
         width: 380,
+        hasCloseButton: true,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -26,10 +27,10 @@ class SolanaWalletPickerModal extends StatelessWidget {
             Center(
               child: Image.asset(
                 Resources.images.login.solana,
-                height: 40,
+                height: 36,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Align(
               alignment: Alignment.topCenter,
               child: Text(
@@ -56,8 +57,8 @@ class SolanaWalletPickerModal extends StatelessWidget {
                 alignment: Alignment.center,
                 child: SvgPicture.asset(
                   Resources.images.login.phantom,
-                  width: 24,
-                  height: 24,
+                  width: 28,
+                  height: 28,
                   fit: BoxFit.contain,
                 ),
               ),
@@ -75,8 +76,8 @@ class SolanaWalletPickerModal extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Image.asset(
                   Resources.images.login.solflare,
-                  width: 24,
-                  height: 24,
+                  width: 32,
+                  height: 32,
                   fit: BoxFit.contain,
                 ),
               ),
@@ -87,18 +88,13 @@ class SolanaWalletPickerModal extends StatelessWidget {
                 loginBloc.add(const LoginWithSolana(provider: 'solflare'));
               },
             ),
-            const SizedBox(height: 24),
-            Center(
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Text(
-                  'Cancel',
-                  style: typography.paragraphNormal(
-                    color: colorTokens.textLow,
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                ),
-              ),
+            const SizedBox(height: 12),
+            ArDriveButtonNew(
+              text: 'Cancel',
+              typography: typography,
+              variant: ButtonVariant.outline,
+              maxWidth: double.maxFinite,
+              onPressed: () => Navigator.pop(context),
             ),
           ],
         ),

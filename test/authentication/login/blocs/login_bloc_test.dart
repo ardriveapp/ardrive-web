@@ -787,11 +787,16 @@ void main() {
             .thenAnswer((invocation) => false);
         when(() => mockArConnectService.disconnect())
             .thenAnswer((invocation) => Future.value(null));
+        when(() => mockSolanaProviderService.disconnect())
+            .thenAnswer((_) => Future.value());
         when(() => mockProfileCubit.logoutProfile())
             .thenAnswer((_) => Future.value(null));
       },
       act: (bloc) async {
         bloc.add(const ForgetWallet());
+      },
+      verify: (_) {
+        verify(() => mockSolanaProviderService.disconnect()).called(1);
       },
       expect: () => [const LoginLanding()],
     );
@@ -810,6 +815,8 @@ void main() {
 
         when(() => mockArConnectService.disconnect())
             .thenAnswer((invocation) => Future.value(null));
+        when(() => mockSolanaProviderService.disconnect())
+            .thenAnswer((_) => Future.value());
       },
       act: (bloc) async {
         bloc.add(const ForgetWallet());
@@ -944,6 +951,8 @@ void main() {
           .thenAnswer((_) => false);
       when(() => mockSolanaProviderService.isExtensionPresent())
           .thenReturn(true);
+      when(() => mockSolanaProviderService.disconnect())
+          .thenAnswer((_) => Future.value());
     });
 
     blocTest(
