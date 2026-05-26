@@ -98,8 +98,9 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     String username,
     String password,
     Wallet wallet,
-    ProfileType profileType,
-  ) async {
+    ProfileType profileType, {
+    String? sourceWalletAddress,
+  }) async {
     logger.d('Adding profile with type $profileType');
 
     final profileKdRes =
@@ -147,6 +148,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
         profileType: profileType.index,
         walletPublicKey: publicKey,
         encryptedPublicKey: encryptedPublicKey.concatenation(nonce: false),
+        sourceWalletAddress: Value(sourceWalletAddress),
       ),
     );
 

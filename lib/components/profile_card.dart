@@ -20,6 +20,7 @@ import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/components/turbo_balance_widget.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
+import 'package:ardrive/user/user.dart';
 import 'package:ardrive/user/balance/user_balance_bloc.dart';
 import 'package:ardrive/user/download_wallet/download_wallet_modal.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
@@ -94,7 +95,7 @@ class _ProfileCardState extends State<ProfileCard> {
     required bool isMobile,
   }) {
     final state = context.read<ProfileCubit>().state as ProfileLoggedIn;
-    final walletAddress = state.user.walletAddress;
+    final walletAddress = state.user.displayAddress;
 
     return ArDriveOverlay(
       onVisibleChange: (visible) {
@@ -115,7 +116,7 @@ class _ProfileCardState extends State<ProfileCard> {
         state,
         isMobile: isMobile,
       ),
-      child: _buildProfileCardHeader(context, walletAddress),
+      child: _buildProfileCardHeader(context, walletAddress, state.user),
     );
   }
 
@@ -458,40 +459,61 @@ class _ProfileCardState extends State<ProfileCard> {
   }
 
   Widget _buildWalletAddressRow(BuildContext context, ProfileLoggedIn state) {
-    final walletAddress = state.user.walletAddress;
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final sourceAddress = state.user.sourceWalletAddress;
+    final hasSourceWallet = sourceAddress != null;
+    final arweaveAddress = state.user.walletAddress;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 8),
-          Row(
-            children: [
-              if (walletAddress.isNotEmpty)
+          if (hasSourceWallet) ...[
+            _WalletAddressLine(
+              label: sourceAddress.startsWith('0x') ? 'ETH' : 'SOL',
+              address: sourceAddress,
+              explorerUrl: sourceAddress.startsWith('0x')
+                  ? 'https://etherscan.io/address/$sourceAddress'
+                  : 'https://solscan.io/account/$sourceAddress',
+            ),
+            const SizedBox(height: 4),
+            _WalletAddressLine(
+              label: 'AR',
+              address: arweaveAddress,
+              explorerUrl:
+                  'https://viewblock.io/arweave/address/$arweaveAddress',
+            ),
+          ] else ...[
+            Row(
+              children: [
                 TruncatedAddress(
-                  walletAddress: walletAddress,
+                  walletAddress: arweaveAddress,
                   fontSize: 18,
                 ),
-              const Spacer(),
-              if (state.user.profileType != ProfileType.arConnect)
-                ArDriveIconButton(
-                  icon: ArDriveIcons.download(
-                    color: colorTokens.textHigh,
-                    size: 21,
-                  ),
-                  onPressed: () {
-                    showDownloadWalletModal(context);
-                  },
+                const Spacer(),
+                CopyButton(
+                  size: 21,
+                  text: arweaveAddress,
+                  showCopyText: false,
                 ),
-              CopyButton(
-                size: 21,
-                text: walletAddress,
-                showCopyText: false,
+              ],
+            ),
+          ],
+          if (state.user.profileType != ProfileType.arConnect)
+            Align(
+              alignment: Alignment.centerRight,
+              child: ArDriveIconButton(
+                icon: ArDriveIcons.download(
+                  color: colorTokens.textHigh,
+                  size: 21,
+                ),
+                onPressed: () {
+                  showDownloadWalletModal(context);
+                },
               ),
-            ],
-          ),
+            ),
         ],
       ),
     );
@@ -651,9 +673,11 @@ class _ProfileCardState extends State<ProfileCard> {
     );
   }
 
-  Widget _buildProfileCardHeader(BuildContext context, String walletAddress) {
+  Widget _buildProfileCardHeader(
+      BuildContext context, String walletAddress, User user) {
     return ProfileCardHeader(
       walletAddress: walletAddress,
+      walletIndicatorColor: getWalletIndicatorColor(user),
       onPressed: () {
         setState(() {
           _showProfileCard = !_showProfileCard;
@@ -773,6 +797,9 @@ class ProfileCardHeader extends StatelessWidget {
   final Function()? onClickLogout;
   final String? logoutTooltip;
 
+  /// Colored indicator dot for wallet type.
+  final Color? walletIndicatorColor;
+
   const ProfileCardHeader({
     super.key,
     required this.walletAddress,
@@ -781,6 +808,7 @@ class ProfileCardHeader extends StatelessWidget {
     this.hasLogoutButton = false,
     this.onClickLogout,
     this.logoutTooltip,
+    this.walletIndicatorColor,
   });
 
   @override
@@ -839,13 +867,15 @@ class ProfileCardHeader extends StatelessWidget {
       return null;
     }
 
+    final logoUrl = state.primaryNameDetails.logo!.startsWith('http')
+        ? state.primaryNameDetails.logo!
+        : 'https://ardrive.net/${state.primaryNameDetails.logo}';
+
     return Padding(
       padding: const EdgeInsets.only(right: 8.0),
       child: ClipOval(
         child: ArDriveImage(
-          image: NetworkImage(
-            'https://ardrive.net/${state.primaryNameDetails.logo}',
-          ),
+          image: NetworkImage(logoUrl),
           width: 34,
           height: 34,
           fit: BoxFit.cover,
@@ -875,9 +905,11 @@ class ProfileCardHeader extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              if (walletIndicatorColor != null)
+                _WalletIndicatorDot(color: walletIndicatorColor!),
               Flexible(
                 child: Text(
-                  isExpanded ? state.walletAddress! : truncatedWalletAddress,
+                  isExpanded ? walletAddress : truncatedWalletAddress,
                   softWrap: true,
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
@@ -924,6 +956,8 @@ class ProfileCardHeader extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (walletIndicatorColor != null)
+                  _WalletIndicatorDot(color: walletIndicatorColor!),
                 if (icon != null) icon,
                 Flexible(
                   child: SizedBox(
@@ -946,7 +980,7 @@ class ProfileCardHeader extends StatelessWidget {
                         Flexible(
                           child: Text(
                             isExpanded
-                                ? state.walletAddress
+                                ? walletAddress
                                 : truncatedWalletAddress,
                             overflow: TextOverflow.ellipsis,
                             softWrap: true,
@@ -1011,4 +1045,85 @@ String getTruncatedWalletAddress(
     offsetStart: offsetStart,
     offsetEnd: offsetEnd,
   );
+}
+
+class _WalletAddressLine extends StatelessWidget {
+  final String label;
+  final String address;
+  final String explorerUrl;
+
+  const _WalletAddressLine({
+    required this.label,
+    required this.address,
+    required this.explorerUrl,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return Row(
+      children: [
+        SizedBox(
+          width: 32,
+          child: Text(
+            label,
+            style: typography.paragraphSmall(
+              color: colorTokens.textLow,
+              fontWeight: ArFontWeight.bold,
+            ),
+          ),
+        ),
+        Expanded(
+          child: TruncatedAddress(
+            walletAddress: address,
+            explorerUrl: explorerUrl,
+          ),
+        ),
+        CopyButton(
+          size: 18,
+          text: address,
+          showCopyText: false,
+        ),
+      ],
+    );
+  }
+}
+
+class _WalletIndicatorDot extends StatelessWidget {
+  final Color color;
+
+  const _WalletIndicatorDot({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 6.0),
+      child: Container(
+        width: 8,
+        height: 8,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+        ),
+      ),
+    );
+  }
+}
+
+/// Returns the wallet indicator color based on the user's profile.
+/// Purple for Solana, blue for Ethereum, white for Arweave.
+Color getWalletIndicatorColor(User user) {
+  final source = user.sourceWalletAddress;
+  if (source != null) {
+    if (source.startsWith('0x')) {
+      // Ethereum-derived wallet
+      return const Color(0xFF627EEA);
+    }
+    // Solana-derived wallet
+    return const Color(0xFF9945FF);
+  }
+  // Arweave (ArConnect, JSON file)
+  return const Color(0xFFFFFFFF);
 }

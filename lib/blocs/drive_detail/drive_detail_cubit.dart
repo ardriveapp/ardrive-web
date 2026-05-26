@@ -179,10 +179,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     await _syncCubit.waitCurrentSync();
 
     // Check if state has already changed (e.g., drives were loaded during sync)
-    // Don't overwrite a more specific state with the empty state
+    // Don't overwrite a more specific state with the empty state.
+    // Allow overwriting DriveDetailLoadInProgress only when no real drive is
+    // being loaded (i.e., the cubit is still on its initial empty drive ID).
     if (state is DriveDetailLoadSuccess ||
         state is DriveDetailLoadUnsynced ||
-        state is DriveDetailLoadInProgress) {
+        (state is DriveDetailLoadInProgress && _driveId.isNotEmpty)) {
       return;
     }
 

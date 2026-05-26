@@ -23,6 +23,7 @@ class EnterYourPasswordWidget extends StatefulWidget {
     required this.loginBloc,
     this.wallet,
     this.derivedEthWallet,
+    this.sourceWalletAddress,
     required this.showWalletCreated,
     required this.alreadyLoggedIn,
     required this.checkingPassword,
@@ -31,6 +32,7 @@ class EnterYourPasswordWidget extends StatefulWidget {
 
   final Wallet? wallet;
   final EthereumProviderWallet? derivedEthWallet;
+  final String? sourceWalletAddress;
   final LoginBloc loginBloc;
   final bool showWalletCreated;
   final bool alreadyLoggedIn;
@@ -270,6 +272,9 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
   }
 
   Future<String?> _getWalletAddress() async {
+    if (widget.sourceWalletAddress != null) {
+      return widget.sourceWalletAddress;
+    }
     if (widget.wallet == null) {
       return context.read<ArDriveAuth>().getWalletAddress();
     }
@@ -300,6 +305,7 @@ void showEnterYourPasswordDialog(
     required bool alreadyLoggedIn,
     Wallet? wallet,
     EthereumProviderWallet? derivedEthWallet,
+    String? sourceWalletAddress,
     bool showWalletCreated = false,
     required bool isPasswordInvalid}) {
   showArDriveDialog(context,
@@ -328,6 +334,7 @@ void showEnterYourPasswordDialog(
             loginBloc: loginBloc,
             wallet: wallet,
             derivedEthWallet: derivedEthWallet,
+            sourceWalletAddress: sourceWalletAddress,
             showWalletCreated: showWalletCreated,
             alreadyLoggedIn: alreadyLoggedIn,
             checkingPassword: checkingPassword,

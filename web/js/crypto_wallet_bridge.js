@@ -466,6 +466,31 @@
   }
 
   /**
+   * Sign a message with Solana wallet
+   * @param {string} providerPreference - 'phantom' or 'solflare'
+   * @param {string} message - Message to sign
+   * @returns {Promise<Uint8Array>} 64-byte Ed25519 signature
+   */
+  async function signSolanaMessage(providerPreference, message) {
+    const provider = getSolanaProvider(providerPreference);
+    if (!provider) throw new Error('NO_PROVIDER');
+
+    const encodedMessage = new TextEncoder().encode(message);
+    try {
+      const result = await provider.signMessage(encodedMessage, 'utf8');
+      // Phantom returns { signature: Uint8Array, publicKey: PublicKey }
+      // Solflare may return Uint8Array directly or { signature: Uint8Array }
+      const signature = result.signature || result;
+      return new Uint8Array(signature);
+    } catch (error) {
+      if (error.code === 4001 || error.message?.includes('rejected')) {
+        throw new Error('USER_REJECTED');
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Register Solana event listeners
    * @param {string} providerPreference - 'phantom' or 'solflare'
    * @param {Function} onConnect - Callback for connect
@@ -537,6 +562,7 @@
     disconnectSolanaWallet,
     isSolanaConnected,
     getSolanaPublicKey,
+    signSolanaMessage,
     registerSolanaListeners,
     removeSolanaListeners,
   };

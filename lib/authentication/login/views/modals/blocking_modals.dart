@@ -61,16 +61,45 @@ void showBlockingMessageDialog(
           color: colorTokens.containerL3,
           borderRadius: BorderRadius.circular(9),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(64),
-              child: Text(message,
-                  textAlign: TextAlign.center,
-                  style: ArDriveTypographyNew.of(context).paragraphNormal(
-                      color: colorTokens.textLow,
-                      fontWeight: ArFontWeight.semiBold)),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(64, 64, 64, 16),
+                  child: LottieBuilder.asset(
+                    Resources.images.login.ardriveLoader,
+                    filterQuality: FilterQuality.high,
+                    frameRate: FrameRate.max,
+                    addRepaintBoundary: true,
+                    height: 75,
+                    width: 75,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 64),
+                  child: Text(message,
+                      textAlign: TextAlign.center,
+                      style: ArDriveTypographyNew.of(context).paragraphLarge(
+                          color: colorTokens.textLow,
+                          fontWeight: ArFontWeight.semiBold)),
+                ),
+              ],
+            ),
+            Positioned(
+              right: 8,
+              top: 8,
+              child: ArDriveClickArea(
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Icon(
+                    Icons.close,
+                    color: colorTokens.textLow,
+                    size: 20,
+                  ),
+                ),
+              ),
             ),
           ],
         ),

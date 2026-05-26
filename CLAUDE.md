@@ -80,8 +80,8 @@ PR titles must follow the pattern `PE-{number}: {description}` (enforced by CI).
 ## Code Style
 
 - Use single quotes for strings (`prefer_single_quotes` lint rule is enabled)
-- Generated files (`**.g.dart`) and GraphQL files (`lib/services/arweave/graphql/`) are excluded from analysis
-- Platform-specific directories (`macos/`, `ios/`, `android/`, `web/`) are also excluded from analysis
+- Generated files (`**.g.dart`), GraphQL files (`lib/services/arweave/graphql/`), and ario_sdk models (`packages/ario_sdk/lib/src/models/`) are excluded from analysis
+- Platform-specific directories (`macos/`, `ios/`, `android/`, `web/`), `drift_schemas/`, and `scripts/` are also excluded from analysis
 
 ## Architecture Overview
 
@@ -139,7 +139,7 @@ Note: The `ario_sdk` package requires separate code generation - `scr setup` han
 - Main database: `lib/models/database/database.dart`
 - Table definitions: `lib/models/tables/*.drift`
 - DAOs: `DriveDao`, `ProfileDao`, `ARNSDao`
-- After schema changes: bump `schemaVersion` in `database.dart` and run code generation
+- After schema changes: bump `schemaVersion` in `database.dart` (currently v27) and run code generation
 - Pre-push hook validates schema version is incremented when `.drift` files change
 - Pre-commit hook validates the correct Flutter version is installed
 
@@ -149,6 +149,13 @@ Note: The `ario_sdk` package requires separate code generation - `scr setup` han
 - **ArweaveService** (`services/arweave/`) - Node interaction, GraphQL
 - **ConfigService** (`services/config/`) - App config, flavors
 - **TurboUploadService** (`turbo/services/`) - Bundled uploads, payments
+
+### Routing
+
+Uses Flutter's `RouterDelegate` pattern (not go_router or similar packages). Core files in `lib/pages/`:
+- `app_router_delegate.dart` - Navigation state management
+- `app_route_information_parser.dart` - Route parsing
+- `app_route_path.dart` - Route path definitions
 
 ### Dependency Injection
 
@@ -179,11 +186,11 @@ The app supports multiple languages via ARB files in `lib/l10n/`: English, Spani
 ### Testing
 - Unit tests use `mocktail` for mocking
 - BLoC tests use `bloc_test` package
-- Test utilities in `test/test_utils/`
-- `scr test` runs main app tests (`flutter test`) plus all packages with test directories
+- Test utilities in `test/test_utils/` (fake data generators, mock users, custom matchers, mocked dependencies, fake implementations)
+- `scr test` runs `flutter test` on the main app plus discovers and runs tests in `packages/*/test` directories, also running `flutter analyze` on each package
 
 ### CI Pipeline
-CI runs `scr setup` → `flutter analyze` → `scr test`. Ensure these all pass locally before pushing.
+CI runs `scr setup` → `flutter analyze` → `scr test`. Ensure these all pass locally before pushing. PR title format (`PE-{number}: {description}`) is enforced by a separate CI check (`pr_title_check.yaml`). Staging/production builds integrate Sentry for error tracking.
 
 ### Git Hooks (Lefthook)
 - **Pre-commit**: Validates Flutter version matches 3.19.6

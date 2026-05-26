@@ -1,5 +1,7 @@
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/services/ethereum/ethereum_name_service.dart';
+import 'package:ardrive/services/solana/solana_name_service.dart';
 import 'package:ardrive/user/name/domain/repository/profile_logo_repository.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ario_sdk/ario_sdk.dart';
@@ -13,12 +15,18 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
   final ARNSRepository _arnsRepository;
   final ProfileLogoRepository _profileLogoRepository;
   final ArDriveAuth _auth;
+  final SolanaNameService _solanaNameService;
+  final EthereumNameService _ethereumNameService;
 
   ProfileNameBloc(
     this._arnsRepository,
     this._profileLogoRepository,
-    this._auth,
-  ) : super(const ProfileNameInitial(null)) {
+    this._auth, {
+    SolanaNameService? solanaNameService,
+    EthereumNameService? ethereumNameService,
+  })  : _solanaNameService = solanaNameService ?? SolanaNameService(),
+        _ethereumNameService = ethereumNameService ?? EthereumNameService(),
+        super(const ProfileNameInitial(null)) {
     on<LoadProfileName>((event, emit) async {
       await _loadProfileName(
         walletAddress: _auth.currentUser.walletAddress,
@@ -64,6 +72,55 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
       /// if we are not refreshing, we emit a loading state
       if (!refreshName) {
         emit(ProfileNameLoading(walletAddress));
+      }
+
+      // Name service results are cached for the session.
+      // Page reload clears the cache for fresh resolution.
+      // Resolve cross-chain names: determine source address from either
+      // the logged-in user or the walletAddress parameter itself (pre-login).
+      final sourceAddress = isUserLoggedIn
+          ? _auth.currentUser.sourceWalletAddress
+          : (walletAddress.startsWith('0x') ? walletAddress : null);
+      // For pre-login Solana: Solana addresses are base58, 32-44 chars,
+      // don't start with 0x, and aren't 43-char base64url (Arweave).
+      final isSolanaPreLogin = !isUserLoggedIn &&
+          !walletAddress.startsWith('0x') &&
+          walletAddress.length >= 32 &&
+          walletAddress.length <= 44 &&
+          !walletAddress.contains('-') &&
+          !walletAddress.contains('_');
+
+      final resolveAddress =
+          sourceAddress ?? (isSolanaPreLogin ? walletAddress : null);
+
+      if (resolveAddress != null) {
+        if (resolveAddress.startsWith('0x')) {
+          final ensProfile =
+              await _ethereumNameService.getProfile(resolveAddress);
+          if (ensProfile != null) {
+            emit(ProfileNameLoaded(
+              PrimaryNameDetails(
+                primaryName: ensProfile.domain,
+                logo: ensProfile.avatarUrl,
+              ),
+              walletAddress,
+            ));
+            return;
+          }
+        } else {
+          final solProfile =
+              await _solanaNameService.getProfile(resolveAddress);
+          if (solProfile != null) {
+            emit(ProfileNameLoaded(
+              PrimaryNameDetails(
+                primaryName: solProfile.domain,
+                logo: solProfile.pictureUrl,
+              ),
+              walletAddress,
+            ));
+            return;
+          }
+        }
       }
 
       if (!refreshLogo) {

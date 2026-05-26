@@ -2,6 +2,8 @@ import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart
 import 'package:ardrive/authentication/components/lined_text_divider.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/authentication/login/views/modals/import_wallet_modal.dart';
+import 'package:ardrive/authentication/login/views/modals/solana_wallet_picker_modal.dart';
+import 'package:ardrive/services/solana/solana_provider.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -19,12 +21,14 @@ const String termsOfServiceUrl = 'https://ardrive.io/tos-and-privacy/';
 class PromptWalletView extends StatefulWidget {
   final bool isArConnectAvailable;
   final bool isMetamaskAvailable;
+  final bool isSolanaAvailable;
   final bool existingUserFlow;
 
   const PromptWalletView({
     super.key,
     required this.isArConnectAvailable,
     required this.isMetamaskAvailable,
+    required this.isSolanaAvailable,
     required this.existingUserFlow,
   });
 
@@ -99,7 +103,8 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                     ),
                     const SizedBox(height: 72),
                     if (widget.isArConnectAvailable ||
-                        widget.isMetamaskAvailable) ...[
+                        widget.isMetamaskAvailable ||
+                        widget.isSolanaAvailable) ...[
                       if (widget.isArConnectAvailable) ...[
                         ArDriveButtonNew(
                           text: 'Continue with Wander',
@@ -147,6 +152,30 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                             context
                                 .read<LoginBloc>()
                                 .add(const LoginWithMetamask());
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      if (widget.isSolanaAvailable) ...[
+                        ArDriveButtonNew(
+                          text: 'Continue with Solana',
+                          hoverIcon: Container(
+                            alignment: Alignment.center,
+                            child: Image.asset(
+                              Resources.images.login.solana,
+                              width: 24,
+                              height: 24,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                          typography: typography,
+                          onPressed: () {
+                            PlausibleEventTracker
+                                .trackClickContinueWithSolanaButton(
+                              pageView,
+                            );
+
+                            _connectSolanaWallet(context);
                           },
                         ),
                       ],
@@ -287,6 +316,24 @@ class _PromptWalletViewState extends State<PromptWalletView> {
         ],
       ),
     );
+  }
+
+  void _connectSolanaWallet(BuildContext context) {
+    final loginBloc = context.read<LoginBloc>();
+    final detection = SolanaProviderService().detectProviders();
+
+    if (detection.hasPhantom && detection.hasSolflare) {
+      showSolanaWalletPickerDialog(
+        context: context,
+        loginBloc: loginBloc,
+      );
+    } else if (detection.hasPhantom) {
+      loginBloc.add(const LoginWithSolana(provider: 'phantom'));
+    } else if (detection.hasSolflare) {
+      loginBloc.add(const LoginWithSolana(provider: 'solflare'));
+    } else {
+      loginBloc.add(const LoginWithSolana());
+    }
   }
 
   SizedBox heightSpacing() {
