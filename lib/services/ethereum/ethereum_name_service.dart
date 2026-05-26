@@ -15,7 +15,7 @@ class EnsProfile {
 ///
 /// Uses ensdata.net API with in-memory caching to avoid repeated calls.
 class EthereumNameService {
-  static const _baseUrl = 'https://ensdata.net';
+  static const _baseUrl = 'https://api.ensdata.net';
 
   /// In-memory cache: address → resolved profile (or null if none found).
   final Map<String, EnsProfile?> _cache = {};
