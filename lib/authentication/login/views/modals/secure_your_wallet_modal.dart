@@ -307,6 +307,12 @@ void showSecureYourPasswordDialog(
             Navigator.of(context).pop();
             return false;
           }
+          if (current is LoginFailure ||
+              current is LoginUnknownFailure ||
+              current is GatewayLoginFailure) {
+            Navigator.of(context).pop();
+            return false;
+          }
           return true;
         },
         builder: (context, state) {
