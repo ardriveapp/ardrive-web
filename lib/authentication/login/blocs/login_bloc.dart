@@ -299,6 +299,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           .deriveArdriveSeedphrase(chainId, event.password);
       emit(LoginCloseBlockingDialog());
     } catch (e) {
+      logger.e('Failed to derive Ethereum seedphrase during login', e);
       emit(LoginCloseBlockingDialog());
       emit(PromptPassword(
           wallet: event.wallet,
@@ -541,11 +542,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       (mnemonic, fullEntropy) = await (wallet as EthereumWallet)
           .deriveArdriveSeedphrase(chainId, event.password);
     } catch (e) {
-      emit(previousState);
-      return;
-    } finally {
+      logger.e('Failed to derive Ethereum seedphrase', e);
       emit(LoginCloseBlockingDialog());
+      rethrow;
     }
+    emit(LoginCloseBlockingDialog());
 
     emit(LoginShowLoader());
     wallet = await generateWalletFromMnemonic(mnemonic);
