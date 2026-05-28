@@ -511,8 +511,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       emit(LoginCreatePasswordComplete());
     } catch (e) {
+      logger.e('Create password failed', e);
       usingSeedphrase = false;
-      emit(previousState);
+      // Close any open dialogs (loader, blocking message)
+      emit(LoginCloseBlockingDialog());
       emit(LoginFailure(e));
     }
   }

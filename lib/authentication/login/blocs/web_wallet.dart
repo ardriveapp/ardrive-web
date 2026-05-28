@@ -19,9 +19,17 @@ Future<Wallet> generateWalletFromMnemonic(String mnemonic) async {
   // Lazy-load arweave-wallet.js if not yet loaded
   final lazyLoader = getProperty(_globalThis, 'LazyLoader');
   if (lazyLoader != null) {
-    await promiseToFuture(callMethod(lazyLoader, 'loadArweaveWallet', []));
+    try {
+      await promiseToFuture(callMethod(lazyLoader, 'loadArweaveWallet', []));
+    } catch (e) {
+      throw Exception('Failed to load arweave-wallet.js: $e');
+    }
   }
 
-  var jwk = await promiseToFuture(_generateJWKStringFromMnemonic(mnemonic));
-  return Wallet.fromJwk(json.decode(jwk));
+  try {
+    var jwk = await promiseToFuture(_generateJWKStringFromMnemonic(mnemonic));
+    return Wallet.fromJwk(json.decode(jwk));
+  } catch (e) {
+    throw Exception('Failed to generate wallet from mnemonic: $e');
+  }
 }

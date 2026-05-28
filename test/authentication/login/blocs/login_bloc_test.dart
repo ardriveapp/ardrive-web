@@ -567,7 +567,7 @@ void main() {
       expect: () => [
         const PromptPassword(),
         LoginLoading(),
-        const PromptPassword(),
+        LoginCloseBlockingDialog(),
         const TypeMatcher<LoginFailure>(),
       ],
     );
@@ -636,7 +636,7 @@ void main() {
       expect: () => [
         const PromptPassword(),
         LoginLoading(),
-        const PromptPassword(),
+        LoginCloseBlockingDialog(),
         const TypeMatcher<LoginFailure>(),
       ],
     );
