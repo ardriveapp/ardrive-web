@@ -114,10 +114,23 @@
 
   /**
    * Load Arweave wallet generator (693 KB) — only for wallet generation.
+   * Must temporarily unset define/require to prevent CommonJS detection
+   * conflict with dart2js/requirejs.
    */
   async function loadArweaveWallet() {
-    await loadScript('./js/arweave-wallet.js');
-    console.log('Arweave wallet lazy-loaded');
+    if (window.ArweaveWallet) return;
+
+    const savedDefine = window.define;
+    const savedRequire = window.require;
+    window.define = undefined;
+    window.require = undefined;
+    try {
+      await loadScript('./js/arweave-wallet.js');
+      console.log('Arweave wallet lazy-loaded');
+    } finally {
+      window.define = savedDefine;
+      window.require = savedRequire;
+    }
   }
 
   window.LazyLoader = {
