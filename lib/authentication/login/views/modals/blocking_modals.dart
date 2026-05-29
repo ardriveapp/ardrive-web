@@ -17,7 +17,7 @@ void showLoaderDialog({required BuildContext context}) {
     useRootNavigator: false,
     content: ArDriveLoginModal(
       width: 380,
-      hasCloseButton: false,
+      hasCloseButton: true,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
