@@ -118,7 +118,14 @@
    * conflict with dart2js/requirejs.
    */
   async function loadArweaveWallet() {
-    if (window.ArweaveWallet) return;
+    if (window.ArweaveWallet) {
+      console.log('Arweave wallet already loaded');
+      return;
+    }
+
+    console.log('[LazyLoader] Loading arweave-wallet.js...');
+    console.log('[LazyLoader] window.define exists:', typeof window.define !== 'undefined');
+    console.log('[LazyLoader] window.require exists:', typeof window.require !== 'undefined');
 
     const savedDefine = window.define;
     const savedRequire = window.require;
@@ -126,10 +133,15 @@
     window.require = undefined;
     try {
       await loadScript('./js/arweave-wallet.js');
-      console.log('Arweave wallet lazy-loaded');
     } finally {
       window.define = savedDefine;
       window.require = savedRequire;
+    }
+
+    if (window.ArweaveWallet) {
+      console.log('[LazyLoader] ArweaveWallet loaded successfully, has generateJWKStringFromMnemonic:', typeof window.ArweaveWallet.generateJWKStringFromMnemonic);
+    } else {
+      console.error('[LazyLoader] FAILED: arweave-wallet.js loaded but window.ArweaveWallet is', typeof window.ArweaveWallet);
     }
   }
 
