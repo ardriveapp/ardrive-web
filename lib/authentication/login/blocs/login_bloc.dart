@@ -510,8 +510,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       }
 
       emit(LoginCreatePasswordComplete());
-    } catch (e) {
-      logger.e('Create password failed', e);
+    } catch (e, stackTrace) {
+      logger.e('[ETH-CREATE] CREATE PASSWORD FAILED', e, stackTrace);
       usingSeedphrase = false;
       // Close any open dialogs (loader, blocking message)
       emit(LoginCloseBlockingDialog());
@@ -540,22 +540,29 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
             'Please approve the request in your Ethereum wallet.'));
 
     const chainId = 1; // Ethereum mainnet
+    logger.d('[ETH-CREATE] Step 1: Requesting MetaMask signature...');
     try {
       (mnemonic, fullEntropy) = await (wallet as EthereumWallet)
           .deriveArdriveSeedphrase(chainId, event.password);
+      logger.d('[ETH-CREATE] Step 1 complete: mnemonic derived');
     } catch (e) {
-      logger.e('Failed to derive Ethereum seedphrase', e);
+      logger.e('[ETH-CREATE] Step 1 FAILED: derive seedphrase', e);
       emit(LoginCloseBlockingDialog());
       rethrow;
     }
     emit(LoginCloseBlockingDialog());
 
+    logger.d('[ETH-CREATE] Step 2: Generating Arweave wallet from mnemonic...');
     emit(LoginShowLoader());
     wallet = await generateWalletFromMnemonic(mnemonic);
+    logger.d('[ETH-CREATE] Step 2 complete: wallet generated');
 
+    logger.d('[ETH-CREATE] Step 3: Signing verification data...');
     final verifySignature = await wallet.sign(fullEntropy);
+    logger.d('[ETH-CREATE] Step 3 complete: verification signed');
 
     // upload verification signature with derived Arweave wallet
+    logger.d('[ETH-CREATE] Step 4: Uploading Arweave verification...');
     final dataItem = DataItem.withBlobData(
       data: verifySignature,
       owner: await wallet.getOwner(),
@@ -563,8 +570,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     await dataItem.sign(ArweaveSigner(wallet));
 
     await _turboUploadService.postDataItem(dataItem: dataItem, wallet: wallet);
+    logger.d('[ETH-CREATE] Step 4 complete: Arweave verification uploaded');
 
     // upload verification signature with derived ETH wallet
+    logger.d('[ETH-CREATE] Step 5: Uploading ETH verification...');
     final ethSignedDataItem = DataItem.withBlobData(
       data: verifySignature,
       owner: await derivedEthWallet.getOwner(),
@@ -574,6 +583,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     await _turboUploadService.postDataItem(
         dataItem: ethSignedDataItem, wallet: derivedEthWallet);
+    logger.d('[ETH-CREATE] Step 5 complete: ETH verification uploaded');
 
     emit(LoginCloseBlockingDialog());
 
