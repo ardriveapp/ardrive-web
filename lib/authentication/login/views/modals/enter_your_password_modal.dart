@@ -178,7 +178,7 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
           ),
           showDerivedWalletAlreadyCreated
               ? Text(
-                  'We found a wallet already created for this Ethereum address, please enter your password to continue.',
+                  'An existing account was found. Please enter your password to continue.',
                   textAlign: TextAlign.center,
                   style: typography.paragraphNormal(
                       color: colorTokens.textLow,

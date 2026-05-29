@@ -174,7 +174,7 @@ class _LoginPageState extends State<LoginPage> {
                 context: context,
                 title: appLocalizationsOf(context).loginFailed,
                 message:
-                    'This version of Wander is not supported. Please upgrade and try again.',
+                    'Your Arweave wallet extension needs to be updated. Please upgrade and try again.',
               );
               return;
             }
@@ -190,7 +190,7 @@ class _LoginPageState extends State<LoginPage> {
               title: appLocalizationsOf(context).loginFailed,
               showShareLogsButton: true,
               message:
-                  'Oops, something went wrong. Please try again later. If the issue persists, tap the \'Copy Logs\' button to help us diagnose the problem.',
+                  'Something went wrong. Please try again. If the issue persists, tap \'Copy Logs\' to help us diagnose the problem.',
             );
           } else if (loginState is LoginSuccess) {
             final profileType = loginState.user.profileType;
@@ -205,7 +205,7 @@ class _LoginPageState extends State<LoginPage> {
               context: context,
               title: appLocalizationsOf(context).loginFailed,
               message:
-                  'There was a problem communicating with the gateway at ${loginState.gatewayUrl}.\nPlease try again later.',
+                  'Unable to connect to the server. Please check your connection and try again.',
             );
           } else if (loginState
               is LoginPasswordFailedWithPrivateDriveNotFound) {
@@ -213,7 +213,7 @@ class _LoginPageState extends State<LoginPage> {
               context: context,
               title: appLocalizationsOf(context).loginFailed,
               message:
-                  'Your drive is still processing on Arweave. Please wait a few minutes for the transaction to confirm, then try again.',
+                  'Your drive is still being confirmed. Please wait a few minutes and try again.',
             );
           }
         },

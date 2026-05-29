@@ -107,7 +107,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                         widget.isSolanaAvailable) ...[
                       if (widget.isArConnectAvailable) ...[
                         ArDriveButtonNew(
-                          text: 'Continue with Wander',
+                          text: 'Continue with Arweave',
                           hoverIcon: Container(
                               alignment: Alignment.center,
                               child: ArDriveImage(

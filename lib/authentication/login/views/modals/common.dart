@@ -23,7 +23,7 @@ void showErrorDialog(
     barrierDismissible: false,
     useRootNavigator: false,
     content: ArDriveLoginModal(
-      width: 440,
+      width: 380,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -49,32 +49,29 @@ void showErrorDialog(
               style: typography.paragraphNormal(
                   color: colorTokens.textLow,
                   fontWeight: ArFontWeight.semiBold)),
-          const SizedBox(height: 40),
-          SizedBox(
-            width: 440,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: ArDriveButtonNew(
-                    text: 'Close',
-                    typography: typography,
-                    variant: showShareLogsButton
-                        ? ButtonVariant.secondary
-                        : ButtonVariant.primary,
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                  ),
+          const SizedBox(height: 32),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: ArDriveButtonNew(
+                  text: 'Close',
+                  typography: typography,
+                  variant: showShareLogsButton
+                      ? ButtonVariant.secondary
+                      : ButtonVariant.primary,
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
                 ),
-                if (showShareLogsButton) const SizedBox(width: 12),
-                if (showShareLogsButton)
-                  const Flexible(
-                    child: CopyLogsButton(),
-                  ),
-              ],
-            ),
+              ),
+              if (showShareLogsButton) const SizedBox(width: 12),
+              if (showShareLogsButton)
+                const Flexible(
+                  child: CopyLogsButton(),
+                ),
+            ],
           ),
         ],
       ),
