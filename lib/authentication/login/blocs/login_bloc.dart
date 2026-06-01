@@ -630,35 +630,40 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       return;
     }
 
-    try {
-      // 1. Connect wallet (ArConnect handles its own popup)
-      bool hasPermissions = await _arConnectService.checkPermissions();
-      if (!hasPermissions) {
-        try {
-          // If we have partial permissions, we're gonna disconnect before
-          /// re-connecting again.
-          ignoreNextWaletSwitch = true;
-          await _arConnectService.disconnect();
-        } catch (_) {}
+    // 1. Connect wallet (ArConnect handles its own popup)
+    bool hasPermissions = await _arConnectService.checkPermissions();
+    if (!hasPermissions) {
+      try {
+        // If we have partial permissions, disconnect before reconnecting.
+        ignoreNextWaletSwitch = true;
+        await _arConnectService.disconnect();
+      } catch (_) {}
 
+      try {
         await _arConnectService.connect();
+      } catch (e) {
+        // User rejected or extension error — return silently
+        return;
       }
+    }
 
-      hasPermissions = await _arConnectService.checkPermissions();
-      if (!hasPermissions) {
-        throw Exception('ArConnect permissions not granted');
-      }
+    hasPermissions = await _arConnectService.checkPermissions();
+    if (!hasPermissions) {
+      // User didn't grant permissions — return silently
+      return;
+    }
 
-      final wallet = ArConnectWallet(_arConnectService);
+    final wallet = ArConnectWallet(_arConnectService);
 
-      profileType = ProfileType.arConnect;
+    profileType = ProfileType.arConnect;
 
-      lastKnownWalletAddress = await wallet.getAddress();
+    lastKnownWalletAddress = await wallet.getAddress();
 
-      // 2. Server-side check (user waits — show blocking dialog)
-      emit(const LoginShowBlockingDialog(
-          message: 'Setting up your account...'));
+    // 2. Server-side check (user waits — show blocking dialog)
+    emit(const LoginShowBlockingDialog(
+        message: 'Setting up your account...'));
 
+    try {
       if (await _arDriveAuth.userHasPassword(wallet)) {
         emit(LoginCloseBlockingDialog());
         emit(PromptPassword(wallet: wallet, showWalletCreated: false));
@@ -904,7 +909,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     try {
       ethWallet = await _ethereumProviderService.connect();
     } catch (e) {
-      emit(LoginFailure(e));
+      // User rejected or extension error — return silently
       return;
     }
 
@@ -929,7 +934,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       derivedEthWallet = EthereumProviderWallet(privateKey);
     } catch (e) {
-      emit(LoginFailure(e));
+      // User rejected signature or extension error — return silently
       return;
     }
 

@@ -740,7 +740,7 @@ void main() {
     );
 
     blocTest(
-      'should emit a failure when user doesnt have permissions',
+      'should return silently when user doesnt grant permissions',
       build: () {
         return createBloc();
       },
@@ -754,10 +754,8 @@ void main() {
       act: (bloc) async {
         bloc.add(const AddWalletFromArConnect());
       },
-      expect: () => [
-        LoginCloseBlockingDialog(),
-        const TypeMatcher<LoginFailure>(),
-      ],
+      // User rejected — silent return, no error dialog
+      expect: () => [],
     );
   });
 
