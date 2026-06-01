@@ -618,7 +618,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     AddWalletFromArConnect event,
     Emitter<LoginState> emit,
   ) async {
-    final previousState = state;
     usingSeedphrase = false;
     _sourceWalletAddress = null;
 
@@ -626,7 +625,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         await _arConnectService.isWalletVersionSupported();
     if (!arconnectVersionSupported) {
       emit(const LoginFailure(ArConnectVersionNotSupportedException()));
-      emit(previousState);
       return;
     }
 
@@ -983,12 +981,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     LoginWithSolana event,
     Emitter<LoginState> emit,
   ) async {
-    final previousState = state;
-
     if (!_solanaProviderService.isExtensionPresent()) {
       emit(const LoginFailure(
           'No Solana wallet detected. Please install Phantom or Solflare.'));
-      emit(previousState);
       return;
     }
 
@@ -999,7 +994,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       if (connection == null) {
         await _solanaProviderService.disconnect();
-        emit(previousState);
         return;
       }
 
@@ -1013,7 +1007,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       } catch (e) {
         await _solanaProviderService.disconnect();
         _sourceWalletAddress = null;
-        emit(previousState);
         return;
       }
 
@@ -1054,7 +1047,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       } else {
         emit(LoginFailure(e));
       }
-      emit(previousState);
     }
   }
 

@@ -1038,18 +1038,15 @@ void main() {
             .thenReturn(false);
       },
       act: (bloc) async {
-        bloc.emit(const PromptPassword());
         bloc.add(const LoginWithSolana());
       },
       expect: () => [
-        const PromptPassword(),
         const TypeMatcher<LoginFailure>(),
-        const PromptPassword(),
       ],
     );
 
     blocTest(
-      'should stay on current state when user rejects wallet connection',
+      'should return silently when user rejects wallet connection',
       build: () => createSolanaBloc(),
       setUp: () {
         when(() => mockSolanaProviderService.connect(
@@ -1059,11 +1056,11 @@ void main() {
       act: (bloc) async {
         bloc.add(const LoginWithSolana());
       },
-      expect: () => [LoginLoading()],
+      expect: () => [],
     );
 
     blocTest(
-      'should stay on current state when user rejects signature',
+      'should return silently when user rejects signature',
       build: () => createSolanaBloc(),
       setUp: () {
         when(() => mockSolanaProviderService.connect(
@@ -1078,7 +1075,7 @@ void main() {
       act: (bloc) async {
         bloc.add(const LoginWithSolana());
       },
-      expect: () => [LoginLoading()],
+      expect: () => [],
     );
   });
 }
