@@ -88,14 +88,6 @@ class SolanaWalletPickerModal extends StatelessWidget {
                 loginBloc.add(const LoginWithSolana(provider: 'solflare'));
               },
             ),
-            const SizedBox(height: 12),
-            ArDriveButtonNew(
-              text: 'Cancel',
-              typography: typography,
-              variant: ButtonVariant.outline,
-              maxWidth: double.maxFinite,
-              onPressed: () => Navigator.pop(context),
-            ),
           ],
         ),
       ),
