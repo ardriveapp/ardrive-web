@@ -669,8 +669,8 @@ void main() {
         bloc.add(const AddWalletFromArConnect());
       },
       expect: () => [
-        LoginLoadingIfUserAlreadyExists(),
-        LoginLoadingIfUserAlreadyExistsSuccess(),
+        const TypeMatcher<LoginShowBlockingDialog>(),
+        LoginCloseBlockingDialog(),
         const TypeMatcher<PromptPassword>()
       ],
     );
@@ -697,8 +697,8 @@ void main() {
         bloc.add(const AddWalletFromArConnect());
       },
       expect: () => [
-        LoginLoadingIfUserAlreadyExists(),
-        LoginLoadingIfUserAlreadyExistsSuccess(),
+        const TypeMatcher<LoginShowBlockingDialog>(),
+        LoginCloseBlockingDialog(),
         predicate<CreateNewPassword>((cnp) {
           return cnp.showWalletCreated == false &&
               cnp.mnemonic == null &&
@@ -729,8 +729,8 @@ void main() {
         bloc.add(const AddWalletFromArConnect());
       },
       expect: () => [
-        LoginLoadingIfUserAlreadyExists(),
-        LoginLoadingIfUserAlreadyExistsSuccess(),
+        const TypeMatcher<LoginShowBlockingDialog>(),
+        LoginCloseBlockingDialog(),
         predicate<CreateNewPassword>((cnp) {
           return cnp.showWalletCreated == false &&
               cnp.mnemonic == null &&
@@ -752,16 +752,10 @@ void main() {
             .thenAnswer((invocation) => Future.value(false));
       },
       act: (bloc) async {
-        // when an error occurs we go back to the last state, so use it to test
-        bloc.emit(const PromptPassword());
-
         bloc.add(const AddWalletFromArConnect());
       },
       expect: () => [
-        const PromptPassword(),
-        LoginLoadingIfUserAlreadyExists(),
-        LoginLoadingIfUserAlreadyExistsSuccess(),
-        const PromptPassword(),
+        LoginCloseBlockingDialog(),
         const TypeMatcher<LoginFailure>(),
       ],
     );

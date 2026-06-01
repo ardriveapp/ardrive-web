@@ -631,8 +631,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     }
 
     try {
-      emit(LoginLoadingIfUserAlreadyExists());
-
+      // 1. Connect wallet (ArConnect handles its own popup)
       bool hasPermissions = await _arConnectService.checkPermissions();
       if (!hasPermissions) {
         try {
@@ -656,12 +655,16 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       lastKnownWalletAddress = await wallet.getAddress();
 
+      // 2. Server-side check (user waits — show blocking dialog)
+      emit(const LoginShowBlockingDialog(
+          message: 'Setting up your account...'));
+
       if (await _arDriveAuth.userHasPassword(wallet)) {
-        emit(LoginLoadingIfUserAlreadyExistsSuccess());
+        emit(LoginCloseBlockingDialog());
         emit(PromptPassword(wallet: wallet, showWalletCreated: false));
       } else {
-        emit(LoginLoadingIfUserAlreadyExistsSuccess());
         final hasDrives = await _arDriveAuth.isExistingUser(wallet);
+        emit(LoginCloseBlockingDialog());
         emit(
           CreateNewPassword(
             wallet: wallet,
@@ -671,8 +674,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         );
       }
     } catch (e) {
-      emit(LoginLoadingIfUserAlreadyExistsSuccess());
-      emit(previousState);
+      emit(LoginCloseBlockingDialog());
       if (e is AuthenticationGatewayException) {
         emit(GatewayLoginFailure(e, _getGatewayUrl()));
       } else {
@@ -896,35 +898,24 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       emit(const LoginFailure('Metamask not available'));
       return;
     }
-    emit(const LoginShowBlockingDialog(
-        message: 'Please connect your Ethereum wallet.'));
 
+    // 1. Connect wallet (MetaMask handles its own popup)
     EthereumWallet? ethWallet;
     try {
       ethWallet = await _ethereumProviderService.connect();
     } catch (e) {
-      emit(LoginCloseBlockingDialog());
       emit(LoginFailure(e));
       return;
     }
 
-    emit(LoginCloseBlockingDialog());
-
     if (ethWallet == null) {
-      emit(const LoginFailure('Unable to connect to Metamask'));
       return;
     }
 
     _sourceWalletAddress = await ethWallet.getAddress();
 
-    // Sign message to verify user address and use signature to derive in-memory
-    // ETH wallet
-
+    // 2. Sign verification message (MetaMask handles its own popup)
     const signMessage = 'Sign message to verify wallet address.';
-
-    emit(const LoginShowBlockingDialog(
-        message:
-            'Please approve the request in your Ethereum wallet.'));
 
     late EthereumProviderWallet derivedEthWallet;
     try {
@@ -938,12 +929,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       derivedEthWallet = EthereumProviderWallet(privateKey);
     } catch (e) {
-      emit(LoginCloseBlockingDialog());
       emit(LoginFailure(e));
       return;
     }
 
-    emit(LoginCloseBlockingDialog());
+    // 3. Server-side check (user waits — show blocking dialog)
     emit(const LoginShowBlockingDialog(
         message: 'Setting up your account...'));
 
