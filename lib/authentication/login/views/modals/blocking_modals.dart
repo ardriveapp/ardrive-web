@@ -31,7 +31,7 @@ void showLoaderDialog({required BuildContext context}) {
           ),
           const SizedBox(height: 16),
           Text(
-            'Setting up your account...',
+            'Setting up your account.\nThis may take a moment.',
             style: ArDriveTypographyNew.of(context).paragraphNormal(
                 color: colorTokens.textLow,
                 fontWeight: ArFontWeight.semiBold),
