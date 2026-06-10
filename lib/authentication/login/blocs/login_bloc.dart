@@ -641,8 +641,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         await _arConnectService.connect();
       } catch (e) {
         // User rejected or extension error — return silently
+        ignoreNextWaletSwitch = false;
         return;
       }
+
+      // Clear the flag after connect completes — if the wallet switch
+      // event was going to fire, it already did during disconnect/connect.
+      ignoreNextWaletSwitch = false;
     }
 
     hasPermissions = await _arConnectService.checkPermissions();
