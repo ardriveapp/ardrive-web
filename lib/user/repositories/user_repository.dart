@@ -3,7 +3,6 @@ import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/utils/logger.dart';
-import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 
 abstract class UserRepository {
@@ -18,29 +17,23 @@ abstract class UserRepository {
   Future<void> deleteUser();
   Future<String?> getOwnerOfDefaultProfile();
   Future<BigInt> getBalance(Wallet wallet);
-  Future<String?> getARIOTokens(Wallet wallet);
-
   factory UserRepository(
-          ProfileDao profileDao, ArweaveService arweave, ArioSDK arioSDK) =>
+          ProfileDao profileDao, ArweaveService arweave) =>
       _UserRepository(
         profileDao: profileDao,
         arweave: arweave,
-        arioSDK: arioSDK,
       );
 }
 
 class _UserRepository implements UserRepository {
   final ProfileDao _profileDao;
   final ArweaveService _arweave;
-  final ArioSDK _arioSDK;
 
   _UserRepository({
     required ProfileDao profileDao,
     required ArweaveService arweave,
-    required ArioSDK arioSDK,
   })  : _profileDao = profileDao,
-        _arweave = arweave,
-        _arioSDK = arioSDK;
+        _arweave = arweave;
 
   // TODO: Check ProfileDAO to implement only one source for user data
 
@@ -117,20 +110,6 @@ class _UserRepository implements UserRepository {
     }
 
     return profile.walletPublicKey;
-  }
-
-  @override
-  Future<String?> getARIOTokens(Wallet wallet) async {
-    String? arioTokens;
-
-    if (isArioSDKSupportedOnPlatform()) {
-      arioTokens = await _arioSDK.getARIOTokens(await wallet.getAddress());
-      if (arioTokens == 'null') {
-        throw Exception('Error fetching ARIOTokens');
-      }
-    }
-
-    return arioTokens;
   }
 
   @override

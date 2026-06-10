@@ -433,7 +433,6 @@ class AppState extends State<App> {
           create: (context) => UserRepository(
             context.read<ProfileDao>(),
             context.read<ArweaveService>(),
-            ArioSDKFactory().create(),
           ),
         ),
         RepositoryProvider(
