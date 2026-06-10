@@ -117,18 +117,14 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           return;
         }
 
-        // Check if drive exists and has been content-synced
+        // Check if drive exists
         if (drive == null) {
           emit(DriveDetailLoadNotFound());
           return;
         }
 
-        // If drive has only metadata (not content-synced), show unsynced state
-        if (drive.lastBlockHeight == null || drive.lastBlockHeight == 0) {
-          emit(DriveDetailLoadUnsynced(drive: drive));
-          return;
-        }
-
+        // Open the drive regardless of lastBlockHeight.
+        // Background sync will update via Drift streams.
         openFolder(folderId: drive.rootFolderId);
       }).whenComplete(() {
         _initialLoadComplete = true;
@@ -195,12 +191,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     // First check current drive state before waiting for sync
     var drive = await _driveDao.driveById(driveId: driveId).getSingleOrNull();
 
-    // If drive isn't synced yet, wait for sync to complete then re-check
-    if (drive == null || drive.lastBlockHeight == null || drive.lastBlockHeight == 0) {
+    // If drive doesn't exist locally at all, wait for sync to discover it
+    if (drive == null) {
       emit(DriveDetailLoadInProgress());
       await _syncCubit.waitCurrentSync();
-
-      // Re-query drive after sync completes
       drive = await _driveDao.driveById(driveId: driveId).getSingleOrNull();
     }
 
@@ -209,17 +203,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       return;
     }
 
-    // Check if drive content has been synced (lastBlockHeight > 0 means synced)
-    if (drive.lastBlockHeight == null || drive.lastBlockHeight == 0) {
-      await _folderSubscription?.cancel();
-      _driveId = driveId;
-      // Clear selection state to avoid stale data leaking into sync/openFolder
-      _selectedItem = null;
-      _selectedItems.clear();
-      _refreshSelectedItem = false;
-      emit(DriveDetailLoadUnsynced(drive: drive));
-      return;
-    }
+    // Proceed to open the drive regardless of lastBlockHeight.
+    // The local DB has whatever the user created or last synced.
+    // Background sync will update via Drift streams if anything new appears.
 
     await _folderSubscription?.cancel();
 

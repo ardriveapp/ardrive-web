@@ -618,7 +618,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     AddWalletFromArConnect event,
     Emitter<LoginState> emit,
   ) async {
-    final previousState = state;
     usingSeedphrase = false;
     _sourceWalletAddress = null;
 
@@ -626,42 +625,49 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         await _arConnectService.isWalletVersionSupported();
     if (!arconnectVersionSupported) {
       emit(const LoginFailure(ArConnectVersionNotSupportedException()));
-      emit(previousState);
       return;
     }
 
-    try {
-      emit(LoginLoadingIfUserAlreadyExists());
+    // 1. Connect wallet (ArConnect handles its own popup)
+    bool hasPermissions = await _arConnectService.checkPermissions();
+    if (!hasPermissions) {
+      try {
+        // If we have partial permissions, disconnect before reconnecting.
+        ignoreNextWaletSwitch = true;
+        await _arConnectService.disconnect();
+      } catch (_) {}
 
-      bool hasPermissions = await _arConnectService.checkPermissions();
-      if (!hasPermissions) {
-        try {
-          // If we have partial permissions, we're gonna disconnect before
-          /// re-connecting again.
-          ignoreNextWaletSwitch = true;
-          await _arConnectService.disconnect();
-        } catch (_) {}
-
+      try {
         await _arConnectService.connect();
+      } catch (e) {
+        // User rejected or extension error — return silently
+        return;
       }
+    }
 
-      hasPermissions = await _arConnectService.checkPermissions();
-      if (!hasPermissions) {
-        throw Exception('ArConnect permissions not granted');
-      }
+    hasPermissions = await _arConnectService.checkPermissions();
+    if (!hasPermissions) {
+      // User didn't grant permissions — return silently
+      return;
+    }
 
-      final wallet = ArConnectWallet(_arConnectService);
+    final wallet = ArConnectWallet(_arConnectService);
 
-      profileType = ProfileType.arConnect;
+    profileType = ProfileType.arConnect;
 
-      lastKnownWalletAddress = await wallet.getAddress();
+    lastKnownWalletAddress = await wallet.getAddress();
 
+    // 2. Server-side check (user waits — show blocking dialog)
+    emit(const LoginShowBlockingDialog(
+        message: 'Setting up your account...'));
+
+    try {
       if (await _arDriveAuth.userHasPassword(wallet)) {
-        emit(LoginLoadingIfUserAlreadyExistsSuccess());
+        emit(LoginCloseBlockingDialog());
         emit(PromptPassword(wallet: wallet, showWalletCreated: false));
       } else {
-        emit(LoginLoadingIfUserAlreadyExistsSuccess());
         final hasDrives = await _arDriveAuth.isExistingUser(wallet);
+        emit(LoginCloseBlockingDialog());
         emit(
           CreateNewPassword(
             wallet: wallet,
@@ -671,8 +677,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         );
       }
     } catch (e) {
-      emit(LoginLoadingIfUserAlreadyExistsSuccess());
-      emit(previousState);
+      emit(LoginCloseBlockingDialog());
       if (e is AuthenticationGatewayException) {
         emit(GatewayLoginFailure(e, _getGatewayUrl()));
       } else {
@@ -896,35 +901,24 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       emit(const LoginFailure('Metamask not available'));
       return;
     }
-    emit(const LoginShowBlockingDialog(
-        message: 'Please connect your Ethereum wallet.'));
 
+    // 1. Connect wallet (MetaMask handles its own popup)
     EthereumWallet? ethWallet;
     try {
       ethWallet = await _ethereumProviderService.connect();
     } catch (e) {
-      emit(LoginCloseBlockingDialog());
-      emit(LoginFailure(e));
+      // User rejected or extension error — return silently
       return;
     }
 
-    emit(LoginCloseBlockingDialog());
-
     if (ethWallet == null) {
-      emit(const LoginFailure('Unable to connect to Metamask'));
       return;
     }
 
     _sourceWalletAddress = await ethWallet.getAddress();
 
-    // Sign message to verify user address and use signature to derive in-memory
-    // ETH wallet
-
+    // 2. Sign verification message (MetaMask handles its own popup)
     const signMessage = 'Sign message to verify wallet address.';
-
-    emit(const LoginShowBlockingDialog(
-        message:
-            'Please approve the request in your Ethereum wallet.'));
 
     late EthereumProviderWallet derivedEthWallet;
     try {
@@ -938,12 +932,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       derivedEthWallet = EthereumProviderWallet(privateKey);
     } catch (e) {
-      emit(LoginCloseBlockingDialog());
-      emit(LoginFailure(e));
+      // User rejected signature or extension error — return silently
       return;
     }
 
-    emit(LoginCloseBlockingDialog());
+    // 3. Server-side check (user waits — show blocking dialog)
     emit(const LoginShowBlockingDialog(
         message: 'Setting up your account...'));
 
@@ -988,12 +981,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     LoginWithSolana event,
     Emitter<LoginState> emit,
   ) async {
-    final previousState = state;
-
     if (!_solanaProviderService.isExtensionPresent()) {
       emit(const LoginFailure(
           'No Solana wallet detected. Please install Phantom or Solflare.'));
-      emit(previousState);
       return;
     }
 
@@ -1004,7 +994,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       if (connection == null) {
         await _solanaProviderService.disconnect();
-        emit(previousState);
         return;
       }
 
@@ -1018,7 +1007,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       } catch (e) {
         await _solanaProviderService.disconnect();
         _sourceWalletAddress = null;
-        emit(previousState);
         return;
       }
 
@@ -1059,7 +1047,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       } else {
         emit(LoginFailure(e));
       }
-      emit(previousState);
     }
   }
 

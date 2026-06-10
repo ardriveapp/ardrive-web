@@ -31,7 +31,7 @@ void showLoaderDialog({required BuildContext context}) {
           ),
           const SizedBox(height: 16),
           Text(
-            'Generating wallet...',
+            'Setting up your account...',
             style: ArDriveTypographyNew.of(context).paragraphNormal(
                 color: colorTokens.textLow,
                 fontWeight: ArFontWeight.semiBold),

@@ -669,8 +669,8 @@ void main() {
         bloc.add(const AddWalletFromArConnect());
       },
       expect: () => [
-        LoginLoadingIfUserAlreadyExists(),
-        LoginLoadingIfUserAlreadyExistsSuccess(),
+        const TypeMatcher<LoginShowBlockingDialog>(),
+        LoginCloseBlockingDialog(),
         const TypeMatcher<PromptPassword>()
       ],
     );
@@ -697,8 +697,8 @@ void main() {
         bloc.add(const AddWalletFromArConnect());
       },
       expect: () => [
-        LoginLoadingIfUserAlreadyExists(),
-        LoginLoadingIfUserAlreadyExistsSuccess(),
+        const TypeMatcher<LoginShowBlockingDialog>(),
+        LoginCloseBlockingDialog(),
         predicate<CreateNewPassword>((cnp) {
           return cnp.showWalletCreated == false &&
               cnp.mnemonic == null &&
@@ -729,8 +729,8 @@ void main() {
         bloc.add(const AddWalletFromArConnect());
       },
       expect: () => [
-        LoginLoadingIfUserAlreadyExists(),
-        LoginLoadingIfUserAlreadyExistsSuccess(),
+        const TypeMatcher<LoginShowBlockingDialog>(),
+        LoginCloseBlockingDialog(),
         predicate<CreateNewPassword>((cnp) {
           return cnp.showWalletCreated == false &&
               cnp.mnemonic == null &&
@@ -740,7 +740,7 @@ void main() {
     );
 
     blocTest(
-      'should emit a failure when user doesnt have permissions',
+      'should return silently when user doesnt grant permissions',
       build: () {
         return createBloc();
       },
@@ -752,18 +752,10 @@ void main() {
             .thenAnswer((invocation) => Future.value(false));
       },
       act: (bloc) async {
-        // when an error occurs we go back to the last state, so use it to test
-        bloc.emit(const PromptPassword());
-
         bloc.add(const AddWalletFromArConnect());
       },
-      expect: () => [
-        const PromptPassword(),
-        LoginLoadingIfUserAlreadyExists(),
-        LoginLoadingIfUserAlreadyExistsSuccess(),
-        const PromptPassword(),
-        const TypeMatcher<LoginFailure>(),
-      ],
+      // User rejected — silent return, no error dialog
+      expect: () => [],
     );
   });
 
@@ -1046,18 +1038,15 @@ void main() {
             .thenReturn(false);
       },
       act: (bloc) async {
-        bloc.emit(const PromptPassword());
         bloc.add(const LoginWithSolana());
       },
       expect: () => [
-        const PromptPassword(),
         const TypeMatcher<LoginFailure>(),
-        const PromptPassword(),
       ],
     );
 
     blocTest(
-      'should stay on current state when user rejects wallet connection',
+      'should return silently when user rejects wallet connection',
       build: () => createSolanaBloc(),
       setUp: () {
         when(() => mockSolanaProviderService.connect(
@@ -1067,11 +1056,11 @@ void main() {
       act: (bloc) async {
         bloc.add(const LoginWithSolana());
       },
-      expect: () => [LoginLoading()],
+      expect: () => [],
     );
 
     blocTest(
-      'should stay on current state when user rejects signature',
+      'should return silently when user rejects signature',
       build: () => createSolanaBloc(),
       setUp: () {
         when(() => mockSolanaProviderService.connect(
@@ -1086,7 +1075,7 @@ void main() {
       act: (bloc) async {
         bloc.add(const LoginWithSolana());
       },
-      expect: () => [LoginLoading()],
+      expect: () => [],
     );
   });
 }
