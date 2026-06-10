@@ -108,18 +108,9 @@ class ArweaveService {
     client = Arweave(api: ArweaveApi(gatewayUrl: getGatewayUri(gateway)));
   }
 
-  static Uri _baseGatewayUriFromUrl(String gatewayUrl) {
-    final uri = Uri.parse(gatewayUrl);
-    final path = uri.path;
-    if (path.endsWith('/graphql')) {
-      final basePath = path.substring(0, path.length - 8);
-      return uri.replace(path: basePath.isEmpty ? '/' : basePath);
-    }
-    return uri;
-  }
-
-  /// Updates the GraphQL endpoint and Arweave API client to use [gatewayUrl],
-  /// then notifies so uploader and other dependents can rebuild.
+  /// Updates ONLY the GraphQL endpoint. Does NOT change the data gateway.
+  /// Data requests (GET /tx/{id}/data, wallet balance, etc.) continue using
+  /// the configured arweaveGatewayForDataRequest.
   void updateGraphQLEndpoint(String gatewayUrl) {
     final previousClient = _gql;
     final graphqlUrl = _graphqlUrlFromGateway(gatewayUrl);
@@ -132,10 +123,6 @@ class ArweaveService {
       arioSDK: ArioSDKFactory().create(),
     );
     previousClient.dispose();
-
-    client = Arweave(
-      api: ArweaveApi(gatewayUrl: _baseGatewayUriFromUrl(gatewayUrl)),
-    );
   }
 
   int bytesToChunks(int bytes) {
