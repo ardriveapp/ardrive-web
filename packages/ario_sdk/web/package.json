@@ -6,15 +6,15 @@
   "packageManager": "yarn@1.22.22",
   "type": "module",
   "scripts": {
-    "build": "esbuild src/index.js --bundle --minify --sourcemap --format=esm --outfile=dist/index.js && cp dist/index.js ../../../web/js/ario_sdk.min.js && echo 'saved to web/js/ario_sdk.min.js'"
+    "build": "esbuild src/index.js --bundle --minify --sourcemap --format=esm --alias:crypto=./src/crypto-shim.js --outfile=dist/index.js && cp dist/index.js ../../../web/js/ario_sdk.min.js && echo 'saved to web/js/ario_sdk.min.js'"
   },
   "devDependencies": {
     "esbuild": "^0.21.5",
     "process": "^0.11.10"
   },
   "dependencies": {
-    "@ar.io/sdk": "^3.14.0",
-    "@permaweb/aoconnect": "^0.0.68",
-    "arweave": "^1.15.5"
+    "@ar.io/sdk": "4.0.2",
+    "@solana/kit": "^6.8.0",
+    "events": "^3.3.0"
   }
 }

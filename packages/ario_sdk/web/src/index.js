@@ -1,5 +1,8 @@
-import { ANT, ANT_REGISTRY_ID, ANTRegistry, AOProcess, ArconnectSigner, ARIO, ArNSEventEmitter, ArweaveSigner, mARIOToken, InjectedEthereumSigner } from '@ar.io/sdk';
-import { connect } from '@permaweb/aoconnect';
+import { ARIO, MAINNET_RPC_URL, mARIOToken } from '@ar.io/sdk';
+import { createSolanaRpc } from '@solana/kit';
+
+const rpc = createSolanaRpc(MAINNET_RPC_URL);
+const ario = ARIO.init({ rpc });
 
 window.ario = {
   getGateways,
@@ -10,19 +13,6 @@ window.ario = {
   getARNSRecordsForWallet,
   getPrimaryNameAndLogo,
 };
-
-// Export signers for use by turbo payments (avoids bundling separate @ar.io/sdk)
-window.ArioArconnectSigner = ArconnectSigner;
-window.ArioInjectedEthereumSigner = InjectedEthereumSigner;
-
-const ario = ARIO.init({
-  process: new AOProcess({
-    processId: 'qNvAoz0TgcH7DMg8BCVn8jF32QH5L6T29VjHxhHqqGE',
-    ao: connect({
-      CU_URL: 'https://cu.ardrive.io'
-    })
-  }),
-});
 
 async function getGateways() {
   let cursor = null;
@@ -37,15 +27,12 @@ async function getGateways() {
       sortBy: 'operatorStake',
     });
 
-    // Add the retrieved gateways to the array
     allGateways = allGateways.concat(response.items);
 
-    // Break the loop if there are no more gateways to fetch
     if (!response.items.length || !response.nextCursor) {
       break;
     }
 
-    // Set the cursor to the last gateway address for the next request
     cursor = response.nextCursor;
   }
 
@@ -53,7 +40,7 @@ async function getGateways() {
 }
 
 async function getARIOTokens(address) {
-  try{
+  try {
     const balance = await ario
       .getBalance({
         address: address,
@@ -61,152 +48,49 @@ async function getARIOTokens(address) {
       .then((balance) => new mARIOToken(balance).toARIO());
 
     return balance;
-  } catch(e) {
+  } catch (e) {
     console.error(e);
   }
 }
 
-
-async function setAnt(JWKString, processId, txId, undername, useArConnect, ttlSeconds = 900) {
-  const signer = useArConnect ? new ArconnectSigner(window.arweaveWallet) : new ArweaveSigner(JSON.parse(JWKString));
-
-  const ant = ANT.init({
-    signer: signer,
-    process: new AOProcess({
-      processId: processId,
-      ao: connect({ CU_URL: "https://cu.ardrive.io" })
-    })
-  });
-
-  const { id } = await ant.setRecord(
-    {
-      undername: undername,
-      transactionId: txId,
-      ttlSeconds: ttlSeconds
-    },
-
-  { tags: [{ name: 'App-Name', value: 'ArDrive-App' }] },
-  );
-
-  return id;
+// Stub functions - ArNS write operations require Solana signers (future PR)
+async function setAnt() {
+  throw new Error('ANT operations not yet implemented for Solana');
 }
 
-async function setARNS(JWKString, txId, domain, undername, useArConnect, ttlSeconds = 900) {
-  try {
-    const record = await ario.getArNSRecord({ name: domain });
-
-    const processId = record.processId;
-
-    const setRecordResult = await setAnt(JWKString, processId, txId, undername, useArConnect, ttlSeconds);
-
-    return JSON.stringify(setRecordResult);
-  } catch (error) {
-    console.error('Error in setARNS:', error);
-    throw error;
-  }
+async function setARNS() {
+  throw new Error('ArNS operations not yet implemented for Solana');
 }
 
-async function getUndernames(JWKString, processId) {
-  const ant = ANT.init({
-    signer: new ArweaveSigner(JSON.parse(JWKString)),
-    process: new AOProcess({
-      processId: processId,
-      ao: connect({ CU_URL: "https://cu.ardrive.io" })
-    })
-  });
-
-  const records = await ant.getRecords();
-
-  return JSON.stringify(records);
+async function getUndernames() {
+  throw new Error('Undername operations not yet implemented for Solana');
 }
 
-async function getARNSRecordsForWallet(address) {
-  try {
-    console.log('Fetching processes for wallet:', address);
-    const jsonResult = await getProcesses(address);
-    console.log('JSON Result:', jsonResult);
-    return jsonResult;
-  } catch (error) {
-    console.error('Failed to fetch processes:', error);
-    throw error;
-  }
-}
-
-async function getProcesses(address) {
-  return new Promise((resolve, reject) => {
-    // Initialize the emitter
-    console.log('Initializing emitter');
-
-    const arnsEmitter = new ArNSEventEmitter({
-      timeoutMs: 60000,
-      concurrency: 10,
-      contract: ario,
-      antAoClient: connect({ CU_URL: "https://cu.ardrive.io" })
-    });
-
-    arnsEmitter.on('progress', (current, total) => {
-      console.log(`Progress: ${current}/${total}`);
-    });
-
-    arnsEmitter.on('process', (processId, processData) => {
-      console.log(`Process ${processId} details:`, processData);
-    });
-
-    arnsEmitter.on('error', (error) => {
-      console.error('Error:', error);
-      reject(error);
-    });
-
-    arnsEmitter.on('end', (result) => {
-      console.log('Completed fetching processes:', result);
-      resolve(JSON.stringify(result));
-    });
-
-    arnsEmitter.fetchProcessesOwnedByWallet({
-      address: address,
-      pageSize: 1000,
-      antRegistry: ANTRegistry.init({
-        process: new AOProcess({
-          processId: ANT_REGISTRY_ID,
-          ao: connect({ CU_URL: "https://cu.ardrive.io" })
-        })
-      })
-    });
-  });
+async function getARNSRecordsForWallet() {
+  throw new Error('ArNS records not yet implemented for Solana');
 }
 
 async function getPrimaryNameAndLogo(address, getLogo = true) {
   let primaryName;
 
   try {
-     primaryName = await ario.getPrimaryName({ address: address });
-  } catch(e) {
+    primaryName = await ario.getPrimaryName({ address: address });
+  } catch (e) {
     console.error('Error fetching primary name:', e);
   }
 
-  var info = null;
-  var record = null;
-
-  if (getLogo && primaryName && primaryName.name) {
-    try {
-      record = await ario.getArNSRecord({ name: primaryName.name });
-      if (record && record.processId) {
-        const ant = ANT.init({
-          process: new AOProcess({
-            processId: record.processId,
-            ao: connect({ CU_URL: "https://cu.ardrive.io" })
-          })
-        });
-        info = await ant.getInfo();
-      }
-    } catch(e) {
-      console.error('Error fetching logo info:', e);
-    }
+  if (!primaryName) {
+    return JSON.stringify({
+      primaryName: null,
+      antInfo: null,
+      arnsRecord: null,
+    });
   }
 
+  // ANT info (logo) requires Solana ANT integration (future PR)
   return JSON.stringify({
     primaryName: primaryName,
-    antInfo: info,
-    arnsRecord: record
+    antInfo: null,
+    arnsRecord: null,
   });
 }
