@@ -1,6 +1,8 @@
+import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/services/ethereum/ethereum_name_service.dart';
 import 'package:ardrive/services/solana/solana_name_service.dart';
+import 'package:ardrive/user/name/domain/repository/profile_logo_repository.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:equatable/equatable.dart';
@@ -10,11 +12,15 @@ part 'profile_name_event.dart';
 part 'profile_name_state.dart';
 
 class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
+  final ARNSRepository _arnsRepository;
+  final ProfileLogoRepository _profileLogoRepository;
   final ArDriveAuth _auth;
   final SolanaNameService _solanaNameService;
   final EthereumNameService _ethereumNameService;
 
   ProfileNameBloc(
+    this._arnsRepository,
+    this._profileLogoRepository,
     this._auth, {
     SolanaNameService? solanaNameService,
     EthereumNameService? ethereumNameService,
@@ -24,20 +30,26 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
     on<LoadProfileName>((event, emit) async {
       await _loadProfileName(
         walletAddress: _auth.currentUser.walletAddress,
+        refreshName: false,
+        refreshLogo: false,
         emit: emit,
       );
     });
     on<RefreshProfileName>((event, emit) async {
-      _solanaNameService.clearCache();
-      _ethereumNameService.clearCache();
       await _loadProfileName(
         walletAddress: _auth.currentUser.walletAddress,
+        refreshName: true,
+        refreshLogo: true,
         emit: emit,
       );
     });
     on<LoadProfileNameBeforeLogin>((event, emit) async {
+      emit(ProfileNameLoading(event.walletAddress));
+
       await _loadProfileName(
         walletAddress: event.walletAddress,
+        refreshName: true,
+        refreshLogo: false,
         emit: emit,
         isUserLoggedIn: false,
       );
@@ -49,11 +61,18 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
 
   Future<void> _loadProfileName({
     required String walletAddress,
+    required bool refreshName,
+    required bool refreshLogo,
     required Emitter<ProfileNameState> emit,
     bool isUserLoggedIn = true,
   }) async {
     try {
-      emit(ProfileNameLoading(walletAddress));
+      String? profileLogoTxId;
+
+      /// if we are not refreshing, we emit a loading state
+      if (!refreshName) {
+        emit(ProfileNameLoading(walletAddress));
+      }
 
       // Name service results are cached for the session.
       // Page reload clears the cache for fresh resolution.
@@ -104,12 +123,54 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
         }
       }
 
-      // No ArNS/AO primary name resolution — only .sol/.eth above.
-      // Fall through to truncated wallet address.
-      emit(ProfileNameLoadedWithWalletAddress(walletAddress));
+      if (!refreshLogo) {
+        logger.d('Getting profile logo tx id from cache');
+
+        profileLogoTxId =
+            await _profileLogoRepository.getProfileLogoTxId(walletAddress);
+
+        logger.d('Profile logo tx id: $profileLogoTxId');
+      }
+
+      final getLogo = refreshLogo || profileLogoTxId == null;
+
+      var primaryNameDetails = await _arnsRepository.getPrimaryName(
+        walletAddress,
+        update: refreshName,
+        getLogo: getLogo,
+      );
+
+      if (!refreshLogo && profileLogoTxId != null) {
+        primaryNameDetails = primaryNameDetails.copyWith(logo: profileLogoTxId);
+      }
+
+      if (isUserLoggedIn && _auth.currentUser.walletAddress != walletAddress) {
+        // A user can load profile name and log out while fetching this request. Then log in again. We should not emit a profile name loaded state in this case.
+        logger.d('User logged out while fetching profile name');
+
+        return;
+      }
+
+      if (profileLogoTxId == null && primaryNameDetails.logo != null) {
+        _profileLogoRepository.setProfileLogoTxId(
+          walletAddress,
+          primaryNameDetails.logo!,
+        );
+      }
+
+      emit(ProfileNameLoaded(primaryNameDetails, walletAddress));
     } catch (e) {
-      logger.e('Error resolving profile name', e);
-      emit(ProfileNameLoadedWithWalletAddress(walletAddress));
+      if (e is PrimaryNameNotFoundException) {
+        logger.d('Primary name not found for address: $walletAddress');
+      } else {
+        logger.e('Error getting primary name.', e);
+      }
+
+      emit(
+        ProfileNameLoadedWithWalletAddress(
+          walletAddress,
+        ),
+      );
     }
   }
 }

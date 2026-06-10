@@ -378,6 +378,8 @@ class AppState extends State<App> {
         ),
         BlocProvider(
           create: (context) => ProfileNameBloc(
+            context.read<ARNSRepository>(),
+            context.read<ProfileLogoRepository>(),
             context.read<ArDriveAuth>(),
           ),
         ),
