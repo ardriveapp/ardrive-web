@@ -919,16 +919,6 @@ class _DetailsPanelState extends State<DetailsPanel> {
             ],
           ),
         ),
-      // TODO(solana-migration): Re-enable ArNS name display/assignment once migrated to Solana
-      // if (widget.drivePrivacy == DrivePrivacy.public.name &&
-      //     AppPlatform.isWeb() &&
-      //     !widget.isSharePage) ...[
-      //   sizedBoxHeight16px,
-      //   DetailsPanelItem(
-      //     leading: _ArnsNameDisplay(fileItem: item),
-      //     itemTitle: 'ArNS Name',
-      //   ),
-      // ],
       if (pinnedDataOwnerAddress != null) ...[
         sizedBoxHeight16px,
         DetailsPanelItem(

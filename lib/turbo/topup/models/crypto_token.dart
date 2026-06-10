@@ -331,17 +331,10 @@ class TokenGroup extends Equatable {
 
   /// Get all token groups for display in the token selection view
   static List<TokenGroup> get allGroups => [
-        // TODO(solana-migration): Re-enable ARIO on AO group once migrated to Solana
-        // Arweave wallet tokens (no label needed - uses existing wallet)
-        // const TokenGroup(
-        //   tokens: [CryptoToken.arioAO],
-        // ),
         // Ethereum wallet tokens
         const TokenGroup(
           label: 'Requires Ethereum Wallet',
           tokens: [
-            // TODO(solana-migration): Re-enable arioAOViaEth once migrated to Solana
-            // CryptoToken.arioAOViaEth,
             CryptoToken.arioBase,
             CryptoToken.usdcBase,
             CryptoToken.ethBase,
