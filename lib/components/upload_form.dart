@@ -273,7 +273,6 @@ class _UploadFormState extends State<UploadForm> {
                     );
                   }).toList();
 
-                  // TODO(solana-migration): Re-enable LoadAnts once migrated to Solana
                   return UploadManifestOptionsBloc(
                     manifestFiles: manifestSelections,
                     arnsRepository: context.read<ARNSRepository>(),
@@ -1865,28 +1864,6 @@ class _UploadReadyWidget extends StatelessWidget {
                     ],
                   ),
                 ),
-              // TODO(solana-migration): Re-enable ArNS name assignment checkbox once migrated to Solana
-              // if (state.showArnsCheckbox && !state.loadingArNSNames)
-              //   Padding(
-              //     padding: const EdgeInsets.only(top: 8, bottom: 8),
-              //     child: Row(
-              //       children: [
-              //         ArDriveCheckBox(
-              //           title: 'Assign an ArNS name',
-              //           checked: state.arnsCheckboxChecked,
-              //           useNewIcons: true,
-              //           titleStyle: typography.paragraphNormal(
-              //             fontWeight: ArFontWeight.semiBold,
-              //           ),
-              //           onChange: (value) {
-              //             context
-              //                 .read<UploadCubit>()
-              //                 .changeShowArnsNameSelection(value);
-              //           },
-              //         ),
-              //       ],
-              //     ),
-              //   ),
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Column(

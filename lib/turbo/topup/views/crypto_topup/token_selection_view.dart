@@ -111,16 +111,6 @@ class _TokenSelectionContent extends StatelessWidget {
             const SizedBox(height: 16),
           ],
 
-          // TODO(solana-migration): Re-enable ARIO on AO recommended section once migrated to Solana
-          // _RecommendedSection(
-          //   arioBalance: state.arioBalance,
-          //   isLoadingBalances: state.isLoadingBalances,
-          //   onTokenSelected: (token) {
-          //     bloc.add(CryptoTopupSelectToken(token));
-          //   },
-          // ),
-          // const SizedBox(height: 24),
-
           // ===== OTHER OPTIONS SECTION =====
           _OtherOptionsSection(
             ethAddress: state.ethAddress,
@@ -401,8 +391,6 @@ class _OtherOptionsSection extends StatelessWidget {
           title: 'Ethereum',
           description: 'Higher fees, more liquidity',
           tokens: const [
-            // TODO(solana-migration): Re-enable arioAOViaEth once migrated to Solana
-            // CryptoToken.arioAOViaEth,
             CryptoToken.ethL1,
             CryptoToken.usdcEth,
           ],

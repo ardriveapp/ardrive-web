@@ -157,33 +157,6 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
                       ],
                     ),
                   ),
-                  // TODO(solana-migration): Re-enable ArNS name selection button once migrated to Solana
-                  // ArDriveTooltip(
-                  //   message: (state.arnsNamesLoaded && state.ants!.isEmpty)
-                  //       ? 'No ArNS names found for your wallet'
-                  //       : '',
-                  //   child: ArDriveButtonNew(
-                  //     text: !state.arnsNamesLoaded
-                  //         ? 'Loading Names...'
-                  //         : hasSelectedAnt
-                  //             ? 'Change ArNS Name'
-                  //             : 'Add ArNS Name',
-                  //     typography: typography,
-                  //     isDisabled: isExpanded ||
-                  //         !widget.isSelected ||
-                  //         !state.arnsNamesLoaded ||
-                  //         (state.arnsNamesLoaded && state.ants!.isEmpty),
-                  //     fontStyle: typography.paragraphSmall(),
-                  //     variant: ButtonVariant.primary,
-                  //     maxWidth: state.arnsNamesLoaded ? 140 : 160,
-                  //     maxHeight: 30,
-                  //     onPressed: () {
-                  //       context
-                  //           .read<UploadManifestOptionsBloc>()
-                  //           .add(ShowArNSSelection(manifest: file));
-                  //     },
-                  //   ),
-                  // )
                   const SizedBox.shrink()
                 ],
               ),
