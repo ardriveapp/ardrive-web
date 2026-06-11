@@ -1,3 +1,6 @@
+import { Buffer } from 'buffer';
+globalThis.Buffer = Buffer;
+
 import {
   ARIO,
   MAINNET_RPC_URL,
