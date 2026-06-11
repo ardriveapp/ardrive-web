@@ -95,21 +95,6 @@ void main() async {
 }
 
 Future<void> _startApp() async {
-  // Flavor is already loaded by configService.loadConfig() in _initializeServices()
-  final flavor = configService.flavor;
-
-  flavor == Flavor.staging || flavor == Flavor.production
-      ? _runWithSentryLogging()
-      : _runWithoutLogging();
-}
-
-Future<void> _runWithoutLogging() async {
-  runApp(const App());
-}
-
-Future<void> _runWithSentryLogging() async {
-  await logger.initSentry();
-
   runApp(const App());
 }
 

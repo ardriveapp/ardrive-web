@@ -135,7 +135,6 @@ dependencies:
     git:
       url: https://github.com/bhagat-techind/flutter_sharing_intent
       ref: 5f4f2e66c02580105ba89b3fec5a7be907d5466f
-  sentry_flutter: ^7.14.0
   webthree: ^2.5.7+2
   carousel_slider: ^4.2.1
   dots_indicator: ^3.0.0
@@ -187,7 +186,6 @@ dev_dependencies:
   drift_dev:
   mocktail: ^1.0.2
   json_serializable:
-  sentry_dart_plugin: ^1.0.0
 
 flutter:
   uses-material-design: true
@@ -203,11 +201,3 @@ flutter:
     - assets/images/crypto/
     - assets/images/wallets/
     - assets/animations/
-
-sentry:
-  upload_debug_symbols: true
-  upload_source_maps: true
-  upload_sources: true
-  wait_for_processing: false
-  log_level: error
-  ignore_missing: true
