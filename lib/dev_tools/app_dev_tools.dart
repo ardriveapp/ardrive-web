@@ -339,7 +339,8 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       onChange: (value) {
         setState(() {
           final c = config.copyWith(
-            solanaRpcUrl: 'https://api.devnet.solana.com',
+            solanaRpcUrl:
+                'https://still-stylish-diagram.solana-devnet.quiknode.pro/7bb783112e4f06d72eeb7ca7125bbce97009438f/',
             solanaCoreProgramId:
                 '8Njx9wPkXiNzDCgjwVsJFRjpAEV34gGW3n8DzX3V23m1',
             solanaGarProgramId:

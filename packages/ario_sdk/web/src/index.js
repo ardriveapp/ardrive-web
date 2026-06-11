@@ -9,11 +9,17 @@ import {
   mARIOToken,
 } from '@ar.io/sdk';
 
+// Public Solana RPC (api.mainnet-beta.solana.com) returns 403 from browsers.
+// Use managed QuickNode RPC that supports browser CORS + getProgramAccounts.
+// Same endpoints used by arns-react and ar-io-network-portal.
+const ARDRIVE_MAINNET_RPC = 'https://autumn-snowy-liquid.solana-mainnet.quiknode.pro/564349f369b6daf36e58004dbcf4dfdf33ba852e/';
+const ARDRIVE_DEVNET_RPC = 'https://still-stylish-diagram.solana-devnet.quiknode.pro/7bb783112e4f06d72eeb7ca7125bbce97009438f/';
+
 let ario;
 try {
   const rpc = createCircuitBreakerRpc({
-    primaryUrl: MAINNET_RPC_URL,
-    fallbackUrl: defaultFallbackUrl(MAINNET_RPC_URL),
+    primaryUrl: ARDRIVE_MAINNET_RPC,
+    fallbackUrl: defaultFallbackUrl(ARDRIVE_MAINNET_RPC),
   });
   ario = ARIO.init({ rpc });
 } catch (e) {
@@ -33,7 +39,7 @@ window.ario = {
 };
 
 async function reinitArioSDK(rpcUrl, coreProgramId, garProgramId, arnsProgramId, antProgramId) {
-  const url = rpcUrl || MAINNET_RPC_URL;
+  const url = rpcUrl || ARDRIVE_MAINNET_RPC;
   const rpc = createCircuitBreakerRpc({
     primaryUrl: url,
     fallbackUrl: defaultFallbackUrl(url),
@@ -52,8 +58,8 @@ async function reinitArioSDK(rpcUrl, coreProgramId, garProgramId, arnsProgramId,
 
 function getArioConfig() {
   return JSON.stringify({
-    mainnetRpcUrl: MAINNET_RPC_URL,
-    devnetRpcUrl: DEVNET_RPC_URL,
+    mainnetRpcUrl: ARDRIVE_MAINNET_RPC,
+    devnetRpcUrl: ARDRIVE_DEVNET_RPC,
     mainnetProgramIds: MAINNET_PROGRAM_IDS,
     devnetProgramIds: DEVNET_PROGRAM_IDS,
   });
@@ -82,6 +88,11 @@ async function getGateways() {
 
     cursor = response.nextCursor;
   }
+
+  // Sort by total stake (operator + delegated) descending
+  allGateways.sort((a, b) =>
+    (b.operatorStake + b.totalDelegatedStake) - (a.operatorStake + a.totalDelegatedStake)
+  );
 
   return JSON.stringify(allGateways);
 }
