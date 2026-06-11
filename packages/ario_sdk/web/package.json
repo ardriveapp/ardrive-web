@@ -14,7 +14,6 @@
   },
   "dependencies": {
     "@ar.io/sdk": "4.0.2",
-    "@solana/kit": "^6.8.0",
     "events": "^3.3.0"
   }
 }

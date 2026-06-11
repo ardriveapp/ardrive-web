@@ -1,8 +1,15 @@
-import { ARIO, MAINNET_RPC_URL, mARIOToken } from '@ar.io/sdk';
-import { createSolanaRpc } from '@solana/kit';
+import { ARIO, MAINNET_RPC_URL, createCircuitBreakerRpc, defaultFallbackUrl, mARIOToken } from '@ar.io/sdk';
 
-const rpc = createSolanaRpc(MAINNET_RPC_URL);
-const ario = ARIO.init({ rpc });
+let ario;
+try {
+  const rpc = createCircuitBreakerRpc({
+    primaryUrl: MAINNET_RPC_URL,
+    fallbackUrl: defaultFallbackUrl,
+  });
+  ario = ARIO.init({ rpc });
+} catch (e) {
+  console.error('[ario_sdk] Failed to initialize ARIO SDK:', e);
+}
 
 window.ario = {
   getGateways,
@@ -15,6 +22,8 @@ window.ario = {
 };
 
 async function getGateways() {
+  if (!ario) throw new Error('ARIO SDK not initialized');
+
   let cursor = null;
   let allGateways = [];
   const limit = 1000;
@@ -40,6 +49,8 @@ async function getGateways() {
 }
 
 async function getARIOTokens(address) {
+  if (!ario) throw new Error('ARIO SDK not initialized');
+
   try {
     const balance = await ario
       .getBalance({
@@ -71,6 +82,10 @@ async function getARNSRecordsForWallet() {
 }
 
 async function getPrimaryNameAndLogo(address, getLogo = true) {
+  if (!ario) {
+    return JSON.stringify({ primaryName: null, antInfo: null, arnsRecord: null });
+  }
+
   let primaryName;
 
   try {
