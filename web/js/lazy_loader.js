@@ -87,7 +87,7 @@
   }
 
   /**
-   * Load ARIO SDK (6.9 MB) — only when token balance/ARIO features needed.
+   * Load ARIO SDK (435 KB) — only when token balance/ARIO features needed.
    */
   async function loadArioSDK() {
     await loadScript('./js/ario_sdk.min.js');
