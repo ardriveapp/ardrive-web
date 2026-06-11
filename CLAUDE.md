@@ -190,7 +190,7 @@ The app supports multiple languages via ARB files in `lib/l10n/`: English, Spani
 - `scr test` runs `flutter test` on the main app plus discovers and runs tests in `packages/*/test` directories, also running `flutter analyze` on each package
 
 ### CI Pipeline
-CI runs `scr setup` → `flutter analyze` → `scr test`. Ensure these all pass locally before pushing. PR title format (`PE-{number}: {description}`) is enforced by a separate CI check (`pr_title_check.yaml`). Staging/production builds integrate Sentry for error tracking.
+CI runs `scr setup` → `flutter analyze` → `scr test`. Ensure these all pass locally before pushing. PR title format (`PE-{number}: {description}`) is enforced by a separate CI check (`pr_title_check.yaml`).
 
 ### Git Hooks (Lefthook)
 - **Pre-commit**: Validates Flutter version matches 3.19.6

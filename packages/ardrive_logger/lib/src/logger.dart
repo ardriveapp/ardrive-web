@@ -7,12 +7,10 @@ import 'dart:io';
 
 import 'package:app_settings/app_settings.dart';
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:ardrive_logger/ardrive_logger.dart';
 import 'package:ardrive_logger/src/ardrive_context.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 Future<IOFile> _convertTextToIOFile({
@@ -36,8 +34,6 @@ enum LogLevel {
   error,
 }
 
-/// A callback that determines whether an error should be logged to Sentry.
-/// If the callback returns false, the error will not be logged to Sentry.
 typedef ShouldLogErrorCallback = bool Function(Object? error);
 
 class Logger {
@@ -50,9 +46,6 @@ class Logger {
 
   ArDriveContext _context = ArDriveContext();
 
-  /// A null value means that all errors will be logged to Sentry.
-  final ShouldLogErrorCallback? _shouldLogErrorCallback;
-
   Logger({
     LogLevel logLevel = LogLevel.debug,
     bool storeLogsInMemory = false,
@@ -64,7 +57,6 @@ class Logger {
         _logExporter = logExporter,
         _storeLogsInMemory = storeLogsInMemory,
         _memoryLogLevel = memoryLogLevel,
-        _shouldLogErrorCallback = shouldLogErrorCallback,
         _memoryLogSize = memoryLogSize {
     inMemoryLogs = ListQueue(storeLogsInMemory ? memoryLogSize : 0);
   }
@@ -75,7 +67,6 @@ class Logger {
 
   void i(String message) {
     log(LogLevel.info, message);
-    Sentry.addBreadcrumb(Breadcrumb(message: message));
   }
 
   void w(String message) {
@@ -94,8 +85,6 @@ class Logger {
     }
 
     log(LogLevel.error, errorMessage);
-
-    Sentry.captureException(error ?? message, stackTrace: stackTrace);
   }
 
   ArDriveContext get context => _context;
@@ -103,8 +92,6 @@ class Logger {
   void setContext(ArDriveContext context) {
     _context = context;
     debugPrint('Context updated: ${_context.toString()}');
-
-    Sentry.addBreadcrumb(Breadcrumb(message: _context.toString()));
   }
 
   void log(LogLevel level, String message) {
@@ -132,74 +119,6 @@ class Logger {
         inMemoryLogs.add(finalMessage);
       }
     }
-  }
-
-  Future<void> initSentry() async {
-    String dsn = const String.fromEnvironment('SENTRY_DSN');
-
-    await SentryFlutter.init(
-      (options) {
-        options.beforeSend = _beforeSendEvent;
-        options.beforeSendTransaction = _beforeSendTransaction;
-        options.tracesSampleRate = 1.0;
-        options.dsn = dsn;
-      },
-    );
-  }
-
-  FutureOr<SentryEvent?> _beforeSendEvent(SentryEvent event,
-      {Hint? hint}) async {
-    if (_shouldLogError(event.throwable)) {
-      event = event.copyWith(
-        user: SentryUser(
-          id: null,
-          username: null,
-          email: null,
-          ipAddress: null,
-          geo: null,
-          name: null,
-          data: null,
-        ),
-      );
-
-      return event;
-    }
-
-    return null;
-  }
-
-  FutureOr<SentryTransaction?> _beforeSendTransaction(
-    SentryTransaction transaction,
-  ) async {
-    if (_shouldLogError(transaction.throwable)) {
-      transaction = transaction.copyWith(
-        user: SentryUser(
-          id: null,
-          username: null,
-          email: null,
-          ipAddress: null,
-          geo: null,
-          name: null,
-          data: null,
-        ),
-      );
-
-      return transaction;
-    }
-
-    return null;
-  }
-
-  bool _shouldLogError(Object? throwable) {
-    if (throwable == null || throwable is UntrackedException) {
-      return false;
-    }
-
-    if (_shouldLogErrorCallback != null) {
-      return _shouldLogErrorCallback!(throwable);
-    }
-
-    return true;
   }
 
   Future<String> getLogs() async {
