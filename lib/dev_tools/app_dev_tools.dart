@@ -5,6 +5,7 @@ import 'package:ardrive/main.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ario_sdk/ario_sdk.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -254,6 +255,108 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.bool,
     );
 
+    // --- Solana / AR.IO SDK options ---
+
+    void reinitArioSdk(AppConfig cfg) {
+      ArioSDKFactory().create().reinitialize(
+            rpcUrl: cfg.solanaRpcUrl,
+            coreProgramId: cfg.solanaCoreProgramId,
+            garProgramId: cfg.solanaGarProgramId,
+            arnsProgramId: cfg.solanaArnsProgramId,
+            antProgramId: cfg.solanaAntProgramId,
+          );
+    }
+
+    final solanaRpcUrlOption = ArDriveDevToolOption(
+      name: 'solanaRpcUrl',
+      value: config.solanaRpcUrl,
+      onChange: (value) {
+        setState(() {
+          final c = config.copyWith(solanaRpcUrl: value);
+          configService.updateAppConfig(c);
+          reinitArioSdk(c);
+        });
+      },
+      type: ArDriveDevToolOptionType.text,
+    );
+
+    final solanaCoreProgramIdOption = ArDriveDevToolOption(
+      name: 'solanaCoreProgramId',
+      value: config.solanaCoreProgramId,
+      onChange: (value) {
+        setState(() {
+          final c = config.copyWith(solanaCoreProgramId: value);
+          configService.updateAppConfig(c);
+          reinitArioSdk(c);
+        });
+      },
+      type: ArDriveDevToolOptionType.text,
+    );
+
+    final solanaGarProgramIdOption = ArDriveDevToolOption(
+      name: 'solanaGarProgramId',
+      value: config.solanaGarProgramId,
+      onChange: (value) {
+        setState(() {
+          final c = config.copyWith(solanaGarProgramId: value);
+          configService.updateAppConfig(c);
+          reinitArioSdk(c);
+        });
+      },
+      type: ArDriveDevToolOptionType.text,
+    );
+
+    final solanaArnsProgramIdOption = ArDriveDevToolOption(
+      name: 'solanaArnsProgramId',
+      value: config.solanaArnsProgramId,
+      onChange: (value) {
+        setState(() {
+          final c = config.copyWith(solanaArnsProgramId: value);
+          configService.updateAppConfig(c);
+          reinitArioSdk(c);
+        });
+      },
+      type: ArDriveDevToolOptionType.text,
+    );
+
+    final solanaAntProgramIdOption = ArDriveDevToolOption(
+      name: 'solanaAntProgramId',
+      value: config.solanaAntProgramId,
+      onChange: (value) {
+        setState(() {
+          final c = config.copyWith(solanaAntProgramId: value);
+          configService.updateAppConfig(c);
+          reinitArioSdk(c);
+        });
+      },
+      type: ArDriveDevToolOptionType.text,
+    );
+
+    // @ar.io/sdk v4.0.2 devnet program IDs
+    final switchArioToDevnet = ArDriveDevToolOption(
+      name: 'Switch ARIO to Devnet',
+      value: '',
+      onChange: (value) {
+        setState(() {
+          final c = config.copyWith(
+            solanaRpcUrl:
+                'https://still-stylish-diagram.solana-devnet.quiknode.pro/7bb783112e4f06d72eeb7ca7125bbce97009438f/',
+            solanaCoreProgramId:
+                '8Njx9wPkXiNzDCgjwVsJFRjpAEV34gGW3n8DzX3V23m1',
+            solanaGarProgramId:
+                '7WsDTrtZBsfKtnP33XkjuqXCY69JE7n4QVYpynqJCFxz',
+            solanaArnsProgramId:
+                '6EZNezcg4rc5hnh8HG34vGquT3WpW5xXypzPb24uyEpp',
+            solanaAntProgramId:
+                'DbHbRwUD1oAn1mrDSqtWtvwGcNrmhWdD2g8L4xmeQ7NX',
+          );
+          configService.updateAppConfig(c);
+          reinitArioSdk(c);
+        });
+      },
+      type: ArDriveDevToolOptionType.button,
+    );
+
     final List<ArDriveDevToolOption> options = [
       runHealthCheck,
       useTurboOption,
@@ -264,6 +367,12 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       arweaveGatewayUrlOption,
       defaultTurboUrlOption,
       autoSyncIntervalInSecondsOption,
+      solanaRpcUrlOption,
+      solanaCoreProgramIdOption,
+      solanaGarProgramIdOption,
+      solanaArnsProgramIdOption,
+      solanaAntProgramIdOption,
+      switchArioToDevnet,
       reloadOption,
       resetOptions,
     ];

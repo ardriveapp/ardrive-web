@@ -43,4 +43,15 @@ abstract class ArioSDK {
     String address,
     bool getLogo,
   );
+
+  /// Reinitialize the SDK with new Solana RPC and/or program ID configuration.
+  /// Pass null for any parameter to use the SDK default (mainnet).
+  /// Clears all cached data.
+  Future<void> reinitialize({
+    String? rpcUrl,
+    String? coreProgramId,
+    String? garProgramId,
+    String? arnsProgramId,
+    String? antProgramId,
+  });
 }

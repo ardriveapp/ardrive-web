@@ -139,6 +139,21 @@ Future<void> _initializeServices() async {
 
   final config = configService.config;
 
+  // Apply any persisted Solana RPC / program ID overrides from dev tools
+  if (config.solanaRpcUrl != null ||
+      config.solanaCoreProgramId != null ||
+      config.solanaGarProgramId != null ||
+      config.solanaArnsProgramId != null ||
+      config.solanaAntProgramId != null) {
+    await ArioSDKFactory().create().reinitialize(
+          rpcUrl: config.solanaRpcUrl,
+          coreProgramId: config.solanaCoreProgramId,
+          garProgramId: config.solanaGarProgramId,
+          arnsProgramId: config.solanaArnsProgramId,
+          antProgramId: config.solanaAntProgramId,
+        );
+  }
+
   db = Database();
 
   arweave = ArweaveService(

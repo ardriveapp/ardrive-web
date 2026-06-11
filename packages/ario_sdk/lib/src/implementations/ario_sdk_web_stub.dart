@@ -65,7 +65,17 @@ class ArioSDKWeb implements ArioSDK {
     required String txId,
     String? jwtString,
   }) {
-    // TODO: implement createUndername
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> reinitialize({
+    String? rpcUrl,
+    String? coreProgramId,
+    String? garProgramId,
+    String? arnsProgramId,
+    String? antProgramId,
+  }) {
     throw UnimplementedError();
   }
 }
