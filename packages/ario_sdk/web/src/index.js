@@ -10,10 +10,9 @@ import {
 } from '@ar.io/sdk';
 
 // Public Solana RPC (api.mainnet-beta.solana.com) returns 403 from browsers.
-// Use managed QuickNode RPC that supports browser CORS + getProgramAccounts.
-// Same endpoints used by arns-react and ar-io-network-portal.
-const ARDRIVE_MAINNET_RPC = 'https://autumn-snowy-liquid.solana-mainnet.quiknode.pro/564349f369b6daf36e58004dbcf4dfdf33ba852e/';
-const ARDRIVE_DEVNET_RPC = 'https://still-stylish-diagram.solana-devnet.quiknode.pro/7bb783112e4f06d72eeb7ca7125bbce97009438f/';
+// Use ArDrive's managed QuickNode RPC (same as turbo/crypto_network_config.dart).
+const ARDRIVE_MAINNET_RPC = 'https://damp-stylish-sheet.solana-mainnet.quiknode.pro/b3dd2ce1c4f1a06d5fb6c42b80d6848796dd6408/';
+const ARDRIVE_DEVNET_RPC = 'https://api.devnet.solana.com';
 
 let ario;
 try {
