@@ -1,6 +1,3 @@
-import { Buffer } from 'buffer';
-globalThis.Buffer = Buffer;
-
 import {
   ARIO,
   MAINNET_RPC_URL,
@@ -16,7 +13,7 @@ let ario;
 try {
   const rpc = createCircuitBreakerRpc({
     primaryUrl: MAINNET_RPC_URL,
-    fallbackUrl: defaultFallbackUrl,
+    fallbackUrl: defaultFallbackUrl(MAINNET_RPC_URL),
   });
   ario = ARIO.init({ rpc });
 } catch (e) {
@@ -39,7 +36,7 @@ async function reinitArioSDK(rpcUrl, coreProgramId, garProgramId, arnsProgramId,
   const url = rpcUrl || MAINNET_RPC_URL;
   const rpc = createCircuitBreakerRpc({
     primaryUrl: url,
-    fallbackUrl: defaultFallbackUrl,
+    fallbackUrl: defaultFallbackUrl(url),
   });
 
   const config = { rpc };

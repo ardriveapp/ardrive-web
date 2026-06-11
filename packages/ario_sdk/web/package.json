@@ -6,7 +6,7 @@
   "packageManager": "yarn@1.22.22",
   "type": "module",
   "scripts": {
-    "build": "esbuild src/index.js --bundle --minify --sourcemap --format=iife --alias:crypto=./src/crypto-shim.js --outfile=dist/index.js && cp dist/index.js ../../../web/js/ario_sdk.min.js && echo 'saved to web/js/ario_sdk.min.js'"
+    "build": "esbuild src/index.js --bundle --minify --sourcemap --format=iife --alias:crypto=./src/crypto-shim.js --inject:src/buffer-shim.js --outfile=dist/index.js && cp dist/index.js ../../../web/js/ario_sdk.min.js && echo 'saved to web/js/ario_sdk.min.js'"
   },
   "devDependencies": {
     "esbuild": "^0.21.5",
