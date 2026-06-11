@@ -3,7 +3,6 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/user/name/domain/repository/profile_logo_repository.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/user/user.dart';
-import 'package:ario_sdk/ario_sdk.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -22,7 +21,6 @@ void main() {
   late MockCurrentUser currentUser;
   late MockProfileLogoRepository profileLogoRepository;
   const testWalletAddress = '0x123456789';
-  const testPrimaryName = 'test.arweave';
 
   setUp(() {
     arnsRepository = MockARNSRepository();
@@ -35,85 +33,36 @@ void main() {
 
   group('ProfileNameBloc', () {
     blocTest<ProfileNameBloc, ProfileNameState>(
-      'emits [ProfileNameLoading, ProfileNameLoaded] when LoadProfileName is successful',
+      'emits [ProfileNameLoading, ProfileNameLoadedWithWalletAddress] on LoadProfileName when no cross-chain name is found',
       build: () {
-        when(() => arnsRepository.getPrimaryName(testWalletAddress,
-                update: false, getLogo: true))
-            .thenAnswer((_) async => const PrimaryNameDetails(
-                  primaryName: testPrimaryName,
-                  logo: null,
-                ));
-        when(() => profileLogoRepository.getProfileLogoTxId(testWalletAddress))
-            .thenAnswer((_) async => null);
         return ProfileNameBloc(arnsRepository, profileLogoRepository, auth);
       },
       act: (bloc) => bloc.add(LoadProfileName()),
       expect: () => [
         const ProfileNameLoading(testWalletAddress),
-        const ProfileNameLoaded(
-          PrimaryNameDetails(
-            primaryName: testPrimaryName,
-            logo: null,
-          ),
-          testWalletAddress,
-        ),
+        const ProfileNameLoadedWithWalletAddress(testWalletAddress),
       ],
     );
 
     blocTest<ProfileNameBloc, ProfileNameState>(
-      'emits [ProfileNameLoaded] when RefreshProfileName is successful',
+      'emits [ProfileNameLoadedWithWalletAddress] on RefreshProfileName when no cross-chain name is found',
       build: () {
-        when(() =>
-                arnsRepository.getPrimaryName(testWalletAddress, update: true))
-            .thenAnswer((_) async => const PrimaryNameDetails(
-                  primaryName: testPrimaryName,
-                  logo: null,
-                ));
         return ProfileNameBloc(arnsRepository, profileLogoRepository, auth);
       },
       act: (bloc) => bloc.add(RefreshProfileName()),
       expect: () => [
-        const ProfileNameLoaded(
-          PrimaryNameDetails(
-            primaryName: testPrimaryName,
-            logo: null,
-          ),
-          testWalletAddress,
-        ),
-      ],
-    );
-
-    blocTest<ProfileNameBloc, ProfileNameState>(
-      'emits [ProfileNameLoading, ProfileNameLoadedWithWalletAddress] when getPrimaryName throws PrimaryNameNotFoundException',
-      build: () {
-        when(() => profileLogoRepository.getProfileLogoTxId(testWalletAddress))
-            .thenAnswer((_) async => null);
-        when(() => arnsRepository.getPrimaryName(testWalletAddress,
-                update: false, getLogo: true))
-            .thenThrow(PrimaryNameNotFoundException('Test error'));
-        return ProfileNameBloc(arnsRepository, profileLogoRepository, auth);
-      },
-      act: (bloc) => bloc.add(LoadProfileName()),
-      expect: () => [
-        const ProfileNameLoading(testWalletAddress),
         const ProfileNameLoadedWithWalletAddress(testWalletAddress),
       ],
     );
 
     blocTest<ProfileNameBloc, ProfileNameState>(
-      'emits [ProfileNameLoading, ProfileNameLoadedWithWalletAddress] when getPrimaryName throws general error',
+      'emits [ProfileNameInitial] on CleanProfileName',
       build: () {
-        when(() => profileLogoRepository.getProfileLogoTxId(testWalletAddress))
-            .thenAnswer((_) async => null);
-        when(() => arnsRepository.getPrimaryName(testWalletAddress,
-                update: false, getLogo: true))
-            .thenThrow(Exception('Test error'));
         return ProfileNameBloc(arnsRepository, profileLogoRepository, auth);
       },
-      act: (bloc) => bloc.add(LoadProfileName()),
+      act: (bloc) => bloc.add(const CleanProfileName()),
       expect: () => [
-        const ProfileNameLoading(testWalletAddress),
-        const ProfileNameLoadedWithWalletAddress(testWalletAddress),
+        const ProfileNameInitial(null),
       ],
     );
   });

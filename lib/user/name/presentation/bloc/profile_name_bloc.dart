@@ -12,8 +12,10 @@ part 'profile_name_event.dart';
 part 'profile_name_state.dart';
 
 class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
-  final ARNSRepository _arnsRepository;
-  final ProfileLogoRepository _profileLogoRepository;
+  // ignore: unused_field
+  final ARNSRepository _arnsRepository; // kept for ArNS Solana integration
+  // ignore: unused_field
+  final ProfileLogoRepository _profileLogoRepository; // kept for ArNS Solana integration
   final ArDriveAuth _auth;
   final SolanaNameService _solanaNameService;
   final EthereumNameService _ethereumNameService;
@@ -67,8 +69,6 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
     bool isUserLoggedIn = true,
   }) async {
     try {
-      String? profileLogoTxId;
-
       /// if we are not refreshing, we emit a loading state
       if (!refreshName) {
         emit(ProfileNameLoading(walletAddress));
@@ -123,42 +123,10 @@ class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
         }
       }
 
-      if (!refreshLogo) {
-        logger.d('Getting profile logo tx id from cache');
-
-        profileLogoTxId =
-            await _profileLogoRepository.getProfileLogoTxId(walletAddress);
-
-        logger.d('Profile logo tx id: $profileLogoTxId');
-      }
-
-      final getLogo = refreshLogo || profileLogoTxId == null;
-
-      var primaryNameDetails = await _arnsRepository.getPrimaryName(
-        walletAddress,
-        update: refreshName,
-        getLogo: getLogo,
-      );
-
-      if (!refreshLogo && profileLogoTxId != null) {
-        primaryNameDetails = primaryNameDetails.copyWith(logo: profileLogoTxId);
-      }
-
-      if (isUserLoggedIn && _auth.currentUser.walletAddress != walletAddress) {
-        // A user can load profile name and log out while fetching this request. Then log in again. We should not emit a profile name loaded state in this case.
-        logger.d('User logged out while fetching profile name');
-
-        return;
-      }
-
-      if (profileLogoTxId == null && primaryNameDetails.logo != null) {
-        _profileLogoRepository.setProfileLogoTxId(
-          walletAddress,
-          primaryNameDetails.logo!,
-        );
-      }
-
-      emit(ProfileNameLoaded(primaryNameDetails, walletAddress));
+      // ar.io primary names are now Solana-native and require a Solana
+      // address. Skip the lookup since we only have the Arweave address here.
+      // This will be re-enabled when ArNS Solana integration is complete.
+      emit(ProfileNameLoadedWithWalletAddress(walletAddress));
     } catch (e) {
       if (e is PrimaryNameNotFoundException) {
         logger.d('Primary name not found for address: $walletAddress');
