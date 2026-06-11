@@ -1,4 +1,13 @@
-import { ARIO, MAINNET_RPC_URL, createCircuitBreakerRpc, defaultFallbackUrl, mARIOToken } from '@ar.io/sdk';
+import {
+  ARIO,
+  MAINNET_RPC_URL,
+  DEVNET_RPC_URL,
+  MAINNET_PROGRAM_IDS,
+  DEVNET_PROGRAM_IDS,
+  createCircuitBreakerRpc,
+  defaultFallbackUrl,
+  mARIOToken,
+} from '@ar.io/sdk';
 
 let ario;
 try {
@@ -19,7 +28,36 @@ window.ario = {
   getUndernames,
   getARNSRecordsForWallet,
   getPrimaryNameAndLogo,
+  reinitArioSDK,
+  getArioConfig,
 };
+
+async function reinitArioSDK(rpcUrl, coreProgramId, garProgramId, arnsProgramId, antProgramId) {
+  const url = rpcUrl || MAINNET_RPC_URL;
+  const rpc = createCircuitBreakerRpc({
+    primaryUrl: url,
+    fallbackUrl: defaultFallbackUrl,
+  });
+
+  const config = { rpc };
+  if (coreProgramId) config.coreProgramId = coreProgramId;
+  if (garProgramId) config.garProgramId = garProgramId;
+  if (arnsProgramId) config.arnsProgramId = arnsProgramId;
+  if (antProgramId) config.antProgramId = antProgramId;
+
+  ario = ARIO.init(config);
+  console.log('[ario_sdk] Reinitialized with RPC:', url);
+  return true;
+}
+
+function getArioConfig() {
+  return JSON.stringify({
+    mainnetRpcUrl: MAINNET_RPC_URL,
+    devnetRpcUrl: DEVNET_RPC_URL,
+    mainnetProgramIds: MAINNET_PROGRAM_IDS,
+    devnetProgramIds: DEVNET_PROGRAM_IDS,
+  });
+}
 
 async function getGateways() {
   if (!ario) throw new Error('ARIO SDK not initialized');

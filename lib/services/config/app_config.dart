@@ -21,6 +21,11 @@ class AppConfig {
   final bool autoSync;
   final bool uploadThumbnails;
   final int? configVersion;
+  final String? solanaRpcUrl;
+  final String? solanaCoreProgramId;
+  final String? solanaGarProgramId;
+  final String? solanaArnsProgramId;
+  final String? solanaAntProgramId;
 
   AppConfig({
     this.arweaveGatewayUrl,
@@ -39,6 +44,11 @@ class AppConfig {
     this.autoSync = true,
     this.uploadThumbnails = true,
     this.configVersion,
+    this.solanaRpcUrl,
+    this.solanaCoreProgramId,
+    this.solanaGarProgramId,
+    this.solanaArnsProgramId,
+    this.solanaAntProgramId,
   });
 
   AppConfig copyWith({
@@ -55,6 +65,11 @@ class AppConfig {
     bool? autoSync,
     bool? uploadThumbnails,
     int? configVersion,
+    String? solanaRpcUrl,
+    String? solanaCoreProgramId,
+    String? solanaGarProgramId,
+    String? solanaArnsProgramId,
+    String? solanaAntProgramId,
   }) {
     return AppConfig(
       arweaveGatewayUrl:
@@ -77,6 +92,11 @@ class AppConfig {
       autoSync: autoSync ?? this.autoSync,
       uploadThumbnails: uploadThumbnails ?? this.uploadThumbnails,
       configVersion: configVersion ?? this.configVersion,
+      solanaRpcUrl: solanaRpcUrl ?? this.solanaRpcUrl,
+      solanaCoreProgramId: solanaCoreProgramId ?? this.solanaCoreProgramId,
+      solanaGarProgramId: solanaGarProgramId ?? this.solanaGarProgramId,
+      solanaArnsProgramId: solanaArnsProgramId ?? this.solanaArnsProgramId,
+      solanaAntProgramId: solanaAntProgramId ?? this.solanaAntProgramId,
     );
   }
 

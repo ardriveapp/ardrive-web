@@ -151,6 +151,25 @@ class ArioSDKWeb implements ArioSDK {
   }) {
     return _setARNSImpl(jwtString, undername, isArConnect);
   }
+
+  @override
+  Future<void> reinitialize({
+    String? rpcUrl,
+    String? coreProgramId,
+    String? garProgramId,
+    String? arnsProgramId,
+    String? antProgramId,
+  }) async {
+    await promiseToFuture(_reinitArioSDK(
+      rpcUrl,
+      coreProgramId,
+      garProgramId,
+      arnsProgramId,
+      antProgramId,
+    ));
+    _cachedGateways = null;
+    _cachedUndernames.clear();
+  }
 }
 
 @JS('setARNS')
@@ -286,3 +305,12 @@ Future<PrimaryNameDetails> _getPrimaryNameImpl(
     recordId: json['arnsRecord']?['processId'],
   );
 }
+
+@JS('reinitArioSDK')
+external Object _reinitArioSDK(
+  String? rpcUrl,
+  String? coreProgramId,
+  String? garProgramId,
+  String? arnsProgramId,
+  String? antProgramId,
+);
