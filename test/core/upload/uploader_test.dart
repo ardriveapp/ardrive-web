@@ -1000,8 +1000,8 @@ AppConfig getFakeConfig() => AppConfig(
       useTurboUpload: true,
       useTurboPayment: true,
       arweaveGatewayForDataRequest: const SelectedGateway(
-        label: 'ArDrive Turbo Gateway',
-        url: 'https://ardrive.net',
+        label: 'Turbo Gateway',
+        url: 'https://turbo-gateway.com',
       ),
     );
 
@@ -1011,8 +1011,8 @@ AppConfig getFakeConfigForDisabledTurbo() => AppConfig(
       useTurboUpload: false,
       useTurboPayment: false,
       arweaveGatewayForDataRequest: const SelectedGateway(
-        label: 'ArDrive Turbo Gateway',
-        url: 'https://ardrive.net',
+        label: 'Turbo Gateway',
+        url: 'https://turbo-gateway.com',
       ),
     );
 User getFakeUser() => User(

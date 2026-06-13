@@ -53,7 +53,7 @@ class TutorialsViewState extends State<TutorialsView> {
               'The permaweb is just like the currently existing web, but everything published on it is available forever - meaning that you will never risk losing a file ever again.',
           // secondaryButtonHasIcon: false,
           videoUrl:
-              'https://ardrive.net/KynB0c5IBqk66gO2E6W9lqD92sfxZXIuiWT08cmwWzc',
+              'https://turbo-gateway.com/KynB0c5IBqk66gO2E6W9lqD92sfxZXIuiWT08cmwWzc',
         ),
         _TutorialPage(
           nextButtonText: appLocalizationsOf(context).next,
@@ -75,7 +75,7 @@ class TutorialsViewState extends State<TutorialsView> {
           description:
               'When you upload content, you can choose to make it public or private. Private content is encrypted, and viewable only to you and those you share it with.',
           videoUrl:
-              'https://ardrive.net/IDxtPlhnBBdXSOSeIwSjFlywc18ZZ2p-QMxtaPT3pZs',
+              'https://turbo-gateway.com/IDxtPlhnBBdXSOSeIwSjFlywc18ZZ2p-QMxtaPT3pZs',
         ),
         _TutorialPage(
           nextButtonText:
@@ -111,7 +111,7 @@ class TutorialsViewState extends State<TutorialsView> {
           description:
               'When you upload a file, you will pay for it once and never again. You can access it forever without requiring a subscription, as with standard cloud storage.',
           videoUrl:
-              'https://ardrive.net/vhrQJSssEMi2UWx8W6BDijZxT82u2qD_BamI_1NmgRw',
+              'https://turbo-gateway.com/vhrQJSssEMi2UWx8W6BDijZxT82u2qD_BamI_1NmgRw',
         ),
       ];
 

@@ -11,7 +11,7 @@ AppConfig _$AppConfigFromJson(Map<String, dynamic> json) => AppConfig(
       arweaveGatewayForDataRequest:
           json['defaultArweaveGatewayForDataRequest'] == null
               ? const SelectedGateway(
-                  label: 'ArDrive Turbo Gateway', url: 'https://ardrive.net')
+                  label: 'Turbo Gateway', url: 'https://turbo-gateway.com')
               : SelectedGateway.fromJson(
                   json['defaultArweaveGatewayForDataRequest']
                       as Map<String, dynamic>),
