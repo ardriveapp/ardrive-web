@@ -9,6 +9,7 @@ import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/services/arweave/arweave_service_exception.dart';
+import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
 import 'package:ardrive/services/arweave/get_segmented_transaction_from_drive_strategy.dart';
 import 'package:ardrive/services/services.dart';
@@ -31,7 +32,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:http/http.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:retry/retry.dart';
 import 'package:stash_shared_preferences/stash_shared_preferences.dart';
 
 import 'error/gateway_response_handler.dart';
@@ -49,6 +49,7 @@ class ArweaveService {
   final ArDriveCrypto _crypto;
   final DriveDao _driveDao;
   late ArtemisClient _gql;
+  late DataGatewayFallback _gatewayFallback;
 
   static String _graphqlUrlFromGateway(String gatewayUrl) {
     final uri = Uri.parse(gatewayUrl);
@@ -100,6 +101,9 @@ class ArweaveService {
           return exception is! RateLimitError;
         },
       ),
+    );
+    _gatewayFallback = DataGatewayFallback(
+      arioSDK: ArioSDKFactory().create(),
     );
   }
 
@@ -596,9 +600,7 @@ class ArweaveService {
   }
 
   Future<Uint8List> getEntityDataFromNetwork({required String txId}) async {
-    final Response data =
-        (await httpRetry.processRequest(() => client.api.getSandboxedTx(txId)));
-
+    final Response data = await _gatewayFallback.fetchData(txId, client);
     return data.bodyBytes;
   }
 
@@ -681,8 +683,7 @@ class ArweaveService {
     final driveSignatureTx = await getDriveSignatureTxForDrive(wallet, driveId);
 
     final driveSignatureData = driveSignatureTx != null
-        ? (await httpRetry.processRequest(
-            () => client.api.getSandboxedTx(driveSignatureTx.id)))
+        ? await _gatewayFallback.fetchData(driveSignatureTx.id, client)
         : null;
 
     final driveSignature =
@@ -702,16 +703,17 @@ class ArweaveService {
       final userAddress = await wallet.getAddress();
       final driveTxs = await getUniqueUserDriveEntityTxs(userAddress);
 
-      final driveResponses = await retry(
-          () async => await Future.wait(
-                driveTxs.map((e) => client.api.getSandboxedTx(e.id)),
-              ), onRetry: (Exception err) {
-        logger.w('Retrying for get unique user drive entities');
-      });
+      final driveResponses = await Future.wait(
+        driveTxs.map((e) => _gatewayFallback
+            .fetchData(e.id, client)
+            .then<Response?>((r) => r)
+            .catchError((_) => null)),
+      );
 
       final drivesById = <String?, DriveEntity>{};
       final drivesWithKey = <DriveEntity, DriveKey?>{};
       for (var i = 0; i < driveTxs.length; i++) {
+        if (driveResponses[i] == null) continue;
         final driveTx = driveTxs[i];
 
         // Ignore drive entity transactions which we already have newer entities for.
@@ -752,7 +754,7 @@ class ArweaveService {
           final drive = await DriveEntity.fromTransaction(
             driveTx,
             _crypto,
-            driveResponses[i].bodyBytes,
+            driveResponses[i]!.bodyBytes,
             driveKey?.key,
           );
 
@@ -835,11 +837,7 @@ class ArweaveService {
       }
 
       final fileTx = filteredEdges.first.node;
-      final fileDataRes = await client.api.getSandboxedTx(fileTx.id);
-
-      if (fileDataRes.statusCode == 404) {
-        throw TransactionNotFound(fileTx.id);
-      }
+      final fileDataRes = await _gatewayFallback.fetchData(fileTx.id, client);
 
       try {
         return await DriveEntity.fromTransaction(
@@ -1064,7 +1062,7 @@ class ArweaveService {
       }
 
       final fileTx = filteredEdges.first.node;
-      final fileDataRes = await client.api.getSandboxedTx(fileTx.id);
+      final fileDataRes = await _gatewayFallback.fetchData(fileTx.id, client);
 
       try {
         return await FileEntity.fromTransaction(
@@ -1120,7 +1118,8 @@ class ArweaveService {
       }
       for (var edge in queryEdges) {
         final fileTx = edge.node;
-        final fileDataRes = await client.api.getSandboxedTx(fileTx.id);
+        final fileDataRes =
+            await _gatewayFallback.fetchData(fileTx.id, client);
 
         try {
           fileEntities.add(
@@ -1472,8 +1471,7 @@ class ArweaveService {
   ) async {
     // TODO: PE-2917
 
-    final Response data =
-        (await httpRetry.processRequest(() => client.api.getSandboxedTx(txId)));
+    final Response data = await _gatewayFallback.fetchData(txId, client);
     final metadata = data.bodyBytes;
     return metadata;
   }
