@@ -867,7 +867,7 @@ class ProfileCardHeader extends StatelessWidget {
 
     final logoUrl = state.primaryNameDetails.logo!.startsWith('http')
         ? state.primaryNameDetails.logo!
-        : 'https://ardrive.net/${state.primaryNameDetails.logo}';
+        : 'https://turbo-gateway.com/${state.primaryNameDetails.logo}';
 
     return Padding(
       padding: const EdgeInsets.only(right: 8.0),
