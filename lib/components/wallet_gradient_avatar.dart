@@ -10,11 +10,13 @@ import 'package:flutter/material.dart';
 class WalletGradientAvatar extends StatefulWidget {
   final String address;
   final double size;
+  final Color? ringColor;
 
   const WalletGradientAvatar({
     super.key,
     required this.address,
     this.size = 34,
+    this.ringColor,
   });
 
   @override
@@ -44,10 +46,12 @@ class _WalletGradientAvatarState extends State<WalletGradientAvatar>
   Widget build(BuildContext context) {
     final data = _AvatarData.fromAddress(widget.address);
 
+    final ringWidth = widget.size > 40 ? 2.5 : 2.0;
+
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        return ClipOval(
+        final avatar = ClipOval(
           child: CustomPaint(
             size: Size(widget.size, widget.size),
             painter: _PixelAvatarPainter(
@@ -55,6 +59,21 @@ class _WalletGradientAvatarState extends State<WalletGradientAvatar>
               breathe: _controller.value,
             ),
           ),
+        );
+
+        if (widget.ringColor == null) return avatar;
+
+        return Container(
+          width: widget.size + ringWidth * 2,
+          height: widget.size + ringWidth * 2,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: widget.ringColor!,
+              width: ringWidth,
+            ),
+          ),
+          child: avatar,
         );
       },
     );

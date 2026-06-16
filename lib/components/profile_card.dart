@@ -1,6 +1,7 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/copy_button.dart';
+import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/components/graphql_endpoint_dialog.dart';
 import 'package:ardrive/components/icon_theme_switcher.dart';
 import 'package:ardrive/components/wallet_gradient_avatar.dart';
@@ -8,18 +9,16 @@ import 'package:ardrive/components/truncated_address.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/gar/domain/repositories/gar_repository.dart';
 import 'package:ardrive/gar/presentation/widgets/gateway_input_modal.dart';
-import 'package:ardrive/gift/bloc/redeem_gift_bloc.dart';
-import 'package:ardrive/gift/redeem_gift_modal.dart';
-import 'package:ardrive/main.dart';
-import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
-import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
-import 'package:ardrive/turbo/topup/components/turbo_balance_widget.dart';
+import 'package:ardrive/components/help_info_modals.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
+import 'package:ardrive/turbo/topup/blocs/turbo_balance/turbo_balance_cubit.dart';
+import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive/user/balance/user_balance_bloc.dart';
@@ -28,13 +27,10 @@ import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/user_preferences.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
-import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -51,6 +47,7 @@ class ProfileCard extends StatefulWidget {
 
 class _ProfileCardState extends State<ProfileCard> {
   bool _showProfileCard = false;
+  Future<_AccountStats>? _accountStatsFuture;
 
   @override
   Widget build(BuildContext context) {
@@ -109,8 +106,8 @@ class _ProfileCardState extends State<ProfileCard> {
       visible: _showProfileCard,
       anchor: Aligned(
         follower: Alignment.topRight,
-        target: Alignment.bottomRight,
-        offset: isMobile ? const Offset(12, -60) : const Offset(0, 18),
+        target: isMobile ? Alignment.bottomRight : Alignment.topRight,
+        offset: isMobile ? const Offset(12, -60) : const Offset(0, 0),
       ),
       content: _buildProfileCardContent(
         context,
@@ -133,424 +130,547 @@ class _ProfileCardState extends State<ProfileCard> {
       width: 281,
       height: isMobile ? double.infinity : null,
       borderRadius: isMobile ? 0 : null,
-      boxShadow: BoxShadowCard.shadow60,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            color: ArDriveTheme.of(context).themeData.colorTokens.containerL3,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (isMobile)
-                  Row(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: ArDriveIconButton(
-                          onPressed: () {
-                            setState(() {
-                              _showProfileCard = false;
-                            });
-                          },
-                          icon: ArDriveIcons.x(
-                            size: 24,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                _buildWalletAddressRow(context, state),
-                if (state.user.wallet is! ArConnectWallet) ...[
-                  const SizedBox(height: 8),
-                ],
-                const Divider(
-                  height: 21,
-                  indent: 16,
-                  endIndent: 16,
-                ),
-                _buildBalanceRow(context, state),
-                if (context.read<PaymentService>().useTurboPayment) ...[
+      boxShadow: BoxShadowCard.shadow80,
+      content: Container(
+        color: ArDriveTheme.of(context).themeData.dropdownTheme.backgroundColor,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (isMobile)
+              Row(
+                children: [
                   Padding(
-                    padding: const EdgeInsets.only(top: 20.0),
-                    child: TurboBalance(
-                      paymentService: context.read<PaymentService>(),
-                      wallet: state.user.wallet,
-                      onTapAddButton: () {
+                    padding: const EdgeInsets.all(16),
+                    child: ArDriveIconButton(
+                      onPressed: () {
                         setState(() {
                           _showProfileCard = false;
                         });
                       },
+                      icon: ArDriveIcons.x(
+                        size: 24,
+                      ),
                     ),
-                  ),
-                ],
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
-          ArDriveAccordion(
-            backgroundColor: Colors.transparent,
-            automaticallyCloseWhenOpenAnotherItem: true,
-            children: [
-              ArDriveAccordionItem(
-                Text(
-                  'Gift',
-                  style: typography.paragraphNormal(
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                ),
-                [
-                  _ProfileMenuAccordionItem(
-                    text: 'Send',
-                    onTap: () {
-                      _closeProfileCardMobile();
-
-                      openUrl(url: Resources.sendGiftLink);
-                    },
-                  ),
-                  _ProfileMenuAccordionItem(
-                    text: 'Redeem',
-                    onTap: () {
-                      _closeProfileCardMobile();
-
-                      showArDriveDialog(
-                        context,
-                        content: BlocProvider(
-                          create: (context) => RedeemGiftBloc(
-                              paymentService: context.read<PaymentService>(),
-                              auth: context.read<ArDriveAuth>()),
-                          child: const RedeemGiftModal(),
-                        ),
-                      );
-                    },
                   ),
                 ],
               ),
-              ArDriveAccordionItem(
-                Text(
-                  'Advanced Settings',
-                  style: typography.paragraphNormal(
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                ),
-                [
-                  const SizedBox(height: 6),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 16.0, right: 16),
-                    child: ArDriveToggleSwitch(
-                      alignRight: true,
-                      value: context.read<ConfigService>().config.autoSync,
-                      text: 'Automatic Sync',
-                      textStyle: typography.paragraphNormal(
-                        fontWeight: ArFontWeight.semiBold,
-                        color: colorTokens.textMid,
+            _buildIdentityHeader(context, state),
+            _buildAccountStats(context),
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            _buildBalanceSection(context, state),
+            const SizedBox(height: 8),
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            ArDriveAccordion(
+              backgroundColor: Colors.transparent,
+              automaticallyCloseWhenOpenAnotherItem: true,
+              children: [
+                ArDriveAccordionItem(
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        state.user.sourceWalletAddress != null
+                            ? 'Wallets'
+                            : 'Wallet',
+                        style: typography.paragraphNormal(
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
                       ),
-                      onChanged: (value) {
-                        final config = context.read<ConfigService>().config;
-                        context.read<ConfigService>().updateAppConfig(
-                              config.copyWith(
-                                autoSync: value,
+                      if (state.user.sourceWalletAddress != null) ...[
+                        const SizedBox(width: 4),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _showProfileCard = false;
+                            });
+                            showArDriveDialog(
+                              context,
+                              content: ArDriveStandardModalNew(
+                                hasCloseButton: true,
+                                title: 'About Your Wallets',
+                                description:
+                                    'Your ${state.user.sourceWalletAddress!.startsWith('0x') ? 'Ethereum' : 'Solana'} wallet is used to sign in. '
+                                    'A unique Arweave wallet is automatically derived from it to store your data permanently on the Arweave network.\n\n'
+                                    'Your Arweave wallet is deterministic — it will always be the same when you sign in with the same ${state.user.sourceWalletAddress!.startsWith('0x') ? 'Ethereum' : 'Solana'} wallet.\n\n'
+                                    'Never share your wallet private keys with anyone.',
                               ),
                             );
-                      },
+                          },
+                          child: MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: Icon(
+                              Icons.info_outline,
+                              size: 14,
+                              color: colorTokens.textLow,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  _buildWalletSettingsItems(context, state),
+                ),
+                ArDriveAccordionItem(
+                  Text(
+                    'Settings',
+                    style: typography.paragraphNormal(
+                      fontWeight: ArFontWeight.semiBold,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 16.0, right: 16),
-                    child: StreamBuilder<UserPreferences>(
-                      stream: context
-                          .read<UserPreferencesRepository>()
-                          .watch(),
-                      builder: (context, snapshot) {
-                        final repo = context.read<UserPreferencesRepository>();
-                        final syncAllDrivesOnLogin =
-                            snapshot.data?.syncAllDrivesOnLogin ??
-                                repo.currentPreferences?.syncAllDrivesOnLogin ??
-                                true;
-                        return ArDriveToggleSwitch(
-                          alignRight: true,
-                          value: syncAllDrivesOnLogin,
-                          text: appLocalizationsOf(context).syncAllDrivesOnLogin,
-                          textStyle: typography.paragraphNormal(
-                            fontWeight: ArFontWeight.semiBold,
-                            color: colorTokens.textMid,
-                          ),
-                          onChanged: (value) {
-                            context
-                                .read<UserPreferencesRepository>()
-                                .saveSyncAllDrivesOnLogin(value);
+                  [
+                    const SizedBox(height: 8),
+                    _ProfileMenuAccordionItem(
+                      text: 'Switch Gateway',
+                      onTap: () {
+                        setState(() {
+                          _showProfileCard = false;
+                        });
+                        _showGatewayInputDialog(
+                          context,
+                          onSave: (newGatewayUrl) async {
+                            final cs = context.read<ConfigService>();
+                            final garRepository = GarRepositoryImpl(
+                              configService: cs,
+                              arweave: context.read<ArweaveService>(),
+                              arioSDK: ArioSDKFactory().create(),
+                              http: ArDriveHTTP(),
+                            );
+                            await garRepository
+                                .updateCustomGateway(newGatewayUrl);
                           },
                         );
                       },
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 16.0, right: 16),
-                    child: ArDriveToggleSwitch(
-                      alignRight: true,
-                      value:
-                          context.read<ConfigService>().config.uploadThumbnails,
-                      text: 'Upload with thumbnails',
-                      textStyle: typography.paragraphNormal(
-                        fontWeight: ArFontWeight.semiBold,
-                        color: colorTokens.textMid,
-                      ),
-                      onChanged: (value) {
-                        final config = context.read<ConfigService>().config;
-                        context.read<ConfigService>().updateAppConfig(
-                              config.copyWith(
-                                uploadThumbnails: value,
-                              ),
-                            );
+                    const SizedBox(height: 8),
+                    _ProfileMenuAccordionItem(
+                      text: 'Switch GraphQL Server',
+                      onTap: () {
+                        setState(() {
+                          _showProfileCard = false;
+                        });
+                        _showGQLServerDialog(context);
                       },
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 16.0, right: 16),
-                    child: ArDriveToggleSwitch(
-                      alignRight: true,
-                      value: context
-                          .read<ConfigService>()
-                          .config
-                          .enableSyncFromSnapshot,
-                      text: 'Sync From Snapshots',
-                      textStyle: typography.paragraphNormal(
-                        fontWeight: ArFontWeight.semiBold,
-                        color: colorTokens.textMid,
-                      ),
-                      onChanged: (value) {
-                        final config = context.read<ConfigService>().config;
-                        context.read<ConfigService>().updateAppConfig(
-                              config.copyWith(
-                                enableSyncFromSnapshot: value,
-                              ),
-                            );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  _ProfileMenuAccordionItem(
-                    text: 'Switch Gateway',
-                    onTap: () {
-                      setState(() {
-                        _showProfileCard = false;
-                      });
-                      _showGatewayInputDialog(
-                        context,
-                        onSave: (newGatewayUrl) async {
-                          final configService = context.read<ConfigService>();
-                          // Create a repository instance to handle the gateway update
-                          final garRepository = GarRepositoryImpl(
-                            configService: configService,
-                            arweave: context.read<ArweaveService>(),
-                            arioSDK: ArioSDKFactory().create(),
-                            http: ArDriveHTTP(),
-                          );
-
-                          // Use the repository to update the custom gateway
-                          await garRepository
-                              .updateCustomGateway(newGatewayUrl);
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: ArDriveToggleSwitch(
+                        alignRight: true,
+                        value: context.read<ConfigService>().config.autoSync,
+                        text: 'Automatic Sync',
+                        textStyle: typography.paragraphNormal(
+                          fontWeight: ArFontWeight.semiBold,
+                          color: colorTokens.textMid,
+                        ),
+                        onChanged: (value) {
+                          final config = context.read<ConfigService>().config;
+                          context.read<ConfigService>().updateAppConfig(
+                                config.copyWith(autoSync: value),
+                              );
                         },
-                      );
-                    },
-                  ),
-                  Padding(
-                    padding:
-                        const EdgeInsets.only(left: 16.0, right: 16, top: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Current Gateway:',
-                          style: typography.paragraphNormal(
-                            fontWeight: ArFontWeight.semiBold,
-                          ),
-                        ),
-                        Text(
-                          configService
-                              .config.arweaveGatewayForDataRequest.url,
-                          style: typography.paragraphNormal(
-                            fontWeight: ArFontWeight.bold,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  _ProfileMenuAccordionItem(
-                    text: 'Switch GraphQL Server',
-                    onTap: () {
-                      setState(() {
-                        _showProfileCard = false;
-                      });
-                      // TODO: Show GraphQL endpoint switcher modal
-                      _showGQLServerDialog(context);
-                    },
-                  ),
-                  Padding(
-                    padding:
-                        const EdgeInsets.only(left: 16.0, right: 16, top: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Current GraphQL Server:',
-                          style: typography.paragraphNormal(
-                            fontWeight: ArFontWeight.semiBold,
-                          ),
-                        ),
-                        Text(
-                          configService.config.arweaveGatewayUrl ??
-                              'Not set',
-                          style: typography.paragraphNormal(
-                            fontWeight: ArFontWeight.bold,
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: StreamBuilder<UserPreferences>(
+                        stream: context
+                            .read<UserPreferencesRepository>()
+                            .watch(),
+                        builder: (context, snapshot) {
+                          final repo =
+                              context.read<UserPreferencesRepository>();
+                          final syncAllDrivesOnLogin =
+                              snapshot.data?.syncAllDrivesOnLogin ??
+                                  repo.currentPreferences
+                                      ?.syncAllDrivesOnLogin ??
+                                  true;
+                          return ArDriveToggleSwitch(
+                            alignRight: true,
+                            value: syncAllDrivesOnLogin,
+                            text: appLocalizationsOf(context)
+                                .syncAllDrivesOnLogin,
+                            textStyle: typography.paragraphNormal(
+                              fontWeight: ArFontWeight.semiBold,
+                              color: colorTokens.textMid,
+                            ),
+                            onChanged: (value) {
+                              context
+                                  .read<UserPreferencesRepository>()
+                                  .saveSyncAllDrivesOnLogin(value);
+                            },
+                          );
+                        },
+                      ),
                     ),
-                  )
-                ],
-              ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 12.0, left: 16, top: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Theme',
-                  style: typography.paragraphNormal(
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                ),
-                IconThemeSwitcher(
-                  color:
-                      ArDriveTheme.of(context).themeData.colorTokens.iconHigh,
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: ArDriveToggleSwitch(
+                        alignRight: true,
+                        value: context
+                            .read<ConfigService>()
+                            .config
+                            .uploadThumbnails,
+                        text: 'Upload with thumbnails',
+                        textStyle: typography.paragraphNormal(
+                          fontWeight: ArFontWeight.semiBold,
+                          color: colorTokens.textMid,
+                        ),
+                        onChanged: (value) {
+                          final config = context.read<ConfigService>().config;
+                          context.read<ConfigService>().updateAppConfig(
+                                config.copyWith(uploadThumbnails: value),
+                              );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: ArDriveToggleSwitch(
+                        alignRight: true,
+                        value: context
+                            .read<ConfigService>()
+                            .config
+                            .enableSyncFromSnapshot,
+                        text: 'Sync From Snapshots',
+                        textStyle: typography.paragraphNormal(
+                          fontWeight: ArFontWeight.semiBold,
+                          color: colorTokens.textMid,
+                        ),
+                        onChanged: (value) {
+                          final config = context.read<ConfigService>().config;
+                          context.read<ConfigService>().updateAppConfig(
+                                config.copyWith(enableSyncFromSnapshot: value),
+                              );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Theme',
+                            style: typography.paragraphNormal(
+                              fontWeight: ArFontWeight.semiBold,
+                              color: colorTokens.textMid,
+                            ),
+                          ),
+                          IconThemeSwitcher(
+                            color: colorTokens.iconHigh,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                 ),
               ],
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(top: 20.0),
-            child: _LogoutButton(
-              onLogout: () {
-                _showProfileCard = false;
-                setState(() {});
-              },
-            ),
+          // Logout — always at the very bottom
+          const Divider(height: 1, indent: 16, endIndent: 16),
+          _LogoutButton(
+            onLogout: () {
+              _showProfileCard = false;
+              setState(() {});
+            },
           ),
           if (isMobile)
             Expanded(
               child: Container(
-                color: ArDriveTheme.of(context).themeData.colors.themeBgSubtle,
+                color: ArDriveTheme.of(context).themeData.dropdownTheme.backgroundColor,
               ),
             ),
         ],
       ),
+      ),
     );
   }
 
-  Widget _buildWalletAddressRow(BuildContext context, ProfileLoggedIn state) {
+  Widget _buildAccountStats(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final sourceAddress = state.user.sourceWalletAddress;
-    final hasSourceWallet = sourceAddress != null;
-    final arweaveAddress = state.user.walletAddress;
+    final driveDao = context.read<DriveDao>();
+    _accountStatsFuture ??= _getAccountStats(driveDao);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 8),
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: WalletGradientAvatar(
-                address: state.user.displayAddress,
-                size: 48,
+    return FutureBuilder<_AccountStats>(
+      future: _accountStatsFuture,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox.shrink();
+        final stats = snapshot.data!;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Center(
+            child: Text(
+              '${stats.driveCount} ${stats.driveCount == 1 ? 'drive' : 'drives'} · ${stats.fileCount} ${stats.fileCount == 1 ? 'file' : 'files'} · ${_formatBytes(stats.totalSize)}',
+              style: typography.caption(
+                color: colorTokens.textLow,
+                fontWeight: ArFontWeight.book,
               ),
             ),
           ),
-          if (hasSourceWallet) ...[
-            _WalletAddressLine(
-              label: sourceAddress.startsWith('0x') ? 'ETH' : 'SOL',
-              address: sourceAddress,
-              explorerUrl: sourceAddress.startsWith('0x')
-                  ? 'https://etherscan.io/address/$sourceAddress'
-                  : 'https://solscan.io/account/$sourceAddress',
-            ),
-            const SizedBox(height: 4),
-            _ArweaveWalletDisclosure(
-              arweaveAddress: arweaveAddress,
-              isEthereum: sourceAddress.startsWith('0x'),
-            ),
-          ] else ...[
-            Row(
-              children: [
-                TruncatedAddress(
-                  walletAddress: arweaveAddress,
-                  fontSize: 18,
-                ),
-                const Spacer(),
-                CopyButton(
-                  size: 21,
-                  text: arweaveAddress,
-                  showCopyText: false,
-                ),
-              ],
-            ),
-          ],
-          if (state.user.profileType != ProfileType.arConnect &&
-              state.user.sourceWalletAddress == null)
-            Align(
-              alignment: Alignment.centerRight,
-              child: ArDriveIconButton(
-                icon: ArDriveIcons.download(
-                  color: colorTokens.textHigh,
-                  size: 21,
-                ),
-                onPressed: () {
-                  showDownloadWalletModal(context);
-                },
-              ),
-            ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildBalanceRow(BuildContext context, ProfileLoggedIn state) {
-    final walletBalance =
-        convertWinstonToLiteralString(state.user.walletBalance);
+  Future<_AccountStats> _getAccountStats(DriveDao driveDao) async {
+    final drives = await driveDao.allDrives().get();
+    var fileCount = 0;
+    var totalSize = 0;
+    for (final drive in drives) {
+      final files =
+          await driveDao.filesInDriveWithRevisionTransactions(driveId: drive.id).get();
+      fileCount += files.length;
+      for (final file in files) {
+        totalSize += file.size;
+      }
+    }
+    return _AccountStats(
+      driveCount: drives.length,
+      fileCount: fileCount,
+      totalSize: totalSize,
+    );
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  }
+
+  Widget _buildIdentityHeader(BuildContext context, ProfileLoggedIn state) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            appLocalizationsOf(context).arBalance,
-            style: typography.paragraphNormal(
-              fontWeight: ArFontWeight.semiBold,
-              color: colorTokens.textHigh,
+          const SizedBox(height: 12),
+          Center(
+            child: WalletGradientAvatar(
+              address: state.user.displayAddress,
+              size: 48,
+              ringColor: getWalletIndicatorColor(state.user),
             ),
           ),
-          Text(
-            '$walletBalance AR',
-            style: typography.paragraphNormal(
-              color: colorTokens.textLow,
-              fontWeight: ArFontWeight.semiBold,
+          const SizedBox(height: 8),
+          Center(
+            child: BlocBuilder<ProfileNameBloc, ProfileNameState>(
+              builder: (context, nameState) {
+                final name = nameState is ProfileNameLoaded
+                    ? nameState.primaryNameDetails.primaryName
+                    : truncateString(state.user.displayAddress,
+                        offsetStart: 6, offsetEnd: 4);
+                return Text(
+                  name,
+                  style: typography.paragraphLarge(
+                    fontWeight: ArFontWeight.bold,
+                    color: colorTokens.textHigh,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                );
+              },
             ),
           ),
+          const SizedBox(height: 12),
         ],
+      ),
+    );
+  }
+
+  /// Builds wallet address rows for the Settings accordion.
+  List<Widget> _buildWalletSettingsItems(
+      BuildContext context, ProfileLoggedIn state) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final sourceAddress = state.user.sourceWalletAddress;
+    final arweaveAddress = state.user.walletAddress;
+
+    return [
+      const SizedBox(height: 8),
+      if (sourceAddress != null) ...[
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _WalletAddressLine(
+            label: sourceAddress.startsWith('0x') ? 'ETH' : 'SOL',
+            address: sourceAddress,
+            explorerUrl: sourceAddress.startsWith('0x')
+                ? 'https://etherscan.io/address/$sourceAddress'
+                : 'https://solscan.io/account/$sourceAddress',
+          ),
+        ),
+        const SizedBox(height: 4),
+      ],
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: _WalletAddressLine(
+          label: 'AR',
+          address: arweaveAddress,
+          explorerUrl:
+              'https://viewblock.io/arweave/address/$arweaveAddress',
+        ),
+      ),
+      if (state.user.profileType != ProfileType.arConnect &&
+          state.user.sourceWalletAddress == null) ...[
+        const SizedBox(height: 4),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: GestureDetector(
+              onTap: () => showDownloadWalletModal(context),
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: Text(
+                  'Download wallet backup',
+                  style: typography.paragraphSmall(
+                    color: colorTokens.textLow,
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ];
+  }
+
+  Widget _buildBalanceSection(BuildContext context, ProfileLoggedIn state) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final walletBalance = state.user.walletBalance;
+    final hasArBalance = walletBalance > BigInt.zero;
+
+    return BlocProvider(
+      create: (context) => TurboBalanceCubit(
+        paymentService: context.read<PaymentService>(),
+        wallet: state.user.wallet,
+      )..getBalance(),
+      child: BlocBuilder<TurboBalanceCubit, TurboBalanceState>(
+        builder: (context, turboState) {
+          final creditsText = turboState is TurboBalanceSuccessState
+              ? convertWinstonToLiteralString(turboState.balance)
+              : turboState is TurboBalanceLoading
+                  ? '...'
+                  : '0.0000';
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Column(
+              children: [
+                // Credits row — always visible
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Credits',
+                          style: typography.paragraphNormal(
+                            fontWeight: ArFontWeight.semiBold,
+                            color: colorTokens.textMid,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _showProfileCard = false;
+                            });
+                            showTurboInfoModal(context: context);
+                          },
+                          child: MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: Icon(
+                              Icons.info_outline,
+                              size: 14,
+                              color: colorTokens.textLow,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          creditsText,
+                          style: typography.paragraphNormal(
+                            color: colorTokens.textHigh,
+                            fontWeight: ArFontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _showProfileCard = false;
+                            });
+                            showTurboTopupModal(context);
+                          },
+                          child: MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: Container(
+                              width: 18,
+                              height: 18,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: colorTokens.textMid,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.add,
+                                size: 12,
+                                color: colorTokens.textMid,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                // AR Balance — only if non-zero
+                if (hasArBalance) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'AR Balance',
+                        style: typography.paragraphNormal(
+                          fontWeight: ArFontWeight.semiBold,
+                          color: colorTokens.textMid,
+                        ),
+                      ),
+                      Text(
+                        convertWinstonToLiteralString(walletBalance),
+                        style: typography.paragraphNormal(
+                          color: colorTokens.textHigh,
+                          fontWeight: ArFontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -628,14 +748,6 @@ class _ProfileCardState extends State<ProfileCard> {
         },
       ),
     );
-  }
-
-  void _closeProfileCardMobile() {
-    if (AppPlatform.isMobile) {
-      setState(() {
-        _showProfileCard = false;
-      });
-    }
   }
 
   void _showGatewayInputDialog(BuildContext context,
@@ -739,15 +851,15 @@ class __LogoutButtonState extends State<_LogoutButton> {
         child: Container(
           color: _isHovering
               ? ArDriveTheme.of(context).themeData.colors.themeGbMuted
-              : ArDriveTheme.of(context).themeData.colors.themeBgSubtle,
+              : Colors.transparent,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14),
             child: Row(
               children: [
                 Text(
                   appLocalizationsOf(context).logOut,
                   style: typography.paragraphNormal(
-                    color: colorTokens.textHigh,
+                    color: colorTokens.textMid,
                     fontWeight: ArFontWeight.semiBold,
                   ),
                 ),
@@ -780,7 +892,7 @@ class _ProfileMenuAccordionItem extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.only(left: 16.0, right: 15),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             text,
             style: typography.paragraphNormal(
@@ -915,6 +1027,7 @@ class ProfileCardHeader extends StatelessWidget {
                 child: WalletGradientAvatar(
                   address: walletAddress,
                   size: 28,
+                  ringColor: walletIndicatorColor,
                 ),
               ),
               Flexible(
@@ -974,6 +1087,7 @@ class ProfileCardHeader extends StatelessWidget {
                     child: WalletGradientAvatar(
                       address: walletAddress,
                       size: 34,
+                      ringColor: walletIndicatorColor,
                     ),
                   ),
                 Flexible(
@@ -1203,4 +1317,16 @@ Color getWalletIndicatorColor(User user) {
   }
   // Arweave (ArConnect, JSON file)
   return const Color(0xFFFFFFFF);
+}
+
+class _AccountStats {
+  final int driveCount;
+  final int fileCount;
+  final int totalSize;
+
+  _AccountStats({
+    required this.driveCount,
+    required this.fileCount,
+    required this.totalSize,
+  });
 }

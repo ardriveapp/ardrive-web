@@ -10,6 +10,7 @@ import 'package:ardrive/authentication/login/views/wallet_created_view.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/icon_theme_switcher.dart';
 import 'package:ardrive/components/progress_dialog.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/components/settings_popover.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
@@ -100,10 +101,23 @@ class _LoginPageState extends State<LoginPage> {
           }
 
           if (loginState is LoginLoadingIfUserAlreadyExists) {
-            showProgressDialog(
+            showArDriveDialog(
               context,
-              title: 'Loading wallet details...',
-              useNewArDriveUI: true,
+              barrierDismissible: false,
+              content: ProgressDialog(
+                title: 'Loading wallet details...',
+                useNewArDriveUI: true,
+                progressDescription: Text(
+                  'This may take a moment.',
+                  style: ArDriveTypographyNew.of(context).paragraphNormal(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colorTokens
+                        .textLow,
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                ),
+              ),
             );
 
             return;
