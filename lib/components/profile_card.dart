@@ -3,6 +3,7 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/copy_button.dart';
 import 'package:ardrive/components/graphql_endpoint_dialog.dart';
 import 'package:ardrive/components/icon_theme_switcher.dart';
+import 'package:ardrive/components/wallet_gradient_avatar.dart';
 import 'package:ardrive/components/truncated_address.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/gar/domain/repositories/gar_repository.dart';
@@ -160,7 +161,6 @@ class _ProfileCardState extends State<ProfileCard> {
                       ),
                     ],
                   ),
-                const SizedBox(height: 8),
                 _buildWalletAddressRow(context, state),
                 if (state.user.wallet is! ArConnectWallet) ...[
                   const SizedBox(height: 8),
@@ -210,7 +210,7 @@ class _ProfileCardState extends State<ProfileCard> {
                     },
                   ),
                   _ProfileMenuAccordionItem(
-                    text: 'Reedem',
+                    text: 'Redeem',
                     onTap: () {
                       _closeProfileCardMobile();
 
@@ -467,6 +467,15 @@ class _ProfileCardState extends State<ProfileCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 8),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: WalletGradientAvatar(
+                address: state.user.displayAddress,
+                size: 48,
+              ),
+            ),
+          ),
           if (hasSourceWallet) ...[
             _WalletAddressLine(
               label: sourceAddress.startsWith('0x') ? 'ETH' : 'SOL',
@@ -476,11 +485,9 @@ class _ProfileCardState extends State<ProfileCard> {
                   : 'https://solscan.io/account/$sourceAddress',
             ),
             const SizedBox(height: 4),
-            _WalletAddressLine(
-              label: 'AR',
-              address: arweaveAddress,
-              explorerUrl:
-                  'https://viewblock.io/arweave/address/$arweaveAddress',
+            _ArweaveWalletDisclosure(
+              arweaveAddress: arweaveAddress,
+              isEthereum: sourceAddress.startsWith('0x'),
             ),
           ] else ...[
             Row(
@@ -847,12 +854,12 @@ class ProfileCardHeader extends StatelessWidget {
       return state.primaryNameDetails.primaryName;
     }
 
-    return truncateString(walletAddress, offsetStart: 2, offsetEnd: 2);
+    return truncateString(walletAddress, offsetStart: 6, offsetEnd: 4);
   }
 
   double _calculateMaxWidth(String primaryName, ProfileNameState state) {
     if (state is! ProfileNameLoaded && !isExpanded) {
-      return 100;
+      return 180;
     }
 
     double width = primaryName.length * 20;
@@ -903,8 +910,13 @@ class ProfileCardHeader extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              if (walletIndicatorColor != null)
-                _WalletIndicatorDot(color: walletIndicatorColor!),
+              Padding(
+                padding: const EdgeInsets.only(right: 6.0),
+                child: WalletGradientAvatar(
+                  address: walletAddress,
+                  size: 28,
+                ),
+              ),
               Flexible(
                 child: Text(
                   isExpanded ? walletAddress : truncatedWalletAddress,
@@ -954,9 +966,16 @@ class ProfileCardHeader extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (walletIndicatorColor != null)
-                  _WalletIndicatorDot(color: walletIndicatorColor!),
-                if (icon != null) icon,
+                if (icon != null)
+                  icon
+                else
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: WalletGradientAvatar(
+                      address: walletAddress,
+                      size: 34,
+                    ),
+                  ),
                 Flexible(
                   child: SizedBox(
                     height: 46,
@@ -1045,6 +1064,87 @@ String getTruncatedWalletAddress(
   );
 }
 
+class _ArweaveWalletDisclosure extends StatefulWidget {
+  final String arweaveAddress;
+  final bool isEthereum;
+
+  const _ArweaveWalletDisclosure({
+    required this.arweaveAddress,
+    required this.isEthereum,
+  });
+
+  @override
+  State<_ArweaveWalletDisclosure> createState() =>
+      _ArweaveWalletDisclosureState();
+}
+
+class _ArweaveWalletDisclosureState extends State<_ArweaveWalletDisclosure> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final chainName = widget.isEthereum ? 'Ethereum' : 'Solana';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 32,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Icon(
+                      _expanded
+                          ? Icons.keyboard_arrow_down
+                          : Icons.keyboard_arrow_right,
+                      size: 16,
+                      color: colorTokens.textLow,
+                    ),
+                  ),
+                ),
+                Text(
+                  'Arweave wallet',
+                  style: typography.paragraphSmall(
+                    color: colorTokens.textLow,
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_expanded) ...[
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, right: 4, bottom: 6),
+            child: Text(
+              'Your $chainName wallet derives a unique Arweave '
+              'wallet used to store your data permanently.',
+              style: typography.caption(
+                color: colorTokens.textLow,
+                fontWeight: ArFontWeight.book,
+              ),
+            ),
+          ),
+          _WalletAddressLine(
+            label: 'AR',
+            address: widget.arweaveAddress,
+            explorerUrl:
+                'https://viewblock.io/arweave/address/${widget.arweaveAddress}',
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 class _WalletAddressLine extends StatelessWidget {
   final String label;
   final String address;
@@ -1085,27 +1185,6 @@ class _WalletAddressLine extends StatelessWidget {
           showCopyText: false,
         ),
       ],
-    );
-  }
-}
-
-class _WalletIndicatorDot extends StatelessWidget {
-  final Color color;
-
-  const _WalletIndicatorDot({required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 6.0),
-      child: Container(
-        width: 8,
-        height: 8,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-        ),
-      ),
     );
   }
 }

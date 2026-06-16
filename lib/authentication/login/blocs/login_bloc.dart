@@ -664,7 +664,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     // 2. Server-side check (user waits — show blocking dialog)
     emit(const LoginShowBlockingDialog(
-        message: 'Setting up your account...'));
+        message: 'Setting up your account.\nThis may take a moment.'));
 
     try {
       if (await _arDriveAuth.userHasPassword(wallet)) {
@@ -943,7 +943,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     // 3. Server-side check (user waits — show blocking dialog)
     emit(const LoginShowBlockingDialog(
-        message: 'Setting up your account...'));
+        message: 'Setting up your account.\nThis may take a moment.'));
 
     final arweaveNativeAddressForEth =
         await ownerToAddress(await derivedEthWallet.getOwner());
@@ -1017,7 +1017,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       // 3. Derive wallet and check account (show themed loader)
       emit(const LoginShowBlockingDialog(
-          message: 'Setting up your account...'));
+          message: 'Setting up your account.\nThis may take a moment.'));
 
       final mnemonic = await deriveMnemonicFromSolanaSignature(signature);
       final wallet = await _walletFromMnemonic(mnemonic);
