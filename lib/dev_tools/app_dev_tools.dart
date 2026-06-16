@@ -206,6 +206,20 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.number,
     );
 
+    final ArDriveDevToolOption maxConcurrentDataFetchesOption =
+        ArDriveDevToolOption(
+      name: 'maxConcurrentDataFetches',
+      value: config.maxConcurrentDataFetches,
+      onChange: (value) {
+        setState(() {
+          configService.updateAppConfig(
+            config.copyWith(maxConcurrentDataFetches: value),
+          );
+        });
+      },
+      type: ArDriveDevToolOptionType.number,
+    );
+
     // reload option
     final ArDriveDevToolOption reloadOption = ArDriveDevToolOption(
       name: 'Reload',
@@ -366,6 +380,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       arweaveGatewayUrlOption,
       defaultTurboUrlOption,
       autoSyncIntervalInSecondsOption,
+      maxConcurrentDataFetchesOption,
       solanaRpcUrlOption,
       solanaCoreProgramIdOption,
       solanaGarProgramIdOption,

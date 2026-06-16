@@ -48,6 +48,7 @@ class ArweaveService {
   Arweave client;
   final ArDriveCrypto _crypto;
   final DriveDao _driveDao;
+  final ConfigService _configService;
   late ArtemisClient _gql;
   late DataGatewayFallback _gatewayFallback;
 
@@ -71,16 +72,16 @@ class ArweaveService {
     this.client,
     this._crypto,
     this._driveDao,
-    ConfigService configService, {
+    this._configService, {
     ArtemisClient? artemisClient,
   }) : _gql = artemisClient ?? ArtemisClient(_graphqlUrlFromGateway(
-            configService.config.arweaveGatewayUrl ?? defaultGraphqlGateway)) {
+            _configService.config.arweaveGatewayUrl ??
+                defaultGraphqlGateway)) {
     graphQLRetry = GraphQLRetry(
       _gql,
       internetChecker: InternetChecker(
         connectivity: Connectivity(),
       ),
-      arioSDK: ArioSDKFactory().create(),
     );
     httpRetry = HttpRetry(
       GatewayResponseHandler(),
@@ -124,7 +125,6 @@ class ArweaveService {
       internetChecker: InternetChecker(
         connectivity: Connectivity(),
       ),
-      arioSDK: ArioSDKFactory().create(),
     );
     previousClient.dispose();
   }
@@ -397,19 +397,22 @@ class ArweaveService {
     required DriveID driveId,
     int? currentBlockHeight,
   }) async {
-    // FIXME - PE-3440
-    /// Make use of `eagerError: true` to make it fail on first error
-    /// Also, when there's no internet connection and when we're getting
-    /// rate-limited (TODO: check the latter), many requests will be retrying.
-    /// We shall find another way to fail faster.
+    // Limit concurrent data fetches to avoid overwhelming the gateway.
+    // Without this, a batch of 200 entities fires 200 simultaneous requests
+    // which triggers rate limits and 503s.
+    final maxConcurrent =
+        _configService.config.maxConcurrentDataFetches.clamp(1, 100);
+    final entityDatas = List<Uint8List>.filled(entityTxs.length, Uint8List(0));
 
-    // MAYBE FIX: set a narrow concurrency limit
+    for (var start = 0; start < entityTxs.length; start += maxConcurrent) {
+      final end = (start + maxConcurrent < entityTxs.length)
+          ? start + maxConcurrent
+          : entityTxs.length;
 
-    final List<Uint8List> entityDatas = await Future.wait(
-      entityTxs.map(
-        (model) async {
-          final entity = model.transactionCommonMixin;
-
+      await Future.wait(
+        List.generate(end - start, (j) {
+          final i = start + j;
+          final entity = entityTxs[i].transactionCommonMixin;
           final tags = HashMap.fromIterable(
             entity.tags,
             key: (tag) => tag.name,
@@ -417,27 +420,22 @@ class ArweaveService {
           );
 
           if (driveKey != null && tags[EntityTag.cipherIv] == null) {
-            logger.d('skipping unnecessary request for a broken entity');
-            return Uint8List(0);
+            return Future.value();
           }
-
-          final isSnapshot =
-              tags[EntityTag.entityType] == EntityTypeTag.snapshot;
-
-          // don't fetch data for snapshots
-          if (isSnapshot) {
-            logger.d('skipping unnecessary request for snapshot data');
-            return Uint8List(0);
+          if (tags[EntityTag.entityType] == EntityTypeTag.snapshot) {
+            return Future.value();
           }
 
           return _getEntityData(
             entityId: entity.id,
             driveId: driveId,
             isPrivate: driveKey != null,
-          );
-        },
-      ),
-    );
+          ).then((data) {
+            entityDatas[i] = data;
+          });
+        }),
+      );
+    }
 
     final metadataCache = await MetadataCache.fromCacheStore(
       await newSharedPreferencesCacheStore(),
@@ -475,7 +473,9 @@ class ArweaveService {
         final entityType = tags[EntityTag.entityType];
         final rawEntityData = entityDatas[i];
 
-        await metadataCache.put(transaction.id, rawEntityData);
+        if (rawEntityData.isNotEmpty) {
+          await metadataCache.put(transaction.id, rawEntityData);
+        }
 
         Entity? entity;
         if (entityType == EntityTypeTag.drive) {

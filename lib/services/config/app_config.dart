@@ -26,6 +26,7 @@ class AppConfig {
   final String? solanaGarProgramId;
   final String? solanaArnsProgramId;
   final String? solanaAntProgramId;
+  final int maxConcurrentDataFetches;
 
   AppConfig({
     this.arweaveGatewayUrl,
@@ -49,6 +50,7 @@ class AppConfig {
     this.solanaGarProgramId,
     this.solanaArnsProgramId,
     this.solanaAntProgramId,
+    this.maxConcurrentDataFetches = 5,
   });
 
   AppConfig copyWith({
@@ -70,6 +72,7 @@ class AppConfig {
     String? solanaGarProgramId,
     String? solanaArnsProgramId,
     String? solanaAntProgramId,
+    int? maxConcurrentDataFetches,
   }) {
     return AppConfig(
       arweaveGatewayUrl:
@@ -97,6 +100,8 @@ class AppConfig {
       solanaGarProgramId: solanaGarProgramId ?? this.solanaGarProgramId,
       solanaArnsProgramId: solanaArnsProgramId ?? this.solanaArnsProgramId,
       solanaAntProgramId: solanaAntProgramId ?? this.solanaAntProgramId,
+      maxConcurrentDataFetches:
+          maxConcurrentDataFetches ?? this.maxConcurrentDataFetches,
     );
   }
 
