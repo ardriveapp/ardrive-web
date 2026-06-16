@@ -210,7 +210,7 @@ class _ProfileCardState extends State<ProfileCard> {
                     },
                   ),
                   _ProfileMenuAccordionItem(
-                    text: 'Reedem',
+                    text: 'Redeem',
                     onTap: () {
                       _closeProfileCardMobile();
 
@@ -476,11 +476,9 @@ class _ProfileCardState extends State<ProfileCard> {
                   : 'https://solscan.io/account/$sourceAddress',
             ),
             const SizedBox(height: 4),
-            _WalletAddressLine(
-              label: 'AR',
-              address: arweaveAddress,
-              explorerUrl:
-                  'https://viewblock.io/arweave/address/$arweaveAddress',
+            _ArweaveWalletDisclosure(
+              arweaveAddress: arweaveAddress,
+              isEthereum: sourceAddress.startsWith('0x'),
             ),
           ] else ...[
             Row(
@@ -1043,6 +1041,87 @@ String getTruncatedWalletAddress(
     offsetStart: offsetStart,
     offsetEnd: offsetEnd,
   );
+}
+
+class _ArweaveWalletDisclosure extends StatefulWidget {
+  final String arweaveAddress;
+  final bool isEthereum;
+
+  const _ArweaveWalletDisclosure({
+    required this.arweaveAddress,
+    required this.isEthereum,
+  });
+
+  @override
+  State<_ArweaveWalletDisclosure> createState() =>
+      _ArweaveWalletDisclosureState();
+}
+
+class _ArweaveWalletDisclosureState extends State<_ArweaveWalletDisclosure> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final chainName = widget.isEthereum ? 'Ethereum' : 'Solana';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 32,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Icon(
+                      _expanded
+                          ? Icons.keyboard_arrow_down
+                          : Icons.keyboard_arrow_right,
+                      size: 16,
+                      color: colorTokens.textLow,
+                    ),
+                  ),
+                ),
+                Text(
+                  'Arweave wallet',
+                  style: typography.paragraphSmall(
+                    color: colorTokens.textLow,
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                ArDriveTooltip(
+                  message:
+                      'Your $chainName wallet derives a unique Arweave '
+                      'wallet used to store your data permanently on Arweave.',
+                  child: Icon(
+                    Icons.info_outline,
+                    size: 14,
+                    color: colorTokens.textLow,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_expanded) ...[
+          const SizedBox(height: 4),
+          _WalletAddressLine(
+            label: 'AR',
+            address: widget.arweaveAddress,
+            explorerUrl:
+                'https://viewblock.io/arweave/address/${widget.arweaveAddress}',
+          ),
+        ],
+      ],
+    );
+  }
 }
 
 class _WalletAddressLine extends StatelessWidget {
