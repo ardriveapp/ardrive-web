@@ -71,6 +71,34 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
     }
   }
 
+  String _getDescription() {
+    final isReturning = !widget.showTutorials;
+    final chainName = widget.sourceWalletAddress != null
+        ? (widget.sourceWalletAddress!.startsWith('0x')
+            ? 'Ethereum'
+            : 'Solana')
+        : null;
+
+    if (isReturning && chainName != null) {
+      return 'We found your drives! Enter a password to encrypt '
+          'your private files. This password can never be changed, '
+          'reset, or recovered.';
+    } else if (isReturning) {
+      return 'We found your drives! Enter a password to encrypt '
+          'your private files. This password can never be changed, '
+          'reset, or recovered.';
+    } else if (chainName != null) {
+      return 'ArDrive creates a secure storage wallet linked to your '
+          '$chainName wallet. Enter a password to encrypt your '
+          'private files. This password can never be changed, '
+          'reset, or recovered.';
+    }
+    return 'Please enter and confirm a password to secure your wallet. '
+        'This password is used to encrypt your private files, and can '
+        'never be changed, reset, or recovered. Be sure to store it '
+        'somewhere safe.';
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
@@ -100,7 +128,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
               Align(
                 alignment: Alignment.topCenter,
                 child: Text(
-                  'Secure Your Wallet',
+                  widget.showTutorials ? 'Secure Your Wallet' : 'Welcome Back',
                   style: typography.heading2(
                       color: colorTokens.textHigh,
                       fontWeight: ArFontWeight.bold),
@@ -108,22 +136,19 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
               ),
               const SizedBox(height: 12),
               Text(
-                  widget.sourceWalletAddress != null
-                      ? 'ArDrive creates a secure storage wallet linked to your ${widget.sourceWalletAddress!.startsWith('0x') ? 'Ethereum' : 'Solana'} wallet. Enter a password to encrypt your private files. This password can never be changed, reset, or recovered.'
-                      : 'Please enter and confirm a password to secure your wallet. This password is used to encrypt your private files, and can never be changed, reset, or recovered. Be sure to store it somewhere safe.',
+                  _getDescription(),
                   textAlign: TextAlign.center,
                   style: typography.paragraphNormal(
                       color: colorTokens.textLow,
                       fontWeight: ArFontWeight.semiBold)),
               const SizedBox(height: 24),
-              if (!widget.showTutorials)
-                BlocBuilder<ProfileNameBloc, ProfileNameState>(
+              BlocBuilder<ProfileNameBloc, ProfileNameState>(
                   builder: (context, state) {
                     if (state is ProfileNameLoaded) {
                       return ProfileCardHeader(
                         walletAddress: state.walletAddress,
                         onPressed: () {
-                          openViewBlockWallet(state.walletAddress);
+                          openWalletExplorer(state.walletAddress);
                         },
                         isExpanded: true,
                         hasLogoutButton: true,
@@ -140,7 +165,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                       walletAddress: state.walletAddress ?? '',
                       onPressed: () {
                         if (state.walletAddress != null) {
-                          openViewBlockWallet(state.walletAddress!);
+                          openWalletExplorer(state.walletAddress!);
                         }
                       },
                       isExpanded: true,

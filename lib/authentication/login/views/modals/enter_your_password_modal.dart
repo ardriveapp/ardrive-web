@@ -139,14 +139,22 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                   color: colorTokens.textHigh, fontWeight: ArFontWeight.bold),
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 12),
+          Text(
+            'Enter your password to unlock your drives.',
+            textAlign: TextAlign.center,
+            style: typography.paragraphNormal(
+                color: colorTokens.textLow,
+                fontWeight: ArFontWeight.semiBold),
+          ),
+          const SizedBox(height: 24),
           BlocBuilder<ProfileNameBloc, ProfileNameState>(
             builder: (context, state) {
               if (state is ProfileNameLoaded) {
                 return ProfileCardHeader(
                   walletAddress: state.walletAddress,
                   onPressed: () {
-                    openViewBlockWallet(state.walletAddress);
+                    openWalletExplorer(state.walletAddress);
                   },
                   isExpanded: true,
                   hasLogoutButton: true,
@@ -163,7 +171,7 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                 walletAddress: state.walletAddress ?? '',
                 onPressed: () {
                   if (state.walletAddress != null) {
-                    openViewBlockWallet(state.walletAddress!);
+                    openWalletExplorer(state.walletAddress!);
                   }
                 },
                 isExpanded: true,

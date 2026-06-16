@@ -416,8 +416,20 @@
     }
 
     try {
+      // Disconnect first to clear any stale provider state
+      // (Phantom's service worker can break after disconnect/reconnect cycles)
+      if (provider.disconnect) {
+        try { await provider.disconnect(); } catch (_) {}
+      }
+
       const response = await provider.connect();
-      const publicKey = response.publicKey.toString();
+      // Some wallets return { publicKey } in the response,
+      // others set it on the provider object directly
+      const pk = response?.publicKey || provider.publicKey;
+      if (!pk) {
+        throw new Error('NO_PUBLIC_KEY');
+      }
+      const publicKey = pk.toString();
 
       return {
         address: publicKey,
