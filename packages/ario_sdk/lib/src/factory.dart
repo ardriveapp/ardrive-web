@@ -5,8 +5,12 @@ import 'package:ario_sdk/src/implementations/ario_sdk_web_stub.dart'
     if (dart.library.html) 'package:ario_sdk/src/implementations/ario_sdk_web.dart';
 
 class ArioSDKFactory {
-  /// Create a new instance of the Ario SDK
+  static ArioSDK? _instance;
+
+  /// Returns a shared instance of the Ario SDK.
+  /// The SDK caches gateway lists and other data internally,
+  /// so reusing the same instance avoids redundant RPC calls.
   ArioSDK create() {
-    return ArioSDKWeb();
+    return _instance ??= ArioSDKWeb();
   }
 }

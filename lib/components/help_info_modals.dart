@@ -180,7 +180,7 @@ Future<void> showTurboInfoModal({
   final typography = ArDriveTypographyNew.of(context);
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-  showArDriveDialog(
+  await showArDriveDialog(
     context,
     content: ArDriveStandardModalNew(
       hasCloseButton: true,

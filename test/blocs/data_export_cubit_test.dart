@@ -26,7 +26,7 @@ void main() {
 
     const folderName = 'folder-name';
 
-    const testGatewayURL = 'https://ardrive.net';
+    const testGatewayURL = 'https://turbo-gateway.com';
     setUp(() async {
       db = getTestDb();
       driveDao = db.driveDao;

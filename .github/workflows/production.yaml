@@ -14,10 +14,6 @@ on:
 env:
   BUILD_NUMBER: ${{ github.run_number }}
   RELEASE_NOTES: 'Production'
-  SENTRY_DSN: ${{secrets.SENTRY_DSN}}
-  SENTRY_ORG: ${{secrets.SENTRY_ORG}}
-  SENTRY_AUTH_TOKEN: ${{secrets.SENTRY_AUTH_TOKEN}}
-  SENTRY_PROJECT: ${{secrets.SENTRY_PROJECT}}
 
 
 jobs:
@@ -49,8 +45,7 @@ jobs:
         run: |
           scr setup
           flutter config --enable-web
-          flutter build web --release --dart-define=environment=production --dart-define=SENTRY_DSN=${SENTRY_DSN} --dart-define=SENTRY_PROJECT=${SENTRY_PROJECT} --dart-define=SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN} --dart-define=SENTRY_ORG=${SENTRY_ORG} --pwa-strategy=none --no-web-resources-cdn --source-maps --dart2js-optimization=O1
-          flutter packages pub run sentry_dart_plugin
+          flutter build web --release --dart-define=environment=production --pwa-strategy=none --no-web-resources-cdn --source-maps --dart2js-optimization=O1
 
       # Disribute to Firebase
       - uses: FirebaseExtended/action-hosting-deploy@v0
@@ -60,12 +55,14 @@ jobs:
           channelId: live
 
       # Deploy to Arweave
-      - run: |
-          scr deploy-to-arweave
-        env:
-          ARNS_NAME: ${{ secrets.ARNS_NAME }}
-          DEPLOY_ANT_UNDERNAME: ${{ secrets.DEPLOY_ANT_UNDERNAME }}
-          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+      - name: Deploy to Arweave
+        uses: ar-io/ar-io-deploy@v1
+        with:
+          deploy-key: ${{ secrets.DEPLOY_KEY }}
+          arns-key: ${{ secrets.ARNS_KEY }}
+          arns-name: ${{ secrets.ARNS_NAME }}
+          undername: ${{ secrets.DEPLOY_ANT_UNDERNAME }}
+          deploy-folder: ./build/web
 
 
   build-ios:

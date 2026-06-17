@@ -12,8 +12,9 @@ abstract class UserRepository {
   Future<void> saveUser(
     String password,
     ProfileType profileType,
-    Wallet wallet,
-  );
+    Wallet wallet, {
+    String? sourceWalletAddress,
+  });
   Future<void> deleteUser();
   Future<String?> getOwnerOfDefaultProfile();
   Future<BigInt> getBalance(Wallet wallet);
@@ -65,6 +66,7 @@ class _UserRepository implements UserRepository {
         await profileDetails.wallet.getAddress(),
       ),
       errorFetchingIOTokens: false,
+      sourceWalletAddress: profileDetails.details.sourceWalletAddress,
     );
 
     logger.d('Loaded user');
@@ -74,7 +76,11 @@ class _UserRepository implements UserRepository {
 
   @override
   Future<void> saveUser(
-      String password, ProfileType profileType, Wallet wallet) async {
+    String password,
+    ProfileType profileType,
+    Wallet wallet, {
+    String? sourceWalletAddress,
+  }) async {
     logger.d('Saving user');
 
     await _profileDao.addProfile(
@@ -83,6 +89,7 @@ class _UserRepository implements UserRepository {
       password,
       wallet,
       profileType,
+      sourceWalletAddress: sourceWalletAddress,
     );
   }
 

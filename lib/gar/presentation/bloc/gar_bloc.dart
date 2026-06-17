@@ -1,5 +1,6 @@
 import 'package:ardrive/gar/domain/repositories/gar_repository.dart';
 import 'package:ardrive/gar/utils/gateway_validator.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -27,6 +28,7 @@ class GarBloc extends Bloc<GarEvent, GarState> {
           ),
         );
       } catch (e) {
+        logger.e('Failed to load gateways from AR.IO', e);
         emit(const GatewaysError());
       }
     });

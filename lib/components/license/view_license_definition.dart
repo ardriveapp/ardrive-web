@@ -18,7 +18,7 @@ viewLicenseDefinitionTextSpan(
           ),
       recognizer: TapGestureRecognizer()
         ..onTap = () async {
-          final url = 'https://ardrive.net/$licenseDefinitionTxId';
+          final url = 'https://turbo-gateway.com/$licenseDefinitionTxId';
           await openUrl(url: url);
         },
     );

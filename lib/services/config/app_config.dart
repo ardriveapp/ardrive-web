@@ -21,12 +21,18 @@ class AppConfig {
   final bool autoSync;
   final bool uploadThumbnails;
   final int? configVersion;
+  final String? solanaRpcUrl;
+  final String? solanaCoreProgramId;
+  final String? solanaGarProgramId;
+  final String? solanaArnsProgramId;
+  final String? solanaAntProgramId;
+  final int maxConcurrentDataFetches;
 
   AppConfig({
     this.arweaveGatewayUrl,
     this.arweaveGatewayForDataRequest = const SelectedGateway(
-      label: 'ArDrive Turbo Gateway',
-      url: 'https://ardrive.net',
+      label: 'Turbo Gateway',
+      url: 'https://turbo-gateway.com',
     ),
     this.useTurboUpload = false,
     this.useTurboPayment = false,
@@ -39,6 +45,12 @@ class AppConfig {
     this.autoSync = true,
     this.uploadThumbnails = true,
     this.configVersion,
+    this.solanaRpcUrl,
+    this.solanaCoreProgramId,
+    this.solanaGarProgramId,
+    this.solanaArnsProgramId,
+    this.solanaAntProgramId,
+    this.maxConcurrentDataFetches = 5,
   });
 
   AppConfig copyWith({
@@ -55,6 +67,12 @@ class AppConfig {
     bool? autoSync,
     bool? uploadThumbnails,
     int? configVersion,
+    String? solanaRpcUrl,
+    String? solanaCoreProgramId,
+    String? solanaGarProgramId,
+    String? solanaArnsProgramId,
+    String? solanaAntProgramId,
+    int? maxConcurrentDataFetches,
   }) {
     return AppConfig(
       arweaveGatewayUrl:
@@ -77,6 +95,13 @@ class AppConfig {
       autoSync: autoSync ?? this.autoSync,
       uploadThumbnails: uploadThumbnails ?? this.uploadThumbnails,
       configVersion: configVersion ?? this.configVersion,
+      solanaRpcUrl: solanaRpcUrl ?? this.solanaRpcUrl,
+      solanaCoreProgramId: solanaCoreProgramId ?? this.solanaCoreProgramId,
+      solanaGarProgramId: solanaGarProgramId ?? this.solanaGarProgramId,
+      solanaArnsProgramId: solanaArnsProgramId ?? this.solanaArnsProgramId,
+      solanaAntProgramId: solanaAntProgramId ?? this.solanaAntProgramId,
+      maxConcurrentDataFetches:
+          maxConcurrentDataFetches ?? this.maxConcurrentDataFetches,
     );
   }
 

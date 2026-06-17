@@ -103,7 +103,7 @@ class _OwnerFieldState extends State<OwnerField> {
             child: Image.network(
               _arnsLogo!.startsWith('http')
                   ? _arnsLogo!
-                  : 'https://ardrive.net/$_arnsLogo',
+                  : 'https://turbo-gateway.com/$_arnsLogo',
               width: 28,
               height: 28,
               fit: BoxFit.cover,

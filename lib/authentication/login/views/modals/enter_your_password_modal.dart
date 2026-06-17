@@ -15,7 +15,6 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:responsive_builder/responsive_builder.dart';
 
 class EnterYourPasswordWidget extends StatefulWidget {
   const EnterYourPasswordWidget({
@@ -23,6 +22,7 @@ class EnterYourPasswordWidget extends StatefulWidget {
     required this.loginBloc,
     this.wallet,
     this.derivedEthWallet,
+    this.sourceWalletAddress,
     required this.showWalletCreated,
     required this.alreadyLoggedIn,
     required this.checkingPassword,
@@ -31,6 +31,7 @@ class EnterYourPasswordWidget extends StatefulWidget {
 
   final Wallet? wallet;
   final EthereumProviderWallet? derivedEthWallet;
+  final String? sourceWalletAddress;
   final LoginBloc loginBloc;
   final bool showWalletCreated;
   final bool alreadyLoggedIn;
@@ -91,22 +92,10 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
         widget.derivedEthWallet != null && !widget.loginBloc.existingUserFlow;
 
     return SingleChildScrollView(
-      child: ScreenTypeLayout.builder(
-        mobile: (context) => _buildContent(
-          width: 450,
-          context: context,
-          showDerivedWalletAlreadyCreated: showDerivedWalletAlreadyCreated,
-        ),
-        tablet: (context) => _buildContent(
-          width: 450,
-          context: context,
-          showDerivedWalletAlreadyCreated: showDerivedWalletAlreadyCreated,
-        ),
-        desktop: (context) => _buildContent(
-          width: 500,
-          context: context,
-          showDerivedWalletAlreadyCreated: showDerivedWalletAlreadyCreated,
-        ),
+      child: _buildContent(
+        width: 450,
+        context: context,
+        showDerivedWalletAlreadyCreated: showDerivedWalletAlreadyCreated,
       ),
     );
   }
@@ -150,14 +139,22 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                   color: colorTokens.textHigh, fontWeight: ArFontWeight.bold),
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 12),
+          Text(
+            'Enter your password to unlock your drives.',
+            textAlign: TextAlign.center,
+            style: typography.paragraphNormal(
+                color: colorTokens.textLow,
+                fontWeight: ArFontWeight.semiBold),
+          ),
+          const SizedBox(height: 24),
           BlocBuilder<ProfileNameBloc, ProfileNameState>(
             builder: (context, state) {
               if (state is ProfileNameLoaded) {
                 return ProfileCardHeader(
                   walletAddress: state.walletAddress,
                   onPressed: () {
-                    openViewBlockWallet(state.walletAddress);
+                    openWalletExplorer(state.walletAddress);
                   },
                   isExpanded: true,
                   hasLogoutButton: true,
@@ -174,7 +171,7 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                 walletAddress: state.walletAddress ?? '',
                 onPressed: () {
                   if (state.walletAddress != null) {
-                    openViewBlockWallet(state.walletAddress!);
+                    openWalletExplorer(state.walletAddress!);
                   }
                 },
                 isExpanded: true,
@@ -189,7 +186,7 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
           ),
           showDerivedWalletAlreadyCreated
               ? Text(
-                  'We found a wallet already created for this Ethereum address, please enter your password to continue.',
+                  'An existing account was found. Please enter your password to continue.',
                   textAlign: TextAlign.center,
                   style: typography.paragraphNormal(
                       color: colorTokens.textLow,
@@ -270,6 +267,9 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
   }
 
   Future<String?> _getWalletAddress() async {
+    if (widget.sourceWalletAddress != null) {
+      return widget.sourceWalletAddress;
+    }
     if (widget.wallet == null) {
       return context.read<ArDriveAuth>().getWalletAddress();
     }
@@ -300,6 +300,7 @@ void showEnterYourPasswordDialog(
     required bool alreadyLoggedIn,
     Wallet? wallet,
     EthereumProviderWallet? derivedEthWallet,
+    String? sourceWalletAddress,
     bool showWalletCreated = false,
     required bool isPasswordInvalid}) {
   showArDriveDialog(context,
@@ -328,6 +329,7 @@ void showEnterYourPasswordDialog(
             loginBloc: loginBloc,
             wallet: wallet,
             derivedEthWallet: derivedEthWallet,
+            sourceWalletAddress: sourceWalletAddress,
             showWalletCreated: showWalletCreated,
             alreadyLoggedIn: alreadyLoggedIn,
             checkingPassword: checkingPassword,

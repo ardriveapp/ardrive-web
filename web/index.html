@@ -23,22 +23,19 @@
 
     <title>ArDrive</title>
     <link rel="manifest" href="manifest.json" />
+    <!-- Essential scripts only (small, needed at login) -->
     <script defer src="js/arconnect.js"></script>
     <script defer src="js/is_document_focused.js"></script>
     <script defer src="js/StreamSaver.min.js"></script>
-    <script defer src="js/ario_sdk.min.js"></script>
+    <script defer src="js/crypto_wallet_bridge.js"></script>
+    <script defer src="js/lazy_loader.js"></script>
     <link rel="preload" href="main.dart.js" as="script">
     <link rel="preload" href="splash/img/splash.svg" as="image">
 
-    <!-- Plausible Web Analytics -->
+    <!-- Plausible Web Analytics (async, non-blocking) -->
     <script defer data-domain="app.ardrive.io" src="https://plausible.io/js/plausible.js"></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js" ></script>
-
-    <!-- EML Parser Library and Dependencies (vendored locally) -->
-    <script defer src="js/js-base64.min.js"></script>
-    <script defer src="js/eml-parse-js.min.js"></script>
-    <script defer src="js/eml_parser.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js" ></script>
 
     <!-- Ethers.js for Ethereum wallet interactions -->
     <!-- Load after saving/restoring define to avoid require.js conflict in debug mode -->
@@ -55,28 +52,14 @@
       })();
     </script>
 
-    <!-- Crypto Wallet Bridge (custom JS for wallet connections) -->
-    <script defer src="js/crypto_wallet_bridge.js"></script>
-
-    <!-- Turbo SDK for Crypto Payments -->
-    <!-- Using type="module" to load ESM bundle without conflicting with Flutter's requirejs -->
-    <script type="module">
-      // Local bundle built from @ardrive/turbo-sdk v1.39.2
-      // To rebuild: cd web/js/turbo-sdk-build && npm install && npm run build
-      import * as turboModule from './js/turbo-sdk.bundle.min.js';
-
-      window.TurboFactory = turboModule.TurboFactory;
-      window.ARToTokenAmount = turboModule.ARToTokenAmount;
-      window.ARIOToTokenAmount = turboModule.ARIOToTokenAmount;
-      window.ETHToTokenAmount = turboModule.ETHToTokenAmount;
-      window.SOLToTokenAmount = turboModule.SOLToTokenAmount;
-      window.POLToTokenAmount = turboModule.POLToTokenAmount;
-      window.ArconnectSigner = turboModule.ArconnectSigner;
-      window.InjectedEthereumSigner = turboModule.InjectedEthereumSigner;
-      window.tokenToBaseMap = turboModule.tokenToBaseMap;
-      window.TurboSDKLoaded = true;
-      console.log('Turbo SDK loaded successfully (v1.39.2)');
-    </script>
+    <!--
+      Heavy scripts loaded lazily via LazyLoader (web/js/lazy_loader.js):
+      - turbo-sdk.bundle.min.js (17 MB) — loaded on first upload/payment
+      - ario_sdk.min.js (435 KB) — loaded on first ARIO feature access
+      - eml-parse-js.min.js (704 KB) — loaded on .eml file view
+      - pst.min.js (319 KB) — loaded on PST feature access
+      - arweave-wallet.js (693 KB) — loaded on wallet generation
+    -->
 
     <!-- End Plausible Web Analytics -->
     <script>
@@ -190,10 +173,11 @@
           });
       });
     </script>
-    <script defer src="js/pst.min.js"></script>
-    <script defer scr="js/ario_sdk.min.js"></script>
+    <!-- Small utility scripts needed for core operations -->
     <script defer src="js/sql-wasm.js"></script>
-    <script defer src="js/arweave-wallet.js"></script>
     <script defer src="js/sha384.js"></script>
+    <!-- ARIO SDK: deferred, downloads in background after Flutter starts -->
+    <script defer src="js/ario_sdk.min.js"></script>
+    <!-- PST, EML, arweave-wallet: loaded on-demand via LazyLoader -->
   </body>
 </html>

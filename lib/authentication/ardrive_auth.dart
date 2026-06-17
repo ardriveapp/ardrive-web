@@ -28,7 +28,12 @@ abstract class ArDriveAuth {
   Future<bool> isUserLoggedIn();
   Future<bool> isExistingUser(Wallet wallet);
   Future<bool> userHasPassword(Wallet wallet);
-  Future<User> login(Wallet wallet, String password, ProfileType profileType);
+  Future<User> login(
+    Wallet wallet,
+    String password,
+    ProfileType profileType, {
+    String? sourceWalletAddress,
+  });
   Future<User> unlockWithBiometrics({required String localizedReason});
   Future<User> unlockUser({required String password});
   Future<void> logout();
@@ -160,7 +165,11 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
   @override
   Future<User> login(
-      Wallet wallet, String password, ProfileType profileType) async {
+    Wallet wallet,
+    String password,
+    ProfileType profileType, {
+    String? sourceWalletAddress,
+  }) async {
     try {
       await _validateUser(wallet, password);
 
@@ -170,7 +179,10 @@ class ArDriveAuthImpl implements ArDriveAuth {
         _savePasswordInSecureStorage(password);
       }
 
-      currentUser = await _addUser(wallet, password, profileType);
+      currentUser = await _addUser(
+        wallet, password, profileType,
+        sourceWalletAddress: sourceWalletAddress,
+      );
 
       _userStreamController.add(_currentUser);
 
@@ -345,9 +357,11 @@ class ArDriveAuthImpl implements ArDriveAuth {
   Future<User> _addUser(
     Wallet wallet,
     String password,
-    ProfileType profileType,
-  ) async {
-    await _saveUser(password, profileType, wallet);
+    ProfileType profileType, {
+    String? sourceWalletAddress,
+  }) async {
+    await _saveUser(password, profileType, wallet,
+        sourceWalletAddress: sourceWalletAddress);
 
     currentUser = await _userRepository.getUser(password);
 
@@ -359,21 +373,6 @@ class ArDriveAuthImpl implements ArDriveAuth {
   }
 
   void _updateBalance() {
-    // TODO(solana-migration): Re-enable ARIO token balance fetch once migrated to Solana
-    // _userRepository.getARIOTokens(currentUser.wallet).then((value) {
-    //   _currentUser = _currentUser!.copyWith(
-    //     ioTokens: value,
-    //     errorFetchingIOTokens: false,
-    //   );
-    //   _userStreamController.add(_currentUser);
-    // }).catchError((e) {
-    //   _currentUser = _currentUser!.copyWith(
-    //     errorFetchingIOTokens: true,
-    //   );
-    //   _userStreamController.add(_currentUser);
-    //   logger.e('Error fetching ARIOTokens', e);
-    //   return Future.value(null);
-    // });
     _userRepository.getBalance(currentUser.wallet).then((value) {
       _currentUser = _currentUser!.copyWith(walletBalance: value);
       _userStreamController.add(_currentUser);
@@ -386,8 +385,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
   Future<void> _saveUser(
     String password,
     ProfileType profileType,
-    Wallet wallet,
-  ) async {
+    Wallet wallet, {
+    String? sourceWalletAddress,
+  }) async {
     // delete previous user
     // verify if it is necessary, the user only will add a new user if he is not logged in
     if (await _userRepository.hasUser()) {
@@ -399,6 +399,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
       password,
       profileType,
       wallet,
+      sourceWalletAddress: sourceWalletAddress,
     );
   }
 
@@ -434,12 +435,6 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
   @override
   Future<void> refreshBalance() async {
-    // TODO(solana-migration): Re-enable IO token refresh once migrated to Solana
-    // _currentUser = _currentUser!.copyWith(
-    //   errorFetchingIOTokens: false,
-    // );
-    // _userStreamController.add(_currentUser);
-
     _updateBalance();
   }
 }

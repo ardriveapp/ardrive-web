@@ -295,6 +295,15 @@ abstract class PlausibleEventTracker {
     );
   }
 
+  static Future<void> trackClickContinueWithSolanaButton(
+    PlausiblePageView page,
+  ) {
+    return _trackCustomEvent(
+      page: page,
+      event: PlausibleCustomEvent.clickContinueWithSolanaButton,
+    );
+  }
+
   static Future<void> trackClickImANewUserLinkButton() {
     return _trackCustomEvent(
       page: PlausiblePageView.loginPage,

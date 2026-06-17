@@ -10,6 +10,7 @@ import 'package:ardrive/authentication/login/views/wallet_created_view.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/icon_theme_switcher.dart';
 import 'package:ardrive/components/progress_dialog.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/components/settings_popover.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
@@ -18,6 +19,7 @@ import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/authentication/biometric_permission_dialog.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider.dart';
+import 'package:ardrive/services/solana/solana_provider.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
@@ -69,6 +71,7 @@ class _LoginPageState extends State<LoginPage> {
     _loginBloc = LoginBloc(
       arConnectService: ArConnectService(),
       ethereumProviderService: EthereumProviderService(),
+      solanaProviderService: SolanaProviderService(),
       turboUploadService: context.read<TurboUploadService>(),
       arweaveService: arweaveService,
       downloadService: downloadService,
@@ -98,10 +101,23 @@ class _LoginPageState extends State<LoginPage> {
           }
 
           if (loginState is LoginLoadingIfUserAlreadyExists) {
-            showProgressDialog(
+            showArDriveDialog(
               context,
-              title: 'Loading wallet details...',
-              useNewArDriveUI: true,
+              barrierDismissible: false,
+              content: ProgressDialog(
+                title: 'Loading wallet details...',
+                useNewArDriveUI: true,
+                progressDescription: Text(
+                  'This may take a moment.',
+                  style: ArDriveTypographyNew.of(context).paragraphNormal(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colorTokens
+                        .textLow,
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                ),
+              ),
             );
 
             return;
@@ -126,6 +142,7 @@ class _LoginPageState extends State<LoginPage> {
               derivedEthWallet: loginState.derivedEthWallet,
               alreadyLoggedIn: loginState.alreadyLoggedIn,
               isPasswordInvalid: loginState.isPasswordInvalid,
+              sourceWalletAddress: loginState.sourceWalletAddress,
             );
             return;
           } else if (loginState is CreateNewPassword) {
@@ -136,7 +153,8 @@ class _LoginPageState extends State<LoginPage> {
                 mnemonic: loginState.mnemonic,
                 showTutorials: loginState.showTutorials,
                 showWalletCreated: loginState.showWalletCreated,
-                derivedEthWallet: loginState.derivedEthWallet);
+                derivedEthWallet: loginState.derivedEthWallet,
+                sourceWalletAddress: loginState.sourceWalletAddress);
             return;
           } else if (loginState is LoginShowLoader) {
             showLoaderDialog(context: context);
@@ -170,7 +188,7 @@ class _LoginPageState extends State<LoginPage> {
                 context: context,
                 title: appLocalizationsOf(context).loginFailed,
                 message:
-                    'This version of Wander is not supported. Please upgrade and try again.',
+                    'Your Arweave wallet extension needs to be updated. Please upgrade and try again.',
               );
               return;
             }
@@ -186,7 +204,7 @@ class _LoginPageState extends State<LoginPage> {
               title: appLocalizationsOf(context).loginFailed,
               showShareLogsButton: true,
               message:
-                  'Oops, something went wrong. Please try again later. If the issue persists, tap the \'Copy Logs\' button to help us diagnose the problem.',
+                  'Something went wrong. Please try again. If the issue persists, tap \'Copy Logs\' to help us diagnose the problem.',
             );
           } else if (loginState is LoginSuccess) {
             final profileType = loginState.user.profileType;
@@ -201,7 +219,7 @@ class _LoginPageState extends State<LoginPage> {
               context: context,
               title: appLocalizationsOf(context).loginFailed,
               message:
-                  'There was a problem communicating with the gateway at ${loginState.gatewayUrl}.\nPlease try again later.',
+                  'Unable to connect to the server. Please check your connection and try again.',
             );
           } else if (loginState
               is LoginPasswordFailedWithPrivateDriveNotFound) {
@@ -209,7 +227,7 @@ class _LoginPageState extends State<LoginPage> {
               context: context,
               title: appLocalizationsOf(context).loginFailed,
               message:
-                  'Your drive is still processing on Arweave. Please wait a few minutes for the transaction to confirm, then try again.',
+                  'Your drive is still being confirmed. Please wait a few minutes and try again.',
             );
           }
         },
@@ -633,7 +651,7 @@ Widget _buildContent(
       late Widget content;
       final loginBloc = context.read<LoginBloc>();
 
-      if (loginState is LoginLoading || loginState is LoginSuccess) {
+      if (loginState is LoginSuccess) {
         content = const MaxDeviceSizesConstrainedBox(
           child: LoginCard(
             content: Center(
@@ -641,7 +659,7 @@ Widget _buildContent(
             ),
           ),
         );
-      } else if (loginState is LoginLanding) {
+      } else if (loginState is LoginLoading || loginState is LoginLanding) {
         content = const LandingView(
           key: Key('landingPageView'),
         );
@@ -650,6 +668,7 @@ Widget _buildContent(
           key: const Key('promptWalletView'),
           isArConnectAvailable: loginBloc.isArConnectAvailable,
           isMetamaskAvailable: loginBloc.isMetamaskAvailable,
+          isSolanaAvailable: loginBloc.isSolanaAvailable,
           existingUserFlow: loginBloc.existingUserFlow,
         );
       }

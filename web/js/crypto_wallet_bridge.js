@@ -416,8 +416,20 @@
     }
 
     try {
+      // Disconnect first to clear any stale provider state
+      // (Phantom's service worker can break after disconnect/reconnect cycles)
+      if (provider.disconnect) {
+        try { await provider.disconnect(); } catch (_) {}
+      }
+
       const response = await provider.connect();
-      const publicKey = response.publicKey.toString();
+      // Some wallets return { publicKey } in the response,
+      // others set it on the provider object directly
+      const pk = response?.publicKey || provider.publicKey;
+      if (!pk) {
+        throw new Error('NO_PUBLIC_KEY');
+      }
+      const publicKey = pk.toString();
 
       return {
         address: publicKey,
@@ -463,6 +475,31 @@
       return provider.publicKey.toString();
     }
     return null;
+  }
+
+  /**
+   * Sign a message with Solana wallet
+   * @param {string} providerPreference - 'phantom' or 'solflare'
+   * @param {string} message - Message to sign
+   * @returns {Promise<Uint8Array>} 64-byte Ed25519 signature
+   */
+  async function signSolanaMessage(providerPreference, message) {
+    const provider = getSolanaProvider(providerPreference);
+    if (!provider) throw new Error('NO_PROVIDER');
+
+    const encodedMessage = new TextEncoder().encode(message);
+    try {
+      const result = await provider.signMessage(encodedMessage, 'utf8');
+      // Phantom returns { signature: Uint8Array, publicKey: PublicKey }
+      // Solflare may return Uint8Array directly or { signature: Uint8Array }
+      const signature = result.signature || result;
+      return new Uint8Array(signature);
+    } catch (error) {
+      if (error.code === 4001 || error.message?.includes('rejected')) {
+        throw new Error('USER_REJECTED');
+      }
+      throw error;
+    }
   }
 
   /**
@@ -537,6 +574,7 @@
     disconnectSolanaWallet,
     isSolanaConnected,
     getSolanaPublicKey,
+    signSolanaMessage,
     registerSolanaListeners,
     removeSolanaListeners,
   };

@@ -52,6 +52,7 @@ class PromptPassword extends LoginState {
     this.mnemonic,
     this.wallet,
     this.derivedEthWallet,
+    this.sourceWalletAddress,
     this.alreadyLoggedIn = false,
     this.showWalletCreated = false,
     this.isPasswordInvalid = false,
@@ -61,6 +62,9 @@ class PromptPassword extends LoginState {
   final String? mnemonic;
   final Wallet? wallet;
   final EthereumProviderWallet? derivedEthWallet;
+
+  /// The source wallet address (Solana/Ethereum) for display purposes.
+  final String? sourceWalletAddress;
   final bool alreadyLoggedIn;
   final bool isPasswordInvalid;
   final bool hasGraphQLException;
@@ -82,6 +86,7 @@ class CreateNewPassword extends LoginState {
   const CreateNewPassword(
       {required this.wallet,
       this.derivedEthWallet,
+      this.sourceWalletAddress,
       this.mnemonic,
       required this.showTutorials,
       required this.showWalletCreated});
@@ -89,6 +94,9 @@ class CreateNewPassword extends LoginState {
   final String? mnemonic;
   final Wallet wallet;
   final EthereumProviderWallet? derivedEthWallet;
+
+  /// The source wallet address (Solana/Ethereum) for display purposes.
+  final String? sourceWalletAddress;
 
   /// Used to determine next screens to show on password success
   final bool showTutorials;

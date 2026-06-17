@@ -9,6 +9,7 @@ import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/services/arweave/arweave_service_exception.dart';
+import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
 import 'package:ardrive/services/arweave/get_segmented_transaction_from_drive_strategy.dart';
 import 'package:ardrive/services/services.dart';
@@ -31,7 +32,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:http/http.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:retry/retry.dart';
 import 'package:stash_shared_preferences/stash_shared_preferences.dart';
 
 import 'error/gateway_response_handler.dart';
@@ -48,7 +48,9 @@ class ArweaveService {
   Arweave client;
   final ArDriveCrypto _crypto;
   final DriveDao _driveDao;
+  final ConfigService _configService;
   late ArtemisClient _gql;
+  late DataGatewayFallback _gatewayFallback;
 
   static String _graphqlUrlFromGateway(String gatewayUrl) {
     final uri = Uri.parse(gatewayUrl);
@@ -70,16 +72,16 @@ class ArweaveService {
     this.client,
     this._crypto,
     this._driveDao,
-    ConfigService configService, {
+    this._configService, {
     ArtemisClient? artemisClient,
   }) : _gql = artemisClient ?? ArtemisClient(_graphqlUrlFromGateway(
-            configService.config.arweaveGatewayUrl ?? defaultGraphqlGateway)) {
+            _configService.config.arweaveGatewayUrl ??
+                defaultGraphqlGateway)) {
     graphQLRetry = GraphQLRetry(
       _gql,
       internetChecker: InternetChecker(
         connectivity: Connectivity(),
       ),
-      arioSDK: ArioSDKFactory().create(),
     );
     httpRetry = HttpRetry(
       GatewayResponseHandler(),
@@ -101,6 +103,9 @@ class ArweaveService {
         },
       ),
     );
+    _gatewayFallback = DataGatewayFallback(
+      arioSDK: ArioSDKFactory().create(),
+    );
   }
 
   /// Sets the gateway to use for all Data requests. No GraphQL requests are made with the new gateway.
@@ -108,18 +113,9 @@ class ArweaveService {
     client = Arweave(api: ArweaveApi(gatewayUrl: getGatewayUri(gateway)));
   }
 
-  static Uri _baseGatewayUriFromUrl(String gatewayUrl) {
-    final uri = Uri.parse(gatewayUrl);
-    final path = uri.path;
-    if (path.endsWith('/graphql')) {
-      final basePath = path.substring(0, path.length - 8);
-      return uri.replace(path: basePath.isEmpty ? '/' : basePath);
-    }
-    return uri;
-  }
-
-  /// Updates the GraphQL endpoint and Arweave API client to use [gatewayUrl],
-  /// then notifies so uploader and other dependents can rebuild.
+  /// Updates ONLY the GraphQL endpoint. Does NOT change the data gateway.
+  /// Data requests (GET /tx/{id}/data, wallet balance, etc.) continue using
+  /// the configured arweaveGatewayForDataRequest.
   void updateGraphQLEndpoint(String gatewayUrl) {
     final previousClient = _gql;
     final graphqlUrl = _graphqlUrlFromGateway(gatewayUrl);
@@ -129,13 +125,8 @@ class ArweaveService {
       internetChecker: InternetChecker(
         connectivity: Connectivity(),
       ),
-      arioSDK: ArioSDKFactory().create(),
     );
     previousClient.dispose();
-
-    client = Arweave(
-      api: ArweaveApi(gatewayUrl: _baseGatewayUriFromUrl(gatewayUrl)),
-    );
   }
 
   int bytesToChunks(int bytes) {
@@ -406,19 +397,22 @@ class ArweaveService {
     required DriveID driveId,
     int? currentBlockHeight,
   }) async {
-    // FIXME - PE-3440
-    /// Make use of `eagerError: true` to make it fail on first error
-    /// Also, when there's no internet connection and when we're getting
-    /// rate-limited (TODO: check the latter), many requests will be retrying.
-    /// We shall find another way to fail faster.
+    // Limit concurrent data fetches to avoid overwhelming the gateway.
+    // Without this, a batch of 200 entities fires 200 simultaneous requests
+    // which triggers rate limits and 503s.
+    final maxConcurrent =
+        _configService.config.maxConcurrentDataFetches.clamp(1, 100);
+    final entityDatas = List<Uint8List>.filled(entityTxs.length, Uint8List(0));
 
-    // MAYBE FIX: set a narrow concurrency limit
+    for (var start = 0; start < entityTxs.length; start += maxConcurrent) {
+      final end = (start + maxConcurrent < entityTxs.length)
+          ? start + maxConcurrent
+          : entityTxs.length;
 
-    final List<Uint8List> entityDatas = await Future.wait(
-      entityTxs.map(
-        (model) async {
-          final entity = model.transactionCommonMixin;
-
+      await Future.wait(
+        List.generate(end - start, (j) {
+          final i = start + j;
+          final entity = entityTxs[i].transactionCommonMixin;
           final tags = HashMap.fromIterable(
             entity.tags,
             key: (tag) => tag.name,
@@ -426,27 +420,22 @@ class ArweaveService {
           );
 
           if (driveKey != null && tags[EntityTag.cipherIv] == null) {
-            logger.d('skipping unnecessary request for a broken entity');
-            return Uint8List(0);
+            return Future.value();
           }
-
-          final isSnapshot =
-              tags[EntityTag.entityType] == EntityTypeTag.snapshot;
-
-          // don't fetch data for snapshots
-          if (isSnapshot) {
-            logger.d('skipping unnecessary request for snapshot data');
-            return Uint8List(0);
+          if (tags[EntityTag.entityType] == EntityTypeTag.snapshot) {
+            return Future.value();
           }
 
           return _getEntityData(
             entityId: entity.id,
             driveId: driveId,
             isPrivate: driveKey != null,
-          );
-        },
-      ),
-    );
+          ).then((data) {
+            entityDatas[i] = data;
+          });
+        }),
+      );
+    }
 
     final metadataCache = await MetadataCache.fromCacheStore(
       await newSharedPreferencesCacheStore(),
@@ -484,7 +473,9 @@ class ArweaveService {
         final entityType = tags[EntityTag.entityType];
         final rawEntityData = entityDatas[i];
 
-        await metadataCache.put(transaction.id, rawEntityData);
+        if (rawEntityData.isNotEmpty) {
+          await metadataCache.put(transaction.id, rawEntityData);
+        }
 
         Entity? entity;
         if (entityType == EntityTypeTag.drive) {
@@ -609,9 +600,7 @@ class ArweaveService {
   }
 
   Future<Uint8List> getEntityDataFromNetwork({required String txId}) async {
-    final Response data =
-        (await httpRetry.processRequest(() => client.api.getSandboxedTx(txId)));
-
+    final Response data = await _gatewayFallback.fetchData(txId, client);
     return data.bodyBytes;
   }
 
@@ -694,8 +683,7 @@ class ArweaveService {
     final driveSignatureTx = await getDriveSignatureTxForDrive(wallet, driveId);
 
     final driveSignatureData = driveSignatureTx != null
-        ? (await httpRetry.processRequest(
-            () => client.api.getSandboxedTx(driveSignatureTx.id)))
+        ? await _gatewayFallback.fetchData(driveSignatureTx.id, client)
         : null;
 
     final driveSignature =
@@ -715,16 +703,17 @@ class ArweaveService {
       final userAddress = await wallet.getAddress();
       final driveTxs = await getUniqueUserDriveEntityTxs(userAddress);
 
-      final driveResponses = await retry(
-          () async => await Future.wait(
-                driveTxs.map((e) => client.api.getSandboxedTx(e.id)),
-              ), onRetry: (Exception err) {
-        logger.w('Retrying for get unique user drive entities');
-      });
+      final driveResponses = await Future.wait(
+        driveTxs.map((e) => _gatewayFallback
+            .fetchData(e.id, client)
+            .then<Response?>((r) => r)
+            .catchError((_) => null)),
+      );
 
       final drivesById = <String?, DriveEntity>{};
       final drivesWithKey = <DriveEntity, DriveKey?>{};
       for (var i = 0; i < driveTxs.length; i++) {
+        if (driveResponses[i] == null) continue;
         final driveTx = driveTxs[i];
 
         // Ignore drive entity transactions which we already have newer entities for.
@@ -765,7 +754,7 @@ class ArweaveService {
           final drive = await DriveEntity.fromTransaction(
             driveTx,
             _crypto,
-            driveResponses[i].bodyBytes,
+            driveResponses[i]!.bodyBytes,
             driveKey?.key,
           );
 
@@ -848,11 +837,7 @@ class ArweaveService {
       }
 
       final fileTx = filteredEdges.first.node;
-      final fileDataRes = await client.api.getSandboxedTx(fileTx.id);
-
-      if (fileDataRes.statusCode == 404) {
-        throw TransactionNotFound(fileTx.id);
-      }
+      final fileDataRes = await _gatewayFallback.fetchData(fileTx.id, client);
 
       try {
         return await DriveEntity.fromTransaction(
@@ -1077,7 +1062,7 @@ class ArweaveService {
       }
 
       final fileTx = filteredEdges.first.node;
-      final fileDataRes = await client.api.getSandboxedTx(fileTx.id);
+      final fileDataRes = await _gatewayFallback.fetchData(fileTx.id, client);
 
       try {
         return await FileEntity.fromTransaction(
@@ -1133,7 +1118,8 @@ class ArweaveService {
       }
       for (var edge in queryEdges) {
         final fileTx = edge.node;
-        final fileDataRes = await client.api.getSandboxedTx(fileTx.id);
+        final fileDataRes =
+            await _gatewayFallback.fetchData(fileTx.id, client);
 
         try {
           fileEntities.add(
@@ -1485,8 +1471,7 @@ class ArweaveService {
   ) async {
     // TODO: PE-2917
 
-    final Response data =
-        (await httpRetry.processRequest(() => client.api.getSandboxedTx(txId)));
+    final Response data = await _gatewayFallback.fetchData(txId, client);
     final metadata = data.bodyBytes;
     return metadata;
   }

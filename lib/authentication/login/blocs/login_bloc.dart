@@ -16,6 +16,8 @@ import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/services/ethereum/ethereum_wallet.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider.dart';
 import 'package:ardrive/services/ethereum/provider/ethereum_provider_wallet.dart';
+import 'package:ardrive/services/solana/solana_identity.dart';
+import 'package:ardrive/services/solana/solana_provider.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
@@ -35,20 +37,28 @@ import 'package:webthree/credentials.dart' as web3credentials;
 part 'login_event.dart';
 part 'login_state.dart';
 
+typedef WalletFromMnemonic = Future<Wallet> Function(String mnemonic);
+
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
   final ArDriveAuth _arDriveAuth;
   final ArConnectService _arConnectService;
   final EthereumProviderService _ethereumProviderService;
+  final SolanaProviderService _solanaProviderService;
   final TurboUploadService _turboUploadService;
   final ArweaveService _arweaveService;
   final DownloadService _downloadService;
   final ProfileCubit _profileCubit;
   final ConfigService _configService;
+  final WalletFromMnemonic _walletFromMnemonic;
 
   bool ignoreNextWaletSwitch = false;
 
   @visibleForTesting
   String? lastKnownWalletAddress;
+
+  /// The external wallet address used for login (e.g., Solana public key).
+  /// Stored in the profile for display purposes.
+  String? _sourceWalletAddress;
 
   @visibleForTesting
   ProfileType? profileType;
@@ -60,20 +70,24 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     required ArDriveAuth arDriveAuth,
     required ArConnectService arConnectService,
     required EthereumProviderService ethereumProviderService,
+    required SolanaProviderService solanaProviderService,
     required TurboUploadService turboUploadService,
     required ArweaveService arweaveService,
     required DownloadService downloadService,
     required UserRepository userRepository,
     required ProfileCubit profileCubit,
     required ConfigService configService,
+    WalletFromMnemonic? walletFromMnemonic,
   })  : _arDriveAuth = arDriveAuth,
         _arConnectService = arConnectService,
         _ethereumProviderService = ethereumProviderService,
+        _solanaProviderService = solanaProviderService,
         _arweaveService = arweaveService,
         _turboUploadService = turboUploadService,
         _downloadService = downloadService,
         _profileCubit = profileCubit,
         _configService = configService,
+        _walletFromMnemonic = walletFromMnemonic ?? generateWalletFromMnemonic,
         super(LoginLoading()) {
     on<LoginEvent>(_onLoginEvent);
     _listenToWalletChange();
@@ -82,6 +96,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   get isArConnectAvailable => _arConnectService.isExtensionPresent();
 
   get isMetamaskAvailable => _ethereumProviderService.isExtensionPresent();
+
+  get isSolanaAvailable => _solanaProviderService.isExtensionPresent();
 
   Future<void> _onLoginEvent(LoginEvent event, Emitter<LoginState> emit) async {
     if (event is SelectLoginFlow) {
@@ -114,6 +130,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       await _handleCompleteWalletGenerationEvent(event, emit);
     } else if (event is LoginWithMetamask) {
       await _handleLoginWithMetamaskEvent(event, emit);
+    } else if (event is LoginWithSolana) {
+      await _handleLoginWithSolanaEvent(event, emit);
     }
   }
 
@@ -170,6 +188,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       emit(LoginLoadingIfUserAlreadyExists());
 
       profileType = ProfileType.json;
+      _sourceWalletAddress = null;
 
       final wallet =
           Wallet.fromJwk(json.decode(await event.walletFile.readAsString()));
@@ -272,7 +291,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     late Uint8List fullEntropy;
     emit(const LoginShowBlockingDialog(
         message:
-            'Sign the following data with Metamask to secure your wallet and sign in.'));
+            'Please approve the request in your Ethereum wallet.'));
 
     const chainId = 1; // Ethereum mainnet
     try {
@@ -280,6 +299,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           .deriveArdriveSeedphrase(chainId, event.password);
       emit(LoginCloseBlockingDialog());
     } catch (e) {
+      logger.e('Failed to derive Ethereum seedphrase during login', e);
       emit(LoginCloseBlockingDialog());
       emit(PromptPassword(
           wallet: event.wallet,
@@ -490,9 +510,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       }
 
       emit(LoginCreatePasswordComplete());
-    } catch (e) {
+    } catch (e, stackTrace) {
+      logger.e('[ETH-CREATE] CREATE PASSWORD FAILED', e, stackTrace);
       usingSeedphrase = false;
-      emit(previousState);
+      // Close any open dialogs (loader, blocking message)
+      emit(LoginCloseBlockingDialog());
       emit(LoginFailure(e));
     }
   }
@@ -515,25 +537,32 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     late Uint8List fullEntropy;
     emit(const LoginShowBlockingDialog(
         message:
-            'Sign the following data with Metamask to secure your wallet and sign in.'));
+            'Please approve the request in your Ethereum wallet.'));
 
     const chainId = 1; // Ethereum mainnet
+    logger.d('[ETH-CREATE] Step 1: Requesting MetaMask signature...');
     try {
       (mnemonic, fullEntropy) = await (wallet as EthereumWallet)
           .deriveArdriveSeedphrase(chainId, event.password);
+      logger.d('[ETH-CREATE] Step 1 complete: mnemonic derived');
     } catch (e) {
-      emit(previousState);
-      return;
-    } finally {
+      logger.e('[ETH-CREATE] Step 1 FAILED: derive seedphrase', e);
       emit(LoginCloseBlockingDialog());
+      rethrow;
     }
+    emit(LoginCloseBlockingDialog());
 
+    logger.d('[ETH-CREATE] Step 2: Generating Arweave wallet from mnemonic...');
     emit(LoginShowLoader());
     wallet = await generateWalletFromMnemonic(mnemonic);
+    logger.d('[ETH-CREATE] Step 2 complete: wallet generated');
 
+    logger.d('[ETH-CREATE] Step 3: Signing verification data...');
     final verifySignature = await wallet.sign(fullEntropy);
+    logger.d('[ETH-CREATE] Step 3 complete: verification signed');
 
     // upload verification signature with derived Arweave wallet
+    logger.d('[ETH-CREATE] Step 4: Uploading Arweave verification...');
     final dataItem = DataItem.withBlobData(
       data: verifySignature,
       owner: await wallet.getOwner(),
@@ -541,8 +570,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     await dataItem.sign(ArweaveSigner(wallet));
 
     await _turboUploadService.postDataItem(dataItem: dataItem, wallet: wallet);
+    logger.d('[ETH-CREATE] Step 4 complete: Arweave verification uploaded');
 
     // upload verification signature with derived ETH wallet
+    logger.d('[ETH-CREATE] Step 5: Uploading ETH verification...');
     final ethSignedDataItem = DataItem.withBlobData(
       data: verifySignature,
       owner: await derivedEthWallet.getOwner(),
@@ -552,6 +583,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     await _turboUploadService.postDataItem(
         dataItem: ethSignedDataItem, wallet: derivedEthWallet);
+    logger.d('[ETH-CREATE] Step 5 complete: ETH verification uploaded');
 
     emit(LoginCloseBlockingDialog());
 
@@ -586,49 +618,61 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     AddWalletFromArConnect event,
     Emitter<LoginState> emit,
   ) async {
-    final previousState = state;
     usingSeedphrase = false;
+    _sourceWalletAddress = null;
 
     final arconnectVersionSupported =
         await _arConnectService.isWalletVersionSupported();
     if (!arconnectVersionSupported) {
       emit(const LoginFailure(ArConnectVersionNotSupportedException()));
-      emit(previousState);
       return;
     }
 
-    try {
-      emit(LoginLoadingIfUserAlreadyExists());
+    // 1. Connect wallet (ArConnect handles its own popup)
+    bool hasPermissions = await _arConnectService.checkPermissions();
+    if (!hasPermissions) {
+      try {
+        // If we have partial permissions, disconnect before reconnecting.
+        ignoreNextWaletSwitch = true;
+        await _arConnectService.disconnect();
+      } catch (_) {}
 
-      bool hasPermissions = await _arConnectService.checkPermissions();
-      if (!hasPermissions) {
-        try {
-          // If we have partial permissions, we're gonna disconnect before
-          /// re-connecting again.
-          ignoreNextWaletSwitch = true;
-          await _arConnectService.disconnect();
-        } catch (_) {}
-
+      try {
         await _arConnectService.connect();
+      } catch (e) {
+        // User rejected or extension error — return silently
+        ignoreNextWaletSwitch = false;
+        return;
       }
 
-      hasPermissions = await _arConnectService.checkPermissions();
-      if (!hasPermissions) {
-        throw Exception('ArConnect permissions not granted');
-      }
+      // Clear the flag after connect completes — if the wallet switch
+      // event was going to fire, it already did during disconnect/connect.
+      ignoreNextWaletSwitch = false;
+    }
 
-      final wallet = ArConnectWallet(_arConnectService);
+    hasPermissions = await _arConnectService.checkPermissions();
+    if (!hasPermissions) {
+      // User didn't grant permissions — return silently
+      return;
+    }
 
-      profileType = ProfileType.arConnect;
+    final wallet = ArConnectWallet(_arConnectService);
 
-      lastKnownWalletAddress = await wallet.getAddress();
+    profileType = ProfileType.arConnect;
 
+    lastKnownWalletAddress = await wallet.getAddress();
+
+    // 2. Server-side check (user waits — show blocking dialog)
+    emit(const LoginShowBlockingDialog(
+        message: 'Setting up your account.\nThis may take a moment.'));
+
+    try {
       if (await _arDriveAuth.userHasPassword(wallet)) {
-        emit(LoginLoadingIfUserAlreadyExistsSuccess());
+        emit(LoginCloseBlockingDialog());
         emit(PromptPassword(wallet: wallet, showWalletCreated: false));
       } else {
-        emit(LoginLoadingIfUserAlreadyExistsSuccess());
         final hasDrives = await _arDriveAuth.isExistingUser(wallet);
+        emit(LoginCloseBlockingDialog());
         emit(
           CreateNewPassword(
             wallet: wallet,
@@ -638,8 +682,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         );
       }
     } catch (e) {
-      emit(LoginLoadingIfUserAlreadyExistsSuccess());
-      emit(previousState);
+      emit(LoginCloseBlockingDialog());
       if (e is AuthenticationGatewayException) {
         emit(GatewayLoginFailure(e, _getGatewayUrl()));
       } else {
@@ -659,6 +702,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     }
 
     usingSeedphrase = false;
+    _sourceWalletAddress = null;
+    await _solanaProviderService.disconnect();
 
     emit(const LoginLanding());
   }
@@ -702,6 +747,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       wallet,
       password,
       profileType,
+      sourceWalletAddress: _sourceWalletAddress,
     );
 
     if (showTutorials) {
@@ -764,19 +810,27 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       AddWalletFromSeedPhraseLogin event, Emitter<LoginState> emit) async {
     profileType = ProfileType.json;
     usingSeedphrase = true;
+    _sourceWalletAddress = null;
 
     emit(LoginShowLoader());
 
-    final wallet = await generateWalletFromMnemonic(event.mnemonic);
+    try {
+      final wallet = await generateWalletFromMnemonic(event.mnemonic);
 
-    emit(LoginCloseBlockingDialog());
+      emit(LoginCloseBlockingDialog());
 
-    if (await _arDriveAuth.userHasPassword(wallet)) {
-      emit(PromptPassword(wallet: wallet, showWalletCreated: true));
-    } else {
-      final hasDrives = await _arDriveAuth.isExistingUser(wallet);
-      emit(CreateNewPassword(
-          wallet: wallet, showTutorials: !hasDrives, showWalletCreated: true));
+      if (await _arDriveAuth.userHasPassword(wallet)) {
+        emit(PromptPassword(wallet: wallet, showWalletCreated: true));
+      } else {
+        final hasDrives = await _arDriveAuth.isExistingUser(wallet);
+        emit(CreateNewPassword(
+            wallet: wallet,
+            showTutorials: !hasDrives,
+            showWalletCreated: true));
+      }
+    } catch (e) {
+      emit(LoginCloseBlockingDialog());
+      emit(LoginFailure(e));
     }
   }
 
@@ -812,19 +866,25 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   ) async {
     profileType = ProfileType.json;
     usingSeedphrase = true;
+    _sourceWalletAddress = null;
     final mnemonic = bip39.generateMnemonic();
 
     emit(LoginShowLoader());
 
-    final wallet = await generateWalletFromMnemonic(mnemonic);
+    try {
+      final wallet = await generateWalletFromMnemonic(mnemonic);
 
-    emit(LoginCloseBlockingDialog());
+      emit(LoginCloseBlockingDialog());
 
-    emit(CreateNewPassword(
+      emit(CreateNewPassword(
         wallet: wallet,
         mnemonic: mnemonic,
         showTutorials: true,
         showWalletCreated: true));
+    } catch (e) {
+      emit(LoginCloseBlockingDialog());
+      emit(LoginFailure(e));
+    }
   }
 
   Future<void> _handleCompleteWalletGenerationEvent(
@@ -841,37 +901,29 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   Future<void> _handleLoginWithMetamaskEvent(
       LoginWithMetamask event, Emitter<LoginState> emit) async {
     profileType = ProfileType.json;
+    _sourceWalletAddress = null;
     if (!_ethereumProviderService.isExtensionPresent()) {
       emit(const LoginFailure('Metamask not available'));
       return;
     }
-    emit(const LoginShowBlockingDialog(
-        message: 'Please connect your Metamask wallet'));
 
+    // 1. Connect wallet (MetaMask handles its own popup)
     EthereumWallet? ethWallet;
     try {
       ethWallet = await _ethereumProviderService.connect();
     } catch (e) {
-      emit(LoginCloseBlockingDialog());
-      emit(LoginFailure(e));
+      // User rejected or extension error — return silently
       return;
     }
-
-    emit(LoginCloseBlockingDialog());
 
     if (ethWallet == null) {
-      emit(const LoginFailure('Unable to connect to Metamask'));
       return;
     }
 
-    // Sign message to verify user address and use signature to derive in-memory
-    // ETH wallet
+    _sourceWalletAddress = await ethWallet.getAddress();
 
+    // 2. Sign verification message (MetaMask handles its own popup)
     const signMessage = 'Sign message to verify wallet address.';
-
-    emit(const LoginShowBlockingDialog(
-        message:
-            'Sign the following data with Metamask to verify your wallet address.'));
 
     late EthereumProviderWallet derivedEthWallet;
     try {
@@ -885,10 +937,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       derivedEthWallet = EthereumProviderWallet(privateKey);
     } catch (e) {
-      emit(LoginCloseBlockingDialog());
-      emit(LoginFailure(e));
+      // User rejected signature or extension error — return silently
       return;
     }
+
+    // 3. Server-side check (user waits — show blocking dialog)
+    emit(const LoginShowBlockingDialog(
+        message: 'Setting up your account.\nThis may take a moment.'));
 
     final arweaveNativeAddressForEth =
         await ownerToAddress(await derivedEthWallet.getOwner());
@@ -915,13 +970,88 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       emit(PromptPassword(
           wallet: ethWallet,
           derivedEthWallet: derivedEthWallet,
+          sourceWalletAddress: _sourceWalletAddress,
           showWalletCreated: false));
     } else {
       emit(CreateNewPassword(
           wallet: ethWallet,
           derivedEthWallet: derivedEthWallet,
+          sourceWalletAddress: _sourceWalletAddress,
           showTutorials: true,
-          showWalletCreated: true));
+          showWalletCreated: false));
+    }
+  }
+
+  Future<void> _handleLoginWithSolanaEvent(
+    LoginWithSolana event,
+    Emitter<LoginState> emit,
+  ) async {
+    if (!_solanaProviderService.isExtensionPresent()) {
+      emit(const LoginFailure(
+          'No Solana wallet detected. Please install Phantom or Solflare.'));
+      return;
+    }
+
+    try {
+      // 1. Connect wallet (Phantom/Solflare handles its own popup)
+      final connection =
+          await _solanaProviderService.connect(provider: event.provider);
+
+      if (connection == null) {
+        await _solanaProviderService.disconnect();
+        return;
+      }
+
+      _sourceWalletAddress = connection.address;
+
+      // 2. Sign identity message (wallet extension shows its own popup)
+      final Uint8List signature;
+      try {
+        signature = await _solanaProviderService
+            .signMessage(solanaIdentityMessage);
+      } catch (e) {
+        await _solanaProviderService.disconnect();
+        _sourceWalletAddress = null;
+        return;
+      }
+
+      // 3. Derive wallet and check account (show themed loader)
+      emit(const LoginShowBlockingDialog(
+          message: 'Setting up your account.\nThis may take a moment.'));
+
+      final mnemonic = await deriveMnemonicFromSolanaSignature(signature);
+      final wallet = await _walletFromMnemonic(mnemonic);
+
+      // 4. From here, it's a standard JWK wallet
+      profileType = ProfileType.json;
+
+      // 5. Check if user has existing drives
+      if (await _arDriveAuth.userHasPassword(wallet)) {
+        emit(LoginCloseBlockingDialog());
+        emit(PromptPassword(
+          wallet: wallet,
+          showWalletCreated: false,
+          sourceWalletAddress: _sourceWalletAddress,
+        ));
+      } else {
+        final hasDrives = await _arDriveAuth.isExistingUser(wallet);
+        emit(LoginCloseBlockingDialog());
+        emit(CreateNewPassword(
+          wallet: wallet,
+          showTutorials: !hasDrives,
+          showWalletCreated: false,
+          sourceWalletAddress: _sourceWalletAddress,
+        ));
+      }
+    } catch (e) {
+      await _solanaProviderService.disconnect();
+      _sourceWalletAddress = null;
+      emit(LoginCloseBlockingDialog());
+      if (e is AuthenticationGatewayException) {
+        emit(GatewayLoginFailure(e, _getGatewayUrl()));
+      } else {
+        emit(LoginFailure(e));
+      }
     }
   }
 
