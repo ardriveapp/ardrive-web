@@ -55,12 +55,14 @@ jobs:
           channelId: live
 
       # Deploy to Arweave
-      - run: |
-          scr deploy-to-arweave
-        env:
-          ARNS_NAME: ${{ secrets.ARNS_NAME }}
-          DEPLOY_ANT_UNDERNAME: ${{ secrets.DEPLOY_ANT_UNDERNAME }}
-          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+      - name: Deploy to Arweave
+        uses: ar-io/ar-io-deploy@v1
+        with:
+          deploy-key: ${{ secrets.DEPLOY_KEY }}
+          arns-key: ${{ secrets.ARNS_KEY }}
+          arns-name: ${{ secrets.ARNS_NAME }}
+          undername: ${{ secrets.DEPLOY_ANT_UNDERNAME }}
+          deploy-folder: ./build/web
 
 
   build-ios:

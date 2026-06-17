@@ -1,16 +1,13 @@
 {
   "name": "deploy",
   "version": "1.0.0",
-  "description": "Deployer app for deploying ArDrive to arweave using permaweb-deploy",
+  "description": "Deployer app for deploying ArDrive to arweave using @ar.io/deploy",
   "main": "index.js",
   "license": "AGPL-3.0-only",
   "scripts": {
-    "deploy": "rm -f ../build/web-* && permaweb-deploy --arns-name ${ARNS_NAME} --deploy-folder=../build/web --undername=${DEPLOY_ANT_UNDERNAME}"
+    "deploy": "rm -f ../build/web-* && ario-deploy deploy --arns-name ${ARNS_NAME} --deploy-folder=../build/web --undername=${DEPLOY_ANT_UNDERNAME}"
   },
   "dependencies": {
-    "permaweb-deploy": "^2.1.0"
-  },
-  "resolutions": {
-    "@permaweb/aoconnect": "0.0.57"
+    "@ar.io/deploy": "^1.0.0"
   }
 }
