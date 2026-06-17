@@ -19,11 +19,13 @@ class TurboBalance extends StatefulWidget {
     required this.paymentService,
     required this.wallet,
     this.onTapAddButton,
+    this.onTapInfoButton,
   });
 
   final Wallet wallet;
   final PaymentService paymentService;
   final Function? onTapAddButton;
+  final Function? onTapInfoButton;
 
   @override
   State<TurboBalance> createState() => _TurboBalanceState();
@@ -45,7 +47,8 @@ class _TurboBalanceState extends State<TurboBalance> {
   void _showInfoModal() {
     if (_isInfoModalOpen) return;
     _isInfoModalOpen = true;
-    showTurboInfoModal(context: context).then((_) {
+    widget.onTapInfoButton?.call();
+    showTurboInfoModal(context: context).whenComplete(() {
       _isInfoModalOpen = false;
     });
   }
