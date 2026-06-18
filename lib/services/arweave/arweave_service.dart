@@ -398,8 +398,7 @@ class ArweaveService {
     int? currentBlockHeight,
   }) async {
     // Limit concurrent data fetches to avoid overwhelming the gateway.
-    // Without this, a batch of 200 entities fires 200 simultaneous requests
-    // which triggers rate limits and 503s.
+    // Uses chunked Future.wait — processes maxConcurrent at a time.
     final maxConcurrent =
         _configService.config.maxConcurrentDataFetches.clamp(1, 100);
     final entityDatas = List<Uint8List>.filled(entityTxs.length, Uint8List(0));

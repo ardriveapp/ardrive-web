@@ -20,6 +20,8 @@ class DataGatewayFallback {
   static const _retryPerGateway = 2;
   static const _garListTimeout = Duration(seconds: 5);
 
+  List<Gateway>? _cachedGateways;
+
   DataGatewayFallback({
     required ArioSDK arioSDK,
   }) : _arioSDK = arioSDK;
@@ -51,11 +53,12 @@ class DataGatewayFallback {
       );
     }
 
-    // 2. Try GAR gateways (with timeout on list fetch)
+    // 2. Try GAR gateways (cached to avoid repeated Solana RPC calls)
     try {
-      final gateways = await _arioSDK
+      _cachedGateways ??= await _arioSDK
           .getGateways()
           .timeout(_garListTimeout, onTimeout: () => <Gateway>[]);
+      final gateways = _cachedGateways!;
       final primaryHost = primaryClient.api.gatewayUrl.host;
 
       var tried = 0;

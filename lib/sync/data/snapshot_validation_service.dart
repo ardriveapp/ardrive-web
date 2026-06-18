@@ -63,7 +63,10 @@ class SnapshotValidationService {
             .head(Uri.parse('$primaryUrl/$txId'))
             .timeout(_headTimeout);
 
-        if (response.statusCode == 200) return true;
+        // 200 = available, 302 = gateway knows about it (redirecting to sandbox URL)
+        if (response.statusCode == 200 || response.statusCode == 302) {
+          return true;
+        }
 
         if (_isNonRetryable(response.statusCode)) {
           logger.w(
@@ -107,7 +110,7 @@ class SnapshotValidationService {
           .head(Uri.parse('https://${fallback.settings.fqdn}/$txId'))
           .timeout(_headTimeout);
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 302) {
         logger.i(
           'Snapshot $txId validated via fallback '
           'gateway ${fallback.settings.fqdn}',

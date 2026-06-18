@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/entities/drive_entity.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
@@ -31,6 +32,10 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
   final driveIdController = TextEditingController();
 
   late DriveKey? _driveKey;
+  DriveEntity? cachedDriveEntity;
+  final ValueNotifier<bool> _lookupNotifier = ValueNotifier(false);
+
+  ValueNotifier<bool> get lookupNotifier => _lookupNotifier;
 
   DriveAttachCubit({
     DriveID? initialDriveId,
@@ -69,11 +74,8 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         await drivePrivacyLoader();
 
         if (state is! DriveAttachPrivate) {
-          await driveNameLoader();
-
-          if (isClosed) {
-            return;
-          }
+          // Public drives: drivePrivacyLoader already fetched the entity
+          if (isClosed) return;
 
           if (driveNameController.text.isNotEmpty) {
             submit();
@@ -140,10 +142,12 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
       emit(DriveAttachInProgress());
 
-      final driveEntity = await _arweave.getLatestDriveEntityWithId(
-        driveId,
-        driveKey: _driveKey?.key,
-      );
+      // Reuse cached entity from driveNameLoader to avoid redundant GraphQL call
+      final driveEntity = cachedDriveEntity ??
+          await _arweave.getLatestDriveEntityWithId(
+            driveId,
+            driveKey: _driveKey?.key,
+          );
 
       if (driveEntity == null) {
         emit(DriveAttachDriveNotFound());
@@ -163,10 +167,13 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       /// Wait for the sync to finish before syncing the newly attached drive.
       await _syncBloc.waitCurrentSync();
 
-      /// Then, sync and select the newly attached drive.
+      /// Then, sync only the newly attached drive and select it.
       unawaited(_syncBloc
-          .startSync()
-          .then((value) => _drivesBloc.selectDrive(driveId)));
+          .startSyncForDrive(driveId: driveId)
+          .then((value) => _drivesBloc.selectDrive(driveId))
+          .catchError((e) {
+        logger.e('Error syncing attached drive $driveId', e);
+      }));
 
       PlausibleEventTracker.trackAttachDrive(
         drivePrivacy: drivePrivacy,
@@ -202,6 +209,12 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       return false;
     }
 
+    // Already have the entity cached from drivePrivacyLoader
+    if (cachedDriveEntity != null) {
+      driveNameController.text = cachedDriveEntity!.name!;
+      return true;
+    }
+
     if (state is DriveAttachPrivate) {
       _driveKey = await getDriveKey(promptedDriveKey);
 
@@ -210,15 +223,22 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       }
     }
 
-    final drive = await _arweave.getLatestDriveEntityWithId(driveId,
-        driveKey: _driveKey?.key);
+    _lookupNotifier.value = true;
 
-    if (drive == null) {
-      return false;
+    try {
+      final drive = await _arweave.getLatestDriveEntityWithId(driveId,
+          driveKey: _driveKey?.key);
+
+      if (drive == null) {
+        return false;
+      }
+
+      cachedDriveEntity = drive;
+      driveNameController.text = drive.name!;
+      return true;
+    } finally {
+      _lookupNotifier.value = false;
     }
-
-    driveNameController.text = drive.name!;
-    return true;
   }
 
   Future<String?> driveKeyValidator() async {
@@ -238,29 +258,52 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       return 'Invalid drive key';
     }
 
+    cachedDriveEntity = drive;
     driveNameController.text = drive.name!;
 
     return null;
   }
 
+  /// Checks drive privacy and, for public drives, fetches the entity in one flow.
+  /// For private drives, emits DriveAttachPrivate so the key field appears.
   Future drivePrivacyLoader() async {
     final driveId = driveIdController.text;
 
-    if (driveId.isEmpty) {
+    // UUID = 36 chars, but also accept base64url IDs (43 chars)
+    if (driveId.isEmpty || driveId.length < 32) {
       return null;
     }
 
-    final drivePrivacy = await _arweave.getDrivePrivacyForId(driveId);
+    _lookupNotifier.value = true;
 
-    switch (drivePrivacy) {
-      case DrivePrivacyTag.private:
-        emit(DriveAttachPrivate());
-        break;
-      case null:
-        emit(DriveAttachDriveNotFound());
-        break;
-      default:
-        return null;
+    try {
+      final drivePrivacy = await _arweave.getDrivePrivacyForId(driveId);
+
+      switch (drivePrivacy) {
+        case DrivePrivacyTag.private:
+          emit(DriveAttachPrivate());
+          break;
+        case null:
+          emit(DriveAttachDriveNotFound());
+          break;
+        default:
+          // Public drive — fetch entity now to get the name
+          final drive = await _arweave.getLatestDriveEntityWithId(driveId);
+
+          if (drive == null) {
+            emit(DriveAttachDriveNotFound());
+            return null;
+          }
+
+          cachedDriveEntity = drive;
+          driveNameController.text = drive.name!;
+          break;
+      }
+    } catch (e) {
+      logger.e('Error looking up drive $driveId', e);
+      emit(DriveAttachDriveNotFound());
+    } finally {
+      _lookupNotifier.value = false;
     }
 
     return null;

@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/entities/drive_entity.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/services.dart';
@@ -132,23 +133,41 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
                       context.read<DriveAttachCubit>().driveIdController,
                   autofocus: true,
                   onChanged: (s) async {
-                    await context.read<DriveAttachCubit>().drivePrivacyLoader();
-
-                    // ignore: use_build_context_synchronously
-                    if (context.read<DriveAttachCubit>().state
-                        is! DriveAttachPrivate) {
+                    // Only look up when drive ID looks complete (UUID = 36 chars)
+                    if (s.length >= 36) {
                       debounce(() {
-                        if (!mounted) {
-                          logger.i(
-                              'Drive attach form closed. Not loading drive name.');
-                          return;
-                        }
-
-                        context.read<DriveAttachCubit>().driveNameLoader();
+                        if (!mounted) return;
+                        context.read<DriveAttachCubit>().drivePrivacyLoader();
                       });
                     }
                   },
                   hintText: appLocalizationsOf(context).driveID,
+                ),
+                ValueListenableBuilder<bool>(
+                  valueListenable:
+                      context.read<DriveAttachCubit>().lookupNotifier,
+                  builder: (context, isLoading, _) {
+                    if (!isLoading) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Column(
+                        children: [
+                          const LinearProgressIndicator(),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Looking up drive...',
+                            style: ArDriveTypographyNew.of(context)
+                                .paragraphSmall(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colorTokens
+                                  .textLow,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 16),
                 if (state is DriveAttachPrivate)
@@ -189,6 +208,13 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
                     return nameValidation;
                   },
                 ),
+                if (context.read<DriveAttachCubit>().cachedDriveEntity !=
+                    null) ...[
+                  const SizedBox(height: 12),
+                  _DriveInfoRow(
+                    entity: context.read<DriveAttachCubit>().cachedDriveEntity!,
+                  ),
+                ],
               ],
             ),
           ),
@@ -205,6 +231,65 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
           ],
         );
       },
+    );
+  }
+}
+
+class _DriveInfoRow extends StatelessWidget {
+  final DriveEntity entity;
+
+  const _DriveInfoRow({required this.entity});
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final owner = entity.ownerAddress;
+    final truncatedOwner = owner.length > 12
+        ? '${owner.substring(0, 6)}...${owner.substring(owner.length - 4)}'
+        : owner;
+    final date = entity.createdAt;
+    final dateStr =
+        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    final privacy = entity.privacy == 'private' ? 'Private' : 'Public';
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(6),
+        color: colorTokens.containerL1,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$privacy drive',
+                  style: typography.paragraphSmall(
+                    fontWeight: ArFontWeight.semiBold,
+                    color: colorTokens.textMid,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Owner: $truncatedOwner',
+                  style: typography.paragraphSmall(
+                    color: colorTokens.textLow,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+              dateStr,
+              style: typography.paragraphSmall(
+                color: colorTokens.textLow,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
