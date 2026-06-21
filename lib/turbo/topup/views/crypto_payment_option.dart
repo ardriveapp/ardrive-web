@@ -133,6 +133,8 @@ class _CryptoPaymentOptionState extends State<CryptoPaymentOption> {
     final networkConfig = CryptoNetworkConfig.fromEnvironment(
       environment,
       arweaveGatewayUrl: gatewayUrl,
+      turboUploadUrl: configService.config.defaultTurboUploadUrl,
+      turboPaymentUrl: configService.config.defaultTurboPaymentUrl,
     );
 
     // Create the HTTP client
@@ -291,6 +293,8 @@ Future<void> showCryptoTopupModalStandalone(
   final networkConfig = CryptoNetworkConfig.fromEnvironment(
     environment,
     arweaveGatewayUrl: gatewayUrl,
+    turboUploadUrl: configService.config.defaultTurboUploadUrl,
+    turboPaymentUrl: configService.config.defaultTurboPaymentUrl,
   );
 
   // Create the HTTP client

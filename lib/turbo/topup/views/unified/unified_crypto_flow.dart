@@ -113,6 +113,8 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
     final networkConfig = CryptoNetworkConfig.fromEnvironment(
       environment,
       arweaveGatewayUrl: gatewayUrl,
+      turboUploadUrl: configService.config.defaultTurboUploadUrl,
+      turboPaymentUrl: configService.config.defaultTurboPaymentUrl,
     );
 
     // Create services

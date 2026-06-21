@@ -139,7 +139,7 @@ Note: The `ario_sdk` package requires separate code generation - `scr setup` han
 - Main database: `lib/models/database/database.dart`
 - Table definitions: `lib/models/tables/*.drift`
 - DAOs: `DriveDao`, `ProfileDao`, `ARNSDao`
-- After schema changes: bump `schemaVersion` in `database.dart` (currently v27) and run code generation
+- After schema changes: bump `schemaVersion` in `database.dart` and run code generation
 - Pre-push hook validates schema version is incremented when `.drift` files change
 - Pre-commit hook validates the correct Flutter version is installed
 
