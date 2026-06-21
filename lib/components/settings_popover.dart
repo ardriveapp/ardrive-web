@@ -150,8 +150,8 @@ class SettingsSubmenu extends StatelessWidget {
       content: TurboUrlDialog(
         initialUploadUrl: config.defaultTurboUploadUrl ?? '',
         initialPaymentUrl: config.defaultTurboPaymentUrl ?? '',
-        onSave: (uploadUrl, paymentUrl) {
-          configService.updateAppConfig(
+        onSave: (uploadUrl, paymentUrl) async {
+          await configService.updateAppConfig(
             config.copyWith(
               defaultTurboUploadUrl: uploadUrl,
               defaultTurboPaymentUrl: paymentUrl,
