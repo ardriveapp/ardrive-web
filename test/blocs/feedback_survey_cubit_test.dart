@@ -21,12 +21,10 @@ void main() {
     });
 
     blocTest<FeedbackSurveyCubit, FeedbackSurveyState>(
-      'open modal',
+      'open modal is disabled',
       build: () => feedbackCubit,
       act: (bloc) async => await bloc.openRemindMe(),
-      expect: () => [
-        FeedbackSurveyRemindMe(isOpen: true),
-      ],
+      expect: () => [],
     );
 
     blocTest<FeedbackSurveyCubit, FeedbackSurveyState>(
@@ -39,13 +37,13 @@ void main() {
     );
 
     blocTest<FeedbackSurveyCubit, FeedbackSurveyState>(
-      'the modal will be opened again if reset was called',
+      'open modal after reset is still disabled',
       build: () => feedbackCubit,
       act: (bloc) async {
         bloc.reset();
         await bloc.openRemindMe();
       },
-      expect: () => [FeedbackSurveyRemindMe(isOpen: true)],
+      expect: () => [],
     );
 
     blocTest<FeedbackSurveyCubit, FeedbackSurveyState>(
