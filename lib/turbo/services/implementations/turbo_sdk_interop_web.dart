@@ -281,14 +281,13 @@ Future<Object> createAuthenticatedTurboWithSolanaAdapter({
   final uploadServiceConfig =
       uploadServiceUrl != null ? ServiceConfigJS(url: uploadServiceUrl) : null;
 
-  // Create a mutable wrapper via Object.create() so the SDK can reassign
-  // properties like signMessage and publicKey.toString. The sealed
-  // window.solana/solflare objects from browser extensions don't allow
-  // property assignment, but a prototype-based wrapper does: reads fall
-  // through to the real provider, writes land on the mutable wrapper.
-  final jsObjectConstructor = getProperty(globalThis, 'Object');
+  // Wrap the sealed provider in a mutable plain object via the JS bridge.
+  // Browser extensions seal/freeze window.solana/solflare and may define
+  // properties as non-writable, so the SDK cannot reassign signMessage.
+  // The bridge creates a plain {} wrapper with .bind(provider) delegates.
+  final bridge = getProperty(globalThis, 'CryptoWalletBridge');
   final mutableAdapter =
-      callMethod(jsObjectConstructor, 'create', [solanaWalletAdapter]);
+      callMethod(bridge, 'wrapSolanaProvider', [solanaWalletAdapter]);
 
   final config = TurboAuthConfigJS(
     walletAdapter: mutableAdapter,
