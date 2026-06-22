@@ -77,8 +77,7 @@ class _TurboUrlDialogState extends State<TurboUrlDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Configure the upload and payment service URLs. '
-              'The page will reload after saving.',
+              'Configure the upload and payment service URLs.',
               style: typography.paragraphNormal(
                 color: colorTokens.textMid,
               ),
@@ -106,7 +105,7 @@ class _TurboUrlDialogState extends State<TurboUrlDialog> {
           action: () => Navigator.of(context).pop(),
         ),
         ModalAction(
-          title: 'Save & Reload',
+          title: 'Save',
           isEnable: _isValid,
           action: () {
             widget.onSave(
