@@ -70,7 +70,7 @@
   async function loadTurboSDK() {
     if (window.TurboSDKLoaded) return;
 
-    await loadModule('./js/turbo-sdk.bundle.min.js', {
+    await loadModule('./turbo-sdk.bundle.min.js', {
       'TurboFactory': 'TurboFactory',
       'ARToTokenAmount': 'ARToTokenAmount',
       'ARIOToTokenAmount': 'ARIOToTokenAmount',
