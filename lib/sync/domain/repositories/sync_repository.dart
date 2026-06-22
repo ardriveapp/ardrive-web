@@ -366,26 +366,35 @@ class _SyncRepository implements SyncRepository {
         );
         syncProgressController.add(syncProgress);
 
+        // Defer license sync to background — licenses are display-only
+        // and don't affect file access or sync integrity
         try {
           final licenseTxIds = <String>{};
           final revisionsToSyncLicense = (await _driveDao
               .allFileRevisionsWithLicenseReferencedButNotSynced()
               .get())
             ..retainWhere((rev) => licenseTxIds.add(rev.licenseTxId!));
-          logger.d('Found ${revisionsToSyncLicense.length} licenses to sync');
+          logger.d(
+              'Found ${revisionsToSyncLicense.length} licenses to sync (background)');
 
-          await _updateLicenses(
-            revisionsToSyncLicense: revisionsToSyncLicense,
-          );
+          if (revisionsToSyncLicense.isNotEmpty) {
+            final licenseStart = DateTime.now();
+            unawaited(_updateLicenses(
+              revisionsToSyncLicense: revisionsToSyncLicense,
+            ).then((_) {
+              final elapsed = DateTime.now().difference(licenseStart).inMilliseconds;
+              logger.i('Background license sync completed '
+                  '(${revisionsToSyncLicense.length} licenses in ${elapsed}ms)');
+            }).catchError((e) {
+              logger.e('Background license sync failed', e);
+            }));
+          }
         } catch (e) {
-          // Re-throw cancellation exceptions
           if (e is SyncCancelledException) {
             rethrow;
           }
-          logger.e('Error syncing licenses. Proceeding.', e);
+          logger.e('Error preparing license sync. Proceeding.', e);
         }
-
-        logger.i('Licenses synced');
 
         logger.i('Updating transaction statuses...');
 
@@ -679,17 +688,26 @@ class _SyncRepository implements SyncRepository {
           logger.d(
               'Found ${revisionsToSyncLicense.length} licenses to sync for drive $driveId');
 
-          await _updateLicenses(
-            revisionsToSyncLicense: revisionsToSyncLicense,
-          );
+          if (revisionsToSyncLicense.isNotEmpty) {
+            final licenseStart = DateTime.now();
+            unawaited(_updateLicenses(
+              revisionsToSyncLicense: revisionsToSyncLicense,
+            ).then((_) {
+              final elapsed = DateTime.now().difference(licenseStart).inMilliseconds;
+              logger.i('Background license sync completed for drive $driveId '
+                  '(${revisionsToSyncLicense.length} licenses in ${elapsed}ms)');
+            }).catchError((e) {
+              logger.e(
+                  'Background license sync failed for drive $driveId', e);
+            }));
+          }
         } catch (e) {
           if (e is SyncCancelledException) {
             rethrow;
           }
-          logger.e('Error syncing licenses for single drive. Proceeding.', e);
+          logger.e('Error preparing license sync for single drive. Proceeding.',
+              e);
         }
-
-        logger.i('Licenses synced for single drive');
 
         // Check for cancellation before transaction status updates
         token.checkCancellation();

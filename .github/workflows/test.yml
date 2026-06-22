@@ -5,6 +5,10 @@ jobs:
   test-and-lint:
     runs-on: ubuntu-22.04
     steps:
+      # Install native SQLite3 library (required by drift tests)
+      - name: Install SQLite3
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
       # Checkout
       - uses: actions/checkout@v3
         with:

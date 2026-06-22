@@ -20,14 +20,13 @@ import '../test_utils/utils.dart';
 
 void main() {
   group('DriveAttachCubit', () {
-    late Database db;
     late ArweaveService arweave;
     late DriveDao driveDao;
     late SyncCubit syncBloc;
     late DrivesCubit drivesBloc;
     late DriveAttachCubit driveAttachCubit;
 
-    const validPrivateDriveId = 'valid-private-drive-id';
+    const validPrivateDriveId = '00000000-0000-0000-0000-000000000002';
     const validPrivateDriveKeyBase64 =
         'a6U1qYiJNNNfX6RqhCUGpwOfRN3ZdAiQl7LHywqIJTk';
     final validPrivateDriveKey = DriveKey(
@@ -37,19 +36,19 @@ void main() {
     fillBytesWithSecureRandom(keyBytes);
     final profileKey = SecretKey(keyBytes);
 
-    const validDriveId = 'valid-drive-id';
+    const validDriveId = '00000000-0000-0000-0000-000000000001';
     const validDriveName = 'valid-drive-name';
     const ownerAddress = 'owner-address';
     const validRootFolderId = 'valid-root-folder-id';
-    const notFoundDriveId = 'not-found-drive-id';
-    db = getTestDb();
+    const notFoundDriveId = '00000000-0000-0000-0000-000000000003';
 
     setUp(() {
       registerFallbackValue(SyncStateFake());
       registerFallbackValue(ProfileStateFake());
       registerFallbackValue(DrivesStateFake());
+      registerFallbackValue(DriveEntity());
 
-      driveDao = db.driveDao;
+      driveDao = MockDriveDao();
 
       arweave = MockArweaveService();
       syncBloc = MockSyncBloc();
@@ -91,7 +90,15 @@ void main() {
       when(() => arweave.getDrivePrivacyForId(validPrivateDriveId))
           .thenAnswer((_) => Future.value(DrivePrivacyTag.private));
 
-      when(() => syncBloc.startSync()).thenAnswer((_) => Future.value(null));
+      when(() => driveDao.writeDriveEntity(
+            name: any(named: 'name'),
+            entity: any(named: 'entity'),
+            driveKey: any(named: 'driveKey'),
+            profileKey: any(named: 'profileKey'),
+          )).thenAnswer((_) => Future.value());
+
+      when(() => syncBloc.startSyncForDrive(driveId: any(named: 'driveId')))
+          .thenAnswer((_) => Future.value(null));
 
       when(() => syncBloc.waitCurrentSync())
           .thenAnswer((_) => Future.value(null));
@@ -120,7 +127,8 @@ void main() {
         DriveAttachSuccess(),
       ],
       verify: (_) {
-        verify(() => syncBloc.startSync()).called(1);
+        verify(() => syncBloc.startSyncForDrive(driveId: validDriveId))
+            .called(1);
         verify(() => drivesBloc.selectDrive(validDriveId)).called(1);
       },
     );
@@ -201,7 +209,9 @@ void main() {
         ],
         wait: const Duration(milliseconds: 1200),
         verify: (_) async {
-          verify(() => syncBloc.startSync()).called(1);
+          verify(() =>
+                  syncBloc.startSyncForDrive(driveId: validPrivateDriveId))
+              .called(1);
           verify(() => drivesBloc.selectDrive(validPrivateDriveId)).called(1);
         },
       );
