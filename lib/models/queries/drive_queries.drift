@@ -159,12 +159,6 @@ latestFileRevisionsByFileIdWithLicenseAndTransactions AS FileRevisionWithLicense
     WHERE rev.driveId = :driveId AND rev.fileId = :fileId
     ORDER BY rev.dateCreated DESC;
 
-allFileRevisionsWithLicenseReferencedButNotSynced:
-    SELECT * FROM file_revisions
-    WHERE licenseTxId IS NOT NULL AND licenseTxId NOT IN (
-        SELECT licenseTxId FROM licenses
-    );
-
 pendingTransactions:
     SELECT * FROM network_transactions
     WHERE status = 'pending';
