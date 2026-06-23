@@ -347,15 +347,41 @@ class ArweaveService {
     return arfsTag != null && supportedArFSVersionsSet.contains(arfsTag.value);
   }
 
+  /// Computes a safe chunk size for ID-based queries on turbo-gateway.com.
+  ///
+  /// ClickHouse scans rows proportional to (blockRange × numIDs). Testing
+  /// shows ~2.4 rows/block/ID with a 10M row hard limit. We target 5M
+  /// (50% safety margin) so the formula is: 5,000,000 / (range × 2.4).
+  ///
+  /// With block range provided: dynamic (e.g. 200k range → 10 IDs/chunk).
+  /// Without block range (full chain ~2M blocks): falls back to 1 ID/chunk.
+  static int _safeChunkSize(int? minBlock, int? maxBlock) {
+    if (minBlock == null || maxBlock == null || maxBlock <= minBlock) {
+      return 1;
+    }
+    final range = maxBlock - minBlock;
+    final estimated = (5000000 / (range * 2.4)).floor();
+    return estimated.clamp(1, 50);
+  }
+
   Stream<List<LicenseAssertions$Query$TransactionConnection$TransactionEdge$Transaction>>
-      getLicenseAssertions(Iterable<String> licenseAssertionTxIds) async* {
-    const chunkSize = 100;
+      getLicenseAssertions(
+    Iterable<String> licenseAssertionTxIds, {
+    int? minBlockHeight,
+    int? maxBlockHeight,
+  }) async* {
+    final chunkSize = _safeChunkSize(minBlockHeight, maxBlockHeight);
+    logger.d('License assertions: ${licenseAssertionTxIds.length} IDs, '
+        'block range $minBlockHeight..$maxBlockHeight, chunk size $chunkSize');
     final chunks = licenseAssertionTxIds.slices(chunkSize);
     for (final chunk in chunks) {
-      // Get a page of 100 transactions
       final licenseAssertionsQuery = await graphQLRetry.execute(
         LicenseAssertionsQuery(
-          variables: LicenseAssertionsArguments(transactionIds: chunk),
+          variables: LicenseAssertionsArguments(
+            transactionIds: chunk,
+            minBlockHeight: minBlockHeight,
+            maxBlockHeight: maxBlockHeight,
+          ),
         ),
       );
 
@@ -366,14 +392,23 @@ class ArweaveService {
   }
 
   Stream<List<LicenseComposed$Query$TransactionConnection$TransactionEdge$Transaction>>
-      getLicenseComposed(Iterable<String> licenseComposedTxIds) async* {
-    const chunkSize = 100;
+      getLicenseComposed(
+    Iterable<String> licenseComposedTxIds, {
+    int? minBlockHeight,
+    int? maxBlockHeight,
+  }) async* {
+    final chunkSize = _safeChunkSize(minBlockHeight, maxBlockHeight);
+    logger.d('License composed: ${licenseComposedTxIds.length} IDs, '
+        'block range $minBlockHeight..$maxBlockHeight, chunk size $chunkSize');
     final chunks = licenseComposedTxIds.slices(chunkSize);
     for (final chunk in chunks) {
-      // Get a page of 100 transactions
       final licenseComposedQuery = await graphQLRetry.execute(
         LicenseComposedQuery(
-          variables: LicenseComposedArguments(transactionIds: chunk),
+          variables: LicenseComposedArguments(
+            transactionIds: chunk,
+            minBlockHeight: minBlockHeight,
+            maxBlockHeight: maxBlockHeight,
+          ),
         ),
       );
 
@@ -1198,12 +1233,16 @@ class ArweaveService {
   /// When the number of confirmations is 0, the transaction has yet to be mined. When
   /// it is -1, the transaction could not be found.
   Future<Map<String?, int>> getTransactionConfirmations(
-      List<String?> transactionIds) async {
+      List<String?> transactionIds,
+      {int? maxBlockHeight}) async {
     final transactionConfirmations = {
       for (final transactionId in transactionIds) transactionId: -1
     };
 
-    const chunkSize = 100;
+    // Pending txs have no block range info, so use a safe small chunk.
+    // TransactionStatuses is a light query (no tags/owner), but ClickHouse
+    // still scans ~4.5M rows per ID without a min block filter.
+    const chunkSize = 2;
 
     final confirmationFutures = <Future<void>>[];
 
@@ -1218,6 +1257,7 @@ class ArweaveService {
             variables: TransactionStatusesArguments(
               transactionIds:
                   transactionIds.sublist(i, chunkEnd) as List<String>?,
+              maxBlockHeight: maxBlockHeight,
             ),
           ),
         );

@@ -381,6 +381,7 @@ class _SyncRepository implements SyncRepository {
             final licenseStart = DateTime.now();
             unawaited(_updateLicenses(
               revisionsToSyncLicense: revisionsToSyncLicense,
+              maxBlockHeight: currentBlockHeight,
             ).then((_) {
               final elapsed = DateTime.now().difference(licenseStart).inMilliseconds;
               logger.i('Background license sync completed '
@@ -433,6 +434,7 @@ class _SyncRepository implements SyncRepository {
                 arweave: _arweave,
                 txsIdsToSkip: confirmedFileTxIds,
                 cancellationToken: token,
+                maxBlockHeight: currentBlockHeight,
               ).timeout(
                 const Duration(seconds: 10),
                 onTimeout: () {
@@ -692,6 +694,7 @@ class _SyncRepository implements SyncRepository {
             final licenseStart = DateTime.now();
             unawaited(_updateLicenses(
               revisionsToSyncLicense: revisionsToSyncLicense,
+              maxBlockHeight: currentBlockHeight,
             ).then((_) {
               final elapsed = DateTime.now().difference(licenseStart).inMilliseconds;
               logger.i('Background license sync completed for drive $driveId '
@@ -753,6 +756,7 @@ class _SyncRepository implements SyncRepository {
             driveDataTxIds: driveDataTxIds,
             txsIdsToSkip: confirmedFileTxIds,
             cancellationToken: token,
+            maxBlockHeight: currentBlockHeight,
           ).timeout(
             const Duration(seconds: 10),
             onTimeout: () {
@@ -844,6 +848,7 @@ class _SyncRepository implements SyncRepository {
     required Set<String> driveDataTxIds,
     List<TxID> txsIdsToSkip = const [],
     SyncCancellationToken? cancellationToken,
+    int? maxBlockHeight,
   }) async {
     cancellationToken?.checkCancellation();
 
@@ -885,7 +890,8 @@ class _SyncRepository implements SyncRepository {
       cancellationToken?.checkCancellation();
 
       final map = await arweave
-          .getTransactionConfirmations(currentPage.toList())
+          .getTransactionConfirmations(currentPage.toList(),
+              maxBlockHeight: maxBlockHeight)
           .timeout(
         const Duration(seconds: 5),
         onTimeout: () {
@@ -1073,6 +1079,7 @@ class _SyncRepository implements SyncRepository {
     required ArweaveService arweave,
     List<TxID> txsIdsToSkip = const [],
     SyncCancellationToken? cancellationToken,
+    int? maxBlockHeight,
   }) async {
     // Check for cancellation at the start
     cancellationToken?.checkCancellation();
@@ -1126,7 +1133,8 @@ class _SyncRepository implements SyncRepository {
 
       // Use a shorter timeout for individual GraphQL calls
       final map = await arweave
-          .getTransactionConfirmations(currentPage.toList())
+          .getTransactionConfirmations(currentPage.toList(),
+              maxBlockHeight: maxBlockHeight)
           .timeout(
         const Duration(seconds: 5),
         onTimeout: () {
@@ -1546,22 +1554,48 @@ class _SyncRepository implements SyncRepository {
     }
   }
 
+  /// Estimates a block height from a DateTime using Arweave's ~2min block time.
+  /// Subtracts a safety margin to avoid missing transactions near block boundaries.
+  static int _estimateMinBlock(DateTime date) {
+    // Arweave genesis: June 13, 2018 UTC (block 0)
+    const genesisTimestamp = 1528906035;
+    const safetyMarginBlocks = 5000; // ~7 days of margin
+    final seconds = date.millisecondsSinceEpoch ~/ 1000 - genesisTimestamp;
+    if (seconds <= 0) return 0;
+    final estimated = seconds ~/ 120; // ~2 min per block
+    return (estimated - safetyMarginBlocks).clamp(0, estimated);
+  }
+
   Future<void> _updateLicenses({
     required List<FileRevision> revisionsToSyncLicense,
+    int? maxBlockHeight,
   }) async {
+    // Estimate minBlockHeight from the earliest revision's creation date.
+    // This narrows the ClickHouse scan range dramatically — e.g. from 2M
+    // blocks to ~200k, allowing chunks of 10+ IDs instead of 1-2.
+    final earliestDate = revisionsToSyncLicense
+        .map((r) => r.dateCreated)
+        .reduce((a, b) => a.isBefore(b) ? a : b);
+    final minBlockHeight = _estimateMinBlock(earliestDate);
+
     final licenseAssertionTxIds = revisionsToSyncLicense
         .where((rev) => rev.licenseTxId != rev.dataTxId)
         .map((e) => e.licenseTxId!)
         .toList();
 
-    logger.d('Syncing ${licenseAssertionTxIds.length} license assertions');
+    logger.d('Syncing ${licenseAssertionTxIds.length} license assertions'
+        ' (block range: $minBlockHeight..$maxBlockHeight)');
 
     // Collect all license assertion companions from all batches
     final allLicenseAssertionCompanions = <LicensesCompanion>[];
     var skippedLicenseAssertions = 0;
 
     await for (final licenseAssertionTxsBatch
-        in _arweave.getLicenseAssertions(licenseAssertionTxIds)) {
+        in _arweave.getLicenseAssertions(
+      licenseAssertionTxIds,
+      minBlockHeight: minBlockHeight,
+      maxBlockHeight: maxBlockHeight,
+    )) {
       // Parse each transaction individually with error handling
       for (final tx in licenseAssertionTxsBatch) {
         try {
@@ -1601,7 +1635,11 @@ class _SyncRepository implements SyncRepository {
     var skippedLicenseComposed = 0;
 
     await for (final licenseComposedTxsBatch
-        in _arweave.getLicenseComposed(licenseComposedTxIds)) {
+        in _arweave.getLicenseComposed(
+      licenseComposedTxIds,
+      minBlockHeight: minBlockHeight,
+      maxBlockHeight: maxBlockHeight,
+    )) {
       // Parse each transaction individually with error handling
       for (final tx in licenseComposedTxsBatch) {
         try {

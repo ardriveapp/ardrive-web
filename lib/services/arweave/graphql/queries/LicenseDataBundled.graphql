@@ -1,7 +1,8 @@
-query LicenseComposed($transactionIds: [ID!]) {
+query LicenseComposed($transactionIds: [ID!], $minBlockHeight: Int, $maxBlockHeight: Int) {
   transactions(
     first: 100
     ids: $transactionIds
+    block: { min: $minBlockHeight, max: $maxBlockHeight }
   ) {
     edges {
       node {

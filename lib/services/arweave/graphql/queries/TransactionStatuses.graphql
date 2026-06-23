@@ -1,5 +1,5 @@
-query TransactionStatuses($transactionIds: [ID!]) {
-  transactions(first: 100, ids: $transactionIds) {
+query TransactionStatuses($transactionIds: [ID!], $maxBlockHeight: Int) {
+  transactions(first: 100, ids: $transactionIds, block: { max: $maxBlockHeight }) {
     edges {
       node {
         id

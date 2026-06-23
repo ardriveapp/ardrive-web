@@ -1,8 +1,9 @@
-query LicenseAssertions($transactionIds: [ID!]) {
+query LicenseAssertions($transactionIds: [ID!], $minBlockHeight: Int, $maxBlockHeight: Int) {
   transactions(
     first: 100
     ids: $transactionIds
     tags: [{ name: "App-Name", values: ["License-Assertion"] }]
+    block: { min: $minBlockHeight, max: $maxBlockHeight }
   ) {
     edges {
       node {
