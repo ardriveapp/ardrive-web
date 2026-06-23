@@ -458,7 +458,8 @@
       // others set it on the provider object directly
       const pk = response?.publicKey || provider.publicKey;
       if (!pk) {
-        throw new Error('NO_PUBLIC_KEY');
+        // Solflare resolves with no publicKey when user closes the popup
+        throw new Error('USER_REJECTED');
       }
       const publicKey = pk.toString();
 
@@ -467,7 +468,11 @@
         providerType: provider.isPhantom ? 'phantom' : 'solflare',
       };
     } catch (error) {
-      if (error.code === 4001 || error.message?.includes('rejected')) {
+      if (error.code === 4001 ||
+          error.message?.includes('rejected') ||
+          error.message?.includes('cancelled') ||
+          error.message?.includes('closed') ||
+          error.message === 'USER_REJECTED') {
         throw new Error('USER_REJECTED');
       }
       throw error;
