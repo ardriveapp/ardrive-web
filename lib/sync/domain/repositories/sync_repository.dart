@@ -870,32 +870,6 @@ class _SyncRepository implements SyncRepository {
       pendingTxMap.remove(txId);
     }
 
-    // Mark stale pending transactions as failed without querying the network.
-    final staleIds = <String>[];
-    for (final entry in pendingTxMap.entries) {
-      final age = DateTime.now().difference(entry.value.dateCreated);
-      if (age > pendingWaitTime) {
-        staleIds.add(entry.key);
-      }
-    }
-    if (staleIds.isNotEmpty) {
-      logger.i('Marking ${staleIds.length} stale pending transactions as failed'
-          ' for this drive');
-      await driveDao.transaction(() async {
-        for (final txId in staleIds) {
-          await driveDao.writeToTransaction(
-            NetworkTransactionsCompanion(
-              id: Value(txId),
-              status: const Value(TransactionStatus.failed),
-            ),
-          );
-        }
-      });
-      for (final txId in staleIds) {
-        pendingTxMap.remove(txId);
-      }
-    }
-
     final length = pendingTxMap.length;
 
     if (length == 0) {
@@ -1136,33 +1110,6 @@ class _SyncRepository implements SyncRepository {
 
     for (final txId in txsIdsToSkip) {
       pendingTxMap.remove(txId);
-    }
-
-    // Mark stale pending transactions as failed without querying the network.
-    // This prevents zombie pending txs from firing GraphQL calls every sync.
-    final staleIds = <String>[];
-    for (final entry in pendingTxMap.entries) {
-      final age = DateTime.now().difference(entry.value.dateCreated);
-      if (age > pendingWaitTime) {
-        staleIds.add(entry.key);
-      }
-    }
-    if (staleIds.isNotEmpty) {
-      logger.i('Marking ${staleIds.length} stale pending transactions as failed'
-          ' (older than $pendingWaitTime)');
-      await driveDao.transaction(() async {
-        for (final txId in staleIds) {
-          await driveDao.writeToTransaction(
-            NetworkTransactionsCompanion(
-              id: Value(txId),
-              status: const Value(TransactionStatus.failed),
-            ),
-          );
-        }
-      });
-      for (final txId in staleIds) {
-        pendingTxMap.remove(txId);
-      }
     }
 
     final length = pendingTxMap.length;
@@ -1619,37 +1566,24 @@ class _SyncRepository implements SyncRepository {
     }
   }
 
-  /// Estimates a block height from a DateTime using Arweave's ~2min block time.
-  /// Subtracts a safety margin to avoid missing transactions near block boundaries.
-  static int _estimateMinBlock(DateTime date) {
-    // Arweave genesis: June 13, 2018 UTC (block 0)
-    const genesisTimestamp = 1528906035;
-    const safetyMarginBlocks = 5000; // ~7 days of margin
-    final seconds = date.millisecondsSinceEpoch ~/ 1000 - genesisTimestamp;
-    if (seconds <= 0) return 0;
-    final estimated = seconds ~/ 120; // ~2 min per block
-    return (estimated - safetyMarginBlocks).clamp(0, estimated);
-  }
+  // Removed _estimateMinBlock — estimating block heights from ArFS
+  // metadata dates is unreliable and risks missing license transactions.
+  // We rely on maxBlockHeight + small chunk sizes instead.
+  //
+  // Future improvement: if turbo-gateway adds a proper tx ID index to
+  // ClickHouse, these queries can use larger chunk sizes without block filters.
 
   Future<void> _updateLicenses({
     required List<FileRevision> revisionsToSyncLicense,
     int? maxBlockHeight,
   }) async {
-    // Estimate minBlockHeight from the earliest revision's creation date.
-    // This narrows the ClickHouse scan range dramatically — e.g. from 2M
-    // blocks to ~200k, allowing chunks of 10+ IDs instead of 1-2.
-    final earliestDate = revisionsToSyncLicense
-        .map((r) => r.dateCreated)
-        .reduce((a, b) => a.isBefore(b) ? a : b);
-    final minBlockHeight = _estimateMinBlock(earliestDate);
-
     final licenseAssertionTxIds = revisionsToSyncLicense
         .where((rev) => rev.licenseTxId != rev.dataTxId)
         .map((e) => e.licenseTxId!)
         .toList();
 
     logger.d('Syncing ${licenseAssertionTxIds.length} license assertions'
-        ' (block range: $minBlockHeight..$maxBlockHeight)');
+        ' (maxBlock: $maxBlockHeight)');
 
     // Collect all license assertion companions from all batches
     final allLicenseAssertionCompanions = <LicensesCompanion>[];
@@ -1658,7 +1592,6 @@ class _SyncRepository implements SyncRepository {
     await for (final licenseAssertionTxsBatch
         in _arweave.getLicenseAssertions(
       licenseAssertionTxIds,
-      minBlockHeight: minBlockHeight,
       maxBlockHeight: maxBlockHeight,
     )) {
       // Parse each transaction individually with error handling
@@ -1702,7 +1635,6 @@ class _SyncRepository implements SyncRepository {
     await for (final licenseComposedTxsBatch
         in _arweave.getLicenseComposed(
       licenseComposedTxIds,
-      minBlockHeight: minBlockHeight,
       maxBlockHeight: maxBlockHeight,
     )) {
       // Parse each transaction individually with error handling
