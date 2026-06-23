@@ -17,7 +17,6 @@ import 'package:ardrive/models/file_revision.dart';
 import 'package:ardrive/models/folder_revision.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/config/config.dart';
-import 'package:ardrive/services/license/license_service.dart';
 import 'package:ardrive/sync/constants.dart';
 import 'package:ardrive/sync/data/snapshot_validation_service.dart';
 import 'package:ardrive/sync/domain/ghost_folder.dart';
