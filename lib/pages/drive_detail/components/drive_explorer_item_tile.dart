@@ -370,14 +370,6 @@ class _DriveExplorerItemTileTrailingState
           ),
         ],
         if (widget.item is FileDataTableItem &&
-            (widget.item as FileDataTableItem).licenseTxId != null) ...{
-          ArDriveIcons.license(
-            size: 20,
-            color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
-          ),
-          const SizedBox(width: 4),
-        },
-        if (widget.item is FileDataTableItem &&
             (widget.item as FileDataTableItem).pinnedDataOwnerAddress !=
                 null) ...{
           const PinIndicator(
