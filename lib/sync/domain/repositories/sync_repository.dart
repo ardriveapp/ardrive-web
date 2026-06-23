@@ -870,7 +870,39 @@ class _SyncRepository implements SyncRepository {
       pendingTxMap.remove(txId);
     }
 
+    // Mark stale pending transactions as failed without querying the network.
+    final staleIds = <String>[];
+    for (final entry in pendingTxMap.entries) {
+      final age = DateTime.now().difference(entry.value.dateCreated);
+      if (age > pendingWaitTime) {
+        staleIds.add(entry.key);
+      }
+    }
+    if (staleIds.isNotEmpty) {
+      logger.i('Marking ${staleIds.length} stale pending transactions as failed'
+          ' for this drive');
+      await driveDao.transaction(() async {
+        for (final txId in staleIds) {
+          await driveDao.writeToTransaction(
+            NetworkTransactionsCompanion(
+              id: Value(txId),
+              status: const Value(TransactionStatus.failed),
+            ),
+          );
+        }
+      });
+      for (final txId in staleIds) {
+        pendingTxMap.remove(txId);
+      }
+    }
+
     final length = pendingTxMap.length;
+
+    if (length == 0) {
+      logger.i('No pending transactions for this drive');
+      return;
+    }
+
     final list = pendingTxMap.keys.toList();
     const page = 5000;
 
@@ -1106,7 +1138,40 @@ class _SyncRepository implements SyncRepository {
       pendingTxMap.remove(txId);
     }
 
+    // Mark stale pending transactions as failed without querying the network.
+    // This prevents zombie pending txs from firing GraphQL calls every sync.
+    final staleIds = <String>[];
+    for (final entry in pendingTxMap.entries) {
+      final age = DateTime.now().difference(entry.value.dateCreated);
+      if (age > pendingWaitTime) {
+        staleIds.add(entry.key);
+      }
+    }
+    if (staleIds.isNotEmpty) {
+      logger.i('Marking ${staleIds.length} stale pending transactions as failed'
+          ' (older than $pendingWaitTime)');
+      await driveDao.transaction(() async {
+        for (final txId in staleIds) {
+          await driveDao.writeToTransaction(
+            NetworkTransactionsCompanion(
+              id: Value(txId),
+              status: const Value(TransactionStatus.failed),
+            ),
+          );
+        }
+      });
+      for (final txId in staleIds) {
+        pendingTxMap.remove(txId);
+      }
+    }
+
     final length = pendingTxMap.length;
+
+    if (length == 0) {
+      logger.i('No pending transactions to check');
+      return;
+    }
+
     final list = pendingTxMap.keys.toList();
 
     // Thats was discovered by tests at profile mode.
