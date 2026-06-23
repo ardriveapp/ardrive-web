@@ -47,7 +47,7 @@ class CryptoProcessingView extends StatelessWidget {
               ),
             ),
             // Main content
-            Expanded(
+            Flexible(
               child: Container(
                 color: colors.themeBgCanvas,
                 child: Center(

@@ -221,12 +221,11 @@ class _CryptoPaymentTab extends StatelessWidget {
     final colors = ArDriveTheme.of(context).themeData.colors;
     final typography = ArDriveTypographyNew.of(context);
 
-    return CryptoToken.values.map((token) {
-      // ARIO tokens have no Turbo fee (no 20% upcharge), but may still have gas fees
-      final hasNoTurboFee = token == CryptoToken.arioAO ||
-          token == CryptoToken.arioAOViaEth ||
-          token == CryptoToken.arioBase;
+    final availableTokens = TokenGroup.allGroups
+        .expand((group) => group.tokens)
+        .toList();
 
+    return availableTokens.map((token) {
       return PopupMenuItem<CryptoToken>(
         value: token,
         child: Row(
@@ -246,27 +245,6 @@ class _CryptoPaymentTab extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  if (hasNoTurboFee) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.themeBgSubtle,
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: colors.themeBorderDefault),
-                      ),
-                      child: Text(
-                        appLocalizationsOf(context).noTurboFee,
-                        style: typography.caption(
-                          fontWeight: ArFontWeight.semiBold,
-                          color: colors.themeFgMuted,
-                        ),
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
