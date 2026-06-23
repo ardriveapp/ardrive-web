@@ -347,57 +347,98 @@ class ArweaveService {
     return arfsTag != null && supportedArFSVersionsSet.contains(arfsTag.value);
   }
 
-  /// Safe chunk size for ID-based queries on turbo-gateway.com.
-  ///
-  /// ClickHouse scans ~4-5M rows per tx ID without a min block filter.
-  /// With a 10M row hard limit, 2 IDs stays safely under. If a reliable
-  /// minBlockHeight becomes available in the future, this can be made
-  /// dynamic based on the block range.
-  static const _idQueryChunkSize = 2;
+  /// Max concurrent license queries. Each query fetches 1 tx ID (ClickHouse
+  /// on turbo-gateway scans ~5M rows per ID, 10M limit = 1 ID per query).
+  /// 5 concurrent keeps throughput high without overwhelming the gateway.
+  static const _licenseConcurrency = 5;
 
-  Stream<List<LicenseAssertions$Query$TransactionConnection$TransactionEdge$Transaction>>
+  /// Fetches license assertion transactions by ID, one per query, with
+  /// up to [_licenseConcurrency] queries in flight at once.
+  Future<List<LicenseAssertions$Query$TransactionConnection$TransactionEdge$Transaction>>
       getLicenseAssertions(
     Iterable<String> licenseAssertionTxIds, {
     int? maxBlockHeight,
-  }) async* {
-    final chunks = licenseAssertionTxIds.slices(_idQueryChunkSize);
-    for (final chunk in chunks) {
-      final licenseAssertionsQuery = await graphQLRetry.execute(
-        LicenseAssertionsQuery(
-          variables: LicenseAssertionsArguments(
-            transactionIds: chunk,
-            maxBlockHeight: maxBlockHeight,
-          ),
-        ),
-      );
+  }) async {
+    final results =
+        <LicenseAssertions$Query$TransactionConnection$TransactionEdge$Transaction>[];
 
-      yield licenseAssertionsQuery.data!.transactions.edges
-          .map((e) => e.node)
-          .toList();
+    // Process in concurrent batches
+    final idList = licenseAssertionTxIds.toList();
+    for (var i = 0; i < idList.length; i += _licenseConcurrency) {
+      final batch = idList.sublist(
+        i,
+        (i + _licenseConcurrency).clamp(0, idList.length),
+      );
+      final futures = batch.map((txId) async {
+        try {
+          final query = await graphQLRetry.execute(
+            LicenseAssertionsQuery(
+              variables: LicenseAssertionsArguments(
+                transactionIds: [txId],
+                maxBlockHeight: maxBlockHeight,
+              ),
+            ),
+          );
+          return query.data!.transactions.edges
+              .map((e) => e.node)
+              .toList();
+        } catch (e) {
+          logger.w('Failed to fetch license assertion $txId: $e');
+          return <LicenseAssertions$Query$TransactionConnection$TransactionEdge$Transaction>[];
+        }
+      });
+      final batchResults = await Future.wait(futures);
+      for (final txList in batchResults) {
+        results.addAll(txList);
+      }
     }
+
+    return results;
   }
 
-  Stream<List<LicenseComposed$Query$TransactionConnection$TransactionEdge$Transaction>>
+  /// Fetches composed license transactions by ID, one per query, with
+  /// up to [_licenseConcurrency] queries in flight at once.
+  Future<List<LicenseComposed$Query$TransactionConnection$TransactionEdge$Transaction>>
       getLicenseComposed(
     Iterable<String> licenseComposedTxIds, {
     int? maxBlockHeight,
-  }) async* {
-    final chunks = licenseComposedTxIds.slices(_idQueryChunkSize);
-    for (final chunk in chunks) {
-      final licenseComposedQuery = await graphQLRetry.execute(
-        LicenseComposedQuery(
-          variables: LicenseComposedArguments(
-            transactionIds: chunk,
-            maxBlockHeight: maxBlockHeight,
-          ),
-        ),
-      );
+  }) async {
+    final results =
+        <LicenseComposed$Query$TransactionConnection$TransactionEdge$Transaction>[];
 
-      yield licenseComposedQuery.data!.transactions.edges
-          .map((e) => e.node)
-          .where((e) => e.tags.any((t) => t.name == 'License'))
-          .toList();
+    // Process in concurrent batches
+    final idList = licenseComposedTxIds.toList();
+    for (var i = 0; i < idList.length; i += _licenseConcurrency) {
+      final batch = idList.sublist(
+        i,
+        (i + _licenseConcurrency).clamp(0, idList.length),
+      );
+      final futures = batch.map((txId) async {
+        try {
+          final query = await graphQLRetry.execute(
+            LicenseComposedQuery(
+              variables: LicenseComposedArguments(
+                transactionIds: [txId],
+                maxBlockHeight: maxBlockHeight,
+              ),
+            ),
+          );
+          return query.data!.transactions.edges
+              .map((e) => e.node)
+              .where((e) => e.tags.any((t) => t.name == 'License'))
+              .toList();
+        } catch (e) {
+          logger.w('Failed to fetch composed license $txId: $e');
+          return <LicenseComposed$Query$TransactionConnection$TransactionEdge$Transaction>[];
+        }
+      });
+      final batchResults = await Future.wait(futures);
+      for (final txList in batchResults) {
+        results.addAll(txList);
+      }
     }
+
+    return results;
   }
 
   /// Get the metadata of transactions
@@ -1220,7 +1261,9 @@ class ArweaveService {
       for (final transactionId in transactionIds) transactionId: -1
     };
 
-    const chunkSize = _idQueryChunkSize;
+    // 2 IDs per query — ClickHouse scans ~5M rows per ID (10M limit).
+    // TransactionStatuses is lighter (no tags/owner) but still constrained.
+    const chunkSize = 2;
 
     final confirmationFutures = <Future<void>>[];
 

@@ -91,10 +91,8 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     final isComposed = revision.licenseTxId == revision.dataTxId;
     if (isComposed) {
       // License Composed
-      final licenseTxs = await _arweave
-          .getLicenseComposed([revision.licenseTxId!])
-          .expand((e) => e)
-          .toList();
+      final licenseTxs =
+          await _arweave.getLicenseComposed([revision.licenseTxId!]);
       if (licenseTxs.isEmpty) {
         logger.e(
             'Could not find any license composed with txId: ${revision.licenseTxId}');
@@ -105,10 +103,8 @@ class SharedFileCubit extends Cubit<SharedFileState> {
       return _licenseService.fromComposedEntity(licenseComposedEntity);
     } else {
       // License Assertion
-      final licenseTxs = await _arweave
-          .getLicenseAssertions([revision.licenseTxId!])
-          .expand((e) => e)
-          .toList();
+      final licenseTxs =
+          await _arweave.getLicenseAssertions([revision.licenseTxId!]);
       if (licenseTxs.isEmpty) {
         logger.e(
             'Could not find any license assertions with txId: ${revision.licenseTxId}');

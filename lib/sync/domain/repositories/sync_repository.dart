@@ -1585,41 +1585,36 @@ class _SyncRepository implements SyncRepository {
     logger.d('Syncing ${licenseAssertionTxIds.length} license assertions'
         ' (maxBlock: $maxBlockHeight)');
 
-    // Collect all license assertion companions from all batches
+    // Fetch all license assertions concurrently (1 ID per query, N in parallel)
     final allLicenseAssertionCompanions = <LicensesCompanion>[];
     var skippedLicenseAssertions = 0;
 
-    await for (final licenseAssertionTxsBatch
-        in _arweave.getLicenseAssertions(
+    final licenseAssertionTxs = await _arweave.getLicenseAssertions(
       licenseAssertionTxIds,
       maxBlockHeight: maxBlockHeight,
-    )) {
-      // Parse each transaction individually with error handling
-      for (final tx in licenseAssertionTxsBatch) {
-        try {
-          final entity = LicenseAssertionEntity.fromTransaction(tx);
-          final revision = revisionsToSyncLicense.firstWhere(
-            (rev) => rev.licenseTxId == entity.txId,
-          );
-          final licenseType =
-              _licenseService.licenseTypeByTxId(entity.licenseDefinitionTxId);
-          final companion = entity.toCompanion(
-            fileId: revision.fileId,
-            driveId: revision.driveId,
-            licenseType: licenseType ?? LicenseType.unknown,
-          );
-          allLicenseAssertionCompanions.add(companion);
-        } catch (e) {
-          // Skip malformed license assertions and continue processing
-          skippedLicenseAssertions++;
-          logger.w(
-              'Skipping malformed license assertion transaction ${tx.id}: $e');
-        }
+    );
+    for (final tx in licenseAssertionTxs) {
+      try {
+        final entity = LicenseAssertionEntity.fromTransaction(tx);
+        final revision = revisionsToSyncLicense.firstWhere(
+          (rev) => rev.licenseTxId == entity.txId,
+        );
+        final licenseType =
+            _licenseService.licenseTypeByTxId(entity.licenseDefinitionTxId);
+        final companion = entity.toCompanion(
+          fileId: revision.fileId,
+          driveId: revision.driveId,
+          licenseType: licenseType ?? LicenseType.unknown,
+        );
+        allLicenseAssertionCompanions.add(companion);
+      } catch (e) {
+        skippedLicenseAssertions++;
+        logger.w(
+            'Skipping malformed license assertion transaction ${tx.id}: $e');
       }
-
-      logger.d(
-          'Collected batch of license assertions (${allLicenseAssertionCompanions.length} total, $skippedLicenseAssertions skipped)');
     }
+    logger.d(
+        'Collected ${allLicenseAssertionCompanions.length} license assertions ($skippedLicenseAssertions skipped)');
 
     final licenseComposedTxIds = revisionsToSyncLicense
         .where((rev) => rev.licenseTxId == rev.dataTxId)
@@ -1628,41 +1623,36 @@ class _SyncRepository implements SyncRepository {
 
     logger.d('Syncing ${licenseComposedTxIds.length} composed licenses');
 
-    // Collect all license composed companions from all batches
+    // Fetch all composed licenses concurrently (1 ID per query, N in parallel)
     final allLicenseComposedCompanions = <LicensesCompanion>[];
     var skippedLicenseComposed = 0;
 
-    await for (final licenseComposedTxsBatch
-        in _arweave.getLicenseComposed(
+    final licenseComposedTxs = await _arweave.getLicenseComposed(
       licenseComposedTxIds,
       maxBlockHeight: maxBlockHeight,
-    )) {
-      // Parse each transaction individually with error handling
-      for (final tx in licenseComposedTxsBatch) {
-        try {
-          final entity = LicenseComposedEntity.fromTransaction(tx);
-          final revision = revisionsToSyncLicense.firstWhere(
-            (rev) => rev.licenseTxId == entity.txId,
-          );
-          final licenseType =
-              _licenseService.licenseTypeByTxId(entity.licenseDefinitionTxId);
-          final companion = entity.toCompanion(
-            fileId: revision.fileId,
-            driveId: revision.driveId,
-            licenseType: licenseType ?? LicenseType.unknown,
-          );
-          allLicenseComposedCompanions.add(companion);
-        } catch (e) {
-          // Skip malformed license composed transactions and continue processing
-          skippedLicenseComposed++;
-          logger.w(
-              'Skipping malformed license composed transaction ${tx.id}: $e');
-        }
+    );
+    for (final tx in licenseComposedTxs) {
+      try {
+        final entity = LicenseComposedEntity.fromTransaction(tx);
+        final revision = revisionsToSyncLicense.firstWhere(
+          (rev) => rev.licenseTxId == entity.txId,
+        );
+        final licenseType =
+            _licenseService.licenseTypeByTxId(entity.licenseDefinitionTxId);
+        final companion = entity.toCompanion(
+          fileId: revision.fileId,
+          driveId: revision.driveId,
+          licenseType: licenseType ?? LicenseType.unknown,
+        );
+        allLicenseComposedCompanions.add(companion);
+      } catch (e) {
+        skippedLicenseComposed++;
+        logger.w(
+            'Skipping malformed license composed transaction ${tx.id}: $e');
       }
-
-      logger.d(
-          'Collected batch of composed licenses (${allLicenseComposedCompanions.length} total, $skippedLicenseComposed skipped)');
     }
+    logger.d(
+        'Collected ${allLicenseComposedCompanions.length} composed licenses ($skippedLicenseComposed skipped)');
 
     // Insert all licenses in a single transaction to minimize database exports
     final totalLicenses = allLicenseAssertionCompanions.length +
