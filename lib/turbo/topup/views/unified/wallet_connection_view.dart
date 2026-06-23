@@ -90,7 +90,7 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
                   ),
                 ),
                 // Main content
-                Expanded(
+                Flexible(
                   child: Container(
                     color: colors.themeBgCanvas,
                     child: SingleChildScrollView(
@@ -159,8 +159,6 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
 
                             // Connection status and action
                             _buildConnectionContent(context, state),
-
-                            const SizedBox(height: 48), // Space for footer
                           ],
                         ),
                       ),

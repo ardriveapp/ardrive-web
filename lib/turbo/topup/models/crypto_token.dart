@@ -335,7 +335,6 @@ class TokenGroup extends Equatable {
         const TokenGroup(
           label: 'Requires Ethereum Wallet',
           tokens: [
-            CryptoToken.arioBase,
             CryptoToken.usdcBase,
             CryptoToken.ethBase,
             CryptoToken.usdcEth,
