@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import 'package:ardrive/entities/license_assertion.dart';
+import 'package:ardrive/entities/license_composed.dart';
+import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/services.dart';
@@ -15,6 +18,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
 
   final DriveDao _driveDao;
   final LicenseService _licenseService;
+  final ArweaveService _arweave;
   final String? _ownerAddress;
 
   StreamSubscription? _entrySubscription;
@@ -24,6 +28,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
     this.maybeSelectedItem,
     required DriveDao driveDao,
     required LicenseService licenseService,
+    required ArweaveService arweave,
     bool isSharedFile = false,
     // Supplied in the case isSharedFile == true
     List<FileRevision>? maybeRevisions,
@@ -31,6 +36,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
     String? ownerAddress,
   })  : _driveDao = driveDao,
         _licenseService = licenseService,
+        _arweave = arweave,
         _ownerAddress = ownerAddress,
         super(FsEntryInfoInitial()) {
     final selectedItem = maybeSelectedItem;
@@ -77,8 +83,8 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
                 maybeRevisions!.first;
 
             LicenseState? licenseState;
-            // Prefer unconfirmed LicenseState from the DB...
             if (latestRevision.licenseTxId != null) {
+              // 1. Check local DB first (cached from previous fetch)
               final license = await _driveDao
                   .licenseByTxId(tx: latestRevision.licenseTxId!)
                   .getSingleOrNull();
@@ -87,17 +93,10 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
                 final companion = license.toCompanion(true);
                 licenseState = _licenseService.fromCompanion(companion);
               } else {
-                // ...fall back to license fetched from [SharedFileCubit] if available
-                licenseState ??= maybeLicenseState;
-                // License not yet mined?
-                licenseState ??= const LicenseState(
-                  meta: LicenseMeta(
-                    licenseType: LicenseType.unknown,
-                    licenseDefinitionTxId: '',
-                    name: 'Pending',
-                    shortName: '...',
-                  ),
-                );
+                // 2. Fall back to pre-supplied state (shared file page)
+                // 3. Or fetch on-demand from network and cache to DB
+                licenseState = maybeLicenseState ??
+                    await _fetchAndCacheLicense(latestRevision);
               }
             }
 
@@ -185,6 +184,51 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
     super.onError(error, stackTrace);
 
     logger.e('Failed to load entity info', error, stackTrace);
+  }
+
+  /// Fetches a license from the network and caches it to the local DB.
+  /// Returns the LicenseState, or null if the fetch fails.
+  Future<LicenseState?> _fetchAndCacheLicense(FileRevision revision) async {
+    try {
+      final isComposed = revision.licenseTxId == revision.dataTxId;
+
+      if (isComposed) {
+        final txs = await _arweave
+            .getLicenseComposed([revision.licenseTxId!])
+            .expand((e) => e)
+            .toList();
+        if (txs.isEmpty) return null;
+        final entity = LicenseComposedEntity.fromTransaction(txs.single);
+        final licenseType =
+            _licenseService.licenseTypeByTxId(entity.licenseDefinitionTxId);
+        final companion = entity.toCompanion(
+          fileId: revision.fileId,
+          driveId: revision.driveId,
+          licenseType: licenseType ?? LicenseType.unknown,
+        );
+        await _driveDao.insertLicense(companion);
+        return _licenseService.fromComposedEntity(entity);
+      } else {
+        final txs = await _arweave
+            .getLicenseAssertions([revision.licenseTxId!])
+            .expand((e) => e)
+            .toList();
+        if (txs.isEmpty) return null;
+        final entity = LicenseAssertionEntity.fromTransaction(txs.single);
+        final licenseType =
+            _licenseService.licenseTypeByTxId(entity.licenseDefinitionTxId);
+        final companion = entity.toCompanion(
+          fileId: revision.fileId,
+          driveId: revision.driveId,
+          licenseType: licenseType ?? LicenseType.unknown,
+        );
+        await _driveDao.insertLicense(companion);
+        return _licenseService.fromAssertionEntity(entity);
+      }
+    } catch (e) {
+      logger.w('Failed to fetch license ${revision.licenseTxId} on demand: $e');
+      return null;
+    }
   }
 
   @override

@@ -207,12 +207,14 @@ Widget _buildDataListContent(
               lastUpdated: row.lastUpdated,
               dateCreated: row.dateCreated,
               dataTableItem: row,
-              license: row.licenseType == null
-                  ? ''
-                  : context
-                      .read<LicenseService>()
-                      .licenseMetaByType(row.licenseType!)
-                      .shortName,
+              license: row is FileDataTableItem && row.licenseTxId != null
+                  ? (row.licenseType != null
+                      ? context
+                          .read<LicenseService>()
+                          .licenseMetaByType(row.licenseType!)
+                          .shortName
+                      : 'Licensed')
+                  : '',
               isHidden: row.isHidden,
               onPressed: () {
                 final cubit = context.read<DriveDetailCubit>();
