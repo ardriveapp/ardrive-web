@@ -8,8 +8,6 @@ part 'feedback_survey_state.dart';
 class FeedbackSurveyCubit extends Cubit<FeedbackSurveyState> {
   static const dontRemindMeAgainKey = 'dont_remind_me_again';
   static KeyValueStore? _maybeStore;
-  bool _hasAlreadyBeenOpened = false;
-
   FeedbackSurveyCubit(
     super.initialState, {
     /// takes a KeyValueStore for testing purposes
@@ -25,12 +23,8 @@ class FeedbackSurveyCubit extends Cubit<FeedbackSurveyState> {
   }
 
   Future<void> openRemindMe() async {
-    final dontRemindMeAgain =
-        (await _store).getBool(dontRemindMeAgainKey) == true;
-    if (!(_hasAlreadyBeenOpened || dontRemindMeAgain)) {
-      emit(FeedbackSurveyRemindMe(isOpen: true));
-      _hasAlreadyBeenOpened = true;
-    }
+    // Disabled — feedback survey is not monitored
+    return;
   }
 
   void closeRemindMe() {
@@ -51,7 +45,5 @@ class FeedbackSurveyCubit extends Cubit<FeedbackSurveyState> {
     emit(FeedbackSurveyDontRemindMe(isOpen: false));
   }
 
-  void reset() {
-    _hasAlreadyBeenOpened = false;
-  }
+  void reset() {}
 }

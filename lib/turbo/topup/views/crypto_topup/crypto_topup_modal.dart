@@ -31,9 +31,9 @@ class CryptoTopupModal extends StatelessWidget {
         maxWidth: 480,
         maxHeight: 680,
       ),
+      contentPadding: EdgeInsets.zero,
       content: SizedBox(
         width: 480,
-        height: 600,
         child: BlocConsumer<CryptoTopupBloc, CryptoTopupState>(
           listener: _handleStateChanges,
           builder: (context, state) {
@@ -300,37 +300,29 @@ class _SessionExpiredView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
-        // Icon and message - centered
-        Expanded(
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.timer_off_outlined,
-                  size: 64,
-                  color: colors.themeWarningFg,
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Your session has expired due to inactivity.',
-                  style: typography.paragraphLarge(
-                    color: colors.themeFgDefault,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Please start a new payment to continue.',
-                  style: typography.paragraphNormal(
-                    color: colors.themeFgMuted,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
+        // Icon and message
+        Icon(
+          Icons.timer_off_outlined,
+          size: 64,
+          color: colors.themeWarningFg,
         ),
+        const SizedBox(height: 24),
+        Text(
+          'Your session has expired due to inactivity.',
+          style: typography.paragraphLarge(
+            color: colors.themeFgDefault,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Please start a new payment to continue.',
+          style: typography.paragraphNormal(
+            color: colors.themeFgMuted,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 24),
         // Close button
         SizedBox(
           width: double.infinity,
@@ -381,12 +373,12 @@ class _ConcurrentSessionView extends StatelessWidget {
               ),
             ),
             // Content
-            Expanded(
-              child: Container(
-                color: colors.themeBgCanvas,
-                padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            Container(
+              color: colors.themeBgCanvas,
+              padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                   children: [
                     // Title
                     Text(
@@ -398,37 +390,29 @@ class _ConcurrentSessionView extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     // Icon and message
-                    Expanded(
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.tab_outlined,
-                              size: 64,
-                              color: colors.themeWarningFg,
-                            ),
-                            const SizedBox(height: 24),
-                            Text(
-                              'Another payment session is active',
-                              style: typography.paragraphLarge(
-                                color: colors.themeFgDefault,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'A crypto payment is in progress in another tab. '
-                              'You can take over this session or cancel.',
-                              style: typography.paragraphNormal(
-                                color: colors.themeFgMuted,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
+                    Icon(
+                      Icons.tab_outlined,
+                      size: 64,
+                      color: colors.themeWarningFg,
                     ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Another payment session is active',
+                      style: typography.paragraphLarge(
+                        color: colors.themeFgDefault,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'A crypto payment is in progress in another tab. '
+                      'You can take over this session or cancel.',
+                      style: typography.paragraphNormal(
+                        color: colors.themeFgMuted,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
                     // Action buttons
                     Row(
                       children: [
@@ -457,7 +441,6 @@ class _ConcurrentSessionView extends StatelessWidget {
                   ],
                 ),
               ),
-            ),
           ],
         ),
         // Close button in top right

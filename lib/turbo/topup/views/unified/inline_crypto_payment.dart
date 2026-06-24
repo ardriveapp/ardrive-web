@@ -228,8 +228,6 @@ class _TokenSelector extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
             ),
             itemBuilder: (context) => [
-              // ARIO options (no fees)
-              _buildTokenMenuItem(context, CryptoToken.arioBase),
               // Base L2 tokens (fast, low fees)
               _buildTokenMenuItem(context, CryptoToken.ethBase),
               _buildTokenMenuItem(context, CryptoToken.usdcBase),

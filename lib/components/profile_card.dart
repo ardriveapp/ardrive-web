@@ -3,6 +3,7 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/copy_button.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/components/graphql_endpoint_dialog.dart';
+import 'package:ardrive/components/turbo_url_dialog.dart';
 import 'package:ardrive/components/icon_theme_switcher.dart';
 import 'package:ardrive/components/wallet_gradient_avatar.dart';
 import 'package:ardrive/components/truncated_address.dart';
@@ -30,6 +31,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_http/ardrive_http.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter/material.dart';
@@ -250,6 +252,16 @@ class _ProfileCardState extends State<ProfileCard> {
                           _showProfileCard = false;
                         });
                         _showGQLServerDialog(context);
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    _ProfileMenuAccordionItem(
+                      text: 'Switch Turbo Services',
+                      onTap: () {
+                        setState(() {
+                          _showProfileCard = false;
+                        });
+                        _showTurboUrlDialog(context);
                       },
                     ),
                     const SizedBox(height: 8),
@@ -785,6 +797,27 @@ class _ProfileCardState extends State<ProfileCard> {
           context
               .read<ArweaveService>()
               .updateGraphQLEndpoint(normalizedEndpoint);
+        },
+      ),
+    );
+  }
+
+  Future<void> _showTurboUrlDialog(BuildContext context) async {
+    final configService = context.read<ConfigService>();
+    final config = configService.config;
+    await showAnimatedDialogWithBuilder(
+      context,
+      builder: (context) => TurboUrlDialog(
+        initialUploadUrl: config.defaultTurboUploadUrl ?? '',
+        initialPaymentUrl: config.defaultTurboPaymentUrl ?? '',
+        onSave: (uploadUrl, paymentUrl) async {
+          await configService.updateAppConfig(
+            config.copyWith(
+              defaultTurboUploadUrl: uploadUrl,
+              defaultTurboPaymentUrl: paymentUrl,
+            ),
+          );
+          triggerHTMLPageReload();
         },
       ),
     );

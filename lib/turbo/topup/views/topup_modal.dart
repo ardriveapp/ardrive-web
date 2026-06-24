@@ -107,6 +107,8 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
             final networkConfig = CryptoNetworkConfig.fromEnvironment(
               environment,
               arweaveGatewayUrl: gatewayUrl,
+              turboUploadUrl: configService.config.defaultTurboUploadUrl,
+              turboPaymentUrl: configService.config.defaultTurboPaymentUrl,
             );
 
             return UnifiedTopupBloc(

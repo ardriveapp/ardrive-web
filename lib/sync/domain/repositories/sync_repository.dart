@@ -8,8 +8,6 @@ import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/drive_entity.dart';
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/entities/folder_entity.dart';
-import 'package:ardrive/entities/license_assertion.dart';
-import 'package:ardrive/entities/license_composed.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/models/drive.dart';
@@ -17,11 +15,8 @@ import 'package:ardrive/models/drive_revision.dart';
 import 'package:ardrive/models/enums.dart';
 import 'package:ardrive/models/file_revision.dart';
 import 'package:ardrive/models/folder_revision.dart';
-import 'package:ardrive/models/license.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/config/config.dart';
-import 'package:ardrive/services/license/license_service.dart';
-import 'package:ardrive/services/license/license_state.dart';
 import 'package:ardrive/sync/constants.dart';
 import 'package:ardrive/sync/data/snapshot_validation_service.dart';
 import 'package:ardrive/sync/domain/ghost_folder.dart';
@@ -107,7 +102,6 @@ abstract class SyncRepository {
     required ArweaveService arweave,
     required DriveDao driveDao,
     required ConfigService configService,
-    required LicenseService licenseService,
     required BatchProcessor batchProcessor,
     required SnapshotValidationService snapshotValidationService,
     required ARNSRepository arnsRepository,
@@ -117,7 +111,6 @@ abstract class SyncRepository {
       arweave: arweave,
       driveDao: driveDao,
       configService: configService,
-      licenseService: licenseService,
       batchProcessor: batchProcessor,
       snapshotValidationService: snapshotValidationService,
       arnsRepository: arnsRepository,
@@ -130,7 +123,6 @@ class _SyncRepository implements SyncRepository {
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final ConfigService _configService;
-  final LicenseService _licenseService;
   final BatchProcessor _batchProcessor;
   final SnapshotValidationService _snapshotValidationService;
   final ARNSRepository _arnsRepository;
@@ -150,7 +142,6 @@ class _SyncRepository implements SyncRepository {
     required ArweaveService arweave,
     required DriveDao driveDao,
     required ConfigService configService,
-    required LicenseService licenseService,
     required BatchProcessor batchProcessor,
     required SnapshotValidationService snapshotValidationService,
     required ARNSRepository arnsRepository,
@@ -158,7 +149,6 @@ class _SyncRepository implements SyncRepository {
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _configService = configService,
-        _licenseService = licenseService,
         _snapshotValidationService = snapshotValidationService,
         _batchProcessor = batchProcessor,
         _userPreferencesRepository = userPreferencesRepository,
@@ -354,38 +344,9 @@ class _SyncRepository implements SyncRepository {
 
         logger.i('Ghosts created...');
 
-        logger.i('Syncing licenses...');
-
-        // Check for cancellation before license sync
-        token.checkCancellation();
-
-        // Update progress to 94% for license sync
-        syncProgress = syncProgress.copyWith(
-          progress: 0.94,
-          statusMessage: 'Syncing licenses...',
-        );
-        syncProgressController.add(syncProgress);
-
-        try {
-          final licenseTxIds = <String>{};
-          final revisionsToSyncLicense = (await _driveDao
-              .allFileRevisionsWithLicenseReferencedButNotSynced()
-              .get())
-            ..retainWhere((rev) => licenseTxIds.add(rev.licenseTxId!));
-          logger.d('Found ${revisionsToSyncLicense.length} licenses to sync');
-
-          await _updateLicenses(
-            revisionsToSyncLicense: revisionsToSyncLicense,
-          );
-        } catch (e) {
-          // Re-throw cancellation exceptions
-          if (e is SyncCancelledException) {
-            rethrow;
-          }
-          logger.e('Error syncing licenses. Proceeding.', e);
-        }
-
-        logger.i('Licenses synced');
+        // License sync removed — licenses are now fetched on-demand when the
+        // user views file details. This avoids thousands of GraphQL queries
+        // during sync for display-only data.
 
         logger.i('Updating transaction statuses...');
 
@@ -658,38 +619,7 @@ class _SyncRepository implements SyncRepository {
         // Check for cancellation before license sync
         token.checkCancellation();
 
-        // Update progress to 94% for license sync
-        syncProgress = syncProgress.copyWith(
-          progress: 0.94,
-          statusMessage: 'Syncing licenses...',
-        );
-        syncProgressController.add(syncProgress);
-
-        logger.i('Syncing licenses for single drive...');
-
-        try {
-          final licenseTxIds = <String>{};
-          // Filter to only revisions for this drive
-          final revisionsToSyncLicense = (await _driveDao
-              .allFileRevisionsWithLicenseReferencedButNotSynced()
-              .get())
-            ..retainWhere((rev) =>
-                rev.driveId == driveId && licenseTxIds.add(rev.licenseTxId!));
-
-          logger.d(
-              'Found ${revisionsToSyncLicense.length} licenses to sync for drive $driveId');
-
-          await _updateLicenses(
-            revisionsToSyncLicense: revisionsToSyncLicense,
-          );
-        } catch (e) {
-          if (e is SyncCancelledException) {
-            rethrow;
-          }
-          logger.e('Error syncing licenses for single drive. Proceeding.', e);
-        }
-
-        logger.i('Licenses synced for single drive');
+        // License sync removed — fetched on-demand in file details panel.
 
         // Check for cancellation before transaction status updates
         token.checkCancellation();
@@ -1525,112 +1455,6 @@ class _SyncRepository implements SyncRepository {
       ownerAddress: ownerAddress,
     )) {
       // Just consume the stream, progress is handled in main loop
-    }
-  }
-
-  Future<void> _updateLicenses({
-    required List<FileRevision> revisionsToSyncLicense,
-  }) async {
-    final licenseAssertionTxIds = revisionsToSyncLicense
-        .where((rev) => rev.licenseTxId != rev.dataTxId)
-        .map((e) => e.licenseTxId!)
-        .toList();
-
-    logger.d('Syncing ${licenseAssertionTxIds.length} license assertions');
-
-    // Collect all license assertion companions from all batches
-    final allLicenseAssertionCompanions = <LicensesCompanion>[];
-    var skippedLicenseAssertions = 0;
-
-    await for (final licenseAssertionTxsBatch
-        in _arweave.getLicenseAssertions(licenseAssertionTxIds)) {
-      // Parse each transaction individually with error handling
-      for (final tx in licenseAssertionTxsBatch) {
-        try {
-          final entity = LicenseAssertionEntity.fromTransaction(tx);
-          final revision = revisionsToSyncLicense.firstWhere(
-            (rev) => rev.licenseTxId == entity.txId,
-          );
-          final licenseType =
-              _licenseService.licenseTypeByTxId(entity.licenseDefinitionTxId);
-          final companion = entity.toCompanion(
-            fileId: revision.fileId,
-            driveId: revision.driveId,
-            licenseType: licenseType ?? LicenseType.unknown,
-          );
-          allLicenseAssertionCompanions.add(companion);
-        } catch (e) {
-          // Skip malformed license assertions and continue processing
-          skippedLicenseAssertions++;
-          logger.w(
-              'Skipping malformed license assertion transaction ${tx.id}: $e');
-        }
-      }
-
-      logger.d(
-          'Collected batch of license assertions (${allLicenseAssertionCompanions.length} total, $skippedLicenseAssertions skipped)');
-    }
-
-    final licenseComposedTxIds = revisionsToSyncLicense
-        .where((rev) => rev.licenseTxId == rev.dataTxId)
-        .map((e) => e.licenseTxId!)
-        .toList();
-
-    logger.d('Syncing ${licenseComposedTxIds.length} composed licenses');
-
-    // Collect all license composed companions from all batches
-    final allLicenseComposedCompanions = <LicensesCompanion>[];
-    var skippedLicenseComposed = 0;
-
-    await for (final licenseComposedTxsBatch
-        in _arweave.getLicenseComposed(licenseComposedTxIds)) {
-      // Parse each transaction individually with error handling
-      for (final tx in licenseComposedTxsBatch) {
-        try {
-          final entity = LicenseComposedEntity.fromTransaction(tx);
-          final revision = revisionsToSyncLicense.firstWhere(
-            (rev) => rev.licenseTxId == entity.txId,
-          );
-          final licenseType =
-              _licenseService.licenseTypeByTxId(entity.licenseDefinitionTxId);
-          final companion = entity.toCompanion(
-            fileId: revision.fileId,
-            driveId: revision.driveId,
-            licenseType: licenseType ?? LicenseType.unknown,
-          );
-          allLicenseComposedCompanions.add(companion);
-        } catch (e) {
-          // Skip malformed license composed transactions and continue processing
-          skippedLicenseComposed++;
-          logger.w(
-              'Skipping malformed license composed transaction ${tx.id}: $e');
-        }
-      }
-
-      logger.d(
-          'Collected batch of composed licenses (${allLicenseComposedCompanions.length} total, $skippedLicenseComposed skipped)');
-    }
-
-    // Insert all licenses in a single transaction to minimize database exports
-    final totalLicenses = allLicenseAssertionCompanions.length +
-        allLicenseComposedCompanions.length;
-    final totalSkipped = skippedLicenseAssertions + skippedLicenseComposed;
-
-    if (totalLicenses > 0) {
-      logger.d('Inserting all $totalLicenses licenses in a single transaction');
-      await _driveDao.transaction(() async {
-        for (final licenseCompanion in allLicenseAssertionCompanions) {
-          await _driveDao.insertLicense(licenseCompanion);
-        }
-        for (final licenseCompanion in allLicenseComposedCompanions) {
-          await _driveDao.insertLicense(licenseCompanion);
-        }
-      });
-      logger.i(
-          'Successfully inserted $totalLicenses licenses ($totalSkipped skipped due to malformed data)');
-    } else if (totalSkipped > 0) {
-      logger.w(
-          'No licenses inserted. All $totalSkipped license transactions were malformed and skipped.');
     }
   }
 

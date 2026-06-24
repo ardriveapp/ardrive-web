@@ -13,6 +13,7 @@ class SnapshotValidationService {
   static const _headTimeout = Duration(seconds: 10);
   static const _retryDelay = Duration(milliseconds: 500);
   static const _garListTimeout = Duration(seconds: 5);
+  static const _maxConcurrentValidations = 3;
 
   SnapshotValidationService({
     required ConfigService configService,
@@ -26,26 +27,32 @@ class SnapshotValidationService {
     final List<SnapshotItem> snapshotsVerified = [];
     final primaryUrl = _configService.config.arweaveGatewayForDataRequest.url;
 
-    final futures = snapshotItems.map((snapshotItem) async {
-      try {
-        final isValid = await _validateSnapshot(snapshotItem.txId, primaryUrl);
+    // Limit concurrent HEAD requests to avoid gateway rate-limiting (402)
+    final remaining = List<SnapshotItem>.from(snapshotItems);
+    while (remaining.isNotEmpty) {
+      final batch = remaining.take(_maxConcurrentValidations).toList();
+      remaining.removeRange(0, batch.length);
 
-        if (isValid) {
-          logger.d('Snapshot ${snapshotItem.txId} is valid');
-          snapshotsVerified.add(snapshotItem);
-        } else {
-          logger.w('Snapshot ${snapshotItem.txId} failed validation');
+      await Future.wait(batch.map((snapshotItem) async {
+        try {
+          final isValid =
+              await _validateSnapshot(snapshotItem.txId, primaryUrl);
+
+          if (isValid) {
+            logger.d('Snapshot ${snapshotItem.txId} is valid');
+            snapshotsVerified.add(snapshotItem);
+          } else {
+            logger.w('Snapshot ${snapshotItem.txId} failed validation');
+          }
+        } catch (e, stackTrace) {
+          logger.e(
+            'Error while validating snapshot ${snapshotItem.txId}',
+            e,
+            stackTrace,
+          );
         }
-      } catch (e, stackTrace) {
-        logger.e(
-          'Error while validating snapshot ${snapshotItem.txId}',
-          e,
-          stackTrace,
-        );
-      }
-    });
-
-    await Future.wait(futures);
+      }));
+    }
 
     return snapshotsVerified;
   }
@@ -63,7 +70,10 @@ class SnapshotValidationService {
             .head(Uri.parse('$primaryUrl/$txId'))
             .timeout(_headTimeout);
 
-        if (response.statusCode == 200) return true;
+        // 200 = available, 302 = gateway knows about it (redirecting to sandbox URL)
+        if (response.statusCode == 200 || response.statusCode == 302) {
+          return true;
+        }
 
         if (_isNonRetryable(response.statusCode)) {
           logger.w(
@@ -107,7 +117,7 @@ class SnapshotValidationService {
           .head(Uri.parse('https://${fallback.settings.fqdn}/$txId'))
           .timeout(_headTimeout);
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 302) {
         logger.i(
           'Snapshot $txId validated via fallback '
           'gateway ${fallback.settings.fqdn}',
@@ -128,5 +138,8 @@ class SnapshotValidationService {
 
   /// Status codes that should not be retried or fallback-rotated.
   bool _isNonRetryable(int statusCode) =>
-      statusCode == 400 || statusCode == 401 || statusCode == 403;
+      statusCode == 400 ||
+      statusCode == 401 ||
+      statusCode == 402 ||
+      statusCode == 403;
 }

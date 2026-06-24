@@ -105,6 +105,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
             ownerAddress: widget.ownerAddress,
             driveDao: context.read<DriveDao>(),
             licenseService: context.read<LicenseService>(),
+            arweave: context.read<ArweaveService>(),
           ),
         ),
         BlocProvider<FsEntryPreviewCubit>(

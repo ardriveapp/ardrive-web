@@ -262,7 +262,10 @@ Future<Object> createAuthenticatedTurboWithWalletAdapter({
 /// Create an authenticated Turbo client with a Solana wallet adapter
 ///
 /// Use this for Solana (SOL) payments.
-/// The SDK expects the raw window.solana adapter object.
+/// The raw window.solana/solflare objects are sealed by browser extensions,
+/// so the SDK cannot reassign properties like `signMessage` on them.
+/// We wrap the provider in a mutable plain object that delegates calls
+/// to the real provider.
 Future<Object> createAuthenticatedTurboWithSolanaAdapter({
   required Object solanaWalletAdapter,
   String? gatewayUrl,
@@ -278,8 +281,16 @@ Future<Object> createAuthenticatedTurboWithSolanaAdapter({
   final uploadServiceConfig =
       uploadServiceUrl != null ? ServiceConfigJS(url: uploadServiceUrl) : null;
 
+  // Wrap the sealed provider in a mutable plain object via the JS bridge.
+  // Browser extensions seal/freeze window.solana/solflare and may define
+  // properties as non-writable, so the SDK cannot reassign signMessage.
+  // The bridge creates a plain {} wrapper with .bind(provider) delegates.
+  final bridge = getProperty(globalThis, 'CryptoWalletBridge');
+  final mutableAdapter =
+      callMethod(bridge, 'wrapSolanaProvider', [solanaWalletAdapter]);
+
   final config = TurboAuthConfigJS(
-    walletAdapter: solanaWalletAdapter,
+    walletAdapter: mutableAdapter,
     gatewayUrl: gatewayUrl,
     paymentServiceConfig: paymentServiceConfig,
     uploadServiceConfig: uploadServiceConfig,

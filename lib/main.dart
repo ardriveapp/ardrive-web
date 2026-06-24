@@ -489,7 +489,6 @@ class AppState extends State<App> {
             arweave: arweave,
             configService: configService,
             driveDao: _.read<DriveDao>(),
-            licenseService: _.read<LicenseService>(),
             batchProcessor: BatchProcessor(),
             snapshotValidationService: SnapshotValidationService(
               configService: configService,

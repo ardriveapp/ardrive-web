@@ -382,6 +382,37 @@
   }
 
   /**
+   * Wrap a Solana provider in a mutable plain object.
+   * Browser extensions seal/freeze window.solana and window.solflare,
+   * and may define properties as non-writable. The Turbo SDK needs to
+   * reassign signMessage on the adapter, which fails on sealed objects.
+   * This creates a plain mutable wrapper that delegates to the real provider.
+   * @param {Object} provider - The raw Solana provider (window.solana etc.)
+   * @returns {Object} A mutable wrapper
+   */
+  function wrapSolanaProvider(provider) {
+    if (!provider) return null;
+    return {
+      publicKey: provider.publicKey,
+      signMessage: provider.signMessage.bind(provider),
+      signTransaction: provider.signTransaction.bind(provider),
+      signAllTransactions: provider.signAllTransactions
+        ? provider.signAllTransactions.bind(provider)
+        : undefined,
+      signAndSendTransaction: provider.signAndSendTransaction
+        ? provider.signAndSendTransaction.bind(provider)
+        : undefined,
+      connect: provider.connect ? provider.connect.bind(provider) : undefined,
+      disconnect: provider.disconnect
+        ? provider.disconnect.bind(provider)
+        : undefined,
+      connected: provider.connected,
+      isPhantom: provider.isPhantom,
+      isSolflare: provider.isSolflare,
+    };
+  }
+
+  /**
    * Get Solana provider
    * @param {string} preferred - 'phantom' or 'solflare'
    * @returns {Object|null} The provider or null
@@ -427,7 +458,8 @@
       // others set it on the provider object directly
       const pk = response?.publicKey || provider.publicKey;
       if (!pk) {
-        throw new Error('NO_PUBLIC_KEY');
+        // Solflare resolves with no publicKey when user closes the popup
+        throw new Error('USER_REJECTED');
       }
       const publicKey = pk.toString();
 
@@ -436,7 +468,11 @@
         providerType: provider.isPhantom ? 'phantom' : 'solflare',
       };
     } catch (error) {
-      if (error.code === 4001 || error.message?.includes('rejected')) {
+      if (error.code === 4001 ||
+          error.message?.includes('rejected') ||
+          error.message?.includes('cancelled') ||
+          error.message?.includes('closed') ||
+          error.message === 'USER_REJECTED') {
         throw new Error('USER_REJECTED');
       }
       throw error;
@@ -570,6 +606,7 @@
     // Solana
     detectSolanaProviders,
     getSolanaProvider,
+    wrapSolanaProvider,
     connectSolanaWallet,
     disconnectSolanaWallet,
     isSolanaConnected,

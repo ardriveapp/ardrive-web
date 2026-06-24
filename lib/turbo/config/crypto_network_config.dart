@@ -12,10 +12,20 @@ class CryptoNetworkConfig {
   /// Arweave gateway URL from config (e.g. [ConfigService.config.arweaveGatewayUrl]).
   final String _arweaveGatewayUrl;
 
+  /// Turbo upload URL override from config, if provided.
+  final String? _turboUploadUrlOverride;
+
+  /// Turbo payment URL override from config, if provided.
+  final String? _turboPaymentUrlOverride;
+
   CryptoNetworkConfig({
     required this.isTestnet,
     required String arweaveGatewayUrl,
-  }) : _arweaveGatewayUrl = arweaveGatewayUrl;
+    String? turboUploadUrl,
+    String? turboPaymentUrl,
+  })  : _arweaveGatewayUrl = arweaveGatewayUrl,
+        _turboUploadUrlOverride = turboUploadUrl,
+        _turboPaymentUrlOverride = turboPaymentUrl;
 
   /// Factory for creating config based on environment
   ///
@@ -27,11 +37,15 @@ class CryptoNetworkConfig {
   factory CryptoNetworkConfig.fromEnvironment(
     String environment, {
     required String arweaveGatewayUrl,
+    String? turboUploadUrl,
+    String? turboPaymentUrl,
   }) {
     final isTestnet = environment == 'development';
     return CryptoNetworkConfig(
       isTestnet: isTestnet,
       arweaveGatewayUrl: arweaveGatewayUrl,
+      turboUploadUrl: turboUploadUrl,
+      turboPaymentUrl: turboPaymentUrl,
     );
   }
 
@@ -136,13 +150,15 @@ class CryptoNetworkConfig {
   // Turbo Service URLs
   // ============================================
 
-  /// Turbo payment service URL
+  /// Turbo payment service URL (uses config override if set)
   String get turboPaymentUrl =>
-      isTestnet ? 'https://payment.ardrive.dev' : 'https://payment.ardrive.io';
+      _turboPaymentUrlOverride ??
+      (isTestnet ? 'https://payment.ardrive.dev' : 'https://payment.ardrive.io');
 
-  /// Turbo upload service URL
+  /// Turbo upload service URL (uses config override if set)
   String get turboUploadUrl =>
-      isTestnet ? 'https://upload.ardrive.dev' : 'https://upload.ardrive.io';
+      _turboUploadUrlOverride ??
+      (isTestnet ? 'https://upload.ardrive.dev' : 'https://upload.ardrive.io');
 
   // ============================================
   // Helper Methods
