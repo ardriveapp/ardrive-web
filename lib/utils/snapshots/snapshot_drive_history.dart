@@ -91,30 +91,9 @@ class SnapshotDriveHistory implements SegmentedGQLData {
         _subRangeToSnapshotItemMapping[subRangeForIndex]!;
 
     // reads the next stream of each item in the list and yields each node in order
-    for (var i = 0; i < itemsInRange.length; i++) {
-      final item = itemsInRange[i];
-
-      // Prefetch the NEXT snapshot body while processing the current one.
-      // This overlaps download with parsing/DB-writes. Only 1 ahead to
-      // avoid gateway 429s.
-      if (i + 1 < itemsInRange.length) {
-        final next = itemsInRange[i + 1];
-        if (next is SnapshotItemOnChain) {
-          next.prefetch();
-        }
-      } else if (currentIndex + 1 < subRanges.rangeSegments.length) {
-        // Prefetch the first item of the NEXT sub-range
-        final nextRange = subRanges.rangeSegments[currentIndex + 1];
-        final nextItems = _subRangeToSnapshotItemMapping[nextRange];
-        if (nextItems != null && nextItems.isNotEmpty) {
-          final next = nextItems.first;
-          if (next is SnapshotItemOnChain) {
-            next.prefetch();
-          }
-        }
-      }
-
-      yield* item.getNextStream();
+    for (SnapshotItem item in itemsInRange) {
+      final stream = item.getNextStream();
+      yield* stream;
     }
   }
 }
