@@ -362,11 +362,19 @@ class UploadPaymentEvaluator {
       totalSize: dataItemSize,
     );
 
-    /// Calculate the upload with AR is not optional
-    final arCostEstimate =
-        await _uploadCostEstimateCalculatorForAR.calculateCost(
-      totalSize: dataItemSize,
-    );
+    /// Calculate the upload cost with AR (D2N). If the gateway is
+    /// unavailable, fall back to a zero estimate so the modal can still
+    /// show Turbo as an option instead of crashing entirely.
+    UploadCostEstimate arCostEstimate;
+    try {
+      arCostEstimate =
+          await _uploadCostEstimateCalculatorForAR.calculateCost(
+        totalSize: dataItemSize,
+      );
+    } catch (e) {
+      logger.e('Failed to get AR cost estimate, falling back to zero', e);
+      arCostEstimate = UploadCostEstimate.zero();
+    }
 
     final allowedDataItemSizeForTurbo = _appConfig.allowedDataItemSizeForTurbo;
 
@@ -433,11 +441,19 @@ class UploadPaymentEvaluator {
       }
     }
 
-    /// Calculate the upload with AR is not optional
-    final arCostEstimate =
-        await _uploadCostEstimateCalculatorForAR.calculateCost(
-      totalSize: arBundleSizes + arFileSizes,
-    );
+    /// Calculate the upload cost with AR (D2N). If the gateway is
+    /// unavailable, fall back to a zero estimate so the modal can still
+    /// show Turbo as an option instead of crashing entirely.
+    UploadCostEstimate arCostEstimate;
+    try {
+      arCostEstimate =
+          await _uploadCostEstimateCalculatorForAR.calculateCost(
+        totalSize: arBundleSizes + arFileSizes,
+      );
+    } catch (e) {
+      logger.e('Failed to get AR cost estimate, falling back to zero', e);
+      arCostEstimate = UploadCostEstimate.zero();
+    }
 
     bool isFreeUploadPossibleUsingTurbo = false;
 

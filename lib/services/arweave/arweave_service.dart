@@ -154,9 +154,24 @@ class ArweaveService {
   }
 
   Future<BigInt> getPrice({required int byteSize}) async {
-    return client.api
-        .get('price/$byteSize')
-        .then((res) => BigInt.parse(res.body));
+    const maxRetries = 3;
+    for (var attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        final res = await client.api.get('price/$byteSize');
+        if (res.statusCode == 200) {
+          return BigInt.parse(res.body);
+        }
+        logger.w(
+          'getPrice attempt ${attempt + 1} returned ${res.statusCode}',
+        );
+      } catch (e) {
+        logger.w('getPrice attempt ${attempt + 1} failed: $e');
+      }
+      if (attempt < maxRetries - 1) {
+        await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
+      }
+    }
+    throw Exception('Failed to get price after $maxRetries attempts');
   }
 
   Future<int> getMempoolSizeFromArweave() async {
