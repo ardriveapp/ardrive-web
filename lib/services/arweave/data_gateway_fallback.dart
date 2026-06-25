@@ -16,9 +16,10 @@ class DataGatewayFallback {
   final Map<String, Arweave> _clientCache = {};
 
   static const _lastResortGateway = 'https://arweave.net';
-  static const _maxGarFallbacks = 3;
-  static const _retryPerGateway = 2;
+  static const _maxGarFallbacks = 2;
+  static const _retryPerGateway = 1;
   static const _garListTimeout = Duration(seconds: 5);
+  static const _requestTimeout = Duration(seconds: 5);
 
   List<Gateway>? _cachedGateways;
 
@@ -120,7 +121,9 @@ class DataGatewayFallback {
 
     for (var attempt = 0; attempt < _retryPerGateway; attempt++) {
       try {
-        final response = await client.api.getSandboxedTx(txId);
+        final response = await client.api
+            .getSandboxedTx(txId)
+            .timeout(_requestTimeout);
 
         if (response.statusCode >= 200 && response.statusCode <= 208) {
           return response;
