@@ -1825,17 +1825,22 @@ Future<Map<String, FileEntriesCompanion>>
   required List<FileRevisionsCompanion> revisionsByFileId,
   required Map<String, FileRevision> oldestRevisionsCache,
 }) async {
-  final updatedFilesById = {
-    for (final revision in revisionsByFileId)
-      revision.fileId.value: revision.toEntryCompanion(),
-  };
+  // Build map of entry companions AND keep revision dateCreated for fallback
+  final revisionDateByFileId = <String, DateTime>{};
+  final updatedFilesById = <String, FileEntriesCompanion>{};
+  for (final revision in revisionsByFileId) {
+    final fileId = revision.fileId.value;
+    updatedFilesById[fileId] = revision.toEntryCompanion();
+    revisionDateByFileId[fileId] = revision.dateCreated.value;
+  }
 
   for (final fileId in updatedFilesById.keys) {
-    // Use pre-loaded cache instead of per-entity DB query
+    // Use pre-loaded cache instead of per-entity DB query.
+    // Fall back to the revision's own dateCreated (not the entry companion's,
+    // which may be Value.absent due to schema defaults).
     final oldestRevision = oldestRevisionsCache[fileId];
-
-    final dateCreated = oldestRevision?.dateCreated ??
-        updatedFilesById[fileId]!.dateCreated.value;
+    final dateCreated =
+        oldestRevision?.dateCreated ?? revisionDateByFileId[fileId]!;
 
     updatedFilesById[fileId] = updatedFilesById[fileId]!.copyWith(
       dateCreated: Value<DateTime>(dateCreated),
@@ -1853,17 +1858,22 @@ Future<Map<String, FolderEntriesCompanion>>
   required List<FolderRevisionsCompanion> revisionsByFolderId,
   required Map<String, FolderRevision> oldestRevisionsCache,
 }) async {
-  final updatedFoldersById = {
-    for (final revision in revisionsByFolderId)
-      revision.folderId.value: revision.toEntryCompanion(),
-  };
+  // Build map of entry companions AND keep revision dateCreated for fallback
+  final revisionDateByFolderId = <String, DateTime>{};
+  final updatedFoldersById = <String, FolderEntriesCompanion>{};
+  for (final revision in revisionsByFolderId) {
+    final folderId = revision.folderId.value;
+    updatedFoldersById[folderId] = revision.toEntryCompanion();
+    revisionDateByFolderId[folderId] = revision.dateCreated.value;
+  }
 
   for (final folderId in updatedFoldersById.keys) {
-    // Use pre-loaded cache instead of per-entity DB query
+    // Use pre-loaded cache instead of per-entity DB query.
+    // Fall back to the revision's own dateCreated (not the entry companion's,
+    // which may be Value.absent due to schema defaults).
     final oldestRevision = oldestRevisionsCache[folderId];
-
-    final dateCreated = oldestRevision?.dateCreated ??
-        updatedFoldersById[folderId]!.dateCreated.value;
+    final dateCreated =
+        oldestRevision?.dateCreated ?? revisionDateByFolderId[folderId]!;
 
     updatedFoldersById[folderId] = updatedFoldersById[folderId]!.copyWith(
       dateCreated: Value<DateTime>(dateCreated),
