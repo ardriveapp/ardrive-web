@@ -175,6 +175,38 @@ SELECT * FROM file_entries
 WHERE assignedNames IS NOT NULL;
 
 
+allLatestFileRevisionsByDriveId:
+    SELECT fr.* FROM file_revisions fr
+    INNER JOIN (
+        SELECT fileId, MAX(dateCreated) AS maxDate
+        FROM file_revisions WHERE driveId = :driveId GROUP BY fileId
+    ) latest ON fr.fileId = latest.fileId AND fr.dateCreated = latest.maxDate
+    WHERE fr.driveId = :driveId;
+
+allOldestFileRevisionsByDriveId:
+    SELECT fr.* FROM file_revisions fr
+    INNER JOIN (
+        SELECT fileId, MIN(dateCreated) AS minDate
+        FROM file_revisions WHERE driveId = :driveId GROUP BY fileId
+    ) oldest ON fr.fileId = oldest.fileId AND fr.dateCreated = oldest.minDate
+    WHERE fr.driveId = :driveId;
+
+allLatestFolderRevisionsByDriveId:
+    SELECT fr.* FROM folder_revisions fr
+    INNER JOIN (
+        SELECT folderId, MAX(dateCreated) AS maxDate
+        FROM folder_revisions WHERE driveId = :driveId GROUP BY folderId
+    ) latest ON fr.folderId = latest.folderId AND fr.dateCreated = latest.maxDate
+    WHERE fr.driveId = :driveId;
+
+allOldestFolderRevisionsByDriveId:
+    SELECT fr.* FROM folder_revisions fr
+    INNER JOIN (
+        SELECT folderId, MIN(dateCreated) AS minDate
+        FROM folder_revisions WHERE driveId = :driveId GROUP BY folderId
+    ) oldest ON fr.folderId = oldest.folderId AND fr.dateCreated = oldest.minDate
+    WHERE fr.driveId = :driveId;
+
 deleteDriveById: DELETE FROM drives WHERE id = :driveId;
 deleteAllDriveRevisionsByDriveId:
   DELETE FROM drive_revisions

@@ -1496,6 +1496,45 @@ class _SyncRepository implements SyncRepository {
       'no. of entities in drive with id ${drive.id} to be parsed are: $numberOfDriveEntitiesToParse\n',
     );
 
+    // Pre-load all latest/oldest revisions for this drive into maps.
+    // Replaces thousands of individual DB queries with 4 bulk queries.
+    final isFirstSync =
+        drive.lastBlockHeight == null || drive.lastBlockHeight == 0;
+
+    final latestFileRevisionsCache = isFirstSync
+        ? <String, FileRevisionsCompanion>{}
+        : <String, FileRevisionsCompanion>{
+            for (final e
+                in (await _driveDao.getAllLatestFileRevisionsMap(drive.id))
+                    .entries)
+              e.key: e.value.toCompanion(true),
+          };
+
+    final latestFolderRevisionsCache = isFirstSync
+        ? <String, FolderRevisionsCompanion>{}
+        : <String, FolderRevisionsCompanion>{
+            for (final e
+                in (await _driveDao.getAllLatestFolderRevisionsMap(drive.id))
+                    .entries)
+              e.key: e.value.toCompanion(true),
+          };
+
+    // Oldest revision maps — immutable during processing since inserting
+    // newer revisions doesn't change the oldest.
+    final oldestFileRevisionsCache = isFirstSync
+        ? <String, FileRevision>{}
+        : await _driveDao.getAllOldestFileRevisionsMap(drive.id);
+
+    final oldestFolderRevisionsCache = isFirstSync
+        ? <String, FolderRevision>{}
+        : await _driveDao.getAllOldestFolderRevisionsMap(drive.id);
+
+    if (!isFirstSync) {
+      logger.d('Pre-loaded revision caches: '
+          '${latestFileRevisionsCache.length} files, '
+          '${latestFolderRevisionsCache.length} folders');
+    }
+
     yield* _batchProcessor.batchProcess<DriveEntityHistoryTransactionModel>(
         list: transactions,
         batchSize: batchSize,
@@ -1538,10 +1577,12 @@ class _SyncRepository implements SyncRepository {
             final latestFolderRevisions = await _addNewFolderEntityRevisions(
               driveId: drive.id,
               newEntities: newEntities.whereType<FolderEntity>(),
+              latestRevisionsCache: latestFolderRevisionsCache,
             );
             final latestFileRevisions = await _addNewFileEntityRevisions(
               driveId: drive.id,
               newEntities: newEntities.whereType<FileEntity>(),
+              latestRevisionsCache: latestFileRevisionsCache,
             );
 
             for (final entity in latestFileRevisions) {
@@ -1570,12 +1611,14 @@ class _SyncRepository implements SyncRepository {
               driveDao: _driveDao,
               driveId: drive.id,
               revisionsByFolderId: latestFolderRevisions,
+              oldestRevisionsCache: oldestFolderRevisionsCache,
             );
             final updatedFilesById =
                 await _computeRefreshedFileEntriesFromRevisions(
               driveDao: _driveDao,
               driveId: drive.id,
               revisionsByFileId: latestFileRevisions,
+              oldestRevisionsCache: oldestFileRevisionsCache,
             );
 
             numberOfDriveEntitiesParsed += newEntities.length;
@@ -1652,6 +1695,7 @@ class _SyncRepository implements SyncRepository {
   Future<List<FileRevisionsCompanion>> _addNewFileEntityRevisions({
     required String driveId,
     required Iterable<FileEntity> newEntities,
+    required Map<String, FileRevisionsCompanion> latestRevisionsCache,
   }) async {
     // The latest file revisions, keyed by their entity ids.
     final latestRevisions = <String, FileRevisionsCompanion>{};
@@ -1660,12 +1704,10 @@ class _SyncRepository implements SyncRepository {
     for (final entity in newEntities) {
       if (!latestRevisions.containsKey(entity.id) &&
           entity.parentFolderId != null) {
-        final revisions = await _driveDao
-            .latestFileRevisionByFileId(driveId: driveId, fileId: entity.id!)
-            .getSingleOrNull();
-        // Gets the latest revision for the file, if it exists on the database.
-        if (revisions != null) {
-          latestRevisions[entity.id!] = revisions.toCompanion(true);
+        // Use pre-loaded cache instead of per-entity DB query
+        final cached = latestRevisionsCache[entity.id!];
+        if (cached != null) {
+          latestRevisions[entity.id!] = cached;
         }
       }
 
@@ -1693,10 +1735,12 @@ class _SyncRepository implements SyncRepository {
           if (revision.dateCreated.value
               .isAfter(latestRevision!.dateCreated.value)) {
             latestRevisions[entity.id!] = revision;
+            latestRevisionsCache[entity.id!] = revision;
             newRevisions.add(revision);
           }
         } else {
           latestRevisions[entity.id!] = revision;
+          latestRevisionsCache[entity.id!] = revision;
           newRevisions.add(revision);
         }
       } catch (e, stacktrace) {
@@ -1717,6 +1761,7 @@ class _SyncRepository implements SyncRepository {
   Future<List<FolderRevisionsCompanion>> _addNewFolderEntityRevisions({
     required String driveId,
     required Iterable<FolderEntity> newEntities,
+    required Map<String, FolderRevisionsCompanion> latestRevisionsCache,
   }) async {
     _folderIds.addAll(newEntities.map((e) => e.id!));
     // The latest folder revisions, keyed by their entity ids.
@@ -1725,12 +1770,10 @@ class _SyncRepository implements SyncRepository {
     final newRevisions = <FolderRevisionsCompanion>[];
     for (final entity in newEntities) {
       if (!latestRevisions.containsKey(entity.id)) {
-        final revisions = (await _driveDao
-            .latestFolderRevisionByFolderId(
-                driveId: driveId, folderId: entity.id!)
-            .getSingleOrNull());
-        if (revisions != null) {
-          latestRevisions[entity.id!] = revisions.toCompanion(true);
+        // Use pre-loaded cache instead of per-entity DB query
+        final cached = latestRevisionsCache[entity.id!];
+        if (cached != null) {
+          latestRevisions[entity.id!] = cached;
         }
       }
 
@@ -1748,6 +1791,7 @@ class _SyncRepository implements SyncRepository {
 
       newRevisions.add(revision);
       latestRevisions[entity.id!] = revision;
+      latestRevisionsCache[entity.id!] = revision;
     }
     final newNetworkTransactions =
         createNetworkTransactionsCompanionsForFolders(
@@ -1779,6 +1823,7 @@ Future<Map<String, FileEntriesCompanion>>
   required DriveDao driveDao,
   required String driveId,
   required List<FileRevisionsCompanion> revisionsByFileId,
+  required Map<String, FileRevision> oldestRevisionsCache,
 }) async {
   final updatedFilesById = {
     for (final revision in revisionsByFileId)
@@ -1786,9 +1831,8 @@ Future<Map<String, FileEntriesCompanion>>
   };
 
   for (final fileId in updatedFilesById.keys) {
-    final oldestRevision = await driveDao
-        .oldestFileRevisionByFileId(driveId: driveId, fileId: fileId)
-        .getSingleOrNull();
+    // Use pre-loaded cache instead of per-entity DB query
+    final oldestRevision = oldestRevisionsCache[fileId];
 
     final dateCreated = oldestRevision?.dateCreated ??
         updatedFilesById[fileId]!.dateCreated.value;
@@ -1807,6 +1851,7 @@ Future<Map<String, FolderEntriesCompanion>>
   required DriveDao driveDao,
   required String driveId,
   required List<FolderRevisionsCompanion> revisionsByFolderId,
+  required Map<String, FolderRevision> oldestRevisionsCache,
 }) async {
   final updatedFoldersById = {
     for (final revision in revisionsByFolderId)
@@ -1814,9 +1859,8 @@ Future<Map<String, FolderEntriesCompanion>>
   };
 
   for (final folderId in updatedFoldersById.keys) {
-    final oldestRevision = await driveDao
-        .oldestFolderRevisionByFolderId(driveId: driveId, folderId: folderId)
-        .getSingleOrNull();
+    // Use pre-loaded cache instead of per-entity DB query
+    final oldestRevision = oldestRevisionsCache[folderId];
 
     final dateCreated = oldestRevision?.dateCreated ??
         updatedFoldersById[folderId]!.dateCreated.value;
@@ -1840,7 +1884,7 @@ Future<DrivesCompanion> _computeRefreshedDriveFromRevision({
 
   return latestRevision.toEntryCompanion().copyWith(
         dateCreated: Value(
-          oldestRevision?.dateCreated ?? latestRevision.dateCreated as DateTime,
+          oldestRevision?.dateCreated ?? latestRevision.dateCreated.value,
         ),
       );
 }
