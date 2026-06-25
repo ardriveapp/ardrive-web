@@ -20,6 +20,9 @@ class DataGatewayFallback {
   static const _retryPerGateway = 1;
   static const _garListTimeout = Duration(seconds: 5);
   static const _requestTimeout = Duration(seconds: 5);
+  /// Total time allowed for the entire fallback chain per tx.
+  /// Prevents a single missing/broken tx from blocking sync for minutes.
+  static const _totalFetchTimeout = Duration(seconds: 15);
 
   List<Gateway>? _cachedGateways;
 
@@ -34,6 +37,15 @@ class DataGatewayFallback {
   /// If ALL gateways return 404, throws [TransactionNotFound] to preserve
   /// upstream error handling (e.g. private drive detection during login).
   Future<Response> fetchData(String txId, Arweave primaryClient) async {
+    return _fetchDataWithTimeout(txId, primaryClient)
+        .timeout(_totalFetchTimeout, onTimeout: () {
+      logger.w('Total fetch timeout exceeded for tx $txId');
+      throw Exception('Total fetch timeout exceeded for tx $txId');
+    });
+  }
+
+  Future<Response> _fetchDataWithTimeout(
+      String txId, Arweave primaryClient) async {
     var all404 = true;
 
     // 1. Try primary gateway
