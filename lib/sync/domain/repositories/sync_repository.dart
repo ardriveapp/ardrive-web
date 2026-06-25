@@ -169,11 +169,17 @@ class _SyncRepository implements SyncRepository {
     _ghostFolders.clear();
     _folderIds.clear();
 
+    // The address of the currently logged-in wallet. All pending transactions
+    // are uploads made by this wallet, so scoping the status query by it lets
+    // the gateway prune its search space. (Edge case: data txs of files pinned
+    // from other authors are owned by those authors and won't match — those
+    // are rare and treated as best-effort.)
+    String? walletAddress;
     if (wallet != null) {
-      final address = await wallet.getAddress();
+      walletAddress = await wallet.getAddress();
 
       _arnsRepository
-          .getAntRecordsForWallet(address, update: true)
+          .getAntRecordsForWallet(walletAddress, update: true)
           .catchError((e) {
         logger.e('Error getting ANT records for wallet. Continuing...', e);
         return Future.value(<ANTRecord>[]);
@@ -383,6 +389,8 @@ class _SyncRepository implements SyncRepository {
               _updateTransactionStatuses(
                 driveDao: _driveDao,
                 arweave: _arweave,
+                // Scope the gateway query to the logged-in wallet for selectivity.
+                ownerAddress: walletAddress,
                 txsIdsToSkip: confirmedFileTxIds,
                 cancellationToken: token,
               ).timeout(
@@ -663,6 +671,8 @@ class _SyncRepository implements SyncRepository {
             driveDao: _driveDao,
             arweave: _arweave,
             driveDataTxIds: driveDataTxIds,
+            // Scope the gateway query to this drive's owner for selectivity.
+            ownerAddress: drive.ownerAddress,
             txsIdsToSkip: confirmedFileTxIds,
             cancellationToken: token,
           ).timeout(
@@ -754,6 +764,7 @@ class _SyncRepository implements SyncRepository {
     required DriveDao driveDao,
     required ArweaveService arweave,
     required Set<String> driveDataTxIds,
+    String? ownerAddress,
     List<TxID> txsIdsToSkip = const [],
     SyncCancellationToken? cancellationToken,
   }) async {
@@ -797,7 +808,8 @@ class _SyncRepository implements SyncRepository {
       cancellationToken?.checkCancellation();
 
       final map = await arweave
-          .getTransactionConfirmations(currentPage.toList())
+          .getTransactionConfirmations(currentPage.toList(),
+              owner: ownerAddress)
           .timeout(
         const Duration(seconds: 5),
         onTimeout: () {
@@ -983,6 +995,7 @@ class _SyncRepository implements SyncRepository {
   Future<void> _updateTransactionStatuses({
     required DriveDao driveDao,
     required ArweaveService arweave,
+    String? ownerAddress,
     List<TxID> txsIdsToSkip = const [],
     SyncCancellationToken? cancellationToken,
   }) async {
@@ -1038,7 +1051,8 @@ class _SyncRepository implements SyncRepository {
 
       // Use a shorter timeout for individual GraphQL calls
       final map = await arweave
-          .getTransactionConfirmations(currentPage.toList())
+          .getTransactionConfirmations(currentPage.toList(),
+              owner: ownerAddress)
           .timeout(
         const Duration(seconds: 5),
         onTimeout: () {

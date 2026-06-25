@@ -363,14 +363,22 @@ class ArweaveService {
   }
 
   Stream<List<LicenseAssertions$Query$TransactionConnection$TransactionEdge$Transaction>>
-      getLicenseAssertions(Iterable<String> licenseAssertionTxIds) async* {
+      getLicenseAssertions(
+    Iterable<String> licenseAssertionTxIds, {
+    String? owner,
+  }) async* {
     const chunkSize = 100;
     final chunks = licenseAssertionTxIds.slices(chunkSize);
     for (final chunk in chunks) {
       // Get a page of 100 transactions
       final licenseAssertionsQuery = await graphQLRetry.execute(
         LicenseAssertionsQuery(
-          variables: LicenseAssertionsArguments(transactionIds: chunk),
+          variables: LicenseAssertionsArguments(
+            transactionIds: chunk,
+            // Scoping by owner narrows the gateway's search space; null leaves
+            // the query unscoped (current behavior).
+            owners: owner != null ? [owner] : null,
+          ),
         ),
       );
 
@@ -381,14 +389,22 @@ class ArweaveService {
   }
 
   Stream<List<LicenseComposed$Query$TransactionConnection$TransactionEdge$Transaction>>
-      getLicenseComposed(Iterable<String> licenseComposedTxIds) async* {
+      getLicenseComposed(
+    Iterable<String> licenseComposedTxIds, {
+    String? owner,
+  }) async* {
     const chunkSize = 100;
     final chunks = licenseComposedTxIds.slices(chunkSize);
     for (final chunk in chunks) {
       // Get a page of 100 transactions
       final licenseComposedQuery = await graphQLRetry.execute(
         LicenseComposedQuery(
-          variables: LicenseComposedArguments(transactionIds: chunk),
+          variables: LicenseComposedArguments(
+            transactionIds: chunk,
+            // Scoping by owner narrows the gateway's search space; null leaves
+            // the query unscoped (current behavior).
+            owners: owner != null ? [owner] : null,
+          ),
         ),
       );
 
@@ -1213,7 +1229,9 @@ class ArweaveService {
   /// When the number of confirmations is 0, the transaction has yet to be mined. When
   /// it is -1, the transaction could not be found.
   Future<Map<String?, int>> getTransactionConfirmations(
-      List<String?> transactionIds) async {
+    List<String?> transactionIds, {
+    String? owner,
+  }) async {
     final transactionConfirmations = {
       for (final transactionId in transactionIds) transactionId: -1
     };
@@ -1233,6 +1251,9 @@ class ArweaveService {
             variables: TransactionStatusesArguments(
               transactionIds:
                   transactionIds.sublist(i, chunkEnd) as List<String>?,
+              // Scoping by owner lets the gateway prune its search space; null
+              // leaves the query unscoped (current behavior).
+              owners: owner != null ? [owner] : null,
             ),
           ),
         );

@@ -1,5 +1,5 @@
-query TransactionStatuses($transactionIds: [ID!]) {
-  transactions(first: 100, ids: $transactionIds) {
+query TransactionStatuses($transactionIds: [ID!], $owners: [String!]) {
+  transactions(first: 100, ids: $transactionIds, owners: $owners) {
     edges {
       node {
         id
