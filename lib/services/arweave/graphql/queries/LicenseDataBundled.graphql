@@ -1,7 +1,8 @@
-query LicenseComposed($transactionIds: [ID!]) {
+query LicenseComposed($transactionIds: [ID!], $owners: [String!]) {
   transactions(
     first: 100
     ids: $transactionIds
+    owners: $owners
   ) {
     edges {
       node {

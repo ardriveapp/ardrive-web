@@ -154,9 +154,24 @@ class ArweaveService {
   }
 
   Future<BigInt> getPrice({required int byteSize}) async {
-    return client.api
-        .get('price/$byteSize')
-        .then((res) => BigInt.parse(res.body));
+    const maxRetries = 3;
+    for (var attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        final res = await client.api.get('price/$byteSize');
+        if (res.statusCode == 200) {
+          return BigInt.parse(res.body);
+        }
+        logger.w(
+          'getPrice attempt ${attempt + 1} returned ${res.statusCode}',
+        );
+      } catch (e) {
+        logger.w('getPrice attempt ${attempt + 1} failed: $e');
+      }
+      if (attempt < maxRetries - 1) {
+        await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
+      }
+    }
+    throw Exception('Failed to get price after $maxRetries attempts');
   }
 
   Future<int> getMempoolSizeFromArweave() async {
@@ -348,14 +363,22 @@ class ArweaveService {
   }
 
   Stream<List<LicenseAssertions$Query$TransactionConnection$TransactionEdge$Transaction>>
-      getLicenseAssertions(Iterable<String> licenseAssertionTxIds) async* {
+      getLicenseAssertions(
+    Iterable<String> licenseAssertionTxIds, {
+    String? owner,
+  }) async* {
     const chunkSize = 100;
     final chunks = licenseAssertionTxIds.slices(chunkSize);
     for (final chunk in chunks) {
       // Get a page of 100 transactions
       final licenseAssertionsQuery = await graphQLRetry.execute(
         LicenseAssertionsQuery(
-          variables: LicenseAssertionsArguments(transactionIds: chunk),
+          variables: LicenseAssertionsArguments(
+            transactionIds: chunk,
+            // Scoping by owner narrows the gateway's search space; null leaves
+            // the query unscoped (current behavior).
+            owners: owner != null ? [owner] : null,
+          ),
         ),
       );
 
@@ -366,14 +389,22 @@ class ArweaveService {
   }
 
   Stream<List<LicenseComposed$Query$TransactionConnection$TransactionEdge$Transaction>>
-      getLicenseComposed(Iterable<String> licenseComposedTxIds) async* {
+      getLicenseComposed(
+    Iterable<String> licenseComposedTxIds, {
+    String? owner,
+  }) async* {
     const chunkSize = 100;
     final chunks = licenseComposedTxIds.slices(chunkSize);
     for (final chunk in chunks) {
       // Get a page of 100 transactions
       final licenseComposedQuery = await graphQLRetry.execute(
         LicenseComposedQuery(
-          variables: LicenseComposedArguments(transactionIds: chunk),
+          variables: LicenseComposedArguments(
+            transactionIds: chunk,
+            // Scoping by owner narrows the gateway's search space; null leaves
+            // the query unscoped (current behavior).
+            owners: owner != null ? [owner] : null,
+          ),
         ),
       );
 
@@ -1197,27 +1228,54 @@ class ArweaveService {
   ///
   /// When the number of confirmations is 0, the transaction has yet to be mined. When
   /// it is -1, the transaction could not be found.
+  /// [ownerOverrides] maps a transaction id to the address that actually owns
+  /// it on-chain when that differs from [owner] (e.g. the data tx of a file
+  /// pinned from another author's upload). Any id left unresolved by the
+  /// owner-scoped pass that has an override is re-queried scoped to its real
+  /// owner — keeping every query selective. Ids with no override are left
+  /// unresolved rather than re-queried unscoped, which would reintroduce the
+  /// expensive gateway scan this scoping is meant to avoid.
+  ///
+  /// [verifiedSink], if provided, is progressively populated with each
+  /// successfully verified confirmation (value >= 0) as the query completes —
+  /// it never receives the -1 "not found" placeholders. A caller can wrap this
+  /// method in a timeout and, on expiry, fall back to [verifiedSink] to keep
+  /// the confirmations resolved so far instead of discarding the whole batch.
+  /// Because it holds only positive verifications, applying it after a timeout
+  /// never marks anything failed off an incomplete run.
   Future<Map<String?, int>> getTransactionConfirmations(
-      List<String?> transactionIds) async {
+    List<String?> transactionIds, {
+    String? owner,
+    Map<String, String>? ownerOverrides,
+    Map<String?, int>? verifiedSink,
+  }) async {
     final transactionConfirmations = {
       for (final transactionId in transactionIds) transactionId: -1
     };
 
-    const chunkSize = 100;
+    // Queries confirmation status for [ids] in chunks, writing results into
+    // [transactionConfirmations] (and [verifiedSink] for resolved ids). When
+    // [owner] is provided, the query is scoped to that owner so the gateway can
+    // prune its search space.
+    Future<void> queryConfirmations(List<String?> ids, {String? owner}) async {
+      const chunkSize = 100;
+      // Cap how many chunk queries hit the gateway at once so a large page
+      // doesn't fan out into a burst of concurrent GraphQL retries (and a
+      // potential rate-limit storm), matching the throttling used by the other
+      // gateway-heavy paths in this service.
+      final maxConcurrent =
+          _configService.config.maxConcurrentDataFetches.clamp(1, 100);
 
-    final confirmationFutures = <Future<void>>[];
-
-    for (var i = 0; i < transactionIds.length; i += chunkSize) {
-      confirmationFutures.add(() async {
-        final chunkEnd = (i + chunkSize < transactionIds.length)
-            ? i + chunkSize
-            : transactionIds.length;
+      Future<void> queryChunk(int start) async {
+        final chunkEnd =
+            (start + chunkSize < ids.length) ? start + chunkSize : ids.length;
 
         final query = await graphQLRetry.execute(
           TransactionStatusesQuery(
             variables: TransactionStatusesArguments(
               transactionIds:
-                  transactionIds.sublist(i, chunkEnd) as List<String>?,
+                  ids.sublist(start, chunkEnd).whereType<String>().toList(),
+              owners: owner != null ? [owner] : null,
             ),
           ),
         );
@@ -1226,22 +1284,64 @@ class ArweaveService {
 
         for (final transaction
             in query.data!.transactions.edges.map((e) => e.node)) {
-          if (transaction.block == null) {
-            transactionConfirmations[transaction.id] = 0;
-            continue;
-          }
-
-          transactionConfirmations[transaction.id] =
-              currentBlockHeight - transaction.block!.height + 1;
+          final confirmations = transaction.block == null
+              ? 0
+              : currentBlockHeight - transaction.block!.height + 1;
+          transactionConfirmations[transaction.id] = confirmations;
+          // Record the resolved verification so it survives a caller timeout.
+          verifiedSink?[transaction.id] = confirmations;
         }
-      }());
+      }
+
+      final chunkStarts = [for (var i = 0; i < ids.length; i += chunkSize) i];
+      // Process the chunks in bounded-concurrency batches.
+      for (var b = 0; b < chunkStarts.length; b += maxConcurrent) {
+        final batch = chunkStarts.skip(b).take(maxConcurrent);
+        try {
+          await Future.wait(batch.map(queryChunk));
+        } catch (e) {
+          logger.e('Error getting transactions confirmations on exception', e);
+          rethrow;
+        }
+      }
     }
 
-    try {
-      await Future.wait(confirmationFutures);
-    } catch (e) {
-      logger.e('Error getting transactions confirmations on exception', e);
-      rethrow;
+    // First pass: scoped by owner for gateway selectivity.
+    await queryConfirmations(transactionIds, owner: owner);
+
+    // Second pass: for any unresolved id whose real owner we know locally
+    // (currently pinned data txs), re-query scoped to that owner. This recovers
+    // confirmed cross-owner txs without an unscoped scan. Genuinely missing txs
+    // have no override and are left unresolved — handled by the caller's
+    // existing pending/failed logic.
+    //
+    // Best-effort: this pass must never discard the first pass's results. Its
+    // results are merged into the already-populated map, so we swallow any
+    // error and bound it with its own timeout — even if it fails or stalls,
+    // the confirmations resolved by the first pass are still returned.
+    if (owner != null && ownerOverrides != null && ownerOverrides.isNotEmpty) {
+      final idsByOverrideOwner = <String, List<String?>>{};
+      for (final entry in transactionConfirmations.entries) {
+        if (entry.value >= 0) continue;
+        final overrideOwner = ownerOverrides[entry.key];
+        if (overrideOwner == null || overrideOwner == owner) continue;
+        idsByOverrideOwner.putIfAbsent(overrideOwner, () => []).add(entry.key);
+      }
+
+      if (idsByOverrideOwner.isNotEmpty) {
+        try {
+          await Future(() async {
+            for (final entry in idsByOverrideOwner.entries) {
+              await queryConfirmations(entry.value, owner: entry.key);
+            }
+          }).timeout(const Duration(seconds: 3));
+        } catch (e) {
+          logger.w(
+            'Pinned-owner confirmation recovery failed or timed out; '
+            'leaving those txs unresolved: $e',
+          );
+        }
+      }
     }
 
     return transactionConfirmations;

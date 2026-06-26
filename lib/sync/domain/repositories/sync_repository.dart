@@ -169,11 +169,18 @@ class _SyncRepository implements SyncRepository {
     _ghostFolders.clear();
     _folderIds.clear();
 
+    // The address of the currently logged-in wallet. All pending transactions
+    // are uploads made by this wallet, so scoping the status query by it lets
+    // the gateway prune its search space. Cross-owner txs (e.g. data txs of
+    // files pinned from other authors) won't match this owner; those that we
+    // can identify locally are re-queried scoped to their real owner via
+    // ownerOverrides in getTransactionConfirmations.
+    String? walletAddress;
     if (wallet != null) {
-      final address = await wallet.getAddress();
+      walletAddress = await wallet.getAddress();
 
       _arnsRepository
-          .getAntRecordsForWallet(address, update: true)
+          .getAntRecordsForWallet(walletAddress, update: true)
           .catchError((e) {
         logger.e('Error getting ANT records for wallet. Continuing...', e);
         return Future.value(<ANTRecord>[]);
@@ -383,6 +390,8 @@ class _SyncRepository implements SyncRepository {
               _updateTransactionStatuses(
                 driveDao: _driveDao,
                 arweave: _arweave,
+                // Scope the gateway query to the logged-in wallet for selectivity.
+                ownerAddress: walletAddress,
                 txsIdsToSkip: confirmedFileTxIds,
                 cancellationToken: token,
               ).timeout(
@@ -663,6 +672,8 @@ class _SyncRepository implements SyncRepository {
             driveDao: _driveDao,
             arweave: _arweave,
             driveDataTxIds: driveDataTxIds,
+            // Scope the gateway query to this drive's owner for selectivity.
+            ownerAddress: drive.ownerAddress,
             txsIdsToSkip: confirmedFileTxIds,
             cancellationToken: token,
           ).timeout(
@@ -754,10 +765,13 @@ class _SyncRepository implements SyncRepository {
     required DriveDao driveDao,
     required ArweaveService arweave,
     required Set<String> driveDataTxIds,
+    String? ownerAddress,
     List<TxID> txsIdsToSkip = const [],
     SyncCancellationToken? cancellationToken,
   }) async {
     cancellationToken?.checkCancellation();
+
+    final ownerOverrides = await _buildPinnedDataTxOwnerOverrides(driveDao);
 
     // Load all pending transactions and filter to this drive
     final allPendingTxs = await driveDao.pendingTransactions().get();
@@ -796,13 +810,21 @@ class _SyncRepository implements SyncRepository {
 
       cancellationToken?.checkCancellation();
 
+      // Caller-owned sink populated with each resolved confirmation; on timeout
+      // we fall back to it so progress made before the deadline isn't lost.
+      final verified = <String?, int>{};
+
       final map = await arweave
-          .getTransactionConfirmations(currentPage.toList())
+          .getTransactionConfirmations(currentPage.toList(),
+              owner: ownerAddress,
+              ownerOverrides: ownerOverrides,
+              verifiedSink: verified)
           .timeout(
         const Duration(seconds: 5),
         onTimeout: () {
-          logger.w('Individual transaction confirmation timeout');
-          return <String, int>{};
+          logger.w('Individual transaction confirmation timeout; '
+              'applying ${verified.length} confirmations resolved so far');
+          return verified;
         },
       );
 
@@ -980,14 +1002,32 @@ class _SyncRepository implements SyncRepository {
     }
   }
 
+  /// Maps the data tx id of each pinned file to the address that actually owns
+  /// it on-chain (the original uploader, not the drive owner). Used to resolve
+  /// confirmation status for these cross-owner txs with a selective,
+  /// owner-scoped query instead of an expensive unscoped one.
+  Future<Map<String, String>> _buildPinnedDataTxOwnerOverrides(
+    DriveDao driveDao,
+  ) async {
+    final pinnedFileRevisions = await driveDao.pinnedFileRevisions().get();
+    return {
+      for (final row in pinnedFileRevisions)
+        if (row.pinnedDataOwnerAddress != null)
+          row.dataTxId: row.pinnedDataOwnerAddress!,
+    };
+  }
+
   Future<void> _updateTransactionStatuses({
     required DriveDao driveDao,
     required ArweaveService arweave,
+    String? ownerAddress,
     List<TxID> txsIdsToSkip = const [],
     SyncCancellationToken? cancellationToken,
   }) async {
     // Check for cancellation at the start
     cancellationToken?.checkCancellation();
+
+    final ownerOverrides = await _buildPinnedDataTxOwnerOverrides(driveDao);
 
     // Load all pending transactions
     // Note: We load all at once here, but the memory impact is acceptable
@@ -1036,15 +1076,24 @@ class _SyncRepository implements SyncRepository {
       // Check cancellation before making the GraphQL call
       cancellationToken?.checkCancellation();
 
+      // Caller-owned sink that getTransactionConfirmations populates with each
+      // resolved confirmation. On timeout we fall back to it so the work done
+      // before the deadline isn't discarded (it holds only verified
+      // confirmations, so it never marks anything failed off a partial run).
+      final verified = <String?, int>{};
+
       // Use a shorter timeout for individual GraphQL calls
       final map = await arweave
-          .getTransactionConfirmations(currentPage.toList())
+          .getTransactionConfirmations(currentPage.toList(),
+              owner: ownerAddress,
+              ownerOverrides: ownerOverrides,
+              verifiedSink: verified)
           .timeout(
         const Duration(seconds: 5),
         onTimeout: () {
-          logger.w('Individual transaction confirmation timeout');
-          // Return empty map on timeout to continue with other transactions
-          return <String, int>{};
+          logger.w('Individual transaction confirmation timeout; '
+              'applying ${verified.length} confirmations resolved so far');
+          return verified;
         },
       );
 
@@ -1496,6 +1545,45 @@ class _SyncRepository implements SyncRepository {
       'no. of entities in drive with id ${drive.id} to be parsed are: $numberOfDriveEntitiesToParse\n',
     );
 
+    // Pre-load all latest/oldest revisions for this drive into maps.
+    // Replaces thousands of individual DB queries with 4 bulk queries.
+    final isFirstSync =
+        drive.lastBlockHeight == null || drive.lastBlockHeight == 0;
+
+    final latestFileRevisionsCache = isFirstSync
+        ? <String, FileRevisionsCompanion>{}
+        : <String, FileRevisionsCompanion>{
+            for (final e
+                in (await _driveDao.getAllLatestFileRevisionsMap(drive.id))
+                    .entries)
+              e.key: e.value.toCompanion(true),
+          };
+
+    final latestFolderRevisionsCache = isFirstSync
+        ? <String, FolderRevisionsCompanion>{}
+        : <String, FolderRevisionsCompanion>{
+            for (final e
+                in (await _driveDao.getAllLatestFolderRevisionsMap(drive.id))
+                    .entries)
+              e.key: e.value.toCompanion(true),
+          };
+
+    // Oldest revision maps — immutable during processing since inserting
+    // newer revisions doesn't change the oldest.
+    final oldestFileRevisionsCache = isFirstSync
+        ? <String, FileRevision>{}
+        : await _driveDao.getAllOldestFileRevisionsMap(drive.id);
+
+    final oldestFolderRevisionsCache = isFirstSync
+        ? <String, FolderRevision>{}
+        : await _driveDao.getAllOldestFolderRevisionsMap(drive.id);
+
+    if (!isFirstSync) {
+      logger.d('Pre-loaded revision caches: '
+          '${latestFileRevisionsCache.length} files, '
+          '${latestFolderRevisionsCache.length} folders');
+    }
+
     yield* _batchProcessor.batchProcess<DriveEntityHistoryTransactionModel>(
         list: transactions,
         batchSize: batchSize,
@@ -1538,10 +1626,12 @@ class _SyncRepository implements SyncRepository {
             final latestFolderRevisions = await _addNewFolderEntityRevisions(
               driveId: drive.id,
               newEntities: newEntities.whereType<FolderEntity>(),
+              latestRevisionsCache: latestFolderRevisionsCache,
             );
             final latestFileRevisions = await _addNewFileEntityRevisions(
               driveId: drive.id,
               newEntities: newEntities.whereType<FileEntity>(),
+              latestRevisionsCache: latestFileRevisionsCache,
             );
 
             for (final entity in latestFileRevisions) {
@@ -1570,12 +1660,14 @@ class _SyncRepository implements SyncRepository {
               driveDao: _driveDao,
               driveId: drive.id,
               revisionsByFolderId: latestFolderRevisions,
+              oldestRevisionsCache: oldestFolderRevisionsCache,
             );
             final updatedFilesById =
                 await _computeRefreshedFileEntriesFromRevisions(
               driveDao: _driveDao,
               driveId: drive.id,
               revisionsByFileId: latestFileRevisions,
+              oldestRevisionsCache: oldestFileRevisionsCache,
             );
 
             numberOfDriveEntitiesParsed += newEntities.length;
@@ -1652,6 +1744,7 @@ class _SyncRepository implements SyncRepository {
   Future<List<FileRevisionsCompanion>> _addNewFileEntityRevisions({
     required String driveId,
     required Iterable<FileEntity> newEntities,
+    required Map<String, FileRevisionsCompanion> latestRevisionsCache,
   }) async {
     // The latest file revisions, keyed by their entity ids.
     final latestRevisions = <String, FileRevisionsCompanion>{};
@@ -1660,12 +1753,10 @@ class _SyncRepository implements SyncRepository {
     for (final entity in newEntities) {
       if (!latestRevisions.containsKey(entity.id) &&
           entity.parentFolderId != null) {
-        final revisions = await _driveDao
-            .latestFileRevisionByFileId(driveId: driveId, fileId: entity.id!)
-            .getSingleOrNull();
-        // Gets the latest revision for the file, if it exists on the database.
-        if (revisions != null) {
-          latestRevisions[entity.id!] = revisions.toCompanion(true);
+        // Use pre-loaded cache instead of per-entity DB query
+        final cached = latestRevisionsCache[entity.id!];
+        if (cached != null) {
+          latestRevisions[entity.id!] = cached;
         }
       }
 
@@ -1693,10 +1784,12 @@ class _SyncRepository implements SyncRepository {
           if (revision.dateCreated.value
               .isAfter(latestRevision!.dateCreated.value)) {
             latestRevisions[entity.id!] = revision;
+            latestRevisionsCache[entity.id!] = revision;
             newRevisions.add(revision);
           }
         } else {
           latestRevisions[entity.id!] = revision;
+          latestRevisionsCache[entity.id!] = revision;
           newRevisions.add(revision);
         }
       } catch (e, stacktrace) {
@@ -1717,6 +1810,7 @@ class _SyncRepository implements SyncRepository {
   Future<List<FolderRevisionsCompanion>> _addNewFolderEntityRevisions({
     required String driveId,
     required Iterable<FolderEntity> newEntities,
+    required Map<String, FolderRevisionsCompanion> latestRevisionsCache,
   }) async {
     _folderIds.addAll(newEntities.map((e) => e.id!));
     // The latest folder revisions, keyed by their entity ids.
@@ -1725,12 +1819,10 @@ class _SyncRepository implements SyncRepository {
     final newRevisions = <FolderRevisionsCompanion>[];
     for (final entity in newEntities) {
       if (!latestRevisions.containsKey(entity.id)) {
-        final revisions = (await _driveDao
-            .latestFolderRevisionByFolderId(
-                driveId: driveId, folderId: entity.id!)
-            .getSingleOrNull());
-        if (revisions != null) {
-          latestRevisions[entity.id!] = revisions.toCompanion(true);
+        // Use pre-loaded cache instead of per-entity DB query
+        final cached = latestRevisionsCache[entity.id!];
+        if (cached != null) {
+          latestRevisions[entity.id!] = cached;
         }
       }
 
@@ -1748,6 +1840,7 @@ class _SyncRepository implements SyncRepository {
 
       newRevisions.add(revision);
       latestRevisions[entity.id!] = revision;
+      latestRevisionsCache[entity.id!] = revision;
     }
     final newNetworkTransactions =
         createNetworkTransactionsCompanionsForFolders(
@@ -1779,19 +1872,24 @@ Future<Map<String, FileEntriesCompanion>>
   required DriveDao driveDao,
   required String driveId,
   required List<FileRevisionsCompanion> revisionsByFileId,
+  required Map<String, FileRevision> oldestRevisionsCache,
 }) async {
-  final updatedFilesById = {
-    for (final revision in revisionsByFileId)
-      revision.fileId.value: revision.toEntryCompanion(),
-  };
+  // Build map of entry companions AND keep revision dateCreated for fallback
+  final revisionDateByFileId = <String, DateTime>{};
+  final updatedFilesById = <String, FileEntriesCompanion>{};
+  for (final revision in revisionsByFileId) {
+    final fileId = revision.fileId.value;
+    updatedFilesById[fileId] = revision.toEntryCompanion();
+    revisionDateByFileId[fileId] = revision.dateCreated.value;
+  }
 
   for (final fileId in updatedFilesById.keys) {
-    final oldestRevision = await driveDao
-        .oldestFileRevisionByFileId(driveId: driveId, fileId: fileId)
-        .getSingleOrNull();
-
-    final dateCreated = oldestRevision?.dateCreated ??
-        updatedFilesById[fileId]!.dateCreated.value;
+    // Use pre-loaded cache instead of per-entity DB query.
+    // Fall back to the revision's own dateCreated (not the entry companion's,
+    // which may be Value.absent due to schema defaults).
+    final oldestRevision = oldestRevisionsCache[fileId];
+    final dateCreated =
+        oldestRevision?.dateCreated ?? revisionDateByFileId[fileId]!;
 
     updatedFilesById[fileId] = updatedFilesById[fileId]!.copyWith(
       dateCreated: Value<DateTime>(dateCreated),
@@ -1807,19 +1905,24 @@ Future<Map<String, FolderEntriesCompanion>>
   required DriveDao driveDao,
   required String driveId,
   required List<FolderRevisionsCompanion> revisionsByFolderId,
+  required Map<String, FolderRevision> oldestRevisionsCache,
 }) async {
-  final updatedFoldersById = {
-    for (final revision in revisionsByFolderId)
-      revision.folderId.value: revision.toEntryCompanion(),
-  };
+  // Build map of entry companions AND keep revision dateCreated for fallback
+  final revisionDateByFolderId = <String, DateTime>{};
+  final updatedFoldersById = <String, FolderEntriesCompanion>{};
+  for (final revision in revisionsByFolderId) {
+    final folderId = revision.folderId.value;
+    updatedFoldersById[folderId] = revision.toEntryCompanion();
+    revisionDateByFolderId[folderId] = revision.dateCreated.value;
+  }
 
   for (final folderId in updatedFoldersById.keys) {
-    final oldestRevision = await driveDao
-        .oldestFolderRevisionByFolderId(driveId: driveId, folderId: folderId)
-        .getSingleOrNull();
-
-    final dateCreated = oldestRevision?.dateCreated ??
-        updatedFoldersById[folderId]!.dateCreated.value;
+    // Use pre-loaded cache instead of per-entity DB query.
+    // Fall back to the revision's own dateCreated (not the entry companion's,
+    // which may be Value.absent due to schema defaults).
+    final oldestRevision = oldestRevisionsCache[folderId];
+    final dateCreated =
+        oldestRevision?.dateCreated ?? revisionDateByFolderId[folderId]!;
 
     updatedFoldersById[folderId] = updatedFoldersById[folderId]!.copyWith(
       dateCreated: Value<DateTime>(dateCreated),
@@ -1840,7 +1943,7 @@ Future<DrivesCompanion> _computeRefreshedDriveFromRevision({
 
   return latestRevision.toEntryCompanion().copyWith(
         dateCreated: Value(
-          oldestRevision?.dateCreated ?? latestRevision.dateCreated as DateTime,
+          oldestRevision?.dateCreated ?? latestRevision.dateCreated.value,
         ),
       );
 }

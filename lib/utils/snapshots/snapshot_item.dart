@@ -214,13 +214,29 @@ class SnapshotItemOnChain implements SnapshotItem {
   @override
   int get currentIndex => _currentIndex;
 
+  Future<String>? _prefetchFuture;
+
   Future<String> _source() async {
     if (_cachedSource != null) {
       return _cachedSource!;
     }
+    // Use prefetch result if available, otherwise fetch now
+    if (_prefetchFuture != null) {
+      return _cachedSource = await _prefetchFuture!;
+    }
     final dataBytes = await _arweave.getEntityDataFromNetwork(txId: txId);
     final dataBytesAsString = String.fromCharCodes(dataBytes);
     return _cachedSource = dataBytesAsString;
+  }
+
+  /// Start downloading the snapshot body without waiting for it.
+  /// Call this on the NEXT snapshot while processing the current one.
+  void prefetch() {
+    if (_cachedSource != null || _prefetchFuture != null) return;
+    logger.d('Prefetching snapshot $txId');
+    _prefetchFuture = _arweave
+        .getEntityDataFromNetwork(txId: txId)
+        .then((bytes) => String.fromCharCodes(bytes));
   }
 
   @override
@@ -233,28 +249,45 @@ class SnapshotItemOnChain implements SnapshotItem {
     return _getNextStream();
   }
 
+  /// Parses snapshot entries one at a time by scanning for object boundaries
+  /// in the JSON string, avoiding a full jsonDecode of the entire snapshot.
+  /// This keeps memory bounded to one entry at a time instead of the full Map.
   Stream<DriveEntityHistoryTransactionModel> _getNextStream() async* {
     final Range range = subRanges.rangeSegments[currentIndex];
+    final source = await _source();
 
-    final Map dataJson = jsonDecode(await _source());
-    final List<Map> txSnapshots =
-        List.castFrom<dynamic, Map>(dataJson['txSnapshots']);
+    // Find the txSnapshots array in the JSON string
+    final arrayStart = source.indexOf('[', source.indexOf('"txSnapshots"'));
+    if (arrayStart == -1) {
+      logger.w('Snapshot $txId has no txSnapshots array');
+      return;
+    }
 
-    for (Map item in txSnapshots) {
+    var yielded = 0;
+    var skipped = 0;
+
+    // Scan for individual objects within the array
+    for (final objectJson in _iterateJsonArrayObjects(source, arrayStart)) {
+      Map item;
+      try {
+        item = jsonDecode(objectJson) as Map;
+      } catch (e) {
+        logger.w('Error parsing snapshot entry in $txId');
+        continue;
+      }
+
       DriveHistoryTransaction node;
-
       try {
         node = DriveHistoryTransaction.fromJson(item['gqlNode']);
       } catch (e) {
-        logger.w(
-          'Error while parsing GQLNode from snapshot item ($txId)',
-        );
+        logger.w('Error parsing GQLNode from snapshot item ($txId)');
         continue;
       }
 
       final isInRange = range.isInRange(node.block?.height ?? -1);
       if (isInRange) {
         yield DriveEntityHistoryTransactionModel(transactionCommonMixin: node);
+        yielded++;
 
         final String? data = item['jsonMetadata'];
         if (data != null) {
@@ -262,15 +295,87 @@ class SnapshotItemOnChain implements SnapshotItem {
           final Uint8List dataAsBytes = Uint8List.fromList(utf8.encode(data));
           await _setDataForTxId(driveId, txId, dataAsBytes);
         }
+      } else {
+        skipped++;
       }
     }
 
-    if (currentIndex == subRanges.rangeSegments.length - 1) {
-      // Done reading all data, the memory can be freed
-      _cachedSource = null;
-    }
+    logger.d('Snapshot $txId range ${range.start}-${range.end}: '
+        'yielded $yielded, skipped $skipped');
 
-    return;
+    if (currentIndex == subRanges.rangeSegments.length - 1) {
+      _cachedSource = null;
+      _prefetchFuture = null;
+    }
+  }
+
+  /// Iterates over top-level JSON objects in an array without parsing the
+  /// entire array. Uses brace counting to find object boundaries.
+  ///
+  /// [source] is the full JSON string. [arrayStartIndex] is the index of
+  /// the opening `[` of the array.
+  static Iterable<String> _iterateJsonArrayObjects(
+    String source,
+    int arrayStartIndex,
+  ) sync* {
+    var i = arrayStartIndex + 1; // skip the '['
+    final len = source.length;
+
+    while (i < len) {
+      // Skip whitespace and commas
+      while (i < len) {
+        final c = source.codeUnitAt(i);
+        if (c == 0x7D + 1) break; // shouldn't happen
+        if (c == 0x5D) return; // ']' — end of array
+        if (c == 0x7B) break; // '{' — start of object
+        i++;
+      }
+      if (i >= len) return;
+
+      // Found '{', count braces to find matching '}'
+      final objectStart = i;
+      var depth = 0;
+      var inString = false;
+      var escaped = false;
+
+      while (i < len) {
+        final c = source.codeUnitAt(i);
+
+        if (escaped) {
+          escaped = false;
+          i++;
+          continue;
+        }
+
+        if (c == 0x5C) {
+          // backslash
+          escaped = true;
+          i++;
+          continue;
+        }
+
+        if (c == 0x22) {
+          // double quote
+          inString = !inString;
+          i++;
+          continue;
+        }
+
+        if (!inString) {
+          if (c == 0x7B) depth++; // '{'
+          if (c == 0x7D) {
+            // '}'
+            depth--;
+            if (depth == 0) {
+              yield source.substring(objectStart, i + 1);
+              i++;
+              break;
+            }
+          }
+        }
+        i++;
+      }
+    }
   }
 
   static Future<Uint8List> _setDataForTxId(

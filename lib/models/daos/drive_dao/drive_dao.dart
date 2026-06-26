@@ -121,6 +121,38 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     }
   }
 
+  /// Bulk-loads ALL latest file revisions for a drive into a map keyed by fileId.
+  Future<Map<String, FileRevision>> getAllLatestFileRevisionsMap(
+      String driveId) async {
+    final revisions =
+        await allLatestFileRevisionsByDriveId(driveId: driveId).get();
+    return {for (final rev in revisions) rev.fileId: rev};
+  }
+
+  /// Bulk-loads ALL oldest file revisions for a drive into a map keyed by fileId.
+  Future<Map<String, FileRevision>> getAllOldestFileRevisionsMap(
+      String driveId) async {
+    final revisions =
+        await allOldestFileRevisionsByDriveId(driveId: driveId).get();
+    return {for (final rev in revisions) rev.fileId: rev};
+  }
+
+  /// Bulk-loads ALL latest folder revisions for a drive into a map keyed by folderId.
+  Future<Map<String, FolderRevision>> getAllLatestFolderRevisionsMap(
+      String driveId) async {
+    final revisions =
+        await allLatestFolderRevisionsByDriveId(driveId: driveId).get();
+    return {for (final rev in revisions) rev.folderId: rev};
+  }
+
+  /// Bulk-loads ALL oldest folder revisions for a drive into a map keyed by folderId.
+  Future<Map<String, FolderRevision>> getAllOldestFolderRevisionsMap(
+      String driveId) async {
+    final revisions =
+        await allOldestFolderRevisionsByDriveId(driveId: driveId).get();
+    return {for (final rev in revisions) rev.folderId: rev};
+  }
+
   Future<void> insertNewDriveRevisions(
     List<DriveRevisionsCompanion> revisions,
   ) async {
