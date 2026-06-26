@@ -48,7 +48,6 @@ promptToDownloadMultipleFiles(
       )..add(
           StartDownload(
             selectedItems,
-            // folderName: driveDetail.folderInView.folder.name,
             zipName: zipName,
           ),
         ),
@@ -69,8 +68,78 @@ class MultipleFilesDownload extends StatefulWidget {
 class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
   final _scrollController = ScrollController();
 
+  Widget _buildFileListItem(
+    dynamic file,
+    ArdriveTypographyNew typography,
+    ArDriveColorTokens colorTokens,
+  ) {
+    final isFile = file is MultiDownloadFile;
+    final name = isFile ? file.fileName : (file as MultiDownloadFolder).folderPath;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        color: colorTokens.containerL1,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isFile ? Icons.insert_drive_file_outlined : Icons.folder_outlined,
+            size: 16,
+            color: colorTokens.textLow,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              name,
+              style: typography.paragraphSmall(
+                fontWeight: ArFontWeight.semiBold,
+                color: colorTokens.textHigh,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (isFile)
+            Text(
+              filesize(file.size),
+              style: typography.paragraphSmall(
+                color: colorTokens.textLow,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFileList(
+    List<dynamic> files,
+    ArdriveTypographyNew typography,
+    ArDriveColorTokens colorTokens,
+  ) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 256),
+      child: ArDriveScrollBar(
+        controller: _scrollController,
+        alwaysVisible: true,
+        child: ListView.builder(
+          padding: EdgeInsets.zero,
+          controller: _scrollController,
+          shrinkWrap: true,
+          itemCount: files.length,
+          itemBuilder: (context, index) =>
+              _buildFileListItem(files[index], typography, colorTokens),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
     return BlocListener<MultipleDownloadBloc, MultipleDownloadState>(
       listener: (context, state) async {
         if (state is MultipleDownloadFinishedWithSuccess) {
@@ -82,7 +151,6 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
             lastModifiedDate: state.lastModified,
           );
 
-          // Close modal when save file
           io.saveFile(file).then((value) {
             if (state.skippedFiles.isEmpty) {
               Navigator.pop(context);
@@ -92,11 +160,8 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
       },
       child: BlocBuilder<MultipleDownloadBloc, MultipleDownloadState>(
         builder: (context, state) {
-          late Widget content;
-          List<ModalAction> actions = [];
-
           if (state is MultipleDownloadInProgress) {
-            return ArDriveStandardModal(
+            return ArDriveStandardModalNew(
               width: 408,
               title: appLocalizationsOf(context)
                   .multiDownloadDownloadingFilesProgress(
@@ -105,56 +170,7 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Align(
-                    alignment: Alignment.topCenter,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 256),
-                      child: ArDriveScrollBar(
-                          controller: _scrollController,
-                          alwaysVisible: true,
-                          child: ListView.builder(
-                            padding: const EdgeInsets.only(top: 0),
-                            controller: _scrollController,
-                            shrinkWrap: true,
-                            itemCount: state.files.length,
-                            itemBuilder: (BuildContext context, int index) {
-                              final file = state.files[index];
-                              return Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      file is MultiDownloadFile
-                                          ? '${file.fileName} '
-                                          : (file as MultiDownloadFolder)
-                                              .folderPath,
-                                      style: ArDriveTypography.body.smallBold(
-                                        color: ArDriveTheme.of(context)
-                                            .themeData
-                                            .colors
-                                            .themeFgSubtle,
-                                      ),
-                                    ),
-                                  ),
-                                  if (file is MultiDownloadFile)
-                                    Padding(
-                                      padding: const EdgeInsets.only(right: 16),
-                                      child: Text(
-                                        filesize(file.size),
-                                        style:
-                                            ArDriveTypography.body.smallRegular(
-                                          color: ArDriveTheme.of(context)
-                                              .themeData
-                                              .colors
-                                              .themeFgMuted,
-                                        ),
-                                      ),
-                                    )
-                                ],
-                              );
-                            },
-                          )),
-                    ),
-                  )
+                  _buildFileList(state.files, typography, colorTokens),
                 ],
               ),
               actions: [
@@ -170,8 +186,7 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
               ],
             );
           } else if (state is MultipleDownloadFinishedWithSuccess) {
-            // should only get here if there are skipped files
-            return ArDriveStandardModal(
+            return ArDriveStandardModalNew(
               width: 408,
               title: appLocalizationsOf(context)
                   .multiDownloadCompleteWithSkippedFiles(
@@ -180,53 +195,7 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Align(
-                    alignment: Alignment.topCenter,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 256),
-                      child: ArDriveScrollBar(
-                          controller: _scrollController,
-                          alwaysVisible: true,
-                          child: ListView.builder(
-                            padding: const EdgeInsets.only(top: 0),
-                            controller: _scrollController,
-                            shrinkWrap: true,
-                            itemCount: state.skippedFiles.length,
-                            itemBuilder: (BuildContext context, int index) {
-                              final file = state.skippedFiles[index];
-                              return Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      file is MultiDownloadFile
-                                          ? '${file.fileName} '
-                                          : (file as MultiDownloadFolder)
-                                              .folderPath,
-                                      style: ArDriveTypography.body.smallBold(
-                                        color: ArDriveTheme.of(context)
-                                            .themeData
-                                            .colors
-                                            .themeFgSubtle,
-                                      ),
-                                    ),
-                                  ),
-                                  if (file is MultiDownloadFile)
-                                    Text(
-                                      filesize(file.size),
-                                      style:
-                                          ArDriveTypography.body.smallRegular(
-                                        color: ArDriveTheme.of(context)
-                                            .themeData
-                                            .colors
-                                            .themeFgMuted,
-                                      ),
-                                    ),
-                                ],
-                              );
-                            },
-                          )),
-                    ),
-                  )
+                  _buildFileList(state.skippedFiles, typography, colorTokens),
                 ],
               ),
               actions: [
@@ -239,67 +208,88 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
               ],
             );
           } else if (state is MultipleDownloadFailure) {
+            late Widget content;
             bool showRetryAndSkip = true;
+
             switch (state.reason) {
               case FileDownloadFailureReason.fileAboveLimit:
                 content = Text(
                   appLocalizationsOf(context)
                       .fileFailedToDownloadFileAbovePublicLimit,
+                  style: typography.paragraphNormal(
+                    color: colorTokens.textMid,
+                  ),
                 );
                 showRetryAndSkip = false;
                 break;
               case FileDownloadFailureReason.fileNotFound:
-                content =
-                    Text(appLocalizationsOf(context).tryAgainDownloadingFile);
+                content = Text(
+                  appLocalizationsOf(context).tryAgainDownloadingFile,
+                  style: typography.paragraphNormal(
+                    color: colorTokens.textMid,
+                  ),
+                );
                 break;
               case FileDownloadFailureReason.networkConnectionError:
                 content = Text(
-                    appLocalizationsOf(context).multiDownloadErrorTryAgain);
+                  appLocalizationsOf(context).multiDownloadErrorTryAgain,
+                  style: typography.paragraphNormal(
+                    color: colorTokens.textMid,
+                  ),
+                );
                 break;
               default:
-                content = Text(appLocalizationsOf(context).fileDownloadFailed);
+                content = Text(
+                  appLocalizationsOf(context).fileDownloadFailed,
+                  style: typography.paragraphNormal(
+                    color: colorTokens.textMid,
+                  ),
+                );
             }
 
-            actions = [
-              ModalAction(
-                action: () {
-                  context
-                      .read<MultipleDownloadBloc>()
-                      .add(const CancelDownload());
-                  Navigator.pop(context);
-                },
-                title: appLocalizationsOf(context).cancel,
-              ),
-              if (showRetryAndSkip) ...[
+            return ArDriveStandardModalNew(
+              title: appLocalizationsOf(context).download,
+              content: content,
+              actions: [
                 ModalAction(
                   action: () {
                     context
                         .read<MultipleDownloadBloc>()
-                        .add(const ResumeDownload());
+                        .add(const CancelDownload());
+                    Navigator.pop(context);
                   },
-                  title: appLocalizationsOf(context).tryAgain,
+                  title: appLocalizationsOf(context).cancel,
                 ),
-                ModalAction(
-                  action: () {
-                    context
-                        .read<MultipleDownloadBloc>()
-                        .add(const SkipFileAndResumeDownload());
-                  },
-                  title: appLocalizationsOf(context).skip,
-                ),
-              ]
-            ];
-          } else {
-            content = Text(
-              appLocalizationsOf(context).download,
-              style: ArDriveTypography.body.buttonLargeBold(),
+                if (showRetryAndSkip) ...[
+                  ModalAction(
+                    action: () {
+                      context
+                          .read<MultipleDownloadBloc>()
+                          .add(const ResumeDownload());
+                    },
+                    title: appLocalizationsOf(context).tryAgain,
+                  ),
+                  ModalAction(
+                    action: () {
+                      context
+                          .read<MultipleDownloadBloc>()
+                          .add(const SkipFileAndResumeDownload());
+                    },
+                    title: appLocalizationsOf(context).skip,
+                  ),
+                ]
+              ],
             );
           }
 
-          return ArDriveStandardModal(
+          return ArDriveStandardModalNew(
             title: appLocalizationsOf(context).download,
-            content: content,
-            actions: actions,
+            content: Text(
+              appLocalizationsOf(context).download,
+              style: typography.paragraphNormal(
+                color: colorTokens.textMid,
+              ),
+            ),
           );
         },
       ),
