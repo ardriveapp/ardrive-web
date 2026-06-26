@@ -1298,6 +1298,11 @@ class ArweaveService {
     // confirmed cross-owner txs without an unscoped scan. Genuinely missing txs
     // have no override and are left unresolved — handled by the caller's
     // existing pending/failed logic.
+    //
+    // Best-effort: this pass must never discard the first pass's results. Its
+    // results are merged into the already-populated map, so we swallow any
+    // error and bound it with its own timeout — even if it fails or stalls,
+    // the confirmations resolved by the first pass are still returned.
     if (owner != null && ownerOverrides != null && ownerOverrides.isNotEmpty) {
       final idsByOverrideOwner = <String, List<String?>>{};
       for (final entry in transactionConfirmations.entries) {
@@ -1307,8 +1312,19 @@ class ArweaveService {
         idsByOverrideOwner.putIfAbsent(overrideOwner, () => []).add(entry.key);
       }
 
-      for (final entry in idsByOverrideOwner.entries) {
-        await queryConfirmations(entry.value, owner: entry.key);
+      if (idsByOverrideOwner.isNotEmpty) {
+        try {
+          await Future(() async {
+            for (final entry in idsByOverrideOwner.entries) {
+              await queryConfirmations(entry.value, owner: entry.key);
+            }
+          }).timeout(const Duration(seconds: 3));
+        } catch (e) {
+          logger.w(
+            'Pinned-owner confirmation recovery failed or timed out; '
+            'leaving those txs unresolved: $e',
+          );
+        }
       }
     }
 
