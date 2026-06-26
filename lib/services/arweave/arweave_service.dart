@@ -1259,43 +1259,50 @@ class ArweaveService {
     // prune its search space.
     Future<void> queryConfirmations(List<String?> ids, {String? owner}) async {
       const chunkSize = 100;
+      // Cap how many chunk queries hit the gateway at once so a large page
+      // doesn't fan out into a burst of concurrent GraphQL retries (and a
+      // potential rate-limit storm), matching the throttling used by the other
+      // gateway-heavy paths in this service.
+      final maxConcurrent =
+          _configService.config.maxConcurrentDataFetches.clamp(1, 100);
 
-      final confirmationFutures = <Future<void>>[];
+      Future<void> queryChunk(int start) async {
+        final chunkEnd =
+            (start + chunkSize < ids.length) ? start + chunkSize : ids.length;
 
-      for (var i = 0; i < ids.length; i += chunkSize) {
-        confirmationFutures.add(() async {
-          final chunkEnd =
-              (i + chunkSize < ids.length) ? i + chunkSize : ids.length;
-
-          final query = await graphQLRetry.execute(
-            TransactionStatusesQuery(
-              variables: TransactionStatusesArguments(
-                transactionIds: ids.sublist(i, chunkEnd) as List<String>?,
-                owners: owner != null ? [owner] : null,
-              ),
+        final query = await graphQLRetry.execute(
+          TransactionStatusesQuery(
+            variables: TransactionStatusesArguments(
+              transactionIds:
+                  ids.sublist(start, chunkEnd).whereType<String>().toList(),
+              owners: owner != null ? [owner] : null,
             ),
-          );
+          ),
+        );
 
-          final currentBlockHeight =
-              query.data!.blocks.edges.first.node.height;
+        final currentBlockHeight = query.data!.blocks.edges.first.node.height;
 
-          for (final transaction
-              in query.data!.transactions.edges.map((e) => e.node)) {
-            final confirmations = transaction.block == null
-                ? 0
-                : currentBlockHeight - transaction.block!.height + 1;
-            transactionConfirmations[transaction.id] = confirmations;
-            // Record the resolved verification so it survives a caller timeout.
-            verifiedSink?[transaction.id] = confirmations;
-          }
-        }());
+        for (final transaction
+            in query.data!.transactions.edges.map((e) => e.node)) {
+          final confirmations = transaction.block == null
+              ? 0
+              : currentBlockHeight - transaction.block!.height + 1;
+          transactionConfirmations[transaction.id] = confirmations;
+          // Record the resolved verification so it survives a caller timeout.
+          verifiedSink?[transaction.id] = confirmations;
+        }
       }
 
-      try {
-        await Future.wait(confirmationFutures);
-      } catch (e) {
-        logger.e('Error getting transactions confirmations on exception', e);
-        rethrow;
+      final chunkStarts = [for (var i = 0; i < ids.length; i += chunkSize) i];
+      // Process the chunks in bounded-concurrency batches.
+      for (var b = 0; b < chunkStarts.length; b += maxConcurrent) {
+        final batch = chunkStarts.skip(b).take(maxConcurrent);
+        try {
+          await Future.wait(batch.map(queryChunk));
+        } catch (e) {
+          logger.e('Error getting transactions confirmations on exception', e);
+          rethrow;
+        }
       }
     }
 
