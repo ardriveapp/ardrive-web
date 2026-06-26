@@ -1228,9 +1228,17 @@ class ArweaveService {
   ///
   /// When the number of confirmations is 0, the transaction has yet to be mined. When
   /// it is -1, the transaction could not be found.
+  /// [ownerOverrides] maps a transaction id to the address that actually owns
+  /// it on-chain when that differs from [owner] (e.g. the data tx of a file
+  /// pinned from another author's upload). Any id left unresolved by the
+  /// owner-scoped pass that has an override is re-queried scoped to its real
+  /// owner — keeping every query selective. Ids with no override are left
+  /// unresolved rather than re-queried unscoped, which would reintroduce the
+  /// expensive gateway scan this scoping is meant to avoid.
   Future<Map<String?, int>> getTransactionConfirmations(
     List<String?> transactionIds, {
     String? owner,
+    Map<String, String>? ownerOverrides,
   }) async {
     final transactionConfirmations = {
       for (final transactionId in transactionIds) transactionId: -1
@@ -1285,19 +1293,22 @@ class ArweaveService {
     // First pass: scoped by owner for gateway selectivity.
     await queryConfirmations(transactionIds, owner: owner);
 
-    // Fallback: a tx not found under the owner scope may simply belong to a
-    // different owner (e.g. the data tx of a file pinned from another author's
-    // upload) rather than being absent from the network. Re-query just those
-    // unresolved ids without the owner filter so confirmed cross-owner txs
-    // aren't misclassified as failed by the caller. The residual set is
-    // normally tiny, so this preserves the selectivity win of the first pass.
-    if (owner != null) {
-      final unresolvedIds = transactionConfirmations.entries
-          .where((entry) => entry.value < 0)
-          .map((entry) => entry.key)
-          .toList();
-      if (unresolvedIds.isNotEmpty) {
-        await queryConfirmations(unresolvedIds);
+    // Second pass: for any unresolved id whose real owner we know locally
+    // (currently pinned data txs), re-query scoped to that owner. This recovers
+    // confirmed cross-owner txs without an unscoped scan. Genuinely missing txs
+    // have no override and are left unresolved — handled by the caller's
+    // existing pending/failed logic.
+    if (owner != null && ownerOverrides != null && ownerOverrides.isNotEmpty) {
+      final idsByOverrideOwner = <String, List<String?>>{};
+      for (final entry in transactionConfirmations.entries) {
+        if (entry.value >= 0) continue;
+        final overrideOwner = ownerOverrides[entry.key];
+        if (overrideOwner == null || overrideOwner == owner) continue;
+        idsByOverrideOwner.putIfAbsent(overrideOwner, () => []).add(entry.key);
+      }
+
+      for (final entry in idsByOverrideOwner.entries) {
+        await queryConfirmations(entry.value, owner: entry.key);
       }
     }
 
