@@ -1236,48 +1236,69 @@ class ArweaveService {
       for (final transactionId in transactionIds) transactionId: -1
     };
 
-    const chunkSize = 100;
+    // Queries confirmation status for [ids] in chunks, writing results into
+    // [transactionConfirmations]. When [owner] is provided, the query is scoped
+    // to that owner so the gateway can prune its search space.
+    Future<void> queryConfirmations(List<String?> ids, {String? owner}) async {
+      const chunkSize = 100;
 
-    final confirmationFutures = <Future<void>>[];
+      final confirmationFutures = <Future<void>>[];
 
-    for (var i = 0; i < transactionIds.length; i += chunkSize) {
-      confirmationFutures.add(() async {
-        final chunkEnd = (i + chunkSize < transactionIds.length)
-            ? i + chunkSize
-            : transactionIds.length;
+      for (var i = 0; i < ids.length; i += chunkSize) {
+        confirmationFutures.add(() async {
+          final chunkEnd =
+              (i + chunkSize < ids.length) ? i + chunkSize : ids.length;
 
-        final query = await graphQLRetry.execute(
-          TransactionStatusesQuery(
-            variables: TransactionStatusesArguments(
-              transactionIds:
-                  transactionIds.sublist(i, chunkEnd) as List<String>?,
-              // Scoping by owner lets the gateway prune its search space; null
-              // leaves the query unscoped (current behavior).
-              owners: owner != null ? [owner] : null,
+          final query = await graphQLRetry.execute(
+            TransactionStatusesQuery(
+              variables: TransactionStatusesArguments(
+                transactionIds: ids.sublist(i, chunkEnd) as List<String>?,
+                owners: owner != null ? [owner] : null,
+              ),
             ),
-          ),
-        );
+          );
 
-        final currentBlockHeight = query.data!.blocks.edges.first.node.height;
+          final currentBlockHeight =
+              query.data!.blocks.edges.first.node.height;
 
-        for (final transaction
-            in query.data!.transactions.edges.map((e) => e.node)) {
-          if (transaction.block == null) {
-            transactionConfirmations[transaction.id] = 0;
-            continue;
+          for (final transaction
+              in query.data!.transactions.edges.map((e) => e.node)) {
+            if (transaction.block == null) {
+              transactionConfirmations[transaction.id] = 0;
+              continue;
+            }
+
+            transactionConfirmations[transaction.id] =
+                currentBlockHeight - transaction.block!.height + 1;
           }
+        }());
+      }
 
-          transactionConfirmations[transaction.id] =
-              currentBlockHeight - transaction.block!.height + 1;
-        }
-      }());
+      try {
+        await Future.wait(confirmationFutures);
+      } catch (e) {
+        logger.e('Error getting transactions confirmations on exception', e);
+        rethrow;
+      }
     }
 
-    try {
-      await Future.wait(confirmationFutures);
-    } catch (e) {
-      logger.e('Error getting transactions confirmations on exception', e);
-      rethrow;
+    // First pass: scoped by owner for gateway selectivity.
+    await queryConfirmations(transactionIds, owner: owner);
+
+    // Fallback: a tx not found under the owner scope may simply belong to a
+    // different owner (e.g. the data tx of a file pinned from another author's
+    // upload) rather than being absent from the network. Re-query just those
+    // unresolved ids without the owner filter so confirmed cross-owner txs
+    // aren't misclassified as failed by the caller. The residual set is
+    // normally tiny, so this preserves the selectivity win of the first pass.
+    if (owner != null) {
+      final unresolvedIds = transactionConfirmations.entries
+          .where((entry) => entry.value < 0)
+          .map((entry) => entry.key)
+          .toList();
+      if (unresolvedIds.isNotEmpty) {
+        await queryConfirmations(unresolvedIds);
+      }
     }
 
     return transactionConfirmations;

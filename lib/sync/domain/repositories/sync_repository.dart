@@ -171,9 +171,10 @@ class _SyncRepository implements SyncRepository {
 
     // The address of the currently logged-in wallet. All pending transactions
     // are uploads made by this wallet, so scoping the status query by it lets
-    // the gateway prune its search space. (Edge case: data txs of files pinned
-    // from other authors are owned by those authors and won't match — those
-    // are rare and treated as best-effort.)
+    // the gateway prune its search space. Cross-owner txs (e.g. data txs of
+    // files pinned from other authors) won't match this owner, but
+    // getTransactionConfirmations re-queries any unresolved ids without the
+    // owner filter so they aren't misclassified as failed.
     String? walletAddress;
     if (wallet != null) {
       walletAddress = await wallet.getAddress();
