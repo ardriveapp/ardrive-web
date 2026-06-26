@@ -10,10 +10,13 @@ class SnapshotValidationService {
   final ConfigService _configService;
   final ArioSDK _arioSDK;
 
-  static const _headTimeout = Duration(seconds: 10);
-  static const _retryDelay = Duration(milliseconds: 500);
-  static const _garListTimeout = Duration(seconds: 5);
+  static const _headTimeout = Duration(seconds: 5);
+  static const _garListTimeout = Duration(seconds: 3);
   static const _maxConcurrentValidations = 3;
+
+  /// Cached GAR gateway list — fetched once per session, avoids repeated
+  /// Solana RPC calls which may be slow or unavailable (e.g. localhost).
+  List<Gateway>? _cachedGateways;
 
   SnapshotValidationService({
     required ConfigService configService,
@@ -63,47 +66,51 @@ class SnapshotValidationService {
   /// 2. If primary fails, try 1 fallback gateway from the GAR list
   /// 3. Accept if ANY gateway returns 200
   Future<bool> _validateSnapshot(String txId, String primaryUrl) async {
-    // 1. Try primary gateway (with 1 retry)
-    for (var attempt = 0; attempt < 2; attempt++) {
-      try {
-        final response = await http
-            .head(Uri.parse('$primaryUrl/$txId'))
-            .timeout(_headTimeout);
+    var primaryWas404 = false;
 
-        // 200 = available, 302 = gateway knows about it (redirecting to sandbox URL)
-        if (response.statusCode == 200 || response.statusCode == 302) {
-          return true;
-        }
+    // 1. Try primary gateway (1 attempt, no retry — fail fast)
+    try {
+      final response = await http
+          .head(Uri.parse('$primaryUrl/$txId'))
+          .timeout(_headTimeout);
 
-        if (_isNonRetryable(response.statusCode)) {
-          logger.w(
-            'Snapshot $txId rejected: '
-            'non-retryable status ${response.statusCode}',
-          );
-          return false;
-        }
+      if (response.statusCode == 200 || response.statusCode == 302) {
+        return true;
+      }
 
-        logger.d(
-          'Snapshot $txId HEAD attempt ${attempt + 1} '
-          'returned ${response.statusCode}',
+      if (_isNonRetryable(response.statusCode)) {
+        logger.w(
+          'Snapshot $txId rejected: '
+          'non-retryable status ${response.statusCode}',
         );
-      } on TimeoutException {
-        logger.d('Snapshot $txId HEAD attempt ${attempt + 1} timed out');
-      } catch (e) {
-        logger.d('Snapshot $txId HEAD attempt ${attempt + 1} error: $e');
+        return false;
       }
 
-      // Retry after brief delay (skip delay on last attempt)
-      if (attempt == 0) {
-        await Future.delayed(_retryDelay);
-      }
+      primaryWas404 = response.statusCode == 404;
+
+      logger.d(
+        'Snapshot $txId HEAD returned ${response.statusCode}',
+      );
+    } on TimeoutException {
+      logger.d('Snapshot $txId HEAD timed out');
+    } catch (e) {
+      logger.d('Snapshot $txId HEAD error: $e');
     }
 
-    // 2. Primary failed — try 1 fallback gateway
+    // 2. If primary returned 404, the snapshot likely doesn't exist.
+    //    Skip the fallback — GAR list requires Solana RPC which may be
+    //    unavailable (localhost, rate limits). Fail fast and fall back to GQL.
+    if (primaryWas404) {
+      logger.w('Snapshot $txId not found on primary (404), skipping fallback');
+      return false;
+    }
+
+    // 3. Primary had a transient error (timeout, 5xx) — try 1 fallback gateway
     try {
-      final gateways = await _arioSDK
+      _cachedGateways ??= await _arioSDK
           .getGateways()
           .timeout(_garListTimeout, onTimeout: () => <Gateway>[]);
+      final gateways = _cachedGateways!;
 
       if (gateways.isEmpty) return false;
 

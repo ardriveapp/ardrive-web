@@ -141,8 +141,11 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                   state.sharedDrives.isNotEmpty) {
                 final cubit = context.read<DriveDetailCubit>();
 
-                // Don't re-trigger changeDrive if we're already viewing/loading this drive
-                if (cubit.currentDriveId == state.selectedDriveId) {
+                // Don't re-trigger changeDrive if we're already viewing/loading
+                // this drive — UNLESS the drive was not found (it may have
+                // been attached since we last checked).
+                if (cubit.currentDriveId == state.selectedDriveId &&
+                    cubit.state is! DriveDetailLoadNotFound) {
                   return;
                 }
 
@@ -174,9 +177,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
               builder: (context, hideState) {
                 return BlocBuilder<DriveDetailCubit, DriveDetailState>(
                   buildWhen: (previous, current) {
-                    return !context.read<ActivityTracker>().isBulkImporting &&
-                        widget.context.read<SyncCubit>().state
-                            is! SyncInProgress;
+                    return !context.read<ActivityTracker>().isBulkImporting;
                   },
                   builder: (context, driveDetailState) {
                     if (driveDetailState is DriveDetailLoadEmpty) {
