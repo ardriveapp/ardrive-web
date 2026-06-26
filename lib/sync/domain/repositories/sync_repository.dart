@@ -169,11 +169,18 @@ class _SyncRepository implements SyncRepository {
     _ghostFolders.clear();
     _folderIds.clear();
 
+    // The address of the currently logged-in wallet. All pending transactions
+    // are uploads made by this wallet, so scoping the status query by it lets
+    // the gateway prune its search space. Cross-owner txs (e.g. data txs of
+    // files pinned from other authors) won't match this owner; those that we
+    // can identify locally are re-queried scoped to their real owner via
+    // ownerOverrides in getTransactionConfirmations.
+    String? walletAddress;
     if (wallet != null) {
-      final address = await wallet.getAddress();
+      walletAddress = await wallet.getAddress();
 
       _arnsRepository
-          .getAntRecordsForWallet(address, update: true)
+          .getAntRecordsForWallet(walletAddress, update: true)
           .catchError((e) {
         logger.e('Error getting ANT records for wallet. Continuing...', e);
         return Future.value(<ANTRecord>[]);
@@ -383,6 +390,8 @@ class _SyncRepository implements SyncRepository {
               _updateTransactionStatuses(
                 driveDao: _driveDao,
                 arweave: _arweave,
+                // Scope the gateway query to the logged-in wallet for selectivity.
+                ownerAddress: walletAddress,
                 txsIdsToSkip: confirmedFileTxIds,
                 cancellationToken: token,
               ).timeout(
@@ -663,6 +672,8 @@ class _SyncRepository implements SyncRepository {
             driveDao: _driveDao,
             arweave: _arweave,
             driveDataTxIds: driveDataTxIds,
+            // Scope the gateway query to this drive's owner for selectivity.
+            ownerAddress: drive.ownerAddress,
             txsIdsToSkip: confirmedFileTxIds,
             cancellationToken: token,
           ).timeout(
@@ -754,10 +765,13 @@ class _SyncRepository implements SyncRepository {
     required DriveDao driveDao,
     required ArweaveService arweave,
     required Set<String> driveDataTxIds,
+    String? ownerAddress,
     List<TxID> txsIdsToSkip = const [],
     SyncCancellationToken? cancellationToken,
   }) async {
     cancellationToken?.checkCancellation();
+
+    final ownerOverrides = await _buildPinnedDataTxOwnerOverrides(driveDao);
 
     // Load all pending transactions and filter to this drive
     final allPendingTxs = await driveDao.pendingTransactions().get();
@@ -796,13 +810,21 @@ class _SyncRepository implements SyncRepository {
 
       cancellationToken?.checkCancellation();
 
+      // Caller-owned sink populated with each resolved confirmation; on timeout
+      // we fall back to it so progress made before the deadline isn't lost.
+      final verified = <String?, int>{};
+
       final map = await arweave
-          .getTransactionConfirmations(currentPage.toList())
+          .getTransactionConfirmations(currentPage.toList(),
+              owner: ownerAddress,
+              ownerOverrides: ownerOverrides,
+              verifiedSink: verified)
           .timeout(
         const Duration(seconds: 5),
         onTimeout: () {
-          logger.w('Individual transaction confirmation timeout');
-          return <String, int>{};
+          logger.w('Individual transaction confirmation timeout; '
+              'applying ${verified.length} confirmations resolved so far');
+          return verified;
         },
       );
 
@@ -980,14 +1002,32 @@ class _SyncRepository implements SyncRepository {
     }
   }
 
+  /// Maps the data tx id of each pinned file to the address that actually owns
+  /// it on-chain (the original uploader, not the drive owner). Used to resolve
+  /// confirmation status for these cross-owner txs with a selective,
+  /// owner-scoped query instead of an expensive unscoped one.
+  Future<Map<String, String>> _buildPinnedDataTxOwnerOverrides(
+    DriveDao driveDao,
+  ) async {
+    final pinnedFileRevisions = await driveDao.pinnedFileRevisions().get();
+    return {
+      for (final row in pinnedFileRevisions)
+        if (row.pinnedDataOwnerAddress != null)
+          row.dataTxId: row.pinnedDataOwnerAddress!,
+    };
+  }
+
   Future<void> _updateTransactionStatuses({
     required DriveDao driveDao,
     required ArweaveService arweave,
+    String? ownerAddress,
     List<TxID> txsIdsToSkip = const [],
     SyncCancellationToken? cancellationToken,
   }) async {
     // Check for cancellation at the start
     cancellationToken?.checkCancellation();
+
+    final ownerOverrides = await _buildPinnedDataTxOwnerOverrides(driveDao);
 
     // Load all pending transactions
     // Note: We load all at once here, but the memory impact is acceptable
@@ -1036,15 +1076,24 @@ class _SyncRepository implements SyncRepository {
       // Check cancellation before making the GraphQL call
       cancellationToken?.checkCancellation();
 
+      // Caller-owned sink that getTransactionConfirmations populates with each
+      // resolved confirmation. On timeout we fall back to it so the work done
+      // before the deadline isn't discarded (it holds only verified
+      // confirmations, so it never marks anything failed off a partial run).
+      final verified = <String?, int>{};
+
       // Use a shorter timeout for individual GraphQL calls
       final map = await arweave
-          .getTransactionConfirmations(currentPage.toList())
+          .getTransactionConfirmations(currentPage.toList(),
+              owner: ownerAddress,
+              ownerOverrides: ownerOverrides,
+              verifiedSink: verified)
           .timeout(
         const Duration(seconds: 5),
         onTimeout: () {
-          logger.w('Individual transaction confirmation timeout');
-          // Return empty map on timeout to continue with other transactions
-          return <String, int>{};
+          logger.w('Individual transaction confirmation timeout; '
+              'applying ${verified.length} confirmations resolved so far');
+          return verified;
         },
       );
 

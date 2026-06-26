@@ -170,6 +170,13 @@ pendingTransactionsForDrive:
         WHERE driveId = :driveId
     );
 
+-- File revisions of pinned files, whose data tx is owned on-chain by the
+-- original uploader (not the drive owner). Used to resolve confirmation status
+-- for these cross-owner txs without an unscoped gateway query.
+pinnedFileRevisions:
+    SELECT * FROM file_revisions
+    WHERE pinnedDataOwnerAddress IS NOT NULL;
+
 getFilesWithAssignedNames:
 SELECT * FROM file_entries
 WHERE assignedNames IS NOT NULL;
