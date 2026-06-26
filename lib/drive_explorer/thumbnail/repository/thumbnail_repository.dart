@@ -73,9 +73,9 @@ class ThumbnailRepository {
   Future<Uint8List> _getThumbnailData({
     required FileDataTableItem fileDataTableItem,
   }) async {
-    final dataTx = await _arweaveService.getTransactionDetails(
-      fileDataTableItem.thumbnail!.variants.first.txId,
-    );
+    final thumbnailTxId = fileDataTableItem.thumbnail!.variants.first.txId;
+
+    final dataTx = await _arweaveService.getTransactionDetails(thumbnailTxId);
 
     if (dataTx == null) {
       throw Exception('Data transaction not found');
@@ -85,7 +85,8 @@ class ThumbnailRepository {
         fileDataTableItem.driveId, _arDriveAuth.currentUser.cipherKey);
 
     return await _arDriveDownloader.downloadToMemory(
-      dataTx: dataTx,
+      dataTxId: thumbnailTxId,
+      appName: dataTx.getTag(EntityTag.appName),
       fileSize: fileDataTableItem.thumbnail!.variants.first.size,
       fileName: fileDataTableItem.name,
       lastModifiedDate: fileDataTableItem.lastModifiedDate,
@@ -106,6 +107,11 @@ class ThumbnailRepository {
 
     final dataTx =
         await _arweaveService.getTransactionDetails(fileEntry.dataTxId);
+
+    if (dataTx == null) {
+      throw Exception(
+          'Data transaction not found for thumbnail generation: ${fileEntry.dataTxId}');
+    }
 
     SecretKey? fileKey;
 
@@ -128,7 +134,8 @@ class ThumbnailRepository {
     logger.d('Downloading file to memory');
 
     final bytes = await _arDriveDownloader.downloadToMemory(
-      dataTx: dataTx!,
+      dataTxId: fileEntry.dataTxId,
+      appName: dataTx.getTag(EntityTag.appName),
       fileSize: fileEntry.size,
       fileName: fileEntry.name,
       lastModifiedDate: fileEntry.lastModifiedDate,

@@ -99,6 +99,7 @@ Future<void> promptToDownloadSharedFile({
   required BuildContext context,
   SecretKey? fileKey,
   required ARFSFileEntity revision,
+  Map<String, String>? preloadedTags,
 }) {
   final cubit = SharedFileDownloadCubit(
     arDriveDownloader: ArDriveDownloader(
@@ -110,6 +111,7 @@ Future<void> promptToDownloadSharedFile({
     revision: revision,
     fileKey: fileKey,
     arweave: context.read<ArweaveService>(),
+    preloadedTags: preloadedTags,
   );
   return showArDriveDialog(
     context,
@@ -297,7 +299,7 @@ class FileDownloadDialog extends StatelessWidget {
       BuildContext context, FileDownloadFinishedWithSuccess state) {
     return _modalWrapper(
       title: appLocalizationsOf(context).downloadFinished,
-      description: appLocalizationsOf(context).downloadFinished,
+      description: 'Your file has been saved successfully.',
       actions: [
         ModalAction(
           action: () {

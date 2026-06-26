@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
@@ -201,13 +203,26 @@ class SharedFilePage extends StatelessWidget {
                   ArDriveButton(
                     icon: ArDriveIcons.download(color: Colors.white),
                     onPressed: () {
+                      final latestRevision = state.fileRevisions.first;
                       final file = ARFSFactory().getARFSFileFromFileRevision(
-                        state.fileRevisions.first,
+                        latestRevision,
                       );
+                      // Pass pre-loaded tags to avoid redundant GraphQL query
+                      Map<String, String>? tags;
+                      if (latestRevision.customGQLTags != null) {
+                        try {
+                          final decoded =
+                              json.decode(latestRevision.customGQLTags!);
+                          if (decoded is Map) {
+                            tags = Map<String, String>.from(decoded);
+                          }
+                        } catch (_) {}
+                      }
                       return promptToDownloadSharedFile(
                         revision: file,
                         context: context,
                         fileKey: state.fileKey,
+                        preloadedTags: tags,
                       );
                     },
                     text: appLocalizationsOf(context).download,
