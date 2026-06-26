@@ -810,14 +810,21 @@ class _SyncRepository implements SyncRepository {
 
       cancellationToken?.checkCancellation();
 
+      // Caller-owned sink populated with each resolved confirmation; on timeout
+      // we fall back to it so progress made before the deadline isn't lost.
+      final verified = <String?, int>{};
+
       final map = await arweave
           .getTransactionConfirmations(currentPage.toList(),
-              owner: ownerAddress, ownerOverrides: ownerOverrides)
+              owner: ownerAddress,
+              ownerOverrides: ownerOverrides,
+              verifiedSink: verified)
           .timeout(
         const Duration(seconds: 5),
         onTimeout: () {
-          logger.w('Individual transaction confirmation timeout');
-          return <String, int>{};
+          logger.w('Individual transaction confirmation timeout; '
+              'applying ${verified.length} confirmations resolved so far');
+          return verified;
         },
       );
 
@@ -1069,16 +1076,24 @@ class _SyncRepository implements SyncRepository {
       // Check cancellation before making the GraphQL call
       cancellationToken?.checkCancellation();
 
+      // Caller-owned sink that getTransactionConfirmations populates with each
+      // resolved confirmation. On timeout we fall back to it so the work done
+      // before the deadline isn't discarded (it holds only verified
+      // confirmations, so it never marks anything failed off a partial run).
+      final verified = <String?, int>{};
+
       // Use a shorter timeout for individual GraphQL calls
       final map = await arweave
           .getTransactionConfirmations(currentPage.toList(),
-              owner: ownerAddress, ownerOverrides: ownerOverrides)
+              owner: ownerAddress,
+              ownerOverrides: ownerOverrides,
+              verifiedSink: verified)
           .timeout(
         const Duration(seconds: 5),
         onTimeout: () {
-          logger.w('Individual transaction confirmation timeout');
-          // Return empty map on timeout to continue with other transactions
-          return <String, int>{};
+          logger.w('Individual transaction confirmation timeout; '
+              'applying ${verified.length} confirmations resolved so far');
+          return verified;
         },
       );
 

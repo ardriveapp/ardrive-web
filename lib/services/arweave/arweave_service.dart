@@ -1235,18 +1235,28 @@ class ArweaveService {
   /// owner — keeping every query selective. Ids with no override are left
   /// unresolved rather than re-queried unscoped, which would reintroduce the
   /// expensive gateway scan this scoping is meant to avoid.
+  ///
+  /// [verifiedSink], if provided, is progressively populated with each
+  /// successfully verified confirmation (value >= 0) as the query completes —
+  /// it never receives the -1 "not found" placeholders. A caller can wrap this
+  /// method in a timeout and, on expiry, fall back to [verifiedSink] to keep
+  /// the confirmations resolved so far instead of discarding the whole batch.
+  /// Because it holds only positive verifications, applying it after a timeout
+  /// never marks anything failed off an incomplete run.
   Future<Map<String?, int>> getTransactionConfirmations(
     List<String?> transactionIds, {
     String? owner,
     Map<String, String>? ownerOverrides,
+    Map<String?, int>? verifiedSink,
   }) async {
     final transactionConfirmations = {
       for (final transactionId in transactionIds) transactionId: -1
     };
 
     // Queries confirmation status for [ids] in chunks, writing results into
-    // [transactionConfirmations]. When [owner] is provided, the query is scoped
-    // to that owner so the gateway can prune its search space.
+    // [transactionConfirmations] (and [verifiedSink] for resolved ids). When
+    // [owner] is provided, the query is scoped to that owner so the gateway can
+    // prune its search space.
     Future<void> queryConfirmations(List<String?> ids, {String? owner}) async {
       const chunkSize = 100;
 
@@ -1271,13 +1281,12 @@ class ArweaveService {
 
           for (final transaction
               in query.data!.transactions.edges.map((e) => e.node)) {
-            if (transaction.block == null) {
-              transactionConfirmations[transaction.id] = 0;
-              continue;
-            }
-
-            transactionConfirmations[transaction.id] =
-                currentBlockHeight - transaction.block!.height + 1;
+            final confirmations = transaction.block == null
+                ? 0
+                : currentBlockHeight - transaction.block!.height + 1;
+            transactionConfirmations[transaction.id] = confirmations;
+            // Record the resolved verification so it survives a caller timeout.
+            verifiedSink?[transaction.id] = confirmations;
           }
         }());
       }
