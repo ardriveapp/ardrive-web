@@ -142,15 +142,45 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     String? cipher;
     String? cipherIvTag;
     SecretKey? fileKey;
+    String? appName;
 
     final isPinFile = _file.pinnedDataOwnerAddress != null;
 
-    final dataTx = await (_arweave.getTransactionDetails(_file.txId));
+    // Read transaction tags from the local DB to avoid a GraphQL round-trip.
+    // The file revision's customGQLTags stores the original tags as JSON.
+    final localRevision = await _driveDao
+        .latestFileRevisionByFileId(
+          driveId: _file.driveId,
+          fileId: _file.id,
+        )
+        .getSingleOrNull();
 
-    if (dataTx == null) {
-      throw StateError(
-          'Failed to download: Data transaction not found for file');
+    Map<String, String>? localTags;
+    if (localRevision?.customGQLTags != null) {
+      try {
+        final decoded = json.decode(localRevision!.customGQLTags!);
+        if (decoded is Map) {
+          localTags = Map<String, String>.from(decoded);
+        }
+      } catch (_) {
+        // Malformed tags — fall back to network below
+      }
     }
+
+    // Fall back to GraphQL only if local DB doesn't have tags
+    if (localTags == null) {
+      logger.d('Tags not in local DB, fetching transaction from network');
+      final dataTx = await _arweave.getTransactionDetails(_file.txId);
+      if (dataTx == null) {
+        throw StateError(
+            'Failed to download: transaction tags not available locally or from network');
+      }
+      localTags = {
+        for (final tag in dataTx.tags) tag.name: tag.value,
+      };
+    }
+
+    appName = localTags[EntityTag.appName];
 
     if (drive.drivePrivacy == DrivePrivacy.private && !isPinFile) {
       DriveKey? driveKey;
@@ -171,15 +201,18 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
       fileKey = await _driveDao.getFileKey(_file.id, driveKey.key);
 
-      cipher = dataTx.getTag(EntityTag.cipher);
-      cipherIvTag = dataTx.getTag(EntityTag.cipherIv);
+      cipher = localTags[EntityTag.cipher];
+      cipherIvTag = localTags[EntityTag.cipherIv];
     }
 
     // log file size
     logger.d('File size: ${_file.size}');
 
+    final dataTxId = _file.dataTxId ?? _file.txId;
+
     final downloadStream = await _arDriveDownloader.downloadFile(
-      dataTx: dataTx,
+      dataTxId: dataTxId,
+      appName: appName,
       fileName: _file.name,
       fileSize: _file.size,
       lastModifiedDate: _file.lastModifiedDate,

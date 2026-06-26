@@ -14,7 +14,8 @@ import 'package:cryptography/cryptography.dart' hide Cipher;
 
 abstract class ArDriveDownloader {
   Future<Stream<double>> downloadFile({
-    required TransactionCommonMixin dataTx,
+    required String dataTxId,
+    String? appName,
     required int fileSize,
     required String fileName,
     required DateTime lastModifiedDate,
@@ -26,7 +27,8 @@ abstract class ArDriveDownloader {
     String? cipherIvString,
   });
   Future<Uint8List> downloadToMemory({
-    required TransactionCommonMixin dataTx,
+    required String dataTxId,
+    String? appName,
     required int fileSize,
     required String fileName,
     required DateTime lastModifiedDate,
@@ -65,7 +67,8 @@ class _ArDriveDownloader implements ArDriveDownloader {
 
   @override
   Future<Stream<double>> downloadFile({
-    required TransactionCommonMixin dataTx,
+    required String dataTxId,
+    String? appName,
     required int fileSize,
     required String fileName,
     required DateTime lastModifiedDate,
@@ -85,7 +88,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
           cipher,
           cipherIvString,
           (await arweave.download(
-            txId: dataTx.id,
+            txId: dataTxId,
             arweave: _arweave.client,
             onProgress: (progress, speed) => logger.d(progress.toString()),
           ))
@@ -102,10 +105,11 @@ class _ArDriveDownloader implements ArDriveDownloader {
     Stream<Uint8List> saveStream;
 
     if (isManifest) {
-      saveStream = await _getManifestStream(dataTx.id);
+      saveStream = await _getManifestStream(dataTxId);
     } else {
       saveStream = await _getFileStream(
-        dataTx: dataTx,
+        dataTxId: dataTxId,
+        appName: appName,
         fileSize: fileSize,
         fileName: fileName,
         lastModifiedDate: lastModifiedDate,
@@ -205,7 +209,8 @@ class _ArDriveDownloader implements ArDriveDownloader {
   }
 
   Future<Stream<Uint8List>> _getFileStream({
-    required TransactionCommonMixin dataTx,
+    required String dataTxId,
+    String? appName,
     required int fileSize,
     required String fileName,
     required DateTime lastModifiedDate,
@@ -217,12 +222,12 @@ class _ArDriveDownloader implements ArDriveDownloader {
     logger.d('The file is not a manifest. Downloading it from Arweave...');
 
     /// Disables the verification when the file was uploaded by the CLI
-    final verifyDownload = dataTx.getTag(EntityTag.appName) == 'ArDrive-CLI';
+    final verifyDownload = appName == 'ArDrive-CLI';
 
     logger.d('verifying download: $verifyDownload');
 
     final streamDownloadResponse = await arweave.download(
-      txId: dataTx.id,
+      txId: dataTxId,
       arweave: _arweave.client,
       onProgress: (progress, speed) => logger.d(progress.toString()),
       verifyDownload: verifyDownload,
@@ -299,7 +304,8 @@ class _ArDriveDownloader implements ArDriveDownloader {
 
   @override
   Future<Uint8List> downloadToMemory({
-    required TransactionCommonMixin dataTx,
+    required String dataTxId,
+    String? appName,
     required int fileSize,
     required String fileName,
     required DateTime lastModifiedDate,
@@ -311,7 +317,8 @@ class _ArDriveDownloader implements ArDriveDownloader {
     String? cipherIvString,
   }) async {
     final stream = await _getFileStream(
-      dataTx: dataTx,
+      dataTxId: dataTxId,
+      appName: appName,
       fileSize: fileSize,
       fileName: fileName,
       lastModifiedDate: lastModifiedDate,

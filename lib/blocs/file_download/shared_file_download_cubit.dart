@@ -7,6 +7,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
   final ARFSFileEntity revision;
   final ArweaveService _arweave;
   final ArDriveDownloader _arDriveDownloader;
+  final Map<String, String>? _preloadedTags;
 
   SharedFileDownloadCubit({
     this.fileKey,
@@ -14,8 +15,10 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
     required ArweaveService arweave,
     required ArDriveCrypto crypto,
     required ArDriveDownloader arDriveDownloader,
+    Map<String, String>? preloadedTags,
   })  : _arweave = arweave,
         _arDriveDownloader = arDriveDownloader,
+        _preloadedTags = preloadedTags,
         super(FileDownloadStarting()) {
     verifyUploadLimitationsAndDownload();
   }
@@ -58,27 +61,33 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
 
     final dataTxId = revision.dataTxId;
 
-    final dataTx = await _arweave.getTransactionDetails(revision.dataTxId!);
-
-    if (dataTx == null) {
-      throw StateError(
-          'Data transaction not found for file ${revision.id} with txId ${revision.dataTxId} from gateway ${_arweave.client.api.gatewayUrl.origin}');
-    }
-
     if (dataTxId == null) {
       throw StateError(
           'Data transaction id is null for file ${revision.id} with name ${revision.name}');
     }
 
+    // Use preloaded tags if available (from SharedFileCubit's initial fetch),
+    // otherwise query the network.
+    Map<String, String>? tags = _preloadedTags;
+    if (tags == null) {
+      final dataTx = await _arweave.getTransactionDetails(dataTxId);
+      if (dataTx == null) {
+        throw StateError(
+            'Data transaction not found for file ${revision.id} with txId $dataTxId from gateway ${_arweave.client.api.gatewayUrl.origin}');
+      }
+      tags = {for (final tag in dataTx.tags) tag.name: tag.value};
+    }
+
     if (fileKey != null && !isPinFile) {
-      cipherTag = dataTx.getTag(EntityTag.cipher);
-      cipherIvTag = dataTx.getTag(EntityTag.cipherIv);
+      cipherTag = tags[EntityTag.cipher];
+      cipherIvTag = tags[EntityTag.cipherIv];
     }
 
     logger.d('File size: ${revision.size}');
 
     final downloadStream = await _arDriveDownloader.downloadFile(
-      dataTx: dataTx,
+      dataTxId: dataTxId,
+      appName: tags[EntityTag.appName],
       fileName: revision.name,
       fileSize: revision.size,
       lastModifiedDate: revision.lastModifiedDate,
