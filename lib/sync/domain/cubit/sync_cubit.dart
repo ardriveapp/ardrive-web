@@ -401,6 +401,11 @@ class SyncCubit extends Cubit<SyncState> {
     if (state is SyncInProgress) {
       logger.d('Waiting for current sync to finish before single drive sync');
       await waitCurrentSync();
+      // Re-check: another caller may have started syncing while we waited
+      if (state is SyncInProgress) {
+        logger.d('Another sync started while waiting, aborting single drive sync');
+        return;
+      }
     }
 
     // Mark as single drive sync from the start so the UI shows the right title
