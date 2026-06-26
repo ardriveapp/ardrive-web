@@ -87,12 +87,15 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     return revisions.reversed.toList();
   }
 
-  Future<LicenseState?> fetchLicenseForRevision(FileRevision revision) async {
+  Future<LicenseState?> fetchLicenseForRevision(
+    FileRevision revision, {
+    String? owner,
+  }) async {
     final isComposed = revision.licenseTxId == revision.dataTxId;
     if (isComposed) {
       // License Composed
       final licenseTxs = await _arweave
-          .getLicenseComposed([revision.licenseTxId!])
+          .getLicenseComposed([revision.licenseTxId!], owner: owner)
           .expand((e) => e)
           .toList();
       if (licenseTxs.isEmpty) {
@@ -106,7 +109,7 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     } else {
       // License Assertion
       final licenseTxs = await _arweave
-          .getLicenseAssertions([revision.licenseTxId!])
+          .getLicenseAssertions([revision.licenseTxId!], owner: owner)
           .expand((e) => e)
           .toList();
       if (licenseTxs.isEmpty) {
@@ -145,7 +148,7 @@ class SharedFileCubit extends Cubit<SharedFileState> {
       final revisions = await computeRevisionsFromEntities(allEntities);
       // revisions are in reverse chronological order, so first is most recent
       final latestLicense = revisions.first.licenseTxId != null
-          ? await fetchLicenseForRevision(revisions.first)
+          ? await fetchLicenseForRevision(revisions.first, owner: ownerAddress)
           : null;
       
       emit(SharedFileLoadSuccess(

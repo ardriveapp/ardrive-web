@@ -192,9 +192,22 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
     try {
       final isComposed = revision.licenseTxId == revision.dataTxId;
 
+      // Owner of the license transaction, used to make the gateway query more
+      // selective. For composed licenses the license tx is the data tx, so its
+      // owner is the data uploader (the pinned data owner for pinned files);
+      // for assertions and regular files it is the drive owner. Resolved best
+      // effort — when unknown the query is left unscoped.
+      final licenseOwner = _ownerAddress ??
+          revision.pinnedDataOwnerAddress ??
+          revision.originalOwner ??
+          (await _driveDao
+                  .driveById(driveId: revision.driveId)
+                  .getSingleOrNull())
+              ?.ownerAddress;
+
       if (isComposed) {
         final txs = await _arweave
-            .getLicenseComposed([revision.licenseTxId!])
+            .getLicenseComposed([revision.licenseTxId!], owner: licenseOwner)
             .expand((e) => e)
             .toList();
         if (txs.isEmpty) return null;
@@ -210,7 +223,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
         return _licenseService.fromComposedEntity(entity);
       } else {
         final txs = await _arweave
-            .getLicenseAssertions([revision.licenseTxId!])
+            .getLicenseAssertions([revision.licenseTxId!], owner: licenseOwner)
             .expand((e) => e)
             .toList();
         if (txs.isEmpty) return null;
