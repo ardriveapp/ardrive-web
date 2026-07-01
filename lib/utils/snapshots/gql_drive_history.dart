@@ -1,4 +1,3 @@
-import 'package:ardrive/services/arweave/get_segmented_transaction_from_drive_strategy.dart';
 import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
@@ -54,9 +53,6 @@ class GQLDriveHistory implements SegmentedGQLData {
       minBlockHeight: subRangeForIndex.start,
       maxBlockHeight: subRangeForIndex.end,
       ownerAddress: ownerAddress,
-      strategy: GetSegmentedTransactionFromDriveFilteringByEntityTypeStrategy(
-        _arweave.graphQLRetry,
-      ),
     );
 
     await for (final multipleEdges in txsStream) {
