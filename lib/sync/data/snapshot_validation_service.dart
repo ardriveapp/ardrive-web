@@ -107,9 +107,17 @@ class SnapshotValidationService {
 
     // 3. Primary had a transient error (timeout, 5xx) — try 1 fallback gateway
     try {
-      cachedGateways ??= await _arioSDK
-          .getGateways()
-          .timeout(_garListTimeout, onTimeout: () => <Gateway>[]);
+      if (cachedGateways == null) {
+        try {
+          cachedGateways = await _arioSDK
+              .getGateways()
+              .timeout(_garListTimeout, onTimeout: () => <Gateway>[]);
+        } catch (e) {
+          // Solana RPC failed — cache empty list so we don't retry every call
+          logger.w('GAR gateway list unavailable, will not retry: $e');
+          cachedGateways = [];
+        }
+      }
       final gateways = cachedGateways!;
 
       if (gateways.isEmpty) return false;

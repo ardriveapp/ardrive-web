@@ -193,9 +193,17 @@ class DataGatewayFallback {
     final primaryHost = primaryClient.api.gatewayUrl.host;
 
     try {
-      cachedGateways ??= await _arioSDK
-          .getGateways()
-          .timeout(_garListTimeout, onTimeout: () => <Gateway>[]);
+      if (cachedGateways == null) {
+        try {
+          cachedGateways = await _arioSDK
+              .getGateways()
+              .timeout(_garListTimeout, onTimeout: () => <Gateway>[]);
+        } catch (e) {
+          // Solana RPC failed — cache empty list so we don't retry every call
+          logger.w('GAR list unavailable for fallback, will not retry: $e');
+          cachedGateways = [];
+        }
+      }
 
       var added = 0;
       for (final gw in cachedGateways!) {

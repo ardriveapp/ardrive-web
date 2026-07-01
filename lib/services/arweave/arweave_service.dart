@@ -137,6 +137,20 @@ class ArweaveService {
   late GraphQLRetry graphQLRetry;
   late HttpRetry httpRetry;
 
+  /// Cache for [getUniqueUserDriveEntityTxs] to avoid redundant GQL calls.
+  /// Auth flow (isExistingUser, _validateUser) and sync (updateUserDrives)
+  /// all call this for the same wallet. Invalidated explicitly via
+  /// [clearUserDriveTxsCache] when a drive is created/updated or after sync.
+  String? _cachedUserDriveTxsAddress;
+  List<TransactionCommonMixin>? _cachedUserDriveTxs;
+
+  /// Clears the cached result of [getUniqueUserDriveEntityTxs].
+  /// Call after creating/updating a drive or after a full sync completes.
+  void clearUserDriveTxsCache() {
+    _cachedUserDriveTxsAddress = null;
+    _cachedUserDriveTxs = null;
+  }
+
   /// Returns the onchain balance of the specified address.
   Future<BigInt> getWalletBalance(String address) => client.api
       .get('wallet/$address/balance')
@@ -691,6 +705,16 @@ class ArweaveService {
     String userAddress, {
     int maxRetries = defaultMaxRetries,
   }) async {
+    // Return cached result if available for the same address.
+    // Auth flow (isExistingUser, _validateUser) and sync (updateUserDrives)
+    // all call this for the same wallet. Cache is invalidated explicitly
+    // via clearUserDriveTxsCache() after drive creation or sync completion.
+    if (_cachedUserDriveTxs != null &&
+        _cachedUserDriveTxsAddress == userAddress) {
+      logger.d('Using cached UserDriveEntityTxs');
+      return _cachedUserDriveTxs!;
+    }
+
     List<TransactionCommonMixin> drives = [];
     String cursor = '';
 
@@ -737,6 +761,10 @@ class ArweaveService {
         break;
       }
     }
+
+    // Cache the result — cleared by clearUserDriveTxsCache()
+    _cachedUserDriveTxsAddress = userAddress;
+    _cachedUserDriveTxs = drives;
 
     return drives;
   }

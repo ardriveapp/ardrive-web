@@ -43,6 +43,12 @@ class GQLDriveHistory implements SegmentedGQLData {
   Stream<DriveEntityHistoryTransactionModel> _getNextStream() async* {
     Range subRangeForIndex = subRanges.rangeSegments[currentIndex];
 
+    // Skip the genesis block range — no ArFS transactions exist at block 0.
+    // This gap appears when snapshots start at block 1 and lastBlockHeight is 0.
+    if (subRangeForIndex.start == 0 && subRangeForIndex.end == 0) {
+      return;
+    }
+
     final txsStream = _arweave.getSegmentedTransactionsFromDrive(
       driveId,
       minBlockHeight: subRangeForIndex.start,
