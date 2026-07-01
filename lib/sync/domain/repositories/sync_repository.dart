@@ -263,12 +263,6 @@ class _SyncRepository implements SyncRepository {
 
     final numberOfDrivesToSync = drivesToSync.length;
 
-    if (numberOfDrivesToSync == 0) {
-      yield SyncProgress.emptySyncCompleted();
-      _lastSync = DateTime.now();
-      return;
-    }
-
     syncProgress = syncProgress.copyWith(drivesCount: numberOfDrivesToSync);
     yield syncProgress;
 
