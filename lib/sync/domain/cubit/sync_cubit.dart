@@ -333,7 +333,8 @@ class SyncCubit extends Cubit<SyncState> {
         syncProgressController.add(_syncProgress);
       }
 
-      if (profile is ProfileLoggedIn) {
+      // Only refresh balance if drives were actually synced (skip after no-op)
+      if (profile is ProfileLoggedIn && _syncProgress.drivesSynced > 0) {
         _profileCubit.refreshBalance();
       }
 
@@ -482,7 +483,8 @@ class SyncCubit extends Cubit<SyncState> {
         syncProgressController.add(_syncProgress);
       }
 
-      if (profile is ProfileLoggedIn) {
+      // Only refresh balance if drives were actually synced
+      if (profile is ProfileLoggedIn && _syncProgress.drivesSynced > 0) {
         _profileCubit.refreshBalance();
       }
 

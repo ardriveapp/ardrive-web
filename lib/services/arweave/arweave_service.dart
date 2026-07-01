@@ -144,11 +144,20 @@ class ArweaveService {
   String? _cachedUserDriveTxsAddress;
   List<TransactionCommonMixin>? _cachedUserDriveTxs;
 
-  /// Clears the cached result of [getUniqueUserDriveEntityTxs].
+  /// Cache for raw entity data bytes fetched during [getUniqueUserDriveEntities].
+  /// Keyed by transaction ID. Allows [getLatestDriveEntityWithId] to re-parse
+  /// the data with a different key without re-downloading from the gateway.
+  final Map<String, Uint8List> _cachedEntityDataBytes = {};
+
+  /// Cache for drive signatures (immutable on-chain, never change).
+  final Map<String, DriveSignatureEntity?> _cachedDriveSignatures = {};
+
+  /// Clears the cached result of [getUniqueUserDriveEntityTxs] and entity data.
   /// Call after creating/updating a drive or after a full sync completes.
   void clearUserDriveTxsCache() {
     _cachedUserDriveTxsAddress = null;
     _cachedUserDriveTxs = null;
+    _cachedEntityDataBytes.clear();
   }
 
   /// Returns the onchain balance of the specified address.
@@ -790,6 +799,11 @@ class ArweaveService {
     Wallet wallet,
     String driveId,
   ) async {
+    // Drive signatures are immutable on-chain — cache permanently once fetched
+    if (_cachedDriveSignatures.containsKey(driveId)) {
+      return _cachedDriveSignatures[driveId];
+    }
+
     final driveSignatureTx = await getDriveSignatureTxForDrive(wallet, driveId);
 
     final driveSignatureData = driveSignatureTx != null
@@ -801,6 +815,7 @@ class ArweaveService {
             ? DriveSignatureEntity.fromTransaction(
                 driveSignatureTx, driveSignatureData.bodyBytes)
             : null;
+    _cachedDriveSignatures[driveId] = driveSignature;
     return driveSignature;
   }
 
@@ -819,6 +834,14 @@ class ArweaveService {
             .then<Response?>((r) => r)
             .catchError((_) => null)),
       );
+
+      // Cache raw bytes for reuse by getLatestDriveEntityWithId (e.g., during
+      // password validation in _validateUser, which re-parses the same data)
+      for (var i = 0; i < driveTxs.length; i++) {
+        if (driveResponses[i] != null) {
+          _cachedEntityDataBytes[driveTxs[i].id] = driveResponses[i]!.bodyBytes;
+        }
+      }
 
       final drivesById = <String?, DriveEntity>{};
       final drivesWithKey = <DriveEntity, DriveKey?>{};
@@ -947,11 +970,15 @@ class ArweaveService {
       }
 
       final fileTx = filteredEdges.first.node;
-      final fileDataRes = await _gatewayFallback.fetchData(fileTx.id, client);
+
+      // Use cached bytes if available (e.g., from getUniqueUserDriveEntities)
+      final cachedBytes = _cachedEntityDataBytes[fileTx.id];
+      final entityBytes = cachedBytes ??
+          (await _gatewayFallback.fetchData(fileTx.id, client)).bodyBytes;
 
       try {
         return await DriveEntity.fromTransaction(
-            fileTx, _crypto, fileDataRes.bodyBytes, driveKey);
+            fileTx, _crypto, entityBytes, driveKey);
       } on EntityTransactionParseException catch (parseException) {
         logger.e(
           'Failed to parse transaction '

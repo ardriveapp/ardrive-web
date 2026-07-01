@@ -223,6 +223,12 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       }
     }
 
+    // Reuse entity if already fetched by drivePrivacyLoader or driveKeyValidator
+    if (cachedDriveEntity != null) {
+      driveNameController.text = cachedDriveEntity!.name!;
+      return true;
+    }
+
     _lookupNotifier.value = true;
 
     try {
