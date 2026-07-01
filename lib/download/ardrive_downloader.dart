@@ -83,15 +83,18 @@ class _ArDriveDownloader implements ArDriveDownloader {
           fileKey != null && cipher != null && cipherIvString != null;
 
       if (isPrivateFile && cipher == Cipher.aes256gcm) {
+        final downloadResponse =
+            await _arweave.gatewayFallback.downloadWithFallback(
+          txId: txId,
+          primaryClient: _arweave.client,
+          onProgress: (progress, speed) => logger.d(progress.toString()),
+          verifyDownload: verifyDownload,
+        );
+
         return _getDartVMGCMDecryptStream(
           cipher,
           cipherIvString,
-          (await _arweave.gatewayFallback.downloadWithFallback(
-            txId: txId,
-            primaryClient: _arweave.client,
-            onProgress: (progress, speed) => logger.d(progress.toString()),
-          ))
-              .$1,
+          _withStallDetection(downloadResponse.$1, txId),
           fileSize,
           fileName,
           lastModifiedDate,
@@ -278,26 +281,36 @@ class _ArDriveDownloader implements ArDriveDownloader {
       Stream<List<int>> source, String txId) {
     final controller = StreamController<List<int>>();
     Timer? stallTimer;
+    late final StreamSubscription<List<int>> subscription;
+
     void resetTimer() {
       stallTimer?.cancel();
       stallTimer = Timer(_stallTimeout, () {
-        controller.addError(DownloadStalledException(txId, _stallTimeout));
-        controller.close();
+        subscription.cancel();
+        if (!controller.isClosed) {
+          controller.addError(DownloadStalledException(txId, _stallTimeout));
+          controller.close();
+        }
       });
     }
 
-    final subscription = source.listen(
+    subscription = source.listen(
       (chunk) {
+        if (controller.isClosed) return;
         resetTimer();
         controller.add(chunk);
       },
       onError: (Object e, StackTrace s) {
         stallTimer?.cancel();
-        controller.addError(e, s);
+        if (!controller.isClosed) {
+          controller.addError(e, s);
+        }
       },
       onDone: () {
         stallTimer?.cancel();
-        controller.close();
+        if (!controller.isClosed) {
+          controller.close();
+        }
       },
     );
 
