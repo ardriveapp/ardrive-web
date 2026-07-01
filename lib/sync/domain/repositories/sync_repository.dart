@@ -1205,13 +1205,18 @@ class _SyncRepository implements SyncRepository {
       return _userDrivesUpdateFuture!;
     }
 
-    _userDrivesUpdateFuture = _doUpdateUserDrives(
+    final future = _doUpdateUserDrives(
       wallet: wallet,
       password: password,
       cipherKey: cipherKey,
-    );
+    ).catchError((e) {
+      // Clear the cached future on error so the next caller retries
+      _userDrivesUpdateFuture = null;
+      throw e;
+    });
 
-    return _userDrivesUpdateFuture!;
+    _userDrivesUpdateFuture = future;
+    return future;
   }
 
   Future<void> _doUpdateUserDrives({
