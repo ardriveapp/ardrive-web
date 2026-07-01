@@ -42,6 +42,24 @@ import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:retry/retry.dart';
 
+/// Timeout for a single transaction-status confirmation batch
+/// ([ArweaveService.getTransactionConfirmations]).
+///
+/// A gateway can be intermittently slow to answer a status query — a request may
+/// take several seconds and still return valid data. This is set well above
+/// typical response times so a slow-but-successful response isn't cancelled:
+/// cancelling early discards the batch's confirmations and leaves
+/// already-confirmed txs stuck showing as pending. Normal responses are fast, so
+/// this only lengthens waits while a gateway is degraded — when we want to wait
+/// rather than drop the batch. Partial progress is still preserved by the
+/// verified sink regardless.
+const _txConfirmationBatchTimeout = Duration(seconds: 15);
+
+/// Overall timeout for a drive's transaction-status update (across batches).
+/// Sits above [_txConfirmationBatchTimeout] so at least one slow-but-successful
+/// batch can complete; remaining work resumes on the next sync.
+const _txStatusUpdateTimeout = Duration(seconds: 30);
+
 abstract class SyncRepository {
   Stream<double> syncDriveById({
     required String driveId,
@@ -560,12 +578,13 @@ class _SyncRepository implements SyncRepository {
                 txsIdsToSkip: confirmedFileTxIds,
                 cancellationToken: token,
               ).timeout(
-                const Duration(seconds: 10),
+                _txStatusUpdateTimeout,
                 onTimeout: () {
                   // Check if cancelled before timing out
                   token.checkCancellation();
                   logger.w(
-                      'Transaction status update timed out after 10 seconds');
+                      'Transaction status update timed out after '
+                      '${_txStatusUpdateTimeout.inSeconds}s');
                   // Update status message to indicate timeout but don't treat as error
                   syncProgress = syncProgress.copyWith(
                     statusMessage: 'Completing sync...',
@@ -849,11 +868,12 @@ class _SyncRepository implements SyncRepository {
             txsIdsToSkip: confirmedFileTxIds,
             cancellationToken: token,
           ).timeout(
-            const Duration(seconds: 10),
+            _txStatusUpdateTimeout,
             onTimeout: () {
               token.checkCancellation();
               logger.w(
-                  'Transaction status update timed out after 10 seconds for single drive');
+                  'Transaction status update timed out after '
+                  '${_txStatusUpdateTimeout.inSeconds}s for single drive');
               syncProgress = syncProgress.copyWith(
                 statusMessage: 'Completing sync...',
               );
@@ -1015,7 +1035,7 @@ class _SyncRepository implements SyncRepository {
               ownerOverrides: ownerOverrides,
               verifiedSink: verified)
           .timeout(
-        const Duration(seconds: 5),
+        _txConfirmationBatchTimeout,
         onTimeout: () {
           logger.w('Individual transaction confirmation timeout; '
               'applying ${verified.length} confirmations resolved so far');
@@ -1226,6 +1246,27 @@ class _SyncRepository implements SyncRepository {
     };
   }
 
+  /// Maps each pending data tx id to the owner of the drive it belongs to, so
+  /// the confirmation query can be scoped per-tx by the actual drive owner.
+  /// This is needed because a single sync can span the user's own drives and
+  /// attached drives owned by other wallets — assuming the logged-in wallet
+  /// owns every pending tx would send an unscoped (or wrongly-scoped) query for
+  /// the attached ones.
+  Future<Map<String, String>> _buildPendingTxDriveOwners(
+    DriveDao driveDao,
+  ) async {
+    final pendingRevisions = await driveDao.pendingDataFileRevisions().get();
+    final ownerByDriveId = {
+      for (final drive in await driveDao.allDrives().get())
+        drive.id: drive.ownerAddress,
+    };
+    return {
+      for (final revision in pendingRevisions)
+        if ((ownerByDriveId[revision.driveId] ?? '').isNotEmpty)
+          revision.dataTxId: ownerByDriveId[revision.driveId]!,
+    };
+  }
+
   Future<void> _updateTransactionStatuses({
     required DriveDao driveDao,
     required ArweaveService arweave,
@@ -1237,6 +1278,10 @@ class _SyncRepository implements SyncRepository {
     cancellationToken?.checkCancellation();
 
     final ownerOverrides = await _buildPinnedDataTxOwnerOverrides(driveDao);
+    // Scope each pending tx by the owner of its own drive rather than assuming
+    // the logged-in wallet owns everything (which is wrong for attached drives
+    // owned by other wallets, and null when browsing without a wallet).
+    final ownersByTxId = await _buildPendingTxDriveOwners(driveDao);
 
     // Load all pending transactions
     // Note: We load all at once here, but the memory impact is acceptable
@@ -1309,14 +1354,16 @@ class _SyncRepository implements SyncRepository {
       // confirmations, so it never marks anything failed off a partial run).
       final verified = <String?, int>{};
 
-      // Use a shorter timeout for individual GraphQL calls
+      // Give each batch a generous timeout so a slow-but-successful response
+      // can land instead of being discarded.
       final map = await arweave
           .getTransactionConfirmations(currentPage.toList(),
               owner: ownerAddress,
+              ownersByTxId: ownersByTxId,
               ownerOverrides: ownerOverrides,
               verifiedSink: verified)
           .timeout(
-        const Duration(seconds: 5),
+        _txConfirmationBatchTimeout,
         onTimeout: () {
           logger.w('Individual transaction confirmation timeout; '
               'applying ${verified.length} confirmations resolved so far');

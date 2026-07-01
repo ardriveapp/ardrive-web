@@ -40,121 +40,142 @@ class FileShareDialogState extends State<FileShareDialog> {
   final shareLinkController = TextEditingController();
 
   @override
-  Widget build(BuildContext context) =>
-      BlocConsumer<FileShareCubit, FileShareState>(
-        listener: (context, state) {
-          if (state is FileShareLoadSuccess) {
-            shareLinkController.text = state.fileShareLink.toString();
-          }
-        },
-        builder: (context, state) => ArDriveStandardModal(
-          width: kLargeDialogWidth,
-          title: appLocalizationsOf(context).shareFileWithOthers,
-          description: state is FileShareLoadSuccess ? state.fileName : null,
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (state is FileShareLoadInProgress)
-                const Center(child: CircularProgressIndicator())
-              else if (state is FileShareLoadedFailedFile)
-                Text(appLocalizationsOf(context).shareFailedFile)
-              else if (state is FileShareLoadSuccess) ...{
-                if (state.isPending)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0),
-                    child: Row(
-                      children: [
-                        ArDriveIcons.triangle(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeWarningEmphasis,
-                        ),
-                        const SizedBox(
-                          width: 8,
-                        ),
-                        Flexible(
-                          child: Text(
-                            'Warning: This file is currently pending and may not be immediately accessible.',
-                            style: ArDriveTypography.body.buttonNormalBold(
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeWarningEmphasis,
-                            ),
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return BlocConsumer<FileShareCubit, FileShareState>(
+      listener: (context, state) {
+        if (state is FileShareLoadSuccess) {
+          shareLinkController.text = state.fileShareLink.toString();
+        }
+      },
+      builder: (context, state) => ArDriveStandardModalNew(
+        width: kLargeDialogWidth,
+        title: appLocalizationsOf(context).shareFileWithOthers,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (state is FileShareLoadSuccess)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Text(
+                  state.fileName,
+                  style: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.semiBold,
+                    color: colorTokens.textHigh,
+                  ),
+                ),
+              ),
+            if (state is FileShareLoadInProgress)
+              const Center(child: CircularProgressIndicator())
+            else if (state is FileShareLoadedFailedFile)
+              Text(
+                appLocalizationsOf(context).shareFailedFile,
+                style: typography.paragraphNormal(
+                  color: colorTokens.textMid,
+                ),
+              )
+            else if (state is FileShareLoadedPendingFile)
+              Text(
+                appLocalizationsOf(context).sharePendingFile,
+                style: typography.paragraphNormal(
+                  color: colorTokens.textMid,
+                ),
+              )
+            else if (state is FileShareLoadSuccess) ...{
+              if (state.isPending)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: colorTokens.containerL1,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    children: [
+                      ArDriveIcons.triangle(
+                        size: 16,
+                        color: colorTokens.strokeRed,
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          // TODO(PE-9103): extract to ARB localization files
+                          'Warning: This file is currently pending and may not be immediately accessible.',
+                          style: typography.paragraphSmall(
+                            fontWeight: ArFontWeight.semiBold,
+                            color: colorTokens.strokeRed,
                           ),
                         ),
-                      ],
+                      ),
+                    ],
+                  ),
+                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: ArDriveTextFieldNew(
+                      controller: shareLinkController,
+                      isEnabled: false,
                     ),
                   ),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: ArDriveTextField(
-                        controller: shareLinkController,
-                        isEnabled: false,
-                      ),
+                  const SizedBox(width: 16),
+                  CopyButton(
+                    positionX: 4,
+                    positionY: 40,
+                    copyMessageColor: colorTokens.containerRed,
+                    showCopyText: true,
+                    text: () {
+                      shareLinkController.selection = TextSelection(
+                        baseOffset: 0,
+                        extentOffset: shareLinkController.text.length,
+                      );
+                      return shareLinkController.text;
+                    }(),
+                    child: Text(
+                      appLocalizationsOf(context).copyLink,
+                      style: typography
+                          .paragraphNormal(
+                            fontWeight: ArFontWeight.semiBold,
+                            color: colorTokens.textMid,
+                          )
+                          .copyWith(
+                            decoration: TextDecoration.underline,
+                          ),
                     ),
-                    const SizedBox(width: 16),
-                    CopyButton(
-                      positionX: 4,
-                      positionY: 40,
-                      copyMessageColor: ArDriveTheme.of(context)
-                          .themeData
-                          .tableTheme
-                          .selectedItemColor,
-                      showCopyText: true,
-                      text: () {
-                        // Select the entire link to give the user some feedback on their action.
-                        shareLinkController.selection = TextSelection(
-                          baseOffset: 0,
-                          extentOffset: shareLinkController.text.length,
-                        );
-
-                        return shareLinkController.text;
-                      }(),
-                      child: Text(
-                        appLocalizationsOf(context).copyLink,
-                        style: ArDriveTypography.body
-                            .buttonLargeRegular(
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeFgDefault,
-                            )
-                            .copyWith(
-                              decoration: TextDecoration.underline,
-                            ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  appLocalizationsOf(context).anyoneCanAccessThisFile,
-                  style: ArDriveTypography.body.buttonNormalBold(),
-                ),
-              }
-            ],
-          ),
-          actions: [
-            if (state is FileShareLoadSuccess)
-              ModalAction(
-                action: () {
-                  Navigator.pop(context);
-                  context.read<FeedbackSurveyCubit>().openRemindMe();
-                },
-                title: appLocalizationsOf(context).doneEmphasized,
+                  ),
+                ],
               ),
-            if (state is FileShareLoadedFailedFile ||
-                state is FileShareLoadedPendingFile)
-              ModalAction(
-                action: () => Navigator.pop(context),
-                title: appLocalizationsOf(context).ok,
-              )
+              const SizedBox(height: 16),
+              Text(
+                appLocalizationsOf(context).anyoneCanAccessThisFile,
+                style: typography.paragraphSmall(
+                  color: colorTokens.textLow,
+                ),
+              ),
+            }
           ],
         ),
-      );
+        actions: [
+          if (state is FileShareLoadSuccess)
+            ModalAction(
+              action: () {
+                Navigator.pop(context);
+                context.read<FeedbackSurveyCubit>().openRemindMe();
+              },
+              title: appLocalizationsOf(context).doneEmphasized,
+            ),
+          if (state is FileShareLoadedFailedFile ||
+              state is FileShareLoadedPendingFile)
+            ModalAction(
+              action: () => Navigator.pop(context),
+              title: appLocalizationsOf(context).ok,
+            )
+        ],
+      ),
+    );
+  }
 }
