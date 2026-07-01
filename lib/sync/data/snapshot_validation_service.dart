@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
@@ -14,9 +15,10 @@ class SnapshotValidationService {
   static const _garListTimeout = Duration(seconds: 3);
   static const _maxConcurrentValidations = 3;
 
-  /// Cached GAR gateway list — populated from DataGatewayFallback's cache
-  /// when available, otherwise fetched from Solana RPC (once per session).
-  List<Gateway>? cachedGateways;
+  /// Shared reference to [DataGatewayFallback] for reading/writing the
+  /// gateway cache. Set by SyncRepository before validation runs so both
+  /// services share one cache and avoid duplicate Solana RPC calls.
+  DataGatewayFallback? gatewayFallback;
 
   SnapshotValidationService({
     required ConfigService configService,
@@ -105,20 +107,32 @@ class SnapshotValidationService {
       return false;
     }
 
-    // 3. Primary had a transient error (timeout, 5xx) — try 1 fallback gateway
+    // 3. Primary had a transient error (timeout, 5xx) — try 1 fallback gateway.
+    //    Read the shared gateway cache from DataGatewayFallback. If unavailable,
+    //    fetch from Solana RPC once and cache the result (empty on failure).
     try {
-      if (cachedGateways == null) {
+      List<Gateway> gateways;
+      if (gatewayFallback != null &&
+          gatewayFallback!.cachedGateways != null) {
+        gateways = gatewayFallback!.cachedGateways!;
+      } else {
         try {
-          cachedGateways = await _arioSDK
+          gateways = await _arioSDK
               .getGateways()
               .timeout(_garListTimeout, onTimeout: () => <Gateway>[]);
+          // Store in shared cache if available
+          if (gatewayFallback != null) {
+            gatewayFallback!.cachedGateways = gateways;
+          }
         } catch (e) {
           // Solana RPC failed — cache empty list so we don't retry every call
           logger.w('GAR gateway list unavailable, will not retry: $e');
-          cachedGateways = [];
+          if (gatewayFallback != null) {
+            gatewayFallback!.cachedGateways = [];
+          }
+          gateways = [];
         }
       }
-      final gateways = cachedGateways!;
 
       if (gateways.isEmpty) return false;
 

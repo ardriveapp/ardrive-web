@@ -156,10 +156,11 @@ class _SyncRepository implements SyncRepository {
   /// Smaller values = lower memory usage, more frequent DB commits
   static const kStreamTransactionChunkSize = 1000;
 
-  /// Flag to avoid redundant [updateUserDrives] GQL calls when multiple entry
-  /// points (syncMetadataOnly, startSync, startSyncForDrive) call it.
+  /// In-flight or completed [updateUserDrives] future to avoid redundant GQL
+  /// calls when multiple entry points (syncMetadataOnly, startSync,
+  /// startSyncForDrive) call it concurrently or in quick succession.
   /// Cleared after sync completes or when a drive is created/updated.
-  bool _userDrivesUpToDate = false;
+  Future<void>? _userDrivesUpdateFuture;
 
   DateTime? _lastSync;
 
@@ -233,9 +234,9 @@ class _SyncRepository implements SyncRepository {
       ),
     );
 
-    // Share gateway cache between services to avoid duplicate Solana RPC calls
-    _snapshotValidationService.cachedGateways =
-        _arweave.gatewayFallback.cachedGateways;
+    // Share gateway fallback reference so snapshot validation and data fetching
+    // use the same gateway cache (avoids duplicate Solana RPC calls)
+    _snapshotValidationService.gatewayFallback = _arweave.gatewayFallback;
 
     // Probe for drive activity to skip unchanged drives.
     // Partition drives: never-synced drives always need full sync and would
@@ -279,6 +280,7 @@ class _SyncRepository implements SyncRepository {
           bool allComplete = true;
 
           for (final entry in drivesByOwner.entries) {
+            token.checkCancellation();
             final ownerDrives = entry.value;
             final minBlock = ownerDrives
                 .map((d) =>
@@ -352,10 +354,15 @@ class _SyncRepository implements SyncRepository {
 
         for (final entry in snapshotDrivesByOwner.entries) {
           final ownerDrives = entry.value;
-          final minBlock = ownerDrives
+          // Use only previously-synced drives for minBlock so never-synced
+          // drives (lastBlockHeight=0) don't drag the query back to genesis.
+          final syncedHeights = ownerDrives
+              .where((d) => (d.lastBlockHeight ?? 0) > 0)
               .map((d) =>
-                  _calculateSyncLastBlockHeight(d.lastBlockHeight ?? 0))
-              .reduce(min);
+                  _calculateSyncLastBlockHeight(d.lastBlockHeight ?? 0));
+          final minBlock = syncedHeights.isNotEmpty
+              ? syncedHeights.reduce(min)
+              : 0;
 
           final snapshotsStream = _arweave.getAllSnapshotsForDrives(
             ownerDrives.map((d) => d.id).toList(),
@@ -606,7 +613,7 @@ class _SyncRepository implements SyncRepository {
 
         _lastSync = DateTime.now();
         // Invalidate drive caches so next sync re-fetches fresh data
-        _userDrivesUpToDate = false;
+        _userDrivesUpdateFuture = null;
         _arweave.clearUserDriveTxsCache();
 
         // Update progress to 100% when truly complete
@@ -890,7 +897,7 @@ class _SyncRepository implements SyncRepository {
 
         _lastSync = DateTime.now();
         // Invalidate drive caches so next sync re-fetches fresh data
-        _userDrivesUpToDate = false;
+        _userDrivesUpdateFuture = null;
         _arweave.clearUserDriveTxsCache();
 
         // Update progress to 100% when truly complete
@@ -1190,14 +1197,28 @@ class _SyncRepository implements SyncRepository {
     required SecretKey cipherKey,
     bool forceRefresh = false,
   }) async {
-    // Skip if already up-to-date (unless forced).
-    // Multiple entry points (syncMetadataOnly, startSync, startSyncForDrive)
-    // can call this in quick succession with identical results.
-    if (!forceRefresh && _userDrivesUpToDate) {
-      logger.d('Skipping updateUserDrives: already up-to-date');
-      return;
+    // If an in-flight or completed future exists, await it (unless forced).
+    // This handles both concurrent calls (two callers before the first finishes)
+    // and serial calls (syncMetadataOnly then startSync seconds later).
+    if (!forceRefresh && _userDrivesUpdateFuture != null) {
+      logger.d('Skipping updateUserDrives: reusing in-flight/completed result');
+      return _userDrivesUpdateFuture!;
     }
 
+    _userDrivesUpdateFuture = _doUpdateUserDrives(
+      wallet: wallet,
+      password: password,
+      cipherKey: cipherKey,
+    );
+
+    return _userDrivesUpdateFuture!;
+  }
+
+  Future<void> _doUpdateUserDrives({
+    required Wallet wallet,
+    required String password,
+    required SecretKey cipherKey,
+  }) async {
     // This syncs in the latest info on drives owned by the user and will be overwritten
     // below when the full sync process is ran.
     //
@@ -1209,7 +1230,6 @@ class _SyncRepository implements SyncRepository {
     );
 
     await _driveDao.updateUserDrives(userDriveEntities, cipherKey);
-    _userDrivesUpToDate = true;
   }
 
   @override
