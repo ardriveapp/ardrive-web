@@ -196,10 +196,8 @@ class _SyncRepository implements SyncRepository {
       return;
     }
 
-    final numberOfDrivesToSync = drives.length;
-
     SyncProgress syncProgress =
-        SyncProgress.initial().copyWith(drivesCount: numberOfDrivesToSync);
+        SyncProgress.initial().copyWith(drivesCount: drives.length);
 
     yield syncProgress;
 
@@ -209,6 +207,70 @@ class _SyncRepository implements SyncRepository {
         'Retrying for get the current block height',
       ),
     );
+
+    // Probe for drive activity to skip unchanged drives
+    List<Drive> drivesToSync;
+    if (syncDeep) {
+      drivesToSync = drives;
+    } else {
+      try {
+        // Group drives by owner for efficient probing
+        final drivesByOwner = <String, List<Drive>>{};
+        for (final drive in drives) {
+          drivesByOwner
+              .putIfAbsent(drive.ownerAddress, () => [])
+              .add(drive);
+        }
+
+        final activeDriveIds = <String>{};
+        bool allComplete = true;
+
+        for (final entry in drivesByOwner.entries) {
+          final ownerDrives = entry.value;
+          final minBlock = ownerDrives
+              .map((d) =>
+                  _calculateSyncLastBlockHeight(d.lastBlockHeight ?? 0))
+              .reduce(min);
+
+          final result = await _arweave.probeActiveDriveIds(
+            driveIds: ownerDrives.map((d) => d.id).toList(),
+            minBlockHeight: minBlock,
+            ownerAddress: entry.key,
+          );
+
+          activeDriveIds.addAll(result.activeDriveIds);
+          if (!result.isComplete) allComplete = false;
+        }
+
+        if (!allComplete) {
+          // Can't confirm all drives checked — sync any not yet seen
+          for (final drive in drives) {
+            activeDriveIds.add(drive.id);
+          }
+        }
+
+        drivesToSync =
+            drives.where((d) => activeDriveIds.contains(d.id)).toList();
+        final skipped = drives.length - drivesToSync.length;
+        if (skipped > 0) {
+          logger.i('Skipping $skipped unchanged drives');
+        }
+      } catch (e) {
+        logger.w('Drive activity probe failed, syncing all drives: $e');
+        drivesToSync = drives;
+      }
+    }
+
+    final numberOfDrivesToSync = drivesToSync.length;
+
+    if (numberOfDrivesToSync == 0) {
+      yield SyncProgress.emptySyncCompleted();
+      _lastSync = DateTime.now();
+      return;
+    }
+
+    syncProgress = syncProgress.copyWith(drivesCount: numberOfDrivesToSync);
+    yield syncProgress;
 
     double totalProgress = 0;
 
@@ -226,7 +288,7 @@ class _SyncRepository implements SyncRepository {
     // Start the async work but don't wait for it yet
     // Using Future.wait with eagerError: false to continue even if some drives fail
     Future.wait(
-      drives.map((drive) async {
+      drivesToSync.map((drive) async {
         try {
           // Check for cancellation before starting each drive
           token.checkCancellation();
@@ -367,14 +429,19 @@ class _SyncRepository implements SyncRepository {
         );
         syncProgressController.add(syncProgress);
 
-        final allFileRevisions = await _getAllFileEntities(driveDao: _driveDao);
         final metadataTxsFromSnapshots =
             await SnapshotItemOnChain.getAllCachedTransactionIds();
-        final confirmedFileTxIds = allFileRevisions
-            .where(
-                (file) => metadataTxsFromSnapshots.contains(file.metadataTxId))
-            .map((file) => file.dataTxId)
-            .toList();
+        final confirmedFileTxIds = <String>[];
+        if (metadataTxsFromSnapshots.isNotEmpty) {
+          for (var i = 0; i < metadataTxsFromSnapshots.length; i += 500) {
+            final chunk = metadataTxsFromSnapshots.sublist(
+                i, min(i + 500, metadataTxsFromSnapshots.length));
+            final rows = await _driveDao
+                .fileRevisionDataTxIdsByMetadataTxIds(metadataTxIds: chunk)
+                .get();
+            confirmedFileTxIds.addAll(rows);
+          }
+        }
         // Clear cached transaction IDs now that we've used them
         SnapshotItemOnChain.clearAllCachedTransactionIds();
         _arnsRepository
@@ -791,6 +858,26 @@ class _SyncRepository implements SyncRepository {
       pendingTxMap.remove(txId);
     }
 
+    // Bulk pre-load dateCreated for pending txs missing it (avoids N+1 queries)
+    final txIdsNeedingDates = pendingTxMap.entries
+        .where((e) => e.value.transactionDateCreated == null)
+        .map((e) => e.key)
+        .toList();
+
+    final dateCreatedCache = <String, DateTime?>{};
+    if (txIdsNeedingDates.isNotEmpty) {
+      for (var i = 0; i < txIdsNeedingDates.length; i += 500) {
+        final chunk = txIdsNeedingDates.sublist(
+            i, min(i + 500, txIdsNeedingDates.length));
+        final rows = await driveDao
+            .fileRevisionDateCreatedByDataTxIds(txIds: chunk)
+            .get();
+        for (final row in rows) {
+          dateCreatedCache[row.dataTxId] = row.dateCreated;
+        }
+      }
+    }
+
     final length = pendingTxMap.length;
     final list = pendingTxMap.keys.toList();
     const page = 5000;
@@ -832,72 +919,69 @@ class _SyncRepository implements SyncRepository {
         confirmations.putIfAbsent(key, () => value);
       });
 
-      await driveDao.transaction(() async {
-        for (final txId in currentPage) {
-          cancellationToken?.checkCancellation();
+      final updates = <NetworkTransactionsCompanion>[];
+      for (final txId in currentPage) {
+        cancellationToken?.checkCancellation();
 
-          // Skip if confirmation data is missing (e.g., timeout or partial response)
-          final confirmationCount = confirmations[txId];
-          if (confirmationCount == null) {
-            continue;
-          }
+        // Skip if confirmation data is missing (e.g., timeout or partial response)
+        final confirmationCount = confirmations[txId];
+        if (confirmationCount == null) {
+          continue;
+        }
 
-          final txConfirmed =
-              confirmationCount >= kRequiredTxConfirmationCount;
-          final txNotFound = confirmationCount < 0;
+        final txConfirmed =
+            confirmationCount >= kRequiredTxConfirmationCount;
+        final txNotFound = confirmationCount < 0;
 
-          String? txStatus;
-          DateTime? transactionDateCreated;
+        String? txStatus;
+        DateTime? transactionDateCreated;
 
-          if (pendingTxMap[txId]!.transactionDateCreated != null) {
-            transactionDateCreated =
-                pendingTxMap[txId]!.transactionDateCreated!;
-          } else {
-            transactionDateCreated = await _getDateCreatedByDataTx(
-              driveDao: driveDao,
-              dataTx: txId,
-            );
-          }
+        if (pendingTxMap[txId]!.transactionDateCreated != null) {
+          transactionDateCreated =
+              pendingTxMap[txId]!.transactionDateCreated!;
+        } else {
+          transactionDateCreated = dateCreatedCache[txId];
+        }
 
-          if (txConfirmed) {
-            txStatus = TransactionStatus.confirmed;
-          } else if (txNotFound) {
-            final abovePendingThreshold = DateTime.now()
-                    .difference(pendingTxMap[txId]!.dateCreated)
-                    .inMinutes >
-                kRequiredTxConfirmationPendingThreshold;
+        if (txConfirmed) {
+          txStatus = TransactionStatus.confirmed;
+        } else if (txNotFound) {
+          final abovePendingThreshold = DateTime.now()
+                  .difference(pendingTxMap[txId]!.dateCreated)
+                  .inMinutes >
+              kRequiredTxConfirmationPendingThreshold;
 
-            if (abovePendingThreshold ||
-                _isOverThePendingTime(transactionDateCreated)) {
-              txStatus = TransactionStatus.failed;
-            }
-          }
-          if (txStatus != null) {
-            await driveDao.writeToTransaction(
-              NetworkTransactionsCompanion(
-                transactionDateCreated: Value(transactionDateCreated),
-                id: Value(txId),
-                status: Value(txStatus),
-              ),
-            );
+          if (abovePendingThreshold ||
+              _isOverThePendingTime(transactionDateCreated)) {
+            txStatus = TransactionStatus.failed;
           }
         }
-      });
-
-      await Future.delayed(const Duration(milliseconds: 200));
+        if (txStatus != null) {
+          updates.add(
+            NetworkTransactionsCompanion(
+              transactionDateCreated: Value(transactionDateCreated),
+              id: Value(txId),
+              status: Value(txStatus),
+            ),
+          );
+        }
+      }
+      if (updates.isNotEmpty) {
+        await driveDao.insertNewNetworkTransactions(updates);
+      }
     }
 
     // Mark skipped transactions as confirmed
-    await driveDao.transaction(() async {
-      for (final txId in txsIdsToSkip) {
-        await driveDao.writeToTransaction(
-          NetworkTransactionsCompanion(
-            id: Value(txId),
-            status: const Value(TransactionStatus.confirmed),
-          ),
-        );
-      }
-    });
+    if (txsIdsToSkip.isNotEmpty) {
+      await driveDao.insertNewNetworkTransactions(
+        txsIdsToSkip
+            .map((txId) => NetworkTransactionsCompanion(
+                  id: Value(txId),
+                  status: const Value(TransactionStatus.confirmed),
+                ))
+            .toList(),
+      );
+    }
   }
 
   @override
@@ -912,20 +996,27 @@ class _SyncRepository implements SyncRepository {
     // Collect all ghost folders to be created
     final ghostFoldersToCreate = <FolderEntry>[];
 
-    //Finalize missing parent list
+    if (ghostFolders.isEmpty) return;
+
+    // Bulk pre-load existing folders and drives to avoid N+1 queries
+    final existingFolderIds = (await driveDao
+            .foldersByIds(folderIds: ghostFolders.keys.toList())
+            .get())
+        .map((f) => f.id)
+        .toSet();
+    final drivesMap = {
+      for (final d in await driveDao.allDrives().get()) d.id: d
+    };
+
     for (final ghostFolder in ghostFolders.values) {
-      final folder = await driveDao
-          .folderById(folderId: ghostFolder.folderId)
-          .getSingleOrNull();
-
-      final folderExists = folder != null;
-
-      if (folderExists) {
+      if (existingFolderIds.contains(ghostFolder.folderId)) {
         continue;
       }
 
-      final drive =
-          await driveDao.driveById(driveId: ghostFolder.driveId).getSingle();
+      final drive = drivesMap[ghostFolder.driveId];
+      if (drive == null) {
+        continue;
+      }
 
       // Don't create ghost folder if the ghost is a missing root folder
       // Or if the drive doesn't belong to the user
@@ -1051,11 +1142,29 @@ class _SyncRepository implements SyncRepository {
       pendingTxMap.remove(txId);
     }
 
+    // Bulk pre-load dateCreated for pending txs missing it (avoids N+1 queries)
+    final txIdsNeedingDates = pendingTxMap.entries
+        .where((e) => e.value.transactionDateCreated == null)
+        .map((e) => e.key)
+        .toList();
+
+    final dateCreatedCache = <String, DateTime?>{};
+    if (txIdsNeedingDates.isNotEmpty) {
+      for (var i = 0; i < txIdsNeedingDates.length; i += 500) {
+        final chunk = txIdsNeedingDates.sublist(
+            i, min(i + 500, txIdsNeedingDates.length));
+        final rows = await driveDao
+            .fileRevisionDateCreatedByDataTxIds(txIds: chunk)
+            .get();
+        for (final row in rows) {
+          dateCreatedCache[row.dataTxId] = row.dateCreated;
+        }
+      }
+    }
+
     final length = pendingTxMap.length;
     final list = pendingTxMap.keys.toList();
 
-    // Thats was discovered by tests at profile mode.
-    // TODO(@thiagocarvalhodev): Revisit
     const page = 5000;
 
     for (var i = 0; i < length / page; i++) {
@@ -1101,97 +1210,75 @@ class _SyncRepository implements SyncRepository {
         confirmations.putIfAbsent(key, () => value);
       });
 
-      await driveDao.transaction(() async {
-        for (final txId in currentPage) {
-          // Check cancellation for each transaction
-          cancellationToken?.checkCancellation();
+      final updates = <NetworkTransactionsCompanion>[];
+      for (final txId in currentPage) {
+        // Check cancellation for each transaction
+        cancellationToken?.checkCancellation();
 
-          // Skip if confirmation data is missing (e.g., timeout or partial response)
-          final confirmationCount = confirmations[txId];
-          if (confirmationCount == null) {
-            continue;
-          }
+        // Skip if confirmation data is missing (e.g., timeout or partial response)
+        final confirmationCount = confirmations[txId];
+        if (confirmationCount == null) {
+          continue;
+        }
 
-          final txConfirmed =
-              confirmationCount >= kRequiredTxConfirmationCount;
-          final txNotFound = confirmationCount < 0;
+        final txConfirmed =
+            confirmationCount >= kRequiredTxConfirmationCount;
+        final txNotFound = confirmationCount < 0;
 
-          String? txStatus;
+        String? txStatus;
 
-          DateTime? transactionDateCreated;
+        DateTime? transactionDateCreated;
 
-          if (pendingTxMap[txId]!.transactionDateCreated != null) {
-            transactionDateCreated =
-                pendingTxMap[txId]!.transactionDateCreated!;
-          } else {
-            transactionDateCreated = await _getDateCreatedByDataTx(
-              driveDao: driveDao,
-              dataTx: txId,
-            );
-          }
+        if (pendingTxMap[txId]!.transactionDateCreated != null) {
+          transactionDateCreated =
+              pendingTxMap[txId]!.transactionDateCreated!;
+        } else {
+          transactionDateCreated = dateCreatedCache[txId];
+        }
 
-          if (txConfirmed) {
-            txStatus = TransactionStatus.confirmed;
-          } else if (txNotFound) {
-            // Only mark transactions as failed if they are unconfirmed for over 45 minutes
-            // as the transaction might not be queryable for right after it was created.
-            final abovePendingThreshold = DateTime.now()
-                    .difference(pendingTxMap[txId]!.dateCreated)
-                    .inMinutes >
-                kRequiredTxConfirmationPendingThreshold;
+        if (txConfirmed) {
+          txStatus = TransactionStatus.confirmed;
+        } else if (txNotFound) {
+          // Only mark transactions as failed if they are unconfirmed for over 45 minutes
+          // as the transaction might not be queryable for right after it was created.
+          final abovePendingThreshold = DateTime.now()
+                  .difference(pendingTxMap[txId]!.dateCreated)
+                  .inMinutes >
+              kRequiredTxConfirmationPendingThreshold;
 
-            // Assume that data tx that weren't mined up to a maximum of
-            // `_pendingWaitTime` was failed.
-            if (abovePendingThreshold ||
-                _isOverThePendingTime(transactionDateCreated)) {
-              txStatus = TransactionStatus.failed;
-            }
-          }
-          if (txStatus != null) {
-            await driveDao.writeToTransaction(
-              NetworkTransactionsCompanion(
-                transactionDateCreated: Value(transactionDateCreated),
-                id: Value(txId),
-                status: Value(txStatus),
-              ),
-            );
+          // Assume that data tx that weren't mined up to a maximum of
+          // `_pendingWaitTime` was failed.
+          if (abovePendingThreshold ||
+              _isOverThePendingTime(transactionDateCreated)) {
+            txStatus = TransactionStatus.failed;
           }
         }
-      });
-
-      await Future.delayed(const Duration(milliseconds: 200));
-    }
-    await driveDao.transaction(() async {
-      for (final txId in txsIdsToSkip) {
-        await driveDao.writeToTransaction(
-          NetworkTransactionsCompanion(
-            id: Value(txId),
-            status: const Value(TransactionStatus.confirmed),
-          ),
-        );
+        if (txStatus != null) {
+          updates.add(
+            NetworkTransactionsCompanion(
+              transactionDateCreated: Value(transactionDateCreated),
+              id: Value(txId),
+              status: Value(txStatus),
+            ),
+          );
+        }
       }
-    });
-  }
-
-  Future<List<FileRevision>> _getAllFileEntities({
-    required DriveDao driveDao,
-  }) async {
-    return await driveDao.db.fileRevisions.select().get();
-  }
-
-  Future<DateTime?> _getDateCreatedByDataTx({
-    required DriveDao driveDao,
-    required String dataTx,
-  }) async {
-    final rev = await driveDao.fileRevisionByDataTx(tx: dataTx).get();
-
-    // no file found
-    if (rev.isEmpty) {
-      return null;
+      if (updates.isNotEmpty) {
+        await driveDao.insertNewNetworkTransactions(updates);
+      }
     }
-
-    return rev.first.dateCreated;
+    if (txsIdsToSkip.isNotEmpty) {
+      await driveDao.insertNewNetworkTransactions(
+        txsIdsToSkip
+            .map((txId) => NetworkTransactionsCompanion(
+                  id: Value(txId),
+                  status: const Value(TransactionStatus.confirmed),
+                ))
+            .toList(),
+      );
+    }
   }
+
 
   bool _isOverThePendingTime(DateTime? transactionCreatedDate) {
     // If don't have the date information we cannot assume that is over the pending time

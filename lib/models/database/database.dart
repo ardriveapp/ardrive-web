@@ -30,7 +30,7 @@ class Database extends _$Database {
   Database([QueryExecutor? e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 28;
+  int get schemaVersion => 29;
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) {
@@ -188,6 +188,18 @@ class Database extends _$Database {
               logger.d('Migrating schema from v27 to v28');
 
               await m.addColumn(profiles, profiles.sourceWalletAddress);
+            }
+
+            if (from < 29) {
+              logger.d('Migrating schema from v28 to v29');
+              logger.d('Adding sync performance indexes');
+              await customStatement('''
+                CREATE INDEX IF NOT EXISTS idx_file_revisions_data_tx_id ON file_revisions(dataTxId);
+              ''');
+              await customStatement('''
+                CREATE INDEX IF NOT EXISTS idx_network_transactions_status ON network_transactions(status);
+              ''');
+              logger.d('Sync performance indexes created');
             }
           } catch (e, stacktrace) {
             logger.e(

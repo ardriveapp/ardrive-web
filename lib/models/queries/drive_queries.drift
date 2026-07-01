@@ -81,6 +81,15 @@ fileById:
 fileRevisionByDataTx:
     SELECT * FROM file_revisions
     WHERE dataTxId = :tx;
+fileRevisionDateCreatedByDataTxIds:
+    SELECT dataTxId, dateCreated FROM file_revisions
+    WHERE dataTxId IN :txIds;
+foldersByIds:
+    SELECT * FROM folder_entries
+    WHERE id IN :folderIds;
+fileRevisionDataTxIdsByMetadataTxIds:
+    SELECT dataTxId FROM file_revisions
+    WHERE metadataTxId IN :metadataTxIds;
 licenseByTxId:
     SELECT * FROM licenses
     WHERE licenseTxId = :tx;

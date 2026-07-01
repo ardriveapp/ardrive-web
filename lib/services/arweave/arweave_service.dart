@@ -209,7 +209,7 @@ class ArweaveService {
   }
 
   Future<TransactionCommonMixin?> getTransactionDetails(String txId) async {
-    final query = await _gql.execute(TransactionDetailsQuery(
+    final query = await graphQLRetry.execute(TransactionDetailsQuery(
         variables: TransactionDetailsArguments(txId: txId)));
     return query.data?.transaction;
   }
@@ -217,7 +217,7 @@ class ArweaveService {
   Future<InfoOfTransactionToBePinned$Query$Transaction?> getInfoOfTxToBePinned(
     String txId,
   ) async {
-    final query = await _gql.execute(InfoOfTransactionToBePinnedQuery(
+    final query = await graphQLRetry.execute(InfoOfTransactionToBePinnedQuery(
         variables: InfoOfTransactionToBePinnedArguments(txId: txId)));
     return query.data?.transaction;
   }
@@ -261,6 +261,43 @@ class ArweaveService {
         break;
       }
     }
+  }
+
+  /// Probes which drives have any new transactions since [minBlockHeight].
+  /// Returns the set of drive IDs with activity. If the query returns
+  /// hasNextPage=true, the result is incomplete — caller should treat
+  /// un-checked drives as potentially active.
+  Future<({Set<String> activeDriveIds, bool isComplete})> probeActiveDriveIds({
+    required List<String> driveIds,
+    required int minBlockHeight,
+    required String ownerAddress,
+  }) async {
+    final query = await graphQLRetry.execute(
+      DriveActivityProbeQuery(
+        variables: DriveActivityProbeArguments(
+          driveIds: driveIds,
+          minBlockHeight: minBlockHeight,
+          ownerAddress: ownerAddress,
+        ),
+      ),
+    );
+
+    if (query.data == null) {
+      // Treat as incomplete — caller will fall back to syncing all drives
+      return (activeDriveIds: <String>{}, isComplete: false);
+    }
+
+    final activeDriveIds = <String>{};
+    for (final edge in query.data!.transactions.edges) {
+      for (final tag in edge.node.tags) {
+        if (tag.name == 'Drive-Id') {
+          activeDriveIds.add(tag.value);
+        }
+      }
+    }
+
+    final isComplete = !query.data!.transactions.pageInfo.hasNextPage;
+    return (activeDriveIds: activeDriveIds, isComplete: isComplete);
   }
 
   Stream<List<DriveEntityHistoryTransactionModel>>
@@ -928,7 +965,7 @@ class ArweaveService {
     String cursor = '';
 
     while (true) {
-      final latestFileQuery = await _gql.execute(
+      final latestFileQuery = await graphQLRetry.execute(
         LatestFileEntityWithIdQuery(
           variables: LatestFileEntityWithIdArguments(
             fileId: fileId,
@@ -1590,7 +1627,7 @@ class ArweaveService {
       logger.i('Fetching transaction info for batch ${batch.length}');
 
       try {
-        final query = await _gql.execute(
+        final query = await graphQLRetry.execute(
           InfoOfTransactionsToBePinnedQuery(
             variables: InfoOfTransactionsToBePinnedArguments(
               transactionIds: batch,

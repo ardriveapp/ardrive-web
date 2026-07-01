@@ -22,7 +22,7 @@ class DataGatewayFallback {
   static const _requestTimeout = Duration(seconds: 5);
   /// Total time allowed for the entire fallback chain per tx.
   /// Prevents a single missing/broken tx from blocking sync for minutes.
-  static const _totalFetchTimeout = Duration(seconds: 15);
+  static const _totalFetchTimeout = Duration(seconds: 25);
 
   List<Gateway>? _cachedGateways;
 
@@ -32,7 +32,7 @@ class DataGatewayFallback {
 
   /// Fetch transaction data with automatic gateway fallback.
   ///
-  /// Tries: primary → up to 3 GAR gateways → arweave.net
+  /// Tries: primary → up to 2 GAR gateways → arweave.net
   ///
   /// If ALL gateways return 404, throws [TransactionNotFound] to preserve
   /// upstream error handling (e.g. private drive detection during login).
