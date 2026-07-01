@@ -14,7 +14,7 @@ import 'package:cryptography/cryptography.dart' hide Cipher;
 
 abstract class ArDriveDownloader {
   Future<Stream<double>> downloadFile({
-    required TransactionCommonMixin dataTx,
+    required String txId,
     required int fileSize,
     required String fileName,
     required DateTime lastModifiedDate,
@@ -24,9 +24,10 @@ abstract class ArDriveDownloader {
     SecretKey? fileKey,
     String? cipher,
     String? cipherIvString,
+    bool verifyDownload,
   });
   Future<Uint8List> downloadToMemory({
-    required TransactionCommonMixin dataTx,
+    required String txId,
     required int fileSize,
     required String fileName,
     required DateTime lastModifiedDate,
@@ -36,6 +37,7 @@ abstract class ArDriveDownloader {
     SecretKey? fileKey,
     String? cipher,
     String? cipherIvString,
+    bool verifyDownload,
   });
   Future<void> abortDownload();
 
@@ -65,7 +67,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
 
   @override
   Future<Stream<double>> downloadFile({
-    required TransactionCommonMixin dataTx,
+    required String txId,
     required int fileSize,
     required String fileName,
     required DateTime lastModifiedDate,
@@ -75,6 +77,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
     SecretKey? fileKey,
     String? cipher,
     String? cipherIvString,
+    bool verifyDownload = false,
   }) async {
     if (AppPlatform.isMobile) {
       final isPrivateFile =
@@ -85,7 +88,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
           cipher,
           cipherIvString,
           (await arweave.download(
-            txId: dataTx.id,
+            txId: txId,
             arweave: _arweave.client,
             onProgress: (progress, speed) => logger.d(progress.toString()),
           ))
@@ -102,10 +105,10 @@ class _ArDriveDownloader implements ArDriveDownloader {
     Stream<Uint8List> saveStream;
 
     if (isManifest) {
-      saveStream = await _getManifestStream(dataTx.id);
+      saveStream = await _getManifestStream(txId);
     } else {
       saveStream = await _getFileStream(
-        dataTx: dataTx,
+        txId: txId,
         fileSize: fileSize,
         fileName: fileName,
         lastModifiedDate: lastModifiedDate,
@@ -113,6 +116,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
         fileKey: fileKey,
         cipher: cipher,
         cipherIvString: cipherIvString,
+        verifyDownload: verifyDownload,
       );
     }
 
@@ -205,7 +209,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
   }
 
   Future<Stream<Uint8List>> _getFileStream({
-    required TransactionCommonMixin dataTx,
+    required String txId,
     required int fileSize,
     required String fileName,
     required DateTime lastModifiedDate,
@@ -213,16 +217,14 @@ class _ArDriveDownloader implements ArDriveDownloader {
     SecretKey? fileKey,
     String? cipher,
     String? cipherIvString,
+    bool verifyDownload = false,
   }) async {
     logger.d('The file is not a manifest. Downloading it from Arweave...');
-
-    /// Disables the verification when the file was uploaded by the CLI
-    final verifyDownload = dataTx.getTag(EntityTag.appName) == 'ArDrive-CLI';
 
     logger.d('verifying download: $verifyDownload');
 
     final streamDownloadResponse = await arweave.download(
-      txId: dataTx.id,
+      txId: txId,
       arweave: _arweave.client,
       onProgress: (progress, speed) => logger.d(progress.toString()),
       verifyDownload: verifyDownload,
@@ -299,7 +301,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
 
   @override
   Future<Uint8List> downloadToMemory({
-    required TransactionCommonMixin dataTx,
+    required String txId,
     required int fileSize,
     required String fileName,
     required DateTime lastModifiedDate,
@@ -309,9 +311,10 @@ class _ArDriveDownloader implements ArDriveDownloader {
     SecretKey? fileKey,
     String? cipher,
     String? cipherIvString,
+    bool verifyDownload = false,
   }) async {
     final stream = await _getFileStream(
-      dataTx: dataTx,
+      txId: txId,
       fileSize: fileSize,
       fileName: fileName,
       lastModifiedDate: lastModifiedDate,
@@ -319,6 +322,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
       fileKey: fileKey,
       cipher: cipher,
       cipherIvString: cipherIvString,
+      verifyDownload: verifyDownload,
     );
 
     final data = await stream.toList();

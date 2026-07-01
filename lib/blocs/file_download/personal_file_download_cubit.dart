@@ -142,17 +142,19 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     String? cipher;
     String? cipherIvTag;
     SecretKey? fileKey;
+    bool verifyDownload = false;
 
     final isPinFile = _file.pinnedDataOwnerAddress != null;
 
-    final dataTx = await (_arweave.getTransactionDetails(_file.txId));
-
-    if (dataTx == null) {
-      throw StateError(
-          'Failed to download: Data transaction not found for file');
-    }
-
     if (drive.drivePrivacy == DrivePrivacy.private && !isPinFile) {
+      // Private files need cipher/IV tags from the data transaction
+      final dataTx = await (_arweave.getTransactionDetails(_file.txId));
+
+      if (dataTx == null) {
+        throw StateError(
+            'Failed to download: Data transaction not found for file');
+      }
+
       DriveKey? driveKey;
 
       if (cipherKey != null) {
@@ -173,13 +175,14 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
       cipher = dataTx.getTag(EntityTag.cipher);
       cipherIvTag = dataTx.getTag(EntityTag.cipherIv);
+      verifyDownload = dataTx.getTag(EntityTag.appName) == 'ArDrive-CLI';
     }
 
     // log file size
     logger.d('File size: ${_file.size}');
 
     final downloadStream = await _arDriveDownloader.downloadFile(
-      dataTx: dataTx,
+      txId: _file.txId,
       fileName: _file.name,
       fileSize: _file.size,
       lastModifiedDate: _file.lastModifiedDate,
@@ -189,6 +192,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       cipher: cipher,
       cipherIvString: cipherIvTag,
       fileKey: fileKey,
+      verifyDownload: verifyDownload,
     );
 
     downloadStream.listen(
