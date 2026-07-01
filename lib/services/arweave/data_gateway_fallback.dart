@@ -29,7 +29,9 @@ class DataGatewayFallback {
   static const _hedgeDelay = Duration(milliseconds: 1500);
   static const _downloadTimeout = Duration(seconds: 15);
 
-  List<Gateway>? _cachedGateways;
+  /// Cached gateway list — shared with other services (e.g.
+  /// SnapshotValidationService) to avoid duplicate Solana RPC calls.
+  List<Gateway>? cachedGateways;
 
   DataGatewayFallback({
     required ArioSDK arioSDK,
@@ -191,12 +193,12 @@ class DataGatewayFallback {
     final primaryHost = primaryClient.api.gatewayUrl.host;
 
     try {
-      _cachedGateways ??= await _arioSDK
+      cachedGateways ??= await _arioSDK
           .getGateways()
           .timeout(_garListTimeout, onTimeout: () => <Gateway>[]);
 
       var added = 0;
-      for (final gw in _cachedGateways!) {
+      for (final gw in cachedGateways!) {
         if (added >= _maxGarFallbacks) break;
         if (gw.settings.fqdn == primaryHost) continue;
         clients.add(_getOrCreateClient(gw.settings.fqdn));

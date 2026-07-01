@@ -15,7 +15,8 @@ import 'package:ardrive/models/drive_revision.dart';
 import 'package:ardrive/models/enums.dart';
 import 'package:ardrive/models/file_revision.dart';
 import 'package:ardrive/models/folder_revision.dart';
-import 'package:ardrive/services/arweave/arweave.dart';
+import 'package:ardrive/services/arweave/arweave.dart'
+    hide SnapshotEntityTransaction;
 import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/sync/constants.dart';
 import 'package:ardrive/sync/data/snapshot_validation_service.dart';
@@ -208,6 +209,10 @@ class _SyncRepository implements SyncRepository {
       ),
     );
 
+    // Share gateway cache between services to avoid duplicate Solana RPC calls
+    _snapshotValidationService.cachedGateways =
+        _arweave.gatewayFallback.cachedGateways;
+
     // Probe for drive activity to skip unchanged drives
     List<Drive> drivesToSync;
     if (syncDeep) {
@@ -266,6 +271,55 @@ class _SyncRepository implements SyncRepository {
     syncProgress = syncProgress.copyWith(drivesCount: numberOfDrivesToSync);
     yield syncProgress;
 
+    // Batch-fetch snapshots for all drives per owner (1 GQL query per owner
+    // instead of 1 per drive). Results are grouped by Drive-Id and passed to
+    // each drive's sync to avoid redundant per-drive snapshot queries.
+    final prefetchedSnapshots = <String, List<SnapshotEntityTransaction>>{};
+    if (_configService.config.enableSyncFromSnapshot && !syncDeep) {
+      try {
+        // Reuse the drivesByOwner grouping from the probe (or rebuild it)
+        final snapshotDrivesByOwner = <String, List<Drive>>{};
+        for (final drive in drivesToSync) {
+          snapshotDrivesByOwner
+              .putIfAbsent(drive.ownerAddress, () => [])
+              .add(drive);
+        }
+
+        for (final entry in snapshotDrivesByOwner.entries) {
+          final ownerDrives = entry.value;
+          final minBlock = ownerDrives
+              .map((d) =>
+                  _calculateSyncLastBlockHeight(d.lastBlockHeight ?? 0))
+              .reduce(min);
+
+          final snapshotsStream = _arweave.getAllSnapshotsForDrives(
+            ownerDrives.map((d) => d.id).toList(),
+            minBlock,
+            ownerAddress: entry.key,
+          );
+
+          await for (final snapshot in snapshotsStream) {
+            final driveIdTag = snapshot.tags
+                .where((t) => t.name == 'Drive-Id')
+                .firstOrNull
+                ?.value;
+            if (driveIdTag != null) {
+              prefetchedSnapshots
+                  .putIfAbsent(driveIdTag, () => [])
+                  .add(snapshot);
+            }
+          }
+        }
+
+        logger.i(
+            'Prefetched ${prefetchedSnapshots.values.expand((v) => v).length} '
+            'snapshots across ${prefetchedSnapshots.length} drives');
+      } catch (e) {
+        logger.w('Snapshot prefetch failed, will fetch per-drive: $e');
+        prefetchedSnapshots.clear();
+      }
+    }
+
     double totalProgress = 0;
 
     final StreamController<SyncProgress> syncProgressController =
@@ -302,6 +356,7 @@ class _SyncRepository implements SyncRepository {
             ownerAddress: drive.ownerAddress,
             txFechedCallback: txFechedCallback,
             cancellationToken: token,
+            prefetchedSnapshots: prefetchedSnapshots[drive.id],
           );
 
           double currentDriveProgress = 0;
@@ -1292,6 +1347,7 @@ class _SyncRepository implements SyncRepository {
     required String ownerAddress,
     Function(String driveId, int txCount)? txFechedCallback,
     SyncCancellationToken? cancellationToken,
+    List<SnapshotEntityTransaction>? prefetchedSnapshots,
   }) async* {
     final token = cancellationToken ?? SyncCancellationToken();
 
@@ -1330,11 +1386,12 @@ class _SyncRepository implements SyncRepository {
       if (_configService.config.enableSyncFromSnapshot) {
         logger.i('Syncing from snapshot: ${drive.id}');
 
-        final snapshotsStream = _arweave.getAllSnapshotsOfDrive(
-          driveId,
-          lastBlockHeight,
-          ownerAddress: ownerAddress,
-        );
+        // Use prefetched snapshots if available (batched query),
+        // otherwise fall back to per-drive query
+        final snapshotsStream = prefetchedSnapshots != null
+            ? Stream.fromIterable(prefetchedSnapshots)
+            : _arweave.getAllSnapshotsOfDrive(
+                driveId, lastBlockHeight, ownerAddress: ownerAddress);
 
         snapshotItems = await SnapshotItem.instantiateAll(
           snapshotsStream,

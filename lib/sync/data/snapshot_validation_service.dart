@@ -14,9 +14,9 @@ class SnapshotValidationService {
   static const _garListTimeout = Duration(seconds: 3);
   static const _maxConcurrentValidations = 3;
 
-  /// Cached GAR gateway list — fetched once per session, avoids repeated
-  /// Solana RPC calls which may be slow or unavailable (e.g. localhost).
-  List<Gateway>? _cachedGateways;
+  /// Cached GAR gateway list — populated from DataGatewayFallback's cache
+  /// when available, otherwise fetched from Solana RPC (once per session).
+  List<Gateway>? cachedGateways;
 
   SnapshotValidationService({
     required ConfigService configService,
@@ -107,10 +107,10 @@ class SnapshotValidationService {
 
     // 3. Primary had a transient error (timeout, 5xx) — try 1 fallback gateway
     try {
-      _cachedGateways ??= await _arioSDK
+      cachedGateways ??= await _arioSDK
           .getGateways()
           .timeout(_garListTimeout, onTimeout: () => <Gateway>[]);
-      final gateways = _cachedGateways!;
+      final gateways = cachedGateways!;
 
       if (gateways.isEmpty) return false;
 

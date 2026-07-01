@@ -223,27 +223,41 @@ class ArweaveService {
     return query.data?.transaction;
   }
 
+  /// Fetch snapshots for a single drive. Delegates to [getAllSnapshotsForDrives].
   Stream<SnapshotEntityTransaction> getAllSnapshotsOfDrive(
     String driveId,
     int? lastBlockHeight, {
+    required String ownerAddress,
+  }) =>
+      getAllSnapshotsForDrives([driveId], lastBlockHeight,
+          ownerAddress: ownerAddress);
+
+  /// Fetch snapshots for multiple drives in a single paginated GQL query.
+  ///
+  /// Use [minBlockHeight] = min of all drives' lastBlockHeights.
+  /// Caller should filter results by Drive-Id tag and pass each drive's
+  /// subset to [SnapshotItem.instantiateAll] with that drive's own
+  /// lastBlockHeight to preserve per-drive state isolation.
+  Stream<SnapshotEntityTransaction> getAllSnapshotsForDrives(
+    List<String> driveIds,
+    int? minBlockHeight, {
     required String ownerAddress,
   }) async* {
     String cursor = '';
 
     while (true) {
       try {
-        // Get a page of 100 transactions
         final snapshotEntityHistoryQuery = await graphQLRetry.execute(
           SnapshotEntityHistoryQuery(
             variables: SnapshotEntityHistoryArguments(
-              driveId: driveId,
-              lastBlockHeight: lastBlockHeight,
+              driveIds: driveIds,
+              lastBlockHeight: minBlockHeight,
               after: cursor,
               ownerAddress: ownerAddress,
             ),
           ),
         );
-        for (SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge edge
+        for (final edge
             in snapshotEntityHistoryQuery.data!.transactions.edges) {
           yield edge.node;
         }
@@ -257,8 +271,8 @@ class ArweaveService {
           break;
         }
       } catch (e) {
-        logger.e('Error fetching snapshots for drive $driveId', e);
-        logger.i('This drive and ones after will fall back to GQL');
+        logger.e('Error fetching snapshots for drives $driveIds', e);
+        logger.i('These drives will fall back to GQL');
         break;
       }
     }

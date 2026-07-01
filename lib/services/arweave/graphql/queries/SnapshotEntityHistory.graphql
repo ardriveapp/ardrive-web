@@ -1,5 +1,5 @@
 query SnapshotEntityHistory(
-  $driveId: String!
+  $driveIds: [String!]!
   $after: String
   $lastBlockHeight: Int
   $ownerAddress: String!
@@ -9,8 +9,8 @@ query SnapshotEntityHistory(
     first: 100
     sort: HEIGHT_DESC
     tags: [
-      { name: "Drive-Id", values: [$driveId] }
-      { name: "Entity-Type", values: "snapshot" }
+      { name: "Drive-Id", values: $driveIds }
+      { name: "Entity-Type", values: ["snapshot"] }
     ]
     after: $after
     block: { min: $lastBlockHeight }
