@@ -44,15 +44,13 @@ import 'package:retry/retry.dart';
 /// Timeout for a single transaction-status confirmation batch
 /// ([ArweaveService.getTransactionConfirmations]).
 ///
-/// The gateway's GraphQL layer proxies an upstream index (`indexer-core`) with a
-/// ~9.5s upstream timeout and a circuit breaker. When the breaker is open a
-/// status query can legitimately take ~10s to return valid data (observed:
-/// 9.87s, with `UPSTREAM_CIRCUIT_OPEN` / "timeout of 9500ms exceeded" warnings).
-/// This must sit *above* that ceiling: otherwise the client cancels the batch
-/// before the successful response lands, discarding confirmations and leaving
-/// long-confirmed txs stuck as pending. Typical responses are ~0.5s, so this
-/// only extends waits while the gateway is degraded — exactly when we want to
-/// wait rather than drop the batch. Partial progress is still preserved by the
+/// A gateway can be intermittently slow to answer a status query — a request may
+/// take several seconds and still return valid data. This is set well above
+/// typical response times so a slow-but-successful response isn't cancelled:
+/// cancelling early discards the batch's confirmations and leaves
+/// already-confirmed txs stuck showing as pending. Normal responses are fast, so
+/// this only lengthens waits while a gateway is degraded — when we want to wait
+/// rather than drop the batch. Partial progress is still preserved by the
 /// verified sink regardless.
 const _txConfirmationBatchTimeout = Duration(seconds: 15);
 
@@ -1129,8 +1127,8 @@ class _SyncRepository implements SyncRepository {
       // confirmations, so it never marks anything failed off a partial run).
       final verified = <String?, int>{};
 
-      // Bound each batch above the gateway's ~9.5s upstream ceiling so a
-      // slow-but-successful response can land instead of being discarded.
+      // Give each batch a generous timeout so a slow-but-successful response
+      // can land instead of being discarded.
       final map = await arweave
           .getTransactionConfirmations(currentPage.toList(),
               owner: ownerAddress,
