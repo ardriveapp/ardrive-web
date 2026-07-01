@@ -270,13 +270,14 @@ class _ArDriveDownloader implements ArDriveDownloader {
 
   static const _stallTimeout = Duration(seconds: 60);
 
-  /// Wraps a download stream with stall detection. If no chunk arrives
-  /// within [_stallTimeout], emits a [DownloadStalledException].
+  /// Wraps a download stream with stall detection. After the first chunk
+  /// arrives, if no subsequent chunk arrives within [_stallTimeout], emits
+  /// a [DownloadStalledException]. If the stream completes before any chunks
+  /// (empty file), no stall error is raised.
   Stream<List<int>> _withStallDetection(
       Stream<List<int>> source, String txId) {
     final controller = StreamController<List<int>>();
     Timer? stallTimer;
-
     void resetTimer() {
       stallTimer?.cancel();
       stallTimer = Timer(_stallTimeout, () {
@@ -305,7 +306,6 @@ class _ArDriveDownloader implements ArDriveDownloader {
       subscription.cancel();
     };
 
-    resetTimer();
     return controller.stream;
   }
 
