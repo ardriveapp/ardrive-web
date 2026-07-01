@@ -151,14 +151,45 @@ class FileDownloadDialog extends StatelessWidget {
           } else if (state is FileDownloadInProgress) {
             return _fileDownloadInProgressDialog(context, state);
           } else if (state is FileDownloadFailure) {
-            if (state.reason == FileDownloadFailureReason.unknownError) {
-              return _fileDownloadFailedDialog(context);
-            } else if (state.reason ==
-                FileDownloadFailureReason.browserDoesNotSupportLargeDownloads) {
-              return _fileDownloadFailedDueToAboveBrowserLimit(context);
+            switch (state.reason) {
+              case FileDownloadFailureReason.unknownError:
+                return _retryableFailureDialog(
+                  context,
+                  title: appLocalizationsOf(context).fileFailedToDownload,
+                  description:
+                      appLocalizationsOf(context).tryAgainDownloadingFile,
+                );
+              case FileDownloadFailureReason.networkConnectionError:
+                return _retryableFailureDialog(
+                  context,
+                  title: appLocalizationsOf(context).downloadNetworkError,
+                  description: appLocalizationsOf(context)
+                      .downloadNetworkErrorDescription,
+                );
+              case FileDownloadFailureReason.rateLimited:
+                return _retryableFailureDialog(
+                  context,
+                  title: appLocalizationsOf(context).downloadRateLimited,
+                  description: appLocalizationsOf(context)
+                      .downloadRateLimitedDescription,
+                );
+              case FileDownloadFailureReason.fileNotFound:
+                return _modalWrapper(
+                  title: appLocalizationsOf(context).downloadFileNotFound,
+                  description: appLocalizationsOf(context)
+                      .downloadFileNotFoundDescription,
+                  actions: [
+                    ModalAction(
+                      action: () => Navigator.pop(context),
+                      title: appLocalizationsOf(context).ok,
+                    ),
+                  ],
+                );
+              case FileDownloadFailureReason.fileAboveLimit:
+                return _fileDownloadFailedDueToFileAbovePrivateLimit(context);
+              case FileDownloadFailureReason.browserDoesNotSupportLargeDownloads:
+                return _fileDownloadFailedDueToAboveBrowserLimit(context);
             }
-
-            return _fileDownloadFailedDueToFileAbovePrivateLimit(context);
           } else if (state is FileDownloadWarning) {
             return _warningToWaitDownloadFinishes(context);
           } else if (state is FileDownloadAborted) {
@@ -169,14 +200,23 @@ class FileDownloadDialog extends StatelessWidget {
         },
       );
 
-  ArDriveStandardModalNew _fileDownloadFailedDialog(BuildContext context) {
+  ArDriveStandardModalNew _retryableFailureDialog(
+    BuildContext context, {
+    required String title,
+    required String description,
+  }) {
     return _modalWrapper(
-      title: appLocalizationsOf(context).fileFailedToDownload,
-      description: appLocalizationsOf(context).tryAgainDownloadingFile,
+      title: title,
+      description: description,
       actions: [
         ModalAction(
           action: () => Navigator.pop(context),
-          title: appLocalizationsOf(context).ok,
+          title: appLocalizationsOf(context).cancel,
+        ),
+        ModalAction(
+          action: () =>
+              context.read<FileDownloadCubit>().retryDownload(),
+          title: appLocalizationsOf(context).tryAgain,
         ),
       ],
     );

@@ -1,14 +1,13 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:ardrive/download/download_exceptions.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart';
-import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:arweave/arweave.dart' as arweave;
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
 
@@ -87,9 +86,9 @@ class _ArDriveDownloader implements ArDriveDownloader {
         return _getDartVMGCMDecryptStream(
           cipher,
           cipherIvString,
-          (await arweave.download(
+          (await _arweave.gatewayFallback.downloadWithFallback(
             txId: txId,
-            arweave: _arweave.client,
+            primaryClient: _arweave.client,
             onProgress: (progress, speed) => logger.d(progress.toString()),
           ))
               .$1,
@@ -199,13 +198,13 @@ class _ArDriveDownloader implements ArDriveDownloader {
   }
 
   Future<Stream<Uint8List>> _getManifestStream(String dataTxId) async {
-    final urlString = '${_arweave.client.api.gatewayUrl.origin}/raw/$dataTxId';
+    logger.i('The file is a manifest. Downloading with gateway fallback...');
 
-    logger.i('The file is a manifest. Downloading it from $urlString');
+    final response = await _arweave.gatewayFallback
+        .fetchManifestWithFallback(dataTxId, _arweave.client);
 
-    final dataRes = await ArDriveHTTP().getAsBytes(urlString);
-
-    return Stream.fromIterable([dataRes.data]);
+    return Stream.fromIterable(
+        [Uint8List.fromList(response.bodyBytes)]);
   }
 
   Future<Stream<Uint8List>> _getFileStream({
@@ -223,14 +222,18 @@ class _ArDriveDownloader implements ArDriveDownloader {
 
     logger.d('verifying download: $verifyDownload');
 
-    final streamDownloadResponse = await arweave.download(
+    final streamDownloadResponse =
+        await _arweave.gatewayFallback.downloadWithFallback(
       txId: txId,
-      arweave: _arweave.client,
+      primaryClient: _arweave.client,
       onProgress: (progress, speed) => logger.d(progress.toString()),
       verifyDownload: verifyDownload,
     );
 
-    final streamDownload = streamDownloadResponse.$1;
+    final rawStream = streamDownloadResponse.$1;
+
+    // Wrap with stall detection — throw if no chunk arrives within 60s
+    final streamDownload = _withStallDetection(rawStream, txId);
 
     final isPrivateFile =
         fileKey != null && cipher != null && cipherIvString != null;
@@ -263,6 +266,47 @@ class _ArDriveDownloader implements ArDriveDownloader {
 
     logger.d('No cipher found. Saving file as is...');
     return streamDownload.transform(listIntToUint8ListTransformer);
+  }
+
+  static const _stallTimeout = Duration(seconds: 60);
+
+  /// Wraps a download stream with stall detection. If no chunk arrives
+  /// within [_stallTimeout], emits a [DownloadStalledException].
+  Stream<List<int>> _withStallDetection(
+      Stream<List<int>> source, String txId) {
+    final controller = StreamController<List<int>>();
+    Timer? stallTimer;
+
+    void resetTimer() {
+      stallTimer?.cancel();
+      stallTimer = Timer(_stallTimeout, () {
+        controller.addError(DownloadStalledException(txId, _stallTimeout));
+        controller.close();
+      });
+    }
+
+    final subscription = source.listen(
+      (chunk) {
+        resetTimer();
+        controller.add(chunk);
+      },
+      onError: (Object e, StackTrace s) {
+        stallTimer?.cancel();
+        controller.addError(e, s);
+      },
+      onDone: () {
+        stallTimer?.cancel();
+        controller.close();
+      },
+    );
+
+    controller.onCancel = () {
+      stallTimer?.cancel();
+      subscription.cancel();
+    };
+
+    resetTimer();
+    return controller.stream;
   }
 
   Stream<double> _getDartVMGCMDecryptStream(

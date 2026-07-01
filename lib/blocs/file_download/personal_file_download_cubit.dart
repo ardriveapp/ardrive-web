@@ -11,6 +11,7 @@ class FileDownloadProgress extends LinearProgress {
 
 class ProfileFileDownloadCubit extends FileDownloadCubit {
   final ARFSFileEntity _file;
+  SecretKey? _lastCipherKey;
 
   final StreamController<LinearProgress> _downloadProgress =
       StreamController<LinearProgress>.broadcast();
@@ -59,7 +60,14 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     download(cipherKey);
   }
 
+  @override
+  FutureOr<void> retryDownload() {
+    emit(FileDownloadStarting());
+    download(_lastCipherKey);
+  }
+
   Future<void> download(SecretKey? cipherKey) async {
+    _lastCipherKey = cipherKey;
     try {
       final drive = await _arfsRepository.getDriveById(_file.driveId);
 
@@ -251,18 +259,30 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    emit(
-      const FileDownloadFailure(
-        FileDownloadFailureReason.unknownError,
-      ),
-    );
+    final reason = _classifyError(error);
+    emit(FileDownloadFailure(reason));
 
     super.onError(error, stackTrace);
 
     logger.e(
-      'Failed to download file ${_file.id} with txId ${_file.txId} from gateway ${_arweave.client.api.gatewayUrl.origin}',
+      'Failed to download file ${_file.id} with txId ${_file.txId} '
+      '(reason: $reason)',
       error,
       stackTrace,
     );
+  }
+
+  static FileDownloadFailureReason _classifyError(Object error) {
+    if (error is DownloadFileNotFoundException) {
+      return FileDownloadFailureReason.fileNotFound;
+    }
+    if (error is DownloadRateLimitException) {
+      return FileDownloadFailureReason.rateLimited;
+    }
+    if (error is DownloadNetworkException ||
+        error is DownloadStalledException) {
+      return FileDownloadFailureReason.networkConnectionError;
+    }
+    return FileDownloadFailureReason.unknownError;
   }
 }

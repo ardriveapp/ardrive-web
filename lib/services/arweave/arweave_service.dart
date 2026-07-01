@@ -51,6 +51,7 @@ class ArweaveService {
   final ConfigService _configService;
   late ArtemisClient _gql;
   late DataGatewayFallback _gatewayFallback;
+  DataGatewayFallback get gatewayFallback => _gatewayFallback;
 
   static String _graphqlUrlFromGateway(String gatewayUrl) {
     final uri = Uri.parse(gatewayUrl);
@@ -927,7 +928,11 @@ class ArweaveService {
   /// by that owner.
   ///
   /// Returns `null` if no valid drive is found.
-  Future<Privacy?> getDrivePrivacyForId(String driveId) async {
+  /// Gets drive privacy and the owner address + latest transaction node.
+  ///
+  /// Returns both so the caller can reuse the owner and transaction node
+  /// without making redundant GraphQL queries.
+  Future<DrivePrivacyResult?> getDrivePrivacyForId(String driveId) async {
     final driveOwner = await getOwnerForDriveEntityWithId(driveId);
     if (driveOwner == null) {
       return null;
@@ -945,7 +950,11 @@ class ArweaveService {
 
     final driveTx = queryEdges.first.node;
 
-    return driveTx.getTag(EntityTag.drivePrivacy);
+    return DrivePrivacyResult(
+      privacy: driveTx.getTag(EntityTag.drivePrivacy),
+      ownerAddress: driveOwner,
+      driveTx: driveTx,
+    );
   }
 
   /// Gets the file privacy of the latest file entity with the provided id.
@@ -1677,6 +1686,20 @@ class UploadTransactions {
   Transaction dataTx;
 
   UploadTransactions(this.entityTx, this.dataTx);
+}
+
+/// Result of [ArweaveService.getDrivePrivacyForId], containing the privacy tag
+/// plus the owner and transaction node to avoid redundant re-queries.
+class DrivePrivacyResult {
+  final String? privacy;
+  final String ownerAddress;
+  final TransactionCommonMixin driveTx;
+
+  DrivePrivacyResult({
+    required this.privacy,
+    required this.ownerAddress,
+    required this.driveTx,
+  });
 }
 
 class TransactionNotFound implements Exception {

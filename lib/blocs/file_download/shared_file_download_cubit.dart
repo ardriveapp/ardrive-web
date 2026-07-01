@@ -130,14 +130,36 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
   }
 
   @override
+  FutureOr<void> retryDownload() {
+    emit(FileDownloadStarting());
+    download();
+  }
+
+  @override
   void onError(Object error, StackTrace stackTrace) {
-    emit(const FileDownloadFailure(FileDownloadFailureReason.unknownError));
+    final reason = _classifyError(error);
+    emit(FileDownloadFailure(reason));
     super.onError(error, stackTrace);
 
     logger.e(
-      'Failed to download shared file ${revision.id} with txId ${revision.dataTxId} from gateway ${_arweave.client.api.gatewayUrl.origin}. File name: ${revision.name}, size: ${revision.size}',
+      'Failed to download shared file ${revision.id} with txId '
+      '${revision.dataTxId} (reason: $reason)',
       error,
       stackTrace,
     );
+  }
+
+  static FileDownloadFailureReason _classifyError(Object error) {
+    if (error is DownloadFileNotFoundException) {
+      return FileDownloadFailureReason.fileNotFound;
+    }
+    if (error is DownloadRateLimitException) {
+      return FileDownloadFailureReason.rateLimited;
+    }
+    if (error is DownloadNetworkException ||
+        error is DownloadStalledException) {
+      return FileDownloadFailureReason.networkConnectionError;
+    }
+    return FileDownloadFailureReason.unknownError;
   }
 }

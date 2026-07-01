@@ -277,9 +277,14 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     _lookupNotifier.value = true;
 
     try {
-      final drivePrivacy = await _arweave.getDrivePrivacyForId(driveId);
+      final result = await _arweave.getDrivePrivacyForId(driveId);
 
-      switch (drivePrivacy) {
+      if (result == null) {
+        emit(DriveAttachDriveNotFound());
+        return null;
+      }
+
+      switch (result.privacy) {
         case DrivePrivacyTag.private:
           emit(DriveAttachPrivate());
           break;
@@ -287,8 +292,12 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
           emit(DriveAttachDriveNotFound());
           break;
         default:
-          // Public drive — fetch entity now to get the name
-          final drive = await _arweave.getLatestDriveEntityWithId(driveId);
+          // Public drive — build entity from the already-fetched transaction
+          // (avoids 2 redundant GQL queries)
+          final drive = await _arweave.getLatestDriveEntityWithId(
+            driveId,
+            driveOwner: result.ownerAddress,
+          );
 
           if (drive == null) {
             emit(DriveAttachDriveNotFound());
