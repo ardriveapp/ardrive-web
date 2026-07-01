@@ -77,6 +77,13 @@ class FileShareDialogState extends State<FileShareDialog> {
                   color: colorTokens.textMid,
                 ),
               )
+            else if (state is FileShareLoadedPendingFile)
+              Text(
+                appLocalizationsOf(context).sharePendingFile,
+                style: typography.paragraphNormal(
+                  color: colorTokens.textMid,
+                ),
+              )
             else if (state is FileShareLoadSuccess) ...{
               if (state.isPending)
                 Container(
@@ -95,6 +102,7 @@ class FileShareDialogState extends State<FileShareDialog> {
                       const SizedBox(width: 8),
                       Flexible(
                         child: Text(
+                          // TODO(PE-9103): extract to ARB localization files
                           'Warning: This file is currently pending and may not be immediately accessible.',
                           style: typography.paragraphSmall(
                             fontWeight: ArFontWeight.semiBold,

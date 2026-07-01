@@ -290,6 +290,12 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                 color: colorTokens.textMid,
               ),
             ),
+            actions: [
+              ModalAction(
+                action: () => Navigator.pop(context),
+                title: appLocalizationsOf(context).close,
+              ),
+            ],
           );
         },
       ),
