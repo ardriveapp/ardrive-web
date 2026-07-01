@@ -41,6 +41,26 @@ import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:retry/retry.dart';
 
+/// Timeout for a single transaction-status confirmation batch
+/// ([ArweaveService.getTransactionConfirmations]).
+///
+/// The gateway's GraphQL layer proxies an upstream index (`indexer-core`) with a
+/// ~9.5s upstream timeout and a circuit breaker. When the breaker is open a
+/// status query can legitimately take ~10s to return valid data (observed:
+/// 9.87s, with `UPSTREAM_CIRCUIT_OPEN` / "timeout of 9500ms exceeded" warnings).
+/// This must sit *above* that ceiling: otherwise the client cancels the batch
+/// before the successful response lands, discarding confirmations and leaving
+/// long-confirmed txs stuck as pending. Typical responses are ~0.5s, so this
+/// only extends waits while the gateway is degraded — exactly when we want to
+/// wait rather than drop the batch. Partial progress is still preserved by the
+/// verified sink regardless.
+const _txConfirmationBatchTimeout = Duration(seconds: 15);
+
+/// Overall timeout for a drive's transaction-status update (across batches).
+/// Sits above [_txConfirmationBatchTimeout] so at least one slow-but-successful
+/// batch can complete; remaining work resumes on the next sync.
+const _txStatusUpdateTimeout = Duration(seconds: 30);
+
 abstract class SyncRepository {
   Stream<double> syncDriveById({
     required String driveId,
@@ -395,12 +415,13 @@ class _SyncRepository implements SyncRepository {
                 txsIdsToSkip: confirmedFileTxIds,
                 cancellationToken: token,
               ).timeout(
-                const Duration(seconds: 10),
+                _txStatusUpdateTimeout,
                 onTimeout: () {
                   // Check if cancelled before timing out
                   token.checkCancellation();
                   logger.w(
-                      'Transaction status update timed out after 10 seconds');
+                      'Transaction status update timed out after '
+                      '${_txStatusUpdateTimeout.inSeconds}s');
                   // Update status message to indicate timeout but don't treat as error
                   syncProgress = syncProgress.copyWith(
                     statusMessage: 'Completing sync...',
@@ -677,11 +698,12 @@ class _SyncRepository implements SyncRepository {
             txsIdsToSkip: confirmedFileTxIds,
             cancellationToken: token,
           ).timeout(
-            const Duration(seconds: 10),
+            _txStatusUpdateTimeout,
             onTimeout: () {
               token.checkCancellation();
               logger.w(
-                  'Transaction status update timed out after 10 seconds for single drive');
+                  'Transaction status update timed out after '
+                  '${_txStatusUpdateTimeout.inSeconds}s for single drive');
               syncProgress = syncProgress.copyWith(
                 statusMessage: 'Completing sync...',
               );
@@ -820,7 +842,7 @@ class _SyncRepository implements SyncRepository {
               ownerOverrides: ownerOverrides,
               verifiedSink: verified)
           .timeout(
-        const Duration(seconds: 5),
+        _txConfirmationBatchTimeout,
         onTimeout: () {
           logger.w('Individual transaction confirmation timeout; '
               'applying ${verified.length} confirmations resolved so far');
@@ -1107,7 +1129,8 @@ class _SyncRepository implements SyncRepository {
       // confirmations, so it never marks anything failed off a partial run).
       final verified = <String?, int>{};
 
-      // Use a shorter timeout for individual GraphQL calls
+      // Bound each batch above the gateway's ~9.5s upstream ceiling so a
+      // slow-but-successful response can land instead of being discarded.
       final map = await arweave
           .getTransactionConfirmations(currentPage.toList(),
               owner: ownerAddress,
@@ -1115,7 +1138,7 @@ class _SyncRepository implements SyncRepository {
               ownerOverrides: ownerOverrides,
               verifiedSink: verified)
           .timeout(
-        const Duration(seconds: 5),
+        _txConfirmationBatchTimeout,
         onTimeout: () {
           logger.w('Individual transaction confirmation timeout; '
               'applying ${verified.length} confirmations resolved so far');
