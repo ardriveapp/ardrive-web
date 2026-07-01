@@ -1017,6 +1017,27 @@ class _SyncRepository implements SyncRepository {
     };
   }
 
+  /// Maps each pending data tx id to the owner of the drive it belongs to, so
+  /// the confirmation query can be scoped per-tx by the actual drive owner.
+  /// This is needed because a single sync can span the user's own drives and
+  /// attached drives owned by other wallets — assuming the logged-in wallet
+  /// owns every pending tx would send an unscoped (or wrongly-scoped) query for
+  /// the attached ones.
+  Future<Map<String, String>> _buildPendingTxDriveOwners(
+    DriveDao driveDao,
+  ) async {
+    final pendingRevisions = await driveDao.pendingDataFileRevisions().get();
+    final ownerByDriveId = {
+      for (final drive in await driveDao.allDrives().get())
+        drive.id: drive.ownerAddress,
+    };
+    return {
+      for (final revision in pendingRevisions)
+        if ((ownerByDriveId[revision.driveId] ?? '').isNotEmpty)
+          revision.dataTxId: ownerByDriveId[revision.driveId]!,
+    };
+  }
+
   Future<void> _updateTransactionStatuses({
     required DriveDao driveDao,
     required ArweaveService arweave,
@@ -1028,6 +1049,10 @@ class _SyncRepository implements SyncRepository {
     cancellationToken?.checkCancellation();
 
     final ownerOverrides = await _buildPinnedDataTxOwnerOverrides(driveDao);
+    // Scope each pending tx by the owner of its own drive rather than assuming
+    // the logged-in wallet owns everything (which is wrong for attached drives
+    // owned by other wallets, and null when browsing without a wallet).
+    final ownersByTxId = await _buildPendingTxDriveOwners(driveDao);
 
     // Load all pending transactions
     // Note: We load all at once here, but the memory impact is acceptable
@@ -1086,6 +1111,7 @@ class _SyncRepository implements SyncRepository {
       final map = await arweave
           .getTransactionConfirmations(currentPage.toList(),
               owner: ownerAddress,
+              ownersByTxId: ownersByTxId,
               ownerOverrides: ownerOverrides,
               verifiedSink: verified)
           .timeout(

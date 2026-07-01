@@ -1236,6 +1236,13 @@ class ArweaveService {
   /// unresolved rather than re-queried unscoped, which would reintroduce the
   /// expensive gateway scan this scoping is meant to avoid.
   ///
+  /// [ownersByTxId] maps a transaction id to the owner it should be scoped by
+  /// (the owner of the drive the tx belongs to). It takes precedence over
+  /// [owner] per tx, letting a batch spanning multiple drives — e.g. the user's
+  /// own drives plus attached drives owned by others — be scoped correctly
+  /// instead of assuming a single owner. A tx present in neither [ownersByTxId]
+  /// nor [owner] is left unresolved rather than queried unscoped.
+  ///
   /// [verifiedSink], if provided, is progressively populated with each
   /// successfully verified confirmation (value >= 0) as the query completes —
   /// it never receives the -1 "not found" placeholders. A caller can wrap this
@@ -1246,6 +1253,7 @@ class ArweaveService {
   Future<Map<String?, int>> getTransactionConfirmations(
     List<String?> transactionIds, {
     String? owner,
+    Map<String, String>? ownersByTxId,
     Map<String, String>? ownerOverrides,
     Map<String?, int>? verifiedSink,
   }) async {
@@ -1306,8 +1314,29 @@ class ArweaveService {
       }
     }
 
-    // First pass: scoped by owner for gateway selectivity.
-    await queryConfirmations(transactionIds, owner: owner);
+    // The owner a tx should be scoped by: its per-tx owner if known, else the
+    // single [owner]. Returns null when neither is available (unscopable).
+    String? primaryOwnerFor(String? id) {
+      if (id != null && ownersByTxId != null) {
+        final mapped = ownersByTxId[id];
+        if (mapped != null) return mapped;
+      }
+      return owner;
+    }
+
+    // First pass: scope each tx by its resolved owner and query each owner
+    // once. This keeps every query selective even when the batch spans drives
+    // with different owners. A tx with no resolvable owner is left unresolved
+    // rather than queried unscoped, which would reintroduce the expensive scan.
+    final idsByPrimaryOwner = <String, List<String?>>{};
+    for (final id in transactionIds) {
+      final resolvedOwner = primaryOwnerFor(id);
+      if (resolvedOwner == null) continue;
+      idsByPrimaryOwner.putIfAbsent(resolvedOwner, () => []).add(id);
+    }
+    for (final entry in idsByPrimaryOwner.entries) {
+      await queryConfirmations(entry.value, owner: entry.key);
+    }
 
     // Second pass: for any unresolved id whose real owner we know locally
     // (currently pinned data txs), re-query scoped to that owner. This recovers
@@ -1319,13 +1348,16 @@ class ArweaveService {
     // results are merged into the already-populated map, so we swallow any
     // error and bound it with its own timeout — even if it fails or stalls,
     // the confirmations resolved by the first pass are still returned.
-    if (owner != null && ownerOverrides != null && ownerOverrides.isNotEmpty) {
+    if (ownerOverrides != null && ownerOverrides.isNotEmpty) {
       final idsByOverrideOwner = <String, List<String?>>{};
       for (final entry in transactionConfirmations.entries) {
         if (entry.value >= 0) continue;
-        final overrideOwner = ownerOverrides[entry.key];
-        if (overrideOwner == null || overrideOwner == owner) continue;
-        idsByOverrideOwner.putIfAbsent(overrideOwner, () => []).add(entry.key);
+        final txId = entry.key;
+        final overrideOwner = ownerOverrides[txId];
+        if (overrideOwner == null) continue;
+        // Skip if the tx's first-pass owner already matched its override owner.
+        if (overrideOwner == primaryOwnerFor(txId)) continue;
+        idsByOverrideOwner.putIfAbsent(overrideOwner, () => []).add(txId);
       }
 
       if (idsByOverrideOwner.isNotEmpty) {
