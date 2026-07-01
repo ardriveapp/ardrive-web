@@ -1331,7 +1331,15 @@ class ArweaveService {
     final idsByPrimaryOwner = <String, List<String?>>{};
     for (final id in transactionIds) {
       final resolvedOwner = primaryOwnerFor(id);
-      if (resolvedOwner == null) continue;
+      if (resolvedOwner == null) {
+        // No owner to scope by, so this tx is never queried. Drop it from the
+        // result rather than leaving the pre-seeded -1, which the caller would
+        // read as a real "not found" and could age an old pending tx into
+        // failed. Absent => the caller skips it; it stays pending until its
+        // drive/owner is known and it can be scoped on a later sync.
+        transactionConfirmations.remove(id);
+        continue;
+      }
       idsByPrimaryOwner.putIfAbsent(resolvedOwner, () => []).add(id);
     }
     for (final entry in idsByPrimaryOwner.entries) {
