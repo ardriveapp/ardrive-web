@@ -54,16 +54,10 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
 
     String? cipherTag;
     String? cipherIvTag;
+    bool verifyDownload = false;
     final isPinFile = revision.pinnedDataOwnerAddress != null;
 
     final dataTxId = revision.dataTxId;
-
-    final dataTx = await _arweave.getTransactionDetails(revision.dataTxId!);
-
-    if (dataTx == null) {
-      throw StateError(
-          'Data transaction not found for file ${revision.id} with txId ${revision.dataTxId} from gateway ${_arweave.client.api.gatewayUrl.origin}');
-    }
 
     if (dataTxId == null) {
       throw StateError(
@@ -71,14 +65,23 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
     }
 
     if (fileKey != null && !isPinFile) {
+      // Private/encrypted files need cipher/IV tags from the data transaction
+      final dataTx = await _arweave.getTransactionDetails(dataTxId);
+
+      if (dataTx == null) {
+        throw StateError(
+            'Data transaction not found for file ${revision.id} with txId $dataTxId from gateway ${_arweave.client.api.gatewayUrl.origin}');
+      }
+
       cipherTag = dataTx.getTag(EntityTag.cipher);
       cipherIvTag = dataTx.getTag(EntityTag.cipherIv);
+      verifyDownload = dataTx.getTag(EntityTag.appName) == 'ArDrive-CLI';
     }
 
     logger.d('File size: ${revision.size}');
 
     final downloadStream = await _arDriveDownloader.downloadFile(
-      dataTx: dataTx,
+      txId: dataTxId,
       fileName: revision.name,
       fileSize: revision.size,
       lastModifiedDate: revision.lastModifiedDate,
@@ -88,6 +91,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       cipherIvString: cipherIvTag,
       fileKey: fileKey,
       isManifest: revision.contentType == ContentType.manifest,
+      verifyDownload: verifyDownload,
     );
 
     downloadStream.listen(
@@ -126,14 +130,36 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
   }
 
   @override
+  FutureOr<void> retryDownload() {
+    emit(FileDownloadStarting());
+    download();
+  }
+
+  @override
   void onError(Object error, StackTrace stackTrace) {
-    emit(const FileDownloadFailure(FileDownloadFailureReason.unknownError));
+    final reason = _classifyError(error);
+    emit(FileDownloadFailure(reason));
     super.onError(error, stackTrace);
 
     logger.e(
-      'Failed to download shared file ${revision.id} with txId ${revision.dataTxId} from gateway ${_arweave.client.api.gatewayUrl.origin}. File name: ${revision.name}, size: ${revision.size}',
+      'Failed to download shared file ${revision.id} with txId '
+      '${revision.dataTxId} (reason: $reason)',
       error,
       stackTrace,
     );
+  }
+
+  static FileDownloadFailureReason _classifyError(Object error) {
+    if (error is DownloadFileNotFoundException) {
+      return FileDownloadFailureReason.fileNotFound;
+    }
+    if (error is DownloadRateLimitException) {
+      return FileDownloadFailureReason.rateLimited;
+    }
+    if (error is DownloadNetworkException ||
+        error is DownloadStalledException) {
+      return FileDownloadFailureReason.networkConnectionError;
+    }
+    return FileDownloadFailureReason.unknownError;
   }
 }

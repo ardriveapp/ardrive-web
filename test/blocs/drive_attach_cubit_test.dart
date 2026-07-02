@@ -16,6 +16,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
 import '../test_utils/fakes.dart';
+import '../test_utils/mocks.dart';
 import '../test_utils/utils.dart';
 
 void main() {
@@ -85,10 +86,18 @@ void main() {
 
       when(() => arweave.getLatestDriveEntityWithId(notFoundDriveId))
           .thenAnswer((_) => Future.value(null));
-      when(() => arweave.getDrivePrivacyForId(validDriveId))
-          .thenAnswer((_) => Future.value(DrivePrivacyTag.public));
-      when(() => arweave.getDrivePrivacyForId(validPrivateDriveId))
-          .thenAnswer((_) => Future.value(DrivePrivacyTag.private));
+      when(() => arweave.getDrivePrivacyForId(validDriveId)).thenAnswer(
+          (_) => Future.value(DrivePrivacyResult(
+                privacy: DrivePrivacyTag.public,
+                ownerAddress: 'test-owner',
+                driveTx: MockTransactionCommonMixin(),
+              )));
+      when(() => arweave.getDrivePrivacyForId(validPrivateDriveId)).thenAnswer(
+          (_) => Future.value(DrivePrivacyResult(
+                privacy: DrivePrivacyTag.private,
+                ownerAddress: 'test-owner',
+                driveTx: MockTransactionCommonMixin(),
+              )));
 
       when(() => driveDao.writeDriveEntity(
             name: any(named: 'name'),

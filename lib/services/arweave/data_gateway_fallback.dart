@@ -1,168 +1,253 @@
 import 'dart:async';
 
+import 'package:ardrive/download/download_exceptions.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
+import 'package:arweave/arweave.dart' as arweave_pkg;
 import 'package:http/http.dart';
 
 /// Provides data gateway fallback resilience.
 ///
-/// When the primary gateway fails (404, 429, 5xx, timeout), automatically
-/// tries gateways from the AR.IO GAR list, then arweave.net as last resort.
-/// Fallback is per-request — the primary gateway is always tried first.
+/// Metadata fetches use serial waterfall (primary → GAR → arweave.net) to
+/// avoid unnecessary requests during high-volume sync operations.
+///
+/// File downloads use hedged (staggered parallel) requests since they are
+/// single user-initiated operations where latency matters.
+///
+/// Fallback order: primary → up to 2 GAR gateways → arweave.net
 class DataGatewayFallback {
   final ArioSDK _arioSDK;
   final Map<String, Arweave> _clientCache = {};
 
-  static const _lastResortGateway = 'https://arweave.net';
   static const _maxGarFallbacks = 2;
-  static const _retryPerGateway = 1;
   static const _garListTimeout = Duration(seconds: 5);
   static const _requestTimeout = Duration(seconds: 5);
-  /// Total time allowed for the entire fallback chain per tx.
-  /// Prevents a single missing/broken tx from blocking sync for minutes.
-  static const _totalFetchTimeout = Duration(seconds: 15);
+  static const _totalFetchTimeout = Duration(seconds: 25);
+  static const _hedgeDelay = Duration(milliseconds: 1500);
+  static const _downloadTimeout = Duration(seconds: 15);
 
-  List<Gateway>? _cachedGateways;
+  /// Cached gateway list — shared with other services (e.g.
+  /// SnapshotValidationService) to avoid duplicate Solana RPC calls.
+  List<Gateway>? cachedGateways;
 
   DataGatewayFallback({
     required ArioSDK arioSDK,
   }) : _arioSDK = arioSDK;
 
-  /// Fetch transaction data with automatic gateway fallback.
+  /// Fetch transaction data with serial gateway fallback.
   ///
-  /// Tries: primary → up to 3 GAR gateways → arweave.net
+  /// Tries: primary → up to 2 GAR gateways → arweave.net
+  /// Used for metadata fetches during sync (called hundreds of times).
   ///
-  /// If ALL gateways return 404, throws [TransactionNotFound] to preserve
-  /// upstream error handling (e.g. private drive detection during login).
+  /// If ALL gateways return 404, throws [TransactionNotFound].
   Future<Response> fetchData(String txId, Arweave primaryClient) async {
-    return _fetchDataWithTimeout(txId, primaryClient)
+    return _serialFetch(txId, primaryClient)
         .timeout(_totalFetchTimeout, onTimeout: () {
       logger.w('Total fetch timeout exceeded for tx $txId');
       throw Exception('Total fetch timeout exceeded for tx $txId');
     });
   }
 
-  Future<Response> _fetchDataWithTimeout(
-      String txId, Arweave primaryClient) async {
+  Future<Response> _serialFetch(String txId, Arweave primaryClient) async {
+    final clients = await _buildClientList(primaryClient);
     var all404 = true;
 
-    // 1. Try primary gateway
-    try {
-      return await _tryGateway(primaryClient, txId);
-    } on _ErrorFromStatus catch (e) {
-      if (!e.retryable) rethrow;
-      if (e.statusCode != 404) all404 = false;
-      logger.w(
-        'Primary gateway failed for tx $txId '
-        '(${primaryClient.api.gatewayUrl}): $e',
-      );
-    } catch (e) {
-      all404 = false;
-      logger.w(
-        'Primary gateway failed for tx $txId '
-        '(${primaryClient.api.gatewayUrl}): $e',
-      );
-    }
-
-    // 2. Try GAR gateways (cached to avoid repeated Solana RPC calls)
-    try {
-      _cachedGateways ??= await _arioSDK
-          .getGateways()
-          .timeout(_garListTimeout, onTimeout: () => <Gateway>[]);
-      final gateways = _cachedGateways!;
-      final primaryHost = primaryClient.api.gatewayUrl.host;
-
-      var tried = 0;
-      for (final gw in gateways) {
-        if (tried >= _maxGarFallbacks) break;
-        if (gw.settings.fqdn == primaryHost) continue;
-
-        try {
-          final client = _getOrCreateClient(gw.settings.fqdn);
-          final response = await _tryGateway(client, txId);
-          logger.i(
-            'Fallback gateway ${gw.settings.fqdn} succeeded for tx $txId',
-          );
-          return response;
-        } on _ErrorFromStatus catch (e) {
-          if (!e.retryable) rethrow;
-          if (e.statusCode != 404) all404 = false;
-          logger.w(
-            'Fallback gateway ${gw.settings.fqdn} failed for tx $txId: $e',
-          );
-          tried++;
-          continue;
-        } catch (e) {
-          all404 = false;
-          logger.w(
-            'Fallback gateway ${gw.settings.fqdn} failed for tx $txId: $e',
-          );
-          tried++;
-          continue;
+    for (final client in clients) {
+      final gatewayName = client.api.gatewayUrl.host;
+      try {
+        final response = await _tryGateway(client, txId);
+        if (client != primaryClient) {
+          logger.i('Fallback gateway $gatewayName succeeded for tx $txId');
         }
+        return response;
+      } on _ErrorFromStatus catch (e) {
+        if (e.statusCode != 404) all404 = false;
+        logger.w('Gateway $gatewayName failed for tx $txId: $e');
+      } catch (e) {
+        all404 = false;
+        logger.w('Gateway $gatewayName failed for tx $txId: $e');
       }
-    } catch (e) {
-      all404 = false;
-      logger.w('GAR list unavailable for fallback: $e');
     }
 
-    // 3. Last resort: arweave.net
-    logger.w('Trying last resort gateway $_lastResortGateway for tx $txId');
-    try {
-      final lastResortClient = _getOrCreateClient('arweave.net');
-      final response = await _tryGateway(lastResortClient, txId);
-      logger.i('Last resort gateway succeeded for tx $txId');
-      return response;
-    } on _ErrorFromStatus catch (e) {
-      if (e.statusCode != 404) all404 = false;
-    } catch (e) {
-      all404 = false;
-    }
-
-    // All gateways failed
     if (all404) {
       throw TransactionNotFound(txId);
     }
     throw Exception('All gateways failed for tx $txId');
   }
 
-  Future<Response> _tryGateway(Arweave client, String txId) async {
-    Exception? lastError;
+  /// Download a file with hedged (staggered parallel) gateway fallback.
+  ///
+  /// Fires primary immediately, then launches additional gateways every
+  /// [_hedgeDelay] if no response yet. First successful response wins.
+  /// Used for single user-initiated downloads where latency matters.
+  ///
+  /// Only retries pre-stream failures (connection, 404, 500 before stream
+  /// starts). Once bytes are streaming, failures propagate to the caller.
+  ///
+  /// Throws [DownloadFileNotFoundException], [DownloadNetworkException], or
+  /// [DownloadRateLimitException] on failure.
+  Future<(Stream<List<int>>, void Function())> downloadWithFallback({
+    required String txId,
+    required Arweave primaryClient,
+    Function(double progress, int speed)? onProgress,
+    bool verifyDownload = false,
+  }) async {
+    final clients = await _buildClientList(primaryClient);
+    var all404 = true;
 
-    for (var attempt = 0; attempt < _retryPerGateway; attempt++) {
+    // Hedged: fire primary, then stagger fallbacks
+    final completer = Completer<(Stream<List<int>>, void Function())>();
+    var failedCount = 0;
+
+    for (var i = 0; i < clients.length; i++) {
+      if (completer.isCompleted) break;
+
+      // Stagger: wait before launching each subsequent gateway
+      if (i > 0) {
+        await Future.any([
+          Future.delayed(_hedgeDelay),
+          completer.future.then((_) {}),
+        ]);
+        if (completer.isCompleted) break;
+      }
+
+      final client = clients[i];
+      final gatewayName = i == 0 ? 'primary' : client.api.gatewayUrl.host;
+
+      // Fire and don't await — let the completer collect the winner
+      unawaited(
+        arweave_pkg
+            .download(
+          txId: txId,
+          arweave: client,
+          onProgress: onProgress,
+          verifyDownload: verifyDownload,
+        )
+            .then((result) {
+          if (!completer.isCompleted) {
+            if (i > 0) {
+              logger.i('Hedged gateway $gatewayName won download for tx $txId');
+            }
+            completer.complete(result);
+          }
+        }).catchError((Object e) {
+          failedCount++;
+          if (e is! _ErrorFromStatus || e.statusCode != 404) {
+            all404 = false;
+          }
+          logger.w('Download gateway $gatewayName failed for tx $txId: $e');
+
+          if (failedCount == clients.length && !completer.isCompleted) {
+            if (all404) {
+              completer.completeError(DownloadFileNotFoundException(txId));
+            } else {
+              completer.completeError(
+                  DownloadNetworkException(txId, e.toString()));
+            }
+          }
+        }),
+      );
+    }
+
+    return completer.future.timeout(_downloadTimeout, onTimeout: () {
+      throw DownloadNetworkException(txId, 'Download connection timed out');
+    });
+  }
+
+  /// Fetch manifest data with serial gateway fallback.
+  Future<Response> fetchManifestWithFallback(
+      String txId, Arweave primaryClient) async {
+    final clients = await _buildClientList(primaryClient);
+    var all404 = true;
+
+    for (final client in clients) {
+      final gatewayName = client.api.gatewayUrl.host;
       try {
-        final response = await client.api
-            .getSandboxedTx(txId)
-            .timeout(_requestTimeout);
-
-        if (response.statusCode >= 200 && response.statusCode <= 208) {
-          return response;
+        final response = await _tryManifestGateway(client, txId);
+        if (client != primaryClient) {
+          logger.i(
+              'Fallback gateway $gatewayName succeeded for manifest $txId');
         }
-
-        if (!_isRetryableStatus(response.statusCode)) {
-          throw _ErrorFromStatus(response.statusCode, txId, retryable: false);
-        }
-
-        throw _ErrorFromStatus(response.statusCode, txId);
+        return response;
+      } on _ErrorFromStatus catch (e) {
+        if (e.statusCode != 404) all404 = false;
+        logger.w('Gateway $gatewayName failed for manifest $txId: $e');
       } catch (e) {
-        lastError = e is Exception ? e : Exception(e.toString());
-        if (attempt < _retryPerGateway - 1) {
-          await Future.delayed(
-            Duration(milliseconds: 500 * (attempt + 1)),
-          );
-        }
+        all404 = false;
+        logger.w('Gateway $gatewayName failed for manifest $txId: $e');
       }
     }
 
-    throw lastError!;
+    if (all404) {
+      throw TransactionNotFound(txId);
+    }
+    throw Exception('All gateways failed for manifest $txId');
   }
 
-  bool _isRetryableStatus(int statusCode) =>
-      statusCode == 404 ||
-      statusCode == 429 ||
-      (statusCode >= 500 && statusCode < 600);
+  /// Build the ordered list of clients: primary + GAR gateways + arweave.net.
+  Future<List<Arweave>> _buildClientList(Arweave primaryClient) async {
+    final clients = <Arweave>[primaryClient];
+    final primaryHost = primaryClient.api.gatewayUrl.host;
+
+    try {
+      if (cachedGateways == null) {
+        try {
+          cachedGateways = await _arioSDK
+              .getGateways()
+              .timeout(_garListTimeout, onTimeout: () => <Gateway>[]);
+        } catch (e) {
+          // Solana RPC failed — cache empty list so we don't retry every call
+          logger.w('GAR list unavailable for fallback, will not retry: $e');
+          cachedGateways = [];
+        }
+      }
+
+      var added = 0;
+      for (final gw in cachedGateways!) {
+        if (added >= _maxGarFallbacks) break;
+        if (gw.settings.fqdn == primaryHost) continue;
+        clients.add(_getOrCreateClient(gw.settings.fqdn));
+        added++;
+      }
+    } catch (e) {
+      logger.w('GAR list unavailable for fallback: $e');
+    }
+
+    // Always include arweave.net as last resort
+    if (primaryHost != 'arweave.net') {
+      clients.add(_getOrCreateClient('arweave.net'));
+    }
+
+    return clients;
+  }
+
+  Future<Response> _tryGateway(Arweave client, String txId) async {
+    final response = await client.api
+        .getSandboxedTx(txId)
+        .timeout(_requestTimeout);
+
+    if (response.statusCode >= 200 && response.statusCode <= 208) {
+      return response;
+    }
+
+    throw _ErrorFromStatus(response.statusCode, txId);
+  }
+
+  Future<Response> _tryManifestGateway(Arweave client, String txId) async {
+    final url = '${client.api.gatewayUrl.origin}/raw/$txId';
+    final response =
+        await ArDriveHTTP().get(url: url).timeout(_requestTimeout);
+
+    final statusCode = response.statusCode ?? 0;
+    if (statusCode >= 200 && statusCode <= 208) {
+      return Response(response.data, statusCode);
+    }
+
+    throw _ErrorFromStatus(statusCode, txId);
+  }
 
   Arweave _getOrCreateClient(String fqdn) {
     return _clientCache.putIfAbsent(
@@ -177,9 +262,8 @@ class DataGatewayFallback {
 class _ErrorFromStatus implements Exception {
   final int statusCode;
   final String txId;
-  final bool retryable;
 
-  _ErrorFromStatus(this.statusCode, this.txId, {this.retryable = true});
+  _ErrorFromStatus(this.statusCode, this.txId);
 
   @override
   String toString() => 'Gateway returned $statusCode for tx $txId';

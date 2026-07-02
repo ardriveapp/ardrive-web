@@ -51,6 +51,7 @@ class ArweaveService {
   final ConfigService _configService;
   late ArtemisClient _gql;
   late DataGatewayFallback _gatewayFallback;
+  DataGatewayFallback get gatewayFallback => _gatewayFallback;
 
   static String _graphqlUrlFromGateway(String gatewayUrl) {
     final uri = Uri.parse(gatewayUrl);
@@ -136,6 +137,29 @@ class ArweaveService {
   late GraphQLRetry graphQLRetry;
   late HttpRetry httpRetry;
 
+  /// Cache for [getUniqueUserDriveEntityTxs] to avoid redundant GQL calls.
+  /// Auth flow (isExistingUser, _validateUser) and sync (updateUserDrives)
+  /// all call this for the same wallet. Invalidated explicitly via
+  /// [clearUserDriveTxsCache] when a drive is created/updated or after sync.
+  String? _cachedUserDriveTxsAddress;
+  List<TransactionCommonMixin>? _cachedUserDriveTxs;
+
+  /// Cache for raw entity data bytes fetched during [getUniqueUserDriveEntities].
+  /// Keyed by transaction ID. Allows [getLatestDriveEntityWithId] to re-parse
+  /// the data with a different key without re-downloading from the gateway.
+  final Map<String, Uint8List> _cachedEntityDataBytes = {};
+
+  /// Cache for drive signatures (immutable on-chain, never change).
+  final Map<String, DriveSignatureEntity?> _cachedDriveSignatures = {};
+
+  /// Clears the cached result of [getUniqueUserDriveEntityTxs] and entity data.
+  /// Call after creating/updating a drive or after a full sync completes.
+  void clearUserDriveTxsCache() {
+    _cachedUserDriveTxsAddress = null;
+    _cachedUserDriveTxs = null;
+    _cachedEntityDataBytes.clear();
+  }
+
   /// Returns the onchain balance of the specified address.
   Future<BigInt> getWalletBalance(String address) => client.api
       .get('wallet/$address/balance')
@@ -209,7 +233,7 @@ class ArweaveService {
   }
 
   Future<TransactionCommonMixin?> getTransactionDetails(String txId) async {
-    final query = await _gql.execute(TransactionDetailsQuery(
+    final query = await graphQLRetry.execute(TransactionDetailsQuery(
         variables: TransactionDetailsArguments(txId: txId)));
     return query.data?.transaction;
   }
@@ -217,50 +241,104 @@ class ArweaveService {
   Future<InfoOfTransactionToBePinned$Query$Transaction?> getInfoOfTxToBePinned(
     String txId,
   ) async {
-    final query = await _gql.execute(InfoOfTransactionToBePinnedQuery(
+    final query = await graphQLRetry.execute(InfoOfTransactionToBePinnedQuery(
         variables: InfoOfTransactionToBePinnedArguments(txId: txId)));
     return query.data?.transaction;
   }
 
+  /// Fetch snapshots for a single drive. Delegates to [getAllSnapshotsForDrives].
   Stream<SnapshotEntityTransaction> getAllSnapshotsOfDrive(
     String driveId,
     int? lastBlockHeight, {
+    required String ownerAddress,
+  }) =>
+      getAllSnapshotsForDrives([driveId], lastBlockHeight,
+          ownerAddress: ownerAddress);
+
+  /// Fetch snapshots for multiple drives in a single paginated GQL query.
+  ///
+  /// Use [minBlockHeight] = min of all drives' lastBlockHeights.
+  /// Caller should filter results by Drive-Id tag and pass each drive's
+  /// subset to [SnapshotItem.instantiateAll] with that drive's own
+  /// lastBlockHeight to preserve per-drive state isolation.
+  Stream<SnapshotEntityTransaction> getAllSnapshotsForDrives(
+    List<String> driveIds,
+    int? minBlockHeight, {
     required String ownerAddress,
   }) async* {
     String cursor = '';
 
     while (true) {
       try {
-        // Get a page of 100 transactions
         final snapshotEntityHistoryQuery = await graphQLRetry.execute(
           SnapshotEntityHistoryQuery(
             variables: SnapshotEntityHistoryArguments(
-              driveId: driveId,
-              lastBlockHeight: lastBlockHeight,
+              driveIds: driveIds,
+              lastBlockHeight: minBlockHeight,
               after: cursor,
               ownerAddress: ownerAddress,
             ),
           ),
         );
-        for (SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge edge
-            in snapshotEntityHistoryQuery.data!.transactions.edges) {
+        final edges = snapshotEntityHistoryQuery.data!.transactions.edges;
+        for (final edge in edges) {
           yield edge.node;
         }
 
-        cursor = snapshotEntityHistoryQuery.data!.transactions.edges.isNotEmpty
-            ? snapshotEntityHistoryQuery.data!.transactions.edges.last.cursor
-            : '';
+        // Guard against empty edges with hasNextPage=true causing infinite loop
+        if (edges.isEmpty) {
+          break;
+        }
+
+        cursor = edges.last.cursor;
 
         if (!snapshotEntityHistoryQuery
             .data!.transactions.pageInfo.hasNextPage) {
           break;
         }
       } catch (e) {
-        logger.e('Error fetching snapshots for drive $driveId', e);
-        logger.i('This drive and ones after will fall back to GQL');
+        logger.e('Error fetching snapshots for drives $driveIds', e);
+        logger.i('These drives will fall back to GQL');
         break;
       }
     }
+  }
+
+  /// Probes which drives have any new transactions since [minBlockHeight].
+  /// Returns the set of drive IDs with activity. If the query returns
+  /// hasNextPage=true, the result is incomplete — caller should treat
+  /// un-checked drives as potentially active.
+  Future<({Set<String> activeDriveIds, bool isComplete})> probeActiveDriveIds({
+    required List<String> driveIds,
+    required int minBlockHeight,
+    required String ownerAddress,
+  }) async {
+    final query = await graphQLRetry.execute(
+      DriveActivityProbeQuery(
+        variables: DriveActivityProbeArguments(
+          driveIds: driveIds,
+          minBlockHeight: minBlockHeight,
+          ownerAddress: ownerAddress,
+        ),
+      ),
+    );
+
+    if (query.data == null) {
+      // Treat as incomplete — caller will fall back to syncing all drives
+      return (activeDriveIds: <String>{}, isComplete: false);
+    }
+
+    final activeDriveIds = <String>{};
+    for (final edge in query.data!.transactions.edges) {
+      for (final tag in edge.node.tags) {
+        if (tag.name == 'Drive-Id') {
+          activeDriveIds.add(tag.value);
+        }
+      }
+    }
+
+    final isComplete = !query.data!.transactions.pageInfo.hasNextPage;
+    return (activeDriveIds: activeDriveIds, isComplete: isComplete);
   }
 
   Stream<List<DriveEntityHistoryTransactionModel>>
@@ -639,6 +717,16 @@ class ArweaveService {
     String userAddress, {
     int maxRetries = defaultMaxRetries,
   }) async {
+    // Return cached result if available for the same address.
+    // Auth flow (isExistingUser, _validateUser) and sync (updateUserDrives)
+    // all call this for the same wallet. Cache is invalidated explicitly
+    // via clearUserDriveTxsCache() after drive creation or sync completion.
+    if (_cachedUserDriveTxs != null &&
+        _cachedUserDriveTxsAddress == userAddress) {
+      logger.d('Using cached UserDriveEntityTxs');
+      return _cachedUserDriveTxs!;
+    }
+
     List<TransactionCommonMixin> drives = [];
     String cursor = '';
 
@@ -686,6 +774,10 @@ class ArweaveService {
       }
     }
 
+    // Cache the result — cleared by clearUserDriveTxsCache()
+    _cachedUserDriveTxsAddress = userAddress;
+    _cachedUserDriveTxs = drives;
+
     return drives;
   }
 
@@ -710,6 +802,11 @@ class ArweaveService {
     Wallet wallet,
     String driveId,
   ) async {
+    // Drive signatures are immutable on-chain — cache permanently once fetched
+    if (_cachedDriveSignatures.containsKey(driveId)) {
+      return _cachedDriveSignatures[driveId];
+    }
+
     final driveSignatureTx = await getDriveSignatureTxForDrive(wallet, driveId);
 
     final driveSignatureData = driveSignatureTx != null
@@ -721,6 +818,7 @@ class ArweaveService {
             ? DriveSignatureEntity.fromTransaction(
                 driveSignatureTx, driveSignatureData.bodyBytes)
             : null;
+    _cachedDriveSignatures[driveId] = driveSignature;
     return driveSignature;
   }
 
@@ -739,6 +837,14 @@ class ArweaveService {
             .then<Response?>((r) => r)
             .catchError((_) => null)),
       );
+
+      // Cache raw bytes for reuse by getLatestDriveEntityWithId (e.g., during
+      // password validation in _validateUser, which re-parses the same data)
+      for (var i = 0; i < driveTxs.length; i++) {
+        if (driveResponses[i] != null) {
+          _cachedEntityDataBytes[driveTxs[i].id] = driveResponses[i]!.bodyBytes;
+        }
+      }
 
       final drivesById = <String?, DriveEntity>{};
       final drivesWithKey = <DriveEntity, DriveKey?>{};
@@ -867,11 +973,15 @@ class ArweaveService {
       }
 
       final fileTx = filteredEdges.first.node;
-      final fileDataRes = await _gatewayFallback.fetchData(fileTx.id, client);
+
+      // Use cached bytes if available (e.g., from getUniqueUserDriveEntities)
+      final cachedBytes = _cachedEntityDataBytes[fileTx.id];
+      final entityBytes = cachedBytes ??
+          (await _gatewayFallback.fetchData(fileTx.id, client)).bodyBytes;
 
       try {
         return await DriveEntity.fromTransaction(
-            fileTx, _crypto, fileDataRes.bodyBytes, driveKey);
+            fileTx, _crypto, entityBytes, driveKey);
       } on EntityTransactionParseException catch (parseException) {
         logger.e(
           'Failed to parse transaction '
@@ -890,7 +1000,11 @@ class ArweaveService {
   /// by that owner.
   ///
   /// Returns `null` if no valid drive is found.
-  Future<Privacy?> getDrivePrivacyForId(String driveId) async {
+  /// Gets drive privacy and the owner address + latest transaction node.
+  ///
+  /// Returns both so the caller can reuse the owner and transaction node
+  /// without making redundant GraphQL queries.
+  Future<DrivePrivacyResult?> getDrivePrivacyForId(String driveId) async {
     final driveOwner = await getOwnerForDriveEntityWithId(driveId);
     if (driveOwner == null) {
       return null;
@@ -908,7 +1022,11 @@ class ArweaveService {
 
     final driveTx = queryEdges.first.node;
 
-    return driveTx.getTag(EntityTag.drivePrivacy);
+    return DrivePrivacyResult(
+      privacy: driveTx.getTag(EntityTag.drivePrivacy),
+      ownerAddress: driveOwner,
+      driveTx: driveTx,
+    );
   }
 
   /// Gets the file privacy of the latest file entity with the provided id.
@@ -928,7 +1046,7 @@ class ArweaveService {
     String cursor = '';
 
     while (true) {
-      final latestFileQuery = await _gql.execute(
+      final latestFileQuery = await graphQLRetry.execute(
         LatestFileEntityWithIdQuery(
           variables: LatestFileEntityWithIdArguments(
             fileId: fileId,
@@ -1630,7 +1748,7 @@ class ArweaveService {
       logger.i('Fetching transaction info for batch ${batch.length}');
 
       try {
-        final query = await _gql.execute(
+        final query = await graphQLRetry.execute(
           InfoOfTransactionsToBePinnedQuery(
             variables: InfoOfTransactionsToBePinnedArguments(
               transactionIds: batch,
@@ -1680,6 +1798,20 @@ class UploadTransactions {
   Transaction dataTx;
 
   UploadTransactions(this.entityTx, this.dataTx);
+}
+
+/// Result of [ArweaveService.getDrivePrivacyForId], containing the privacy tag
+/// plus the owner and transaction node to avoid redundant re-queries.
+class DrivePrivacyResult {
+  final String? privacy;
+  final String ownerAddress;
+  final TransactionCommonMixin driveTx;
+
+  DrivePrivacyResult({
+    required this.privacy,
+    required this.ownerAddress,
+    required this.driveTx,
+  });
 }
 
 class TransactionNotFound implements Exception {

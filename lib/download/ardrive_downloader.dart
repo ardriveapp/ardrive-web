@@ -1,20 +1,19 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:ardrive/download/download_exceptions.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart';
-import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:arweave/arweave.dart' as arweave;
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
 
 abstract class ArDriveDownloader {
   Future<Stream<double>> downloadFile({
-    required TransactionCommonMixin dataTx,
+    required String txId,
     required int fileSize,
     required String fileName,
     required DateTime lastModifiedDate,
@@ -24,9 +23,10 @@ abstract class ArDriveDownloader {
     SecretKey? fileKey,
     String? cipher,
     String? cipherIvString,
+    bool verifyDownload,
   });
   Future<Uint8List> downloadToMemory({
-    required TransactionCommonMixin dataTx,
+    required String txId,
     required int fileSize,
     required String fileName,
     required DateTime lastModifiedDate,
@@ -36,6 +36,7 @@ abstract class ArDriveDownloader {
     SecretKey? fileKey,
     String? cipher,
     String? cipherIvString,
+    bool verifyDownload,
   });
   Future<void> abortDownload();
 
@@ -65,7 +66,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
 
   @override
   Future<Stream<double>> downloadFile({
-    required TransactionCommonMixin dataTx,
+    required String txId,
     required int fileSize,
     required String fileName,
     required DateTime lastModifiedDate,
@@ -75,21 +76,25 @@ class _ArDriveDownloader implements ArDriveDownloader {
     SecretKey? fileKey,
     String? cipher,
     String? cipherIvString,
+    bool verifyDownload = false,
   }) async {
     if (AppPlatform.isMobile) {
       final isPrivateFile =
           fileKey != null && cipher != null && cipherIvString != null;
 
       if (isPrivateFile && cipher == Cipher.aes256gcm) {
+        final downloadResponse =
+            await _arweave.gatewayFallback.downloadWithFallback(
+          txId: txId,
+          primaryClient: _arweave.client,
+          onProgress: (progress, speed) => logger.d(progress.toString()),
+          verifyDownload: verifyDownload,
+        );
+
         return _getDartVMGCMDecryptStream(
           cipher,
           cipherIvString,
-          (await arweave.download(
-            txId: dataTx.id,
-            arweave: _arweave.client,
-            onProgress: (progress, speed) => logger.d(progress.toString()),
-          ))
-              .$1,
+          _withStallDetection(downloadResponse.$1, txId),
           fileSize,
           fileName,
           lastModifiedDate,
@@ -102,10 +107,10 @@ class _ArDriveDownloader implements ArDriveDownloader {
     Stream<Uint8List> saveStream;
 
     if (isManifest) {
-      saveStream = await _getManifestStream(dataTx.id);
+      saveStream = await _getManifestStream(txId);
     } else {
       saveStream = await _getFileStream(
-        dataTx: dataTx,
+        txId: txId,
         fileSize: fileSize,
         fileName: fileName,
         lastModifiedDate: lastModifiedDate,
@@ -113,6 +118,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
         fileKey: fileKey,
         cipher: cipher,
         cipherIvString: cipherIvString,
+        verifyDownload: verifyDownload,
       );
     }
 
@@ -195,17 +201,17 @@ class _ArDriveDownloader implements ArDriveDownloader {
   }
 
   Future<Stream<Uint8List>> _getManifestStream(String dataTxId) async {
-    final urlString = '${_arweave.client.api.gatewayUrl.origin}/raw/$dataTxId';
+    logger.i('The file is a manifest. Downloading with gateway fallback...');
 
-    logger.i('The file is a manifest. Downloading it from $urlString');
+    final response = await _arweave.gatewayFallback
+        .fetchManifestWithFallback(dataTxId, _arweave.client);
 
-    final dataRes = await ArDriveHTTP().getAsBytes(urlString);
-
-    return Stream.fromIterable([dataRes.data]);
+    return Stream.fromIterable(
+        [Uint8List.fromList(response.bodyBytes)]);
   }
 
   Future<Stream<Uint8List>> _getFileStream({
-    required TransactionCommonMixin dataTx,
+    required String txId,
     required int fileSize,
     required String fileName,
     required DateTime lastModifiedDate,
@@ -213,22 +219,24 @@ class _ArDriveDownloader implements ArDriveDownloader {
     SecretKey? fileKey,
     String? cipher,
     String? cipherIvString,
+    bool verifyDownload = false,
   }) async {
     logger.d('The file is not a manifest. Downloading it from Arweave...');
 
-    /// Disables the verification when the file was uploaded by the CLI
-    final verifyDownload = dataTx.getTag(EntityTag.appName) == 'ArDrive-CLI';
-
     logger.d('verifying download: $verifyDownload');
 
-    final streamDownloadResponse = await arweave.download(
-      txId: dataTx.id,
-      arweave: _arweave.client,
+    final streamDownloadResponse =
+        await _arweave.gatewayFallback.downloadWithFallback(
+      txId: txId,
+      primaryClient: _arweave.client,
       onProgress: (progress, speed) => logger.d(progress.toString()),
       verifyDownload: verifyDownload,
     );
 
-    final streamDownload = streamDownloadResponse.$1;
+    final rawStream = streamDownloadResponse.$1;
+
+    // Wrap with stall detection — throw if no chunk arrives within 60s
+    final streamDownload = _withStallDetection(rawStream, txId);
 
     final isPrivateFile =
         fileKey != null && cipher != null && cipherIvString != null;
@@ -261,6 +269,57 @@ class _ArDriveDownloader implements ArDriveDownloader {
 
     logger.d('No cipher found. Saving file as is...');
     return streamDownload.transform(listIntToUint8ListTransformer);
+  }
+
+  static const _stallTimeout = Duration(seconds: 60);
+
+  /// Wraps a download stream with stall detection. After the first chunk
+  /// arrives, if no subsequent chunk arrives within [_stallTimeout], emits
+  /// a [DownloadStalledException]. If the stream completes before any chunks
+  /// (empty file), no stall error is raised.
+  Stream<List<int>> _withStallDetection(
+      Stream<List<int>> source, String txId) {
+    final controller = StreamController<List<int>>();
+    Timer? stallTimer;
+    late final StreamSubscription<List<int>> subscription;
+
+    void resetTimer() {
+      stallTimer?.cancel();
+      stallTimer = Timer(_stallTimeout, () {
+        subscription.cancel();
+        if (!controller.isClosed) {
+          controller.addError(DownloadStalledException(txId, _stallTimeout));
+          controller.close();
+        }
+      });
+    }
+
+    subscription = source.listen(
+      (chunk) {
+        if (controller.isClosed) return;
+        resetTimer();
+        controller.add(chunk);
+      },
+      onError: (Object e, StackTrace s) {
+        stallTimer?.cancel();
+        if (!controller.isClosed) {
+          controller.addError(e, s);
+        }
+      },
+      onDone: () {
+        stallTimer?.cancel();
+        if (!controller.isClosed) {
+          controller.close();
+        }
+      },
+    );
+
+    controller.onCancel = () {
+      stallTimer?.cancel();
+      subscription.cancel();
+    };
+
+    return controller.stream;
   }
 
   Stream<double> _getDartVMGCMDecryptStream(
@@ -299,7 +358,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
 
   @override
   Future<Uint8List> downloadToMemory({
-    required TransactionCommonMixin dataTx,
+    required String txId,
     required int fileSize,
     required String fileName,
     required DateTime lastModifiedDate,
@@ -309,9 +368,10 @@ class _ArDriveDownloader implements ArDriveDownloader {
     SecretKey? fileKey,
     String? cipher,
     String? cipherIvString,
+    bool verifyDownload = false,
   }) async {
     final stream = await _getFileStream(
-      dataTx: dataTx,
+      txId: txId,
       fileSize: fileSize,
       fileName: fileName,
       lastModifiedDate: lastModifiedDate,
@@ -319,6 +379,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
       fileKey: fileKey,
       cipher: cipher,
       cipherIvString: cipherIvString,
+      verifyDownload: verifyDownload,
     );
 
     final data = await stream.toList();
