@@ -84,6 +84,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
   SnapshotItemToBeCreated? _itemToBeCreated;
   SnapshotEntity? _snapshotEntity;
+  Uint8List? _cachedSnapshotData;
+  bool _isPrivateDrive = false;
+  MetadataCache? _metadataCache;
 
   CreateSnapshotCubit({
     required ArweaveService arweave,
@@ -111,12 +114,18 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     DriveID driveId, {
     Range? range,
   }) async {
-    try {
-      await _reset(driveId);
-    } catch (e) {
-      emit(ComputeSnapshotDataFailure(errorMessage: e.toString()));
-      logger.e('Error while resetting snapshot creation parameters', e);
-      return;
+    // On retry after upload failure, reuse previously computed data
+    final isRetry = _cachedSnapshotData != null && _driveId == driveId;
+
+    if (!isRetry) {
+      _cachedSnapshotData = null;
+      try {
+        await _reset(driveId);
+      } catch (e) {
+        emit(ComputeSnapshotDataFailure(errorMessage: e.toString()));
+        logger.e('Error while resetting snapshot creation parameters', e);
+        return;
+      }
     }
 
     late Uint8List data;
@@ -124,9 +133,15 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       final profileState = _profileCubit.state as ProfileLoggedIn;
       _ownerAddress = profileState.user.walletAddress;
 
-      _setTrustedRange(range);
-
-      data = await _getSnapshotData();
+      if (isRetry) {
+        data = _cachedSnapshotData!;
+        logger.i('Reusing cached snapshot data for retry '
+            '(${data.length} bytes)');
+      } else {
+        _setTrustedRange(range);
+        data = await _getSnapshotData();
+        _cachedSnapshotData = data;
+      }
 
       if (_wasCancelled()) return;
 
@@ -185,6 +200,17 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _itemToBeCreated = null;
     _snapshotEntity = null;
     _wasSnapshotDataComputingCanceled = false;
+
+    // Cache drive privacy once to avoid N+1 DB queries during metadata fetch
+    final drive =
+        await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+    _isPrivateDrive =
+        drive != null && drive.privacy != DrivePrivacyTag.public;
+
+    // Cache MetadataCache instance to avoid re-creating per transaction
+    _metadataCache ??= await MetadataCache.fromCacheStore(
+      await newSharedPreferencesCacheStore(),
+    );
   }
 
   void _setTrustedRange(Range? range) {
@@ -228,6 +254,14 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       subRanges: HeightRange(rangeSegments: [_range]),
       source: flatGQLEdgesStream,
       jsonMetadataOfTxId: _jsonMetadataOfTxId,
+      onProgress: (processed, total) {
+        emit(ComputingSnapshotData(
+          driveId: _driveId,
+          range: _range,
+          processedTransactions: processed,
+          totalTransactions: total,
+        ));
+      },
     );
 
     _itemToBeCreated = snapshotItemToBeCreated;
@@ -550,15 +584,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   }
 
   Future<Uint8List> _jsonMetadataOfTxId(String txId) async {
-    final drive =
-        await _driveDao.driveById(driveId: _driveId).getSingleOrNull();
-    final isPrivate = drive != null && drive.privacy != DrivePrivacyTag.public;
-
-    final metadataCache = await MetadataCache.fromCacheStore(
-      await newSharedPreferencesCacheStore(),
-    );
-
-    final Uint8List? cachedMetadata = await metadataCache.get(txId);
+    final Uint8List? cachedMetadata = await _metadataCache?.get(txId);
 
     final Uint8List entityJsonData = cachedMetadata ??
         await _arweave.dataFromTxId(
@@ -567,16 +593,11 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         );
 
     if (cachedMetadata == null) {
-      // Write to the cache the data we just fetched
-      await metadataCache.put(txId, entityJsonData);
+      await _metadataCache?.put(txId, entityJsonData);
     }
 
-    if (isPrivate) {
-      final safeEntityDataFromArweave = Uint8List.fromList(
-        utf8.encode(base64Encode(entityJsonData)),
-      );
-
-      return safeEntityDataFromArweave;
+    if (_isPrivateDrive) {
+      return Uint8List.fromList(utf8.encode(base64Encode(entityJsonData)));
     }
 
     return entityJsonData;
@@ -644,6 +665,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         );
       }
 
+      _cachedSnapshotData = null; // Clear cache on success
       emit(SnapshotUploadSuccess());
     } catch (err, stacktrace) {
       logger.e('Error while posting the snapshot transaction', err, stacktrace);
