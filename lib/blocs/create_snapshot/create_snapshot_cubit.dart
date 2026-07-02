@@ -187,6 +187,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   bool _wasCancelled() {
     if (_wasSnapshotDataComputingCanceled) {
       _wasSnapshotDataComputingCanceled = false;
+      _cachedSnapshotData = null; // Don't reuse data from cancelled computation
 
       return true;
     }
@@ -207,8 +208,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _isPrivateDrive =
         drive != null && drive.privacy != DrivePrivacyTag.public;
 
-    // Cache MetadataCache instance to avoid re-creating per transaction
-    _metadataCache ??= await MetadataCache.fromCacheStore(
+    // Cache MetadataCache instance to avoid re-creating per transaction.
+    // Always refresh on reset to avoid stale references from prior sessions.
+    _metadataCache = await MetadataCache.fromCacheStore(
       await newSharedPreferencesCacheStore(),
     );
   }

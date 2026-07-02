@@ -379,6 +379,8 @@ class _SyncRepository implements SyncRepository {
               prefetchedSnapshots
                   .putIfAbsent(driveIdTag, () => [])
                   .add(snapshot);
+            } else {
+              logger.w('Snapshot ${snapshot.id} has no Drive-Id tag, skipping');
             }
           }
         }
