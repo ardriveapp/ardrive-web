@@ -337,7 +337,7 @@ class FileDownloadDialog extends StatelessWidget {
       BuildContext context, FileDownloadFinishedWithSuccess state) {
     return _modalWrapper(
       title: appLocalizationsOf(context).downloadFinished,
-      description: appLocalizationsOf(context).downloadFinished,
+      description: state.fileName,
       actions: [
         ModalAction(
           action: () {
