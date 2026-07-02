@@ -246,6 +246,10 @@ class _SyncRepository implements SyncRepository {
     if (syncDeep) {
       drivesToSync = drives;
     } else {
+      syncProgress = syncProgress.copyWith(
+        statusMessage: 'Checking for changes...',
+      );
+      yield syncProgress;
       try {
         final neverSyncedDrives = <Drive>[];
         final previouslySyncedDrives = <Drive>[];
@@ -324,6 +328,10 @@ class _SyncRepository implements SyncRepository {
         drivesToSync = drives;
       }
     }
+
+    // Clear the probe status message
+    syncProgress = syncProgress.copyWith(statusMessage: null);
+    yield syncProgress;
 
     final numberOfDrivesToSync = drivesToSync.length;
 
@@ -470,7 +478,8 @@ class _SyncRepository implements SyncRepository {
               List<String>.from(syncProgress.failedDriveIds)..add(drive.id);
           final updatedErrorMessages =
               Map<String, String>.from(syncProgress.errorMessages)
-                ..putIfAbsent(drive.id, () => _extractErrorMessage(e));
+                ..putIfAbsent(
+                    drive.id, () => '${drive.name}: ${_extractErrorMessage(e)}');
 
           // Still increment progress but mark as failed (cap at 90%)
           totalProgress += 1;

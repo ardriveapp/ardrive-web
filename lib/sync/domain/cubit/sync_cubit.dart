@@ -46,6 +46,10 @@ class SyncCubit extends Cubit<SyncState> {
       StreamController<SyncProgress>.broadcast();
   DateTime? _lastSync;
   late DateTime _initSync;
+
+  /// Exposed for the sync modal to display elapsed time.
+  DateTime get syncStartTime => _initSync;
+
   SyncProgress _syncProgress = SyncProgress.initial();
   SyncCancellationToken? _currentSyncToken;
 
@@ -581,6 +585,23 @@ class SyncCubit extends Cubit<SyncState> {
     if (state is SyncCompleteWithErrors) {
       emit(SyncIdle());
     }
+  }
+
+  /// Retry syncing only the drives that failed in the previous sync.
+  Future<void> retryFailedDrives(List<String> driveIds) async {
+    if (driveIds.isEmpty) return;
+
+    logger.i('Retrying ${driveIds.length} failed drives');
+
+    // For a single failed drive, use the single-drive sync path
+    if (driveIds.length == 1) {
+      return startSyncForDrive(driveId: driveIds.first);
+    }
+
+    // For multiple failed drives, start a full sync
+    // The drives are already synced, so the probe will only pick up
+    // the ones that actually need re-syncing
+    return startSync(deepSync: true);
   }
 
   /// Get the current sync progress
