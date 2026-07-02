@@ -91,6 +91,7 @@ abstract class SyncRepository {
     String? password,
     SecretKey? cipherKey,
     SyncCancellationToken? cancellationToken,
+    List<String>? driveIdsToRetry,
 
     /// This was required because the usage of the `PromptToSnapshotBloc` in the
     /// `SyncCubit` and the `PromptToSnapshotBloc` is not available in the `SyncRepository`
@@ -188,6 +189,7 @@ class _SyncRepository implements SyncRepository {
     SecretKey? cipherKey,
     SyncCancellationToken? cancellationToken,
     Function(String driveId, int txCount)? txFechedCallback,
+    List<String>? driveIdsToRetry,
   }) async* {
     final token = cancellationToken ?? SyncCancellationToken();
 
@@ -214,7 +216,13 @@ class _SyncRepository implements SyncRepository {
     }
 
     // Sync the contents of each drive attached in the app.
-    final drives = await _driveDao.allDrives().map((d) => d).get();
+    var drives = await _driveDao.allDrives().map((d) => d).get();
+
+    // If retrying specific drives, filter to only those
+    if (driveIdsToRetry != null && driveIdsToRetry.isNotEmpty) {
+      final retrySet = driveIdsToRetry.toSet();
+      drives = drives.where((d) => retrySet.contains(d.id)).toList();
+    }
 
     if (drives.isEmpty) {
       yield SyncProgress.emptySyncCompleted();
@@ -246,6 +254,10 @@ class _SyncRepository implements SyncRepository {
     if (syncDeep) {
       drivesToSync = drives;
     } else {
+      syncProgress = syncProgress.copyWith(
+        statusMessage: 'Checking for changes...',
+      );
+      yield syncProgress;
       try {
         final neverSyncedDrives = <Drive>[];
         final previouslySyncedDrives = <Drive>[];
@@ -324,6 +336,10 @@ class _SyncRepository implements SyncRepository {
         drivesToSync = drives;
       }
     }
+
+    // Clear the probe status message
+    syncProgress = syncProgress.copyWith(statusMessage: null);
+    yield syncProgress;
 
     final numberOfDrivesToSync = drivesToSync.length;
 
@@ -472,7 +488,8 @@ class _SyncRepository implements SyncRepository {
               List<String>.from(syncProgress.failedDriveIds)..add(drive.id);
           final updatedErrorMessages =
               Map<String, String>.from(syncProgress.errorMessages)
-                ..putIfAbsent(drive.id, () => _extractErrorMessage(e));
+                ..putIfAbsent(
+                    drive.id, () => '${drive.name}: ${_extractErrorMessage(e)}');
 
           // Still increment progress but mark as failed (cap at 90%)
           totalProgress += 1;
@@ -935,7 +952,8 @@ class _SyncRepository implements SyncRepository {
 
         final updatedErrorMessages =
             Map<String, String>.from(syncProgress.errorMessages)
-              ..putIfAbsent(driveId, () => _extractErrorMessage(e));
+              ..putIfAbsent(
+                  driveId, () => '${drive.name}: ${_extractErrorMessage(e)}');
 
         syncProgress = syncProgress.copyWith(
           drivesSynced: 1,

@@ -45,7 +45,11 @@ class SyncCubit extends Cubit<SyncState> {
   final StreamController<SyncProgress> syncProgressController =
       StreamController<SyncProgress>.broadcast();
   DateTime? _lastSync;
-  late DateTime _initSync;
+  DateTime _initSync = DateTime.now();
+
+  /// Exposed for the sync modal to display elapsed time.
+  DateTime get syncStartTime => _initSync;
+
   SyncProgress _syncProgress = SyncProgress.initial();
   SyncCancellationToken? _currentSyncToken;
 
@@ -231,6 +235,7 @@ class SyncCubit extends Cubit<SyncState> {
   Future<void> startSync({
     bool deepSync = false,
     bool skipTabVisibilityCheck = false,
+    List<String>? driveIdsToRetry,
   }) async {
     logger.i('Starting Sync');
 
@@ -319,6 +324,7 @@ class SyncCubit extends Cubit<SyncState> {
           password: password,
           cipherKey: cipherKey,
           syncDeep: deepSync,
+          driveIdsToRetry: driveIdsToRetry,
           cancellationToken: _currentSyncToken,
           txFechedCallback: (driveId, txCount) {
             _promptToSnapshotBloc.add(
@@ -581,6 +587,14 @@ class SyncCubit extends Cubit<SyncState> {
     if (state is SyncCompleteWithErrors) {
       emit(SyncIdle());
     }
+  }
+
+  /// Retry syncing only the drives that failed in the previous sync.
+  Future<void> retryFailedDrives(List<String> driveIds) async {
+    if (driveIds.isEmpty) return;
+
+    logger.i('Retrying ${driveIds.length} failed drives');
+    return startSync(driveIdsToRetry: driveIds);
   }
 
   /// Get the current sync progress

@@ -2262,6 +2262,24 @@
       }
     }
   },
+  "syncCheckingForChanges": "Checking for changes...",
+  "@syncCheckingForChanges": {
+    "description": "Status message shown during drive activity probe"
+  },
+  "retryFailedDrives": "Retry Failed",
+  "@retryFailedDrives": {
+    "description": "Button to retry syncing only the drives that failed"
+  },
+  "syncElapsedTime": "{seconds}s elapsed",
+  "@syncElapsedTime": {
+    "description": "Elapsed time shown during sync after 5 seconds",
+    "placeholders": {
+      "seconds": {
+        "type": "String",
+        "example": "45"
+      }
+    }
+  },
   "syncProgressPercentage": "{percentage}% complete",
   "@syncProgressPercentage": {
     "description": "The sync progress percentage",
