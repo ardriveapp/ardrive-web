@@ -223,12 +223,6 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       }
     }
 
-    // Reuse entity if already fetched by drivePrivacyLoader or driveKeyValidator
-    if (cachedDriveEntity != null) {
-      driveNameController.text = cachedDriveEntity!.name!;
-      return true;
-    }
-
     _lookupNotifier.value = true;
 
     try {
@@ -298,8 +292,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
           emit(DriveAttachDriveNotFound());
           break;
         default:
-          // Public drive — build entity from the already-fetched transaction
-          // (avoids 2 redundant GQL queries)
+          // Public drive — fetch and cache entity so driveNameLoader can skip
           final drive = await _arweave.getLatestDriveEntityWithId(
             driveId,
             driveOwner: result.ownerAddress,

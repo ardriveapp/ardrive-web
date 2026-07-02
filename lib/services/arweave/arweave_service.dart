@@ -280,14 +280,17 @@ class ArweaveService {
             ),
           ),
         );
-        for (final edge
-            in snapshotEntityHistoryQuery.data!.transactions.edges) {
+        final edges = snapshotEntityHistoryQuery.data!.transactions.edges;
+        for (final edge in edges) {
           yield edge.node;
         }
 
-        cursor = snapshotEntityHistoryQuery.data!.transactions.edges.isNotEmpty
-            ? snapshotEntityHistoryQuery.data!.transactions.edges.last.cursor
-            : '';
+        // Guard against empty edges with hasNextPage=true causing infinite loop
+        if (edges.isEmpty) {
+          break;
+        }
+
+        cursor = edges.last.cursor;
 
         if (!snapshotEntityHistoryQuery
             .data!.transactions.pageInfo.hasNextPage) {
