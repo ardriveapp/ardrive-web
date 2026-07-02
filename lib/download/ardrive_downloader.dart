@@ -160,11 +160,13 @@ class _ArDriveDownloader implements ArDriveDownloader {
     });
 
     subscription.onDone(() async {
-      if (_cancelWithReason.isCompleted) {
+      if (_cancelWithReason.isCompleted || saveResult == false) {
         progressController.addError(const DownloadCancelledException());
       }
 
-      logger.d('File saved with success');
+      if (saveResult != false) {
+        logger.d('File saved with success');
+      }
 
       progressController.close();
       subscription.cancel();
