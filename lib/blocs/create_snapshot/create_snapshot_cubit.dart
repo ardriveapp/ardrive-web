@@ -208,11 +208,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _isPrivateDrive =
         drive != null && drive.privacy != DrivePrivacyTag.public;
 
-    // Cache MetadataCache instance to avoid re-creating per transaction.
-    // Always refresh on reset to avoid stale references from prior sessions.
-    _metadataCache = await MetadataCache.fromCacheStore(
-      await newSharedPreferencesCacheStore(),
-    );
+    // Clear MetadataCache so it's refreshed on next use (lazy init in
+    // _jsonMetadataOfTxId avoids shared_preferences plugin in tests)
+    _metadataCache = null;
   }
 
   void _setTrustedRange(Range? range) {
@@ -594,6 +592,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   }
 
   Future<Uint8List> _jsonMetadataOfTxId(String txId) async {
+    _metadataCache ??= await MetadataCache.fromCacheStore(
+      await newSharedPreferencesCacheStore(),
+    );
     final Uint8List? cachedMetadata = await _metadataCache?.get(txId);
 
     final Uint8List entityJsonData = cachedMetadata ??
