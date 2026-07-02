@@ -257,12 +257,14 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       source: flatGQLEdgesStream,
       jsonMetadataOfTxId: _jsonMetadataOfTxId,
       onProgress: (processed, total) {
-        emit(ComputingSnapshotData(
-          driveId: _driveId,
-          range: _range,
-          processedTransactions: processed,
-          totalTransactions: total,
-        ));
+        if (!isClosed) {
+          emit(ComputingSnapshotData(
+            driveId: _driveId,
+            range: _range,
+            processedTransactions: processed,
+            totalTransactions: total,
+          ));
+        }
       },
     );
 
