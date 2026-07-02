@@ -593,15 +593,9 @@ class SyncCubit extends Cubit<SyncState> {
 
     logger.i('Retrying ${driveIds.length} failed drives');
 
-    // For a single failed drive, use the single-drive sync path
-    if (driveIds.length == 1) {
-      return startSyncForDrive(driveId: driveIds.first);
+    for (final driveId in driveIds) {
+      await startSyncForDrive(driveId: driveId);
     }
-
-    // For multiple failed drives, start a full sync
-    // The drives are already synced, so the probe will only pick up
-    // the ones that actually need re-syncing
-    return startSync(deepSync: true);
   }
 
   /// Get the current sync progress
