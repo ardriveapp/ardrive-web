@@ -235,6 +235,7 @@ class SyncCubit extends Cubit<SyncState> {
   Future<void> startSync({
     bool deepSync = false,
     bool skipTabVisibilityCheck = false,
+    List<String>? driveIdsToRetry,
   }) async {
     logger.i('Starting Sync');
 
@@ -323,6 +324,7 @@ class SyncCubit extends Cubit<SyncState> {
           password: password,
           cipherKey: cipherKey,
           syncDeep: deepSync,
+          driveIdsToRetry: driveIdsToRetry,
           cancellationToken: _currentSyncToken,
           txFechedCallback: (driveId, txCount) {
             _promptToSnapshotBloc.add(
@@ -592,10 +594,7 @@ class SyncCubit extends Cubit<SyncState> {
     if (driveIds.isEmpty) return;
 
     logger.i('Retrying ${driveIds.length} failed drives');
-
-    for (final driveId in driveIds) {
-      await startSyncForDrive(driveId: driveId);
-    }
+    return startSync(driveIdsToRetry: driveIds);
   }
 
   /// Get the current sync progress

@@ -91,6 +91,7 @@ abstract class SyncRepository {
     String? password,
     SecretKey? cipherKey,
     SyncCancellationToken? cancellationToken,
+    List<String>? driveIdsToRetry,
 
     /// This was required because the usage of the `PromptToSnapshotBloc` in the
     /// `SyncCubit` and the `PromptToSnapshotBloc` is not available in the `SyncRepository`
@@ -188,6 +189,7 @@ class _SyncRepository implements SyncRepository {
     SecretKey? cipherKey,
     SyncCancellationToken? cancellationToken,
     Function(String driveId, int txCount)? txFechedCallback,
+    List<String>? driveIdsToRetry,
   }) async* {
     final token = cancellationToken ?? SyncCancellationToken();
 
@@ -214,7 +216,13 @@ class _SyncRepository implements SyncRepository {
     }
 
     // Sync the contents of each drive attached in the app.
-    final drives = await _driveDao.allDrives().map((d) => d).get();
+    var drives = await _driveDao.allDrives().map((d) => d).get();
+
+    // If retrying specific drives, filter to only those
+    if (driveIdsToRetry != null && driveIdsToRetry.isNotEmpty) {
+      final retrySet = driveIdsToRetry.toSet();
+      drives = drives.where((d) => retrySet.contains(d.id)).toList();
+    }
 
     if (drives.isEmpty) {
       yield SyncProgress.emptySyncCompleted();
