@@ -45,7 +45,7 @@ class SyncCubit extends Cubit<SyncState> {
   final StreamController<SyncProgress> syncProgressController =
       StreamController<SyncProgress>.broadcast();
   DateTime? _lastSync;
-  late DateTime _initSync;
+  DateTime _initSync = DateTime.now();
 
   /// Exposed for the sync modal to display elapsed time.
   DateTime get syncStartTime => _initSync;

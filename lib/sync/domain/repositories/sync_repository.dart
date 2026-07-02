@@ -950,7 +950,8 @@ class _SyncRepository implements SyncRepository {
 
         final updatedErrorMessages =
             Map<String, String>.from(syncProgress.errorMessages)
-              ..putIfAbsent(driveId, () => _extractErrorMessage(e));
+              ..putIfAbsent(
+                  driveId, () => '${drive.name}: ${_extractErrorMessage(e)}');
 
         syncProgress = syncProgress.copyWith(
           drivesSynced: 1,
