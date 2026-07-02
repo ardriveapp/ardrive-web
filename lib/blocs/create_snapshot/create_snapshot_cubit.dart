@@ -459,9 +459,15 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _costEstimateAr = await costCalculatorForAr.calculateCost(
       totalSize: _snapshotEntity!.data!.length,
     );
-    _costEstimateTurbo = await costCalculatorForTurbo.calculateCost(
-      totalSize: _snapshotEntity!.data!.length,
-    );
+    try {
+      _costEstimateTurbo = await costCalculatorForTurbo.calculateCost(
+        totalSize: _snapshotEntity!.data!.length,
+      );
+    } catch (e) {
+      logger.w('Turbo cost estimation failed, AR payment still available: $e');
+      _costEstimateTurbo = UploadCostEstimate.zero();
+      _isTurboUploadPossible = false;
+    }
   }
 
   Future<void> refreshTurboBalance() async {
