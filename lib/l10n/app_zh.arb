@@ -1764,6 +1764,9 @@
   "@syncingPleaseWait": {
     "description": "Syncing drives"
   },
+  "syncCheckingForChanges": "正在检查更改...",
+  "retryFailedDrives": "重试失败",
+  "syncElapsedTime": "已用时{seconds}秒",
   "syncProgressPercentage": "{percentage}% 完成度",
   "@syncProgressPercentage": {
     "description": "The sync progress percentage",

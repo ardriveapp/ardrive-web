@@ -338,6 +338,22 @@ class AppShellState extends State<AppShell> {
                                                     appLocalizationsOf(context)
                                                         .close,
                                               ),
+                                              ModalAction(
+                                                action: () {
+                                                  final failedIds = syncState
+                                                      .failedDriveIds;
+                                                  context
+                                                      .read<SyncCubit>()
+                                                      .clearErrorState();
+                                                  context
+                                                      .read<SyncCubit>()
+                                                      .retryFailedDrives(
+                                                          failedIds);
+                                                },
+                                                title:
+                                                    appLocalizationsOf(context)
+                                                        .retryFailedDrives,
+                                              ),
                                             ],
                                           ),
                                         ),
@@ -387,6 +403,47 @@ class AppShellState extends State<AppShell> {
                                                           ArFontWeight.bold,
                                                     ),
                                                   ),
+                                                // Elapsed time — only shown
+                                                // after 5s to avoid clutter
+                                                // on fast syncs
+                                                StreamBuilder<int>(
+                                                  stream: Stream.periodic(
+                                                    const Duration(seconds: 1),
+                                                    (i) => i,
+                                                  ),
+                                                  builder: (context, _) {
+                                                    final elapsed = DateTime
+                                                            .now()
+                                                        .difference(context
+                                                            .read<SyncCubit>()
+                                                            .syncStartTime);
+                                                    if (elapsed.inSeconds < 5) {
+                                                      return const SizedBox
+                                                          .shrink();
+                                                    }
+                                                    return Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                              top: 4),
+                                                      child: Text(
+                                                        appLocalizationsOf(
+                                                                context)
+                                                            .syncElapsedTime(
+                                                          elapsed.inSeconds
+                                                              .toString(),
+                                                        ),
+                                                        style: typography
+                                                            .paragraphSmall(
+                                                          color: ArDriveTheme.of(
+                                                                  context)
+                                                              .themeData
+                                                              .colorTokens
+                                                              .textMid,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
                                               ],
                                             ),
                                           ),
