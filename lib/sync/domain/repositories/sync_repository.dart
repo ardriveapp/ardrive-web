@@ -441,8 +441,10 @@ class _SyncRepository implements SyncRepository {
                 ? 0
                 : _calculateSyncLastBlockHeight(drive.lastBlockHeight ?? 0),
             currentBlockHeight: currentBlockHeight,
-            transactionParseBatchSize:
-                200 ~/ (syncProgress.drivesCount - syncProgress.drivesSynced),
+            transactionParseBatchSize: calculateTransactionParseBatchSize(
+              drivesCount: syncProgress.drivesCount,
+              drivesSynced: syncProgress.drivesSynced,
+            ),
             ownerAddress: drive.ownerAddress,
             txFechedCallback: txFechedCallback,
             cancellationToken: token,
@@ -2186,6 +2188,18 @@ class _SyncRepository implements SyncRepository {
 
 const fetchPhaseWeight = 0.1;
 const parsePhaseWeight = 0.9;
+
+/// Splits the 200-transaction parse budget across the drives that still need
+/// syncing, clamped so the result is always at least 1. Without the clamp,
+/// wallets with more than 200 drives would compute a batch size of 0 and
+/// [BatchProcessor.batchProcess] would throw, failing every drive sync.
+int calculateTransactionParseBatchSize({
+  required int drivesCount,
+  required int drivesSynced,
+}) {
+  final remainingDrives = max(1, drivesCount - drivesSynced);
+  return max(1, 200 ~/ remainingDrives);
+}
 
 /// Computes the refreshed file entries from the provided revisions and returns them as a map keyed by their ids.
 Future<Map<String, FileEntriesCompanion>>
