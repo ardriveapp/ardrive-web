@@ -1745,9 +1745,13 @@ class ArweaveService {
 
   /// Fetches transaction info for multiple transactions in batches.
   /// Returns a stream of transaction info batches.
+  ///
+  /// The batch size matches the query's `first: 100` page size (the same
+  /// pattern as [getTransactionConfirmations] and [getLicenseAssertions]),
+  /// so each batch resolves in a single request.
   Stream<Map<String, TxInfo>> getInfoOfTxsToBePinned(
     List<String> transactionIds, {
-    int batchSize = 5,
+    int batchSize = 100,
   }) async* {
     for (var i = 0; i < transactionIds.length; i += batchSize) {
       final end = (i + batchSize < transactionIds.length)
