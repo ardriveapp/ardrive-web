@@ -73,9 +73,9 @@ class ThumbnailRepository {
   Future<Uint8List> _getThumbnailData({
     required FileDataTableItem fileDataTableItem,
   }) async {
-    final dataTx = await _arweaveService.getTransactionDetails(
-      fileDataTableItem.thumbnail!.variants.first.txId,
-    );
+    // Thumbnails are always for private files — need cipher/IV from data tx
+    final thumbnailTxId = fileDataTableItem.thumbnail!.variants.first.txId;
+    final dataTx = await _arweaveService.getTransactionDetails(thumbnailTxId);
 
     if (dataTx == null) {
       throw Exception('Data transaction not found');
@@ -85,7 +85,7 @@ class ThumbnailRepository {
         fileDataTableItem.driveId, _arDriveAuth.currentUser.cipherKey);
 
     return await _arDriveDownloader.downloadToMemory(
-      dataTx: dataTx,
+      txId: thumbnailTxId,
       fileSize: fileDataTableItem.thumbnail!.variants.first.size,
       fileName: fileDataTableItem.name,
       lastModifiedDate: fileDataTableItem.lastModifiedDate,
@@ -104,10 +104,9 @@ class ThumbnailRepository {
           ..where((tbl) => tbl.id.equals(fileId)))
         .getSingle();
 
-    final dataTx =
-        await _arweaveService.getTransactionDetails(fileEntry.dataTxId);
-
     SecretKey? fileKey;
+    String? cipher;
+    String? cipherIv;
 
     final drive =
         await _driveDao.driveById(driveId: fileEntry.driveId).getSingle();
@@ -123,20 +122,29 @@ class ThumbnailRepository {
         driveKey!.key,
         fileEntry.id,
       );
+
+      // Private files need cipher/IV tags from the data transaction
+      final dataTx =
+          await _arweaveService.getTransactionDetails(fileEntry.dataTxId);
+      if (dataTx == null) {
+        throw Exception('Data transaction not found for ${fileEntry.dataTxId}');
+      }
+      cipher = dataTx.getTag(EntityTag.cipher);
+      cipherIv = dataTx.getTag(EntityTag.cipherIv);
     }
 
     logger.d('Downloading file to memory');
 
     final bytes = await _arDriveDownloader.downloadToMemory(
-      dataTx: dataTx!,
+      txId: fileEntry.dataTxId,
       fileSize: fileEntry.size,
       fileName: fileEntry.name,
       lastModifiedDate: fileEntry.lastModifiedDate,
       contentType: fileEntry.dataContentType!,
       isManifest: false,
       fileKey: fileKey,
-      cipher: dataTx.getTag(EntityTag.cipher),
-      cipherIvString: dataTx.getTag(EntityTag.cipherIv),
+      cipher: cipher,
+      cipherIvString: cipherIv,
     );
 
     logger.d('Generating thumbnail');

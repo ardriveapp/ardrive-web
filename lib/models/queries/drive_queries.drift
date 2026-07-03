@@ -81,6 +81,15 @@ fileById:
 fileRevisionByDataTx:
     SELECT * FROM file_revisions
     WHERE dataTxId = :tx;
+fileRevisionDateCreatedByDataTxIds:
+    SELECT dataTxId, dateCreated FROM file_revisions
+    WHERE dataTxId IN :txIds;
+foldersByIds:
+    SELECT * FROM folder_entries
+    WHERE id IN :folderIds;
+fileRevisionDataTxIdsByMetadataTxIds:
+    SELECT dataTxId FROM file_revisions
+    WHERE metadataTxId IN :metadataTxIds;
 licenseByTxId:
     SELECT * FROM licenses
     WHERE licenseTxId = :tx;
@@ -176,6 +185,16 @@ pendingTransactionsForDrive:
 pinnedFileRevisions:
     SELECT * FROM file_revisions
     WHERE pinnedDataOwnerAddress IS NOT NULL;
+
+-- File revisions whose data tx is still pending confirmation. Used to map each
+-- pending data tx to the owner of the drive it belongs to, so the confirmation
+-- query can be scoped per-tx by the actual drive owner rather than assuming the
+-- logged-in wallet owns every pending tx (which breaks for attached drives).
+pendingDataFileRevisions:
+    SELECT * FROM file_revisions
+    WHERE dataTxId IN (
+        SELECT id FROM network_transactions WHERE status = 'pending'
+    );
 
 getFilesWithAssignedNames:
 SELECT * FROM file_entries

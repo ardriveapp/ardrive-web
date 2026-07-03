@@ -83,5 +83,6 @@ enum FileDownloadFailureReason {
   fileAboveLimit,
   browserDoesNotSupportLargeDownloads,
   networkConnectionError,
-  fileNotFound
+  fileNotFound,
+  rateLimited,
 }
