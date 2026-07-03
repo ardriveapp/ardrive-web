@@ -442,6 +442,10 @@ class BulkImportFiles {
               originalOwnerAddress: originalOwnerAddress,
             );
 
+            // WorkerPool discards execute's return value, so successful
+            // imports must be collected here for BulkImportResult.
+            importedFiles.add(fileEntry);
+
             onFileUploadSuccess?.call(file.name!);
 
             return fileEntry;
