@@ -34,6 +34,7 @@ class SnapshotItemToBeCreated {
   int get dataEnd => _dataEnd ?? -1;
 
   final Future<Uint8List> Function(TxID txId) _jsonMetadataOfTxId;
+  final void Function(int processed, int total)? _onProgress;
 
   SnapshotItemToBeCreated({
     required this.blockStart,
@@ -42,11 +43,17 @@ class SnapshotItemToBeCreated {
     required this.subRanges,
     required this.source,
     required Future<Uint8List> Function(TxID txId) jsonMetadataOfTxId,
-  }) : _jsonMetadataOfTxId = jsonMetadataOfTxId;
+    void Function(int processed, int total)? onProgress,
+  })  : _jsonMetadataOfTxId = jsonMetadataOfTxId,
+        _onProgress = onProgress;
 
   Stream<Uint8List> getSnapshotData() async* {
     // Convert the source Stream into a List to get all elements at once
     final nodes = await source.toList();
+    final totalCount = nodes.length;
+    var processedCount = 0;
+
+    _onProgress?.call(0, totalCount);
 
     final processor = BatchProcessor();
     List<TxSnapshot> results = [];
@@ -61,6 +68,8 @@ class SnapshotItemToBeCreated {
         }
 
         results.addAll(await Future.wait(tasks));
+        processedCount += items.length;
+        _onProgress?.call(processedCount, totalCount);
 
         yield 1;
       },

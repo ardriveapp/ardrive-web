@@ -11,14 +11,19 @@ class CreateSnapshotInitial extends CreateSnapshotState {}
 class ComputingSnapshotData extends CreateSnapshotState {
   final DriveID driveId;
   final Range range;
+  final int processedTransactions;
+  final int totalTransactions;
 
   ComputingSnapshotData({
     required this.driveId,
     required this.range,
+    this.processedTransactions = 0,
+    this.totalTransactions = 0,
   });
 
   @override
-  List<Object> get props => [driveId, range];
+  List<Object> get props =>
+      [driveId, range, processedTransactions, totalTransactions];
 }
 
 class PreparingAndSigningTransaction extends CreateSnapshotState {

@@ -11,6 +11,7 @@ class FileDownloadProgress extends LinearProgress {
 
 class ProfileFileDownloadCubit extends FileDownloadCubit {
   final ARFSFileEntity _file;
+  SecretKey? _lastCipherKey;
 
   final StreamController<LinearProgress> _downloadProgress =
       StreamController<LinearProgress>.broadcast();
@@ -59,7 +60,14 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     download(cipherKey);
   }
 
+  @override
+  FutureOr<void> retryDownload() {
+    emit(FileDownloadStarting());
+    download(_lastCipherKey);
+  }
+
   Future<void> download(SecretKey? cipherKey) async {
+    _lastCipherKey = cipherKey;
     try {
       final drive = await _arfsRepository.getDriveById(_file.driveId);
 
@@ -142,17 +150,19 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     String? cipher;
     String? cipherIvTag;
     SecretKey? fileKey;
+    bool verifyDownload = false;
 
     final isPinFile = _file.pinnedDataOwnerAddress != null;
 
-    final dataTx = await (_arweave.getTransactionDetails(_file.txId));
-
-    if (dataTx == null) {
-      throw StateError(
-          'Failed to download: Data transaction not found for file');
-    }
-
     if (drive.drivePrivacy == DrivePrivacy.private && !isPinFile) {
+      // Private files need cipher/IV tags from the data transaction
+      final dataTx = await (_arweave.getTransactionDetails(_file.txId));
+
+      if (dataTx == null) {
+        throw StateError(
+            'Failed to download: Data transaction not found for file');
+      }
+
       DriveKey? driveKey;
 
       if (cipherKey != null) {
@@ -173,13 +183,14 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
       cipher = dataTx.getTag(EntityTag.cipher);
       cipherIvTag = dataTx.getTag(EntityTag.cipherIv);
+      verifyDownload = dataTx.getTag(EntityTag.appName) == 'ArDrive-CLI';
     }
 
     // log file size
     logger.d('File size: ${_file.size}');
 
     final downloadStream = await _arDriveDownloader.downloadFile(
-      dataTx: dataTx,
+      txId: _file.txId,
       fileName: _file.name,
       fileSize: _file.size,
       lastModifiedDate: _file.lastModifiedDate,
@@ -189,6 +200,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       cipher: cipher,
       cipherIvString: cipherIvTag,
       fileKey: fileKey,
+      verifyDownload: verifyDownload,
     );
 
     downloadStream.listen(
@@ -247,18 +259,30 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    emit(
-      const FileDownloadFailure(
-        FileDownloadFailureReason.unknownError,
-      ),
-    );
+    final reason = _classifyError(error);
+    emit(FileDownloadFailure(reason));
 
     super.onError(error, stackTrace);
 
     logger.e(
-      'Failed to download file ${_file.id} with txId ${_file.txId} from gateway ${_arweave.client.api.gatewayUrl.origin}',
+      'Failed to download file ${_file.id} with txId ${_file.txId} '
+      '(reason: $reason)',
       error,
       stackTrace,
     );
+  }
+
+  static FileDownloadFailureReason _classifyError(Object error) {
+    if (error is DownloadFileNotFoundException) {
+      return FileDownloadFailureReason.fileNotFound;
+    }
+    if (error is DownloadRateLimitException) {
+      return FileDownloadFailureReason.rateLimited;
+    }
+    if (error is DownloadNetworkException ||
+        error is DownloadStalledException) {
+      return FileDownloadFailureReason.networkConnectionError;
+    }
+    return FileDownloadFailureReason.unknownError;
   }
 }

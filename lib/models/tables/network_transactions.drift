@@ -7,3 +7,5 @@ CREATE TABLE network_transactions (
 
     transactionDateCreated DATETIME
 );
+
+CREATE INDEX idx_network_transactions_status ON network_transactions(status);

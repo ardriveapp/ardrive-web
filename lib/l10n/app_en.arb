@@ -866,6 +866,30 @@
   "@fileFailedToDownloadFileAbovePublicLimit": {
     "description": "Download failure message when a file is too big"
   },
+  "downloadNetworkError": "Network Error",
+  "@downloadNetworkError": {
+    "description": "Title for network error during download"
+  },
+  "downloadNetworkErrorDescription": "Could not connect to the download server. Please check your connection and try again.",
+  "@downloadNetworkErrorDescription": {
+    "description": "Description for network error during download"
+  },
+  "downloadFileNotFound": "File Not Found",
+  "@downloadFileNotFound": {
+    "description": "Title when downloaded file is not found on any gateway"
+  },
+  "downloadFileNotFoundDescription": "This file could not be found on the network. It may have been uploaded recently and is still being processed.",
+  "@downloadFileNotFoundDescription": {
+    "description": "Description when downloaded file is not found"
+  },
+  "downloadRateLimited": "Too Many Requests",
+  "@downloadRateLimited": {
+    "description": "Title when download is rate limited"
+  },
+  "downloadRateLimitedDescription": "The download server is busy. Please wait a moment and try again.",
+  "@downloadRateLimitedDescription": {
+    "description": "Description when download is rate limited"
+  },
   "fileHadANewRevision": "A new version of this file was uploaded.",
   "@fileHadANewRevision": {
     "description": "File activity (journal): new revision"
@@ -2238,6 +2262,24 @@
       }
     }
   },
+  "syncCheckingForChanges": "Checking for changes...",
+  "@syncCheckingForChanges": {
+    "description": "Status message shown during drive activity probe"
+  },
+  "retryFailedDrives": "Retry Failed",
+  "@retryFailedDrives": {
+    "description": "Button to retry syncing only the drives that failed"
+  },
+  "syncElapsedTime": "{seconds}s elapsed",
+  "@syncElapsedTime": {
+    "description": "Elapsed time shown during sync after 5 seconds",
+    "placeholders": {
+      "seconds": {
+        "type": "String",
+        "example": "45"
+      }
+    }
+  },
   "syncProgressPercentage": "{percentage}% complete",
   "@syncProgressPercentage": {
     "description": "The sync progress percentage",
@@ -2277,6 +2319,18 @@
   "thisMayTakeAWhile": "This may take a while...",
   "@thisMayTakeAWhile": {
     "description": "Uploading may take a while"
+  },
+  "snapshotProcessingProgress": "Processing {processed} of {total} transactions...",
+  "@snapshotProcessingProgress": {
+    "description": "Progress text during snapshot data computation",
+    "placeholders": {
+      "processed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
   },
   "tooLargeForUpload": "Too large for upload:",
   "@tooLargeForUpload": {

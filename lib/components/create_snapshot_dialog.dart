@@ -225,6 +225,12 @@ String _loadingDialogDescription(
   bool isArConnectProfile,
 ) {
   if (state is ComputingSnapshotData) {
+    if (state.totalTransactions > 0) {
+      return appLocalizationsOf(context).snapshotProcessingProgress(
+        state.processedTransactions,
+        state.totalTransactions,
+      );
+    }
     return appLocalizationsOf(context).thisMayTakeAWhile;
   } else if (state is PreparingAndSigningTransaction) {
     if (isArConnectProfile) {

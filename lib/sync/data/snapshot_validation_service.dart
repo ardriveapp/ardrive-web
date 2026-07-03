@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
@@ -14,9 +15,10 @@ class SnapshotValidationService {
   static const _garListTimeout = Duration(seconds: 3);
   static const _maxConcurrentValidations = 3;
 
-  /// Cached GAR gateway list — fetched once per session, avoids repeated
-  /// Solana RPC calls which may be slow or unavailable (e.g. localhost).
-  List<Gateway>? _cachedGateways;
+  /// Shared reference to [DataGatewayFallback] for reading/writing the
+  /// gateway cache. Set by SyncRepository before validation runs so both
+  /// services share one cache and avoid duplicate Solana RPC calls.
+  DataGatewayFallback? gatewayFallback;
 
   SnapshotValidationService({
     required ConfigService configService,
@@ -105,12 +107,32 @@ class SnapshotValidationService {
       return false;
     }
 
-    // 3. Primary had a transient error (timeout, 5xx) — try 1 fallback gateway
+    // 3. Primary had a transient error (timeout, 5xx) — try 1 fallback gateway.
+    //    Read the shared gateway cache from DataGatewayFallback. If unavailable,
+    //    fetch from Solana RPC once and cache the result (empty on failure).
     try {
-      _cachedGateways ??= await _arioSDK
-          .getGateways()
-          .timeout(_garListTimeout, onTimeout: () => <Gateway>[]);
-      final gateways = _cachedGateways!;
+      List<Gateway> gateways;
+      if (gatewayFallback != null &&
+          gatewayFallback!.cachedGateways != null) {
+        gateways = gatewayFallback!.cachedGateways!;
+      } else {
+        try {
+          gateways = await _arioSDK
+              .getGateways()
+              .timeout(_garListTimeout, onTimeout: () => <Gateway>[]);
+          // Store in shared cache if available
+          if (gatewayFallback != null) {
+            gatewayFallback!.cachedGateways = gateways;
+          }
+        } catch (e) {
+          // Solana RPC failed — cache empty list so we don't retry every call
+          logger.w('GAR gateway list unavailable, will not retry: $e');
+          if (gatewayFallback != null) {
+            gatewayFallback!.cachedGateways = [];
+          }
+          gateways = [];
+        }
+      }
 
       if (gateways.isEmpty) return false;
 

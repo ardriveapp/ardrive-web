@@ -1,4 +1,3 @@
-import 'package:ardrive/services/arweave/get_segmented_transaction_from_drive_strategy.dart';
 import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
@@ -43,14 +42,17 @@ class GQLDriveHistory implements SegmentedGQLData {
   Stream<DriveEntityHistoryTransactionModel> _getNextStream() async* {
     Range subRangeForIndex = subRanges.rangeSegments[currentIndex];
 
+    // Skip the genesis block range — no ArFS transactions exist at block 0.
+    // This gap appears when snapshots start at block 1 and lastBlockHeight is 0.
+    if (subRangeForIndex.start == 0 && subRangeForIndex.end == 0) {
+      return;
+    }
+
     final txsStream = _arweave.getSegmentedTransactionsFromDrive(
       driveId,
       minBlockHeight: subRangeForIndex.start,
       maxBlockHeight: subRangeForIndex.end,
       ownerAddress: ownerAddress,
-      strategy: GetSegmentedTransactionFromDriveFilteringByEntityTypeStrategy(
-        _arweave.graphQLRetry,
-      ),
     );
 
     await for (final multipleEdges in txsStream) {
