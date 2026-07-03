@@ -26,6 +26,7 @@ import 'package:ardrive/sync/domain/sync_cancellation_token.dart';
 import 'package:ardrive/sync/domain/sync_failure_simulator.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/sync/utils/batch_processor.dart';
+import 'package:ardrive/sync/utils/bounded_worker_pool.dart';
 import 'package:ardrive/sync/utils/network_transaction_utils.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -423,10 +424,13 @@ class _SyncRepository implements SyncRepository {
     // Track if sync was cancelled
     bool wasCancelled = false;
 
-    // Start the async work but don't wait for it yet
-    // Using Future.wait with eagerError: false to continue even if some drives fail
-    Future.wait(
-      drivesToSync.map((drive) async {
+    // Start the async work but don't wait for it yet. Drives are synced
+    // through a bounded worker pool (kMaxConcurrentDriveSyncs at a time) so
+    // large accounts don't fan out one full sync pipeline per drive at once;
+    // like Future.wait(eagerError: false), all drives are processed even if
+    // some fail.
+    final driveSyncTasks =
+        drivesToSync.map((drive) => () async {
         try {
           // Check for cancellation before starting each drive
           token.checkCancellation();
@@ -504,8 +508,11 @@ class _SyncRepository implements SyncRepository {
           );
           syncProgressController.add(syncProgress);
         }
-      }),
-      eagerError: false, // Continue processing even if some drives fail
+      }).toList();
+
+    runBoundedWorkers(
+      tasks: driveSyncTasks,
+      maxConcurrent: kMaxConcurrentDriveSyncs,
     ).then((_) async {
       try {
         // If sync was cancelled during drive sync, add error to stream
