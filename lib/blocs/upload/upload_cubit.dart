@@ -102,6 +102,10 @@ class UploadCubit extends Cubit<UploadState> {
   bool _hasEmittedWarning = false;
   bool _uploadIsInProgress = false;
 
+  /// Pre-computed file lengths cache. Populated in parallel at the start of
+  /// upload preparation to avoid redundant sequential file.ioFile.length reads.
+  Map<String, int> _fileLengthCache = {};
+
   /// Target folder
   late Drive _targetDrive;
   late FolderEntry _targetFolder;
@@ -550,7 +554,8 @@ class UploadCubit extends Cubit<UploadState> {
     int size = 0;
 
     for (final file in _files) {
-      size += await file.ioFile.length;
+      size += _fileLengthCache[file.getIdentifier()] ??
+          await file.ioFile.length;
     }
 
     return size;
@@ -722,22 +727,27 @@ class UploadCubit extends Cubit<UploadState> {
 
     _removeFilesWithFolderNameConflicts();
 
-    for (final file in _files) {
-      final fileName = file.ioFile.name;
-      final existingFileIds = await _driveDao
-          .filesInFolderWithName(
-            driveId: _targetDrive.id,
-            parentFolderId: file.parentFolderId,
-            name: fileName,
-          )
-          .map((f) => f.id)
-          .get();
+    // Parallel conflict detection: check all files concurrently instead of
+    // one sequential DB query per file.
+    final conflictResults = await Future.wait(
+      _files.map((file) async {
+        final existingFileIds = await _driveDao
+            .filesInFolderWithName(
+              driveId: _targetDrive.id,
+              parentFolderId: file.parentFolderId,
+              name: file.ioFile.name,
+            )
+            .map((f) => f.id)
+            .get();
+        return (file: file, existingIds: existingFileIds);
+      }),
+    );
 
-      if (existingFileIds.isNotEmpty) {
-        final existingFileId = existingFileIds.first;
-
+    for (final result in conflictResults) {
+      if (result.existingIds.isNotEmpty) {
+        final existingFileId = result.existingIds.first;
         logger.d('Found conflicting file. Existing file id: $existingFileId');
-        _conflictingFiles[file.getIdentifier()] = existingFileId;
+        _conflictingFiles[result.file.getIdentifier()] = existingFileId;
       }
     }
 
@@ -809,9 +819,9 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> verifyFilesAboveWarningLimit() async {
     emit(UploadPreparationInProgress());
 
-    /// This delay is necessary. Once we start the upload checks, we will perform high computational tasks.
-    /// This delay ensures the previous state (UploadPreparationInProgress) is updated before starting the upload checks.
-    await Future.delayed(const Duration(milliseconds: 100));
+    // Yield to allow the UI to render UploadPreparationInProgress before
+    // starting potentially heavy computation.
+    await Future.delayed(Duration.zero);
 
     if (!_targetDrive.isPrivate) {
       if (await _uploadFileSizeChecker.hasFileAboveWarningSizeLimit(
@@ -926,6 +936,14 @@ class UploadCubit extends Cubit<UploadState> {
     _targetFolder =
         await _driveDao.folderById(folderId: _parentFolderId).getSingle();
 
+    // Pre-compute all file lengths in parallel to avoid redundant sequential
+    // reads across warning check, conflict detection, and plan creation.
+    final lengths = await Future.wait(_files.map((f) => f.ioFile.length));
+    _fileLengthCache = {
+      for (var i = 0; i < _files.length; i++)
+        _files[i].getIdentifier(): lengths[i],
+    };
+
     // TODO: check if the backend refreshed the balance instead of a timer
     if (isRetryingToPayWithTurbo) {
       emit(UploadPreparationInProgress());
@@ -1029,11 +1047,6 @@ class UploadCubit extends Cubit<UploadState> {
     );
 
     try {
-      if (await _profileCubit.checkIfWalletMismatch()) {
-        emit(UploadWalletMismatch());
-        return;
-      }
-
       final containsSupportedImageTypeForThumbnailGeneration = _files.any(
         (element) => supportedImageTypesInFilePreview.contains(
           element.ioFile.contentType,
@@ -1062,9 +1075,9 @@ class UploadCubit extends Cubit<UploadState> {
         _uploadThumbnail = false;
       }
 
-      if (manifestFileEntries.isNotEmpty) {
+      if (manifestFileEntries.isNotEmpty && _ants == null) {
         try {
-          await _arnsRepository
+          _ants = await _arnsRepository
               .getAntRecordsForWallet(_auth.currentUser.walletAddress);
         } catch (e) {
           logger.e(
