@@ -426,23 +426,31 @@ class UploadPaymentEvaluator {
     int turboBundleSizes = 0;
 
     // Calculate AR and Turbo costs in parallel — they're independent.
-    final arCostFuture = _uploadCostEstimateCalculatorForAR
-        .calculateCost(totalSize: arBundleSizes + arFileSizes)
-        .catchError((e) {
-      logger.e('Failed to get AR cost estimate, falling back to zero', e);
-      return UploadCostEstimate.zero();
-    });
+    final arCostFuture = () async {
+      try {
+        return await _uploadCostEstimateCalculatorForAR.calculateCost(
+          totalSize: arBundleSizes + arFileSizes,
+        );
+      } catch (e) {
+        logger.e('Failed to get AR cost estimate, falling back to zero', e);
+        return UploadCostEstimate.zero();
+      }
+    }();
 
     Future<UploadCostEstimate>? turboCostFuture;
     if (isUploadEligibleToTurbo) {
       turboBundleSizes = await sizeUtils
           .getSizeOfAllBundles(uploadPlanForTurbo.bundleUploadHandles);
-      turboCostFuture = _turboUploadCostCalculator
-          .calculateCost(totalSize: turboBundleSizes)
-          .catchError((e) {
-        _isTurboAvailableToUploadAllFiles = false;
-        return UploadCostEstimate.zero();
-      });
+      turboCostFuture = () async {
+        try {
+          return await _turboUploadCostCalculator.calculateCost(
+            totalSize: turboBundleSizes,
+          );
+        } catch (e) {
+          _isTurboAvailableToUploadAllFiles = false;
+          return UploadCostEstimate.zero();
+        }
+      }();
     }
 
     // Await both cost calculations (they've been running in parallel)
