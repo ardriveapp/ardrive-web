@@ -1077,7 +1077,7 @@ class UploadCubit extends Cubit<UploadState> {
         _uploadThumbnail = false;
       }
 
-      if (manifestFileEntries.isNotEmpty && _ants == null) {
+      if (manifestFileEntries.isNotEmpty && _ants.isEmpty) {
         try {
           _ants = await _arnsRepository
               .getAntRecordsForWallet(_auth.currentUser.walletAddress);
