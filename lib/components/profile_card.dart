@@ -630,7 +630,17 @@ class _ProfileCardState extends State<ProfileCard> {
                             setState(() {
                               _showProfileCard = false;
                             });
-                            showTurboTopupModal(context);
+                            showTurboTopupModal(
+                              context,
+                              onSuccess: () {
+                                // Refresh AR balance (in case user paid with AR)
+                                if (context.mounted) {
+                                  context
+                                      .read<ProfileCubit>()
+                                      .refreshBalance();
+                                }
+                              },
+                            );
                           },
                           child: MouseRegion(
                             cursor: SystemMouseCursors.click,

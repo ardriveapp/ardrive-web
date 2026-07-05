@@ -80,8 +80,8 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
 
 enum TableSort { asc, desc }
 
-abstract class IndexedItem with EquatableMixin {
-  IndexedItem(this.index);
+abstract class IndexedItem extends Equatable {
+  const IndexedItem(this.index);
 
   final int index;
 }
