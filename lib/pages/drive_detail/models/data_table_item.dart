@@ -24,6 +24,7 @@ abstract class ArDriveDataTableItem extends IndexedItem {
   final bool isHidden;
   final String? signatureType;
 
+  // ignore: prefer_const_constructors_in_immutables
   ArDriveDataTableItem({
     required this.id,
     this.size,
