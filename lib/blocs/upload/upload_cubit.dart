@@ -938,7 +938,9 @@ class UploadCubit extends Cubit<UploadState> {
 
     // Pre-compute all file lengths in parallel to avoid redundant sequential
     // reads across warning check, conflict detection, and plan creation.
-    final lengths = await Future.wait(_files.map((f) => f.ioFile.length));
+    final lengths = await Future.wait(
+      _files.map((f) async => await f.ioFile.length),
+    );
     _fileLengthCache = {
       for (var i = 0; i < _files.length; i++)
         _files[i].getIdentifier(): lengths[i],
