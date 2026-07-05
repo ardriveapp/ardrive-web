@@ -23,7 +23,10 @@ dependencies:
   percent_indicator: ^4.2.2
   flutter_svg_image:
   provider: ^6.0.5
-  equatable: ^2.0.5
+  # pinned below 2.1.0: equatable 2.1.0 deprecates EquatableMixin (used by
+  # data_table.dart) and the main app's lockfile resolves 2.0.7; this package
+  # has no committed lockfile, so CI floats to the newest allowed version
+  equatable: '>=2.0.5 <2.1.0'
   ardrive_utils:
     path: ../ardrive_utils
 
