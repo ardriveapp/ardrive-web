@@ -1,6 +1,6 @@
 {
-  "configVersion": 2,
-  "defaultArweaveGatewayUrl": "https://ardrive.net",
+  "configVersion": 3,
+  "defaultArweaveGatewayUrl": "https://turbo-gateway.com",
   "defaultArweaveGatewayForDataRequest": {
     "label": "Turbo Gateway",
     "url": "https://turbo-gateway.com"
