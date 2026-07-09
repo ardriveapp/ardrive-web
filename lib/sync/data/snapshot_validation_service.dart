@@ -20,6 +20,10 @@ class SnapshotValidationService {
   /// services share one cache and avoid duplicate Solana RPC calls.
   DataGatewayFallback? gatewayFallback;
 
+  /// Session-local gateway cache used only when no shared
+  /// [gatewayFallback] is wired up.
+  List<Gateway>? _localGateways;
+
   SnapshotValidationService({
     required ConfigService configService,
     required ArioSDK arioSDK,
@@ -108,29 +112,22 @@ class SnapshotValidationService {
     }
 
     // 3. Primary had a transient error (timeout, 5xx) — try 1 fallback gateway.
-    //    Read the shared gateway cache from DataGatewayFallback. If unavailable,
-    //    fetch from Solana RPC once and cache the result (empty on failure).
+    //    Read the shared gateway cache from DataGatewayFallback (which loads
+    //    a persisted list and fetches from Solana RPC at most once ever). If
+    //    no shared cache is wired up, fetch once and keep it in memory.
     try {
       List<Gateway> gateways;
-      if (gatewayFallback != null &&
-          gatewayFallback!.cachedGateways != null) {
-        gateways = gatewayFallback!.cachedGateways!;
+      if (gatewayFallback != null) {
+        gateways = await gatewayFallback!.getGatewaysCached();
       } else {
         try {
-          gateways = await _arioSDK
+          gateways = _localGateways ??= await _arioSDK
               .getGateways()
               .timeout(_garListTimeout, onTimeout: () => <Gateway>[]);
-          // Store in shared cache if available
-          if (gatewayFallback != null) {
-            gatewayFallback!.cachedGateways = gateways;
-          }
         } catch (e) {
           // Solana RPC failed — cache empty list so we don't retry every call
           logger.w('GAR gateway list unavailable, will not retry: $e');
-          if (gatewayFallback != null) {
-            gatewayFallback!.cachedGateways = [];
-          }
-          gateways = [];
+          gateways = _localGateways = [];
         }
       }
 

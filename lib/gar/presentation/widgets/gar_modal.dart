@@ -141,6 +141,12 @@ class _ArIOGatewaySelectorModalContentState extends State<_ArIOGatewaySelectorMo
             actions: [
               ModalAction(
                 action: () {
+                  garBloc.add(RefreshGateways());
+                },
+                title: 'Refresh list',
+              ),
+              ModalAction(
+                action: () {
                   Navigator.of(context).pop();
                 },
                 title: 'Cancel',

@@ -1,4 +1,5 @@
 import 'package:ardrive/gar/domain/repositories/gar_repository.dart';
+import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/services/config/config_service.dart';
@@ -14,6 +15,8 @@ class MockConfigService extends Mock implements ConfigService {}
 
 class MockArweaveService extends Mock implements ArweaveService {}
 
+class MockDataGatewayFallback extends Mock implements DataGatewayFallback {}
+
 class MockGateway extends Mock implements Gateway {}
 
 class MockConfig extends Mock implements AppConfig {}
@@ -27,12 +30,15 @@ void main() {
   late MockArioSDK arioSDK;
   late MockConfigService configService;
   late MockArweaveService arweaveService;
+  late MockDataGatewayFallback gatewayFallback;
   late MockArDriveHTTP http;
 
   setUp(() {
     arioSDK = MockArioSDK();
     configService = MockConfigService();
     arweaveService = MockArweaveService();
+    gatewayFallback = MockDataGatewayFallback();
+    when(() => arweaveService.gatewayFallback).thenReturn(gatewayFallback);
     http = MockArDriveHTTP();
     repository = GarRepositoryImpl(
       arioSDK: arioSDK,
@@ -56,14 +62,30 @@ void main() {
 
   group('GarRepositoryImpl', () {
     group('getGateways', () {
-      test('fetches and returns gateways', () async {
+      test('serves gateways from the shared cache without hitting the SDK',
+          () async {
         final gateways = [MockGateway()];
-        when(() => arioSDK.getGateways()).thenAnswer((_) async => gateways);
+        when(() => gatewayFallback.getGatewaysCached())
+            .thenAnswer((_) async => gateways);
 
         final result = await repository.getGateways();
 
         expect(result, equals(gateways));
-        verify(() => arioSDK.getGateways()).called(1);
+        verify(() => gatewayFallback.getGatewaysCached()).called(1);
+        verifyNever(() => arioSDK.getGateways());
+      });
+    });
+
+    group('refreshGateways', () {
+      test('forces a network refresh through the shared cache', () async {
+        final gateways = [MockGateway()];
+        when(() => gatewayFallback.refreshGateways())
+            .thenAnswer((_) async => gateways);
+
+        final result = await repository.refreshGateways();
+
+        expect(result, equals(gateways));
+        verify(() => gatewayFallback.refreshGateways()).called(1);
       });
     });
 
@@ -137,7 +159,8 @@ void main() {
               url: 'https://ardrive.net',
             ),
           ));
-          when(() => arioSDK.getGateways()).thenAnswer((_) async => gateways);
+          when(() => gatewayFallback.getGatewaysCached())
+              .thenAnswer((_) async => gateways);
           when(() => gateway.settings).thenReturn(settings);
           when(() => settings.label).thenReturn('New Gateway');
 
@@ -171,7 +194,8 @@ void main() {
               url: 'https://not.in.list.com',
             ),
           ));
-          when(() => arioSDK.getGateways()).thenAnswer((_) async => gateways);
+          when(() => gatewayFallback.getGatewaysCached())
+              .thenAnswer((_) async => gateways);
           when(() => gateway1.settings).thenReturn(settings);
           when(() => gateway2.settings).thenReturn(settings);
           when(() => gateway3.settings).thenReturn(settings);
@@ -244,7 +268,8 @@ void main() {
             when(() => settings2.label).thenReturn('second gateway');
             when(() => settings3.label).thenReturn('first');
 
-            when(() => arioSDK.getGateways()).thenAnswer((_) async => gateways);
+            when(() => gatewayFallback.getGatewaysCached())
+              .thenAnswer((_) async => gateways);
 
             // Manually populate the _gateways list
             await repository.getGateways();
@@ -286,7 +311,8 @@ void main() {
             when(() => settings2.label).thenReturn('Beta Gateway');
             when(() => settings3.label).thenReturn('Gamma Gateway');
 
-            when(() => arioSDK.getGateways()).thenAnswer((_) async => gateways);
+            when(() => gatewayFallback.getGatewaysCached())
+              .thenAnswer((_) async => gateways);
 
             // Manually populate the _gateways list
             await repository.getGateways();

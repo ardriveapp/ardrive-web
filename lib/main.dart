@@ -494,7 +494,6 @@ class AppState extends State<App> {
               configService: configService,
               arioSDK: ArioSDKFactory().create(),
             ),
-            arnsRepository: _.read<ARNSRepository>(),
             userPreferencesRepository: _.read<UserPreferencesRepository>(),
           ),
         ),

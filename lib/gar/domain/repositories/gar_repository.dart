@@ -8,6 +8,7 @@ import 'package:collection/collection.dart';
 
 abstract class GarRepository {
   Future<List<Gateway>> getGateways();
+  Future<List<Gateway>> refreshGateways();
   List<Gateway> searchGateways(String query);
   Future<Gateway> getSelectedGateway();
   Future<void> updateGateway(Gateway gateway);
@@ -35,10 +36,21 @@ class GarRepositoryImpl implements GarRepository {
 
   final List<Gateway> _gateways = [];
 
+  /// Serves the persisted/session gateway list; the network is hit at most
+  /// once ever (on the very first use). Use [refreshGateways] for an
+  /// explicit, user-initiated re-fetch.
   @override
   Future<List<Gateway>> getGateways() async {
     _gateways.clear();
-    _gateways.addAll(await arioSDK.getGateways());
+    _gateways.addAll(await arweave.gatewayFallback.getGatewaysCached());
+
+    return _gateways;
+  }
+
+  @override
+  Future<List<Gateway>> refreshGateways() async {
+    _gateways.clear();
+    _gateways.addAll(await arweave.gatewayFallback.refreshGateways());
 
     return _gateways;
   }
