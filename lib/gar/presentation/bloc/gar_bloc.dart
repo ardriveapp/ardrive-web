@@ -33,6 +33,25 @@ class GarBloc extends Bloc<GarEvent, GarState> {
       }
     });
 
+    on<RefreshGateways>((event, emit) async {
+      try {
+        emit(LoadingGateways());
+
+        final gateways = await garRepository.refreshGateways();
+        final currentGateway = await garRepository.getSelectedGateway();
+
+        emit(
+          GatewaysLoaded(
+            gateways: gateways,
+            currentGateway: currentGateway,
+          ),
+        );
+      } catch (e) {
+        logger.e('Failed to refresh gateways from AR.IO', e);
+        emit(const GatewaysError());
+      }
+    });
+
     on<SelectGateway>((event, emit) async {
       emit(VerifyingGateway());
 
