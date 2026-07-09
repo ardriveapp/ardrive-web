@@ -190,5 +190,38 @@ void main() {
       expect(cached.single.settings.fqdn, 'new.gateway.com');
       verifyNoMoreInteractions(sdk);
     });
+
+    test('propagates SDK errors and preserves the existing cache', () async {
+      final original = [_makeGateway('old.gateway.com')];
+      await store.putString(
+        cacheKey,
+        json.encode(original.map((g) => g.toJson()).toList()),
+      );
+      await fallback.getGatewaysCached();
+
+      when(() => sdk.getGateways()).thenThrow(Exception('rpc down'));
+
+      await expectLater(fallback.refreshGateways(), throwsException);
+
+      // The in-memory cache and the persisted list keep the previous values.
+      final cached = await fallback.getGatewaysCached();
+      expect(cached.single.settings.fqdn, 'old.gateway.com');
+      final raw = await store.getString(cacheKey);
+      final persisted = (json.decode(raw!) as List)
+          .map((e) => Gateway.fromJson(e as Map<String, dynamic>))
+          .toList();
+      expect(persisted.single.settings.fqdn, 'old.gateway.com');
+    });
+
+    test('throws on a stalled SDK call instead of hanging', () async {
+      when(() => sdk.getGateways()).thenAnswer(
+        (_) => Completer<List<Gateway>>().future, // never completes
+      );
+
+      await expectLater(
+        fallback.refreshGateways(),
+        throwsA(isA<TimeoutException>()),
+      );
+    });
   });
 }

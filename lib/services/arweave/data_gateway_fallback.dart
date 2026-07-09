@@ -88,8 +88,13 @@ class DataGatewayFallback {
 
   /// Force-refreshes the gateway list from the network and persists the
   /// result. User-initiated only (refresh action in gateway settings).
+  ///
+  /// Unlike [getGatewaysCached], a stalled RPC throws ([TimeoutException])
+  /// instead of returning an empty list, so the caller can surface an error
+  /// state with a retry affordance rather than silently showing no gateways.
+  /// The existing cache and persisted list are left untouched on failure.
   Future<List<Gateway>> refreshGateways() async {
-    final fetched = await _arioSDK.getGateways();
+    final fetched = await _arioSDK.getGateways().timeout(_garListTimeout);
     cachedGateways = fetched;
     if (fetched.isNotEmpty) {
       await _persistGateways(fetched);
