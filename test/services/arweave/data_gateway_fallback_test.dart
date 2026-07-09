@@ -112,7 +112,7 @@ void main() {
       expect(second, equals(fetched));
       verify(() => sdk.getGateways()).called(1);
 
-      final raw = store.getString(cacheKey);
+      final raw = await store.getString(cacheKey);
       expect(raw, isNotNull, reason: 'fetched list must be persisted');
       final roundTripped = (json.decode(raw!) as List)
           .map((e) => Gateway.fromJson(e as Map<String, dynamic>))
@@ -179,7 +179,7 @@ void main() {
       expect(result.single.settings.fqdn, 'new.gateway.com');
       verify(() => sdk.getGateways()).called(1);
 
-      final raw = store.getString(cacheKey);
+      final raw = await store.getString(cacheKey);
       final roundTripped = (json.decode(raw!) as List)
           .map((e) => Gateway.fromJson(e as Map<String, dynamic>))
           .toList();
