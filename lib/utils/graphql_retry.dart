@@ -9,15 +9,20 @@ import 'package:retry/retry.dart';
 
 /// Retry every GraphQL query for `ArtemisClient`
 ///
-/// On 429 or 5xx errors, falls back to arweave.net/graphql (Goldsky proxy)
-/// since most AR.IO gateways don't index ArDrive L2 data.
+/// On 429 or 5xx errors, falls back to the Goldsky search index directly
+/// (arweave.net/graphql proxies to it but rate-limits aggressively) since
+/// most AR.IO gateways don't index ArDrive L2 data.
+///
+/// Note: Goldsky caps page size at 100 and, when asked for more, silently
+/// clamps to 100 while reporting hasNextPage: false — so queries sent through
+/// this fallback must never request more than 100 items per page.
 class GraphQLRetry {
   GraphQLRetry(this._client,
       {required InternetChecker internetChecker,
       String? fallbackGraphqlUrl})
       : _internetChecker = internetChecker,
         _fallbackGraphqlUrl =
-            fallbackGraphqlUrl ?? 'https://arweave.net/graphql';
+            fallbackGraphqlUrl ?? 'https://arweave-search.goldsky.com/graphql';
 
   final ArtemisClient _client;
   final InternetChecker _internetChecker;
