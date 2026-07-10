@@ -2151,9 +2151,22 @@ class _SyncRepository implements SyncRepository {
         continue;
       }
 
-      newRevisions.add(revision);
-      latestRevisions[entity.id!] = revision;
-      latestRevisionsCache[entity.id!] = revision;
+      // Guard against out-of-order arrival (pagination phase restarts can
+      // interleave heights): only a strictly newer revision may become the
+      // latest, mirroring the file-revision logic above.
+      if (latestRevisions.containsKey(entity.id)) {
+        final latestRevision = latestRevisions[entity.id];
+        if (revision.dateCreated.value
+            .isAfter(latestRevision!.dateCreated.value)) {
+          latestRevisions[entity.id!] = revision;
+          latestRevisionsCache[entity.id!] = revision;
+          newRevisions.add(revision);
+        }
+      } else {
+        latestRevisions[entity.id!] = revision;
+        latestRevisionsCache[entity.id!] = revision;
+        newRevisions.add(revision);
+      }
     }
     final newNetworkTransactions =
         createNetworkTransactionsCompanionsForFolders(

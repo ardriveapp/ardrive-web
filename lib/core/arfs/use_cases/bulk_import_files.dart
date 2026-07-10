@@ -418,8 +418,22 @@ class BulkImportFiles {
                   ? 1
                   : 5,
           taskQueue: fileEntries,
-          onWorkerError: (e) {
-            logger.e('Bulk import worker error', e, StackTrace.current);
+          onWorkerError: (file) {
+            // WorkerPool passes the failed TASK (the FileEntity), not the
+            // exception. Record it so BulkImportResult stays truthful:
+            // imported + failures should account for every file.
+            logger.e(
+                'Bulk import worker failed for file: ${file.name}', null,
+                StackTrace.current);
+            final manifestFile =
+                file.dataTxId != null ? fileDataTxIdToFile[file.dataTxId] : null;
+            final path = manifestFile?.path ?? file.name ?? 'unknown';
+            failures.add(FileImportFailure(
+              path: path,
+              dataTxId: file.dataTxId ?? '',
+              error: 'Import failed during metadata upload',
+            ));
+            onFileFailure?.call(path);
           },
           execute: (file) async {
             if (_isCancelled) {

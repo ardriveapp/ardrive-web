@@ -118,6 +118,8 @@ class ArweaveService {
   /// Data requests (GET /tx/{id}/data, wallet balance, etc.) continue using
   /// the configured arweaveGatewayForDataRequest.
   void updateGraphQLEndpoint(String gatewayUrl) {
+    // The old endpoint's capabilities no longer apply.
+    _gqlOwnersPreferringFallback.clear();
     final previousClient = _gql;
     final graphqlUrl = _graphqlUrlFromGateway(gatewayUrl);
     _gql = ArtemisClient(graphqlUrl);
@@ -370,7 +372,7 @@ class ArweaveService {
     strategy ??=
         GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy(
       graphQLRetry,
-      pageSize: _configService.config.driveHistoryGqlPageSize,
+      pageSize: _configService.config.driveHistoryGqlPageSize.clamp(1, 1000),
       ownersPreferringFallback: _gqlOwnersPreferringFallback,
     );
 

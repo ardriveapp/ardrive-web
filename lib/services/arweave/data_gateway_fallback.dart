@@ -61,7 +61,15 @@ class DataGatewayFallback {
   /// success). The gateway registry rarely changes, so we avoid hitting the
   /// Solana RPC on every session; explicit refreshes go through
   /// [refreshGateways] (e.g. from the gateway settings screen).
-  Future<List<Gateway>> getGatewaysCached() async {
+  Future<List<Gateway>>? _getGatewaysFuture;
+
+  Future<List<Gateway>> getGatewaysCached() {
+    // Memoize the in-flight future: concurrent first callers (e.g. several
+    // drive syncs validating snapshots at once) must share one fetch.
+    return _getGatewaysFuture ??= _getGatewaysCachedImpl();
+  }
+
+  Future<List<Gateway>> _getGatewaysCachedImpl() async {
     if (cachedGateways != null) return cachedGateways!;
 
     final persisted = await _loadPersistedGateways();
@@ -96,6 +104,7 @@ class DataGatewayFallback {
   Future<List<Gateway>> refreshGateways() async {
     final fetched = await _arioSDK.getGateways().timeout(_garListTimeout);
     cachedGateways = fetched;
+    _getGatewaysFuture = null; // next cached read observes the refresh
     if (fetched.isNotEmpty) {
       await _persistGateways(fetched);
     }
@@ -107,9 +116,12 @@ class DataGatewayFallback {
       final store = await _getStore();
       final raw = await store?.getString(_garCacheKey);
       if (raw == null) return null;
-      return (json.decode(raw) as List)
+      final decoded = (json.decode(raw) as List)
           .map((e) => Gateway.fromJson(e as Map<String, dynamic>))
           .toList();
+      // An empty persisted list carries no value; treat as not cached so the
+      // next session retries the fetch.
+      return decoded.isEmpty ? null : decoded;
     } catch (e) {
       logger.w('Failed to load persisted GAR list, refetching: $e');
       return null;

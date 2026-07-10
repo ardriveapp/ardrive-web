@@ -435,7 +435,17 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
   @override
   Future<void> refreshBalance() async {
-    _updateBalance();
+    // Await the fetch so callers (e.g. ProfileCubit.refreshBalance, which
+    // re-emits currentUser right after) observe the refreshed value instead
+    // of the stale one.
+    try {
+      final balance = await _userRepository.getBalance(currentUser.wallet);
+      _currentUser = _currentUser!.copyWith(walletBalance: balance);
+      _userStreamController.add(_currentUser);
+    } catch (e) {
+      logger.e('Error refreshing wallet balance', e);
+      // Keep the previous value on error.
+    }
   }
 }
 

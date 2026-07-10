@@ -28,6 +28,14 @@ class GraphQLRetry {
   final InternetChecker _internetChecker;
   final String _fallbackGraphqlUrl;
 
+  /// Cached fallback client: paginated callers hit the fallback once per
+  /// page, so constructing/disposing a client per call would defeat HTTP
+  /// connection reuse.
+  ArtemisClient? _fallbackClient;
+
+  ArtemisClient get _fallback =>
+      _fallbackClient ??= ArtemisClient(_fallbackGraphqlUrl);
+
   /// Executes [query] with retries.
   ///
   /// [allowFallback]: when true (default), a failed primary is retried once
@@ -46,14 +54,11 @@ class GraphQLRetry {
     bool useFallbackEndpoint = false,
   }) async {
     if (useFallbackEndpoint) {
-      final fallbackClient = ArtemisClient(_fallbackGraphqlUrl);
       try {
-        return await _executeWithRetry(fallbackClient, query,
+        return await _executeWithRetry(_fallback, query,
             onRetry: onRetry, maxAttempts: maxAttempts);
       } catch (fallbackError) {
         throw await _terminalException(query, fallbackError);
-      } finally {
-        fallbackClient.dispose();
       }
     }
 
@@ -75,9 +80,8 @@ class GraphQLRetry {
           'trying fallback: $_fallbackGraphqlUrl',
         );
 
-        final fallbackClient = ArtemisClient(_fallbackGraphqlUrl);
         try {
-          final result = await _executeWithRetry(fallbackClient, query,
+          final result = await _executeWithRetry(_fallback, query,
               onRetry: onRetry, maxAttempts: 3);
           logger.i('GraphQL fallback succeeded for ${query.operationName}');
           return result;
@@ -87,8 +91,6 @@ class GraphQLRetry {
             fallbackError,
           );
           // Fall through to unified error handling below
-        } finally {
-          fallbackClient.dispose();
         }
       }
 

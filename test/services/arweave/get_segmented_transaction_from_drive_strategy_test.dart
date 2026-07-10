@@ -122,16 +122,24 @@ void main() {
         if (call.after == null) {
           return page(['tx-1', 'tx-2'], hasNextPage: true);
         }
-        expect(call.after, 'cursor-tx-2');
-        return page(['tx-3'], hasNextPage: false);
+        if (call.after == 'cursor-tx-2') {
+          return page(['tx-3'], hasNextPage: false);
+        }
+        // End-of-range verification page (every non-empty final page of an
+        // oversized request gets one).
+        expect(call.after, 'cursor-tx-3');
+        return page([], hasNextPage: false);
       });
 
       final ids = await collectIds(run(retry));
 
       expect(ids, ['tx-1', 'tx-2', 'tx-3']);
-      expect(retry.calls, hasLength(2));
+      expect(retry.calls, hasLength(3));
+      expect(retry.calls[0].pageSize, 1000);
+      expect(retry.calls[1].pageSize, 1000);
+      expect(retry.calls[2].pageSize, kFallbackGqlPageSize,
+          reason: 'verification page runs at the safe page size');
       for (final call in retry.calls) {
-        expect(call.pageSize, 1000);
         expect(call.allowFallback, isFalse);
         expect(call.useFallbackEndpoint, isFalse);
       }
@@ -145,9 +153,12 @@ void main() {
           return page(['tx-old-1', 'tx-old-2'],
               hasNextPage: true, arfsVersion: '9.99');
         }
-        expect(call.after, 'cursor-tx-old-2',
-            reason: 'cursor must come from raw edges, not the filtered list');
-        return page(['tx-3'], hasNextPage: false);
+        // Cursor must come from raw edges, not the (empty) filtered list.
+        if (call.after == 'cursor-tx-old-2') {
+          return page(['tx-3'], hasNextPage: false);
+        }
+        expect(call.after, 'cursor-tx-3');
+        return page([], hasNextPage: false);
       });
 
       final ids = await collectIds(run(retry));
@@ -175,6 +186,23 @@ void main() {
 
       expect(ids, hasLength(101), reason: 'clamped tail must be recovered');
       expect(retry.calls, hasLength(2));
+    });
+
+    test('catches gateways that clamp below 100 as well', () async {
+      final tenEdges = List.generate(10, (i) => 'tx-$i');
+      final retry = ScriptedGraphQLRetry((call) async {
+        if (call.after == null) {
+          // Gateway clamps first:1000 down to its own default of 10 and
+          // falsely reports the range as complete.
+          return page(tenEdges, hasNextPage: false);
+        }
+        expect(call.after, 'cursor-tx-9');
+        return page(['tx-10'], hasNextPage: false);
+      });
+
+      final ids = await collectIds(run(retry));
+
+      expect(ids, hasLength(11), reason: 'clamped tail must be recovered');
     });
 
     test('a genuinely complete 100-edge page costs one empty verification '
@@ -258,6 +286,30 @@ void main() {
 
       await expectLater(
         collectIds(run(retry)),
+        throwsA(isA<GraphQLException>()),
+      );
+    });
+  });
+
+  group('misbehaving gateways fail loudly instead of truncating', () {
+    test('empty page with hasNextPage=true throws', () async {
+      final retry = ScriptedGraphQLRetry((call) async {
+        return page([], hasNextPage: true);
+      });
+
+      await expectLater(
+        collectIds(run(retry, ownersPreferringFallback: {owner})),
+        throwsA(isA<GraphQLException>()),
+      );
+    });
+
+    test('null data with no errors throws', () async {
+      final retry = ScriptedGraphQLRetry((call) async {
+        return GraphQLResponse(data: null);
+      });
+
+      await expectLater(
+        collectIds(run(retry, ownersPreferringFallback: {owner})),
         throwsA(isA<GraphQLException>()),
       );
     });

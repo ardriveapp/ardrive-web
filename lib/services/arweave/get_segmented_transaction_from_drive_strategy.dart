@@ -2,6 +2,7 @@ import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
 import 'package:ardrive/utils/arfs_txs_filter.dart';
+import 'package:ardrive/utils/exceptions.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item_to_be_created.dart';
@@ -87,6 +88,8 @@ class GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy
           yield batch;
         }
         return;
+      } on NoConnectionException {
+        rethrow; // offline: every endpoint fails; don't ladder or mark owner
       } catch (e) {
         logger.w('Drive history pagination failed on primary endpoint at '
             'page size $pageSize for drive $driveId: $e');
@@ -109,6 +112,8 @@ class GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy
             yield batch;
           }
           return;
+        } on NoConnectionException {
+          rethrow;
         } catch (e) {
           logger.w('Drive history pagination failed on primary endpoint at '
               'page size $kFallbackGqlPageSize for drive $driveId: $e');
@@ -166,8 +171,12 @@ class GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy
       );
 
       if (queryResult.data == null) {
-        logger.w('No data in the query result');
-        break;
+        // A null-data response with no errors must not look like a completed
+        // range: downstream, stream completion is treated as proof of
+        // completeness (sync watermarks, created snapshots). Throw so the
+        // ladder retries or the drive fails visibly.
+        throw GraphQLException(
+            'Null data with no errors while paginating drive history');
       }
 
       final rawEdges = queryResult.data!.transactions.edges;
@@ -195,10 +204,13 @@ class GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy
       // empty page next.
       if (!hasNextPage &&
           effectivePageSize > kFallbackGqlPageSize &&
-          rawEdges.length >= kFallbackGqlPageSize) {
-        logger.w('Possible page-size clamp detected (requested '
-            '$effectivePageSize, received ${rawEdges.length}, hasNextPage '
-            'false); downshifting to $kFallbackGqlPageSize and verifying');
+          rawEdges.isNotEmpty) {
+        // Cost: one extra (usually empty) page per drive fetch. Gateways may
+        // clamp to ANY smaller size (Goldsky: 100; some forks: 10) while
+        // falsely reporting hasNextPage=false, so every non-empty final page
+        // of an oversized request gets one verification page.
+        logger.d('Verifying end of range (requested $effectivePageSize, '
+            'received ${rawEdges.length}, hasNextPage false)');
         effectivePageSize = kFallbackGqlPageSize;
         hasNextPage = true;
       }
@@ -215,11 +227,13 @@ class GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy
       }
 
       if (rawEdges.isEmpty) {
-        // hasNextPage true with an empty page should not happen; break
-        // rather than loop forever against a misbehaving gateway.
-        logger.w('Empty page with hasNextPage=true for drive $driveId; '
-            'stopping pagination');
-        break;
+        // hasNextPage=true with an empty page means the gateway is
+        // misbehaving. Completing the stream here would be treated as a
+        // fully-synced range downstream (and could bake a truncated snapshot
+        // on-chain), so fail the phase instead: the ladder retries on the
+        // next endpoint, and a phase-C failure surfaces as a failed drive.
+        throw GraphQLException(
+            'Empty page with hasNextPage=true for drive $driveId');
       }
     }
   }

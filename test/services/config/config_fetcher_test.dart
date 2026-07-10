@@ -119,10 +119,40 @@ void main() {
       // Act
       final result = await configFetcher.fetchConfig(Flavor.development);
 
-      // Assert
+      // Assert: config replaced, but gateway choices that differ from the
+      // previous defaults are deliberate user choices and are preserved.
       expect(result.configVersion, 2);
       expect(result.stripePublishableKey, 'new-key');
-      verify(() => localStore.putString('config', newConfigString)).called(1);
+      expect(result.arweaveGatewayUrl, 'old-gateway');
+      expect(result.arweaveGatewayForDataRequest.url, 'old');
+      verify(() => localStore.putString('config', any())).called(1);
+    });
+
+    test(
+        'version bump replaces gateways that still match the previous '
+        'defaults', () async {
+      final oldConfig = AppConfig(
+        configVersion: 1,
+        stripePublishableKey: 'old-key',
+        allowedDataItemSizeForTurbo: 100,
+        // Previous defaults: the user never customized these.
+        arweaveGatewayUrl: 'https://ardrive.net',
+        arweaveGatewayForDataRequest: const SelectedGateway(
+          label: 'Turbo Gateway',
+          url: 'https://turbo-gateway.com',
+        ),
+      );
+      when(() => localStore.getString('config'))
+          .thenReturn(json.encode(oldConfig.toJson()));
+      when(() => assetBundle.loadString(any()))
+          .thenAnswer((_) async => newConfigString);
+      when(() => localStore.putString('config', any()))
+          .thenAnswer((_) async => true);
+
+      final result = await configFetcher.fetchConfig(Flavor.development);
+
+      expect(result.arweaveGatewayUrl, 'new-gateway');
+      expect(result.arweaveGatewayForDataRequest.url, 'new');
     });
 
     test(
