@@ -305,7 +305,7 @@ void main() {
 
     test('null data with no errors throws', () async {
       final retry = ScriptedGraphQLRetry((call) async {
-        return GraphQLResponse(data: null);
+        return const GraphQLResponse(data: null);
       });
 
       await expectLater(
