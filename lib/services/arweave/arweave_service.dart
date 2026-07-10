@@ -353,6 +353,12 @@ class ArweaveService {
     return (activeDriveIds: activeDriveIds, isComplete: isComplete);
   }
 
+  /// Owners whose drive-history queries the primary GraphQL endpoint could
+  /// not serve this session (e.g. indexer scan limits for very large
+  /// owners). Shared across strategy instances so the probing cost is paid
+  /// once per owner, not once per drive.
+  final Set<String> _gqlOwnersPreferringFallback = <String>{};
+
   Stream<List<DriveEntityHistoryTransactionModel>>
       getSegmentedTransactionsFromDrive(
     String driveId, {
@@ -364,6 +370,8 @@ class ArweaveService {
     strategy ??=
         GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy(
       graphQLRetry,
+      pageSize: _configService.config.driveHistoryGqlPageSize,
+      ownersPreferringFallback: _gqlOwnersPreferringFallback,
     );
 
     logger.d(

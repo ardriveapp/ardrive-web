@@ -28,6 +28,14 @@ class AppConfig {
   final String? solanaAntProgramId;
   final int maxConcurrentDataFetches;
 
+  /// Maximum number of drives synced concurrently during a full sync.
+  final int maxConcurrentDriveSyncs;
+
+  /// Page size for drive-history GraphQL pagination on the primary gateway.
+  /// The fallback endpoint is always queried at 100 regardless (it clamps
+  /// larger pages while misreporting hasNextPage).
+  final int driveHistoryGqlPageSize;
+
   AppConfig({
     this.arweaveGatewayUrl,
     this.arweaveGatewayForDataRequest = const SelectedGateway(
@@ -51,6 +59,8 @@ class AppConfig {
     this.solanaArnsProgramId,
     this.solanaAntProgramId,
     this.maxConcurrentDataFetches = 5,
+    this.maxConcurrentDriveSyncs = 5,
+    this.driveHistoryGqlPageSize = 1000,
   });
 
   AppConfig copyWith({
@@ -73,6 +83,8 @@ class AppConfig {
     String? solanaArnsProgramId,
     String? solanaAntProgramId,
     int? maxConcurrentDataFetches,
+    int? maxConcurrentDriveSyncs,
+    int? driveHistoryGqlPageSize,
   }) {
     return AppConfig(
       arweaveGatewayUrl:
@@ -102,6 +114,10 @@ class AppConfig {
       solanaAntProgramId: solanaAntProgramId ?? this.solanaAntProgramId,
       maxConcurrentDataFetches:
           maxConcurrentDataFetches ?? this.maxConcurrentDataFetches,
+      maxConcurrentDriveSyncs:
+          maxConcurrentDriveSyncs ?? this.maxConcurrentDriveSyncs,
+      driveHistoryGqlPageSize:
+          driveHistoryGqlPageSize ?? this.driveHistoryGqlPageSize,
     );
   }
 

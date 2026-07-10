@@ -19,14 +19,44 @@ abstract class GetSegmentedTransactionFromDriveStrategy {
   });
 }
 
+/// Page size used on the fallback GraphQL endpoint and as the safe
+/// downshift size. Goldsky (the fallback) caps pages at 100 and, when asked
+/// for more, silently clamps to 100 while falsely reporting
+/// `hasNextPage: false` — so requests above 100 must never reach it.
+const kFallbackGqlPageSize = 100;
+
+/// Attempts per page while probing the primary endpoint at a large page
+/// size. Failures here are usually deterministic (indexer scan limits), so
+/// retrying many times only delays the downshift.
+const _primaryPhaseMaxAttempts = 2;
+
 /// Gets the transactions from the drive, without any `Entity-Type` filtering,
 /// returning all the transactions ordered by block height.
+///
+/// Pagination is endpoint-sticky and runs as a three-phase ladder:
+///   A. primary endpoint at [pageSize] (large pages, fast path)
+///   B. primary endpoint at [kFallbackGqlPageSize] (rules out failures
+///      specific to large pages, e.g. indexer row-scan limits)
+///   C. fallback endpoint at [kFallbackGqlPageSize]
+/// A phase restarts the range from the beginning; [_seen-id] deduplication
+/// makes the restart safe for consumers. Cursors are never reused across
+/// endpoints (they are gateway-specific opaque values), and the fallback is
+/// never asked for more than 100 items per page.
+///
+/// Owners recorded in [ownersPreferringFallback] skip phases A/B for the
+/// rest of the session, so a wallet whose data the primary indexer cannot
+/// serve pays the probing cost once instead of once per drive.
 class GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy
     implements GetSegmentedTransactionFromDriveStrategy {
   final GraphQLRetry _graphQLRetry;
+  final int pageSize;
+  final Set<String> ownersPreferringFallback;
 
-  const GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy(
-      this._graphQLRetry);
+  GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy(
+    this._graphQLRetry, {
+    this.pageSize = kFallbackGqlPageSize,
+    Set<String>? ownersPreferringFallback,
+  }) : ownersPreferringFallback = ownersPreferringFallback ?? <String>{};
 
   @override
   Stream<List<DriveEntityHistoryTransactionModel>>
@@ -36,26 +66,83 @@ class GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy
     int? minBlockHeight,
     int? maxBlockHeight,
   }) async* {
-    yield* _getSegmentedTransactionWithoutFilter(
+    final seenTxIds = <String>{};
+
+    if (!ownersPreferringFallback.contains(ownerAddress)) {
+      // Phase A: primary endpoint at the configured page size.
+      try {
+        yield* _paginate(
+          driveId: driveId,
+          ownerAddress: ownerAddress,
+          minBlockHeight: minBlockHeight,
+          maxBlockHeight: maxBlockHeight,
+          pageSize: pageSize,
+          useFallbackEndpoint: false,
+          maxAttempts: _primaryPhaseMaxAttempts,
+          seenTxIds: seenTxIds,
+        );
+        return;
+      } catch (e) {
+        logger.w('Drive history pagination failed on primary endpoint at '
+            'page size $pageSize for drive $driveId: $e');
+      }
+
+      // Phase B: primary endpoint at the safe page size (only meaningful
+      // when phase A used a larger one).
+      if (pageSize > kFallbackGqlPageSize) {
+        try {
+          yield* _paginate(
+            driveId: driveId,
+            ownerAddress: ownerAddress,
+            minBlockHeight: minBlockHeight,
+            maxBlockHeight: maxBlockHeight,
+            pageSize: kFallbackGqlPageSize,
+            useFallbackEndpoint: false,
+            maxAttempts: _primaryPhaseMaxAttempts,
+            seenTxIds: seenTxIds,
+          );
+          return;
+        } catch (e) {
+          logger.w('Drive history pagination failed on primary endpoint at '
+              'page size $kFallbackGqlPageSize for drive $driveId: $e');
+        }
+      }
+
+      logger.w('Primary GraphQL endpoint cannot serve drive history for '
+          'owner $ownerAddress; using fallback for the rest of this session');
+      ownersPreferringFallback.add(ownerAddress);
+    }
+
+    // Phase C: fallback endpoint at the safe page size. Errors here
+    // propagate: the drive is reported failed through the existing sync
+    // error flow instead of being silently truncated.
+    yield* _paginate(
       driveId: driveId,
       ownerAddress: ownerAddress,
-      graphQLRetry: _graphQLRetry,
-      maxBlockHeight: maxBlockHeight,
       minBlockHeight: minBlockHeight,
+      maxBlockHeight: maxBlockHeight,
+      pageSize: kFallbackGqlPageSize,
+      useFallbackEndpoint: true,
+      maxAttempts: 3,
+      seenTxIds: seenTxIds,
     );
   }
 
-  Stream<List<DriveEntityHistoryTransactionModel>>
-      _getSegmentedTransactionWithoutFilter({
+  Stream<List<DriveEntityHistoryTransactionModel>> _paginate({
     required String driveId,
     required String ownerAddress,
     int? minBlockHeight,
     int? maxBlockHeight,
-    required GraphQLRetry graphQLRetry,
+    required int pageSize,
+    required bool useFallbackEndpoint,
+    required int maxAttempts,
+    required Set<String> seenTxIds,
   }) async* {
     String? cursor;
+    var effectivePageSize = pageSize;
+
     while (true) {
-      final queryResult = await graphQLRetry.execute(
+      final queryResult = await _graphQLRetry.execute(
         DriveEntityHistoryWithoutEntityTypeFilterQuery(
           variables: DriveEntityHistoryWithoutEntityTypeFilterArguments(
             driveId: driveId,
@@ -63,8 +150,12 @@ class GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy
             maxBlockHeight: maxBlockHeight,
             after: cursor,
             ownerAddress: ownerAddress,
+            pageSize: effectivePageSize,
           ),
         ),
+        maxAttempts: maxAttempts,
+        allowFallback: false,
+        useFallbackEndpoint: useFallbackEndpoint,
       );
 
       if (queryResult.data == null) {
@@ -72,16 +163,55 @@ class GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy
         break;
       }
 
-      final transactions = queryResult.data!.transactions.edges
+      final rawEdges = queryResult.data!.transactions.edges;
+
+      final transactions = rawEdges
+          .where((e) => !seenTxIds.contains(e.node.id))
+          .where((e) => _isSupportedArFSVersion(e.node))
           .map((e) => DriveEntityHistoryTransactionModel(
               transactionCommonMixin: e.node, cursor: e.cursor))
-          .where((edge) => _isSupportedArFSVersion(edge.transactionCommonMixin))
           .toList();
+
+      for (final t in transactions) {
+        seenTxIds.add(t.transactionCommonMixin.id);
+      }
+
       yield transactions;
 
-      cursor = transactions.isNotEmpty ? transactions.last.cursor : null;
+      var hasNextPage = queryResult.data!.transactions.pageInfo.hasNextPage;
 
-      if (!queryResult.data!.transactions.pageInfo.hasNextPage) {
+      // Clamp guard: we asked for more than 100 but received exactly a
+      // fallback-sized page with `hasNextPage: false`. Some gateways clamp
+      // silently AND misreport hasNextPage, which would truncate the drive.
+      // Downshift and fetch one verification page (same endpoint, so the
+      // cursor stays valid); a genuinely finished range just returns an
+      // empty page next.
+      if (!hasNextPage &&
+          effectivePageSize > kFallbackGqlPageSize &&
+          rawEdges.length >= kFallbackGqlPageSize) {
+        logger.w('Possible page-size clamp detected (requested '
+            '$effectivePageSize, received ${rawEdges.length}, hasNextPage '
+            'false); downshifting to $kFallbackGqlPageSize and verifying');
+        effectivePageSize = kFallbackGqlPageSize;
+        hasNextPage = true;
+      }
+
+      // Advance the cursor from the last RAW edge. Advancing from the
+      // filtered list would reset the cursor to null (restarting the range)
+      // whenever a page contains only unsupported-ArFS transactions.
+      if (rawEdges.isNotEmpty) {
+        cursor = rawEdges.last.cursor;
+      }
+
+      if (!hasNextPage) {
+        break;
+      }
+
+      if (rawEdges.isEmpty) {
+        // hasNextPage true with an empty page should not happen; break
+        // rather than loop forever against a misbehaving gateway.
+        logger.w('Empty page with hasNextPage=true for drive $driveId; '
+            'stopping pagination');
         break;
       }
     }
@@ -162,7 +292,9 @@ class GetSegmentedTransactionFromDriveFilteringByEntityTypeStrategy
         break;
       }
 
-      final transactions = queryResult.data!.transactions.edges
+      final rawEdges = queryResult.data!.transactions.edges;
+
+      final transactions = rawEdges
           .where((edge) => _isSupportedArFSVersion(edge.node))
           .map((e) => DriveEntityHistoryTransactionModel(
                 transactionCommonMixin: e.node,
@@ -172,9 +304,17 @@ class GetSegmentedTransactionFromDriveFilteringByEntityTypeStrategy
 
       yield transactions;
 
-      cursor = transactions.isNotEmpty ? transactions.last.cursor : null;
+      // Advance from the last RAW edge so a page of unsupported-ArFS
+      // transactions cannot reset the cursor and restart the range.
+      cursor = rawEdges.isNotEmpty ? rawEdges.last.cursor : cursor;
 
       if (!queryResult.data!.transactions.pageInfo.hasNextPage) {
+        break;
+      }
+
+      if (rawEdges.isEmpty) {
+        logger.w('Empty page with hasNextPage=true for drive $driveId; '
+            'stopping pagination');
         break;
       }
     }

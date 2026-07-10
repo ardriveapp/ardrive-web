@@ -28,11 +28,35 @@ class GraphQLRetry {
   final InternetChecker _internetChecker;
   final String _fallbackGraphqlUrl;
 
+  /// Executes [query] with retries.
+  ///
+  /// [allowFallback]: when true (default), a failed primary is retried once
+  /// against the fallback endpoint. Paginated callers using page sizes above
+  /// 100 or gateway-specific cursors must pass false and manage the fallback
+  /// themselves: cursors are opaque, endpoint-specific values, and the
+  /// fallback clamps pages above 100 while misreporting hasNextPage.
+  ///
+  /// [useFallbackEndpoint]: when true, the query is sent only to the
+  /// fallback endpoint. Used by endpoint-sticky pagination.
   Future<GraphQLResponse<T>> execute<T, U extends JsonSerializable>(
     GraphQLQuery<T, U> query, {
     Function(Exception e)? onRetry,
     int maxAttempts = 8,
+    bool allowFallback = true,
+    bool useFallbackEndpoint = false,
   }) async {
+    if (useFallbackEndpoint) {
+      final fallbackClient = ArtemisClient(_fallbackGraphqlUrl);
+      try {
+        return await _executeWithRetry(fallbackClient, query,
+            onRetry: onRetry, maxAttempts: maxAttempts);
+      } catch (fallbackError) {
+        throw await _terminalException(query, fallbackError);
+      } finally {
+        fallbackClient.dispose();
+      }
+    }
+
     // Try primary first
     try {
       return await _executeWithRetry(_client, query,
@@ -40,11 +64,12 @@ class GraphQLRetry {
     } catch (primaryError) {
       // If primary exhausted all retries, try fallback
       final errorStr = primaryError.toString();
-      if (errorStr.contains('429') ||
-          errorStr.contains('500') ||
-          errorStr.contains('502') ||
-          errorStr.contains('503') ||
-          errorStr.contains('504')) {
+      if (allowFallback &&
+          (errorStr.contains('429') ||
+              errorStr.contains('500') ||
+              errorStr.contains('502') ||
+              errorStr.contains('503') ||
+              errorStr.contains('504'))) {
         logger.w(
           'GraphQL primary exhausted retries, '
           'trying fallback: $_fallbackGraphqlUrl',
@@ -67,26 +92,34 @@ class GraphQLRetry {
         }
       }
 
-      // Primary failed (and fallback failed or wasn't attempted)
-      final isConnected = await _internetChecker.isConnected();
-
-      logger.e(
-        'Fatal error while querying: ${query.operationName}. '
-        'Number of retries exceeded',
-        primaryError,
-      );
-
-      if (!isConnected) {
-        throw NoConnectionException();
-      }
-
-      if (primaryError.toString().contains('FormatException')) {
-        throw GraphQLException(
-            const FormatException('Returned data is not a valid JSON.'));
-      }
-
-      throw GraphQLException(primaryError);
+      throw await _terminalException(query, primaryError);
     }
+  }
+
+  /// Builds the terminal exception for an exhausted query, matching the
+  /// original error-classification behavior.
+  Future<Exception> _terminalException<T, U extends JsonSerializable>(
+    GraphQLQuery<T, U> query,
+    Object error,
+  ) async {
+    final isConnected = await _internetChecker.isConnected();
+
+    logger.e(
+      'Fatal error while querying: ${query.operationName}. '
+      'Number of retries exceeded',
+      error,
+    );
+
+    if (!isConnected) {
+      return NoConnectionException();
+    }
+
+    if (error.toString().contains('FormatException')) {
+      return GraphQLException(
+          const FormatException('Returned data is not a valid JSON.'));
+    }
+
+    return GraphQLException(error);
   }
 
   Future<GraphQLResponse<T>> _executeWithRetry<T, U extends JsonSerializable>(

@@ -411,7 +411,7 @@ class _SyncRepository implements SyncRepository {
     bool wasCancelled = false;
 
     // Start the async work but don't wait for it yet. Drives are synced
-    // through a bounded worker pool (kMaxConcurrentDriveSyncs at a time) so
+    // through a bounded worker pool (config.maxConcurrentDriveSyncs at a time) so
     // large accounts don't fan out one full sync pipeline per drive at once;
     // like Future.wait(eagerError: false), all drives are processed even if
     // some fail.
@@ -498,7 +498,7 @@ class _SyncRepository implements SyncRepository {
 
     runBoundedWorkers(
       tasks: driveSyncTasks,
-      maxConcurrent: kMaxConcurrentDriveSyncs,
+      maxConcurrent: _configService.config.maxConcurrentDriveSyncs.clamp(1, 64),
     ).then((_) async {
       try {
         // If sync was cancelled during drive sync, add error to stream
