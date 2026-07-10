@@ -180,10 +180,13 @@ void main() {
       // Act
       final result = await configFetcher.fetchConfig(Flavor.development);
 
-      // Assert
+      // Assert: replaced, but custom gateway choices are preserved (they
+      // differ from the previous defaults).
       expect(result.configVersion, 2);
       expect(result.stripePublishableKey, 'new-key');
-      verify(() => localStore.putString('config', newConfigString)).called(1);
+      expect(result.arweaveGatewayUrl, 'old-gateway');
+      expect(result.arweaveGatewayForDataRequest.url, 'old');
+      verify(() => localStore.putString('config', any())).called(1);
     });
 
     test('replaces local config with asset config if local config is malformed',
