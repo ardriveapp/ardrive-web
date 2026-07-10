@@ -31,6 +31,12 @@ const kFallbackGqlPageSize = 100;
 /// retrying many times only delays the downshift.
 const _primaryPhaseMaxAttempts = 2;
 
+/// Smallest page size any known gateway clamps to. A final page smaller than
+/// this cannot be a silent clamp (gateways clamp to their page-size limit,
+/// e.g. 100 on Goldsky or 10 on some forks — never below), so it needs no
+/// verification page. Keeps warm syncs of small drives at one request.
+const _minPlausibleClampSize = 10;
+
 /// Gets the transactions from the drive, without any `Entity-Type` filtering,
 /// returning all the transactions ordered by block height.
 ///
@@ -204,11 +210,11 @@ class GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy
       // empty page next.
       if (!hasNextPage &&
           effectivePageSize > kFallbackGqlPageSize &&
-          rawEdges.isNotEmpty) {
-        // Cost: one extra (usually empty) page per drive fetch. Gateways may
-        // clamp to ANY smaller size (Goldsky: 100; some forks: 10) while
-        // falsely reporting hasNextPage=false, so every non-empty final page
-        // of an oversized request gets one verification page.
+          rawEdges.length >= _minPlausibleClampSize) {
+        // A full-looking final page of an oversized request may be a silent
+        // clamp (Goldsky: 100; some forks: 10) with a false hasNextPage, so
+        // it gets one verification page. Tails smaller than any plausible
+        // clamp size are genuine and skip the extra request.
         logger.d('Verifying end of range (requested $effectivePageSize, '
             'received ${rawEdges.length}, hasNextPage false)');
         effectivePageSize = kFallbackGqlPageSize;

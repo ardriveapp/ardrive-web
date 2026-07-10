@@ -33,7 +33,7 @@ AppConfig _$AppConfigFromJson(Map<String, dynamic> json) => AppConfig(
       solanaArnsProgramId: json['solanaArnsProgramId'] as String?,
       solanaAntProgramId: json['solanaAntProgramId'] as String?,
       maxConcurrentDataFetches: json['maxConcurrentDataFetches'] as int? ?? 5,
-      maxConcurrentDriveSyncs: json['maxConcurrentDriveSyncs'] as int? ?? 5,
+      maxConcurrentDriveSyncs: json['maxConcurrentDriveSyncs'] as int? ?? 15,
       driveHistoryGqlPageSize:
           json['driveHistoryGqlPageSize'] as int? ?? 1000,
     );

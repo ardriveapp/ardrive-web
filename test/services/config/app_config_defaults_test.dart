@@ -14,7 +14,7 @@ void main() {
         'stripePublishableKey': '',
       });
 
-      expect(config.maxConcurrentDriveSyncs, 5);
+      expect(config.maxConcurrentDriveSyncs, 15);
       expect(config.driveHistoryGqlPageSize, 1000);
     });
 

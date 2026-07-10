@@ -59,7 +59,7 @@ class AppConfig {
     this.solanaArnsProgramId,
     this.solanaAntProgramId,
     this.maxConcurrentDataFetches = 5,
-    this.maxConcurrentDriveSyncs = 5,
+    this.maxConcurrentDriveSyncs = 15,
     this.driveHistoryGqlPageSize = 1000,
   });
 

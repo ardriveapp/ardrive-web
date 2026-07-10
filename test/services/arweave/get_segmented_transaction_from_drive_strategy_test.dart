@@ -122,24 +122,18 @@ void main() {
         if (call.after == null) {
           return page(['tx-1', 'tx-2'], hasNextPage: true);
         }
-        if (call.after == 'cursor-tx-2') {
-          return page(['tx-3'], hasNextPage: false);
-        }
-        // End-of-range verification page (every non-empty final page of an
-        // oversized request gets one).
-        expect(call.after, 'cursor-tx-3');
-        return page([], hasNextPage: false);
+        // A 1-edge tail is smaller than any plausible clamp size, so no
+        // verification page is issued.
+        expect(call.after, 'cursor-tx-2');
+        return page(['tx-3'], hasNextPage: false);
       });
 
       final ids = await collectIds(run(retry));
 
       expect(ids, ['tx-1', 'tx-2', 'tx-3']);
-      expect(retry.calls, hasLength(3));
-      expect(retry.calls[0].pageSize, 1000);
-      expect(retry.calls[1].pageSize, 1000);
-      expect(retry.calls[2].pageSize, kFallbackGqlPageSize,
-          reason: 'verification page runs at the safe page size');
+      expect(retry.calls, hasLength(2));
       for (final call in retry.calls) {
+        expect(call.pageSize, 1000);
         expect(call.allowFallback, isFalse);
         expect(call.useFallbackEndpoint, isFalse);
       }
@@ -154,16 +148,14 @@ void main() {
               hasNextPage: true, arfsVersion: '9.99');
         }
         // Cursor must come from raw edges, not the (empty) filtered list.
-        if (call.after == 'cursor-tx-old-2') {
-          return page(['tx-3'], hasNextPage: false);
-        }
-        expect(call.after, 'cursor-tx-3');
-        return page([], hasNextPage: false);
+        expect(call.after, 'cursor-tx-old-2');
+        return page(['tx-3'], hasNextPage: false);
       });
 
       final ids = await collectIds(run(retry));
 
       expect(ids, ['tx-3']);
+      expect(retry.calls, hasLength(2));
     });
   });
 
@@ -186,6 +178,19 @@ void main() {
 
       expect(ids, hasLength(101), reason: 'clamped tail must be recovered');
       expect(retry.calls, hasLength(2));
+    });
+
+    test('a tail smaller than any plausible clamp skips verification',
+        () async {
+      final retry = ScriptedGraphQLRetry((call) async {
+        return page(['tx-1', 'tx-2', 'tx-3'], hasNextPage: false);
+      });
+
+      final ids = await collectIds(run(retry));
+
+      expect(ids, hasLength(3));
+      expect(retry.calls, hasLength(1),
+          reason: 'no gateway clamps below 10; 3 edges is a genuine tail');
     });
 
     test('catches gateways that clamp below 100 as well', () async {
