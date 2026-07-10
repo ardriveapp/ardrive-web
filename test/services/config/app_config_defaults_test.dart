@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -24,7 +26,11 @@ void main() {
         driveHistoryGqlPageSize: 500,
       );
 
-      final restored = AppConfig.fromJson(config.toJson());
+      // Round-trip through a real encode/decode cycle: AppConfig's toJson
+      // embeds SelectedGateway as an object (no explicitToJson), which only
+      // becomes a map through jsonEncode — matching how configs are stored.
+      final restored = AppConfig.fromJson(
+          json.decode(json.encode(config)) as Map<String, dynamic>);
 
       expect(restored.maxConcurrentDriveSyncs, 8);
       expect(restored.driveHistoryGqlPageSize, 500);

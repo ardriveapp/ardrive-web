@@ -70,8 +70,11 @@ class GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy
 
     if (!ownersPreferringFallback.contains(ownerAddress)) {
       // Phase A: primary endpoint at the configured page size.
+      // NOTE: phases re-yield via await-for instead of yield*: errors from a
+      // yield*'d stream are forwarded to the listener as stream events and
+      // BYPASS a surrounding try/catch, which would defeat the ladder.
       try {
-        yield* _paginate(
+        await for (final batch in _paginate(
           driveId: driveId,
           ownerAddress: ownerAddress,
           minBlockHeight: minBlockHeight,
@@ -80,7 +83,9 @@ class GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy
           useFallbackEndpoint: false,
           maxAttempts: _primaryPhaseMaxAttempts,
           seenTxIds: seenTxIds,
-        );
+        )) {
+          yield batch;
+        }
         return;
       } catch (e) {
         logger.w('Drive history pagination failed on primary endpoint at '
@@ -91,7 +96,7 @@ class GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy
       // when phase A used a larger one).
       if (pageSize > kFallbackGqlPageSize) {
         try {
-          yield* _paginate(
+          await for (final batch in _paginate(
             driveId: driveId,
             ownerAddress: ownerAddress,
             minBlockHeight: minBlockHeight,
@@ -100,7 +105,9 @@ class GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy
             useFallbackEndpoint: false,
             maxAttempts: _primaryPhaseMaxAttempts,
             seenTxIds: seenTxIds,
-          );
+          )) {
+            yield batch;
+          }
           return;
         } catch (e) {
           logger.w('Drive history pagination failed on primary endpoint at '
