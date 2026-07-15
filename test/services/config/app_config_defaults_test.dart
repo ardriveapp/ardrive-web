@@ -14,7 +14,7 @@ void main() {
         'stripePublishableKey': '',
       });
 
-      expect(config.maxConcurrentDriveSyncs, 15);
+      expect(config.maxConcurrentDriveSyncs, 50);
     });
 
     test('round-trips through toJson/fromJson', () {

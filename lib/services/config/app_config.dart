@@ -55,7 +55,7 @@ class AppConfig {
     this.solanaArnsProgramId,
     this.solanaAntProgramId,
     this.maxConcurrentDataFetches = 5,
-    this.maxConcurrentDriveSyncs = 15,
+    this.maxConcurrentDriveSyncs = 50,
   });
 
   AppConfig copyWith({
