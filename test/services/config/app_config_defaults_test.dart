@@ -15,7 +15,7 @@ void main() {
       });
 
       expect(config.maxConcurrentDriveSyncs, 15);
-      expect(config.driveHistoryGqlPageSize, 1000);
+      expect(config.driveHistoryGqlPageSize, 100);
     });
 
     test('round-trips through toJson/fromJson', () {

@@ -60,7 +60,7 @@ class AppConfig {
     this.solanaAntProgramId,
     this.maxConcurrentDataFetches = 5,
     this.maxConcurrentDriveSyncs = 15,
-    this.driveHistoryGqlPageSize = 1000,
+    this.driveHistoryGqlPageSize = 100,
   });
 
   AppConfig copyWith({

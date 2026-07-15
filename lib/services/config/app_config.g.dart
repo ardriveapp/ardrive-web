@@ -35,7 +35,7 @@ AppConfig _$AppConfigFromJson(Map<String, dynamic> json) => AppConfig(
       maxConcurrentDataFetches: json['maxConcurrentDataFetches'] as int? ?? 5,
       maxConcurrentDriveSyncs: json['maxConcurrentDriveSyncs'] as int? ?? 15,
       driveHistoryGqlPageSize:
-          json['driveHistoryGqlPageSize'] as int? ?? 1000,
+          json['driveHistoryGqlPageSize'] as int? ?? 100,
     );
 
 Map<String, dynamic> _$AppConfigToJson(AppConfig instance) => <String, dynamic>{

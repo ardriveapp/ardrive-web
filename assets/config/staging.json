@@ -14,5 +14,5 @@
   "uploadThumbnails": true,
   "autoSync": false,
   "maxConcurrentDriveSyncs": 15,
-  "driveHistoryGqlPageSize": 1000
+  "driveHistoryGqlPageSize": 100
 }
