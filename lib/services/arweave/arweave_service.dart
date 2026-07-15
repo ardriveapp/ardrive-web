@@ -172,6 +172,9 @@ class ArweaveService {
     _cachedUserDriveTxsAddress = null;
     _cachedUserDriveTxs = null;
     _cachedEntityDataBytes.clear();
+    // Sync-scoped, not session-scoped: an owner pushed to the fallback by a
+    // transient primary outage gets the primary again on the next sync.
+    _gqlOwnersPreferringFallback.clear();
   }
 
   /// Returns the onchain balance of the specified address.

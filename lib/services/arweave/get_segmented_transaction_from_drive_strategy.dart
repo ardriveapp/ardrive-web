@@ -26,10 +26,16 @@ abstract class GetSegmentedTransactionFromDriveStrategy {
 /// `hasNextPage: false` — so requests above 100 must never reach it.
 const kFallbackGqlPageSize = 100;
 
-/// Attempts per page while probing the primary endpoint at a large page
-/// size. Failures here are usually deterministic (indexer scan limits), so
-/// retrying many times only delays the downshift.
-const _primaryPhaseMaxAttempts = 2;
+/// Attempts per page while probing the primary endpoint at a page size
+/// above the safe fallback size. Failures there are usually deterministic
+/// (indexer scan limits), so retrying many times only delays the downshift.
+const _oversizedPhaseMaxAttempts = 2;
+
+/// Attempts per page on the primary endpoint at the safe page size. Failures
+/// at <=100 are overwhelmingly transient (network blips, brief gateway
+/// hiccups), so this matches the pre-ladder retry budget: a short outage is
+/// ridden out with backoff instead of failing over to the fallback index.
+const _standardPhaseMaxAttempts = 8;
 
 /// Smallest page size any known gateway clamps to. A final page smaller than
 /// this cannot be a silent clamp (gateways clamp to their page-size limit,
@@ -88,7 +94,9 @@ class GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy
           maxBlockHeight: maxBlockHeight,
           pageSize: pageSize,
           useFallbackEndpoint: false,
-          maxAttempts: _primaryPhaseMaxAttempts,
+          maxAttempts: pageSize > kFallbackGqlPageSize
+              ? _oversizedPhaseMaxAttempts
+              : _standardPhaseMaxAttempts,
           seenTxIds: seenTxIds,
         )) {
           yield batch;
@@ -112,7 +120,7 @@ class GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy
             maxBlockHeight: maxBlockHeight,
             pageSize: kFallbackGqlPageSize,
             useFallbackEndpoint: false,
-            maxAttempts: _primaryPhaseMaxAttempts,
+            maxAttempts: _standardPhaseMaxAttempts,
             seenTxIds: seenTxIds,
           )) {
             yield batch;

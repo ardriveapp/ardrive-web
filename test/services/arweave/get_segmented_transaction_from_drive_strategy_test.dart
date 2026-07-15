@@ -136,6 +136,8 @@ void main() {
         expect(call.pageSize, 1000);
         expect(call.allowFallback, isFalse);
         expect(call.useFallbackEndpoint, isFalse);
+        expect(call.maxAttempts, 2,
+            reason: 'oversized pages fail fast to the downshift');
       }
     });
 
@@ -337,6 +339,9 @@ void main() {
 
       expect(ids, ['tx-1']);
       expect(primaryCalls, 1, reason: 'phase B is redundant at 100');
+      expect(retry.calls.first.maxAttempts, 8,
+          reason: 'transient failures at the safe page size get the full '
+              'pre-ladder retry budget before failing over');
     });
   });
 }
