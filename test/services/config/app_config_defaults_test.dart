@@ -15,7 +15,6 @@ void main() {
       });
 
       expect(config.maxConcurrentDriveSyncs, 15);
-      expect(config.driveHistoryGqlPageSize, 100);
     });
 
     test('round-trips through toJson/fromJson', () {
@@ -23,7 +22,6 @@ void main() {
         allowedDataItemSizeForTurbo: 100000,
         stripePublishableKey: '',
         maxConcurrentDriveSyncs: 8,
-        driveHistoryGqlPageSize: 500,
       );
 
       // Round-trip through a real encode/decode cycle: AppConfig's toJson
@@ -33,7 +31,6 @@ void main() {
           json.decode(json.encode(config)) as Map<String, dynamic>);
 
       expect(restored.maxConcurrentDriveSyncs, 8);
-      expect(restored.driveHistoryGqlPageSize, 500);
     });
   });
 }

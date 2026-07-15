@@ -4,11 +4,10 @@ query DriveEntityHistoryWithoutEntityTypeFilter(
   $minBlockHeight: Int
   $maxBlockHeight: Int
   $ownerAddress: String!
-  $pageSize: Int
 ) {
   transactions(
     owners: [$ownerAddress]
-    first: $pageSize
+    first: 100
     sort: HEIGHT_ASC
     tags: [
       { name: "Drive-Id", values: [$driveId] }

@@ -118,8 +118,6 @@ class ArweaveService {
   /// Data requests (GET /tx/{id}/data, wallet balance, etc.) continue using
   /// the configured arweaveGatewayForDataRequest.
   void updateGraphQLEndpoint(String gatewayUrl) {
-    // The old endpoint's capabilities no longer apply.
-    _gqlOwnersPreferringFallback.clear();
     final previousClient = _gql;
     final graphqlUrl = _graphqlUrlFromGateway(gatewayUrl);
     _gql = ArtemisClient(graphqlUrl);
@@ -172,9 +170,6 @@ class ArweaveService {
     _cachedUserDriveTxsAddress = null;
     _cachedUserDriveTxs = null;
     _cachedEntityDataBytes.clear();
-    // Sync-scoped, not session-scoped: an owner pushed to the fallback by a
-    // transient primary outage gets the primary again on the next sync.
-    _gqlOwnersPreferringFallback.clear();
   }
 
   /// Returns the onchain balance of the specified address.
@@ -358,12 +353,6 @@ class ArweaveService {
     return (activeDriveIds: activeDriveIds, isComplete: isComplete);
   }
 
-  /// Owners whose drive-history queries the primary GraphQL endpoint could
-  /// not serve this session (e.g. indexer scan limits for very large
-  /// owners). Shared across strategy instances so the probing cost is paid
-  /// once per owner, not once per drive.
-  final Set<String> _gqlOwnersPreferringFallback = <String>{};
-
   Stream<List<DriveEntityHistoryTransactionModel>>
       getSegmentedTransactionsFromDrive(
     String driveId, {
@@ -375,8 +364,6 @@ class ArweaveService {
     strategy ??=
         GetSegmentedTransactionFromDriveWithoutEntityTypeFilterStrategy(
       graphQLRetry,
-      pageSize: _configService.config.driveHistoryGqlPageSize.clamp(1, 1000),
-      ownersPreferringFallback: _gqlOwnersPreferringFallback,
     );
 
     logger.d(
