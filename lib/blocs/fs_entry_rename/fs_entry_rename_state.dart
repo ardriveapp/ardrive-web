@@ -26,7 +26,10 @@ class FolderEntryRenameSuccess extends FsEntryRenameState {
 }
 
 class FolderEntryRenameFailure extends FsEntryRenameState {
-  const FolderEntryRenameFailure() : super(isRenamingFolder: true);
+  final bool isPaymentError;
+
+  const FolderEntryRenameFailure({this.isPaymentError = false})
+      : super(isRenamingFolder: true);
 }
 
 class EntityAlreadyExists extends FsEntryRenameState {
@@ -63,7 +66,10 @@ class FileEntryRenameSuccess extends FsEntryRenameState {
 }
 
 class FileEntryRenameFailure extends FsEntryRenameState {
-  const FileEntryRenameFailure() : super(isRenamingFolder: false);
+  final bool isPaymentError;
+
+  const FileEntryRenameFailure({this.isPaymentError = false})
+      : super(isRenamingFolder: false);
 }
 
 class FileEntryRenameWalletMismatch extends FsEntryRenameState {

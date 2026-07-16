@@ -66,7 +66,24 @@ none has payment UI):
 4. **Tests:** unit tests for error decoding; bloc tests for rename/move failure
    states; regression test that a 402 is not retried.
 
-## Phase 2 — Pool-aware eligibility (needs Turbo API contract)
+## DECISION (2026-07-15, after review with Turbo team)
+
+Phase 1 green-lit. The balance-endpoint remaining-free dependency and the
+dynamic pool meter are DROPPED: no pool tracking client-side. Instead:
+- **Static free-tier messaging** — when a post is rejected with 402, show a
+  static explanation ("free allowance is used up — add Credits") with the
+  top-up path. No live "X MiB remaining" anywhere.
+- **`maxItemBytes` from `GET /v1/info`** is kept as the server-driven
+  per-item eligibility threshold (implemented:
+  `TurboUploadService.maxFreeItemSizeBytes`, fetched once at construction,
+  config value as fallback). Follow-up: consume it in
+  `UploadPaymentEvaluator` in place of `allowedDataItemSizeForTurbo`.
+- Typed-402 handling everywhere (Phase 1) is the backbone of the UX.
+
+The original Phase 2/3 below is retained for reference but is NOT the
+current plan; only the pieces named above survive.
+
+## Phase 2 — Pool-aware eligibility (SUPERSEDED by decision above)
 
 **Server asks (blockers for this phase, not Phase 1):**
 - Remaining-free bytes (+ reset timestamp if any) on the existing balance

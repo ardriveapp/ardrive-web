@@ -95,6 +95,23 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
           } else if (state is FolderEntryRenameWalletMismatch ||
               state is FileEntryRenameWalletMismatch) {
             Navigator.pop(context);
+          } else if (state is FolderEntryRenameFailure ||
+              state is FileEntryRenameFailure) {
+            Navigator.pop(context); // dismiss the progress dialog
+            final isPaymentError =
+                (state is FolderEntryRenameFailure && state.isPaymentError) ||
+                    (state is FileEntryRenameFailure && state.isPaymentError);
+            showArDriveDialog(
+              context,
+              content: ArDriveStandardModalNew(
+                title: appLocalizationsOf(context).error,
+                description: isPaymentError
+                    ? 'Turbo\'s free allowance is used up, so this action '
+                        'now requires Credits. Add Credits and try again.'
+                    : 'Failed to rename. Please check your connection and '
+                        'try again.',
+              ),
+            );
           } else if (state is FsEntryRenameInitialized) {
             _nameController.text = widget.entryName;
           } else if (state is EntityAlreadyExists) {

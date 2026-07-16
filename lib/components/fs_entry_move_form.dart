@@ -62,6 +62,19 @@ class FsEntryMoveForm extends StatelessWidget {
           Navigator.pop(context);
         } else if (state is FsEntryMoveWalletMismatch) {
           Navigator.pop(context);
+        } else if (state is FsEntryMoveFailure) {
+          Navigator.pop(context); // dismiss the progress dialog
+          showArDriveDialog(
+            context,
+            content: ArDriveStandardModalNew(
+              title: appLocalizationsOf(context).error,
+              description: state.isPaymentError
+                  ? 'Turbo\'s free allowance is used up, so this action now '
+                      'requires Credits. Add Credits and try again.'
+                  : 'Failed to move the selected items. Please check your '
+                      'connection and try again.',
+            ),
+          );
         }
       },
       builder: (context, state) {
