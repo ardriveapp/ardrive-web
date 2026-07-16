@@ -172,6 +172,10 @@ class DontUseUploadService implements TurboUploadService {
   @override
   int get allowedDataItemSize => throw UnimplementedError();
 
+  // Same-library interface implementation includes private members.
+  @override
+  int? _serverMaxItemBytes;
+
   @override
   int get maxFreeItemSizeBytes => throw UnimplementedError();
 
