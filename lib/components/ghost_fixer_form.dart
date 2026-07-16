@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/blocs/ghost_fixer/ghost_fixer_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
@@ -71,6 +72,20 @@ class _GhostFixerFormState extends State<GhostFixerForm> {
             widget.driveDetailCubit.refreshDriveDataTable();
           } else if (state is GhostFixerWalletMismatch) {
             Navigator.pop(context);
+          } else if (state is GhostFixerFailure) {
+            Navigator.pop(context);
+            if (state.isPaymentError) {
+              showTurboPaymentRequiredDialog(context);
+            } else {
+              showArDriveDialog(
+                context,
+                content: ArDriveStandardModalNew(
+                  title: appLocalizationsOf(context).error,
+                  description: 'Failed to recreate the folder. Please check '
+                      'your connection and try again.',
+                ),
+              );
+            }
           } else if (state is GhostFixerNameConflict) {
             showStandardDialog(
               context,

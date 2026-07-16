@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
+import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/blocs/pin_file/pin_file_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
@@ -68,14 +69,19 @@ class PinFileDialog extends StatelessWidget {
         if (state is PinFileAbort || state is PinFileSuccess) {
           Navigator.of(context).pop();
         } else if (state is PinFileError) {
-          showArDriveDialog(
-            context,
-            content: _errorDialog(
+          if (state.isPaymentError) {
+            Navigator.of(context).pop(); // close the pin dialog
+            showTurboPaymentRequiredDialog(context);
+          } else {
+            showArDriveDialog(
               context,
-              errorText: appLocalizationsOf(context).pinFailedToUpload,
-              doublePop: true,
-            ),
-          );
+              content: _errorDialog(
+                context,
+                errorText: appLocalizationsOf(context).pinFailedToUpload,
+                doublePop: true,
+              ),
+            );
+          }
         } else if (state is PinFileFieldsValidationError) {
           if (state.networkError) {
             showArDriveDialog(

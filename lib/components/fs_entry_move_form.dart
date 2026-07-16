@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
@@ -64,17 +65,18 @@ class FsEntryMoveForm extends StatelessWidget {
           Navigator.pop(context);
         } else if (state is FsEntryMoveFailure) {
           Navigator.pop(context); // dismiss the progress dialog
-          showArDriveDialog(
-            context,
-            content: ArDriveStandardModalNew(
-              title: appLocalizationsOf(context).error,
-              description: state.isPaymentError
-                  ? 'Turbo\'s free allowance is used up, so this action now '
-                      'requires Credits. Add Credits and try again.'
-                  : 'Failed to move the selected items. Please check your '
-                      'connection and try again.',
-            ),
-          );
+          if (state.isPaymentError) {
+            showTurboPaymentRequiredDialog(context);
+          } else {
+            showArDriveDialog(
+              context,
+              content: ArDriveStandardModalNew(
+                title: appLocalizationsOf(context).error,
+                description: 'Failed to move the selected items. Please '
+                    'check your connection and try again.',
+              ),
+            );
+          }
         }
       },
       builder: (context, state) {

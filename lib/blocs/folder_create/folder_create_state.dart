@@ -12,7 +12,10 @@ class FolderCreateInProgress extends FolderCreateState {}
 
 class FolderCreateSuccess extends FolderCreateState {}
 
-class FolderCreateFailure extends FolderCreateState {}
+class FolderCreateFailure extends FolderCreateState {
+  final bool isPaymentError;
+  FolderCreateFailure({this.isPaymentError = false});
+}
 
 class FolderCreateWalletMismatch extends FolderCreateState {}
 

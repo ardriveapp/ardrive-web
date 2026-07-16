@@ -51,11 +51,13 @@ class DriveCreateSuccess extends DriveCreateState {
 }
 
 class DriveCreateFailure extends DriveCreateState {
-  const DriveCreateFailure({required super.privacy});
+  final bool isPaymentError;
+  const DriveCreateFailure({required super.privacy, this.isPaymentError = false});
 
   @override
   DriveCreateFailure copyWith({DrivePrivacy? privacy}) {
-    return DriveCreateFailure(privacy: privacy ?? this.privacy);
+    return DriveCreateFailure(
+        privacy: privacy ?? this.privacy, isPaymentError: isPaymentError);
   }
 }
 

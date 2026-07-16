@@ -36,7 +36,8 @@ class FsEntryLicenseSuccess extends FsEntryLicenseState {
 }
 
 class FsEntryLicenseFailure extends FsEntryLicenseState {
-  const FsEntryLicenseFailure() : super();
+  final bool isPaymentError;
+  const FsEntryLicenseFailure({this.isPaymentError = false}) : super();
 }
 
 class FsEntryLicenseComplete extends FsEntryLicenseState {

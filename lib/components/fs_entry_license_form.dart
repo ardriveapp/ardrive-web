@@ -569,15 +569,21 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                           const SizedBox(height: 16),
                           Flexible(
                             child: Text(
-                              // TODO: Localize
-                              'No dice.',
+                              state.isPaymentError
+                                  ? appLocalizationsOf(context)
+                                      .freeAllowanceUsedUpTitle
+                                  // TODO: Localize
+                                  : 'No dice.',
                               style: ArDriveTypography.headline.headline4Bold(),
                             ),
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            // TODO: Localize
-                            'Your attempted licensing failed, want to try again now?',
+                            state.isPaymentError
+                                ? appLocalizationsOf(context)
+                                    .freeAllowanceUsedUpDescription
+                                // TODO: Localize
+                                : 'Your attempted licensing failed, want to try again now?',
                             textAlign: TextAlign.center,
                             style: ArDriveTypography.body.buttonLargeRegular(
                               color: ArDriveTheme.of(context)

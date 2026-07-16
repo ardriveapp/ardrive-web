@@ -162,9 +162,10 @@ class FsEntryLicenseBloc
         licenseParams: licenseParams,
       );
       emit(const FsEntryLicenseSuccess());
-    } catch (_, trace) {
+    } catch (error, trace) {
       addError('Error licensing entities', trace);
-      emit(const FsEntryLicenseFailure());
+      emit(FsEntryLicenseFailure(
+          isPaymentError: isTurboPaymentError(error)));
     }
   }
 

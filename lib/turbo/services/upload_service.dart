@@ -153,6 +153,13 @@ class TurboUploadService {
   }
 }
 
+/// True when [error] indicates the upload service rejected an operation for
+/// payment reasons (free allowance exhausted / insufficient credits). Used by
+/// metadata-op blocs to choose payment-specific failure UX.
+bool isTurboPaymentError(Object? error) {
+  return error is TurboPaymentRequiredException;
+}
+
 /// Maps a turbo upload HTTP status code to a typed exception, or null for
 /// codes without special semantics.
 Exception? turboExceptionForStatusCode(int? statusCode) {

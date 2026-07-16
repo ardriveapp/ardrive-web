@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
+import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/blocs/hide/hide_bloc.dart';
 import 'package:ardrive/blocs/hide/hide_event.dart';
@@ -100,6 +101,9 @@ class HideDialog extends StatelessWidget {
   String _buildTitle(BuildContext context, HideState state) {
     final hideAction = state.hideAction;
     if (state is FailureHideState) {
+      if (state.isPaymentError) {
+        return appLocalizationsOf(context).freeAllowanceUsedUpTitle;
+      }
       switch (hideAction) {
         case HideAction.hideFile:
           return appLocalizationsOf(context).failedToHideFile;
@@ -134,6 +138,10 @@ class HideDialog extends StatelessWidget {
 
   Widget _buildContent(BuildContext context, HideState state) {
     if (state is FailureHideState) {
+      if (state.isPaymentError) {
+        return Text(
+            appLocalizationsOf(context).freeAllowanceUsedUpDescription);
+      }
       final hideAction = state.hideAction;
 
       switch (hideAction) {

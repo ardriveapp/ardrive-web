@@ -327,6 +327,7 @@ class UploadPaymentEvaluator {
   final ArDriveAuth _auth;
   final SizeUtils sizeUtils = SizeUtils();
   final AppConfig _appConfig;
+  final TurboUploadService? _turboUploadService;
 
   UploadPaymentEvaluator({
     required TurboBalanceRetriever turboBalanceRetriever,
@@ -335,11 +336,20 @@ class UploadPaymentEvaluator {
     required ArDriveAuth auth,
     required TurboUploadCostCalculator turboUploadCostCalculator,
     required AppConfig appConfig,
+    TurboUploadService? turboUploadService,
   })  : _turboBalanceRetriever = turboBalanceRetriever,
         _appConfig = appConfig,
         _uploadCostEstimateCalculatorForAR = uploadCostEstimateCalculatorForAR,
         _auth = auth,
+        _turboUploadService = turboUploadService,
         _turboUploadCostCalculator = turboUploadCostCalculator;
+
+  /// The maximum size, in bytes, of an item eligible for a free Turbo upload.
+  /// Prefers the server-reported value from GET /v1/info (via the upload
+  /// service); falls back to the config value when no service is wired.
+  int get _maxFreeItemBytes =>
+      _turboUploadService?.maxFreeItemSizeBytes ??
+      _appConfig.allowedDataItemSizeForTurbo;
 
   /// Even if this feature flag is off, it will be possible to upload using turbo
   /// for free files
@@ -376,7 +386,7 @@ class UploadPaymentEvaluator {
       arCostEstimate = UploadCostEstimate.zero();
     }
 
-    final allowedDataItemSizeForTurbo = _appConfig.allowedDataItemSizeForTurbo;
+    final allowedDataItemSizeForTurbo = _maxFreeItemBytes;
 
     bool isFreeUploadPossibleUsingTurbo =
         dataItem.getSize() <= allowedDataItemSizeForTurbo;
@@ -458,8 +468,7 @@ class UploadPaymentEvaluator {
     bool isFreeUploadPossibleUsingTurbo = false;
 
     if (isUploadEligibleToTurbo) {
-      final allowedDataItemSizeForTurbo =
-          _appConfig.allowedDataItemSizeForTurbo;
+      final allowedDataItemSizeForTurbo = _maxFreeItemBytes;
 
       isFreeUploadPossibleUsingTurbo =
           uploadPlanForTurbo.bundleUploadHandles.every(
@@ -479,7 +488,7 @@ class UploadPaymentEvaluator {
         : await _determineUploadMethod(
             turboBalance.balance,
             turboBundleSizes,
-            _appConfig.allowedDataItemSizeForTurbo,
+            _maxFreeItemBytes,
             _isTurboAvailableToUploadAllFiles,
           );
 

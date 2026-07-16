@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/components/progress_dialog.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
@@ -101,17 +102,18 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
             final isPaymentError =
                 (state is FolderEntryRenameFailure && state.isPaymentError) ||
                     (state is FileEntryRenameFailure && state.isPaymentError);
-            showArDriveDialog(
-              context,
-              content: ArDriveStandardModalNew(
-                title: appLocalizationsOf(context).error,
-                description: isPaymentError
-                    ? 'Turbo\'s free allowance is used up, so this action '
-                        'now requires Credits. Add Credits and try again.'
-                    : 'Failed to rename. Please check your connection and '
-                        'try again.',
-              ),
-            );
+            if (isPaymentError) {
+              showTurboPaymentRequiredDialog(context);
+            } else {
+              showArDriveDialog(
+                context,
+                content: ArDriveStandardModalNew(
+                  title: appLocalizationsOf(context).error,
+                  description: 'Failed to rename. Please check your '
+                      'connection and try again.',
+                ),
+              );
+            }
           } else if (state is FsEntryRenameInitialized) {
             _nameController.text = widget.entryName;
           } else if (state is EntityAlreadyExists) {

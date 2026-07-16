@@ -13,7 +13,10 @@ class DriveRenameInProgress extends DriveRenameState {}
 
 class DriveRenameSuccess extends DriveRenameState {}
 
-class DriveRenameFailure extends DriveRenameState {}
+class DriveRenameFailure extends DriveRenameState {
+  final bool isPaymentError;
+  DriveRenameFailure({this.isPaymentError = false});
+}
 
 class DriveRenameWalletMismatch extends DriveRenameState {}
 
