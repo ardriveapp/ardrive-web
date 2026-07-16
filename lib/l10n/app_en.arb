@@ -170,6 +170,10 @@
   },
   "buyCredits": "Buy Credits",
   "@buyCredits": {},
+  "actionFailedTryAgain": "Something went wrong. Please check your connection and try again.",
+  "@actionFailedTryAgain": {
+    "description": "Generic failure message for metadata operations (rename, move, create, etc.)"
+  },
   "freeAllowanceUsedUpTitle": "Free allowance used up",
   "@freeAllowanceUsedUpTitle": {
     "description": "Title of the dialog shown when a Turbo action is rejected because the free allowance is exhausted"

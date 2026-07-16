@@ -38,6 +38,9 @@ class FsEntryLicenseSuccess extends FsEntryLicenseState {
 class FsEntryLicenseFailure extends FsEntryLicenseState {
   final bool isPaymentError;
   const FsEntryLicenseFailure({this.isPaymentError = false}) : super();
+
+  @override
+  List<Object> get props => [isPaymentError];
 }
 
 class FsEntryLicenseComplete extends FsEntryLicenseState {

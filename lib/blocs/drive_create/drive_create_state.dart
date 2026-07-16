@@ -59,6 +59,9 @@ class DriveCreateFailure extends DriveCreateState {
     return DriveCreateFailure(
         privacy: privacy ?? this.privacy, isPaymentError: isPaymentError);
   }
+
+  @override
+  List<Object> get props => [privacy, isPaymentError];
 }
 
 class DriveCreateWalletMismatch extends DriveCreateState {

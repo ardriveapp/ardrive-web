@@ -30,6 +30,9 @@ class FolderEntryRenameFailure extends FsEntryRenameState {
 
   const FolderEntryRenameFailure({this.isPaymentError = false})
       : super(isRenamingFolder: true);
+
+  @override
+  List<Object> get props => [isRenamingFolder, isPaymentError];
 }
 
 class EntityAlreadyExists extends FsEntryRenameState {
@@ -70,6 +73,9 @@ class FileEntryRenameFailure extends FsEntryRenameState {
 
   const FileEntryRenameFailure({this.isPaymentError = false})
       : super(isRenamingFolder: false);
+
+  @override
+  List<Object> get props => [isRenamingFolder, isPaymentError];
 }
 
 class FileEntryRenameWalletMismatch extends FsEntryRenameState {

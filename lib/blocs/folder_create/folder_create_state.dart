@@ -15,6 +15,9 @@ class FolderCreateSuccess extends FolderCreateState {}
 class FolderCreateFailure extends FolderCreateState {
   final bool isPaymentError;
   FolderCreateFailure({this.isPaymentError = false});
+
+  @override
+  List<Object> get props => [isPaymentError];
 }
 
 class FolderCreateWalletMismatch extends FolderCreateState {}

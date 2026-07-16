@@ -72,8 +72,8 @@ class FsEntryMoveForm extends StatelessWidget {
               context,
               content: ArDriveStandardModalNew(
                 title: appLocalizationsOf(context).error,
-                description: 'Failed to move the selected items. Please '
-                    'check your connection and try again.',
+                description:
+                    appLocalizationsOf(context).actionFailedTryAgain,
               ),
             );
           }

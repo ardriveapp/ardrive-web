@@ -16,6 +16,9 @@ class DriveRenameSuccess extends DriveRenameState {}
 class DriveRenameFailure extends DriveRenameState {
   final bool isPaymentError;
   const DriveRenameFailure({this.isPaymentError = false});
+
+  @override
+  List<Object> get props => [isPaymentError];
 }
 
 class DriveRenameWalletMismatch extends DriveRenameState {}

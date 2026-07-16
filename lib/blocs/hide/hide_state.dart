@@ -71,6 +71,9 @@ class FailureHideState extends HideState {
     required super.hideAction,
     this.isPaymentError = false,
   });
+
+  @override
+  List<Object?> get props => [hideAction, isPaymentError];
 }
 
 enum HideAction {

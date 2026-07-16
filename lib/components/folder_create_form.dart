@@ -89,8 +89,8 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
                 context,
                 content: ArDriveStandardModalNew(
                   title: appLocalizationsOf(context).error,
-                  description: 'Failed to create the folder. Please check '
-                      'your connection and try again.',
+                  description:
+                      appLocalizationsOf(context).actionFailedTryAgain,
                 ),
               );
             }

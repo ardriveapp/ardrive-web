@@ -91,8 +91,8 @@ class _DriveRenameFormState extends State<DriveRenameForm> {
                 context,
                 content: ArDriveStandardModalNew(
                   title: appLocalizationsOf(context).error,
-                  description: 'Failed to rename the drive. Please check '
-                      'your connection and try again.',
+                  description:
+                      appLocalizationsOf(context).actionFailedTryAgain,
                 ),
               );
             }

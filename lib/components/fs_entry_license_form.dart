@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/components/license/cc_type_form.dart';
 import 'package:ardrive/components/license/udl_params_form.dart';
 import 'package:ardrive/components/license_summary.dart';
@@ -607,10 +608,18 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                                       .themeAccentSubtle,
                                 )
                                 .copyWith(fontWeight: FontWeight.bold),
-                            text: appLocalizationsOf(context).tryAgain,
-                            onPressed: () => context
-                                .read<FsEntryLicenseBloc>()
-                                .add(const FsEntryLicenseFailureTryAgain()),
+                            text: state.isPaymentError
+                                ? appLocalizationsOf(context).buyCredits
+                                : appLocalizationsOf(context).tryAgain,
+                            onPressed: () {
+                              if (state.isPaymentError) {
+                                showTurboPaymentRequiredDialog(context);
+                              } else {
+                                context
+                                    .read<FsEntryLicenseBloc>()
+                                    .add(const FsEntryLicenseFailureTryAgain());
+                              }
+                            },
                           ),
                         ],
                       ),

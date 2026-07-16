@@ -41,6 +41,9 @@ class GhostFixerNameConflict extends GhostFixerState {
 class GhostFixerFailure extends GhostFixerState {
   final bool isPaymentError;
   GhostFixerFailure({this.isPaymentError = false});
+
+  @override
+  List<Object> get props => [isPaymentError];
 }
 
 class GhostFixerWalletMismatch extends GhostFixerState {}

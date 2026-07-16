@@ -109,8 +109,8 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
                 context,
                 content: ArDriveStandardModalNew(
                   title: appLocalizationsOf(context).error,
-                  description: 'Failed to rename. Please check your '
-                      'connection and try again.',
+                  description:
+                      appLocalizationsOf(context).actionFailedTryAgain,
                 ),
               );
             }

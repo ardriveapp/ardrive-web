@@ -81,8 +81,8 @@ class _GhostFixerFormState extends State<GhostFixerForm> {
                 context,
                 content: ArDriveStandardModalNew(
                   title: appLocalizationsOf(context).error,
-                  description: 'Failed to recreate the folder. Please check '
-                      'your connection and try again.',
+                  description:
+                      appLocalizationsOf(context).actionFailedTryAgain,
                 ),
               );
             }
