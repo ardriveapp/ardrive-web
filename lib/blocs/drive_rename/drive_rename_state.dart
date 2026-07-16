@@ -15,7 +15,7 @@ class DriveRenameSuccess extends DriveRenameState {}
 
 class DriveRenameFailure extends DriveRenameState {
   final bool isPaymentError;
-  DriveRenameFailure({this.isPaymentError = false});
+  const DriveRenameFailure({this.isPaymentError = false});
 }
 
 class DriveRenameWalletMismatch extends DriveRenameState {}
