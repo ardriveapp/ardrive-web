@@ -1,14 +1,14 @@
 {
   "configVersion": 2,
-  "defaultArweaveGatewayUrl": "https://ardrive.net",
+  "defaultArweaveGatewayUrl": "https://ar-io.dev",
   "defaultArweaveGatewayForDataRequest": {
-    "label": "Turbo Gateway",
-    "url": "https://turbo-gateway.com"
+    "label": "AR.IO Testnet",
+    "url": "https://ar-io.dev"
   },
   "useTurboUpload": true,
   "useTurboPayment": true,
-  "defaultTurboUploadUrl": "https://upload.ardrive.dev",
-  "defaultTurboPaymentUrl": "https://payment.ardrive.dev",
+  "defaultTurboUploadUrl": "https://upload.services.ar-io.dev",
+  "defaultTurboPaymentUrl": "https://payment.services.ar-io.dev",
   "allowedDataItemSizeForTurbo": 100000,
   "stripePublishableKey": "pk_test_51JUAtwC8apPOWkDLh2FPZkQkiKZEkTo6wqgLCtQoClL6S4l2jlbbc5MgOdwOUdU9Tn93NNvqAGbu115lkJChMikG00XUfTmo2z",
   "uploadThumbnails": true,
