@@ -1,4 +1,5 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/create_snapshot/create_snapshot_cubit.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
@@ -93,6 +94,13 @@ class CreateSnapshotDialog extends StatelessWidget {
           return _loadingDialog(context, state);
         } else if (state is SnapshotUploadSuccess) {
           return _successDialog(context, drive.name);
+        } else if (state is SnapshotUploadFailure &&
+            state.isPaymentError) {
+          // Defer to post-frame so the dialog can be shown over this one.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            showTurboPaymentRequiredDialog(context);
+          });
+          return const SizedBox.shrink();
         } else if (state is SnapshotUploadFailure ||
             state is ComputeSnapshotDataFailure) {
           return _failureDialog(context, drive.id);

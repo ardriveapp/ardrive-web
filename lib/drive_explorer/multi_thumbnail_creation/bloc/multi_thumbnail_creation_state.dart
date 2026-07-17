@@ -70,6 +70,9 @@ final class MultiThumbnailCreationCancelled
     extends MultiThumbnailCreationState {}
 
 final class MultiThumbnailCreationError extends MultiThumbnailCreationState {
+  final bool isPaymentError;
+  MultiThumbnailCreationError({this.isPaymentError = false});
+
   @override
-  List<Object> get props => [];
+  List<Object> get props => [isPaymentError];
 }

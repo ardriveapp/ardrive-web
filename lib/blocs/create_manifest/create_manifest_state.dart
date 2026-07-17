@@ -227,7 +227,13 @@ class CreateManifestPrivacyMismatch extends CreateManifestState {}
 class CreateManifestWalletMismatch extends CreateManifestState {}
 
 /// Manifest transaction upload has failed
-class CreateManifestFailure extends CreateManifestState {}
+class CreateManifestFailure extends CreateManifestState {
+  final bool isPaymentError;
+  CreateManifestFailure({this.isPaymentError = false});
+
+  @override
+  List<Object?> get props => [isPaymentError];
+}
 
 /// Manifest transaction has been successfully uploaded
 class CreateManifestSuccess extends CreateManifestState {

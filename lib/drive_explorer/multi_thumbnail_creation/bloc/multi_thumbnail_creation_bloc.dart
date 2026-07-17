@@ -1,4 +1,5 @@
 import 'package:ardrive/core/arfs/repository/drive_repository.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/utils/constants.dart';
@@ -190,7 +191,8 @@ class MultiThumbnailCreationBloc
       }
       logger.e('Error creating thumbnails: $e');
 
-      emit(MultiThumbnailCreationError());
+      emit(MultiThumbnailCreationError(
+          isPaymentError: isTurboPaymentError(e)));
     }
 
     _skippedDrives.clear();

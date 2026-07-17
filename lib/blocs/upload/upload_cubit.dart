@@ -272,12 +272,19 @@ class UploadCubit extends Cubit<UploadState> {
           completedCount: ++completedCount,
         ));
 
-        await _arnsRepository.setUndernamesToFile(
-          undername: undername,
-          driveId: _driveId,
-          fileId: manifestModels[i].existingManifestFileId,
-          processId: manifestModels[i].antRecord!.processId,
-        );
+        try {
+          await _arnsRepository.setUndernamesToFile(
+            undername: undername,
+            driveId: _driveId,
+            fileId: manifestModels[i].existingManifestFileId,
+            processId: manifestModels[i].antRecord!.processId,
+          );
+        } catch (e) {
+          // The manifest already uploaded; a failed name assignment (e.g. a
+          // payment rejection on the name data item) must not hang the flow.
+          // The name can be reassigned later from the details panel.
+          logger.e('Failed to assign name to uploaded manifest', e);
+        }
 
         manifestModels[i] = manifestModels[i].copyWith(
             isCompleted: true, isUploading: false, isAssigningUndername: false);
@@ -1275,7 +1282,7 @@ class UploadCubit extends Cubit<UploadState> {
     uploadController.onError((tasks) {
       logger.i('Error uploading folders. Number of tasks: ${tasks.length}');
       emit(UploadFailure(
-          error: UploadErrors.unknown,
+          error: _uploadErrorFromTasks(tasks),
           failedTasks: tasks,
           controller: uploadController));
     });
@@ -1344,7 +1351,7 @@ class UploadCubit extends Cubit<UploadState> {
       logger.i('Error uploading files. Number of tasks: ${tasks.length}');
       emit(
         UploadFailure(
-          error: UploadErrors.unknown,
+          error: _uploadErrorFromTasks(tasks),
           failedTasks: tasks,
           controller: uploadController,
         ),
@@ -1437,13 +1444,20 @@ class UploadCubit extends Cubit<UploadState> {
           transactionId: metadata.dataTxId!,
         );
 
-        await _arnsRepository.setUndernamesToFile(
-          undername: newUndername,
-          driveId: _targetDrive.id,
-          fileId: metadata.id,
-          processId: _selectedAntRecord!.processId,
-          uploadNewRevision: false,
-        );
+        try {
+          await _arnsRepository.setUndernamesToFile(
+            undername: newUndername,
+            driveId: _targetDrive.id,
+            fileId: metadata.id,
+            processId: _selectedAntRecord!.processId,
+            uploadNewRevision: false,
+          );
+        } catch (e) {
+          // The file already uploaded; a failed name assignment (e.g. a
+          // payment rejection on the name data item) must not hang the
+          // upload. The name can be reassigned later from the details panel.
+          logger.e('Failed to assign name to uploaded file', e);
+        }
       }
     }
   }
@@ -1505,7 +1519,23 @@ class UploadCubit extends Cubit<UploadState> {
       return;
     }
 
+    if (isTurboPaymentError(error)) {
+      emit(UploadFailure(error: UploadErrors.turboPaymentRequired));
+
+      return;
+    }
+
     emit(UploadFailure(error: UploadErrors.unknown));
+  }
+
+  /// Classifies a failed-task list from the uploader into an [UploadErrors].
+  /// A payment rejection (free allowance exhausted / insufficient credits)
+  /// arrives as an UnderFundException on one of the tasks.
+  UploadErrors _uploadErrorFromTasks(List<UploadTask> tasks) {
+    final hasPaymentError = tasks.any((t) => isTurboPaymentError(t.error));
+    return hasPaymentError
+        ? UploadErrors.turboPaymentRequired
+        : UploadErrors.unknown;
   }
 }
 

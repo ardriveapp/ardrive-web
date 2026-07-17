@@ -143,8 +143,11 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
 class UploadingSnapshot extends CreateSnapshotState {}
 
 class SnapshotUploadFailure extends CreateSnapshotState {
+  final bool isPaymentError;
+  SnapshotUploadFailure({this.isPaymentError = false});
+
   @override
-  List<Object> get props => [];
+  List<Object> get props => [isPaymentError];
 }
 
 class SnapshotUploadSuccess extends CreateSnapshotState {}

@@ -1,4 +1,5 @@
 import 'package:ardrive/arns/domain/arns_repository.dart';
+import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/arns/presentation/assign_name_modal.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
@@ -171,6 +172,12 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
         );
       } else if (state is CreateManifestFailure) {
         Navigator.pop(context);
+        if (state.isPaymentError) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            showTurboPaymentRequiredDialog(context);
+          });
+          return const SizedBox.shrink();
+        }
         return errorDialog(
           errorText:
               appLocalizationsOf(context).manifestTransactionUnexpectedlyFailed,

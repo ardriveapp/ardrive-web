@@ -680,7 +680,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       emit(SnapshotUploadSuccess());
     } catch (err, stacktrace) {
       logger.e('Error while posting the snapshot transaction', err, stacktrace);
-      emit(SnapshotUploadFailure());
+      emit(SnapshotUploadFailure(isPaymentError: isTurboPaymentError(err)));
     }
   }
 

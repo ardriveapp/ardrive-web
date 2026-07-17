@@ -13,4 +13,10 @@ final class ThumbnailCreationLoading extends ThumbnailCreationState {}
 
 final class ThumbnailCreationSuccess extends ThumbnailCreationState {}
 
-final class ThumbnailCreationError extends ThumbnailCreationState {}
+final class ThumbnailCreationError extends ThumbnailCreationState {
+  final bool isPaymentError;
+  ThumbnailCreationError({this.isPaymentError = false});
+
+  @override
+  List<Object> get props => [isPaymentError];
+}

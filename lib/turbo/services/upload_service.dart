@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:ardrive/utils/data_item_utils.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_http/ardrive_http.dart';
+import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 
@@ -157,7 +158,23 @@ class TurboUploadService {
 /// payment reasons (free allowance exhausted / insufficient credits). Used by
 /// metadata-op blocs to choose payment-specific failure UX.
 bool isTurboPaymentError(Object? error) {
-  return error is TurboPaymentRequiredException;
+  // The app-side TurboUploadService throws TurboPaymentRequiredException on
+  // 402; the ardrive_uploader package throws UnderFundException (sometimes
+  // wrapped in an UploadStrategyException). Recognize all of them so every
+  // upload path — metadata ops AND file/folder/manifest uploads — maps a
+  // payment rejection to the same UX.
+  if (error is TurboPaymentRequiredException) return true;
+  if (error is UnderFundException) return true;
+  if (error is UploadStrategyException && error.error is UnderFundException) {
+    return true;
+  }
+  return false;
+}
+
+/// Like [isTurboPaymentError] but inspects a collection of failed upload
+/// tasks (the ardrive_uploader package reports failures as a task list).
+bool anyTaskIsTurboPaymentError(Iterable<Object?> taskErrors) {
+  return taskErrors.any(isTurboPaymentError);
 }
 
 /// Maps a turbo upload HTTP status code to a typed exception, or null for

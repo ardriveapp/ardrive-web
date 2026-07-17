@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/blocs/bulk_import/bulk_import_event.dart';
 import 'package:ardrive/blocs/bulk_import/bulk_import_state.dart';
 import 'package:ardrive/core/arfs/use_cases/bulk_import_files.dart';
@@ -128,9 +129,15 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
       return;
     } catch (e) {
       logger.e('Error during bulk import', e);
+      final paymentError = _isBulkImportPaymentError(e);
       emit(BulkImportError(
-        'An unexpected error occurred during the import process. Please try again.',
+        paymentError
+            ? 'Your free upload allowance has been used up. Add Credits to '
+                'continue importing.'
+            : 'An unexpected error occurred during the import process. '
+                'Please try again.',
         e,
+        paymentError,
       ));
     }
   }
@@ -287,5 +294,18 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
     _pendingFiles = null;
     _bulkImportFiles.reset();
     emit(const BulkImportInitial());
+  }
+}
+
+/// Detects a Turbo payment rejection inside bulk-import failures. Metadata
+/// upload use-cases wrap the original exception in
+/// FileMetadataUploadException/FolderMetadataUploadException.
+bool _isBulkImportPaymentError(Object? error) {
+  if (isTurboPaymentError(error)) return true;
+  try {
+    final dynamic e = error;
+    return isTurboPaymentError(e.originalError);
+  } catch (_) {
+    return false;
   }
 }

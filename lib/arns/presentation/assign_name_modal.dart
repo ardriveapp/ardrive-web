@@ -1,6 +1,7 @@
 // ignore_for_file: unnecessary_string_escapes, unused_element
 
 import 'package:ardrive/arns/domain/arns_repository.dart';
+import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/arns/presentation/assign_name_bloc/assign_name_bloc.dart';
 import 'package:ardrive/arns/presentation/create_undername.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
@@ -343,9 +344,17 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
               } else if (state is SelectionFailed) {
                 final colorTokens =
                     ArDriveTheme.of(context).themeData.colorTokens;
+                if (state.isPaymentError) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    showTurboPaymentRequiredDialog(context);
+                  });
+                }
                 return Center(
                   child: Text(
-                    'Error assigning ArNS name. Please try again later',
+                    state.isPaymentError
+                        ? appLocalizationsOf(context)
+                            .freeAllowanceUsedUpDescription
+                        : 'Error assigning ArNS name. Please try again later',
                     style: typography.paragraphLarge(
                       color: colorTokens.textMid,
                     ),
