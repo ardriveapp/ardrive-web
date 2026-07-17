@@ -1,6 +1,7 @@
 // ignore_for_file: unnecessary_string_escapes, unused_element
 
 import 'package:ardrive/arns/domain/arns_repository.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/arns/presentation/assign_name_bloc/assign_name_bloc.dart';
 import 'package:ardrive/arns/presentation/create_undername.dart';

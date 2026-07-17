@@ -3,7 +3,6 @@ import 'dart:math';
 
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/turbo/topup/views/topup_modal.dart';
-import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/arns/presentation/assign_name_modal.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';

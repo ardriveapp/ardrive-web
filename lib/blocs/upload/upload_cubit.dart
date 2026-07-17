@@ -28,7 +28,8 @@ import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_pro
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive_uploader/ardrive_uploader.dart'
+    hide TurboUploadTimeoutException, TurboRateLimitException;
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
