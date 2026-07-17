@@ -133,6 +133,9 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
         listener: (context, state) {
       if (state is CreateManifestPrivacyMismatch) {
         Navigator.pop(context);
+      } else if (state is CreateManifestFailure && state.isPaymentError) {
+        Navigator.pop(context);
+        showTurboPaymentRequiredDialog(context);
       }
     }, builder: (context, state) {
       final textStyle = typography.paragraphNormal(
@@ -170,14 +173,11 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           errorText:
               appLocalizationsOf(context).walletChangedDuringManifestCreation,
         );
+      } else if (state is CreateManifestFailure && state.isPaymentError) {
+        // Pop + payment dialog handled in the listener; render nothing.
+        return const SizedBox.shrink();
       } else if (state is CreateManifestFailure) {
         Navigator.pop(context);
-        if (state.isPaymentError) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            showTurboPaymentRequiredDialog(context);
-          });
-          return const SizedBox.shrink();
-        }
         return errorDialog(
           errorText:
               appLocalizationsOf(context).manifestTransactionUnexpectedlyFailed,

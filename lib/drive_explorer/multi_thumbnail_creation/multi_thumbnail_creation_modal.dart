@@ -108,7 +108,11 @@ class _MultiThumbnailCreationModalContentState
     return BlocConsumer<MultiThumbnailCreationBloc,
         MultiThumbnailCreationState>(
       bloc: widget.bloc,
-      listener: (context, state) {},
+      listener: (context, state) {
+        if (state is MultiThumbnailCreationError && state.isPaymentError) {
+          showTurboPaymentRequiredDialog(context);
+        }
+      },
       builder: (context, state) {
         final typography = ArDriveTypographyNew.of(context);
 
@@ -162,9 +166,7 @@ class _MultiThumbnailCreationModalContentState
         }
 
         if (state is MultiThumbnailCreationError && state.isPaymentError) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            showTurboPaymentRequiredDialog(context);
-          });
+          // Payment dialog shown from the listener; render nothing.
           return const SizedBox.shrink();
         }
 

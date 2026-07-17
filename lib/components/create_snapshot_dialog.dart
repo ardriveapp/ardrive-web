@@ -83,6 +83,8 @@ class CreateSnapshotDialog extends StatelessWidget {
               /// txsSyncedWithGqlCount: state.notSnapshottedTxsCount,
             ),
           );
+        } else if (state is SnapshotUploadFailure && state.isPaymentError) {
+          showTurboPaymentRequiredDialog(context);
         }
       },
       builder: (context, state) {
@@ -94,12 +96,8 @@ class CreateSnapshotDialog extends StatelessWidget {
           return _loadingDialog(context, state);
         } else if (state is SnapshotUploadSuccess) {
           return _successDialog(context, drive.name);
-        } else if (state is SnapshotUploadFailure &&
-            state.isPaymentError) {
-          // Defer to post-frame so the dialog can be shown over this one.
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            showTurboPaymentRequiredDialog(context);
-          });
+        } else if (state is SnapshotUploadFailure && state.isPaymentError) {
+          // The payment dialog is shown from the listener; render nothing.
           return const SizedBox.shrink();
         } else if (state is SnapshotUploadFailure ||
             state is ComputeSnapshotDataFailure) {

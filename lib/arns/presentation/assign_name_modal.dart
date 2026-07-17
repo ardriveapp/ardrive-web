@@ -126,6 +126,9 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
 
     return BlocConsumer<AssignNameBloc, AssignNameState>(
       listener: (previous, current) {
+        if (current is SelectionFailed && current.isPaymentError) {
+          showTurboPaymentRequiredDialog(context);
+        }
         if (current is NameAssignedWithSuccess) {
           showArDriveDialog(
             context,
@@ -345,11 +348,6 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
               } else if (state is SelectionFailed) {
                 final colorTokens =
                     ArDriveTheme.of(context).themeData.colorTokens;
-                if (state.isPaymentError) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    showTurboPaymentRequiredDialog(context);
-                  });
-                }
                 return Center(
                   child: Text(
                     state.isPaymentError

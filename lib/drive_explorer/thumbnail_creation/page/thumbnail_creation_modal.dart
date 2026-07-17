@@ -44,6 +44,8 @@ class _ThumbnailCreationModal extends StatelessWidget {
           if (state is ThumbnailCreationSuccess) {
             context.read<DriveDetailCubit>().refreshDriveDataTable();
             Navigator.of(context).pop();
+          } else if (state is ThumbnailCreationError && state.isPaymentError) {
+            showTurboPaymentRequiredDialog(context);
           }
         },
         builder: (context, state) {
@@ -51,9 +53,7 @@ class _ThumbnailCreationModal extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           } else if (state is ThumbnailCreationError) {
             if (state.isPaymentError) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                showTurboPaymentRequiredDialog(context);
-              });
+              // The payment dialog is shown from the listener.
               return Text(
                   appLocalizationsOf(context).freeAllowanceUsedUpDescription);
             }
