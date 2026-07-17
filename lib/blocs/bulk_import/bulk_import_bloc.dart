@@ -189,6 +189,7 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
   }) async {
     var processedFiles = 0;
     final failedPaths = <String>[];
+    Object? lastImportError;
 
     try {
       emit(BulkImportInProgress(
@@ -251,6 +252,7 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
     } catch (e) {
       failedPaths.add(files.first.path);
       logger.e('Failed to import file: ${files.first.path}', e);
+      lastImportError = e;
     }
 
     final totalFiles = files.length;
@@ -258,8 +260,15 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
     final failedFiles = failedPaths;
 
     if (successfulFiles == 0) {
-      emit(const BulkImportError(
-        'Failed to import any files. Please check the manifest and try again.',
+      final paymentError = _isBulkImportPaymentError(lastImportError);
+      emit(BulkImportError(
+        paymentError
+            ? 'Your free upload allowance has been used up. Add Credits to '
+                'continue importing.'
+            : 'Failed to import any files. Please check the manifest and '
+                'try again.',
+        lastImportError,
+        paymentError,
       ));
     } else {
       emit(BulkImportSuccess(
