@@ -190,6 +190,7 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
     var processedFiles = 0;
     final failedPaths = <String>[];
     Object? lastImportError;
+    BulkImportResult? importResult;
 
     try {
       emit(BulkImportInProgress(
@@ -209,7 +210,7 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
         return;
       }
 
-      await _bulkImportFiles(
+      importResult = await _bulkImportFiles(
         driveId: driveId,
         parentFolderId: parentFolderId,
         files: files,
@@ -260,7 +261,10 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
     final failedFiles = failedPaths;
 
     if (successfulFiles == 0) {
-      final paymentError = _isBulkImportPaymentError(lastImportError);
+      final paymentError = _isBulkImportPaymentError(lastImportError) ||
+          (importResult?.failures.any(
+                  (f) => _isBulkImportPaymentError(f.originalError)) ??
+              false);
       emit(BulkImportError(
         paymentError
             ? 'Your free upload allowance has been used up. Add Credits to '

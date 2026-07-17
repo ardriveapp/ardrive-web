@@ -13,6 +13,8 @@ part 'multi_thumbnail_creation_state.dart';
 
 class MultiThumbnailCreationBloc
     extends Bloc<MultiThumbnailCreationEvent, MultiThumbnailCreationState> {
+  bool _thumbnailPaymentError = false;
+
   final DriveRepository _driveRepository;
   final ThumbnailRepository _thumbnailRepository;
 
@@ -134,6 +136,7 @@ class MultiThumbnailCreationBloc
 
         int loadedCount = 0;
 
+        _thumbnailPaymentError = false;
         _worker = WorkerPool<ThumbnailLoadingStatus>(
           numWorkers: drive.isPrivate ? 1 : 2,
           maxTasksPerWorker: 2,
@@ -166,12 +169,23 @@ class MultiThumbnailCreationBloc
               emit: emit,
             );
           },
-          onWorkerError: (thumbnail) {
-            logger.d('Error creating thumbnail for file ${thumbnail.file.id}');
+          onWorkerError: (thumbnail, error) {
+            logger.d('Error creating thumbnail for file '
+                '${thumbnail.file.id}: $error');
+            // The pool completes normally even on task errors, so capture a
+            // payment rejection here to surface it after completion.
+            if (isTurboPaymentError(error)) {
+              _thumbnailPaymentError = true;
+            }
           },
         );
 
         await _worker?.onAllTasksCompleted;
+
+        if (_thumbnailPaymentError) {
+          emit(MultiThumbnailCreationError(isPaymentError: true));
+          return;
+        }
 
         loadedDrives++;
       }
