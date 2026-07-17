@@ -183,7 +183,7 @@ class MultiThumbnailCreationBloc
         await _worker?.onAllTasksCompleted;
 
         if (_thumbnailPaymentError) {
-          emit(MultiThumbnailCreationError(isPaymentError: true));
+          emit(const MultiThumbnailCreationError(isPaymentError: true));
           return;
         }
 
