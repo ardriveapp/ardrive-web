@@ -75,6 +75,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   bool _sufficentCreditsBalance = false;
   bool _sufficientArBalance = false;
   bool _isFreeThanksToTurbo = false;
+  bool _isFreeAllowanceExhausted = false;
   bool _wasSnapshotDataComputingCanceled = false;
 
   bool get _useTurboUpload =>
@@ -154,7 +155,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       await _computeBalanceEstimate();
       _computeIsSufficientBalance();
       _computeIsTurboEnabled();
-      _computeIsFreeThanksToTurbo();
+      await _computeIsFreeThanksToTurbo();
       _computeIsButtonEnabled();
 
       logger.d('Computed cost and balance estimate');
@@ -173,6 +174,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
           sufficientBalanceToPayWithAr: _sufficientArBalance,
           sufficientBalanceToPayWithTurbo: _sufficentCreditsBalance,
           isFreeThanksToTurbo: _isFreeThanksToTurbo,
+          isFreeAllowanceExhausted: _isFreeAllowanceExhausted,
         ),
       );
     } catch (e) {
@@ -203,10 +205,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _wasSnapshotDataComputingCanceled = false;
 
     // Cache drive privacy once to avoid N+1 DB queries during metadata fetch
-    final drive =
-        await _driveDao.driveById(driveId: driveId).getSingleOrNull();
-    _isPrivateDrive =
-        drive != null && drive.privacy != DrivePrivacyTag.public;
+    final drive = await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+    _isPrivateDrive = drive != null && drive.privacy != DrivePrivacyTag.public;
 
     // Clear MetadataCache so it's refreshed on next use (lazy init in
     // _jsonMetadataOfTxId avoids shared_preferences plugin in tests)
@@ -548,11 +548,25 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _sufficentCreditsBalance = sufficientBalanceToPayWithTurbo;
   }
 
-  void _computeIsFreeThanksToTurbo() {
+  Future<void> _computeIsFreeThanksToTurbo() async {
     final allowedDataItemSizeForTurbo = appConfig.allowedDataItemSizeForTurbo;
-    final isFreeThanksToTurbo =
-        _snapshotEntity!.data!.length <= allowedDataItemSizeForTurbo;
-    _isFreeThanksToTurbo = isFreeThanksToTurbo;
+    final snapshotSize = _snapshotEntity!.data!.length;
+    final isSizeEligibleForFree = snapshotSize <= allowedDataItemSizeForTurbo;
+
+    if (!isSizeEligibleForFree) {
+      _isFreeThanksToTurbo = false;
+      _isFreeAllowanceExhausted = false;
+      return;
+    }
+
+    /// Being small enough is not sufficient: the wallet's free allowance has
+    /// to cover it too, or Turbo rejects the upload with a 402 after we have
+    /// already told the user it was free.
+    final freeAllowance =
+        await turboBalanceRetriever.getFreeAllowance(auth.currentUser.wallet);
+
+    _isFreeThanksToTurbo = freeAllowance.covers(snapshotSize);
+    _isFreeAllowanceExhausted = freeAllowance.isExhaustedFor(snapshotSize);
   }
 
   void setUploadMethod(UploadMethod method) {

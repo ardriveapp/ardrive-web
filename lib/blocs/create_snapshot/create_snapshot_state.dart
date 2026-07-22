@@ -72,6 +72,10 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
   final bool sufficientBalanceToPayWithTurbo;
   final bool isFreeThanksToTurbo;
 
+  /// Small enough to be free, but the wallet's free allowance is known to
+  /// be used up. False when the allowance could not be determined.
+  final bool isFreeAllowanceExhausted;
+
   ConfirmingSnapshotCreation({
     required this.snapshotSize,
     required this.costEstimateAr,
@@ -85,6 +89,7 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
     required this.sufficientBalanceToPayWithAr,
     required this.sufficientBalanceToPayWithTurbo,
     required this.isFreeThanksToTurbo,
+    this.isFreeAllowanceExhausted = false,
   });
 
   @override
@@ -101,6 +106,7 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
         sufficientBalanceToPayWithAr,
         sufficientBalanceToPayWithTurbo,
         isFreeThanksToTurbo,
+        isFreeAllowanceExhausted,
       ];
 
   ConfirmingSnapshotCreation copyWith({
@@ -118,6 +124,7 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
     bool? sufficientBalanceToPayWithAr,
     bool? sufficientBalanceToPayWithTurbo,
     bool? isFreeThanksToTurbo,
+    bool? isFreeAllowanceExhausted,
   }) {
     return ConfirmingSnapshotCreation(
       snapshotSize: snapshotSize ?? this.snapshotSize,
@@ -136,6 +143,8 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
       sufficientBalanceToPayWithTurbo: sufficientBalanceToPayWithTurbo ??
           this.sufficientBalanceToPayWithTurbo,
       isFreeThanksToTurbo: isFreeThanksToTurbo ?? this.isFreeThanksToTurbo,
+      isFreeAllowanceExhausted:
+          isFreeAllowanceExhausted ?? this.isFreeAllowanceExhausted,
     );
   }
 }

@@ -445,6 +445,21 @@ Widget _confirmDialog(
                         ),
                       ),
                     } else ...{
+                      // Would have been free on size, but the allowance ran
+                      // out — explain the switch to a payment selector.
+                      if (state.isFreeAllowanceExhausted) ...{
+                        Text(
+                          appLocalizationsOf(context)
+                              .freeAllowanceUsedUpUploadNote,
+                          style: typography.paragraphNormal(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgDefault,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      },
                       PaymentMethodSelector(
                         uploadMethodInfo: UploadPaymentMethodInfo(
                           uploadMethod: state.uploadMethod,

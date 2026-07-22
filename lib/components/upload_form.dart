@@ -70,7 +70,7 @@ Future<void> promptToUpload(
   bool autoReplaceConflicts = false,
 }) async {
   final driveDetailCubit = context.read<DriveDetailCubit>();
-  final manifestRepository =     ManifestRepositoryImpl(
+  final manifestRepository = ManifestRepositoryImpl(
     context.read<DriveDao>(),
     ArDriveUploader(
       turboUploadUri: Uri.parse(configService.config.defaultTurboUploadUrl!),
@@ -1256,8 +1256,8 @@ class _UploadReadyModalState extends State<UploadReadyModal> {
                             context.read<ArDriveUploadPreparationManager>(),
                             context.read<ArDriveAuth>(),
                           )..add(PrepareUploadPaymentMethod(
-                            params: state.params,
-                          )),
+                              params: state.params,
+                            )),
                           child: UploadPaymentMethodView(
                             useDropdown: true,
                             onError: () {
@@ -1266,7 +1266,9 @@ class _UploadReadyModalState extends State<UploadReadyModal> {
                                   .emitErrorFromPreparation();
                             },
                             onTurboTopupSucess: () {
-                              context.read<UploadCubit>().startUploadPreparation(
+                              context
+                                  .read<UploadCubit>()
+                                  .startUploadPreparation(
                                     isRetryingToPayWithTurbo: true,
                                   );
                             },
@@ -1947,6 +1949,19 @@ class _UploadReadyWidget extends StatelessWidget {
                 const SizedBox(height: 20),
               ],
               if (!state.paymentInfo.isFreeThanksToTurbo) ...[
+                // Small enough to have been free, but the allowance ran out.
+                // Say so explicitly: without this the modal silently switches
+                // from "free" to a payment selector with no explanation.
+                if (state.paymentInfo.isFreeAllowanceExhausted) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    appLocalizationsOf(context).freeAllowanceUsedUpUploadNote,
+                    style: typography.paragraphNormal(
+                      color: colorTokens.textMid,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 RepositoryProvider.value(
                   value: context.read<ArDriveUploadPreparationManager>(),
                   child: UploadPaymentMethodView(
@@ -2383,8 +2398,7 @@ class _UploadFailureWidget extends StatelessWidget {
       // the top-up flow instead of offering a re-upload that would 402 again.
       return ArDriveStandardModalNew(
         title: appLocalizationsOf(context).freeAllowanceUsedUpTitle,
-        description:
-            appLocalizationsOf(context).freeAllowanceUsedUpDescription,
+        description: appLocalizationsOf(context).freeAllowanceUsedUpDescription,
         actions: [
           ModalAction(
             action: () => Navigator.of(context).pop(false),

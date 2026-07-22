@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:ardrive/turbo/models/turbo_free_allowance.dart';
 import 'package:ardrive/turbo/topup/models/payment_model.dart';
 import 'package:ardrive/turbo/utils/get_signature_headers_for_turbo.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -111,6 +112,24 @@ class PaymentService {
   }) async {
     final turboBalance = await getBalanceAndPaidBy(wallet: wallet);
     return turboBalance.balance;
+  }
+
+  /// Fetches how much of the wallet's Turbo free-upload allowance is left.
+  ///
+  /// Advisory only — see [TurboFreeAllowance]. Throws on transport/HTTP
+  /// failure; callers are expected to fall back to
+  /// [TurboFreeAllowance.unknown] rather than block the upload.
+  Future<TurboFreeAllowance> getFreeAllowance({
+    required Wallet wallet,
+  }) async {
+    final result = await httpClient.get(
+      url:
+          '$turboPaymentUri/v1/account/free?address=${await wallet.getAddress()}',
+    );
+
+    final raw = result.data;
+
+    return TurboFreeAllowance.fromJson(raw is String ? json.decode(raw) : raw);
   }
 
   Future<PaymentModel> getPaymentIntent({

@@ -14,6 +14,12 @@ class UploadPaymentMethodInfo extends Equatable {
   final String turboCredits;
   final bool sufficentCreditsBalance;
   final bool isFreeThanksToTurbo;
+
+  /// This upload qualifies for the free tier on size, but the wallet's free
+  /// allowance is known to be used up — so it needs Credits or AR after all.
+  /// False when the allowance could not be determined, so an unreachable
+  /// endpoint never tells the user they ran out.
+  final bool isFreeAllowanceExhausted;
   final UploadPlan? uploadPlanForAR;
   final UploadPlan? uploadPlanForTurbo;
   final int totalSize;
@@ -30,6 +36,7 @@ class UploadPaymentMethodInfo extends Equatable {
     required this.turboCredits,
     required this.sufficentCreditsBalance,
     required this.isFreeThanksToTurbo,
+    this.isFreeAllowanceExhausted = false,
     this.uploadPlanForAR,
     this.uploadPlanForTurbo,
     required this.totalSize,
@@ -48,6 +55,7 @@ class UploadPaymentMethodInfo extends Equatable {
     String? turboCredits,
     bool? sufficentCreditsBalance,
     bool? isFreeThanksToTurbo,
+    bool? isFreeAllowanceExhausted,
     UploadPlan? uploadPlanForAR,
     UploadPlan? uploadPlanForTurbo,
     int? totalSize,
@@ -69,6 +77,8 @@ class UploadPaymentMethodInfo extends Equatable {
       sufficentCreditsBalance:
           sufficentCreditsBalance ?? this.sufficentCreditsBalance,
       isFreeThanksToTurbo: isFreeThanksToTurbo ?? this.isFreeThanksToTurbo,
+      isFreeAllowanceExhausted:
+          isFreeAllowanceExhausted ?? this.isFreeAllowanceExhausted,
       paidBy: paidBy ?? this.paidBy,
     );
   }
@@ -85,6 +95,7 @@ class UploadPaymentMethodInfo extends Equatable {
         turboCredits,
         sufficentCreditsBalance,
         isFreeThanksToTurbo,
+        isFreeAllowanceExhausted,
         paidBy,
       ];
 }
