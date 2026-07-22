@@ -738,14 +738,6 @@
   "@failedToSyncDrive": {
     "description": "The app wasn't able to sync the drive"
   },
-  "feedbackContent": "你希望为本应用的使用体验留下评价吗?",
-  "@feedbackContent": {
-    "description": "Asks for feedback"
-  },
-  "feedbackTitle": "感谢使用ArDrive!",
-  "@feedbackTitle": {
-    "description": "We thank the user"
-  },
   "fetchingNewQuote": "正在获取新报价……",
   "@fetchingNewQuote": {},
   "fileCount": "{fileCount, plural, zero{无文件} other{{fileCount}个文件}}",
@@ -996,10 +988,6 @@
   "@getAWallet": {
     "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
   },
-  "gotIt": "明白!",
-  "@gotIt": {
-    "description": "Example similar phrases: I've got it, I understood, OK"
-  },
   "goToDeviceSettings": "前往“设置”",
   "@goToDeviceSettings": {
     "description": "Go to device settings"
@@ -1155,10 +1143,6 @@
   },
   "leaveAnEmailToReceiveAReceipt": "如果要接收收据，请提供电子邮件。",
   "@leaveAnEmailToReceiveAReceipt": {},
-  "leaveFeedback": "留下评价",
-  "@leaveFeedback": {
-    "description": "The action of leaving feedback"
-  },
   "letsGetStartedEmphasized": "开始创建",
   "@letsGetStartedEmphasized": {
     "description": "Let's start setting up the account. Emphasized with upper case"
@@ -1336,10 +1320,6 @@
   "noSubscriptions": "无需任何订阅!",
   "@noSubscriptions": {
     "description": "Payment philosophy"
-  },
-  "noThanks": "不用了谢谢!不再显示该提示",
-  "@noThanks": {
-    "description": "Don't leave feedback, and don't ask again for it"
   },
   "notLoggedIn": "你没有登录",
   "@notLoggedIn": {
@@ -2056,6 +2036,10 @@
       }
     }
   },
+  "weWontRemindYou": "好的!我们不会再显示该提示.",
+  "@weWontRemindYou": {
+    "description": "We let the user know that we won't remind them again"
+  },
   "welcome": "欢迎",
   "@welcome": {
     "description": "welcome"
@@ -2097,14 +2081,6 @@
   "weReSorryEmphasized": "对不起!",
   "@weReSorryEmphasized": {
     "description": "Screen not supported page. Emphasized with upper case"
-  },
-  "weWontRemindYou": "好的!我们不会再显示该提示.",
-  "@weWontRemindYou": {
-    "description": "We let the user know that we won't remind them to leave feedback again"
-  },
-  "weWontRemindYouDescription": "如果你改变了主意, 想在之后留下反馈, 可以使用菜单中的链接.",
-  "@weWontRemindYouDescription": {
-    "description": "We let the user know where to find the 'Leave Feedback' button"
   },
   "whatIsAKeyFile": "什么是密钥文件，它是如何工作的？",
   "@whatIsAKeyFile": {},

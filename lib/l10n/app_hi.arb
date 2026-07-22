@@ -738,14 +738,6 @@
   "@failedToSyncDrive": {
     "description": "The app wasn't able to sync the drive"
   },
-  "feedbackContent": "क्या आप ऐप का इस्तेमाल करने के अपने अनुभव पर फ़ीडबैक देना चाहेंगे?",
-  "@feedbackContent": {
-    "description": "Asks for feedback"
-  },
-  "feedbackTitle": "ArDrive का इस्तेमाल करने के लिए आपका धन्यवाद!",
-  "@feedbackTitle": {
-    "description": "We thank the user"
-  },
   "fetchingNewQuote": "नए क्वोट फेच किए जा रहें हैं...",
   "@fetchingNewQuote": {},
   "fileCount": "{fileCount, plural, zero{कोई फ़ाइल नहीं} one{1 फ़ाइल} other{{fileCount} फ़ाइलें}}",
@@ -996,10 +988,6 @@
   "@getAWallet": {
     "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
   },
-  "gotIt": "समझ गया!",
-  "@gotIt": {
-    "description": "Example similar phrases: I've got it, I understood, OK"
-  },
   "goToDeviceSettings": "सेटिंग्स पर जाएं",
   "@goToDeviceSettings": {
     "description": "Go to device settings"
@@ -1155,10 +1143,6 @@
   },
   "leaveAnEmailToReceiveAReceipt": "रिसीप्ट प्राप्त करने के लिए, कृप्या एक ईमेल प्रोवाइड करें.",
   "@leaveAnEmailToReceiveAReceipt": {},
-  "leaveFeedback": "फ़ीडबैक दें",
-  "@leaveFeedback": {
-    "description": "The action of leaving feedback"
-  },
   "letsGetStartedEmphasized": "चलिए शुरू करते हैं",
   "@letsGetStartedEmphasized": {
     "description": "Let's start setting up the account. Emphasized with upper case"
@@ -1336,10 +1320,6 @@
   "noSubscriptions": "कोई सब्सक्रिप्शन की ज़रूरत नहीं है!",
   "@noSubscriptions": {
     "description": "Payment philosophy"
-  },
-  "noThanks": "जी नहीं, शुक्रिया! मुझे दोबारा याद न दिलाएं",
-  "@noThanks": {
-    "description": "Don't leave feedback, and don't ask again for it"
   },
   "notLoggedIn": "आपने लॉग इन नहीं किया है",
   "@notLoggedIn": {
@@ -2056,6 +2036,10 @@
       }
     }
   },
+  "weWontRemindYou": "ठीक है! हम आपको दोबारा याद नहीं दिलाएंगे।",
+  "@weWontRemindYou": {
+    "description": "We let the user know that we won't remind them again"
+  },
   "welcome": "स्वागत है ",
   "@welcome": {
     "description": "welcome"
@@ -2097,14 +2081,6 @@
   "weReSorryEmphasized": "सॉरी!",
   "@weReSorryEmphasized": {
     "description": "Screen not supported page. Emphasized with upper case"
-  },
-  "weWontRemindYou": "ठीक है! हम आपको दोबारा याद नहीं दिलाएंगे।",
-  "@weWontRemindYou": {
-    "description": "We let the user know that we won't remind them to leave feedback again"
-  },
-  "weWontRemindYouDescription": "अगर आप कभी भी अपना मन बदलते हैं और बाद की किसी तारीख में फ़ीडबैक देना चाहते हैं, तो आप अपने मेनू में दिए गए लिंक के ज़रिए ऐसा कर सकते हैं।",
-  "@weWontRemindYouDescription": {
-    "description": "We let the user know where to find the 'Leave Feedback' button"
   },
   "whatIsAKeyFile": "कीफाइल क्या है और यह कैसे काम करता है ",
   "@whatIsAKeyFile": {},

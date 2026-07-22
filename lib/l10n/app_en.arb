@@ -837,14 +837,6 @@
   "@failedToUnhideFolderTryAgain": {
     "description": "Failed to unhide folder, try again."
   },
-  "feedbackContent": "Would you be willing to leave feedback on your experience using the app?",
-  "@feedbackContent": {
-    "description": "Asks for feedback"
-  },
-  "feedbackTitle": "Thank you for using ArDrive!",
-  "@feedbackTitle": {
-    "description": "We thank the user"
-  },
   "fetchingNewQuote": "Fetching new quote...",
   "@fetchingNewQuote": {},
   "fileCount": "{fileCount, plural, zero{no files} one{1 file} other{{fileCount} files}}",
@@ -1153,10 +1145,6 @@
   "@giftCredits": {},
   "giftRedeemed": "Gift Redeemed!",
   "@giftRedeemed": {},
-  "gotIt": "Got it!",
-  "@gotIt": {
-    "description": "Example similar phrases: I've got it, I understood, OK"
-  },
   "goToDeviceSettings": "Go to Settings",
   "@goToDeviceSettings": {
     "description": "Go to device settings"
@@ -1326,10 +1314,6 @@
   },
   "leaveAnEmailToReceiveAReceipt": "To receive a receipt, please provide an email.",
   "@leaveAnEmailToReceiveAReceipt": {},
-  "leaveFeedback": "Leave Feedback",
-  "@leaveFeedback": {
-    "description": "The action of leaving feedback"
-  },
   "letsGetStartedEmphasized": "LET'S GET STARTED",
   "@letsGetStartedEmphasized": {
     "description": "Let's start setting up the account. Emphasized with upper case"
@@ -1675,10 +1659,6 @@
   "noSubscriptions": "No subscriptions are needed!",
   "@noSubscriptions": {
     "description": "Payment philosophy"
-  },
-  "noThanks": "No thanks! Don't remind me again",
-  "@noThanks": {
-    "description": "Don't leave feedback, and don't ask again for it"
   },
   "notLoggedIn": "You're not logged in",
   "@notLoggedIn": {
@@ -2648,6 +2628,10 @@
       }
     }
   },
+  "weWontRemindYou": "Ok cool! We won't remind you again.",
+  "@weWontRemindYou": {
+    "description": "We let the user know that we won't remind them again"
+  },
   "welcome": "Welcome",
   "@welcome": {
     "description": "welcome"
@@ -2689,14 +2673,6 @@
   "weReSorryEmphasized": "WE'RE SORRY!",
   "@weReSorryEmphasized": {
     "description": "Screen not supported page. Emphasized with upper case"
-  },
-  "weWontRemindYou": "Ok cool! We won't remind you again.",
-  "@weWontRemindYou": {
-    "description": "We let the user know that we won't remind them to leave feedback again"
-  },
-  "weWontRemindYouDescription": "If you ever change your mind and want to leave feedback at a later date, you can do so via the link in your menu.",
-  "@weWontRemindYouDescription": {
-    "description": "We let the user know where to find the 'Leave Feedback' button"
   },
   "whatIsAKeyFile": "What is a keyfile and how does it work?",
   "@whatIsAKeyFile": {},

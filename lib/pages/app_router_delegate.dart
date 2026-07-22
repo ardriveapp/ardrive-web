@@ -4,10 +4,8 @@ import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_detail/utils/breadcrumb_builder.dart';
-import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/components/components.dart';
-import 'package:ardrive/components/feedback_survey.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/repository/drive_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
@@ -230,27 +228,6 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                               });
                             }
                           },
-                        ),
-                        BlocListener<FeedbackSurveyCubit, FeedbackSurveyState>(
-                          listener: (context, state) {
-                            if (state is FeedbackSurveyRemindMe &&
-                                state.isOpen) {
-                              openFeedbackSurveyModal(context);
-                            } else if (state is FeedbackSurveyRemindMe &&
-                                !state.isOpen) {
-                              Navigator.pop(context);
-                            } else if (state is FeedbackSurveyDontRemindMe &&
-                                !state.isOpen) {
-                              Navigator.pop(context);
-                            }
-                          },
-                        ),
-                        BlocListener<ProfileCubit, ProfileState>(
-                          listener: ((context, state) {
-                            if (state is ProfileLoggingOut) {
-                              context.read<FeedbackSurveyCubit>().reset();
-                            }
-                          }),
                         ),
                       ],
                       child: AppShell(

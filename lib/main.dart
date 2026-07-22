@@ -4,7 +4,6 @@ import 'package:ardrive/arns/data/arns_dao.dart';
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
-import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/blocs/hide/hide_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
@@ -304,10 +303,6 @@ class AppState extends State<App> {
         ),
         BlocProvider(
           create: (context) => ActivityCubit(),
-        ),
-        BlocProvider(
-          create: (context) =>
-              FeedbackSurveyCubit(FeedbackSurveyInitialState()),
         ),
         BlocProvider(
           create: (context) => PromptToSnapshotBloc(

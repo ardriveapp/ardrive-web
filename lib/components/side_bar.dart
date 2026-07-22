@@ -16,7 +16,6 @@ import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
-import 'package:ardrive/utils/open_url_utils.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_logger/ardrive_logger.dart';
@@ -589,6 +588,31 @@ Future<void> showSupportModal({
             ArDriveClickArea(
               child: GestureDetector(
                 onTap: () {
+                  openUrl(url: Resources.helpCenterLink);
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      appLocalizationsOf(context).helpCenter,
+                      style: typography.paragraphNormal(
+                        color: colorTokens.textLink,
+                        fontWeight: ArFontWeight.semiBold,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    ArDriveIcons.arrowRightOutline(
+                      size: 14,
+                      color: colorTokens.textLink,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            ArDriveClickArea(
+              child: GestureDetector(
+                onTap: () {
                   openUrl(url: Resources.discordLink);
                 },
                 child: Row(
@@ -621,31 +645,6 @@ Future<void> showSupportModal({
                   children: [
                     Text(
                       appLocalizationsOf(context).developerDocs,
-                      style: typography.paragraphNormal(
-                        color: colorTokens.textLink,
-                        fontWeight: ArFontWeight.semiBold,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    ArDriveIcons.arrowRightOutline(
-                      size: 14,
-                      color: colorTokens.textLink,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            ArDriveClickArea(
-              child: GestureDetector(
-                onTap: () {
-                  openFeedbackSurveyUrl();
-                },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      appLocalizationsOf(context).leaveFeedback,
                       style: typography.paragraphNormal(
                         color: colorTokens.textLink,
                         fontWeight: ArFontWeight.semiBold,
