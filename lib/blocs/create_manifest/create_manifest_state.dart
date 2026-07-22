@@ -139,6 +139,10 @@ class CreateManifestUploadReview extends CreateManifestState {
   final bool folderHasPendingFiles;
   final IOFile manifestFile;
   final bool freeUpload;
+
+  /// Small enough to be free, but the wallet's free allowance is known to
+  /// be used up. False when the allowance could not be determined.
+  final bool isFreeAllowanceExhausted;
   final UploadMethod? uploadMethod;
   final Drive drive;
   final FolderEntry parentFolder;
@@ -153,6 +157,7 @@ class CreateManifestUploadReview extends CreateManifestState {
     required this.folderHasPendingFiles,
     required this.manifestFile,
     this.freeUpload = false,
+    this.isFreeAllowanceExhausted = false,
     this.uploadMethod,
     required this.drive,
     required this.parentFolder,
@@ -169,6 +174,7 @@ class CreateManifestUploadReview extends CreateManifestState {
         manifestFile,
         folderHasPendingFiles,
         freeUpload,
+        isFreeAllowanceExhausted,
         uploadMethod,
         drive,
         parentFolder,
@@ -183,6 +189,7 @@ class CreateManifestUploadReview extends CreateManifestState {
     bool? folderHasPendingFiles,
     IOFile? manifestFile,
     bool? freeUpload,
+    bool? isFreeAllowanceExhausted,
     UploadMethod? uploadMethod,
     Drive? drive,
     FolderEntry? parentFolder,
@@ -198,6 +205,8 @@ class CreateManifestUploadReview extends CreateManifestState {
           folderHasPendingFiles ?? this.folderHasPendingFiles,
       manifestFile: manifestFile ?? this.manifestFile,
       freeUpload: freeUpload ?? this.freeUpload,
+      isFreeAllowanceExhausted:
+          isFreeAllowanceExhausted ?? this.isFreeAllowanceExhausted,
       uploadMethod: uploadMethod ?? this.uploadMethod,
       drive: drive ?? this.drive,
       parentFolder: parentFolder ?? this.parentFolder,

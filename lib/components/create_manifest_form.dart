@@ -633,6 +633,18 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
               ),
             ],
             if (!state.freeUpload) ...[
+              // Would have been free on size, but the allowance ran out —
+              // explain the switch instead of silently showing payment options.
+              if (state.isFreeAllowanceExhausted)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    appLocalizationsOf(context).freeAllowanceUsedUpUploadNote,
+                    style: typography.paragraphNormal(
+                      color: colorTokens.textMid,
+                    ),
+                  ),
+                ),
               Padding(
                 padding: const EdgeInsets.only(bottom: 24),
                 child: _paymentOptions(state, context),

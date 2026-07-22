@@ -76,6 +76,7 @@ class UploadCubit extends Cubit<UploadState> {
         _uploadThumbnail = configService.config.uploadThumbnails,
         _manifestRepository = manifestRepository,
         _createManifestCubit = createManifestCubit,
+        _arDriveUploadManager = arDriveUploadManager,
         _autoReplaceConflicts = autoReplaceConflicts,
         super(uploadFolders ? UploadLoadingFolders() : UploadLoadingFiles());
 
@@ -89,6 +90,7 @@ class UploadCubit extends Cubit<UploadState> {
   final ARNSRepository _arnsRepository;
   final ManifestRepository _manifestRepository;
   final CreateManifestCubit _createManifestCubit;
+  final ArDriveUploadPreparationManager _arDriveUploadManager;
 
   final String _driveId;
   final String _parentFolderId;
@@ -141,6 +143,8 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   Future<void> prepareManifestUpload() async {
+    final freeAllowance = await _arDriveUploadManager.getFreeAllowance();
+
     final manifestModels = _selectedManifestModels
         .map((e) => UploadManifestModel(
               entry: e.manifest,
@@ -177,7 +181,11 @@ class UploadCubit extends Cubit<UploadState> {
 
       final manifestSize = await manifestFile.length;
 
-      if (manifestSize <= configService.config.allowedDataItemSizeForTurbo) {
+      /// Size alone is not enough: with the free allowance used up, every
+      /// manifest here would be marked free, payment selection would be
+      /// skipped entirely, and each upload would then fail with a 402.
+      if (manifestSize <= configService.config.allowedDataItemSizeForTurbo &&
+          freeAllowance.covers(manifestSize)) {
         manifestModels[i] = manifestModels[i].copyWith(freeThanksToTurbo: true);
       }
     }
@@ -752,7 +760,8 @@ class UploadCubit extends Cubit<UploadState> {
     if (_conflictingFiles.isNotEmpty) {
       // Auto-replace conflicts when flag is set (used for markdown editing)
       if (_autoReplaceConflicts) {
-        logger.d('Auto-replacing ${_conflictingFiles.length} conflicting file(s)');
+        logger.d(
+            'Auto-replacing ${_conflictingFiles.length} conflicting file(s)');
         await prepareUploadPlanAndCostEstimates(
           uploadAction: UploadActions.replace,
         );
@@ -1056,12 +1065,17 @@ class UploadCubit extends Cubit<UploadState> {
 
       _manifestFiles = {};
 
+      final manifestFreeAllowance =
+          await _arDriveUploadManager.getFreeAllowance();
+
       for (var entry in manifestFileEntries) {
         _manifestFiles[entry.id] = UploadManifestModel(
           entry: entry,
           existingManifestFileId: entry.id,
+          // Free requires both a small enough item and allowance to cover it.
           freeThanksToTurbo:
-              entry.size <= configService.config.allowedDataItemSizeForTurbo,
+              entry.size <= configService.config.allowedDataItemSizeForTurbo &&
+                  manifestFreeAllowance.covers(entry.size),
         );
       }
 

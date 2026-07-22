@@ -113,6 +113,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
           uploadMethod: method,
           canUpload: canUpload,
           freeUpload: info.isFreeThanksToTurbo,
+          isFreeAllowanceExhausted: info.isFreeAllowanceExhausted,
           assignedName: (state as CreateManifestUploadReview).assignedName,
           fallbackTxId: (state as CreateManifestUploadReview).fallbackTxId,
         ),
@@ -496,8 +497,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   void onError(Object error, StackTrace stackTrace) {
     logger.e('Failed to create manifest', error, stackTrace);
     final wrapped = error is ManifestCreationException ? error.error : error;
-    emit(CreateManifestFailure(
-        isPaymentError: isTurboPaymentError(wrapped)));
+    emit(CreateManifestFailure(isPaymentError: isTurboPaymentError(wrapped)));
     super.onError(error, stackTrace);
   }
 }

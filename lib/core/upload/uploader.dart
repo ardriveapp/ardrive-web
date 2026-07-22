@@ -533,6 +533,11 @@ class UploadPaymentEvaluator {
     );
   }
 
+  /// The wallet's remaining free-upload allowance, honouring the turbo
+  /// feature flag. Never throws — see [TurboBalanceRetriever.getFreeAllowance].
+  Future<TurboFreeAllowance> getFreeAllowance() =>
+      _getFreeAllowance(canUseTurbo: _canUseTurbo);
+
   /// The wallet's remaining free-upload allowance for this preparation.
   ///
   /// Fetched per preparation rather than cached like the item-size limit:
@@ -674,6 +679,12 @@ class ArDriveUploadPreparationManager {
     required UploadPaymentEvaluator uploadPreparePaymentOptions,
   })  : _uploadPreparer = uploadPreparer,
         _uploadPaymentEvaluator = uploadPreparePaymentOptions;
+
+  /// The wallet's remaining free-upload allowance, for callers that decide
+  /// free-vs-paid themselves instead of going through [prepareUpload].
+  /// Returns [TurboFreeAllowance.unknown] rather than throwing.
+  Future<TurboFreeAllowance> getFreeAllowance() =>
+      _uploadPaymentEvaluator.getFreeAllowance();
 
   Future<UploadPreparation> prepareUpload({
     required UploadParams params,
