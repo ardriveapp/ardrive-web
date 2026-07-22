@@ -735,14 +735,6 @@
   "@failedToSyncDrive": {
     "description": "The app wasn't able to sync the drive"
   },
-  "feedbackContent": "¿Te interesaría dejar comentarios sobre tu experiencia en la aplicación?",
-  "@feedbackContent": {
-    "description": "Asks for feedback"
-  },
-  "feedbackTitle": "¡Gracias por usar ArDrive!",
-  "@feedbackTitle": {
-    "description": "We thank the user"
-  },
   "fetchingNewQuote": "Obteniendo nuevo presupuesto...",
   "@fetchingNewQuote": {},
   "fileCount": "{fileCount, plural, zero{ningún archivo} one{1 archivo} other{{fileCount} archivos}}",
@@ -993,10 +985,6 @@
   "@getAWallet": {
     "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
   },
-  "gotIt": "¡Entendido!",
-  "@gotIt": {
-    "description": "Example similar phrases: I've got it, I understood, OK"
-  },
   "goToDeviceSettings": "Ir a Ajustes",
   "@goToDeviceSettings": {
     "description": "Go to device settings"
@@ -1152,10 +1140,6 @@
   },
   "leaveAnEmailToReceiveAReceipt": "Para recibir un recibo, indica una dirección de correo electrónico.",
   "@leaveAnEmailToReceiveAReceipt": {},
-  "leaveFeedback": "Dejar comentarios",
-  "@leaveFeedback": {
-    "description": "The action of leaving feedback"
-  },
   "letsGetStartedEmphasized": "COMENCEMOS",
   "@letsGetStartedEmphasized": {
     "description": "Let's start setting up the account. Emphasized with upper case"
@@ -1333,10 +1317,6 @@
   "noSubscriptions": "¡No necesitas suscripciones!",
   "@noSubscriptions": {
     "description": "Payment philosophy"
-  },
-  "noThanks": "¡No, gracias! No me lo recuerdes otra vez",
-  "@noThanks": {
-    "description": "Don't leave feedback, and don't ask again for it"
   },
   "notLoggedIn": "No has ingresado",
   "@notLoggedIn": {
@@ -2053,6 +2033,10 @@
       }
     }
   },
+  "weWontRemindYou": "¡Bien! No te lo recordaremos otra vez.",
+  "@weWontRemindYou": {
+    "description": "We let the user know that we won't remind them again"
+  },
   "welcome": "Bienvenido",
   "@welcome": {
     "description": "welcome"
@@ -2094,14 +2078,6 @@
   "weReSorryEmphasized": "¡LO SENTIMOS!",
   "@weReSorryEmphasized": {
     "description": "Screen not supported page. Emphasized with upper case"
-  },
-  "weWontRemindYou": "¡Bien! No te lo recordaremos otra vez.",
-  "@weWontRemindYou": {
-    "description": "We let the user know that we won't remind them to leave feedback again"
-  },
-  "weWontRemindYouDescription": "Si cambias de opinión y quieres dejar comentarios en otro momento, puedes hacerlo desde el enlace en tu menú.",
-  "@weWontRemindYouDescription": {
-    "description": "We let the user know where to find the 'Leave Feedback' button"
   },
   "whatIsAKeyFile": "¿Qué es un archivo de claves y cómo funciona?",
   "@whatIsAKeyFile": {},
