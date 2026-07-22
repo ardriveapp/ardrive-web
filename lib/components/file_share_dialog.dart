@@ -8,8 +8,6 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../blocs/feedback_survey/feedback_survey_cubit.dart';
-
 Future<void> promptToShareFile({
   required BuildContext context,
   required String driveId,
@@ -26,7 +24,7 @@ Future<void> promptToShareFile({
         ),
         child: const FileShareDialog(),
       ),
-    ).then((value) => context.read<FeedbackSurveyCubit>().openRemindMe());
+    );
 
 /// Depends on a provided [FileShareCubit] for business logic.
 class FileShareDialog extends StatefulWidget {
@@ -162,10 +160,7 @@ class FileShareDialogState extends State<FileShareDialog> {
         actions: [
           if (state is FileShareLoadSuccess)
             ModalAction(
-              action: () {
-                Navigator.pop(context);
-                context.read<FeedbackSurveyCubit>().openRemindMe();
-              },
+              action: () => Navigator.pop(context),
               title: appLocalizationsOf(context).doneEmphasized,
             ),
           if (state is FileShareLoadedFailedFile ||
