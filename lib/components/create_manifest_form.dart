@@ -1,3 +1,4 @@
+import 'package:ardrive/components/turbo_free_status_message.dart';
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/arns/presentation/assign_name_modal.dart';
@@ -620,31 +621,11 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
               ),
             ),
             const Divider(height: 48),
-            if (state.freeUpload) ...[
-              Padding(
-                padding: const EdgeInsets.only(bottom: 24),
-                child: Text(
-                  appLocalizationsOf(context).freeTurboTransaction,
-                  style: typography.paragraphNormal(
-                    color: colorTokens.textMid,
-                    fontWeight: ArFontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
+            TurboFreeStatusMessage(
+              status: state.freeStatus,
+              padding: const EdgeInsets.only(bottom: 24),
+            ),
             if (!state.freeUpload) ...[
-              // Would have been free on size, but the allowance ran out —
-              // explain the switch instead of silently showing payment options.
-              if (state.isFreeAllowanceExhausted)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    appLocalizationsOf(context).freeAllowanceUsedUpUploadNote,
-                    style: typography.paragraphNormal(
-                      color: colorTokens.textMid,
-                    ),
-                  ),
-                ),
               Padding(
                 padding: const EdgeInsets.only(bottom: 24),
                 child: _paymentOptions(state, context),

@@ -78,10 +78,7 @@ class UploadPaymentMethodBloc
             costEstimateTurbo:
                 uploadPreparation.uploadPaymentInfo.turboCostEstimate,
             hasNoTurboBalance: isTurboZeroBalance,
-            isFreeThanksToTurbo: uploadPreparation
-                .uploadPaymentInfo.isFreeUploadPossibleUsingTurbo,
-            isFreeAllowanceExhausted:
-                uploadPreparation.uploadPaymentInfo.isFreeAllowanceExhausted,
+            freeStatus: uploadPreparation.uploadPaymentInfo.freeStatus,
             isTurboUploadPossible: paymentInfo.isUploadEligibleToTurbo,
             sufficentCreditsBalance: _canUploadWithMethod(UploadMethod.turbo),
             sufficientArBalance: _canUploadWithMethod(UploadMethod.ar),

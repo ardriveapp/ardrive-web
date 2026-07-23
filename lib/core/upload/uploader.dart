@@ -11,6 +11,7 @@ import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/config/app_config.dart';
+import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:ardrive/turbo/models/turbo_free_allowance.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
@@ -391,11 +392,12 @@ class UploadPaymentEvaluator {
     /// An item is free only if it is both small enough to qualify AND the
     /// wallet still has free allowance to cover it. Size alone would promise
     /// "free" to a user whose pool is used up, and then fail with a 402.
-    final isSizeEligibleForFree = dataItemSize <= allowedDataItemSizeForTurbo;
     final freeAllowance = await _getFreeAllowance(canUseTurbo: _canUseTurbo);
-
-    bool isFreeUploadPossibleUsingTurbo =
-        isSizeEligibleForFree && freeAllowance.covers(dataItemSize);
+    final freeStatus = freeUploadStatusFor(
+      isSizeEligible: dataItemSize <= allowedDataItemSizeForTurbo,
+      byteCount: dataItemSize,
+      allowance: freeAllowance,
+    );
 
     uploadMethod = await _determineUploadMethod(
       turboBalance.balance,
@@ -411,10 +413,7 @@ class UploadPaymentEvaluator {
       isUploadEligibleToTurbo: true,
       arCostEstimate: arCostEstimate,
       turboCostEstimate: turboCostEstimate,
-      isFreeUploadPossibleUsingTurbo: isFreeUploadPossibleUsingTurbo,
-      isSizeEligibleForFree: isSizeEligibleForFree,
-      isFreeAllowanceExhausted:
-          isSizeEligibleForFree && freeAllowance.isExhaustedFor(dataItemSize),
+      freeStatus: freeStatus,
       totalSize: totalSize,
       turboBalance: turboBalance,
     );
@@ -474,26 +473,28 @@ class UploadPaymentEvaluator {
       arCostEstimate = UploadCostEstimate.zero();
     }
 
-    bool isSizeEligibleForFree = false;
-    bool isFreeUploadPossibleUsingTurbo = false;
-
     final freeAllowance = await _getFreeAllowance(canUseTurbo: _canUseTurbo);
+
+    /// Every item being small enough is not sufficient — the wallet's free
+    /// pool has to cover the whole upload too. Turbo bills the entire upload
+    /// once the pool runs out, so partial coverage is not free either.
+    var freeStatus = FreeUploadStatus.notEligible;
 
     if (isUploadEligibleToTurbo) {
       final allowedDataItemSizeForTurbo = _maxFreeItemBytes;
 
-      isSizeEligibleForFree = uploadPlanForTurbo.bundleUploadHandles.every(
-        (bundle) => bundle.fileDataItemUploadHandles.every(
-          (file) => file.size <= allowedDataItemSizeForTurbo,
+      freeStatus = freeUploadStatusFor(
+        isSizeEligible: uploadPlanForTurbo.bundleUploadHandles.every(
+          (bundle) => bundle.fileDataItemUploadHandles.every(
+            (file) => file.size <= allowedDataItemSizeForTurbo,
+          ),
         ),
+        byteCount: turboBundleSizes,
+        allowance: freeAllowance,
       );
-
-      /// Every item being small enough is not sufficient — the wallet's free
-      /// pool has to cover the whole upload too. Turbo bills the entire upload
-      /// once the pool runs out, so partial coverage is not free either.
-      isFreeUploadPossibleUsingTurbo =
-          isSizeEligibleForFree && freeAllowance.covers(turboBundleSizes);
     }
+
+    final isFreeUploadPossibleUsingTurbo = freeStatus == FreeUploadStatus.free;
 
     // Checking isFreeUploadPossibleUsingTurbo uses the 100KB file size check
     // against the date, but using _determineUploadMethod() additionally uses the
@@ -524,10 +525,7 @@ class UploadPaymentEvaluator {
       isUploadEligibleToTurbo: isUploadEligibleToTurbo,
       arCostEstimate: arCostEstimate,
       turboCostEstimate: turboCostEstimate,
-      isFreeUploadPossibleUsingTurbo: isFreeUploadPossibleUsingTurbo,
-      isSizeEligibleForFree: isSizeEligibleForFree,
-      isFreeAllowanceExhausted: isSizeEligibleForFree &&
-          freeAllowance.isExhaustedFor(turboBundleSizes),
+      freeStatus: freeStatus,
       totalSize: totalSize,
       turboBalance: turboBalance,
     );
@@ -629,35 +627,37 @@ class UploadPreparation {
 class UploadPaymentInfo {
   final UploadMethod defaultPaymentMethod;
   final bool isUploadEligibleToTurbo;
-  final bool isFreeUploadPossibleUsingTurbo;
   final bool isTurboAvailable;
   final UploadCostEstimate arCostEstimate;
   final UploadCostEstimate turboCostEstimate;
   final int totalSize;
   final TurboBalanceInterface turboBalance;
 
-  /// Whether every item is small enough to qualify for a free upload,
-  /// regardless of how much allowance the wallet has left.
-  final bool isSizeEligibleForFree;
-
-  /// Whether this upload would have been free on size alone but the wallet's
-  /// free allowance is known to be used up. Distinguishes "you ran out" from
-  /// "this file is too big", which have different remedies — and is false when
-  /// the allowance simply could not be determined.
-  final bool isFreeAllowanceExhausted;
+  /// Whether this upload is free, and if not, why not. Single source of truth
+  /// for the booleans below, which cannot therefore contradict each other.
+  final FreeUploadStatus freeStatus;
 
   UploadPaymentInfo({
     required this.defaultPaymentMethod,
     required this.isUploadEligibleToTurbo,
     required this.arCostEstimate,
     required this.turboCostEstimate,
-    required this.isFreeUploadPossibleUsingTurbo,
+    required this.freeStatus,
     required this.totalSize,
     required this.isTurboAvailable,
     required this.turboBalance,
-    this.isSizeEligibleForFree = false,
-    this.isFreeAllowanceExhausted = false,
   });
+
+  bool get isFreeUploadPossibleUsingTurbo =>
+      freeStatus == FreeUploadStatus.free;
+
+  /// Would have been free on size, but the wallet's allowance is known to be
+  /// used up. False when the allowance simply could not be determined.
+  bool get isFreeAllowanceExhausted =>
+      freeStatus == FreeUploadStatus.allowanceUsedUp;
+
+  /// Every item is small enough to qualify, regardless of allowance left.
+  bool get isSizeEligibleForFree => freeStatus != FreeUploadStatus.notEligible;
 }
 
 class UploadPlansPreparation {

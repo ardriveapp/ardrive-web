@@ -70,11 +70,9 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
   final bool isButtonToUploadEnabled;
   final bool sufficientBalanceToPayWithAr;
   final bool sufficientBalanceToPayWithTurbo;
-  final bool isFreeThanksToTurbo;
 
-  /// Small enough to be free, but the wallet's free allowance is known to
-  /// be used up. False when the allowance could not be determined.
-  final bool isFreeAllowanceExhausted;
+  /// Whether this snapshot upload is free, and if not, why not.
+  final FreeUploadStatus freeStatus;
 
   ConfirmingSnapshotCreation({
     required this.snapshotSize,
@@ -88,9 +86,14 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
     required this.isButtonToUploadEnabled,
     required this.sufficientBalanceToPayWithAr,
     required this.sufficientBalanceToPayWithTurbo,
-    required this.isFreeThanksToTurbo,
-    this.isFreeAllowanceExhausted = false,
+    required this.freeStatus,
   });
+
+  bool get isFreeThanksToTurbo => freeStatus == FreeUploadStatus.free;
+
+  /// Small enough to be free, but the allowance is known to be used up.
+  bool get isFreeAllowanceExhausted =>
+      freeStatus == FreeUploadStatus.allowanceUsedUp;
 
   @override
   List<Object> get props => [
@@ -105,8 +108,7 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
         isButtonToUploadEnabled,
         sufficientBalanceToPayWithAr,
         sufficientBalanceToPayWithTurbo,
-        isFreeThanksToTurbo,
-        isFreeAllowanceExhausted,
+        freeStatus,
       ];
 
   ConfirmingSnapshotCreation copyWith({
@@ -123,8 +125,7 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
     bool? isButtonToUploadEnabled,
     bool? sufficientBalanceToPayWithAr,
     bool? sufficientBalanceToPayWithTurbo,
-    bool? isFreeThanksToTurbo,
-    bool? isFreeAllowanceExhausted,
+    FreeUploadStatus? freeStatus,
   }) {
     return ConfirmingSnapshotCreation(
       snapshotSize: snapshotSize ?? this.snapshotSize,
@@ -142,9 +143,7 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
           sufficientBalanceToPayWithAr ?? this.sufficientBalanceToPayWithAr,
       sufficientBalanceToPayWithTurbo: sufficientBalanceToPayWithTurbo ??
           this.sufficientBalanceToPayWithTurbo,
-      isFreeThanksToTurbo: isFreeThanksToTurbo ?? this.isFreeThanksToTurbo,
-      isFreeAllowanceExhausted:
-          isFreeAllowanceExhausted ?? this.isFreeAllowanceExhausted,
+      freeStatus: freeStatus ?? this.freeStatus,
     );
   }
 }

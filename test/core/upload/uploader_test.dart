@@ -1,3 +1,4 @@
+import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
@@ -1027,7 +1028,7 @@ void main() {
           isUploadEligibleToTurbo: true,
           arCostEstimate: mockUploadCostEstimateAR,
           turboCostEstimate: mockUploadCostEstimateTurbo,
-          isFreeUploadPossibleUsingTurbo: true,
+          freeStatus: FreeUploadStatus.free,
           totalSize: 100,
           isTurboAvailable: true,
           turboBalance:

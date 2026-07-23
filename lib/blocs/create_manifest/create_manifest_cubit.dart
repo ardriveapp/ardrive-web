@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/manifest/domain/exceptions.dart';
+import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
@@ -112,8 +113,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         (state as CreateManifestUploadReview).copyWith(
           uploadMethod: method,
           canUpload: canUpload,
-          freeUpload: info.isFreeThanksToTurbo,
-          isFreeAllowanceExhausted: info.isFreeAllowanceExhausted,
+          freeStatus: info.freeStatus,
           assignedName: (state as CreateManifestUploadReview).assignedName,
           fallbackTxId: (state as CreateManifestUploadReview).fallbackTxId,
         ),

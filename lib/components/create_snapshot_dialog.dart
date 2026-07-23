@@ -1,3 +1,5 @@
+import 'package:ardrive/turbo/models/free_upload_status.dart';
+import 'package:ardrive/components/turbo_free_status_message.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/blocs/blocs.dart';
@@ -434,32 +436,11 @@ Widget _confirmDialog(
                     ),
                     const Divider(),
                     const SizedBox(height: 16),
-                    if (state.isFreeThanksToTurbo) ...{
-                      Text(
-                        appLocalizationsOf(context).freeTurboTransaction,
-                        style: typography.paragraphNormal(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeFgDefault,
-                        ),
-                      ),
-                    } else ...{
-                      // Would have been free on size, but the allowance ran
-                      // out — explain the switch to a payment selector.
-                      if (state.isFreeAllowanceExhausted) ...{
-                        Text(
-                          appLocalizationsOf(context)
-                              .freeAllowanceUsedUpUploadNote,
-                          style: typography.paragraphNormal(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgDefault,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                      },
+                    TurboFreeStatusMessage(
+                      status: state.freeStatus,
+                      padding: const EdgeInsets.only(bottom: 12),
+                    ),
+                    if (!state.isFreeThanksToTurbo) ...{
                       PaymentMethodSelector(
                         uploadMethodInfo: UploadPaymentMethodInfo(
                           uploadMethod: state.uploadMethod,
@@ -474,7 +455,7 @@ Widget _confirmDialog(
                           turboCredits: state.turboCredits,
                           sufficentCreditsBalance:
                               state.sufficientBalanceToPayWithTurbo,
-                          isFreeThanksToTurbo: false,
+                          freeStatus: FreeUploadStatus.notEligible,
                         ),
                         onTurboTopupSucess: () {
                           createSnapshotCubit.refreshTurboBalance();

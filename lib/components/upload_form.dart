@@ -1,3 +1,4 @@
+import 'package:ardrive/components/turbo_free_status_message.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -1937,31 +1938,11 @@ class _UploadReadyWidget extends StatelessWidget {
                 ),
               ),
               const Divider(),
-              if (state.paymentInfo.isFreeThanksToTurbo) ...[
-                const SizedBox(height: 8),
-                Text(
-                  appLocalizationsOf(context).freeTurboTransaction,
-                  style: typography.paragraphNormal(
-                    color: colorTokens.textMid,
-                    fontWeight: ArFontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
+              TurboFreeStatusMessage(
+                status: state.paymentInfo.freeStatus,
+                padding: const EdgeInsets.only(top: 8, bottom: 20),
+              ),
               if (!state.paymentInfo.isFreeThanksToTurbo) ...[
-                // Small enough to have been free, but the allowance ran out.
-                // Say so explicitly: without this the modal silently switches
-                // from "free" to a payment selector with no explanation.
-                if (state.paymentInfo.isFreeAllowanceExhausted) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    appLocalizationsOf(context).freeAllowanceUsedUpUploadNote,
-                    style: typography.paragraphNormal(
-                      color: colorTokens.textMid,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
                 RepositoryProvider.value(
                   value: context.read<ArDriveUploadPreparationManager>(),
                   child: UploadPaymentMethodView(

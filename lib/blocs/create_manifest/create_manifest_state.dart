@@ -138,11 +138,9 @@ class CreateManifestUploadReview extends CreateManifestState {
   final String manifestName;
   final bool folderHasPendingFiles;
   final IOFile manifestFile;
-  final bool freeUpload;
 
-  /// Small enough to be free, but the wallet's free allowance is known to
-  /// be used up. False when the allowance could not be determined.
-  final bool isFreeAllowanceExhausted;
+  /// Whether this manifest upload is free, and if not, why not.
+  final FreeUploadStatus freeStatus;
   final UploadMethod? uploadMethod;
   final Drive drive;
   final FolderEntry parentFolder;
@@ -156,8 +154,7 @@ class CreateManifestUploadReview extends CreateManifestState {
     required this.manifestName,
     required this.folderHasPendingFiles,
     required this.manifestFile,
-    this.freeUpload = false,
-    this.isFreeAllowanceExhausted = false,
+    this.freeStatus = FreeUploadStatus.notEligible,
     this.uploadMethod,
     required this.drive,
     required this.parentFolder,
@@ -167,14 +164,19 @@ class CreateManifestUploadReview extends CreateManifestState {
     this.fallbackTxId,
   });
 
+  bool get freeUpload => freeStatus == FreeUploadStatus.free;
+
+  /// Small enough to be free, but the allowance is known to be used up.
+  bool get isFreeAllowanceExhausted =>
+      freeStatus == FreeUploadStatus.allowanceUsedUp;
+
   @override
   List get props => [
         manifestSize,
         manifestName,
         manifestFile,
         folderHasPendingFiles,
-        freeUpload,
-        isFreeAllowanceExhausted,
+        freeStatus,
         uploadMethod,
         drive,
         parentFolder,
@@ -188,8 +190,7 @@ class CreateManifestUploadReview extends CreateManifestState {
     String? manifestName,
     bool? folderHasPendingFiles,
     IOFile? manifestFile,
-    bool? freeUpload,
-    bool? isFreeAllowanceExhausted,
+    FreeUploadStatus? freeStatus,
     UploadMethod? uploadMethod,
     Drive? drive,
     FolderEntry? parentFolder,
@@ -204,9 +205,7 @@ class CreateManifestUploadReview extends CreateManifestState {
       folderHasPendingFiles:
           folderHasPendingFiles ?? this.folderHasPendingFiles,
       manifestFile: manifestFile ?? this.manifestFile,
-      freeUpload: freeUpload ?? this.freeUpload,
-      isFreeAllowanceExhausted:
-          isFreeAllowanceExhausted ?? this.isFreeAllowanceExhausted,
+      freeStatus: freeStatus ?? this.freeStatus,
       uploadMethod: uploadMethod ?? this.uploadMethod,
       drive: drive ?? this.drive,
       parentFolder: parentFolder ?? this.parentFolder,

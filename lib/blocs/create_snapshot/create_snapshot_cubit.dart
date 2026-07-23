@@ -14,6 +14,7 @@ import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/models/enums.dart';
 import 'package:drift/drift.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
@@ -74,12 +75,12 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   bool _isTurboUploadPossible = true;
   bool _sufficentCreditsBalance = false;
   bool _sufficientArBalance = false;
-  bool _isFreeThanksToTurbo = false;
-  bool _isFreeAllowanceExhausted = false;
+  FreeUploadStatus _freeStatus = FreeUploadStatus.notEligible;
   bool _wasSnapshotDataComputingCanceled = false;
 
   bool get _useTurboUpload =>
-      _uploadMethod == UploadMethod.turbo || _isFreeThanksToTurbo;
+      _uploadMethod == UploadMethod.turbo ||
+      _freeStatus == FreeUploadStatus.free;
 
   AppConfig get appConfig => configService.config;
 
@@ -173,8 +174,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
           isButtonToUploadEnabled: _isButtonToUploadEnabled,
           sufficientBalanceToPayWithAr: _sufficientArBalance,
           sufficientBalanceToPayWithTurbo: _sufficentCreditsBalance,
-          isFreeThanksToTurbo: _isFreeThanksToTurbo,
-          isFreeAllowanceExhausted: _isFreeAllowanceExhausted,
+          freeStatus: _freeStatus,
         ),
       );
     } catch (e) {
@@ -554,8 +554,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final isSizeEligibleForFree = snapshotSize <= allowedDataItemSizeForTurbo;
 
     if (!isSizeEligibleForFree) {
-      _isFreeThanksToTurbo = false;
-      _isFreeAllowanceExhausted = false;
+      _freeStatus = FreeUploadStatus.notEligible;
       return;
     }
 
@@ -565,8 +564,11 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final freeAllowance =
         await turboBalanceRetriever.getFreeAllowance(auth.currentUser.wallet);
 
-    _isFreeThanksToTurbo = freeAllowance.covers(snapshotSize);
-    _isFreeAllowanceExhausted = freeAllowance.isExhaustedFor(snapshotSize);
+    _freeStatus = freeUploadStatusFor(
+      isSizeEligible: true,
+      byteCount: snapshotSize,
+      allowance: freeAllowance,
+    );
   }
 
   void setUploadMethod(UploadMethod method) {
@@ -597,7 +599,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         _sufficentCreditsBalance) {
       logger.d('Enabling button for Turbo payment method');
       _isButtonToUploadEnabled = true;
-    } else if (_isFreeThanksToTurbo) {
+    } else if (_freeStatus == FreeUploadStatus.free) {
       logger.d('Enabling button for free upload using Turbo');
       _isButtonToUploadEnabled = true;
     } else {

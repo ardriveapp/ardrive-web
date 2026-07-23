@@ -1,3 +1,4 @@
+import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -273,7 +274,7 @@ void main() {
             isUploadEligibleToTurbo: false,
             arCostEstimate: mockUploadCostEstimateAR,
             turboCostEstimate: mockUploadCostEstimateTurbo,
-            isFreeUploadPossibleUsingTurbo: false,
+            freeStatus: FreeUploadStatus.notEligible,
             totalSize: 100,
             isTurboAvailable: true,
             turboBalance:
@@ -344,7 +345,7 @@ void main() {
       sufficientArBalance: true,
       turboCredits: '0',
       sufficentCreditsBalance: true,
-      isFreeThanksToTurbo: true,
+      freeStatus: FreeUploadStatus.free,
       totalSize: 1,
     );
 

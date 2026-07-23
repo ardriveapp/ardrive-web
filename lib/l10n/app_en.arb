@@ -182,7 +182,7 @@
   "@freeAllowanceUsedUpDescription": {
     "description": "Body of the free-allowance-used-up dialog"
   },
-  "freeAllowanceUsedUpUploadNote": "Your free upload allowance is used up, so this upload requires Credits or AR.",
+  "freeAllowanceUsedUpUploadNote": "Free allowance used up. This upload requires Credits or AR.",
   "@freeAllowanceUsedUpUploadNote": {
     "description": "Note shown above the payment method selector when an upload would have been free on size but the wallet's free allowance is used up"
   },
