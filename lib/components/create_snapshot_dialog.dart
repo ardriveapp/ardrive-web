@@ -86,6 +86,10 @@ class CreateSnapshotDialog extends StatelessWidget {
             ),
           );
         } else if (state is SnapshotUploadFailure && state.isPaymentError) {
+          // This dialog is shown with barrierDismissible: false, so it has to
+          // be popped first — otherwise dismissing the payment dialog leaves
+          // an invisible, undismissable barrier over the app.
+          Navigator.of(context).pop();
           showTurboPaymentRequiredDialog(context);
         }
       },
@@ -99,7 +103,8 @@ class CreateSnapshotDialog extends StatelessWidget {
         } else if (state is SnapshotUploadSuccess) {
           return _successDialog(context, drive.name);
         } else if (state is SnapshotUploadFailure && state.isPaymentError) {
-          // The payment dialog is shown from the listener; render nothing.
+          // Pop + payment dialog handled in the listener; render nothing for
+          // any frame between the state landing and the pop taking effect.
           return const SizedBox.shrink();
         } else if (state is SnapshotUploadFailure ||
             state is ComputeSnapshotDataFailure) {

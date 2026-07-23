@@ -12,7 +12,6 @@ import 'package:ardrive/core/upload/domain/repository/upload_repository.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/core/upload/view/blocs/upload_manifest_options_bloc.dart';
 import 'package:ardrive/entities/constants.dart';
-import 'package:ardrive/main.dart';
 import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/models/forms/cc.dart';
 import 'package:ardrive/models/forms/udl.dart';
@@ -144,6 +143,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<void> prepareManifestUpload() async {
     final freeAllowance = await _arDriveUploadManager.getFreeAllowance();
+    final maxFreeItemBytes = _arDriveUploadManager.getMaxFreeItemBytes();
 
     final manifestModels = _selectedManifestModels
         .map((e) => UploadManifestModel(
@@ -184,7 +184,7 @@ class UploadCubit extends Cubit<UploadState> {
       /// Size alone is not enough: with the free allowance used up, every
       /// manifest here would be marked free, payment selection would be
       /// skipped entirely, and each upload would then fail with a 402.
-      if (manifestSize <= configService.config.allowedDataItemSizeForTurbo &&
+      if (manifestSize <= maxFreeItemBytes &&
           freeAllowance.covers(manifestSize)) {
         manifestModels[i] = manifestModels[i].copyWith(freeThanksToTurbo: true);
       }
@@ -1067,15 +1067,18 @@ class UploadCubit extends Cubit<UploadState> {
 
       final manifestFreeAllowance =
           await _arDriveUploadManager.getFreeAllowance();
+      final manifestMaxFreeItemBytes =
+          _arDriveUploadManager.getMaxFreeItemBytes();
 
       for (var entry in manifestFileEntries) {
         _manifestFiles[entry.id] = UploadManifestModel(
           entry: entry,
           existingManifestFileId: entry.id,
           // Free requires both a small enough item and allowance to cover it.
-          freeThanksToTurbo:
-              entry.size <= configService.config.allowedDataItemSizeForTurbo &&
-                  manifestFreeAllowance.covers(entry.size),
+          // The size limit comes from the upload manager, which prefers
+          // Turbo's server-reported value over the static config one.
+          freeThanksToTurbo: entry.size <= manifestMaxFreeItemBytes &&
+              manifestFreeAllowance.covers(entry.size),
         );
       }
 

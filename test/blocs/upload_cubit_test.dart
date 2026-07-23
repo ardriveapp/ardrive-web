@@ -20,7 +20,6 @@ import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/config/selected_gateway.dart';
-import 'package:ardrive/main.dart' as ardrive_main;
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
@@ -220,6 +219,11 @@ void main() {
     // cases exercise the size-based free logic in isolation.
     when(() => mockArDriveUploadPreparationManager.getFreeAllowance())
         .thenAnswer((_) async => const TurboFreeAllowance.unlimited());
+
+    // Matches allowedDataItemSizeForTurbo in the mocked AppConfig, so the
+    // size rule behaves exactly as it did when it read the config directly.
+    when(() => mockArDriveUploadPreparationManager.getMaxFreeItemBytes())
+        .thenReturn(1);
     mockArnsRepository = MockArnsRepository();
     late MockUploadPlan uploadPlan;
     mockUploadRepository = MockUploadRepository();
@@ -382,10 +386,6 @@ void main() {
           .thenAnswer((i) => Future.value(false));
       when(() => mockProfileCubit!.isCurrentProfileArConnect())
           .thenAnswer((i) => Future.value(false));
-      // UploadCubit reads the global configService from main.dart directly,
-      // not the injected one, so it must be set for this branch to run.
-      ardrive_main.configService = mockConfigService;
-
       when(() => mockArDriveAuth.getWalletAddress())
           .thenAnswer((_) async => tWalletAddress);
       when(() => mockArDriveAuth.currentUser).thenAnswer(

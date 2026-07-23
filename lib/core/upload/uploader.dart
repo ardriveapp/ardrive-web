@@ -402,7 +402,7 @@ class UploadPaymentEvaluator {
     uploadMethod = await _determineUploadMethod(
       turboBalance.balance,
       dataItemSize,
-      dataItemSize,
+      allowedDataItemSizeForTurbo,
       _isTurboAvailableToUploadAllFiles,
       freeAllowance,
     );
@@ -535,6 +535,10 @@ class UploadPaymentEvaluator {
   /// feature flag. Never throws — see [TurboBalanceRetriever.getFreeAllowance].
   Future<TurboFreeAllowance> getFreeAllowance() =>
       _getFreeAllowance(canUseTurbo: _canUseTurbo);
+
+  /// The maximum size of an item eligible for a free upload, preferring
+  /// Turbo's server-reported value over the static config one.
+  int get maxFreeItemBytes => _maxFreeItemBytes;
 
   /// The wallet's remaining free-upload allowance for this preparation.
   ///
@@ -685,6 +689,10 @@ class ArDriveUploadPreparationManager {
   /// Returns [TurboFreeAllowance.unknown] rather than throwing.
   Future<TurboFreeAllowance> getFreeAllowance() =>
       _uploadPaymentEvaluator.getFreeAllowance();
+
+  /// The maximum size of an item eligible for a free upload, for callers that
+  /// decide free-vs-paid themselves instead of going through [prepareUpload].
+  int getMaxFreeItemBytes() => _uploadPaymentEvaluator.maxFreeItemBytes;
 
   Future<UploadPreparation> prepareUpload({
     required UploadParams params,
