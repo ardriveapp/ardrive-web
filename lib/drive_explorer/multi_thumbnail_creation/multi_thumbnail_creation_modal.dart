@@ -1,4 +1,5 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/core/arfs/repository/drive_repository.dart';
 import 'package:ardrive/drive_explorer/multi_thumbnail_creation/bloc/multi_thumbnail_creation_bloc.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
@@ -107,7 +108,15 @@ class _MultiThumbnailCreationModalContentState
     return BlocConsumer<MultiThumbnailCreationBloc,
         MultiThumbnailCreationState>(
       bloc: widget.bloc,
-      listener: (context, state) {},
+      listener: (context, state) {
+        if (state is MultiThumbnailCreationError && state.isPaymentError) {
+          // This modal is an OverlayEntry, not a route, so it cannot be popped
+          // with Navigator. Dismiss it through its own close event — otherwise
+          // it lingers behind the payment dialog.
+          widget.bloc.add(CloseMultiThumbnailCreation());
+          showTurboPaymentRequiredDialog(context);
+        }
+      },
       builder: (context, state) {
         final typography = ArDriveTypographyNew.of(context);
 
@@ -158,6 +167,11 @@ class _MultiThumbnailCreationModalContentState
               ],
             ),
           );
+        }
+
+        if (state is MultiThumbnailCreationError && state.isPaymentError) {
+          // Payment dialog shown from the listener; render nothing.
+          return const SizedBox.shrink();
         }
 
         if (state is MultiThumbnailCreationError) {

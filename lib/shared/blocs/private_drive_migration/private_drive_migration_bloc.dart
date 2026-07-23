@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_signature.dart';
@@ -30,6 +31,7 @@ class PrivateDriveMigrationBloc
   final ArDriveAuth ardriveAuth;
   final ArDriveCrypto crypto;
   final TurboUploadService turboUploadService;
+  final ArweaveService arweave;
 
   List<Drive> drivesRequiringMigration = [];
   Set<Drive> completedMigration = {};
@@ -40,6 +42,7 @@ class PrivateDriveMigrationBloc
     required this.ardriveAuth,
     required this.crypto,
     required this.turboUploadService,
+    required this.arweave,
   }) : super(PrivateDriveMigrationHidden()) {
     _drivesSubscription = drivesCubit.stream.listen((state) {
       if (state is DrivesLoadSuccess) {
@@ -130,11 +133,23 @@ class PrivateDriveMigrationBloc
 
         await driveSignatureDataItem.sign(ArweaveSigner(wallet));
 
-        // upload via turbo
-        await turboUploadService.postDataItem(
-          dataItem: driveSignatureDataItem,
-          wallet: wallet,
-        );
+        // Post via Turbo (free/credits) when enabled, otherwise directly to
+        // the network (pays AR from the wallet) — same config-based branch
+        // every other ArFS metadata op uses.
+        if (turboUploadService.useTurboUpload) {
+          await turboUploadService.postDataItem(
+            dataItem: driveSignatureDataItem,
+            wallet: wallet,
+          );
+        } else {
+          final tx = await arweave.prepareDataBundleTx(
+            await DataBundle.fromDataItems(
+              items: [driveSignatureDataItem],
+            ),
+            wallet,
+          );
+          await arweave.postTx(tx);
+        }
 
         // comment upload above and uncomment await below for dev testing
         // await Future.delayed(const Duration(seconds: 1));

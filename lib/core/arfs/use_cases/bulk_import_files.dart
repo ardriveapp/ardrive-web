@@ -418,8 +418,18 @@ class BulkImportFiles {
                   ? 1
                   : 5,
           taskQueue: fileEntries,
-          onWorkerError: (e) {
-            logger.e('Bulk import worker error', e, StackTrace.current);
+          onWorkerError: (file, error) {
+            logger.e('Bulk import worker error', error, StackTrace.current);
+            // Record the failure so BulkImportResult carries it (with its
+            // originalError) — the pool otherwise swallows task exceptions.
+            failures.add(error is FileImportFailure
+                ? error
+                : FileImportFailure(
+                    path: file.name ?? '',
+                    dataTxId: file.dataTxId ?? '',
+                    error: error.toString(),
+                    originalError: error,
+                  ));
           },
           execute: (file) async {
             if (_isCancelled) {
@@ -529,6 +539,7 @@ class BulkImportFiles {
         path: fileName,
         dataTxId: dataTxId,
         error: 'Failed to upload metadata: ${e.toString()}',
+        originalError: e,
       );
     }
     fileEntity.txId = metadataUploadResult.metadataTxId;

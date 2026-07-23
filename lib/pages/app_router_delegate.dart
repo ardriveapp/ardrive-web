@@ -299,6 +299,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                         ardriveAuth: context.read<ArDriveAuth>(),
                         crypto: ArDriveCrypto(),
                         turboUploadService: context.read<TurboUploadService>(),
+                        arweave: context.read<ArweaveService>(),
                       ),
                     ),
                   ],

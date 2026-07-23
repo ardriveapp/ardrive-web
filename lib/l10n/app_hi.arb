@@ -169,6 +169,11 @@
     "description": "The app is bundling together and signing the transactions"
   },
   "buyCredits": "क्रेडिट्स खरीदें ",
+  "actionFailedTryAgain": "Something went wrong. Please check your connection and try again.",
+  "freeAllowanceUsedUpTitle": "Free allowance used up",
+  "freeAllowanceUsedUpDescription": "Your free upload allowance has been used up, so this action now requires Credits. Add Credits and try again.",
+  "freeAllowanceUsedUpUploadNote": "Free allowance used up. This upload requires Credits or AR.",
+  "freeAllowanceExceededUploadNote": "This upload exceeds your free allowance and will need Credits or AR.",
   "@buyCredits": {},
   "camera": "कैमरा",
   "@camera": {

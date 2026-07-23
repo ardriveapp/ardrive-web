@@ -170,6 +170,26 @@
   },
   "buyCredits": "Buy Credits",
   "@buyCredits": {},
+  "actionFailedTryAgain": "Something went wrong. Please check your connection and try again.",
+  "@actionFailedTryAgain": {
+    "description": "Generic failure message for metadata operations (rename, move, create, etc.)"
+  },
+  "freeAllowanceUsedUpTitle": "Free allowance used up",
+  "@freeAllowanceUsedUpTitle": {
+    "description": "Title of the dialog shown when a Turbo action is rejected because the free allowance is exhausted"
+  },
+  "freeAllowanceUsedUpDescription": "Your free upload allowance has been used up, so this action now requires Credits. Add Credits and try again.",
+  "@freeAllowanceUsedUpDescription": {
+    "description": "Body of the free-allowance-used-up dialog"
+  },
+  "freeAllowanceUsedUpUploadNote": "Free allowance used up. This upload requires Credits or AR.",
+  "@freeAllowanceUsedUpUploadNote": {
+    "description": "Note shown above the payment method selector when an upload would have been free on size but the wallet's free allowance is used up"
+  },
+  "freeAllowanceExceededUploadNote": "This upload exceeds your free allowance and will need Credits or AR.",
+  "@freeAllowanceExceededUploadNote": {
+    "description": "Note shown above the payment method selector when an upload is size-eligible for the free tier but larger than the wallet's remaining free allowance, so part or all of it needs payment"
+  },
   "camera": "Camera",
   "@camera": {
     "description": "Button label to select a file from camera"

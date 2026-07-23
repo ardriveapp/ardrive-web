@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/blocs/drive_rename/drive_rename_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -81,6 +82,20 @@ class _DriveRenameFormState extends State<DriveRenameForm> {
             Navigator.pop(context);
           } else if (state is DriveRenameWalletMismatch) {
             Navigator.pop(context);
+          } else if (state is DriveRenameFailure) {
+            Navigator.pop(context);
+            if (state.isPaymentError) {
+              showTurboPaymentRequiredDialog(context);
+            } else {
+              showArDriveDialog(
+                context,
+                content: ArDriveStandardModalNew(
+                  title: appLocalizationsOf(context).error,
+                  description:
+                      appLocalizationsOf(context).actionFailedTryAgain,
+                ),
+              );
+            }
           } else if (state is DriveNameAlreadyExists) {
             showStandardDialog(
               context,

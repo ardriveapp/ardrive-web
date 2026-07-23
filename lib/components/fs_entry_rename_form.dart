@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/components/progress_dialog.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
@@ -95,6 +96,24 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
           } else if (state is FolderEntryRenameWalletMismatch ||
               state is FileEntryRenameWalletMismatch) {
             Navigator.pop(context);
+          } else if (state is FolderEntryRenameFailure ||
+              state is FileEntryRenameFailure) {
+            Navigator.pop(context); // dismiss the progress dialog
+            final isPaymentError =
+                (state is FolderEntryRenameFailure && state.isPaymentError) ||
+                    (state is FileEntryRenameFailure && state.isPaymentError);
+            if (isPaymentError) {
+              showTurboPaymentRequiredDialog(context);
+            } else {
+              showArDriveDialog(
+                context,
+                content: ArDriveStandardModalNew(
+                  title: appLocalizationsOf(context).error,
+                  description:
+                      appLocalizationsOf(context).actionFailedTryAgain,
+                ),
+              );
+            }
           } else if (state is FsEntryRenameInitialized) {
             _nameController.text = widget.entryName;
           } else if (state is EntityAlreadyExists) {

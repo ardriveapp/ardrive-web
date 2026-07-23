@@ -117,11 +117,12 @@ class BulkImportSuccess extends BulkImportState {
 class BulkImportError extends BulkImportState {
   final String message;
   final Object? error;
+  final bool isPaymentError;
 
-  const BulkImportError(this.message, [this.error]);
+  const BulkImportError(this.message, [this.error, this.isPaymentError = false]);
 
   @override
-  List<Object?> get props => [message, error];
+  List<Object?> get props => [message, error, isPaymentError];
 }
 
 class BulkImportResolvingPaths extends BulkImportState {

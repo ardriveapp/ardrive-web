@@ -304,6 +304,9 @@ class UploadFailure extends UploadState {
   final UploadController? controller;
 
   UploadFailure({this.failedTasks, required this.error, this.controller});
+
+  @override
+  List<Object?> get props => [error, failedTasks];
 }
 
 class UploadComplete extends UploadState {
@@ -345,6 +348,7 @@ class EmptyUpload extends UploadState {}
 
 enum UploadErrors {
   turboTimeout,
+  turboPaymentRequired,
   unknown,
 }
 

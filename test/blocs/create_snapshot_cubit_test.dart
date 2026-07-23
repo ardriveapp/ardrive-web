@@ -5,6 +5,7 @@ import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/config/app_config.dart';
+import 'package:ardrive/turbo/models/turbo_free_allowance.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/user.dart';
@@ -204,6 +205,11 @@ void main() {
 
         when(() => turboBalanceRetriever.getBalance(any()))
             .thenAnswer((invocation) async => BigInt.one);
+
+        /// Free allowance covers everything unless a test overrides it, so
+        /// these cases exercise the size-based free logic in isolation.
+        when(() => turboBalanceRetriever.getFreeAllowance(any()))
+            .thenAnswer((_) async => const TurboFreeAllowance.unlimited());
 
         final MockWallet wallet = MockWallet();
         const address = 'addr';

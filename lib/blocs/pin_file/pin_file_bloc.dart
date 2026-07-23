@@ -387,6 +387,7 @@ class PinFileBloc extends Bloc<PinFileEvent, PinFileState> {
         name: state.name,
         nameValidation: state.nameValidation,
         idValidation: state.idValidation,
+        isPaymentError: isTurboPaymentError(err),
       ));
     });
   }

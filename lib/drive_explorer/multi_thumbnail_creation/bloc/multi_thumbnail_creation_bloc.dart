@@ -1,4 +1,5 @@
 import 'package:ardrive/core/arfs/repository/drive_repository.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/utils/constants.dart';
@@ -12,6 +13,8 @@ part 'multi_thumbnail_creation_state.dart';
 
 class MultiThumbnailCreationBloc
     extends Bloc<MultiThumbnailCreationEvent, MultiThumbnailCreationState> {
+  bool _thumbnailPaymentError = false;
+
   final DriveRepository _driveRepository;
   final ThumbnailRepository _thumbnailRepository;
 
@@ -133,6 +136,7 @@ class MultiThumbnailCreationBloc
 
         int loadedCount = 0;
 
+        _thumbnailPaymentError = false;
         _worker = WorkerPool<ThumbnailLoadingStatus>(
           numWorkers: drive.isPrivate ? 1 : 2,
           maxTasksPerWorker: 2,
@@ -165,12 +169,23 @@ class MultiThumbnailCreationBloc
               emit: emit,
             );
           },
-          onWorkerError: (thumbnail) {
-            logger.d('Error creating thumbnail for file ${thumbnail.file.id}');
+          onWorkerError: (thumbnail, error) {
+            logger.d('Error creating thumbnail for file '
+                '${thumbnail.file.id}: $error');
+            // The pool completes normally even on task errors, so capture a
+            // payment rejection here to surface it after completion.
+            if (isTurboPaymentError(error)) {
+              _thumbnailPaymentError = true;
+            }
           },
         );
 
         await _worker?.onAllTasksCompleted;
+
+        if (_thumbnailPaymentError) {
+          emit(const MultiThumbnailCreationError(isPaymentError: true));
+          return;
+        }
 
         loadedDrives++;
       }
@@ -190,7 +205,8 @@ class MultiThumbnailCreationBloc
       }
       logger.e('Error creating thumbnails: $e');
 
-      emit(MultiThumbnailCreationError());
+      emit(MultiThumbnailCreationError(
+          isPaymentError: isTurboPaymentError(e)));
     }
 
     _skippedDrives.clear();

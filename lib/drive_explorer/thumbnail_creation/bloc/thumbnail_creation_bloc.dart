@@ -1,4 +1,5 @@
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:equatable/equatable.dart';
@@ -31,7 +32,7 @@ class ThumbnailCreationBloc
         emit(ThumbnailCreationSuccess());
       } catch (e, stackTrace) {
         logger.e('Error uploading thumbnail', e, stackTrace);
-        emit(ThumbnailCreationError());
+        emit(ThumbnailCreationError(isPaymentError: isTurboPaymentError(e)));
       }
     });
   }
