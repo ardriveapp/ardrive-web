@@ -428,8 +428,9 @@ void main() {
         });
 
         test(
-            'is not free when the wallet allowance cannot cover the upload, '
-            'even though every item is small enough', () async {
+            'exceeds the allowance (not "used up") when some free allowance '
+            'remains but the upload is bigger, even though every item is '
+            'small enough', () async {
           when(() => turboBalanceRetriever.getFreeAllowance(any()))
               .thenAnswer((_) async => TurboFreeAllowance.bytes(199));
 
@@ -441,10 +442,13 @@ void main() {
 
           expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
           expect(result.isSizeEligibleForFree, isTrue);
-          expect(result.isFreeAllowanceExhausted, isTrue);
+          expect(result.freeStatus, FreeUploadStatus.exceedsAllowance);
+          // The user still has free allowance, so this is NOT "used up".
+          expect(result.isFreeAllowanceExhausted, isFalse);
         });
 
-        test('is not free when the free tier is off for the wallet', () async {
+        test('is used up (not merely exceeded) when the free tier is off',
+            () async {
           when(() => turboBalanceRetriever.getFreeAllowance(any()))
               .thenAnswer((_) async => const TurboFreeAllowance.disabled());
 
@@ -455,6 +459,7 @@ void main() {
           );
 
           expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
+          expect(result.freeStatus, FreeUploadStatus.allowanceUsedUp);
           expect(result.isFreeAllowanceExhausted, isTrue);
         });
 

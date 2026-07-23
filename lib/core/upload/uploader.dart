@@ -476,8 +476,10 @@ class UploadPaymentEvaluator {
     final freeAllowance = await getFreeAllowance();
 
     /// Every item being small enough is not sufficient — the wallet's free
-    /// pool has to cover the whole upload too. Turbo bills the entire upload
-    /// once the pool runs out, so partial coverage is not free either.
+    /// pool has to cover the whole upload too. When it does not, we report the
+    /// upload as exceeding the allowance rather than guessing how much of it
+    /// ends up free: Turbo decides that server-side and does not expose the
+    /// split (see [freeUploadStatusFor]).
     var freeStatus = FreeUploadStatus.notEligible;
 
     if (isUploadEligibleToTurbo) {

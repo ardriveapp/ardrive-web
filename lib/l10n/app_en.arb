@@ -186,6 +186,10 @@
   "@freeAllowanceUsedUpUploadNote": {
     "description": "Note shown above the payment method selector when an upload would have been free on size but the wallet's free allowance is used up"
   },
+  "freeAllowanceExceededUploadNote": "This upload exceeds your free allowance and will need Credits or AR.",
+  "@freeAllowanceExceededUploadNote": {
+    "description": "Note shown above the payment method selector when an upload is size-eligible for the free tier but larger than the wallet's remaining free allowance, so part or all of it needs payment"
+  },
   "camera": "Camera",
   "@camera": {
     "description": "Button label to select a file from camera"

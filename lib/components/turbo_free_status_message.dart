@@ -27,23 +27,38 @@ class TurboFreeStatusMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // notEligible has nothing to say — the payment selector alone is the whole
+    // story — so render nothing and consume no padding.
     if (status == FreeUploadStatus.notEligible) {
       return const SizedBox.shrink();
     }
 
+    final l10n = appLocalizationsOf(context);
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final isFree = status == FreeUploadStatus.free;
+
+    // Exhaustive switch: adding a FreeUploadStatus becomes a compile error here
+    // rather than a silently wrong message.
+    final (String text, bool bold) = switch (status) {
+      FreeUploadStatus.free => (l10n.freeTurboTransaction, true),
+      FreeUploadStatus.exceedsAllowance => (
+          l10n.freeAllowanceExceededUploadNote,
+          false,
+        ),
+      FreeUploadStatus.allowanceUsedUp => (
+          l10n.freeAllowanceUsedUpUploadNote,
+          false,
+        ),
+      FreeUploadStatus.notEligible => ('', false), // handled above
+    };
 
     return Padding(
       padding: padding,
       child: Text(
-        isFree
-            ? appLocalizationsOf(context).freeTurboTransaction
-            : appLocalizationsOf(context).freeAllowanceUsedUpUploadNote,
+        text,
         style: typography.paragraphNormal(
           color: colorTokens.textMid,
-          fontWeight: isFree ? ArFontWeight.bold : ArFontWeight.book,
+          fontWeight: bold ? ArFontWeight.bold : ArFontWeight.book,
         ),
       ),
     );
