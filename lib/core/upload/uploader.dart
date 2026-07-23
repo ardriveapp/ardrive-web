@@ -392,7 +392,7 @@ class UploadPaymentEvaluator {
     /// An item is free only if it is both small enough to qualify AND the
     /// wallet still has free allowance to cover it. Size alone would promise
     /// "free" to a user whose pool is used up, and then fail with a 402.
-    final freeAllowance = await _getFreeAllowance(canUseTurbo: _canUseTurbo);
+    final freeAllowance = await getFreeAllowance();
     final freeStatus = freeUploadStatusFor(
       isSizeEligible: dataItemSize <= allowedDataItemSizeForTurbo,
       byteCount: dataItemSize,
@@ -473,7 +473,7 @@ class UploadPaymentEvaluator {
       arCostEstimate = UploadCostEstimate.zero();
     }
 
-    final freeAllowance = await _getFreeAllowance(canUseTurbo: _canUseTurbo);
+    final freeAllowance = await getFreeAllowance();
 
     /// Every item being small enough is not sufficient — the wallet's free
     /// pool has to cover the whole upload too. Turbo bills the entire upload
@@ -531,29 +531,23 @@ class UploadPaymentEvaluator {
     );
   }
 
-  /// The wallet's remaining free-upload allowance, honouring the turbo
-  /// feature flag. Never throws — see [TurboBalanceRetriever.getFreeAllowance].
-  Future<TurboFreeAllowance> getFreeAllowance() =>
-      _getFreeAllowance(canUseTurbo: _canUseTurbo);
-
   /// The maximum size of an item eligible for a free upload, preferring
   /// Turbo's server-reported value over the static config one.
   int get maxFreeItemBytes => _maxFreeItemBytes;
 
   /// The wallet's remaining free-upload allowance for this preparation.
   ///
-  /// Fetched per preparation rather than cached like the item-size limit:
-  /// the limit is static server config, but the allowance is mutable
-  /// per-wallet state that other devices and uploads consume.
-  Future<TurboFreeAllowance> _getFreeAllowance({
-    required bool canUseTurbo,
-  }) async {
-    if (!canUseTurbo) {
-      return const TurboFreeAllowance.unknown();
-    }
-
-    return _turboBalanceRetriever.getFreeAllowance(_auth.currentUser.wallet);
-  }
+  /// Deliberately NOT gated on [_canUseTurbo]: free uploads bypass the turbo
+  /// feature flag (see [_canUseTurbo]), so an upload that can still go over
+  /// Turbo for free must have its free-ness checked against the allowance
+  /// even when the flag is off. Gating this was the last place "free" was
+  /// promised without verifying the allowance. Fetched per preparation rather
+  /// than cached like the item-size limit: the limit is static server config,
+  /// but the allowance is mutable per-wallet state that other devices and
+  /// uploads consume. Never throws — see
+  /// [TurboBalanceRetriever.getFreeAllowance].
+  Future<TurboFreeAllowance> getFreeAllowance() =>
+      _turboBalanceRetriever.getFreeAllowance(_auth.currentUser.wallet);
 
   Future<TurboBalanceInterface> _getTurboBalance({
     required bool canUseTurbo,

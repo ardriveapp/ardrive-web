@@ -110,6 +110,10 @@ class _MultiThumbnailCreationModalContentState
       bloc: widget.bloc,
       listener: (context, state) {
         if (state is MultiThumbnailCreationError && state.isPaymentError) {
+          // This modal is an OverlayEntry, not a route, so it cannot be popped
+          // with Navigator. Dismiss it through its own close event — otherwise
+          // it lingers behind the payment dialog.
+          widget.bloc.add(CloseMultiThumbnailCreation());
           showTurboPaymentRequiredDialog(context);
         }
       },

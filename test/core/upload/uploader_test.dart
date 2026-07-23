@@ -647,6 +647,8 @@ void main() {
               .thenAnswer((invocation) => Future.value(503));
 
           when(() => uploadPlan.bundleUploadHandles).thenReturn([mockBundle]);
+          when(() => turboBalanceRetriever.getFreeAllowance(any()))
+              .thenAnswer((_) async => const TurboFreeAllowance.unlimited());
 
           final result = await paymentEvaluatorWithFeatureFlagFalse
               .getUploadPaymentInfoForUploadPlans(
@@ -658,7 +660,11 @@ void main() {
           expect(result.isUploadEligibleToTurbo, isTrue);
           expect(result.isTurboAvailable, isFalse);
 
+          // Paid turbo is gated by the flag...
           verifyNever(() => turboBalanceRetriever.getBalance(any()));
+          // ...but free-ness is still checked against the allowance, so we
+          // never promise "free" without verifying it, flag off or not.
+          verify(() => turboBalanceRetriever.getFreeAllowance(any())).called(1);
         });
 
         test('isTurboAvailable returns false when getBalance throws', () async {
