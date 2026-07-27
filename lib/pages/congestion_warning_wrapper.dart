@@ -27,7 +27,14 @@ Future<void> showCongestionDependentModalDialog(
       bool shouldShowDialog = false;
       await showArDriveDialog(
         context,
+        // Dismissing (tap outside) is treated the same as "Try Later" below,
+        // so the user is never trapped if the layout is tight on mobile.
+        barrierDismissible: true,
         content: ArDriveStandardModalNew(
+          // The warning text wraps to several lines on narrow screens; without
+          // this the modal grew taller than the viewport and pushed the action
+          // buttons off the bottom on mobile.
+          scrollableContent: true,
           title: appLocalizationsOf(context).warningEmphasized,
           content: SizedBox(
             width: kMediumDialogWidth,
@@ -74,7 +81,6 @@ Future<void> showCongestionDependentModalDialog(
             ),
           ],
         ),
-        barrierDismissible: false,
       );
       if (shouldShowDialog) {
         return showAppDialog();
