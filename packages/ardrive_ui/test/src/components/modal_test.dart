@@ -197,8 +197,15 @@ void main() {
       ArDriveApp(builder: (context) => MaterialApp(home: modal)),
     );
 
-    // The body scrolls...
-    expect(find.byType(SingleChildScrollView), findsWidgets);
+    // The modal's own body scrolls (scoped to the modal so an unrelated
+    // ancestor scroll view can't make this pass)...
+    expect(
+      find.descendant(
+        of: find.byType(ArDriveStandardModalNew),
+        matching: find.byType(SingleChildScrollView),
+      ),
+      findsOneWidget,
+    );
 
     // ...and the action, though below the fold, can be scrolled to and tapped.
     await tester.ensureVisible(find.text('Proceed'));
@@ -225,6 +232,14 @@ void main() {
 
     expect(find.byWidget(testWidget), findsOneWidget);
     expect(find.text('Ok'), findsOneWidget);
+    // Default path adds no scroll view around the body — the branch is distinct.
+    expect(
+      find.descendant(
+        of: find.byType(ArDriveStandardModalNew),
+        matching: find.byType(SingleChildScrollView),
+      ),
+      findsNothing,
+    );
   });
 }
 
