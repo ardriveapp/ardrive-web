@@ -369,6 +369,12 @@ class UploadPaymentEvaluator {
 
     TurboBalanceInterface turboBalance;
 
+    // Only needs the wallet, so start it now and let it run concurrently with
+    // the balance and cost round-trips below — it is awaited where the free
+    // status is computed. getFreeAllowance never throws (see its wrapper), so
+    // an in-flight future here cannot become an unhandled rejection.
+    final freeAllowanceFuture = getFreeAllowance();
+
     turboBalance = await _getTurboBalance(canUseTurbo: _canUseTurbo);
     final turboCostEstimate = await _turboUploadCostCalculator.calculateCost(
       totalSize: dataItemSize,
@@ -392,7 +398,7 @@ class UploadPaymentEvaluator {
     /// An item is free only if it is both small enough to qualify AND the
     /// wallet still has free allowance to cover it. Size alone would promise
     /// "free" to a user whose pool is used up, and then fail with a 402.
-    final freeAllowance = await getFreeAllowance();
+    final freeAllowance = await freeAllowanceFuture;
     final freeStatus = freeUploadStatusFor(
       isSizeEligible: dataItemSize <= allowedDataItemSizeForTurbo,
       byteCount: dataItemSize,
@@ -428,6 +434,13 @@ class UploadPaymentEvaluator {
     int totalSize = 0;
 
     TurboBalanceInterface turboBalance;
+
+    // Only needs the wallet, so start it now and let it run concurrently with
+    // the balance, size and cost round-trips below — it is awaited where the
+    // free status is computed. getFreeAllowance never throws (see its
+    // wrapper), so an in-flight future here cannot become an unhandled
+    // rejection.
+    final freeAllowanceFuture = getFreeAllowance();
 
     /// Check the balance of the user
     /// If we can't get the balance, turbo won't be available
@@ -473,7 +486,7 @@ class UploadPaymentEvaluator {
       arCostEstimate = UploadCostEstimate.zero();
     }
 
-    final freeAllowance = await getFreeAllowance();
+    final freeAllowance = await freeAllowanceFuture;
 
     /// Every item being small enough is not sufficient — the wallet's free
     /// pool has to cover the whole upload too. When it does not, we report the
