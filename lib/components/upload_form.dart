@@ -1,7 +1,9 @@
+import 'package:ardrive/components/turbo_free_status_message.dart';
 import 'dart:async';
 import 'dart:math';
 
 import 'package:ardrive/arns/domain/arns_repository.dart';
+import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/arns/presentation/assign_name_modal.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
@@ -69,7 +71,7 @@ Future<void> promptToUpload(
   bool autoReplaceConflicts = false,
 }) async {
   final driveDetailCubit = context.read<DriveDetailCubit>();
-  final manifestRepository =     ManifestRepositoryImpl(
+  final manifestRepository = ManifestRepositoryImpl(
     context.read<DriveDao>(),
     ArDriveUploader(
       turboUploadUri: Uri.parse(configService.config.defaultTurboUploadUrl!),
@@ -1255,8 +1257,8 @@ class _UploadReadyModalState extends State<UploadReadyModal> {
                             context.read<ArDriveUploadPreparationManager>(),
                             context.read<ArDriveAuth>(),
                           )..add(PrepareUploadPaymentMethod(
-                            params: state.params,
-                          )),
+                              params: state.params,
+                            )),
                           child: UploadPaymentMethodView(
                             useDropdown: true,
                             onError: () {
@@ -1265,7 +1267,9 @@ class _UploadReadyModalState extends State<UploadReadyModal> {
                                   .emitErrorFromPreparation();
                             },
                             onTurboTopupSucess: () {
-                              context.read<UploadCubit>().startUploadPreparation(
+                              context
+                                  .read<UploadCubit>()
+                                  .startUploadPreparation(
                                     isRetryingToPayWithTurbo: true,
                                   );
                             },
@@ -1934,17 +1938,10 @@ class _UploadReadyWidget extends StatelessWidget {
                 ),
               ),
               const Divider(),
-              if (state.paymentInfo.isFreeThanksToTurbo) ...[
-                const SizedBox(height: 8),
-                Text(
-                  appLocalizationsOf(context).freeTurboTransaction,
-                  style: typography.paragraphNormal(
-                    color: colorTokens.textMid,
-                    fontWeight: ArFontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
+              TurboFreeStatusMessage(
+                status: state.paymentInfo.freeStatus,
+                padding: const EdgeInsets.only(top: 8, bottom: 20),
+              ),
               if (!state.paymentInfo.isFreeThanksToTurbo) ...[
                 RepositoryProvider.value(
                   value: context.read<ArDriveUploadPreparationManager>(),
@@ -2372,6 +2369,28 @@ class _UploadFailureWidget extends StatelessWidget {
           ModalAction(
             action: () => Navigator.of(context).pop(false),
             title: appLocalizationsOf(context).okEmphasized,
+          ),
+        ],
+      );
+    }
+
+    if (state.error == UploadErrors.turboPaymentRequired) {
+      // Free allowance exhausted / insufficient credits: point the user at
+      // the top-up flow instead of offering a re-upload that would 402 again.
+      return ArDriveStandardModalNew(
+        title: appLocalizationsOf(context).freeAllowanceUsedUpTitle,
+        description: appLocalizationsOf(context).freeAllowanceUsedUpDescription,
+        actions: [
+          ModalAction(
+            action: () => Navigator.of(context).pop(false),
+            title: appLocalizationsOf(context).cancel,
+          ),
+          ModalAction(
+            action: () {
+              Navigator.of(context).pop(false);
+              showTurboTopupModal(context);
+            },
+            title: appLocalizationsOf(context).buyCredits,
           ),
         ],
       );

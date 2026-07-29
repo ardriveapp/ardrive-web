@@ -179,9 +179,20 @@ class ThumbnailRepository {
 
     Completer<void> completer = Completer();
 
-    controller.onError((error) {
-      logger.e('Error uploading thumbnail on upload controller', error,
+    controller.onError((tasks) {
+      logger.e('Error uploading thumbnail on upload controller', tasks,
           StackTrace.current);
+      // The controller reports failures as a task list and does NOT call
+      // onDone, so the completer must be errored here or the awaiting bloc
+      // hangs forever. Surface payment rejections as the typed exception so
+      // the bloc classifies them.
+      if (!completer.isCompleted) {
+        completer.completeError(
+          anyTaskIsTurboPaymentError(tasks.map((t) => t.error))
+              ? TurboPaymentRequiredException()
+              : Exception('Thumbnail upload failed'),
+        );
+      }
     });
 
     controller.onDone((tasks) async {
@@ -220,6 +231,13 @@ class ThumbnailRepository {
             performedAction: RevisionAction.createThumbnail));
 
         completer.complete();
+      }).catchError((Object e) {
+        // A failure while posting the thumbnail metadata (e.g. a payment
+        // rejection) must error the completer, not hang the awaiting bloc.
+        logger.e('Error finalizing thumbnail upload', e);
+        if (!completer.isCompleted) {
+          completer.completeError(e);
+        }
       });
     });
 

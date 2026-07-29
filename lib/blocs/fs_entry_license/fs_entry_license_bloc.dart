@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/forms/cc.dart';
 import 'package:ardrive/models/forms/udl.dart';
@@ -162,9 +163,11 @@ class FsEntryLicenseBloc
         licenseParams: licenseParams,
       );
       emit(const FsEntryLicenseSuccess());
-    } catch (_, trace) {
+    } catch (error, trace) {
+      logger.e('Error licensing entities', error, trace);
       addError('Error licensing entities', trace);
-      emit(const FsEntryLicenseFailure());
+      emit(FsEntryLicenseFailure(
+          isPaymentError: isTurboPaymentError(error)));
     }
   }
 

@@ -169,6 +169,11 @@
     "description": "The app is bundling together and signing the transactions"
   },
   "buyCredits": "クレジット購入",
+  "actionFailedTryAgain": "Something went wrong. Please check your connection and try again.",
+  "freeAllowanceUsedUpTitle": "Free allowance used up",
+  "freeAllowanceUsedUpDescription": "Your free upload allowance has been used up, so this action now requires Credits. Add Credits and try again.",
+  "freeAllowanceUsedUpUploadNote": "Free allowance used up. This upload requires Credits or AR.",
+  "freeAllowanceExceededUploadNote": "This upload exceeds your free allowance and will need Credits or AR.",
   "@buyCredits": {},
   "camera": "カメラ",
   "@camera": {
@@ -735,14 +740,6 @@
   "@failedToSyncDrive": {
     "description": "The app wasn't able to sync the drive"
   },
-  "feedbackContent": "このアプリを使用した体験についてフィードバックを残していただけますか？",
-  "@feedbackContent": {
-    "description": "Asks for feedback"
-  },
-  "feedbackTitle": "ArDriveをご利用いただきありがとうございます！",
-  "@feedbackTitle": {
-    "description": "We thank the user"
-  },
   "fetchingNewQuote": "新しい引用を取得...",
   "@fetchingNewQuote": {},
   "fileCount": "{fileCount, plural, zero{ファイルなし} other{{fileCount} ファイル}}",
@@ -993,10 +990,6 @@
   "@getAWallet": {
     "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
   },
-  "gotIt": "了解です！",
-  "@gotIt": {
-    "description": "Example similar phrases: I've got it, I understood, OK"
-  },
   "goToDeviceSettings": "設定に移動する",
   "@goToDeviceSettings": {
     "description": "Go to device settings"
@@ -1152,10 +1145,6 @@
   },
   "leaveAnEmailToReceiveAReceipt": "領収書をご希望の方は、Eメールをお送りください。",
   "@leaveAnEmailToReceiveAReceipt": {},
-  "leaveFeedback": "フィードバックを残す",
-  "@leaveFeedback": {
-    "description": "The action of leaving feedback"
-  },
   "letsGetStartedEmphasized": "始めましょう",
   "@letsGetStartedEmphasized": {
     "description": "Let's start setting up the account. Emphasized with upper case"
@@ -1333,10 +1322,6 @@
   "noSubscriptions": "サブスクリプションは不要です！",
   "@noSubscriptions": {
     "description": "Payment philosophy"
-  },
-  "noThanks": "結構です！もう通知しないでください",
-  "@noThanks": {
-    "description": "Don't leave feedback, and don't ask again for it"
   },
   "notLoggedIn": "ログインしていません",
   "@notLoggedIn": {
@@ -2053,6 +2038,10 @@
       }
     }
   },
+  "weWontRemindYou": "OK わかりました！もう通知しません。",
+  "@weWontRemindYou": {
+    "description": "We let the user know that we won't remind them again"
+  },
   "welcome": "ようこそ",
   "@welcome": {
     "description": "welcome"
@@ -2094,14 +2083,6 @@
   "weReSorryEmphasized": "申し訳ありません",
   "@weReSorryEmphasized": {
     "description": "Screen not supported page. Emphasized with upper case"
-  },
-  "weWontRemindYou": "OK わかりました！もう通知しません。",
-  "@weWontRemindYou": {
-    "description": "We let the user know that we won't remind them to leave feedback again"
-  },
-  "weWontRemindYouDescription": "気が変わって後日フィードバックを残したい場合は、メニューのリンクから行えます。",
-  "@weWontRemindYouDescription": {
-    "description": "We let the user know where to find the 'Leave Feedback' button"
   },
   "whatIsAKeyFile": "キーファイルとはどのようなもので、どのように機能するのですか？",
   "@whatIsAKeyFile": {},

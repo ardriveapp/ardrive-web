@@ -345,7 +345,10 @@ class HideBloc extends Bloc<HideEvent, HideState> {
       });
     } catch (e) {
       logger.e('Error while hiding', e);
-      emit(FailureHideState(hideAction: state.hideAction));
+      emit(FailureHideState(
+        hideAction: state.hideAction,
+        isPaymentError: isTurboPaymentError(e),
+      ));
     }
   }
 

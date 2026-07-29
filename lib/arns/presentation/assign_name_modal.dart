@@ -1,6 +1,8 @@
 // ignore_for_file: unnecessary_string_escapes, unused_element
 
 import 'package:ardrive/arns/domain/arns_repository.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/arns/presentation/assign_name_bloc/assign_name_bloc.dart';
 import 'package:ardrive/arns/presentation/create_undername.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
@@ -124,6 +126,9 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
 
     return BlocConsumer<AssignNameBloc, AssignNameState>(
       listener: (previous, current) {
+        if (current is SelectionFailed && current.isPaymentError) {
+          showTurboPaymentRequiredDialog(context);
+        }
         if (current is NameAssignedWithSuccess) {
           showArDriveDialog(
             context,
@@ -345,7 +350,10 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
                     ArDriveTheme.of(context).themeData.colorTokens;
                 return Center(
                   child: Text(
-                    'Error assigning ArNS name. Please try again later',
+                    state.isPaymentError
+                        ? appLocalizationsOf(context)
+                            .freeAllowanceUsedUpDescription
+                        : 'Error assigning ArNS name. Please try again later',
                     style: typography.paragraphLarge(
                       color: colorTokens.textMid,
                     ),

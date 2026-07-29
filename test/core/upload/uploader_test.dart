@@ -1,3 +1,4 @@
+import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
@@ -5,6 +6,7 @@ import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/blocs/upload/upload_handles/handles.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
+import 'package:ardrive/turbo/models/turbo_free_allowance.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/config/selected_gateway.dart';
@@ -260,6 +262,11 @@ void main() {
       when(() => turboBalanceRetriever.getBalanceAndPaidBy(any())).thenAnswer(
           (_) async =>
               TurboBalanceInterface(paidBy: [], balance: BigInt.from(500)));
+
+      /// Free allowance covers everything unless a test overrides it, so these
+      /// cases exercise the size-based free logic in isolation.
+      when(() => turboBalanceRetriever.getFreeAllowance(any()))
+          .thenAnswer((_) async => const TurboFreeAllowance.unlimited());
       when(() => sizeUtils.getSizeOfAllBundles(any()))
           .thenAnswer((_) async => 200);
       when(() => sizeUtils.getSizeOfAllV2Files(any()))
@@ -291,6 +298,11 @@ void main() {
         ]);
 
         when(() => uploadPlan.bundleUploadHandles).thenReturn([mockBundle]);
+
+        // The mocks are built once in setUpAll, so re-stub the allowance for
+        // every test: otherwise a test that overrides it leaks into the next.
+        when(() => turboBalanceRetriever.getFreeAllowance(any()))
+            .thenAnswer((_) async => const TurboFreeAllowance.unlimited());
       });
 
       /// Tests `isFreeUploadPossibleUsingTurbo`
@@ -402,6 +414,107 @@ void main() {
 
       /// Tests `isTurboAvailable`
       ///
+      /// The free-tier promise depends on the wallet's remaining allowance,
+      /// not just item size. Bundle size is stubbed to 200 bytes in setUp.
+      group('testing free allowance logic', () {
+        setUp(() {
+          when(() => uploadPlan.fileV2UploadHandles).thenReturn({});
+          // Every item comfortably under the 500 byte item limit.
+          when(() => mockFile.size).thenReturn(100);
+          when(() => mockFile2.size).thenReturn(100);
+          when(() => mockBundle.computeBundleSize())
+              .thenAnswer((_) => Future.value(200));
+          when(() => uploadPlan.bundleUploadHandles).thenReturn([mockBundle]);
+        });
+
+        test(
+            'exceeds the allowance (not "used up") when some free allowance '
+            'remains but the upload is bigger, even though every item is '
+            'small enough', () async {
+          when(() => turboBalanceRetriever.getFreeAllowance(any()))
+              .thenAnswer((_) async => TurboFreeAllowance.bytes(199));
+
+          final result =
+              await uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
+            uploadPlanForAR: uploadPlan,
+            uploadPlanForTurbo: uploadPlan,
+          );
+
+          expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
+          expect(result.isSizeEligibleForFree, isTrue);
+          expect(result.freeStatus, FreeUploadStatus.exceedsAllowance);
+          // The user still has free allowance, so this is NOT "used up".
+          expect(result.isFreeAllowanceExhausted, isFalse);
+        });
+
+        test('is used up (not merely exceeded) when the free tier is off',
+            () async {
+          when(() => turboBalanceRetriever.getFreeAllowance(any()))
+              .thenAnswer((_) async => const TurboFreeAllowance.disabled());
+
+          final result =
+              await uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
+            uploadPlanForAR: uploadPlan,
+            uploadPlanForTurbo: uploadPlan,
+          );
+
+          expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
+          expect(result.freeStatus, FreeUploadStatus.allowanceUsedUp);
+          expect(result.isFreeAllowanceExhausted, isTrue);
+        });
+
+        test('is free when the allowance exactly covers the upload', () async {
+          when(() => turboBalanceRetriever.getFreeAllowance(any()))
+              .thenAnswer((_) async => TurboFreeAllowance.bytes(200));
+
+          final result =
+              await uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
+            uploadPlanForAR: uploadPlan,
+            uploadPlanForTurbo: uploadPlan,
+          );
+
+          expect(result.isFreeUploadPossibleUsingTurbo, isTrue);
+          expect(result.isFreeAllowanceExhausted, isFalse);
+        });
+
+        test(
+            'falls back to size-only free when the allowance is unknown, so an '
+            'unreachable endpoint never forces the user to pay', () async {
+          when(() => turboBalanceRetriever.getFreeAllowance(any()))
+              .thenAnswer((_) async => const TurboFreeAllowance.unknown());
+
+          final result =
+              await uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
+            uploadPlanForAR: uploadPlan,
+            uploadPlanForTurbo: uploadPlan,
+          );
+
+          expect(result.isFreeUploadPossibleUsingTurbo, isTrue);
+          expect(result.isFreeAllowanceExhausted, isFalse,
+              reason: '"could not check" must not be reported as "used up"');
+        });
+
+        test(
+            'does not report an exhausted allowance when the real problem is '
+            'item size', () async {
+          // Over the 500 byte item limit, so it never qualified on size.
+          when(() => mockFile.size).thenReturn(501);
+          when(() => turboBalanceRetriever.getFreeAllowance(any()))
+              .thenAnswer((_) async => const TurboFreeAllowance.disabled());
+
+          final result =
+              await uploadPaymentEvaluator.getUploadPaymentInfoForUploadPlans(
+            uploadPlanForAR: uploadPlan,
+            uploadPlanForTurbo: uploadPlan,
+          );
+
+          expect(result.isFreeUploadPossibleUsingTurbo, isFalse);
+          expect(result.isSizeEligibleForFree, isFalse);
+          expect(result.isFreeAllowanceExhausted, isFalse,
+              reason: 'the remedy is a smaller file, not more allowance');
+        });
+      });
+
       group('testing turbo eligibility', () {
         setUp(() {
           when(() => uploadPlan.fileV2UploadHandles).thenReturn({});
@@ -539,6 +652,8 @@ void main() {
               .thenAnswer((invocation) => Future.value(503));
 
           when(() => uploadPlan.bundleUploadHandles).thenReturn([mockBundle]);
+          when(() => turboBalanceRetriever.getFreeAllowance(any()))
+              .thenAnswer((_) async => const TurboFreeAllowance.unlimited());
 
           final result = await paymentEvaluatorWithFeatureFlagFalse
               .getUploadPaymentInfoForUploadPlans(
@@ -550,7 +665,11 @@ void main() {
           expect(result.isUploadEligibleToTurbo, isTrue);
           expect(result.isTurboAvailable, isFalse);
 
+          // Paid turbo is gated by the flag...
           verifyNever(() => turboBalanceRetriever.getBalance(any()));
+          // ...but free-ness is still checked against the allowance, so we
+          // never promise "free" without verifying it, flag off or not.
+          verify(() => turboBalanceRetriever.getFreeAllowance(any())).called(1);
         });
 
         test('isTurboAvailable returns false when getBalance throws', () async {
@@ -920,7 +1039,7 @@ void main() {
           isUploadEligibleToTurbo: true,
           arCostEstimate: mockUploadCostEstimateAR,
           turboCostEstimate: mockUploadCostEstimateTurbo,
-          isFreeUploadPossibleUsingTurbo: true,
+          freeStatus: FreeUploadStatus.free,
           totalSize: 100,
           isTurboAvailable: true,
           turboBalance:

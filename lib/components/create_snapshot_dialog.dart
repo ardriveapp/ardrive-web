@@ -1,4 +1,7 @@
+import 'package:ardrive/turbo/models/free_upload_status.dart';
+import 'package:ardrive/components/turbo_free_status_message.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/create_snapshot/create_snapshot_cubit.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
@@ -82,6 +85,12 @@ class CreateSnapshotDialog extends StatelessWidget {
               /// txsSyncedWithGqlCount: state.notSnapshottedTxsCount,
             ),
           );
+        } else if (state is SnapshotUploadFailure && state.isPaymentError) {
+          // This dialog is shown with barrierDismissible: false, so it has to
+          // be popped first — otherwise dismissing the payment dialog leaves
+          // an invisible, undismissable barrier over the app.
+          Navigator.of(context).pop();
+          showTurboPaymentRequiredDialog(context);
         }
       },
       builder: (context, state) {
@@ -93,6 +102,10 @@ class CreateSnapshotDialog extends StatelessWidget {
           return _loadingDialog(context, state);
         } else if (state is SnapshotUploadSuccess) {
           return _successDialog(context, drive.name);
+        } else if (state is SnapshotUploadFailure && state.isPaymentError) {
+          // Pop + payment dialog handled in the listener; render nothing for
+          // any frame between the state landing and the pop taking effect.
+          return const SizedBox.shrink();
         } else if (state is SnapshotUploadFailure ||
             state is ComputeSnapshotDataFailure) {
           return _failureDialog(context, drive.id);
@@ -428,17 +441,11 @@ Widget _confirmDialog(
                     ),
                     const Divider(),
                     const SizedBox(height: 16),
-                    if (state.isFreeThanksToTurbo) ...{
-                      Text(
-                        appLocalizationsOf(context).freeTurboTransaction,
-                        style: typography.paragraphNormal(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeFgDefault,
-                        ),
-                      ),
-                    } else ...{
+                    TurboFreeStatusMessage(
+                      status: state.freeStatus,
+                      padding: const EdgeInsets.only(bottom: 12),
+                    ),
+                    if (!state.isFreeThanksToTurbo) ...{
                       PaymentMethodSelector(
                         uploadMethodInfo: UploadPaymentMethodInfo(
                           uploadMethod: state.uploadMethod,
@@ -453,7 +460,7 @@ Widget _confirmDialog(
                           turboCredits: state.turboCredits,
                           sufficentCreditsBalance:
                               state.sufficientBalanceToPayWithTurbo,
-                          isFreeThanksToTurbo: false,
+                          freeStatus: FreeUploadStatus.notEligible,
                         ),
                         onTurboTopupSucess: () {
                           createSnapshotCubit.refreshTurboBalance();

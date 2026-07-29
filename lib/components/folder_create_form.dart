@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -79,6 +80,20 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
             Navigator.pop(context);
           } else if (state is FolderCreateWalletMismatch) {
             Navigator.pop(context);
+          } else if (state is FolderCreateFailure) {
+            Navigator.pop(context);
+            if (state.isPaymentError) {
+              showTurboPaymentRequiredDialog(context);
+            } else {
+              showArDriveDialog(
+                context,
+                content: ArDriveStandardModalNew(
+                  title: appLocalizationsOf(context).error,
+                  description:
+                      appLocalizationsOf(context).actionFailedTryAgain,
+                ),
+              );
+            }
           } else if (state is FolderCreateNameAlreadyExists) {
             Navigator.pop(context);
 

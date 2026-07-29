@@ -35,6 +35,17 @@ class FsEntryMoveSuccess extends FsEntryMoveState {
   const FsEntryMoveSuccess() : super();
 }
 
+class FsEntryMoveFailure extends FsEntryMoveState {
+  /// True when the network rejected the move for payment reasons
+  /// (free allowance exhausted / insufficient credits).
+  final bool isPaymentError;
+
+  const FsEntryMoveFailure({this.isPaymentError = false}) : super();
+
+  @override
+  List<Object> get props => [isPaymentError];
+}
+
 class FsEntryMoveNameConflict extends FsEntryMoveState {
   final List<ArDriveDataTableItem> conflictingItems;
   final FolderEntry folderInView;

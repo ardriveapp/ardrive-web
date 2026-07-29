@@ -48,7 +48,7 @@ class WorkerPool<T> {
   final List<T> taskQueue;
   late List<Worker<T>> workers;
   final Function(T) execute;
-  final Function(T) onWorkerError;
+  final Function(T, Object) onWorkerError;
   final Completer<void> _completer = Completer<void>();
   int _totalTasks = 0;
   int _completedTasks = 0;
@@ -69,7 +69,7 @@ class WorkerPool<T> {
     workers = List<Worker<T>>.generate(numWorkers, (i) {
       final worker = Worker<T>(
         execute: execute,
-        onError: (task, exception) => onWorkerError(task),
+        onError: (task, exception) => onWorkerError(task, exception),
         maxTasks: maxTasksPerWorker,
         onTaskCompleted: (task) {
           if (_isCanceled) {

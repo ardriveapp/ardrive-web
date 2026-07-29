@@ -169,6 +169,11 @@
     "description": "The app is bundling together and signing the transactions"
   },
   "buyCredits": "購買積分",
+  "actionFailedTryAgain": "Something went wrong. Please check your connection and try again.",
+  "freeAllowanceUsedUpTitle": "Free allowance used up",
+  "freeAllowanceUsedUpDescription": "Your free upload allowance has been used up, so this action now requires Credits. Add Credits and try again.",
+  "freeAllowanceUsedUpUploadNote": "Free allowance used up. This upload requires Credits or AR.",
+  "freeAllowanceExceededUploadNote": "This upload exceeds your free allowance and will need Credits or AR.",
   "@buyCredits": {},
   "camera": "相機",
   "@camera": {
@@ -735,14 +740,6 @@
   "@failedToSyncDrive": {
     "description": "The app wasn't able to sync the drive"
   },
-  "feedbackContent": "您是否願意提供這個應用程式的使用經驗意見？",
-  "@feedbackContent": {
-    "description": "Asks for feedback"
-  },
-  "feedbackTitle": "感謝您使用 ArDrive！",
-  "@feedbackTitle": {
-    "description": "We thank the user"
-  },
   "fetchingNewQuote": "正在獲取新報價...",
   "@fetchingNewQuote": {},
   "fileCount": "{fileCount, plural, zero{無檔案} other{{fileCount}個檔案}}",
@@ -993,10 +990,6 @@
   "@getAWallet": {
     "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
   },
-  "gotIt": "好的！",
-  "@gotIt": {
-    "description": "Example similar phrases: I've got it, I understood, OK"
-  },
   "goToDeviceSettings": "前往設定",
   "@goToDeviceSettings": {
     "description": "Go to device settings"
@@ -1152,10 +1145,6 @@
   },
   "leaveAnEmailToReceiveAReceipt": "如需收據，請提供電郵。",
   "@leaveAnEmailToReceiveAReceipt": {},
-  "leaveFeedback": "請提供意見回饋",
-  "@leaveFeedback": {
-    "description": "The action of leaving feedback"
-  },
   "letsGetStartedEmphasized": "開始吧",
   "@letsGetStartedEmphasized": {
     "description": "Let's start setting up the account. Emphasized with upper case"
@@ -1333,10 +1322,6 @@
   "noSubscriptions": "毋須付款訂閱",
   "@noSubscriptions": {
     "description": "Payment philosophy"
-  },
-  "noThanks": "不需要再提醒我，謝謝！",
-  "@noThanks": {
-    "description": "Don't leave feedback, and don't ask again for it"
   },
   "notLoggedIn": "你没有登入",
   "@notLoggedIn": {
@@ -2053,6 +2038,10 @@
       }
     }
   },
+  "weWontRemindYou": "知道了！我們不會再發送提醒。",
+  "@weWontRemindYou": {
+    "description": "We let the user know that we won't remind them again"
+  },
   "welcome": "歡迎",
   "@welcome": {
     "description": "welcome"
@@ -2094,14 +2083,6 @@
   "weReSorryEmphasized": "很對不起 !",
   "@weReSorryEmphasized": {
     "description": "Screen not supported page. Emphasized with upper case"
-  },
-  "weWontRemindYou": "知道了！我們不會再發送提醒。",
-  "@weWontRemindYou": {
-    "description": "We let the user know that we won't remind them to leave feedback again"
-  },
-  "weWontRemindYouDescription": "如果你改變心意，想在日後留下信用評價，你可以透過選單中的連結進行。",
-  "@weWontRemindYouDescription": {
-    "description": "We let the user know where to find the 'Leave Feedback' button"
   },
   "whatIsAKeyFile": "甚麼是密鑰文件以及它如何運作？",
   "@whatIsAKeyFile": {},

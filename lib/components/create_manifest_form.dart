@@ -1,4 +1,6 @@
+import 'package:ardrive/components/turbo_free_status_message.dart';
 import 'package:ardrive/arns/domain/arns_repository.dart';
+import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/arns/presentation/assign_name_modal.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
@@ -132,6 +134,9 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
         listener: (context, state) {
       if (state is CreateManifestPrivacyMismatch) {
         Navigator.pop(context);
+      } else if (state is CreateManifestFailure && state.isPaymentError) {
+        Navigator.pop(context);
+        showTurboPaymentRequiredDialog(context);
       }
     }, builder: (context, state) {
       final textStyle = typography.paragraphNormal(
@@ -169,6 +174,9 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           errorText:
               appLocalizationsOf(context).walletChangedDuringManifestCreation,
         );
+      } else if (state is CreateManifestFailure && state.isPaymentError) {
+        // Pop + payment dialog handled in the listener; render nothing.
+        return const SizedBox.shrink();
       } else if (state is CreateManifestFailure) {
         Navigator.pop(context);
         return errorDialog(
@@ -613,18 +621,10 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
               ),
             ),
             const Divider(height: 48),
-            if (state.freeUpload) ...[
-              Padding(
-                padding: const EdgeInsets.only(bottom: 24),
-                child: Text(
-                  appLocalizationsOf(context).freeTurboTransaction,
-                  style: typography.paragraphNormal(
-                    color: colorTokens.textMid,
-                    fontWeight: ArFontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
+            TurboFreeStatusMessage(
+              status: state.freeStatus,
+              padding: const EdgeInsets.only(bottom: 24),
+            ),
             if (!state.freeUpload) ...[
               Padding(
                 padding: const EdgeInsets.only(bottom: 24),

@@ -1,3 +1,4 @@
+import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -7,10 +8,12 @@ import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
+import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/domain/repository/upload_repository.dart';
+import 'package:ardrive/turbo/models/turbo_free_allowance.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/manifest/domain/manifest_repository.dart';
@@ -211,6 +214,16 @@ void main() {
     mockTurboBalanceRetriever = MockTurboBalanceRetriever();
     mockTurboUploadCostCalculator = MockTurboUploadCostCalculator();
     mockArDriveUploadPreparationManager = MockArDriveUploadPreparationManager();
+
+    // Free allowance covers everything unless a test overrides it, so these
+    // cases exercise the size-based free logic in isolation.
+    when(() => mockArDriveUploadPreparationManager.getFreeAllowance())
+        .thenAnswer((_) async => const TurboFreeAllowance.unlimited());
+
+    // Matches allowedDataItemSizeForTurbo in the mocked AppConfig, so the
+    // size rule behaves exactly as it did when it read the config directly.
+    when(() => mockArDriveUploadPreparationManager.getMaxFreeItemBytes())
+        .thenReturn(1);
     mockArnsRepository = MockArnsRepository();
     late MockUploadPlan uploadPlan;
     mockUploadRepository = MockUploadRepository();
@@ -265,7 +278,7 @@ void main() {
             isUploadEligibleToTurbo: false,
             arCostEstimate: mockUploadCostEstimateAR,
             turboCostEstimate: mockUploadCostEstimateTurbo,
-            isFreeUploadPossibleUsingTurbo: false,
+            freeStatus: FreeUploadStatus.notEligible,
             totalSize: 100,
             isTurboAvailable: true,
             turboBalance:
@@ -321,6 +334,121 @@ void main() {
               turboUploadService: DontUseUploadService(),
             ),
           ));
+
+  /// The manifest re-upload path marks each manifest free/paid itself rather
+  /// than going through UploadPaymentEvaluator, so it needs its own coverage:
+  /// if every manifest is marked free, payment selection is skipped entirely.
+  group('manifest free-vs-paid honours the wallet free allowance', () {
+    final stubPaymentInfo = UploadPaymentMethodInfo(
+      uploadMethod: UploadMethod.turbo,
+      costEstimateTurbo: costEstimate,
+      costEstimateAr: costEstimate,
+      hasNoTurboBalance: false,
+      isTurboUploadPossible: true,
+      arBalance: '0',
+      sufficientArBalance: true,
+      turboCredits: '0',
+      sufficentCreditsBalance: true,
+      freeStatus: FreeUploadStatus.free,
+      totalSize: 1,
+    );
+
+    FileEntry manifestEntry(int size) => FileEntry(
+          dataTxId: 'manifest-tx',
+          dateCreated: DateTime(2026),
+          size: size,
+          name: 'manifest',
+          parentFolderId: tRootFolderId,
+          lastUpdated: DateTime(2026),
+          lastModifiedDate: DateTime(2026),
+          id: 'manifest-file-id',
+          driveId: tDriveId,
+          isHidden: false,
+          path: '',
+        );
+
+    setUp(() {
+      when(() => mockProfileCubit!.state).thenReturn(
+        ProfileLoggedIn(
+          user: User(
+            password: '123',
+            wallet: tWallet,
+            walletAddress: tWalletAddress!,
+            walletBalance: BigInt.one,
+            cipherKey: SecretKey(tKeyBytes),
+            profileType: ProfileType.json,
+            errorFetchingIOTokens: false,
+          ),
+          useTurbo: false,
+        ),
+      );
+      when(() => mockProfileCubit!.checkIfWalletMismatch())
+          .thenAnswer((i) => Future.value(false));
+      when(() => mockProfileCubit!.isCurrentProfileArConnect())
+          .thenAnswer((i) => Future.value(false));
+      when(() => mockArDriveAuth.getWalletAddress())
+          .thenAnswer((_) async => tWalletAddress);
+      when(() => mockArDriveAuth.currentUser).thenAnswer(
+        (_) => User(
+          password: 'password',
+          wallet: getTestWallet(),
+          walletAddress: tWalletAddress!,
+          walletBalance: BigInt.one,
+          cipherKey: SecretKey([]),
+          profileType: ProfileType.json,
+          errorFetchingIOTokens: false,
+        ),
+      );
+      when(() => mockUploadFileSizeChecker.hasFileAboveWarningSizeLimit(
+          files: any(named: 'files'))).thenAnswer((_) async => false);
+
+      // Non-empty manifest entries take the ArNS lookup branch.
+      when(() => mockArnsRepository.getAntRecordsForWallet(any()))
+          .thenAnswer((_) async => []);
+
+      // A manifest at the free item size limit.
+      when(() => mockManifestRepository.getManifestFilesInFolder(
+              driveId: any(named: 'driveId'), folderId: any(named: 'folderId')))
+          .thenAnswer((_) async => [manifestEntry(1)]);
+    });
+
+    blocTest<UploadCubit, UploadState>(
+      'marks a small manifest free when the allowance covers it',
+      build: () {
+        when(() => mockArDriveUploadPreparationManager.getFreeAllowance())
+            .thenAnswer((_) async => const TurboFreeAllowance.unlimited());
+        return getUploadCubitInstanceWith([]);
+      },
+      act: (bloc) async {
+        await bloc.startUploadPreparation();
+        await bloc.checkConflictingFiles();
+        bloc.setUploadMethod(UploadMethod.turbo, stubPaymentInfo, true);
+      },
+      verify: (bloc) {
+        final state = bloc.state as UploadReady;
+        expect(state.manifestFiles.single.freeThanksToTurbo, isTrue);
+      },
+    );
+
+    blocTest<UploadCubit, UploadState>(
+      'does not mark it free when the allowance is used up, so payment '
+      'selection is not skipped',
+      build: () {
+        when(() => mockArDriveUploadPreparationManager.getFreeAllowance())
+            .thenAnswer((_) async => const TurboFreeAllowance.disabled());
+        return getUploadCubitInstanceWith([]);
+      },
+      act: (bloc) async {
+        await bloc.startUploadPreparation();
+        await bloc.checkConflictingFiles();
+        bloc.setUploadMethod(UploadMethod.turbo, stubPaymentInfo, true);
+      },
+      verify: (bloc) {
+        final state = bloc.state as UploadReady;
+        expect(state.manifestFiles.single.freeThanksToTurbo, isFalse);
+      },
+    );
+  });
 
   group('check if there are some conflicting file', () {
     setUp(() {

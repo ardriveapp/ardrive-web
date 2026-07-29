@@ -12,7 +12,6 @@ import 'package:ardrive/core/upload/domain/repository/upload_repository.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/core/upload/view/blocs/upload_manifest_options_bloc.dart';
 import 'package:ardrive/entities/constants.dart';
-import 'package:ardrive/main.dart';
 import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/models/forms/cc.dart';
 import 'package:ardrive/models/forms/udl.dart';
@@ -28,7 +27,8 @@ import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_pro
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:ardrive_uploader/ardrive_uploader.dart';
+import 'package:ardrive_uploader/ardrive_uploader.dart'
+    hide TurboUploadTimeoutException, TurboRateLimitException;
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
@@ -75,6 +75,7 @@ class UploadCubit extends Cubit<UploadState> {
         _uploadThumbnail = configService.config.uploadThumbnails,
         _manifestRepository = manifestRepository,
         _createManifestCubit = createManifestCubit,
+        _arDriveUploadManager = arDriveUploadManager,
         _autoReplaceConflicts = autoReplaceConflicts,
         super(uploadFolders ? UploadLoadingFolders() : UploadLoadingFiles());
 
@@ -88,6 +89,7 @@ class UploadCubit extends Cubit<UploadState> {
   final ARNSRepository _arnsRepository;
   final ManifestRepository _manifestRepository;
   final CreateManifestCubit _createManifestCubit;
+  final ArDriveUploadPreparationManager _arDriveUploadManager;
 
   final String _driveId;
   final String _parentFolderId;
@@ -140,6 +142,9 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   Future<void> prepareManifestUpload() async {
+    final freeAllowance = await _arDriveUploadManager.getFreeAllowance();
+    final maxFreeItemBytes = _arDriveUploadManager.getMaxFreeItemBytes();
+
     final manifestModels = _selectedManifestModels
         .map((e) => UploadManifestModel(
               entry: e.manifest,
@@ -176,7 +181,11 @@ class UploadCubit extends Cubit<UploadState> {
 
       final manifestSize = await manifestFile.length;
 
-      if (manifestSize <= configService.config.allowedDataItemSizeForTurbo) {
+      /// Size alone is not enough: with the free allowance used up, every
+      /// manifest here would be marked free, payment selection would be
+      /// skipped entirely, and each upload would then fail with a 402.
+      if (manifestSize <= maxFreeItemBytes &&
+          freeAllowance.covers(manifestSize)) {
         manifestModels[i] = manifestModels[i].copyWith(freeThanksToTurbo: true);
       }
     }
@@ -272,12 +281,19 @@ class UploadCubit extends Cubit<UploadState> {
           completedCount: ++completedCount,
         ));
 
-        await _arnsRepository.setUndernamesToFile(
-          undername: undername,
-          driveId: _driveId,
-          fileId: manifestModels[i].existingManifestFileId,
-          processId: manifestModels[i].antRecord!.processId,
-        );
+        try {
+          await _arnsRepository.setUndernamesToFile(
+            undername: undername,
+            driveId: _driveId,
+            fileId: manifestModels[i].existingManifestFileId,
+            processId: manifestModels[i].antRecord!.processId,
+          );
+        } catch (e) {
+          // The manifest already uploaded; a failed name assignment (e.g. a
+          // payment rejection on the name data item) must not hang the flow.
+          // The name can be reassigned later from the details panel.
+          logger.e('Failed to assign name to uploaded manifest', e);
+        }
 
         manifestModels[i] = manifestModels[i].copyWith(
             isCompleted: true, isUploading: false, isAssigningUndername: false);
@@ -744,7 +760,8 @@ class UploadCubit extends Cubit<UploadState> {
     if (_conflictingFiles.isNotEmpty) {
       // Auto-replace conflicts when flag is set (used for markdown editing)
       if (_autoReplaceConflicts) {
-        logger.d('Auto-replacing ${_conflictingFiles.length} conflicting file(s)');
+        logger.d(
+            'Auto-replacing ${_conflictingFiles.length} conflicting file(s)');
         await prepareUploadPlanAndCostEstimates(
           uploadAction: UploadActions.replace,
         );
@@ -1048,12 +1065,20 @@ class UploadCubit extends Cubit<UploadState> {
 
       _manifestFiles = {};
 
+      final manifestFreeAllowance =
+          await _arDriveUploadManager.getFreeAllowance();
+      final manifestMaxFreeItemBytes =
+          _arDriveUploadManager.getMaxFreeItemBytes();
+
       for (var entry in manifestFileEntries) {
         _manifestFiles[entry.id] = UploadManifestModel(
           entry: entry,
           existingManifestFileId: entry.id,
-          freeThanksToTurbo:
-              entry.size <= configService.config.allowedDataItemSizeForTurbo,
+          // Free requires both a small enough item and allowance to cover it.
+          // The size limit comes from the upload manager, which prefers
+          // Turbo's server-reported value over the static config one.
+          freeThanksToTurbo: entry.size <= manifestMaxFreeItemBytes &&
+              manifestFreeAllowance.covers(entry.size),
         );
       }
 
@@ -1275,7 +1300,7 @@ class UploadCubit extends Cubit<UploadState> {
     uploadController.onError((tasks) {
       logger.i('Error uploading folders. Number of tasks: ${tasks.length}');
       emit(UploadFailure(
-          error: UploadErrors.unknown,
+          error: _uploadErrorFromTasks(tasks),
           failedTasks: tasks,
           controller: uploadController));
     });
@@ -1344,7 +1369,7 @@ class UploadCubit extends Cubit<UploadState> {
       logger.i('Error uploading files. Number of tasks: ${tasks.length}');
       emit(
         UploadFailure(
-          error: UploadErrors.unknown,
+          error: _uploadErrorFromTasks(tasks),
           failedTasks: tasks,
           controller: uploadController,
         ),
@@ -1437,13 +1462,20 @@ class UploadCubit extends Cubit<UploadState> {
           transactionId: metadata.dataTxId!,
         );
 
-        await _arnsRepository.setUndernamesToFile(
-          undername: newUndername,
-          driveId: _targetDrive.id,
-          fileId: metadata.id,
-          processId: _selectedAntRecord!.processId,
-          uploadNewRevision: false,
-        );
+        try {
+          await _arnsRepository.setUndernamesToFile(
+            undername: newUndername,
+            driveId: _targetDrive.id,
+            fileId: metadata.id,
+            processId: _selectedAntRecord!.processId,
+            uploadNewRevision: false,
+          );
+        } catch (e) {
+          // The file already uploaded; a failed name assignment (e.g. a
+          // payment rejection on the name data item) must not hang the
+          // upload. The name can be reassigned later from the details panel.
+          logger.e('Failed to assign name to uploaded file', e);
+        }
       }
     }
   }
@@ -1505,7 +1537,23 @@ class UploadCubit extends Cubit<UploadState> {
       return;
     }
 
+    if (isTurboPaymentError(error)) {
+      emit(UploadFailure(error: UploadErrors.turboPaymentRequired));
+
+      return;
+    }
+
     emit(UploadFailure(error: UploadErrors.unknown));
+  }
+
+  /// Classifies a failed-task list from the uploader into an [UploadErrors].
+  /// A payment rejection (free allowance exhausted / insufficient credits)
+  /// arrives as an UnderFundException on one of the tasks.
+  UploadErrors _uploadErrorFromTasks(List<UploadTask> tasks) {
+    final hasPaymentError = tasks.any((t) => isTurboPaymentError(t.error));
+    return hasPaymentError
+        ? UploadErrors.turboPaymentRequired
+        : UploadErrors.unknown;
   }
 }
 
