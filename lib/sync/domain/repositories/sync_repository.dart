@@ -434,6 +434,8 @@ class _SyncRepository implements SyncRepository {
             transactionParseBatchSize: calculateTransactionParseBatchSize(
               drivesCount: syncProgress.drivesCount,
               drivesSynced: syncProgress.drivesSynced,
+              maxConcurrentDriveSyncs:
+                  _configService.config.maxConcurrentDriveSyncs.clamp(1, 64),
             ),
             ownerAddress: drive.ownerAddress,
             txFechedCallback: txFechedCallback,
@@ -2199,9 +2201,17 @@ const parsePhaseWeight = 0.9;
 int calculateTransactionParseBatchSize({
   required int drivesCount,
   required int drivesSynced,
+  required int maxConcurrentDriveSyncs,
 }) {
   final remainingDrives = max(1, drivesCount - drivesSynced);
-  return max(1, 200 ~/ remainingDrives);
+  // Only [maxConcurrentDriveSyncs] drives sync at once, so divide the parse
+  // budget across the drives ACTUALLY running concurrently rather than all
+  // remaining ones. Dividing by every remaining drive under-shoots the batch
+  // size once the account exceeds the concurrency bound (e.g. 200 drives ->
+  // batch 1 instead of ~4), needlessly slowing large-account syncs.
+  final concurrentDrives =
+      min(remainingDrives, max(1, maxConcurrentDriveSyncs));
+  return max(1, 200 ~/ concurrentDrives);
 }
 
 /// Computes the refreshed file entries from the provided revisions and returns them as a map keyed by their ids.
