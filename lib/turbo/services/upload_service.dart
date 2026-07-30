@@ -142,14 +142,25 @@ class TurboUploadService {
       final response = await httpClient.get(url: '$turboUploadUri/v1/info');
       final raw = response.data;
       final data = raw is String ? json.decode(raw) : raw;
-      final value = data is Map ? data['maxItemBytes'] : null;
-      if (value is int && value > 0) {
-        _serverMaxItemBytes = value;
-        logger.d('Turbo free item size limit from /v1/info: $value bytes');
+
+      // The per-item free cap lives at `freeTier.maxItemBytes`; some/older
+      // deployments surface it as top-level `freeUploadLimitBytes` (or
+      // `maxItemBytes`). Read whichever is present, in that order — the old
+      // code only checked top-level `maxItemBytes`, which the current service
+      // does not return, so it silently fell back to the config value.
+      final freeTier = data is Map ? data['freeTier'] : null;
+      final value = (freeTier is Map ? freeTier['maxItemBytes'] : null) ??
+          (data is Map
+              ? (data['freeUploadLimitBytes'] ?? data['maxItemBytes'])
+              : null);
+      if (value is num && value > 0) {
+        _serverMaxItemBytes = value.toInt();
+        logger.d('Turbo free item size limit from /v1/info: '
+            '$_serverMaxItemBytes bytes');
       }
     } catch (e) {
-      logger.w(
-          'Could not fetch turbo /v1/info; using configured item size: $e');
+      logger
+          .w('Could not fetch turbo /v1/info; using configured item size: $e');
     }
   }
 }
