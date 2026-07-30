@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/components/license/cc_type_form.dart';
 import 'package:ardrive/components/license/udl_params_form.dart';
 import 'package:ardrive/components/license_summary.dart';
@@ -569,15 +570,21 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                           const SizedBox(height: 16),
                           Flexible(
                             child: Text(
-                              // TODO: Localize
-                              'No dice.',
+                              state.isPaymentError
+                                  ? appLocalizationsOf(context)
+                                      .freeAllowanceUsedUpTitle
+                                  // TODO: Localize
+                                  : 'No dice.',
                               style: ArDriveTypography.headline.headline4Bold(),
                             ),
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            // TODO: Localize
-                            'Your attempted licensing failed, want to try again now?',
+                            state.isPaymentError
+                                ? appLocalizationsOf(context)
+                                    .freeAllowanceUsedUpDescription
+                                // TODO: Localize
+                                : 'Your attempted licensing failed, want to try again now?',
                             textAlign: TextAlign.center,
                             style: ArDriveTypography.body.buttonLargeRegular(
                               color: ArDriveTheme.of(context)
@@ -601,10 +608,18 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
                                       .themeAccentSubtle,
                                 )
                                 .copyWith(fontWeight: FontWeight.bold),
-                            text: appLocalizationsOf(context).tryAgain,
-                            onPressed: () => context
-                                .read<FsEntryLicenseBloc>()
-                                .add(const FsEntryLicenseFailureTryAgain()),
+                            text: state.isPaymentError
+                                ? appLocalizationsOf(context).buyCredits
+                                : appLocalizationsOf(context).tryAgain,
+                            onPressed: () {
+                              if (state.isPaymentError) {
+                                showTurboPaymentRequiredDialog(context);
+                              } else {
+                                context
+                                    .read<FsEntryLicenseBloc>()
+                                    .add(const FsEntryLicenseFailureTryAgain());
+                              }
+                            },
                           ),
                         ],
                       ),

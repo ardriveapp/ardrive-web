@@ -1,5 +1,4 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/components/copy_button.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -23,8 +22,6 @@ Future<void> promptToShareDrive({
         ),
         child: const DriveShareDialog(),
       ),
-    ).then(
-      (value) => context.read<FeedbackSurveyCubit>().openRemindMe(),
     );
 
 /// Depends on a provided [DriveShareCubit] for business logic.
@@ -125,10 +122,7 @@ class DriveShareDialogState extends State<DriveShareDialog> {
             actions: [
               if (state is DriveShareLoadSuccess)
                 ModalAction(
-                  action: () {
-                    Navigator.pop(context);
-                    context.read<FeedbackSurveyCubit>().openRemindMe();
-                  },
+                  action: () => Navigator.pop(context),
                   title: appLocalizationsOf(context).doneEmphasized,
                 )
             ],

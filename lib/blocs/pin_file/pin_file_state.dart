@@ -147,13 +147,15 @@ class PinFileSuccess extends PinFileState {
 }
 
 class PinFileError extends PinFileState {
+  final bool isPaymentError;
   const PinFileError({
     required super.id,
     required super.name,
     required super.nameValidation,
     required super.idValidation,
+    this.isPaymentError = false,
   });
 
   @override
-  List<Object> get props => [];
+  List<Object> get props => [isPaymentError];
 }

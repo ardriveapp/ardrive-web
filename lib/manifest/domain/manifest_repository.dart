@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/arns/domain/arns_repository.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
@@ -173,7 +174,16 @@ class ManifestRepositoryImpl implements ManifestRepository {
         completer.complete(manifestMetadata.dataTxId);
       });
 
-      controller.onError((err) => completer.completeError(err));
+      controller.onError((tasks) {
+        // Preserve payment rejections as a typed exception through the
+        // ManifestCreationException wrapping so the UI can react to them.
+        if (tasks.any((t) => isTurboPaymentError(t.error))) {
+          completer.completeError(UnderFundException(
+              message: 'Manifest upload requires payment', error: tasks));
+        } else {
+          completer.completeError(tasks);
+        }
+      });
 
       final result = await completer.future;
 

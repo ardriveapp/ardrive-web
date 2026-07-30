@@ -1,6 +1,5 @@
 class Resources {
   static const images = Images();
-  static const surveyFeedbackFormUrl = 'https://pds-inc.typeform.com/ardrive';
 
   static const ardrivePublicSiteLink = 'https://ardrive.io/';
   static const agreementLink = 'https://ardrive.io/tos-and-privacy/';
@@ -13,7 +12,7 @@ class Resources {
       'https://docs.ar.io/build/upload/turbo-credits';
   static const cookiePolicy = 'https://stripe.com/legal/cookies-policy';
   static const emailSupport = 'support@ardrive.io';
-  static const helpCenterLink = 'https://ardrive.io/contact';
+  static const helpCenterLink = 'https://ardrive.io/help/';
   static const discordLink = 'https://discord.gg/KkTqDe4GAF';
 
   static const priceCalculatorLink = 'https://prices.ardrive.io/';

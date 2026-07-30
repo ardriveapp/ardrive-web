@@ -11,6 +11,8 @@ import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/config/app_config.dart';
+import 'package:ardrive/turbo/models/free_upload_status.dart';
+import 'package:ardrive/turbo/models/turbo_free_allowance.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/user/user.dart';
@@ -323,6 +325,7 @@ class UploadPaymentEvaluator {
   final ArDriveAuth _auth;
   final SizeUtils sizeUtils = SizeUtils();
   final AppConfig _appConfig;
+  final TurboUploadService? _turboUploadService;
 
   UploadPaymentEvaluator({
     required TurboBalanceRetriever turboBalanceRetriever,
@@ -331,11 +334,20 @@ class UploadPaymentEvaluator {
     required ArDriveAuth auth,
     required TurboUploadCostCalculator turboUploadCostCalculator,
     required AppConfig appConfig,
+    TurboUploadService? turboUploadService,
   })  : _turboBalanceRetriever = turboBalanceRetriever,
         _appConfig = appConfig,
         _uploadCostEstimateCalculatorForAR = uploadCostEstimateCalculatorForAR,
         _auth = auth,
+        _turboUploadService = turboUploadService,
         _turboUploadCostCalculator = turboUploadCostCalculator;
+
+  /// The maximum size, in bytes, of an item eligible for a free Turbo upload.
+  /// Prefers the server-reported value from GET /v1/info (via the upload
+  /// service); falls back to the config value when no service is wired.
+  int get _maxFreeItemBytes =>
+      _turboUploadService?.maxFreeItemSizeBytes ??
+      _appConfig.allowedDataItemSizeForTurbo;
 
   /// Even if this feature flag is off, it will be possible to upload using turbo
   /// for free files
@@ -353,6 +365,12 @@ class UploadPaymentEvaluator {
 
     TurboBalanceInterface turboBalance;
 
+    // Only needs the wallet, so start it now and let it run concurrently with
+    // the balance and cost round-trips below — it is awaited where the free
+    // status is computed. getFreeAllowance never throws (see its wrapper), so
+    // an in-flight future here cannot become an unhandled rejection.
+    final freeAllowanceFuture = getFreeAllowance();
+
     turboBalance = await _getTurboBalance(canUseTurbo: _canUseTurbo);
     final turboCostEstimate = await _turboUploadCostCalculator.calculateCost(
       totalSize: dataItemSize,
@@ -363,8 +381,7 @@ class UploadPaymentEvaluator {
     /// show Turbo as an option instead of crashing entirely.
     UploadCostEstimate arCostEstimate;
     try {
-      arCostEstimate =
-          await _uploadCostEstimateCalculatorForAR.calculateCost(
+      arCostEstimate = await _uploadCostEstimateCalculatorForAR.calculateCost(
         totalSize: dataItemSize,
       );
     } catch (e) {
@@ -372,16 +389,24 @@ class UploadPaymentEvaluator {
       arCostEstimate = UploadCostEstimate.zero();
     }
 
-    final allowedDataItemSizeForTurbo = _appConfig.allowedDataItemSizeForTurbo;
+    final allowedDataItemSizeForTurbo = _maxFreeItemBytes;
 
-    bool isFreeUploadPossibleUsingTurbo =
-        dataItem.getSize() <= allowedDataItemSizeForTurbo;
+    /// An item is free only if it is both small enough to qualify AND the
+    /// wallet still has free allowance to cover it. Size alone would promise
+    /// "free" to a user whose pool is used up, and then fail with a 402.
+    final freeAllowance = await freeAllowanceFuture;
+    final freeStatus = freeUploadStatusFor(
+      isSizeEligible: dataItemSize <= allowedDataItemSizeForTurbo,
+      byteCount: dataItemSize,
+      allowance: freeAllowance,
+    );
 
     uploadMethod = await _determineUploadMethod(
       turboBalance.balance,
       dataItemSize,
-      dataItemSize,
+      allowedDataItemSizeForTurbo,
       _isTurboAvailableToUploadAllFiles,
+      freeAllowance,
     );
 
     return UploadPaymentInfo(
@@ -390,7 +415,7 @@ class UploadPaymentEvaluator {
       isUploadEligibleToTurbo: true,
       arCostEstimate: arCostEstimate,
       turboCostEstimate: turboCostEstimate,
-      isFreeUploadPossibleUsingTurbo: isFreeUploadPossibleUsingTurbo,
+      freeStatus: freeStatus,
       totalSize: totalSize,
       turboBalance: turboBalance,
     );
@@ -406,8 +431,16 @@ class UploadPaymentEvaluator {
 
     TurboBalanceInterface turboBalance;
 
+    // Only needs the wallet, so start it now and let it run concurrently with
+    // the balance, size and cost round-trips below — it is awaited where the
+    // free status is computed. getFreeAllowance never throws (see its
+    // wrapper), so an in-flight future here cannot become an unhandled
+    // rejection.
+    final freeAllowanceFuture = getFreeAllowance();
+
     // Fetch turbo balance and compute AR sizes in parallel — these are
-    // independent operations (1 network call + 2 local computations).
+    // independent operations (1 network call + 2 local computations). If the
+    // balance call fails turbo is marked unavailable inside _getTurboBalance.
     final parallelResults = await Future.wait([
       _getTurboBalance(canUseTurbo: _canUseTurbo),
       sizeUtils.getSizeOfAllBundles(uploadPlanForAR.bundleUploadHandles),
@@ -453,25 +486,38 @@ class UploadPaymentEvaluator {
       }();
     }
 
-    // Await both cost calculations (they've been running in parallel)
+    // Await both cost calculations (they've been running in parallel). The AR
+    // future already falls back to a zero estimate on gateway failure so the
+    // modal can still offer Turbo instead of crashing.
     UploadCostEstimate arCostEstimate = await arCostFuture;
     if (turboCostFuture != null) {
       turboCostEstimate = await turboCostFuture;
     }
 
-    bool isFreeUploadPossibleUsingTurbo = false;
+    final freeAllowance = await freeAllowanceFuture;
+
+    /// Every item being small enough is not sufficient — the wallet's free
+    /// pool has to cover the whole upload too. When it does not, we report the
+    /// upload as exceeding the allowance rather than guessing how much of it
+    /// ends up free: Turbo decides that server-side and does not expose the
+    /// split (see [freeUploadStatusFor]).
+    var freeStatus = FreeUploadStatus.notEligible;
 
     if (isUploadEligibleToTurbo) {
-      final allowedDataItemSizeForTurbo =
-          _appConfig.allowedDataItemSizeForTurbo;
+      final allowedDataItemSizeForTurbo = _maxFreeItemBytes;
 
-      isFreeUploadPossibleUsingTurbo =
-          uploadPlanForTurbo.bundleUploadHandles.every(
-        (bundle) => bundle.fileDataItemUploadHandles.every(
-          (file) => file.size <= allowedDataItemSizeForTurbo,
+      freeStatus = freeUploadStatusFor(
+        isSizeEligible: uploadPlanForTurbo.bundleUploadHandles.every(
+          (bundle) => bundle.fileDataItemUploadHandles.every(
+            (file) => file.size <= allowedDataItemSizeForTurbo,
+          ),
         ),
+        byteCount: turboBundleSizes,
+        allowance: freeAllowance,
       );
     }
+
+    final isFreeUploadPossibleUsingTurbo = freeStatus == FreeUploadStatus.free;
 
     // Checking isFreeUploadPossibleUsingTurbo uses the 100KB file size check
     // against the date, but using _determineUploadMethod() additionally uses the
@@ -483,8 +529,9 @@ class UploadPaymentEvaluator {
         : await _determineUploadMethod(
             turboBalance.balance,
             turboBundleSizes,
-            _appConfig.allowedDataItemSizeForTurbo,
+            _maxFreeItemBytes,
             _isTurboAvailableToUploadAllFiles,
+            freeAllowance,
           );
 
     if (uploadMethod == UploadMethod.turbo) {
@@ -501,11 +548,29 @@ class UploadPaymentEvaluator {
       isUploadEligibleToTurbo: isUploadEligibleToTurbo,
       arCostEstimate: arCostEstimate,
       turboCostEstimate: turboCostEstimate,
-      isFreeUploadPossibleUsingTurbo: isFreeUploadPossibleUsingTurbo,
+      freeStatus: freeStatus,
       totalSize: totalSize,
       turboBalance: turboBalance,
     );
   }
+
+  /// The maximum size of an item eligible for a free upload, preferring
+  /// Turbo's server-reported value over the static config one.
+  int get maxFreeItemBytes => _maxFreeItemBytes;
+
+  /// The wallet's remaining free-upload allowance for this preparation.
+  ///
+  /// Deliberately NOT gated on [_canUseTurbo]: free uploads bypass the turbo
+  /// feature flag (see [_canUseTurbo]), so an upload that can still go over
+  /// Turbo for free must have its free-ness checked against the allowance
+  /// even when the flag is off. Gating this was the last place "free" was
+  /// promised without verifying the allowance. Fetched per preparation rather
+  /// than cached like the item-size limit: the limit is static server config,
+  /// but the allowance is mutable per-wallet state that other devices and
+  /// uploads consume. Never throws — see
+  /// [TurboBalanceRetriever.getFreeAllowance].
+  Future<TurboFreeAllowance> getFreeAllowance() =>
+      _turboBalanceRetriever.getFreeAllowance(_auth.currentUser.wallet);
 
   Future<TurboBalanceInterface> _getTurboBalance({
     required bool canUseTurbo,
@@ -540,9 +605,11 @@ class UploadPaymentEvaluator {
     int turboBundleSizes,
     int allowedSizeForTurbo,
     bool isTurboAvailableToUploadAllFiles,
+    TurboFreeAllowance freeAllowance,
   ) async {
     bool isFreeUploadPossibleUsingTurbo =
-        turboBundleSizes <= allowedSizeForTurbo;
+        turboBundleSizes <= allowedSizeForTurbo &&
+            freeAllowance.covers(turboBundleSizes);
 
     if (isFreeUploadPossibleUsingTurbo) {
       return UploadMethod.turbo;
@@ -581,23 +648,37 @@ class UploadPreparation {
 class UploadPaymentInfo {
   final UploadMethod defaultPaymentMethod;
   final bool isUploadEligibleToTurbo;
-  final bool isFreeUploadPossibleUsingTurbo;
   final bool isTurboAvailable;
   final UploadCostEstimate arCostEstimate;
   final UploadCostEstimate turboCostEstimate;
   final int totalSize;
   final TurboBalanceInterface turboBalance;
 
+  /// Whether this upload is free, and if not, why not. Single source of truth
+  /// for the booleans below, which cannot therefore contradict each other.
+  final FreeUploadStatus freeStatus;
+
   UploadPaymentInfo({
     required this.defaultPaymentMethod,
     required this.isUploadEligibleToTurbo,
     required this.arCostEstimate,
     required this.turboCostEstimate,
-    required this.isFreeUploadPossibleUsingTurbo,
+    required this.freeStatus,
     required this.totalSize,
     required this.isTurboAvailable,
     required this.turboBalance,
   });
+
+  bool get isFreeUploadPossibleUsingTurbo =>
+      freeStatus == FreeUploadStatus.free;
+
+  /// Would have been free on size, but the wallet's allowance is known to be
+  /// used up. False when the allowance simply could not be determined.
+  bool get isFreeAllowanceExhausted =>
+      freeStatus == FreeUploadStatus.allowanceUsedUp;
+
+  /// Every item is small enough to qualify, regardless of allowance left.
+  bool get isSizeEligibleForFree => freeStatus != FreeUploadStatus.notEligible;
 }
 
 class UploadPlansPreparation {
@@ -619,6 +700,16 @@ class ArDriveUploadPreparationManager {
     required UploadPaymentEvaluator uploadPreparePaymentOptions,
   })  : _uploadPreparer = uploadPreparer,
         _uploadPaymentEvaluator = uploadPreparePaymentOptions;
+
+  /// The wallet's remaining free-upload allowance, for callers that decide
+  /// free-vs-paid themselves instead of going through [prepareUpload].
+  /// Returns [TurboFreeAllowance.unknown] rather than throwing.
+  Future<TurboFreeAllowance> getFreeAllowance() =>
+      _uploadPaymentEvaluator.getFreeAllowance();
+
+  /// The maximum size of an item eligible for a free upload, for callers that
+  /// decide free-vs-paid themselves instead of going through [prepareUpload].
+  int getMaxFreeItemBytes() => _uploadPaymentEvaluator.maxFreeItemBytes;
 
   Future<UploadPreparation> prepareUpload({
     required UploadParams params,

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
@@ -81,11 +82,13 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
                 parentFolder: folderInView,
                 showHiddenItems: event.showHiddenItems,
               );
+              emit(const FsEntryMoveSuccess());
             } catch (err, stacktrace) {
-              // TODO: we must handle this error better. Currently, if an error occurs, it will emit the success state anyway.
               logger.e('Error moving items', err, stacktrace);
+              emit(FsEntryMoveFailure(
+                isPaymentError: err is TurboPaymentRequiredException,
+              ));
             }
-            emit(const FsEntryMoveSuccess());
           } else {
             emit(
               FsEntryMoveNameConflict(
@@ -100,13 +103,20 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
         if (event is FsEntryMoveSkipConflicts) {
           emit(const FsEntryMoveLoadInProgress());
           final folderInView = event.folderInView;
-          await moveEntities(
-            parentFolder: folderInView,
-            conflictingItems: event.conflictingItems,
-            profile: profile,
-            showHiddenItems: event.showHiddenItems,
-          );
-          emit(const FsEntryMoveSuccess());
+          try {
+            await moveEntities(
+              parentFolder: folderInView,
+              conflictingItems: event.conflictingItems,
+              profile: profile,
+              showHiddenItems: event.showHiddenItems,
+            );
+            emit(const FsEntryMoveSuccess());
+          } catch (err, stacktrace) {
+            logger.e('Error moving items', err, stacktrace);
+            emit(FsEntryMoveFailure(
+              isPaymentError: err is TurboPaymentRequiredException,
+            ));
+          }
         }
 
         if (event is FsEntryMoveUpdateTargetFolder) {
@@ -213,63 +223,55 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
     final folderMap = <String, FolderEntriesCompanion>{};
 
-    await _driveDao.transaction(() async {
-      for (var fileToMove in filesToMove) {
-        var file = await _driveDao.fileById(fileId: fileToMove.id).getSingle();
-        file = file.copyWith(
-            parentFolderId: parentFolder.id, lastUpdated: DateTime.now());
-        final fileKey = driveKey != null
-            ? await _crypto.deriveFileKey(driveKey.key, file.id)
-            : null;
+    // Prepare and sign everything first, WITHOUT touching the database: a
+    // network rejection (e.g. payment required) must not leave the local
+    // database claiming the move happened when the chain never saw it.
+    final preparedFileMoves = <MapEntry<FileEntry, FileEntity>>[];
+    final preparedFolderMoves = <MapEntry<FolderEntry, FolderEntity>>[];
 
-        final fileEntity = file.asEntity();
+    for (var fileToMove in filesToMove) {
+      var file = await _driveDao.fileById(fileId: fileToMove.id).getSingle();
+      file = file.copyWith(
+          parentFolderId: parentFolder.id, lastUpdated: DateTime.now());
+      final fileKey = driveKey != null
+          ? await _crypto.deriveFileKey(driveKey.key, file.id)
+          : null;
 
-        final fileDataItem = await _arweave.prepareEntityDataItem(
-          fileEntity,
-          profile.user.wallet,
-          key: fileKey,
-        );
+      final fileEntity = file.asEntity();
 
-        moveTxDataItems.add(fileDataItem);
+      final fileDataItem = await _arweave.prepareEntityDataItem(
+        fileEntity,
+        profile.user.wallet,
+        key: fileKey,
+      );
 
-        await _driveDao.writeToFile(file);
-        fileEntity.txId = fileDataItem.id;
+      moveTxDataItems.add(fileDataItem);
+      fileEntity.txId = fileDataItem.id;
+      preparedFileMoves.add(MapEntry(file, fileEntity));
+    }
 
-        await _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
-          performedAction: RevisionAction.move,
-        ));
-      }
+    for (var folderToMove in foldersToMove) {
+      var folder =
+          await _driveDao.folderById(folderId: folderToMove.id).getSingle();
+      folder = folder.copyWith(
+        parentFolderId: Value(parentFolder.id),
+        lastUpdated: DateTime.now(),
+      );
 
-      for (var folderToMove in foldersToMove) {
-        var folder =
-            await _driveDao.folderById(folderId: folderToMove.id).getSingle();
-        folder = folder.copyWith(
-          parentFolderId: Value(parentFolder.id),
-          lastUpdated: DateTime.now(),
-        );
+      final folderEntity = folder.asEntity();
 
-        final folderEntity = folder.asEntity();
+      final folderDataItem = await _arweave.prepareEntityDataItem(
+        folderEntity,
+        profile.user.wallet,
+        key: driveKey?.key,
+      );
 
-        final folderDataItem = await _arweave.prepareEntityDataItem(
-          folderEntity,
-          profile.user.wallet,
-          key: driveKey?.key,
-        );
+      moveTxDataItems.add(folderDataItem);
+      folderEntity.txId = folderDataItem.id;
+      preparedFolderMoves.add(MapEntry(folder, folderEntity));
+    }
 
-        moveTxDataItems.add(folderDataItem);
-
-        await _driveDao.writeToFolder(folder);
-
-        folderEntity.txId = folderDataItem.id;
-
-        await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
-          performedAction: RevisionAction.move,
-        ));
-
-        folderMap.addAll({folder.id: folder.toCompanion(false)});
-      }
-    });
-
+    // Post to the network before committing locally.
     if (_turboUploadService.useTurboUpload) {
       for (var dataItem in moveTxDataItems) {
         await _turboUploadService.postDataItem(
@@ -286,5 +288,25 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
       );
       await _arweave.postTx(moveTx);
     }
+
+    // Network accepted everything: commit the move locally.
+    await _driveDao.transaction(() async {
+      for (final prepared in preparedFileMoves) {
+        await _driveDao.writeToFile(prepared.key);
+        await _driveDao.insertFileRevision(prepared.value.toRevisionCompanion(
+          performedAction: RevisionAction.move,
+        ));
+      }
+
+      for (final prepared in preparedFolderMoves) {
+        await _driveDao.writeToFolder(prepared.key);
+        await _driveDao
+            .insertFolderRevision(prepared.value.toRevisionCompanion(
+          performedAction: RevisionAction.move,
+        ));
+
+        folderMap.addAll({prepared.key.id: prepared.key.toCompanion(false)});
+      }
+    });
   }
 }

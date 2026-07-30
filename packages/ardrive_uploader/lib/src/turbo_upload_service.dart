@@ -20,6 +20,19 @@ abstract class TurboUploadService {
   Future<void> cancel();
 }
 
+/// Payment (402) and rate-limit (429) rejections are deterministic within a
+/// request window: retrying multiplies server load and, for metered free
+/// tiers, recorded usage — so they are excluded from retries.
+bool shouldRetryTurboRequest(Exception e) {
+  if (e is DioException) {
+    final status = e.response?.statusCode;
+    if (status == 402 || status == 429) {
+      return false;
+    }
+  }
+  return e is! UnderFundException && e is! TurboRateLimitException;
+}
+
 abstract class TurboUploadServiceChunkUploadsBase
     implements TurboUploadService {
   TurboUploadServiceChunkUploadsBase(this.turboUploadUri);
@@ -52,6 +65,7 @@ abstract class TurboUploadServiceChunkUploadsBase
 
     // 2) Fetch basic upload info and tell server chunkSize (server will assert)
     final uploadInfo = await r.retry(
+      retryIf: shouldRetryTurboRequest,
       () =>
           dio.get('$turboUploadUri/chunks/arweave/-1/-1?chunkSize=$chunkSize'),
     );
@@ -265,6 +279,7 @@ class TurboUploadServiceMultipart extends TurboUploadServiceChunkUploadsBase {
     try {
       // POST /finalize
       final finalizeResponse = await r.retry(
+        retryIf: shouldRetryTurboRequest,
         () => dio.post(
           '$turboUploadUri/chunks/arweave/$uploadId/finalize',
           options: Options(
@@ -449,13 +464,21 @@ class TurboUploadServiceNonChunked extends TurboUploadService {
   Exception _handleException(Object error) {
     logger.e('Handling exception in UploadService', error);
 
-    if (error is DioException && error.response?.statusCode == 408) {
-      logger.e(
-        'Handling exception in UploadService with status code: ${error.response?.statusCode}',
-        error,
-      );
-
-      return TurboUploadTimeoutException();
+    if (error is DioException) {
+      final statusCode = error.response?.statusCode;
+      if (statusCode == 408) {
+        return TurboUploadTimeoutException();
+      }
+      if (statusCode == 402) {
+        return UnderFundException(
+          message: 'Upload rejected: payment required (free allowance '
+              'exhausted or insufficient credits).',
+          error: error.response?.data,
+        );
+      }
+      if (statusCode == 429) {
+        return TurboRateLimitException(error: error.response?.data);
+      }
     }
 
     return Exception(error);

@@ -91,7 +91,13 @@ final class SelectionConfirmed extends AssignNameState {
 
 final class LoadingUndernames extends AssignNameState {}
 
-class SelectionFailed extends AssignNameState {}
+class SelectionFailed extends AssignNameState {
+  final bool isPaymentError;
+  const SelectionFailed({this.isPaymentError = false});
+
+  @override
+  List<Object?> get props => [isPaymentError];
+}
 
 final class LoadingNamesFailed extends AssignNameState {}
 

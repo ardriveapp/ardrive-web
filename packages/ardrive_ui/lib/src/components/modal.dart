@@ -693,6 +693,7 @@ class ArDriveStandardModalNew extends StatelessWidget {
     this.width,
     this.hasCloseButton = false,
     this.close,
+    this.scrollableContent = false,
   });
 
   final String? title;
@@ -707,6 +708,15 @@ class ArDriveStandardModalNew extends StatelessWidget {
   final bool hasCloseButton;
   final Function()? close;
 
+  /// When true, the modal body (including its actions) is bounded to the
+  /// viewport height and scrolls if it would exceed it, so the actions can
+  /// never be pushed off-screen on short/mobile layouts.
+  ///
+  /// Opt-in: leaving it false preserves the previous unbounded layout, which
+  /// some callers rely on for content that manages its own height (e.g. an
+  /// [Expanded] or a [ListView]) and would break under a scroll view.
+  final bool scrollableContent;
+
   @override
   Widget build(BuildContext context) {
     late double maxWidth;
@@ -720,6 +730,77 @@ class ArDriveStandardModalNew extends StatelessWidget {
       maxWidth = modalStandardMaxWidthSize;
     }
 
+    final body = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (title != null || titleWidget != null) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  child: titleWidget ??
+                      Text(
+                        title!,
+                        style: typography.heading3(
+                          fontWeight: ArFontWeight.bold,
+                        ),
+                      ),
+                ),
+                if (hasCloseButton)
+                  ArDriveClickArea(
+                    child: GestureDetector(
+                      onTap: () {
+                        if (close != null) {
+                          close?.call();
+                        } else {
+                          Navigator.pop(context);
+                        }
+                      },
+                      child: const Align(
+                        alignment: Alignment.centerRight,
+                        child: ArDriveIcon(
+                          icon: ArDriveIconsData.x,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  )
+              ],
+            ),
+            const SizedBox(
+              height: 24,
+            ),
+          ],
+          if (content != null) ...[
+            content!,
+            const SizedBox(
+              height: 24,
+            ),
+          ],
+          if (content == null) ...[
+            if (description != null) ...[
+              Text(
+                description!,
+                style: ArDriveTypography.body.smallRegular(),
+                textAlign: TextAlign.left,
+              ),
+            ],
+          ],
+          if (actions != null) ...[
+            const SizedBox(
+              height: 24,
+            ),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: _buildActions(
+                actions!,
+                context,
+              ),
+            )
+          ]
+        ]);
+
     return ArDriveModalNew(
       constraints: BoxConstraints(
         minHeight: 100,
@@ -727,76 +808,17 @@ class ArDriveStandardModalNew extends StatelessWidget {
         minWidth: 250,
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (title != null || titleWidget != null) ...[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Flexible(
-                    child: titleWidget ??
-                        Text(
-                          title!,
-                          style: typography.heading3(
-                            fontWeight: ArFontWeight.bold,
-                          ),
-                        ),
-                  ),
-                  if (hasCloseButton)
-                    ArDriveClickArea(
-                      child: GestureDetector(
-                        onTap: () {
-                          if (close != null) {
-                            close?.call();
-                          } else {
-                            Navigator.pop(context);
-                          }
-                        },
-                        child: const Align(
-                          alignment: Alignment.centerRight,
-                          child: ArDriveIcon(
-                            icon: ArDriveIconsData.x,
-                            size: 24,
-                          ),
-                        ),
-                      ),
-                    )
-                ],
+      content: scrollableContent
+          ? ConstrainedBox(
+              // Bound the body to most of the viewport and let it scroll, so a
+              // tall modal on a short screen never pushes its actions off the
+              // bottom — they scroll into reach instead of being clipped.
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.8,
               ),
-              const SizedBox(
-                height: 24,
-              ),
-            ],
-            if (content != null) ...[
-              content!,
-              const SizedBox(
-                height: 24,
-              ),
-            ],
-            if (content == null) ...[
-              if (description != null) ...[
-                Text(
-                  description!,
-                  style: ArDriveTypography.body.smallRegular(),
-                  textAlign: TextAlign.left,
-                ),
-              ],
-            ],
-            if (actions != null) ...[
-              const SizedBox(
-                height: 24,
-              ),
-              Align(
-                alignment: Alignment.bottomRight,
-                child: _buildActions(
-                  actions!,
-                  context,
-                ),
-              )
-            ]
-          ]),
+              child: SingleChildScrollView(child: body),
+            )
+          : body,
     );
   }
 
