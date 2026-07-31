@@ -287,19 +287,15 @@ class UploadPreparer {
   }) : _uploadPlanUtils = uploadPlanUtils;
 
   Future<UploadPlansPreparation> prepareFileUpload(UploadParams params) async {
-    final uploadPlanForAR = await _mountUploadPlan(
-      params: params,
-      method: UploadMethod.ar,
-    );
-
-    final uploadPlanForTurbo = await _mountUploadPlan(
-      params: params,
-      method: UploadMethod.turbo,
-    );
+    // Create both upload plans in parallel — they're independent.
+    final plans = await Future.wait([
+      _mountUploadPlan(params: params, method: UploadMethod.ar),
+      _mountUploadPlan(params: params, method: UploadMethod.turbo),
+    ]);
 
     return UploadPlansPreparation(
-      uploadPlanForAr: uploadPlanForAR,
-      uploadPlanForTurbo: uploadPlanForTurbo,
+      uploadPlanForAr: plans[0],
+      uploadPlanForTurbo: plans[1],
     );
   }
 
@@ -442,14 +438,17 @@ class UploadPaymentEvaluator {
     // rejection.
     final freeAllowanceFuture = getFreeAllowance();
 
-    /// Check the balance of the user
-    /// If we can't get the balance, turbo won't be available
-    turboBalance = await _getTurboBalance(canUseTurbo: _canUseTurbo);
-
-    final arBundleSizes = await sizeUtils
-        .getSizeOfAllBundles(uploadPlanForAR.bundleUploadHandles);
-    final arFileSizes = await sizeUtils
-        .getSizeOfAllV2Files(uploadPlanForAR.fileV2UploadHandles);
+    // Fetch turbo balance and compute AR sizes in parallel — these are
+    // independent operations (1 network call + 2 local computations). If the
+    // balance call fails turbo is marked unavailable inside _getTurboBalance.
+    final parallelResults = await Future.wait([
+      _getTurboBalance(canUseTurbo: _canUseTurbo),
+      sizeUtils.getSizeOfAllBundles(uploadPlanForAR.bundleUploadHandles),
+      sizeUtils.getSizeOfAllV2Files(uploadPlanForAR.fileV2UploadHandles),
+    ]);
+    turboBalance = parallelResults[0] as TurboBalanceInterface;
+    final arBundleSizes = parallelResults[1] as int;
+    final arFileSizes = parallelResults[2] as int;
 
     bool isUploadEligibleToTurbo =
         uploadPlanForTurbo.fileV2UploadHandles.isEmpty &&
@@ -459,31 +458,40 @@ class UploadPaymentEvaluator {
 
     int turboBundleSizes = 0;
 
-    /// Calculate the upload with Turbo if possible
+    // Calculate AR and Turbo costs in parallel — they're independent.
+    final arCostFuture = () async {
+      try {
+        return await _uploadCostEstimateCalculatorForAR.calculateCost(
+          totalSize: arBundleSizes + arFileSizes,
+        );
+      } catch (e) {
+        logger.e('Failed to get AR cost estimate, falling back to zero', e);
+        return UploadCostEstimate.zero();
+      }
+    }();
+
+    Future<UploadCostEstimate>? turboCostFuture;
     if (isUploadEligibleToTurbo) {
       turboBundleSizes = await sizeUtils
           .getSizeOfAllBundles(uploadPlanForTurbo.bundleUploadHandles);
-
-      try {
-        turboCostEstimate = await _turboUploadCostCalculator.calculateCost(
-          totalSize: turboBundleSizes,
-        );
-      } catch (e) {
-        _isTurboAvailableToUploadAllFiles = false;
-      }
+      turboCostFuture = () async {
+        try {
+          return await _turboUploadCostCalculator.calculateCost(
+            totalSize: turboBundleSizes,
+          );
+        } catch (e) {
+          _isTurboAvailableToUploadAllFiles = false;
+          return UploadCostEstimate.zero();
+        }
+      }();
     }
 
-    /// Calculate the upload cost with AR (D2N). If the gateway is
-    /// unavailable, fall back to a zero estimate so the modal can still
-    /// show Turbo as an option instead of crashing entirely.
-    UploadCostEstimate arCostEstimate;
-    try {
-      arCostEstimate = await _uploadCostEstimateCalculatorForAR.calculateCost(
-        totalSize: arBundleSizes + arFileSizes,
-      );
-    } catch (e) {
-      logger.e('Failed to get AR cost estimate, falling back to zero', e);
-      arCostEstimate = UploadCostEstimate.zero();
+    // Await both cost calculations (they've been running in parallel). The AR
+    // future already falls back to a zero estimate on gateway failure so the
+    // modal can still offer Turbo instead of crashing.
+    UploadCostEstimate arCostEstimate = await arCostFuture;
+    if (turboCostFuture != null) {
+      turboCostEstimate = await turboCostFuture;
     }
 
     final freeAllowance = await freeAllowanceFuture;
