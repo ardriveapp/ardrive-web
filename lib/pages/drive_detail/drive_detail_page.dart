@@ -285,7 +285,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                   },
                                   child: DetailsPanel(
                                     currentDrive: driveDetailState.drive,
-                                    isSharePage: false,
                                     drivePrivacy:
                                         driveDetailState.drive.privacy,
                                     item: driveDetailState.selectedItem!,
@@ -343,7 +342,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                         ),
                                         child: DetailsPanel(
                                           item: driveDetailState.selectedItem!,
-                                          isSharePage: false,
                                           drivePrivacy:
                                               driveDetailState.drive.privacy,
                                           canNavigateThroughImages: false,
@@ -862,7 +860,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                   driveDetailState.selectedItem != null
                               ? DetailsPanel(
                                   currentDrive: driveDetailState.currentDrive,
-                                  isSharePage: false,
                                   drivePrivacy:
                                       driveDetailState.currentDrive.privacy,
                                   item: driveDetailState.selectedItem!,
@@ -940,7 +937,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           },
           child: DetailsPanel(
             currentDrive: driveDetailLoadSuccessState.currentDrive,
-            isSharePage: false,
             drivePrivacy: driveDetailLoadSuccessState.currentDrive.privacy,
             item: driveDetailLoadSuccessState.selectedItem!,
             onNextImageNavigation: () {

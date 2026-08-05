@@ -257,6 +257,10 @@
   "@cookieConsentBodyPart1": {},
   "cookieConsentBodyPart2": "\"Accept\" क्लिक करके आप इन कुकीज़ के इस्तेमाल के लिए कंसेंट देते हैं ",
   "@cookieConsentBodyPart2": {},
+  "copyAccessKey": "कुंजी कॉपी करें",
+  "@copyAccessKey": {
+    "description": "Label of the button that copies the access key on the share file dialog"
+  },
   "copyBundleTxID": "बंडल ट्रांज़ैक्शन ID कॉपी करें",
   "@copyBundleTxID": {
     "description": "Copy transaction ID of the Bundle transaction"
@@ -1641,6 +1645,58 @@
   "@sharedDrivesEmphasized": {
     "description": "Sub-header for the shared drives list. Emphasized with upper case"
   },
+  "sharedFileAccessKeyMalformed": "यह ऐक्सेस कुंजी जैसी नहीं लगती। यह 43 अक्षरों की होनी चाहिए।",
+  "@sharedFileAccessKeyMalformed": {
+    "description": "Inline error shown on the shared file page when the pasted access key has the wrong shape, before anything is sent to the network"
+  },
+  "sharedFileAccessKeySentSeparately": "इसे शेयर करने वाले ने आपको कुंजी अलग से भेजी है — फ़ाइल खोलने के लिए उसे नीचे चिपकाएँ।",
+  "@sharedFileAccessKeySentSeparately": {
+    "description": "Text on the shared file page telling the recipient that the sender sent the access key through a different channel"
+  },
+  "sharedFileAccessKeyStaysOnThisDevice": "ऐक्सेस कुंजी इसी डिवाइस पर रहती है और कभी ArDrive को नहीं भेजी जाती।",
+  "@sharedFileAccessKeyStaysOnThisDevice": {
+    "description": "Reassurance shown under the access key field on the shared file page"
+  },
+  "sharedFileDetailsDrawerTitle": "फ़ाइल का विवरण",
+  "@sharedFileDetailsDrawerTitle": {
+    "description": "Title of the collapsed drawer holding the technical details of a shared file"
+  },
+  "sharedFileDetailsHiddenBySender": "भेजने वाले ने इस फ़ाइल का विवरण अनलॉक होने तक छिपाना चुना है।",
+  "@sharedFileDetailsHiddenBySender": {
+    "description": "Shown on the locked shared file page when the sender chose to keep the file's name, size and type out of the link"
+  },
+  "sharedFileDetailsLicense": "लाइसेंस",
+  "@sharedFileDetailsLicense": {
+    "description": "Label of the license row in the shared file details drawer"
+  },
+  "sharedFileDetailsMetadata": "मेटाडेटा",
+  "@sharedFileDetailsMetadata": {
+    "description": "Label of the metadata transaction row in the shared file details drawer"
+  },
+  "sharedFileDetailsOwner": "शेयर करने वाला",
+  "@sharedFileDetailsOwner": {
+    "description": "Label of the owner address row in the shared file details drawer"
+  },
+  "sharedFileDetailsTransaction": "ट्रांज़ैक्शन",
+  "@sharedFileDetailsTransaction": {
+    "description": "Label of the data transaction row in the shared file details drawer"
+  },
+  "sharedFileEncryptedFileTitle": "एन्क्रिप्टेड फ़ाइल",
+  "@sharedFileEncryptedFileTitle": {
+    "description": "Fallback title on the shared file page when a private file's name is not known yet"
+  },
+  "sharedFileGenericTitle": "शेयर की गई फ़ाइल",
+  "@sharedFileGenericTitle": {
+    "description": "Fallback title on the shared file page when a public file's name is not known yet"
+  },
+  "sharedFileGetLatest": "नवीनतम पाएँ",
+  "@sharedFileGetLatest": {
+    "description": "Button that fetches the newest version of a shared file"
+  },
+  "sharedFileHidePreview": "प्रीव्यू छिपाएँ",
+  "@sharedFileHidePreview": {
+    "description": "Button that closes the preview on the shared file page"
+  },
   "sharedFileIsEncrypted": "यह फ़ाइल एन्क्रिप्ट की गई है।",
   "@sharedFileIsEncrypted": {
     "description": "Description that says the file is encrypted on shared file page"
@@ -1649,13 +1705,133 @@
   "@sharedFileKeyIncorrect": {
     "description": "Inline error shown under the file key field on the shared file page when the provided key cannot unlock the file"
   },
+  "sharedFileLinkChecking": "जाँच हो रही है",
+  "@sharedFileLinkChecking": {
+    "description": "Badge shown while the link's claims about the file are still being checked"
+  },
+  "sharedFileLinkDetailsMismatch": "फ़ाइल का विवरण लिंक से मेल नहीं खाता",
+  "@sharedFileLinkDetailsMismatch": {
+    "description": "Warning shown when the details carried by the link do not match the file's own record"
+  },
+  "sharedFileLinkIncomplete": "यह लिंक अधूरा लगता है। भेजने वाले से इसे दोबारा भेजने के लिए कहें।",
+  "@sharedFileLinkIncomplete": {
+    "description": "Shown when the shared link itself is missing the information needed to open a file, so only the sender can fix it"
+  },
   "sharedFileLinkKeyDamaged": "इस लिंक की कुंजी क्षतिग्रस्त लगती है। भेजने वाले से लिंक दोबारा भेजने के लिए कहें, या नीचे कुंजी चिपकाएँ।",
   "@sharedFileLinkKeyDamaged": {
     "description": "Inline error under the file key field when the key in the link could not be decoded"
   },
+  "sharedFileLinkNotChecked": "जाँचा नहीं गया",
+  "@sharedFileLinkNotChecked": {
+    "description": "Neutral badge shown when the link carried nothing that could be checked against the file"
+  },
+  "sharedFileLinkVerified": "सत्यापित",
+  "@sharedFileLinkVerified": {
+    "description": "Badge shown when the details carried by the link match the file's own record"
+  },
   "sharedFileLoadFailure": "हम यह फ़ाइल लोड नहीं कर सके। कृपया अपना कनेक्शन जाँचें और फिर से प्रयास करें।",
   "@sharedFileLoadFailure": {
     "description": "Error shown on the shared file page when the file details could not be loaded because of a network or gateway failure"
+  },
+  "sharedFileLoadingDetails": "फ़ाइल का विवरण लोड हो रहा है…",
+  "@sharedFileLoadingDetails": {
+    "description": "Shown on the shared file page while the file's details are being resolved"
+  },
+  "sharedFileNetworkTrouble": "हमें नेटवर्क तक पहुँचने में दिक्कत हो रही है। अपना कनेक्शन जाँचें और फिर से प्रयास करें।",
+  "@sharedFileNetworkTrouble": {
+    "description": "Shown on the shared file page when the network cannot be reached"
+  },
+  "sharedFileNewerVersionAvailable": "इस फ़ाइल का नया वर्शन उपलब्ध है।",
+  "@sharedFileNewerVersionAvailable": {
+    "description": "Banner shown when the shared file has a version newer than the one the link points at"
+  },
+  "sharedFileNotFoundOnNetwork": "अभी हमें यह फ़ाइल नेटवर्क पर नहीं मिल रही है। हो सकता है वह अब भी सेट हो रही हो — थोड़ी देर बाद फिर से प्रयास करें।",
+  "@sharedFileNotFoundOnNetwork": {
+    "description": "Shown on the shared file page when the file could not be found after the automatic retries"
+  },
+  "sharedFilePasteAccessKey": "ऐक्सेस कुंजी चिपकाएँ",
+  "@sharedFilePasteAccessKey": {
+    "description": "Placeholder of the access key field on the shared file page"
+  },
+  "sharedFilePermanentFileSharing": "स्थायी फ़ाइल शेयरिंग",
+  "@sharedFilePermanentFileSharing": {
+    "description": "Tagline shown under the ArDrive logo on the shared file page"
+  },
+  "sharedFilePreviewUnsupported": "इस फ़ाइल का प्रीव्यू यहाँ नहीं दिखाया जा सकता। इसे खोलने के लिए डाउनलोड करें।",
+  "@sharedFilePreviewUnsupported": {
+    "description": "Shown on the shared file page when the file cannot be previewed in the browser"
+  },
+  "sharedFileProtectedWithAccessKey": "यह फ़ाइल एक ऐक्सेस कुंजी से सुरक्षित है।",
+  "@sharedFileProtectedWithAccessKey": {
+    "description": "Heading of the locked shared file page, telling the recipient that an access key is needed to open the file"
+  },
+  "sharedFileRememberKeyForThisTab": "इस टैब के लिए यह कुंजी याद रखें",
+  "@sharedFileRememberKeyForThisTab": {
+    "description": "Label of the checkbox that keeps the access key for the current browser tab"
+  },
+  "sharedFileRetry": "फिर से प्रयास करें",
+  "@sharedFileRetry": {
+    "description": "Button that tries loading the shared file again"
+  },
+  "sharedFileRetryingNow": "अभी फिर से कोशिश हो रही है…",
+  "@sharedFileRetryingNow": {
+    "description": "Shown when the automatic retry for a shared file is running"
+  },
+  "sharedFileSharedBy": "{address} द्वारा शेयर किया गया",
+  "@sharedFileSharedBy": {
+    "description": "Shows the shortened wallet address the shared file was shared by",
+    "placeholders": {
+      "address": {
+        "type": "String",
+        "example": "Zvp8dE...gF0e"
+      }
+    }
+  },
+  "sharedFileSharedVersion": "शेयर की गई",
+  "@sharedFileSharedVersion": {
+    "description": "Marks, in the version history, the version the shared link points at"
+  },
+  "sharedFileShowingLatestVersion": "आप नवीनतम वर्शन देख रहे हैं। आपको भेजा गया लिंक एक पुराने वर्शन की ओर इशारा करता है।",
+  "@sharedFileShowingLatestVersion": {
+    "description": "Notice shown to the recipient of a pinned link once they have asked for the latest version, telling them the page no longer shows the version the sender linked to"
+  },
+  "sharedFileStillPropagating": "यह फ़ाइल अभी-अभी अपलोड हुई है और शायद अब भी नेटवर्क पर फैल रही है। {seconds} सेकंड में फिर से कोशिश होगी…",
+  "@sharedFileStillPropagating": {
+    "description": "Shown while a just-uploaded shared file has not spread across the network yet, counting down the seconds to the next automatic retry",
+    "placeholders": {
+      "seconds": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "sharedFileStoredPermanently": "यह फ़ाइल स्थायी रूप से संग्रहित है और इसे कभी भी डाउनलोड किया जा सकता है।",
+  "@sharedFileStoredPermanently": {
+    "description": "Reassurance shown at the bottom of the shared file page"
+  },
+  "sharedFileUnlockedWithAccessKey": "आपकी ऐक्सेस कुंजी से अनलॉक किया गया। बाकी सभी के लिए यह फ़ाइल एन्क्रिप्टेड ही रहती है।",
+  "@sharedFileUnlockedWithAccessKey": {
+    "description": "Shown after a private shared file has been unlocked with an access key"
+  },
+  "sharedFileUnlockFile": "फ़ाइल अनलॉक करें",
+  "@sharedFileUnlockFile": {
+    "description": "Button that submits the access key on the shared file page"
+  },
+  "sharedFileVersionHistoryTitle": "वर्शन इतिहास",
+  "@sharedFileVersionHistoryTitle": {
+    "description": "Title of the collapsed drawer holding the version history of a shared file"
+  },
+  "sharedFileVersionHistoryUnavailable": "अभी हम वर्शन इतिहास लोड नहीं कर सके।",
+  "@sharedFileVersionHistoryUnavailable": {
+    "description": "Shown in the version history drawer when the revisions could not be loaded"
+  },
+  "sharedFileViewLatest": "नवीनतम देखें",
+  "@sharedFileViewLatest": {
+    "description": "Button that opens the newest version of a shared file when the link is pinned to an older one"
+  },
+  "sharedFileViewSharedVersion": "शेयर किया गया वर्शन देखें",
+  "@sharedFileViewSharedVersion": {
+    "description": "Button that takes the recipient back to the version the sender actually shared, after they have viewed the latest one"
   },
   "shareDrive": "ड्राइव शेयर करें",
   "@shareDrive": {
@@ -1672,6 +1848,46 @@
   "shareFile": "फ़ाइल शेयर करें",
   "@shareFile": {
     "description": "The action of sharing a file link"
+  },
+  "shareFileAccessKeyLabel": "ऐक्सेस कुंजी",
+  "@shareFileAccessKeyLabel": {
+    "description": "Label of the read-only field holding the access key on the share file dialog"
+  },
+  "shareFileFinishingLink": "इस फ़ाइल के एन्क्रिप्शन विवरण अभी जोड़े जा रहे हैं। लिंक अभी से काम करता है।",
+  "@shareFileFinishingLink": {
+    "description": "Helper text on the share file dialog while the file's encryption details are still being fetched, reassuring the sharer that the link already works"
+  },
+  "shareFileHideDetails": "फ़ाइल का विवरण छिपाएँ",
+  "@shareFileHideDetails": {
+    "description": "Label of the toggle that keeps the file's name, size and type out of the share link"
+  },
+  "shareFileHideDetailsDescription": "छिपाने पर पाने वाले को फ़ाइल के बारे में कुछ भी नहीं दिखेगा — न नाम, न आकार, न प्रकार — जब तक वह उसे अनलॉक न कर ले।",
+  "@shareFileHideDetailsDescription": {
+    "description": "Helper text explaining what the recipient sees when the file's details are hidden from the share link"
+  },
+  "shareFileIncludeKeyInLink": "कुंजी को लिंक में शामिल करें — जिसके पास लिंक होगा वह फ़ाइल खोल सकेगा",
+  "@shareFileIncludeKeyInLink": {
+    "description": "Label of the checkbox that embeds the access key in the share link, which makes the link alone enough to open the file"
+  },
+  "shareFileKeyInLinkWarning": "अब यह लिंक अपने आप फ़ाइल खोल देता है। इसे फ़ाइल जितना ही संवेदनशील समझें।",
+  "@shareFileKeyInLinkWarning": {
+    "description": "Warning shown once the access key has been embedded in the share link"
+  },
+  "shareFileLinkLabel": "लिंक",
+  "@shareFileLinkLabel": {
+    "description": "Label of the read-only field holding the share link on the share file dialog"
+  },
+  "shareFilePinToThisVersion": "सिर्फ़ इसी वर्शन का लिंक बनाएँ",
+  "@shareFilePinToThisVersion": {
+    "description": "Label of the toggle that pins the share link to the version of the file being shared"
+  },
+  "shareFilePinToThisVersionDescription": "पाने वालों को हमेशा यही वर्शन मिलेगा, भले ही आप बाद में नया वर्शन अपलोड करें।",
+  "@shareFilePinToThisVersionDescription": {
+    "description": "Helper text explaining that a pinned share link keeps pointing at the version being shared"
+  },
+  "shareFileSendKeySeparately": "कुंजी को लिंक से अलग किसी दूसरे माध्यम से भेजें। एक ही संदेश में भेजे गए लिंक और कुंजी कोई सुरक्षा नहीं देते।",
+  "@shareFileSendKeySeparately": {
+    "description": "Helper text telling the sharer to send the access key through a different channel than the share link"
   },
   "shareFileWithOthers": "दूसरों के साथ फ़ाइल शेयर करें",
   "@shareFileWithOthers": {

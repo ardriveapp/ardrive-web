@@ -26,6 +26,7 @@ import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/shared_file_link.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart';
@@ -50,6 +51,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   String? sharedRawFileKey;
   bool sharedFileKeyIsDamaged = false;
 
+  /// The v2 payload the shared file link embedded, or `null` for a v1 link.
+  SharedFileLinkPayload? sharedFileLinkPayload;
+
   bool canAnonymouslyShowDriveDetail(ProfileState profileState) =>
       profileState is ProfileUnavailable && tryingToViewDrive;
   bool get tryingToViewDrive => driveId != null;
@@ -69,6 +73,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
         sharedFileKey: sharedFileKey,
         sharedRawFileKey: sharedRawFileKey,
         sharedFileKeyIsDamaged: sharedFileKeyIsDamaged,
+        sharedFileLinkPayload: sharedFileLinkPayload,
       );
 
   @override
@@ -147,10 +152,13 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     fileId: sharedFileId!,
                     fileKey: sharedFileKey,
                     linkKeyIsDamaged: sharedFileKeyIsDamaged,
+                    // `null` for a v1 link; the cubit then resolves the file
+                    // over GraphQL exactly as it always has.
+                    linkPayload: sharedFileLinkPayload,
                     arweave: context.read<ArweaveService>(),
                     licenseService: context.read<LicenseService>(),
                   ),
-                  child: SharedFilePage(),
+                  child: const SharedFilePage(),
                 );
               } else if (signingIn) {
                 shell = const LoginPage();
@@ -359,6 +367,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     sharedFileKey = configuration.sharedFileKey;
     sharedRawFileKey = configuration.sharedRawFileKey;
     sharedFileKeyIsDamaged = configuration.sharedFileKeyIsDamaged;
+    sharedFileLinkPayload = configuration.sharedFileLinkPayload;
   }
 
   void clearState() {
@@ -373,6 +382,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     sharedFileKey = null;
     sharedRawFileKey = null;
     sharedFileKeyIsDamaged = false;
+    sharedFileLinkPayload = null;
   }
 }
 

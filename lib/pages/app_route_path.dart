@@ -1,4 +1,5 @@
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/utils/shared_file_link.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
 
@@ -33,6 +34,18 @@ class AppRoutePath {
   /// left to guess why the key they were sent is not being used.
   final bool sharedFileKeyIsDamaged;
 
+  /// Everything a v2 shared file link embedded, parsed.
+  ///
+  /// `null` for a v1 link - every link ArDrive produced before this schema -
+  /// which the shared file page resolves over GraphQL exactly as it always
+  /// has. A payload lets the page paint the file's details with no network
+  /// round trip at all.
+  ///
+  /// The payload's own key ([SharedFileLinkPayload.key]) is the same key
+  /// [sharedFileKey] and [sharedFileKeyIsDamaged] were derived from; those two
+  /// stay authoritative so that v1 and v2 links present the key identically.
+  final SharedFileLinkPayload? sharedFileLinkPayload;
+
   const AppRoutePath({
     this.signingIn = false,
     this.getStarted = false,
@@ -45,6 +58,7 @@ class AppRoutePath {
     this.sharedFileKey,
     this.sharedRawFileKey,
     this.sharedFileKeyIsDamaged = false,
+    this.sharedFileLinkPayload,
   });
 
   /// Creates a route that lets the user sign in.
@@ -79,12 +93,14 @@ class AppRoutePath {
     SecretKey? sharedFilePk,
     String? sharedRawFileKey,
     bool sharedFileKeyIsDamaged = false,
+    SharedFileLinkPayload? linkPayload,
   }) =>
       AppRoutePath(
         sharedFileId: sharedFileId,
         sharedFileKey: sharedFilePk,
         sharedRawFileKey: sharedRawFileKey,
         sharedFileKeyIsDamaged: sharedFileKeyIsDamaged,
+        sharedFileLinkPayload: linkPayload,
       );
 
   factory AppRoutePath.unknown() => const AppRoutePath();

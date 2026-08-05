@@ -1,12 +1,15 @@
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/shared_file_link.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 
 import 'pages.dart';
 
-const fileKeyQueryParamName = 'fileKey';
+/// The v1 file key parameter. Honored forever - see
+/// `docs/FILE_SHARING_REDESIGN_PLAN.md` §4.1.
+const fileKeyQueryParamName = SharedFileLinkParams.legacyKey;
 const driveKeyQueryParamName = 'driveKey';
 
 class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
@@ -83,38 +86,29 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
         // Handle '/file/:sharedFileId/view'
         if (uri.pathSegments.length == 3 && uri.pathSegments[2] == 'view') {
           final fileId = uri.pathSegments[1];
-          final fileKeyBase64 = uri.queryParameters[fileKeyQueryParamName];
 
-          if (fileKeyBase64 != null && fileKeyBase64.isNotEmpty) {
-            try {
-              final sharedFilePkBytes =
-                  utils.decodeBase64ToBytes(fileKeyBase64);
+          // One resolution for every key source and both link schemas: the
+          // `#k=` fragment, the v2 `k` parameter, and the v1 `fileKey`
+          // parameter, in that order of precedence (§4.2).
+          //
+          // A key that is present but cannot be used is dropped rather than
+          // thrown - links get truncated and mangled in transit all the time -
+          // and the damaged flag carries the reason through to the page, which
+          // tells the recipient the link is damaged rather than silently
+          // asking for a key.
+          final fileKey = SharedFileLinkKey.resolve(uri);
 
-              return AppRoutePath.sharedFile(
-                sharedFileId: fileId,
-                sharedFilePk: SecretKey(sharedFilePkBytes),
-                sharedRawFileKey: fileKeyBase64,
-              );
-            } catch (e) {
-              // The key in the link is damaged - links get truncated and
-              // mangled in transit all the time. Drop it and let the page load
-              // without a key so the file can still be unlocked by hand,
-              // instead of throwing while parsing the route. The flag carries
-              // the reason through to the page, which tells the recipient the
-              // link is damaged rather than silently asking for a key.
-              logger.e(
-                'Failed to decode the file key in the shared file link',
-                e,
-              );
+          // `null` for a v1 link, which resolves over GraphQL as it always
+          // has. Malformed v2 fields are dropped field by field, never fatally.
+          final payload = SharedFileLinkPayload.tryParse(uri, key: fileKey);
 
-              return AppRoutePath.sharedFile(
-                sharedFileId: fileId,
-                sharedFileKeyIsDamaged: true,
-              );
-            }
-          } else {
-            return AppRoutePath.sharedFile(sharedFileId: fileId);
-          }
+          return AppRoutePath.sharedFile(
+            sharedFileId: fileId,
+            sharedFilePk: fileKey.secretKey,
+            sharedRawFileKey: fileKey.raw,
+            sharedFileKeyIsDamaged: fileKey.isDamaged,
+            linkPayload: payload,
+          );
         }
 
         return AppRoutePath.unknown();
@@ -150,16 +144,19 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
                   '/drives/${configuration.driveId}/folders/${configuration.driveFolderId}'),
             );
     } else if (configuration.sharedFileId != null) {
-      final sharedFilePath = '/file/${configuration.sharedFileId}/view';
-
-      if (configuration.sharedRawFileKey != null) {
-        return RouteInformation(
-          uri: Uri.parse(
-              '$sharedFilePath?$fileKeyQueryParamName=${configuration.sharedRawFileKey}'),
-        );
-      } else {
-        return RouteInformation(uri: Uri.parse(sharedFilePath));
-      }
+      // Everything this returns lands after the `#` of the hash route, so the
+      // key never reaches a server. When the app moves to path routing the key
+      // has to move to the fragment - `buildSharedFileLinkLocation` takes that
+      // as a parameter so the switch is one argument, not a rewrite.
+      return RouteInformation(
+        uri: Uri.parse(
+          buildSharedFileLinkLocation(
+            fileId: configuration.sharedFileId!,
+            payload: configuration.sharedFileLinkPayload,
+            rawFileKey: configuration.sharedRawFileKey,
+          ),
+        ),
+      );
     }
 
     return RouteInformation(uri: Uri.parse('/'));
