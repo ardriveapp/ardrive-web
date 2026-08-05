@@ -385,7 +385,7 @@ class FileDownloadDialog extends StatelessWidget {
                         AnimatedSwitcher(
                           duration: const Duration(seconds: 1),
                           child: Text(
-                            'Downloading',
+                            appLocalizationsOf(context).downloading,
                             style: ArDriveTypography.body.buttonNormalBold(
                               color: ArDriveTheme.of(context)
                                   .themeData
@@ -469,8 +469,8 @@ class FileDownloadDialog extends StatelessWidget {
 
   ArDriveStandardModalNew _fileDownloadAbortedDialog(BuildContext context) {
     return _modalWrapper(
-      title: 'Download cancelled',
-      description: 'The download was cancelled',
+      title: appLocalizationsOf(context).downloadCancelled,
+      description: appLocalizationsOf(context).downloadCancelledDescription,
       actions: [
         ModalAction(
           action: () => Navigator.pop(context),

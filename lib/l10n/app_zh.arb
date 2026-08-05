@@ -496,9 +496,21 @@
   "@download": {
     "description": "Action of downloading a file"
   },
+  "downloadCancelled": "下载已取消",
+  "@downloadCancelled": {
+    "description": "Title of the dialog shown when a download is cancelled"
+  },
+  "downloadCancelledDescription": "下载已被取消",
+  "@downloadCancelledDescription": {
+    "description": "Description of the dialog shown when a download is cancelled"
+  },
   "downloadFinished": "下载完成！",
   "@downloadFinished": {
     "description": "Download finished"
+  },
+  "downloading": "下载中",
+  "@downloading": {
+    "description": "Status label shown while a file is being downloaded"
   },
   "downloadingCSV": "下载CSV中...",
   "@downloadingCSV": {
@@ -773,6 +785,30 @@
   "@fileFailedToDownloadFileAbovePublicLimit": {
     "description": "Download failure message when a file is too big"
   },
+  "downloadNetworkError": "网络错误",
+  "@downloadNetworkError": {
+    "description": "Title for network error during download"
+  },
+  "downloadNetworkErrorDescription": "无法连接到下载服务器。请检查您的网络连接后重试。",
+  "@downloadNetworkErrorDescription": {
+    "description": "Description for network error during download"
+  },
+  "downloadFileNotFound": "未找到文件",
+  "@downloadFileNotFound": {
+    "description": "Title when downloaded file is not found on any gateway"
+  },
+  "downloadFileNotFoundDescription": "在网络上未找到此文件。它可能是最近上传的，仍在处理中。",
+  "@downloadFileNotFoundDescription": {
+    "description": "Description when downloaded file is not found"
+  },
+  "downloadRateLimited": "请求过于频繁",
+  "@downloadRateLimited": {
+    "description": "Title when download is rate limited"
+  },
+  "downloadRateLimitedDescription": "下载服务器繁忙。请稍候片刻后重试。",
+  "@downloadRateLimitedDescription": {
+    "description": "Description when download is rate limited"
+  },
   "fileHadANewRevision": "本文件的新版被上传.",
   "@fileHadANewRevision": {
     "description": "File activity (journal): new revision"
@@ -788,6 +824,16 @@
   "fileName": "文件名称",
   "@fileName": {
     "description": "The name of certain file"
+  },
+  "filePreviewTooLarge": "此文件太大，无法预览（上限 {maxSize}）。请下载后查看。",
+  "@filePreviewTooLarge": {
+    "description": "Shown instead of a preview when the file is larger than the in-memory preview limit",
+    "placeholders": {
+      "maxSize": {
+        "type": "String",
+        "example": "100 MiB"
+      }
+    }
   },
   "fileSize": "文件大小",
   "@fileSize": {
@@ -1447,6 +1493,10 @@
   "@preview": {
     "description": "Action of previewing a file"
   },
+  "previewUnavailable": "预览不可用",
+  "@previewUnavailable": {
+    "description": "Shown when a file cannot be previewed in the app"
+  },
   "previous": "前一页",
   "@previous": {
     "description": "Action of going to the previous page"
@@ -1594,6 +1644,18 @@
   "sharedFileIsEncrypted": "此文件已加密.",
   "@sharedFileIsEncrypted": {
     "description": "Description that says the file is encrypted on shared file page"
+  },
+  "sharedFileKeyIncorrect": "该密钥无效。请检查是否有遗漏的字符后重试。",
+  "@sharedFileKeyIncorrect": {
+    "description": "Inline error shown under the file key field on the shared file page when the provided key cannot unlock the file"
+  },
+  "sharedFileLinkKeyDamaged": "此链接的密钥似乎已损坏。请让发送者重新发送链接，或在下方粘贴密钥。",
+  "@sharedFileLinkKeyDamaged": {
+    "description": "Inline error under the file key field when the key in the link could not be decoded"
+  },
+  "sharedFileLoadFailure": "无法加载此文件。请检查您的网络连接后重试。",
+  "@sharedFileLoadFailure": {
+    "description": "Error shown on the shared file page when the file details could not be loaded because of a network or gateway failure"
   },
   "shareDrive": "分享网盘",
   "@shareDrive": {

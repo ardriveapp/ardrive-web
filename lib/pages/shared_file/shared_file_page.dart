@@ -9,7 +9,6 @@ import 'package:ardrive/utils/file_revision_base.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
-import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -30,21 +29,7 @@ class SharedFilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      child: BlocConsumer<SharedFileCubit, SharedFileState>(
-        buildWhen: (previous, current) {
-          return current is! SharedFileKeyInvalid;
-        },
-        listener: (context, state) {
-          if (state is SharedFileKeyInvalid) {
-            showArDriveDialog(
-              context,
-              content: ArDriveStandardModal(
-                title: appLocalizationsOf(context).error,
-                description: appLocalizationsOf(context).invalidKeyFile,
-              ),
-            );
-          }
-        },
+      child: BlocBuilder<SharedFileCubit, SharedFileState>(
         builder: (context, state) {
           Widget activityPanel(SharedFileLoadSuccess state) {
             return DetailsPanel(
@@ -96,6 +81,20 @@ class SharedFilePage extends StatelessWidget {
   }
 
   Widget _buildShareCard(BuildContext context, SharedFileState state) {
+    // The key entry gate stays on screen while a supplied key is rejected, so
+    // that the error can be shown inline and another key can be tried.
+    final isLocked =
+        state is SharedFileIsPrivate || state is SharedFileKeyInvalid;
+
+    // A key that never survived the link is a damaged link, not a wrong key:
+    // the recipient has to ask the sender for the link again, while a key they
+    // type by hand still unlocks the file from this same gate.
+    final keyErrorMessage = state is SharedFileKeyInvalid
+        ? (state.linkKeyIsDamaged
+            ? appLocalizationsOf(context).sharedFileLinkKeyDamaged
+            : appLocalizationsOf(context).sharedFileKeyIncorrect)
+        : null;
+
     return ArDriveCard(
       backgroundColor:
           ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
@@ -146,7 +145,7 @@ class SharedFilePage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 32),
-                if (state is SharedFileIsPrivate) ...[
+                if (isLocked) ...[
                   Text(appLocalizationsOf(context).sharedFileIsEncrypted),
                   const SizedBox(height: 16),
                   ArDriveTextField(
@@ -154,6 +153,7 @@ class SharedFilePage extends StatelessWidget {
                     autofocus: true,
                     obscureText: true,
                     hintText: appLocalizationsOf(context).enterFileKey,
+                    errorMessage: keyErrorMessage,
                     onFieldSubmitted: (_) => context
                         .read<SharedFileCubit>()
                         .submit(_fileKeyController.text),
@@ -223,7 +223,24 @@ class SharedFilePage extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   _buildReturnToAppLink(context),
-                }
+                  // A list, not a set: this branch renders two identical
+                  // `SizedBox(height: 16)` spacers, and a set literal would
+                  // silently collapse them into one.
+                } else if (state is SharedFileLoadFailure) ...[
+                  const Icon(Icons.error_outline, size: 36),
+                  const SizedBox(height: 16),
+                  Text(
+                    appLocalizationsOf(context).sharedFileLoadFailure,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  ArDriveButton(
+                    onPressed: () => context.read<SharedFileCubit>().retry(),
+                    text: appLocalizationsOf(context).tryAgain,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildReturnToAppLink(context),
+                ],
               ],
             ),
           ),

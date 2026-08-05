@@ -71,6 +71,11 @@ class DetailsPanel extends StatefulWidget {
 
   final ArDriveDataTableItem item;
   final Privacy drivePrivacy;
+
+  /// Revisions of the shared file, ordered **newest-first**.
+  ///
+  /// Use [NewestFirstFileRevisions.latestRevision] to read the current
+  /// revision instead of indexing this list directly.
   final List<FileRevision>? revisions;
   final LicenseState? licenseState;
   final SecretKey? fileKey;
@@ -83,6 +88,19 @@ class DetailsPanel extends StatefulWidget {
 
   @override
   State<DetailsPanel> createState() => _DetailsPanelState();
+}
+
+extension NewestFirstFileRevisions on List<FileRevision> {
+  /// The current revision of the file.
+  ///
+  /// The revision lists handed to [DetailsPanel] are **newest-first**:
+  /// `SharedFileCubit.computeRevisionsFromEntities` sorts the entities
+  /// oldest to newest and then returns `revisions.reversed.toList()`.
+  /// `FsEntryInfoCubit` and the share page header both read `.first` to
+  /// describe the file, so taking `.last` here would download the *original*
+  /// bytes while the panel shows the current name and size. Every download
+  /// and preview path must go through this getter.
+  FileRevision get latestRevision => first;
 }
 
 class _DetailsPanelState extends State<DetailsPanel> {
@@ -157,7 +175,10 @@ class _DetailsPanelState extends State<DetailsPanel> {
     required BuildContext context,
   }) {
     final isNotSharePageInMobileView = !(widget.isSharePage && !mobileView);
-    final isPreviewUnavailable = previewState is FsEntryPreviewUnavailable;
+    // [FsEntryPreviewOversized] extends [FsEntryPreviewUnavailable] but must
+    // still show the preview tab so the "too large to preview" message renders.
+    final isPreviewUnavailable = previewState is FsEntryPreviewUnavailable &&
+        previewState is! FsEntryPreviewOversized;
     final isSharePage = widget.isSharePage;
     final typography = ArDriveTypographyNew.of(context);
 
@@ -449,7 +470,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                                       onPressed: () {
                                         final file = ARFSFactory()
                                             .getARFSFileFromFileRevision(
-                                          widget.revisions!.last,
+                                          widget.revisions!.latestRevision,
                                         );
                                         return promptToDownloadSharedFile(
                                           revision: file,
@@ -495,7 +516,12 @@ class _DetailsPanelState extends State<DetailsPanel> {
     FsEntryPreviewState previewState, {
     required BuildContext context,
   }) {
-    if (previewState is FsEntryPreviewUnavailable && widget.isSharePage) {
+    // [FsEntryPreviewOversized] extends [FsEntryPreviewUnavailable], so it must
+    // be excluded here or the share page would swallow the "too large to
+    // preview" message and show the generic branded card instead.
+    if (previewState is FsEntryPreviewUnavailable &&
+        previewState is! FsEntryPreviewOversized &&
+        widget.isSharePage) {
       return Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(
@@ -552,7 +578,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 icon: ArDriveIcons.download(color: Colors.white),
                 onPressed: () {
                   final file = ARFSFactory().getARFSFileFromFileRevision(
-                    widget.revisions!.last,
+                    widget.revisions!.latestRevision,
                   );
                   return promptToDownloadSharedFile(
                     revision: file,

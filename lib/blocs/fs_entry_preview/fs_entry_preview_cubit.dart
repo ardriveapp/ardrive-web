@@ -11,7 +11,6 @@ import 'package:ardrive/services/eml_parser/models/parsed_email.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/logger.dart';
-import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart';
@@ -63,6 +62,26 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     } else {
       _preview();
     }
+  }
+
+  /// Image previews are buffered entirely in memory before being rendered, so
+  /// every image — public or private — is capped at [previewMaxFileSize].
+  ///
+  /// Emits [FsEntryPreviewOversized] and returns `true` when [fileSize] is over
+  /// the limit, so callers can bail out *before* fetching a single byte.
+  bool _emitOversizedIfOverLimit(int? fileSize) {
+    if (fileSize == null || fileSize <= previewMaxFileSize) {
+      return false;
+    }
+
+    if (!isClosed) {
+      emit(FsEntryPreviewOversized(
+        fileSize: fileSize,
+        maxFileSize: previewMaxFileSize,
+      ));
+    }
+
+    return true;
   }
 
   Future<void> _sharedFilePreview(
@@ -268,7 +287,11 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
                 emit(FsEntryPreviewUnavailable());
             }
           } else {
-            emit(FsEntryPreviewUnavailable());
+            // Only reachable for a private file over the in-memory preview
+            // limit — nothing is fetched for it.
+            if (!_emitOversizedIfOverLimit(file.size)) {
+              emit(FsEntryPreviewUnavailable());
+            }
           }
         });
       } else {
@@ -330,6 +353,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         }
         break;
       case 'image':
+        // Images are buffered in memory, public ones included — never start a
+        // preview we cannot hold.
+        if (_emitOversizedIfOverLimit(fileItem.size)) {
+          return;
+        }
+
         // For images, we can emit the preview URL immediately
         // The actual loading will happen in the widget
         emit(FsEntryPreviewImage(previewUrl: previewUrl));
@@ -370,6 +399,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       return;
     }
 
+    // Public images used to be fetched with no cap at all — they are buffered
+    // in memory just like private ones, so cap both before fetching.
+    if (_emitOversizedIfOverLimit(file.size)) {
+      return;
+    }
+
     imagePreviewNotifier.value = ImagePreviewNotification(
       isLoading: true,
       filename: file.name,
@@ -380,7 +415,6 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
     final Uint8List? dataBytes = await _getBytesFromCache(
       dataTxId: file.dataTxId,
-      dataUrl: dataUrl,
     );
 
     try {
@@ -428,6 +462,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     FileDataTableItem file,
     String previewUrl,
   ) async {
+    // The size gate has to run before anything is fetched: this used to sit
+    // after the download and was missing its `return`, so an over-limit private
+    // image was downloaded and decrypted anyway.
+    if (_emitOversizedIfOverLimit(file.size)) {
+      return;
+    }
+
     final isPinFile = file.pinnedDataOwnerAddress != null;
 
     imagePreviewNotifier.value = ImagePreviewNotification(
@@ -438,7 +479,6 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
     final Uint8List? dataBytes = await _getBytesFromCache(
       dataTxId: file.dataTxId,
-      dataUrl: previewUrl,
       withDriveDao: false,
     );
 
@@ -448,10 +488,6 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     }
 
     if (isPrivate && !isPinFile) {
-      if (file.size != null && file.size! >= previewMaxFileSize) {
-        emit(FsEntryPreviewUnavailable());
-      }
-
       final fileKey = await _getFileKey(
         fileId: file.id,
         driveId: driveId,
@@ -549,16 +585,15 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     emit(const FsEntryPreviewLoading());
 
     try {
-      // For manifest files, use the /raw/ endpoint to get the actual JSON content
-      String dataUrl = previewUrl;
-      if (selectedItem.contentType == 'application/x.arweave-manifest+json') {
-        dataUrl = '${_configService.config.arweaveGatewayForDataRequest.url}/raw/${selectedItem.dataTxId}';
-      }
-      
+      // For manifest files, the /raw/ endpoint is used to get the actual JSON
+      // content instead of the resolved manifest index.
+      final isManifest =
+          selectedItem.contentType == 'application/x.arweave-manifest+json';
+
       // Fetch the document content using cache
       final Uint8List? dataBytes = await _getBytesFromCache(
         dataTxId: selectedItem.dataTxId,
-        dataUrl: dataUrl,
+        isManifest: isManifest,
       );
 
       if (dataBytes == null) {
@@ -639,7 +674,6 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       // Fetch the email file using cache
       final Uint8List? dataBytes = await _getBytesFromCache(
         dataTxId: selectedItem.dataTxId,
-        dataUrl: previewUrl,
       );
 
       if (dataBytes == null) {
@@ -700,8 +734,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
   Future<Uint8List?> _getBytesFromCache({
     required String dataTxId,
-    required String dataUrl,
     bool withDriveDao = true,
+    bool isManifest = false,
   }) async {
     Uint8List? dataBytes;
 
@@ -713,13 +747,17 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
     if (cachedBytes == null) {
       try {
-        final dataRes = await ArDriveHTTP().getAsBytes(dataUrl);
-        dataBytes = dataRes.data;
+        final fetchedBytes = await _fetchPreviewBytes(
+          dataTxId,
+          isManifest: isManifest,
+        );
 
         await _driveDao.putPreviewDataInMemory(
           dataTxId: dataTxId,
-          bytes: dataBytes!,
+          bytes: fetchedBytes,
         );
+
+        dataBytes = fetchedBytes;
       } catch (_) {
         dataBytes = null;
       }
@@ -728,6 +766,33 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     }
 
     return dataBytes;
+  }
+
+  /// Fetches preview bytes through the shared multi-gateway fallback layer
+  /// (primary → GAR gateways → arweave.net) instead of hitting the primary data
+  /// gateway directly, so a dead or blackholed gateway still yields a preview.
+  ///
+  /// This is the same path the download flow uses — see [DataGatewayFallback]
+  /// and `ArDriveDownloader`.
+  Future<Uint8List> _fetchPreviewBytes(
+    String dataTxId, {
+    bool isManifest = false,
+  }) async {
+    final gatewayFallback = _arweave.gatewayFallback;
+
+    // Manifests must be read from the `/raw/` endpoint, otherwise the gateway
+    // resolves them to their index path instead of returning the manifest.
+    final response = isManifest
+        ? await gatewayFallback.fetchManifestWithFallback(
+            dataTxId,
+            _arweave.client,
+          )
+        : await gatewayFallback.fetchData(
+            dataTxId,
+            _arweave.client,
+          );
+
+    return response.bodyBytes;
   }
 
   Future<Uint8List?> _decodePrivateData(

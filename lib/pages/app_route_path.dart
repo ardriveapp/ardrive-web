@@ -24,6 +24,15 @@ class AppRoutePath {
   /// The private key of the corresponding shared file, encoded as Base64.
   final String? sharedRawFileKey;
 
+  /// Whether the link carried a file key that could not be decoded.
+  ///
+  /// The key is dropped when that happens - links get truncated and mangled in
+  /// transit all the time - so [sharedFileKey] is `null` just like it is for a
+  /// link that never carried a key. This flag is what tells the two apart, so
+  /// that the recipient can be told the link itself is damaged instead of being
+  /// left to guess why the key they were sent is not being used.
+  final bool sharedFileKeyIsDamaged;
+
   const AppRoutePath({
     this.signingIn = false,
     this.getStarted = false,
@@ -35,6 +44,7 @@ class AppRoutePath {
     this.sharedFileId,
     this.sharedFileKey,
     this.sharedRawFileKey,
+    this.sharedFileKeyIsDamaged = false,
   });
 
   /// Creates a route that lets the user sign in.
@@ -68,11 +78,13 @@ class AppRoutePath {
     required String sharedFileId,
     SecretKey? sharedFilePk,
     String? sharedRawFileKey,
+    bool sharedFileKeyIsDamaged = false,
   }) =>
       AppRoutePath(
         sharedFileId: sharedFileId,
         sharedFileKey: sharedFilePk,
         sharedRawFileKey: sharedRawFileKey,
+        sharedFileKeyIsDamaged: sharedFileKeyIsDamaged,
       );
 
   factory AppRoutePath.unknown() => const AppRoutePath();

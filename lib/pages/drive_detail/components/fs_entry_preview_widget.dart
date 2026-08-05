@@ -30,8 +30,22 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
     final stateType = widget.state.runtimeType;
     switch (stateType) {
       case const (FsEntryPreviewUnavailable):
-        return const Center(
-          child: Text('Preview unavailable'),
+        return Center(
+          child: Text(appLocalizationsOf(context).previewUnavailable),
+        );
+
+      case const (FsEntryPreviewOversized):
+        final oversizedState = widget.state as FsEntryPreviewOversized;
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Center(
+            child: Text(
+              appLocalizationsOf(context).filePreviewTooLarge(
+                filesize(oversizedState.maxFileSize),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
         );
 
       case const (FsEntryPreviewLoading):
@@ -78,12 +92,17 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
           isFullScreen: false,
         );
 
-      default:
+      case const (FsEntryPreviewVideo):
         return VideoPlayerWidget(
           filename: (widget.state as FsEntryPreviewVideo).filename,
           videoUrl: (widget.state as FsEntryPreviewVideo).previewUrl,
           isSharePage: widget.isSharePage,
         );
+
+      default:
+        // Any state without a dedicated branch renders nothing rather than
+        // being blind-cast into a preview widget.
+        return const SizedBox.shrink();
     }
   }
 }

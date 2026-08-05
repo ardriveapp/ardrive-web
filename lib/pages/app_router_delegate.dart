@@ -48,6 +48,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   String? sharedFileId;
   SecretKey? sharedFileKey;
   String? sharedRawFileKey;
+  bool sharedFileKeyIsDamaged = false;
 
   bool canAnonymouslyShowDriveDetail(ProfileState profileState) =>
       profileState is ProfileUnavailable && tryingToViewDrive;
@@ -67,6 +68,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
         sharedFileId: sharedFileId,
         sharedFileKey: sharedFileKey,
         sharedRawFileKey: sharedRawFileKey,
+        sharedFileKeyIsDamaged: sharedFileKeyIsDamaged,
       );
 
   @override
@@ -144,6 +146,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   create: (_) => SharedFileCubit(
                     fileId: sharedFileId!,
                     fileKey: sharedFileKey,
+                    linkKeyIsDamaged: sharedFileKeyIsDamaged,
                     arweave: context.read<ArweaveService>(),
                     licenseService: context.read<LicenseService>(),
                   ),
@@ -355,6 +358,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     sharedFileId = configuration.sharedFileId;
     sharedFileKey = configuration.sharedFileKey;
     sharedRawFileKey = configuration.sharedRawFileKey;
+    sharedFileKeyIsDamaged = configuration.sharedFileKeyIsDamaged;
   }
 
   void clearState() {
@@ -368,6 +372,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     sharedFileId = null;
     sharedFileKey = null;
     sharedRawFileKey = null;
+    sharedFileKeyIsDamaged = false;
   }
 }
 

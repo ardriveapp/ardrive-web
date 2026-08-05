@@ -496,9 +496,21 @@
   "@download": {
     "description": "Action of downloading a file"
   },
+  "downloadCancelled": "Descarga cancelada",
+  "@downloadCancelled": {
+    "description": "Title of the dialog shown when a download is cancelled"
+  },
+  "downloadCancelledDescription": "La descarga fue cancelada",
+  "@downloadCancelledDescription": {
+    "description": "Description of the dialog shown when a download is cancelled"
+  },
   "downloadFinished": "¡Descarga terminada!",
   "@downloadFinished": {
     "description": "Download finished"
+  },
+  "downloading": "Descargando",
+  "@downloading": {
+    "description": "Status label shown while a file is being downloaded"
   },
   "downloadingCSV": "Descargando CSV...",
   "@downloadingCSV": {
@@ -773,6 +785,30 @@
   "@fileFailedToDownloadFileAbovePublicLimit": {
     "description": "Download failure message when a file is too big"
   },
+  "downloadNetworkError": "Error de red",
+  "@downloadNetworkError": {
+    "description": "Title for network error during download"
+  },
+  "downloadNetworkErrorDescription": "No se pudo conectar con el servidor de descargas. Comprueba tu conexión e inténtalo de nuevo.",
+  "@downloadNetworkErrorDescription": {
+    "description": "Description for network error during download"
+  },
+  "downloadFileNotFound": "Archivo no encontrado",
+  "@downloadFileNotFound": {
+    "description": "Title when downloaded file is not found on any gateway"
+  },
+  "downloadFileNotFoundDescription": "No se ha podido encontrar este archivo en la red. Puede que se haya subido hace poco y todavía se esté procesando.",
+  "@downloadFileNotFoundDescription": {
+    "description": "Description when downloaded file is not found"
+  },
+  "downloadRateLimited": "Demasiadas solicitudes",
+  "@downloadRateLimited": {
+    "description": "Title when download is rate limited"
+  },
+  "downloadRateLimitedDescription": "El servidor de descargas está ocupado. Espera un momento e inténtalo de nuevo.",
+  "@downloadRateLimitedDescription": {
+    "description": "Description when download is rate limited"
+  },
   "fileHadANewRevision": "Una nueva revisión del archivo fue cargada.",
   "@fileHadANewRevision": {
     "description": "File activity (journal): new revision"
@@ -788,6 +824,16 @@
   "fileName": "Nombre del archivo",
   "@fileName": {
     "description": "The name of certain file"
+  },
+  "filePreviewTooLarge": "Este archivo es demasiado grande para previsualizarlo (límite de {maxSize}). Descárgalo para verlo.",
+  "@filePreviewTooLarge": {
+    "description": "Shown instead of a preview when the file is larger than the in-memory preview limit",
+    "placeholders": {
+      "maxSize": {
+        "type": "String",
+        "example": "100 MiB"
+      }
+    }
   },
   "fileSize": "Tamaño del archivo",
   "@fileSize": {
@@ -1447,6 +1493,10 @@
   "@preview": {
     "description": "Action of previewing a file"
   },
+  "previewUnavailable": "Vista previa no disponible",
+  "@previewUnavailable": {
+    "description": "Shown when a file cannot be previewed in the app"
+  },
   "previous": "Anterior",
   "@previous": {
     "description": "Action of going to the previous page"
@@ -1594,6 +1644,18 @@
   "sharedFileIsEncrypted": "El archivo está cifrado.",
   "@sharedFileIsEncrypted": {
     "description": "Description that says the file is encrypted on shared file page"
+  },
+  "sharedFileKeyIncorrect": "Esa clave no ha funcionado. Comprueba si falta algún carácter e inténtalo de nuevo.",
+  "@sharedFileKeyIncorrect": {
+    "description": "Inline error shown under the file key field on the shared file page when the provided key cannot unlock the file"
+  },
+  "sharedFileLinkKeyDamaged": "La clave de este enlace parece dañada. Pide al remitente que te envíe el enlace de nuevo o pega la clave abajo.",
+  "@sharedFileLinkKeyDamaged": {
+    "description": "Inline error under the file key field when the key in the link could not be decoded"
+  },
+  "sharedFileLoadFailure": "No hemos podido cargar este archivo. Comprueba tu conexión e inténtalo de nuevo.",
+  "@sharedFileLoadFailure": {
+    "description": "Error shown on the shared file page when the file details could not be loaded because of a network or gateway failure"
   },
   "shareDrive": "Compartir unidad",
   "@shareDrive": {

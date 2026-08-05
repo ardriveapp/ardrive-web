@@ -9,6 +9,25 @@ abstract class FsEntryPreviewState extends Equatable {
 
 class FsEntryPreviewUnavailable extends FsEntryPreviewState {}
 
+/// The file is too large to buffer into memory for an in-app preview, so its
+/// bytes are never fetched.
+///
+/// Extends [FsEntryPreviewUnavailable] on purpose: every existing
+/// `is FsEntryPreviewUnavailable` consumer keeps behaving as it does today
+/// until the preview widget renders a dedicated oversized message.
+class FsEntryPreviewOversized extends FsEntryPreviewUnavailable {
+  final int fileSize;
+  final int maxFileSize;
+
+  FsEntryPreviewOversized({
+    required this.fileSize,
+    required this.maxFileSize,
+  });
+
+  @override
+  List<Object> get props => [fileSize, maxFileSize];
+}
+
 class FsEntryPreviewInitial extends FsEntryPreviewState {}
 
 class FsEntryPreviewSuccess extends FsEntryPreviewState {
