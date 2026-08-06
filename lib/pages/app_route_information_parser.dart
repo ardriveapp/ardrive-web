@@ -16,6 +16,16 @@ import 'pages.dart';
 const fileKeyQueryParamName = SharedFileLinkParams.legacyKey;
 const driveKeyQueryParamName = 'driveKey';
 
+/// Why something failed, with nothing of what it failed on.
+///
+/// A [FormatException] carries the string it could not parse and prints a
+/// window of it from `toString()`. When that string is a key - or a link that
+/// contains one - the exception object must never reach the log, which is held
+/// in memory and can be exported by email from the sidebar. Only the reason
+/// travels, which is all a log of this can usefully say anyway.
+String _reasonWithoutValue(Object error) =>
+    error is FormatException ? error.message : '${error.runtimeType}';
+
 class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
   AppRouteInformationParser({this.urlStrategy = kAppUrlStrategy});
 
@@ -45,7 +55,11 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
       // than at an unguarded `uri.queryParameters` access further down.
       uri.queryParameters;
     } on FormatException catch (e) {
-      logger.e('Failed to parse the route URI', e);
+      // The reason, never the exception object: `FormatException.toString()`
+      // prints a window of its `source`, and the source here is the location -
+      // which on a key-bearing link is the key. Same rule as
+      // `SharedFileLinkKey.parse` (`lib/utils/shared_file_link.dart`, rule 3).
+      logger.e('Failed to parse the route URI: ${e.message}');
       return AppRoutePath.unknown();
     }
     // Handle '/'
@@ -79,9 +93,14 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
               // Same as the shared file link below: a damaged key must not
               // throw while the route is being parsed. Drop it and carry on to
               // the keyless drive route.
+              //
+              // The reason is logged and never the exception object: the
+              // `source` of the `FormatException` a base64 decoder throws *is*
+              // the drive key, and `toString()` prints a window of it into a
+              // log the user can export by email.
               logger.e(
-                'Failed to decode the drive key in the shared drive link',
-                e,
+                'Failed to decode the drive key in the shared drive link: '
+                '${_reasonWithoutValue(e)}',
               );
             }
           }

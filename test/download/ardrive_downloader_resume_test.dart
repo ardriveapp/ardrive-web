@@ -2,14 +2,41 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:ardrive/download/ardrive_downloader.dart';
+import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:arweave/arweave.dart' show ArweaveApi;
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:mocktail/mocktail.dart';
 
 import '../test_utils/mocks.dart';
 import 'download_test_harness.dart';
+
+class MockDataGatewayFallback extends Mock implements DataGatewayFallback {}
+
+/// An `http.Client` that answers whatever the test says and remembers what it
+/// was asked. `send` is the only method [GatewayDownloadSource] ever calls.
+class StubHttpClient extends http.BaseClient {
+  StubHttpClient(this._respond);
+
+  final http.StreamedResponse Function(http.BaseRequest request) _respond;
+
+  final List<http.BaseRequest> requests = [];
+  int closeCount = 0;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    requests.add(request);
+
+    return _respond(request);
+  }
+
+  @override
+  void close() => closeCount++;
+}
 
 /// §3.2/§3.4: the AES-CTR and public streaming path — resume from an aligned
 /// offset, refuse to splice a gateway that ignored `Range`, and report an
@@ -39,7 +66,7 @@ void main() {
     ArDriveDownloader downloader,
     RecordingArDriveIO io,
   }) build(
-    FakeDownloadSource source, {
+    DownloadSource source, {
     IntegrityVerifierFactory? verifierFactory,
   }) {
     final io = RecordingArDriveIO();
@@ -252,6 +279,151 @@ void main() {
 
       expect(GatewayDownloadSource.startOffsetFromResponse(0, 200, null), 0);
     });
+
+    // The static function above decides; `GatewayDownloadSource` is what asks
+    // it, and then has to act on the answer. These drive the real source with
+    // a stub client, because that half - issue the request, read the status,
+    // synthesise the refusal - has no other coverage: `FakeDownloadSource`
+    // computes the 200-means-0 behaviour itself, so the integration test would
+    // stay green with the production branch gone.
+    group('the source that issues the request', () {
+      /// A body that counts what is actually *delivered*, so "the full body
+      /// was never read" is a measurement and not a hope.
+      ({Stream<List<int>> stream, int Function() delivered}) countedBody(
+        Uint8List bytes,
+      ) {
+        var delivered = 0;
+
+        return (
+          stream: Stream<List<int>>.fromIterable([bytes]).map((chunk) {
+            delivered += chunk.length;
+
+            return chunk;
+          }),
+          delivered: () => delivered,
+        );
+      }
+
+      ({GatewayDownloadSource source, List<StubHttpClient> clients})
+          buildSource(
+        http.StreamedResponse Function(http.BaseRequest request) respond,
+      ) {
+        final clients = <StubHttpClient>[];
+        final arweave = MockArweaveService();
+        final client = MockArweave();
+        final fallback = MockDataGatewayFallback();
+
+        // The primary gateway *is* arweave.net, so the gateway order is
+        // exactly one origin and every assertion below is about one request.
+        when(() => arweave.client).thenReturn(client);
+        when(() => client.api).thenReturn(
+          ArweaveApi(gatewayUrl: Uri.parse('https://arweave.net')),
+        );
+        when(() => arweave.gatewayFallback).thenReturn(fallback);
+        when(() => fallback.cachedGateways).thenReturn(null);
+
+        return (
+          source: GatewayDownloadSource(
+            arweave,
+            clientFactory: () {
+              final stub = StubHttpClient(respond);
+              clients.add(stub);
+
+              return stub;
+            },
+          ),
+          clients: clients,
+        );
+      }
+
+      test('a 200 answer to a Range request is reported as byte 0, and its '
+          'body is never read', () async {
+        final body = countedBody(ciphertext);
+        final harness = buildSource(
+          (request) => http.StreamedResponse(body.stream, 200),
+        );
+
+        final response = await harness.source.open(
+          txId: txId,
+          startOffsetBytes: alignedResumeOffset,
+        );
+
+        // It asked for the range it wanted, on the gateway it had.
+        final request = harness.clients.single.requests.single;
+        expect(request.url, Uri.parse('https://arweave.net/$txId'));
+        expect(request.headers['Range'], 'bytes=$alignedResumeOffset-');
+
+        // What the caller is told: the body starts at byte 0. That is the one
+        // answer that makes it abandon the resume. Reporting
+        // `alignedResumeOffset` here - what was asked for rather than what
+        // came back - splices a full body in at byte 1232, which is a silently
+        // corrupt file.
+        expect(response.startOffsetBytes, 0);
+        expect(response.statusCode, 200);
+
+        // And the refusal carries no bytes...
+        expect(await response.stream.toList(), isEmpty);
+        // ...because the full body was dropped rather than consumed: reading
+        // it is the cost resuming exists to avoid.
+        expect(body.delivered(), isZero);
+        expect(harness.clients.single.closeCount, greaterThan(0));
+      });
+
+      test('a 206 whose content-range disagrees with the request is refused, '
+          'and the header is what decides', () async {
+        final body = countedBody(ciphertext);
+        final harness = buildSource(
+          (request) => http.StreamedResponse(
+            body.stream,
+            206,
+            headers: const {'content-range': 'bytes 0-5002/5003'},
+          ),
+        );
+
+        final response = await harness.source.open(
+          txId: txId,
+          startOffsetBytes: alignedResumeOffset,
+        );
+
+        // A 206 and a request for byte 1232: everything except the
+        // `content-range` says this is the resume that was asked for. The
+        // header is the only thing that knows the body starts at 0, and it
+        // wins.
+        expect(response.startOffsetBytes, 0);
+        expect(await response.stream.toList(), isEmpty);
+        expect(body.delivered(), isZero);
+      });
+
+      test('a 206 that serves the range asked for is passed straight through',
+          () async {
+        final tail = Uint8List.sublistView(ciphertext, alignedResumeOffset);
+        final harness = buildSource(
+          (request) => http.StreamedResponse(
+            Stream<List<int>>.fromIterable([tail]),
+            206,
+            headers: {
+              'content-range':
+                  'bytes $alignedResumeOffset-${fileSize - 1}/$fileSize',
+            },
+          ),
+        );
+
+        final response = await harness.source.open(
+          txId: txId,
+          startOffsetBytes: alignedResumeOffset,
+        );
+
+        expect(response.startOffsetBytes, alignedResumeOffset);
+        expect(response.statusCode, 206);
+
+        final received = <int>[];
+        await for (final chunk in response.stream) {
+          received.addAll(chunk);
+        }
+
+        expect(received, tail);
+      });
+    });
   });
 
   group('with the production AES-CTR decryptor', () {
@@ -349,6 +521,28 @@ void main() {
       expect(verdict.reason ?? '', isNot(contains('Resumed')));
     });
 
+    test('the verifier is fed the ciphertext, which is what was signed',
+        () async {
+      final verifier = RecordingVerifier();
+      final harness = build(
+        FakeDownloadSource(ciphertext),
+        verifierFactory: (id) async => verifier,
+      );
+
+      expect(await downloadPrivate(harness.downloader), isEmpty);
+
+      // The signature covers the bytes as they were posted. Tapping after
+      // decryption instead would hash the plaintext - the same *length*, so
+      // `bytesHashed` cannot tell the two apart - and every good private file
+      // would then report `failed`.
+      expect(verifier.fedBytes, ciphertext);
+      expect(verifier.fedBytes, isNot(expectedPlaintext));
+
+      // ...while what reached the disk is the plaintext. The verifier is a tap
+      // on the way past, not a detour.
+      expect(harness.io.savedBytes, expectedPlaintext);
+    });
+
     test('a resumed download reports notVerified rather than guessing',
         () async {
       final harness = build(
@@ -404,14 +598,37 @@ void main() {
       expect(verdict.verdict, DataItemIntegrityVerdict.notVerified);
     });
 
-    test('aborting a download settles the verdict instead of leaving it '
-        'pending forever', () async {
-      final harness = build(FakeDownloadSource(ciphertext));
+    test('aborting a download in flight settles the verdict, and says it was '
+        'cancelled rather than that nothing ran', () async {
+      final source = StallingDownloadSource(ciphertext);
+      final harness = build(source);
+
+      // Deliberately not awaited: this download is still running when it is
+      // aborted, which is the only arrangement that tests anything.
+      // `downloadFile` resets the integrity completer as its first act, so
+      // reading the verdict without a download in flight reads the value the
+      // downloader was *constructed* with - it is already complete, already
+      // `notVerified`, and no code under test ever put it there.
+      final errors = downloadPrivate(harness.downloader);
+      await source.delivering.future;
 
       await harness.downloader.abortDownload();
 
       final verdict = await harness.downloader.integrity;
+
       expect(verdict.verdict, DataItemIntegrityVerdict.notVerified);
+      expect(verdict.reason, contains('cancelled'));
+      // The constructor's placeholder satisfies every other assertion here.
+      expect(verdict.reason, isNot(contains('No download has run yet')));
+
+      // Let the stalled body finish so the download unwinds, and take the
+      // cancellation it reports.
+      source.release.complete();
+
+      expect(
+        (await errors).whereType<DownloadCancelledException>(),
+        isNotEmpty,
+      );
     });
   });
 }

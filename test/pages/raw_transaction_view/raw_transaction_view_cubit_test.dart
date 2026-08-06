@@ -235,8 +235,43 @@ void main() {
     await cubit.close();
   });
 
-  test('a name from a transaction tag cannot carry a path or a newline',
-      () async {
+  test('a name hint that reverses its own extension is dropped', () async {
+    // `n` reaches the operating system's save dialog. A right-to-left override
+    // shows `Q3-Reportexe.pdf` in the card and in the dialog, while what lands
+    // on disk is `Q3-Report<U+202E>fdp.exe` - an executable. The hint is
+    // dropped whole rather than repaired, and the page falls back to the
+    // transaction id, which cannot lie about what it is.
+    when(() => gatewayFallback.fetchData(any(), any())).thenAnswer(
+      (_) async => http.Response.bytes(ascii('some text'), 200),
+    );
+
+    final cubit = build(name: 'Q3-Report\u202Efdp.exe');
+
+    expect((cubit.state as RawTransactionLoadInProgress).name, isNull);
+
+    await cubit.currentLoad;
+
+    expect((cubit.state as RawTransactionReady).name, isNull);
+
+    await cubit.close();
+  });
+
+  test('a name hint that says what it is survives', () async {
+    when(() => gatewayFallback.fetchData(any(), any())).thenAnswer(
+      (_) async => http.Response.bytes(ascii('some text'), 200),
+    );
+
+    final cubit = build(name: 'Q3-Report.pdf');
+
+    await cubit.currentLoad;
+
+    expect((cubit.state as RawTransactionReady).name, 'Q3-Report.pdf');
+
+    await cubit.close();
+  });
+
+  /// A `File-Name` tag with [value] on it, and bytes behind it.
+  void transactionNamed(String value) {
     when(() => arweave.getInfoOfTxToBePinned(any())).thenAnswer(
       (_) async =>
           InfoOfTransactionToBePinned$Query$Transaction.fromJson(<String, dynamic>{
@@ -244,10 +279,7 @@ void main() {
           'address': 'Zvp8dEkO3nQ2wX9yV8uT7sR6qP5oN4mL3kJ2iH1gF0e',
         },
         'tags': <Map<String, dynamic>>[
-          <String, dynamic>{
-            'name': 'File-Name',
-            'value': '../../etc/passwd\nSaved',
-          },
+          <String, dynamic>{'name': 'File-Name', 'value': value},
         ],
         'data': <String, dynamic>{'size': '9', 'type': 'text/plain'},
       }),
@@ -255,15 +287,34 @@ void main() {
     when(() => gatewayFallback.fetchData(any(), any())).thenAnswer(
       (_) async => http.Response.bytes(ascii('some text'), 200),
     );
+  }
+
+  test('a name from a transaction tag cannot carry a path', () async {
+    transactionNamed('../../etc/passwd');
 
     final cubit = build();
     await cubit.currentLoad;
 
     final name = (cubit.state as RawTransactionReady).name;
 
+    // A name is not a path, and this one still says what it is.
     expect(name, isNotNull);
     expect(name, isNot(contains('/')));
-    expect(name, isNot(contains('\n')));
+
+    await cubit.close();
+  });
+
+  test('a name from a transaction tag that misrepresents itself is dropped',
+      () async {
+    // The same rule the link's own `n` follows: a control or direction
+    // character is not repaired, because the repaired string is a name nobody
+    // wrote. The page falls back to the transaction id.
+    transactionNamed('passwd\nSaved as invoice.pdf');
+
+    final cubit = build();
+    await cubit.currentLoad;
+
+    expect((cubit.state as RawTransactionReady).name, isNull);
 
     await cubit.close();
   });

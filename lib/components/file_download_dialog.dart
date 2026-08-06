@@ -188,6 +188,9 @@ class FileDownloadDialog extends StatelessWidget {
               case FileDownloadFailureReason.fileAboveLimit:
                 return _fileDownloadFailedDueToFileAbovePrivateLimit(context);
               case FileDownloadFailureReason.browserDoesNotSupportLargeDownloads:
+              // Same message: from the user's side both mean "this file is
+              // larger than this download can handle, and nothing was saved".
+              case FileDownloadFailureReason.fileTooLargeToVerify:
                 return _fileDownloadFailedDueToAboveBrowserLimit(context);
             }
           } else if (state is FileDownloadWarning) {

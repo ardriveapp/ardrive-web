@@ -268,7 +268,15 @@ class SharedFileLinkKey extends Equatable {
     } catch (e) {
       // Unreachable for anything [isWellFormed] accepts, but a decoder is not
       // something to take on trust while parsing a route.
-      logger.e('Failed to decode the file key in the shared file link', e);
+      //
+      // The reason only, like every other branch here: the `source` of the
+      // `FormatException` a base64 decoder throws is the key it was given, and
+      // `toString()` prints a window of it (rule 3).
+      logger.e(
+        'Failed to decode the file key in the shared file link: '
+        '${e is FormatException ? e.message : e.runtimeType} '
+        '(source: ${source.name})',
+      );
 
       return SharedFileLinkKey.damaged(source);
     }
@@ -288,7 +296,11 @@ class SharedFileLinkKey extends Equatable {
     } on FormatException catch (e) {
       // The route parser guards this too; a bad escape must not throw here
       // either, since this is also called from link inspection code.
-      logger.e('Failed to read the query of a shared file link', e);
+      //
+      // Only the reason is logged: this exception's `source` is the query
+      // being resolved *for its key*, so it is the one string in the app that
+      // must never reach the log (rule 3).
+      logger.e('Failed to read the query of a shared file link: ${e.message}');
     }
 
     try {
@@ -298,7 +310,11 @@ class SharedFileLinkKey extends Equatable {
         fragmentParameters = Uri.splitQueryString(fragment);
       }
     } on FormatException catch (e) {
-      logger.e('Failed to read the fragment of a shared file link', e);
+      // `#k=<key>` is the fragment being split here, so the exception's
+      // `source` is a key. The reason travels; the value never does.
+      logger.e(
+        'Failed to read the fragment of a shared file link: ${e.message}',
+      );
     }
 
     return SharedFileLinkKey.resolveFromParameters(
@@ -539,7 +555,9 @@ class SharedFileLinkPayload extends Equatable {
     try {
       queryParameters = uri.queryParameters;
     } on FormatException catch (e) {
-      logger.e('Failed to read the query of a shared file link', e);
+      // The reason only: the `source` of this exception is the query of a
+      // shared file link, which is where a v1 link carries its key (rule 3).
+      logger.e('Failed to read the query of a shared file link: ${e.message}');
 
       return null;
     }
@@ -757,10 +775,10 @@ class SharedFileLinkPayload extends Equatable {
       return null;
     }
 
-    if (_controlCharacterPattern.hasMatch(value)) {
+    if (unsafeNameCharacterPattern.hasMatch(value)) {
       logger.w(
         'Dropped `${SharedFileLinkParams.name}` from a shared file link: it '
-        'contains control characters.',
+        'contains control or direction characters.',
       );
 
       return null;
@@ -795,6 +813,11 @@ class SharedFileLinkPayload extends Equatable {
 
   /// Validates a content type hint, returning `null` when it is absent or must
   /// be dropped. Shared with `/view/{txId}`'s `ct` hint, as [sanitizeName] is.
+  ///
+  /// [_contentTypePattern] is anchored and lists the characters a MIME type may
+  /// contain, so nothing in [unsafeNameCharacterPattern] can survive it - a
+  /// `ct` carrying a direction override is already dropped as "not a
+  /// `type/subtype`".
   static String? sanitizeContentType(String? value) {
     if (value == null || value.isEmpty) {
       return null;
@@ -888,7 +911,26 @@ class SharedFileLinkPayload extends Equatable {
   static final _contentTypePattern = RegExp(
     r'^[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]*/[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]*$',
   );
-  static final _controlCharacterPattern = RegExp(r'[\x00-\x1f\x7f]');
+
+  /// Characters a file name may never carry, whether it came out of a link or
+  /// off a transaction tag.
+  ///
+  /// Two classes, one rule. The C0 range and DEL are the classic way to make a
+  /// string print as something other than what it is. The rest are Unicode's
+  /// direction controls - the overrides `U+202A`-`U+202E`, the isolates
+  /// `U+2066`-`U+2069` and the marks `U+200E`/`U+200F` - and they matter here
+  /// because `n` is not only rendered: it is the name the file is *saved*
+  /// under. `Q3-Report<U+202E>fdp.exe` reads as `Q3-Reportexe.pdf` in the card
+  /// and in the operating system's save dialog, and lands on disk as an
+  /// executable.
+  ///
+  /// A name carrying one is dropped whole rather than repaired, which is the
+  /// rule every other malformed field in this file follows: the caller then
+  /// falls back to the name the file's own record gives, and a sender who
+  /// wanted a name shown has to send one that says what it is.
+  static final unsafeNameCharacterPattern = RegExp(
+    r'[\x00-\x1f\x7f\u200e\u200f\u202a-\u202e\u2066-\u2069]',
+  );
 }
 
 /// The route location of a shared file link - what

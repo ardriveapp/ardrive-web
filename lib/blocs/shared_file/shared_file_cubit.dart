@@ -91,6 +91,10 @@ class SharedFileCubit extends Cubit<SharedFileState> {
   /// newer one.
   int _resolution = 0;
 
+  /// The address that wrote the file's first metadata transaction, once
+  /// something has established it. See [_fileOwnerAddress].
+  String? _fileOwner;
+
   /// How many automatic not-found retries this load has spent.
   int _propagationAttempts = 0;
 
@@ -461,7 +465,13 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     try {
       fileKey = SecretKey(decodeBase64ToBytes(fileKeyBase64));
     } catch (e) {
-      logger.e('Failed to decode the submitted file key', e);
+      // The reason, never the exception object: the `source` of the
+      // `FormatException` a base64 decoder throws is the key itself, and
+      // `toString()` prints a window of it into a log the user can export.
+      logger.e(
+        'Failed to decode the submitted file key: '
+        '${e is FormatException ? e.message : e.runtimeType}',
+      );
       emit(SharedFileKeyInvalid(payload: linkPayload));
       return;
     }
@@ -630,6 +640,7 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     }
 
     final entity = shared.entity!;
+    final metadataOwner = shared.ownerAddress;
 
     if (entity.id != fileId) {
       // The metadata transaction belongs to a different file. Nothing in this
@@ -660,7 +671,10 @@ class SharedFileCubit extends Cubit<SharedFileState> {
       fileKey: fileKey,
       ownerAddress: entity.ownerAddress,
       payload: payload,
-      verification: _reconcile(payload, revision, shared.ownerAddress),
+      // This metadata was fetched by id, so nothing has established yet that
+      // the file's owner wrote it. The verdict waits for [_confirmAuthorship];
+      // it is never taken from the metadata's agreement with the link alone.
+      verification: LinkVerification.pending,
       isPinned: payload.isPinned,
       newerVersionAvailable: false,
     ));
@@ -668,7 +682,18 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     _backgroundWork = Future(
       () => Future.wait([
         _fetchLicense(revision, entity.ownerAddress, resolution: resolution),
-        _checkFreshness(fileKey, resolution: resolution),
+        // The freshness lookup is owner scoped, so the entity it returns also
+        // answers who owns the file - one lookup for both questions.
+        _checkFreshness(fileKey, resolution: resolution).then(
+          (latest) => _confirmAuthorship(
+            payload,
+            revision,
+            metadataOwner,
+            fileKey,
+            knownOwner: latest?.ownerAddress,
+            resolution: resolution,
+          ),
+        ),
       ]),
     );
 
@@ -918,6 +943,8 @@ class SharedFileCubit extends Cubit<SharedFileState> {
           : latest.txId == metadataTxId;
 
       if (sharesTheNewestRevision) {
+        // The link named the file's own newest revision, so this entity is the
+        // owner's own metadata by construction.
         await _adoptResolvedRevision(payload, latest, resolution: resolution);
         return;
       }
@@ -942,7 +969,14 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     // Either a newer revision exists, or the newest one could not be read. The
     // revision the link actually shared still has to be checked, and that means
     // fetching the metadata transaction it names.
-    await _verifyLink(payload, fileKey, resolution: resolution);
+    await _verifyLink(
+      payload,
+      fileKey,
+      resolution: resolution,
+      // The newest revision came out of an owner-scoped query, so when there
+      // was one it has already answered who owns the file.
+      knownOwner: latest?.ownerAddress,
+    );
   }
 
   /// Takes the file's own record as what the page shows and downloads.
@@ -950,10 +984,17 @@ class SharedFileCubit extends Cubit<SharedFileState> {
   /// The link's claims stay on the state for the UI to compare against, but
   /// from here on the chain is the authority - including for the download
   /// target, which is the whole point of noticing a mismatch at all.
+  ///
+  /// [authorshipIsConfirmed] says whether [entity] is known to have been
+  /// written by the file's owner. It is `true` for anything an owner-scoped
+  /// query returned, and `false` when metadata fetched by id could not be
+  /// attributed - in which case the page keeps what it resolved and the badge
+  /// stops short of endorsing it.
   Future<void> _adoptResolvedRevision(
     SharedFileLinkPayload payload,
     FileEntity entity, {
     required int resolution,
+    bool authorshipIsConfirmed = true,
   }) async {
     final revision = _toRevision(entity);
 
@@ -968,9 +1009,10 @@ class SharedFileCubit extends Cubit<SharedFileState> {
       return;
     }
 
-    final verification = payload.metadataTxId == null
+    final verification = payload.metadataTxId == null || !authorshipIsConfirmed
         // Without an `mtx` there is no claim about *which* revision was
-        // shared, so nothing here amounts to a verified link.
+        // shared, and without a confirmed author there is nothing worth
+        // comparing it against. Neither amounts to a verified link.
         ? LinkVerification.unavailable
         : _reconcile(payload, revision, entity.ownerAddress);
 
@@ -1013,10 +1055,14 @@ class SharedFileCubit extends Cubit<SharedFileState> {
   /// something other than the file it points at: from that moment the chain is
   /// what is shown and downloaded, and the verdict tells the recipient why the
   /// page does not match the link they were sent.
+  ///
+  /// [knownOwner] is the file's owner when the caller already has it from an
+  /// owner-scoped query, which spares the first-writer probe.
   Future<void> _verifyLink(
     SharedFileLinkPayload payload,
     SecretKey? fileKey, {
     required int resolution,
+    String? knownOwner,
   }) async {
     final metadataTxId = payload.metadataTxId;
 
@@ -1107,10 +1153,128 @@ class SharedFileCubit extends Cubit<SharedFileState> {
       return;
     }
 
+    // The metadata carries the right file id, but it was fetched by
+    // transaction id and anyone can post a transaction. Until its author is
+    // the file's owner it describes nothing (see [_fileOwnerAddress]).
+    final fileOwner = await _fileOwnerAddress(knownOwner: knownOwner);
+
+    if (_isStale(resolution)) {
+      return;
+    }
+
+    if (fileOwner != null && shared.ownerAddress != fileOwner) {
+      logger.w(
+        'A shared file link names a metadata transaction that the file\'s '
+        'owner did not write. Resolving the file over GraphQL instead.',
+      );
+
+      await _resolveOverGraphQL(
+        fileKey,
+        resolution: resolution,
+        isRecovery: true,
+        verificationOverride: LinkVerification.mismatch,
+      );
+      return;
+    }
+
     // The resolved revision is what the page shows from here on, whatever the
     // verdict: when it agrees with the link nothing visible changes, and when
     // it does not, the file's own record is the one worth showing.
-    await _adoptResolvedRevision(payload, entity, resolution: resolution);
+    await _adoptResolvedRevision(
+      payload,
+      entity,
+      resolution: resolution,
+      authorshipIsConfirmed: fileOwner != null,
+    );
+  }
+
+  /// Settles the verdict on a link whose revision came out of its own `mtx`.
+  ///
+  /// Nothing has established at that point that the file's owner wrote that
+  /// metadata - it was fetched by transaction id, which anyone can mint. A
+  /// stranger's metadata is not this file's record however well formed it is,
+  /// so the file is resolved from its id instead and the link is reported as
+  /// what it is.
+  Future<void> _confirmAuthorship(
+    SharedFileLinkPayload payload,
+    FileRevision revision,
+    String? metadataOwner,
+    SecretKey? fileKey, {
+    String? knownOwner,
+    required int resolution,
+  }) async {
+    final fileOwner = await _fileOwnerAddress(knownOwner: knownOwner);
+
+    if (_isStale(resolution)) {
+      return;
+    }
+
+    if (fileOwner == null) {
+      // Nobody could say who owns the file. The page keeps the revision it
+      // resolved; the badge stops short of endorsing it.
+      _emitVerification(LinkVerification.unavailable, resolution: resolution);
+      return;
+    }
+
+    if (metadataOwner != fileOwner) {
+      logger.w(
+        'A shared file link names a metadata transaction that the file\'s '
+        'owner did not write. Resolving the file over GraphQL instead.',
+      );
+
+      await _resolveOverGraphQL(
+        fileKey,
+        resolution: resolution,
+        isRecovery: true,
+        verificationOverride: LinkVerification.mismatch,
+      );
+      return;
+    }
+
+    _emitVerification(
+      _reconcile(payload, revision, metadataOwner),
+      resolution: resolution,
+    );
+  }
+
+  /// The address that wrote the file's first metadata transaction - the only
+  /// address whose ArFS metadata describes this file.
+  ///
+  /// Every GraphQL path resolves this first and scopes its queries to it
+  /// (`ArweaveService.getOwnerForFileEntityWithId`). The `mtx` routes are the
+  /// ones that skip the probe, because `getTransactionDetails` resolves a
+  /// transaction by id alone: anyone can post ArFS metadata tagged with a
+  /// `File-Id` that is already circulating, and nothing about the transaction
+  /// itself says whether it belongs to the file the recipient asked for. So the
+  /// probe happens here instead - behind the paint, never in front of it, and
+  /// only when [knownOwner] did not already answer it.
+  ///
+  /// Returns `null` when the owner could not be established. That is never a
+  /// verdict of its own: a question that could not be answered leaves the link
+  /// unverified, and never verified.
+  Future<String?> _fileOwnerAddress({String? knownOwner}) async {
+    if (knownOwner != null) {
+      return _fileOwner = knownOwner;
+    }
+
+    final resolved = _fileOwner;
+
+    if (resolved != null) {
+      // The first writer of a file id never changes, so this is asked once.
+      return resolved;
+    }
+
+    try {
+      return _fileOwner = await _arweave.getOwnerForFileEntityWithId(fileId);
+    } catch (e, stacktrace) {
+      logger.e(
+        'Failed to resolve the owner of the shared file',
+        e,
+        stacktrace,
+      );
+
+      return null;
+    }
   }
 
   /// Looks for a revision newer than the one being shown.
@@ -1118,7 +1282,10 @@ class SharedFileCubit extends Cubit<SharedFileState> {
   /// One lookup, off the critical path, and it only ever sets a flag: the page
   /// offers the newer revision and never swaps to it, on a pinned link or a
   /// live one (decision 1).
-  Future<void> _checkFreshness(
+  ///
+  /// Returns the newest revision it read, which is owner scoped and therefore
+  /// also answers who owns the file, or `null` when it could not be read.
+  Future<FileEntity?> _checkFreshness(
     SecretKey? fileKey, {
     required int resolution,
   }) async {
@@ -1126,13 +1293,13 @@ class SharedFileCubit extends Cubit<SharedFileState> {
       final latest = await _arweave.getLatestFileEntityWithId(fileId, fileKey);
 
       if (latest == null || _isStale(resolution)) {
-        return;
+        return latest;
       }
 
       final current = state;
 
       if (current is! SharedFileLoadSuccess) {
-        return;
+        return latest;
       }
 
       final target = current.revision;
@@ -1146,6 +1313,8 @@ class SharedFileCubit extends Cubit<SharedFileState> {
       if (isNewer) {
         emit(current.copyWith(newerVersionAvailable: true));
       }
+
+      return latest;
     } catch (e, stacktrace) {
       // A freshness check that fails changes nothing about the file in hand.
       logger.e(
@@ -1153,6 +1322,8 @@ class SharedFileCubit extends Cubit<SharedFileState> {
         e,
         stacktrace,
       );
+
+      return null;
     }
   }
 
@@ -1480,15 +1651,30 @@ class SharedFileCubit extends Cubit<SharedFileState> {
   /// claims nothing and cannot disagree with anything. Field *names* are
   /// logged; values are not, because a private file's name and content type are
   /// secrets.
+  ///
+  /// A link that asserted nothing at all is [LinkVerification.unavailable] and
+  /// never [LinkVerification.verified]: there was nothing about the file to
+  /// check, so an empty list of disagreements is silence rather than a result.
+  ///
+  /// [ownerAddress] is the address that wrote the record being compared
+  /// against, which callers establish as the file's own owner first - see
+  /// [_fileOwnerAddress].
   LinkVerification _reconcile(
     SharedFileLinkPayload payload,
     FileRevision revision,
     String? ownerAddress,
   ) {
     final disagreements = <String>[];
+    var claims = 0;
 
     void compare(String field, Object? claimed, Object? actual) {
-      if (claimed != null && claimed != actual) {
+      if (claimed == null) {
+        return;
+      }
+
+      claims++;
+
+      if (claimed != actual) {
         disagreements.add(field);
       }
     }
@@ -1503,16 +1689,21 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     );
     compare(SharedFileLinkParams.owner, payload.ownerAddress, ownerAddress);
 
-    if (disagreements.isEmpty) {
-      return LinkVerification.verified;
+    if (disagreements.isNotEmpty) {
+      logger.w(
+        'A shared file link disagrees with the file\'s record on: '
+        '${disagreements.join(', ')}',
+      );
+
+      return LinkVerification.mismatch;
     }
 
-    logger.w(
-      'A shared file link disagrees with the file\'s record on: '
-      '${disagreements.join(', ')}',
-    );
-
-    return LinkVerification.mismatch;
+    // A link carrying nothing but `mtx` describes the file in no way at all.
+    // Reporting that as verified would put an affirmative badge on a check
+    // that had nothing to run against.
+    return claims == 0
+        ? LinkVerification.unavailable
+        : LinkVerification.verified;
   }
 
   /// Shows the key entry gate.

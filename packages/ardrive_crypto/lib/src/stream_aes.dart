@@ -261,6 +261,28 @@ class AesGcmStream extends AesStream with DecryptStream {
   static FutureOr<AesGcmStream> fromKeyData(Uint8List keyData) =>
       unauthenticated(keyData);
 
+  /// The **one** sanctioned exception to [allowUnauthenticatedGcmDecryption]:
+  /// an AES-GCM file whose ciphertext is too large to hold in memory, so the
+  /// MAC cannot be checked before the plaintext is written.
+  ///
+  /// This is not the old blanket behaviour coming back. It exists because
+  /// AES-GCM was, for years, the cipher ArDrive used for *every* private file
+  /// (`docs/ArweaveFS.md`), and ardrive-cli still does; a multi-gigabyte file
+  /// written by one of those clients has no other way down. Refusing it would
+  /// be a regression, and buffering it is not an option.
+  ///
+  /// The contract for anything built this way:
+  /// - the caller must have established that the file exceeds its buffer
+  ///   ceiling (`DownloadPolicy.maxBufferedCiphertextBytes`) — a file *under*
+  ///   the ceiling must be buffered and MAC-verified instead;
+  /// - the result carries **no** cipher-level integrity guarantee, so the
+  ///   caller must report it as unverified unless it has another proof (e.g.
+  ///   [StreamedDataItemVerifier] over the same bytes).
+  static FutureOr<AesGcmStream> unauthenticatedTooLargeToBuffer(
+    Uint8List keyData,
+  ) async =>
+      AesGcmStream._(await AesCtrSecretKey.importRawKey(keyData));
+
   @override
   StreamTransformer<Uint8List, Uint8List> decryptTransformer(
     Uint8List nonce,

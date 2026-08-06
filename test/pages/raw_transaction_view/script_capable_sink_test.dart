@@ -37,6 +37,12 @@ void main() {
     'lib/pages/raw_transaction_view',
     'lib/components/sandboxed_transaction_view',
     'lib/utils/open_url.dart',
+    // The PDF viewer renders an attacker-chosen document. It is safe today
+    // because pdfx rasterises pages into images, but the sibling widget in the
+    // same directory (`email_attachment_preview_web.dart`) does feed bytes to a
+    // blob URL - so this is fenced file by file, not by directory, and this
+    // file is the one that must never grow such a path.
+    'lib/pages/drive_detail/components/pdf_preview_widget.dart',
   ];
 
   /// Full-line comments only, so a `https://` inside a string cannot swallow

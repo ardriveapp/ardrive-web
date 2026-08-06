@@ -22,9 +22,12 @@ import 'package:flutter_test/flutter_test.dart';
 /// renders a *source view and a sandbox affordance*, never the content.
 void main() {
   const txId = 'j48SFG4GgnFej4tCqKU2iUgI4alFArg_8o8pVLiGujI';
-  const sandboxUrl =
-      'https://r6hrefdoa2bhcxuprnbkrjjwrfearynjiublqp7sr4uvjoegxiza'
-      '.arweave.net/$txId';
+
+  // RFC 4648 base32 of the 32 bytes behind [txId] - the DNS label a gateway
+  // serves this one transaction from, and nothing else.
+  const sandboxSubdomain =
+      'r6hrefdoa2bhcxuprnbkrjjwrfearynjiublqp7sr4uvjoegxiza';
+  const sandboxUrl = 'https://$sandboxSubdomain.arweave.net/$txId';
 
   Uint8List ascii(String text) => Uint8List.fromList(utf8.encode(text));
 
@@ -102,6 +105,32 @@ void main() {
     await tester.pump();
   }
 
+  /// The sandbox affordance is offered, *and it points at this transaction's
+  /// own origin*.
+  ///
+  /// Finding the widget is not the guarantee. The whole same-origin story is
+  /// the URL it is handed: `https://arweave.net/{txId}` would render exactly
+  /// the same button and would put every transaction in the world back on one
+  /// shared origin, where a page fetched from a stranger's transaction can read
+  /// the previous one's storage.
+  void expectSandboxOffer(WidgetTester tester) {
+    expect(find.byType(SandboxedTransactionView), findsOneWidget);
+
+    final view = tester.widget<SandboxedTransactionView>(
+      find.byType(SandboxedTransactionView),
+    );
+
+    expect(view.url, sandboxUrl);
+
+    final host = Uri.parse(view.url).host;
+
+    // Per-transaction by construction: the base32 of *this* id is the leftmost
+    // DNS label, and the bare gateway origin is never what a transaction is
+    // allowed to render itself on.
+    expect(host, startsWith('$sandboxSubdomain.'));
+    expect(host, isNot('arweave.net'));
+  }
+
   group('inline-safe types render inline', () {
     testWidgets('an image is decoded and painted, with no sandbox offer',
         (tester) async {
@@ -124,6 +153,15 @@ void main() {
       expect(find.byType(PdfPreviewWidget), findsOneWidget);
       expect(find.text('rasterised pages'), findsOneWidget);
       expect(find.byType(SandboxedTransactionView), findsNothing);
+
+      // The rasteriser's own fallback - "open it on the gateway" - is the same
+      // per-transaction origin, not the shared one.
+      expect(
+        tester
+            .widget<PdfPreviewWidget>(find.byType(PdfPreviewWidget))
+            .previewUrl,
+        sandboxUrl,
+      );
     });
 
     testWidgets('text renders as text', (tester) async {
@@ -161,7 +199,7 @@ void main() {
 
       expect(find.text('player for $sandboxUrl'), findsOneWidget);
       // The escape hatch stays, because a claim is all that put a player here.
-      expect(find.byType(SandboxedTransactionView), findsOneWidget);
+      expectSandboxOffer(tester);
     });
   });
 
@@ -176,8 +214,9 @@ void main() {
         ),
       );
 
-      // The sandbox affordance is there...
-      expect(find.byType(SandboxedTransactionView), findsOneWidget);
+      // The sandbox affordance is there, pointed at this transaction's own
+      // origin...
+      expectSandboxOffer(tester);
 
       // ...the source is shown as source...
       expect(find.byType(DocumentPreviewWidget), findsOneWidget);
@@ -205,7 +244,7 @@ void main() {
         ),
       );
 
-      expect(find.byType(SandboxedTransactionView), findsOneWidget);
+      expectSandboxOffer(tester);
       expect(find.byType(Image), findsNothing);
     });
 
@@ -219,7 +258,7 @@ void main() {
         ),
       );
 
-      expect(find.byType(SandboxedTransactionView), findsOneWidget);
+      expectSandboxOffer(tester);
       expect(find.byType(Image), findsNothing);
       expect(find.textContaining('match'), findsOneWidget);
     });
@@ -239,7 +278,7 @@ void main() {
       expect(find.byType(Image), findsNothing);
       expect(find.byType(DocumentPreviewWidget), findsNothing);
       expect(find.byType(PdfPreviewWidget), findsNothing);
-      expect(find.byType(SandboxedTransactionView), findsOneWidget);
+      expectSandboxOffer(tester);
     });
 
     testWidgets('an oversized transaction says so rather than guessing',

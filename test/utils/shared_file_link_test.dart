@@ -91,6 +91,74 @@ void main() {
     }
   }
 
+  // Every test below this one reaches for [SharedFileLinkParams], which is the
+  // right thing to do everywhere - and is exactly why none of them can hold
+  // the wire format still. Rename `pinned` to `'p'` and they all keep passing,
+  // while every pinned link already sent to somebody quietly loses its `pin`:
+  // the new build reads no flag, falls back to live semantics, and hands the
+  // recipient a *newer* revision than the sharer chose to send them, with
+  // nothing on screen to say so. Same shape for the other three.
+  //
+  // These are the only assertions in the suite that spell the names out.
+  group('the parameter names on the wire', () {
+    const wireFormat = <String, String>{
+      'v': '2',
+      'dtx': dataTxId,
+      'mtx': metadataTxId,
+      'own': ownerAddress,
+      'n': 'Q3 Report.pdf',
+      's': '4821133',
+      'ct': 'application/pdf',
+      'c': 'AES256-GCM',
+      'iv': cipherIv,
+      'pin': '1',
+      'in': bundledInTxId,
+      'thn': thumbnailTxId,
+      'hid': '1',
+    };
+
+    test('are what a link already in the wild is read with', () {
+      final payload = SharedFileLinkPayload.tryParseParameters(wireFormat);
+
+      expect(payload, isNotNull);
+      expect(payload!.version, 2);
+      expect(payload.dataTxId, dataTxId);
+      expect(payload.metadataTxId, metadataTxId);
+      expect(payload.ownerAddress, ownerAddress);
+      expect(payload.name, 'Q3 Report.pdf');
+      expect(payload.size, 4821133);
+      expect(payload.contentType, 'application/pdf');
+      expect(payload.cipher, Cipher.aes256gcm);
+      expect(payload.cipherIv, cipherIv);
+
+      // The four the suite never spelled out. `pin` is the one with teeth: a
+      // link that loses it silently changes which bytes the recipient gets.
+      expect(payload.isPinned, isTrue, reason: '`pin=1` is a pinned link');
+      expect(
+        payload.detailsAreHidden,
+        isTrue,
+        reason: '`hid=1` is a link whose sharer hid the name and size',
+      );
+      expect(
+        payload.bundledInTxId,
+        bundledInTxId,
+        reason: '`in` is the bundle the data item was posted in',
+      );
+      expect(
+        payload.thumbnailTxId,
+        thumbnailTxId,
+        reason: '`thn` is the thumbnail transaction',
+      );
+    });
+
+    test('are what a new link is written with', () {
+      final payload =
+          SharedFileLinkPayload.tryParseParameters(fullParameters())!;
+
+      expect(payload.toQueryParameters(), wireFormat);
+    });
+  });
+
   group('SharedFileLinkPayload version gate', () {
     test('a link with no version has no payload', () {
       // Every link ArDrive ever produced. It must keep resolving over GraphQL.
@@ -232,6 +300,44 @@ void main() {
 
       expect(payload.name, isNull);
       expectIntactExcept(payload, SharedFileLinkParams.name);
+    });
+
+    // `n` is not only rendered: it is the name the file is saved under, on the
+    // fast path without anything else ever being consulted. A direction
+    // override turns the extension around in the card *and* in the operating
+    // system's save dialog, so a `.exe` arrives looking like a `.pdf`.
+    for (final entry in const <String, String>{
+      'a right-to-left override': '\u202E',
+      'a left-to-right override': '\u202D',
+      'a right-to-left embedding': '\u202B',
+      'a left-to-right isolate': '\u2066',
+      'a pop directional isolate': '\u2069',
+      'a right-to-left mark': '\u200F',
+    }.entries) {
+      test('a name with ${entry.key} is dropped', () {
+        final payload = parseWithCorrupted(
+          SharedFileLinkParams.name,
+          'Q3-Report${entry.value}fdp.exe',
+        );
+
+        expect(payload.name, isNull);
+        expectIntactExcept(payload, SharedFileLinkParams.name);
+      });
+    }
+
+    test('a name written in a right-to-left script is kept', () {
+      // The rule is about the characters that misrepresent a name, never about
+      // the script it is written in: `\u05D3\u05D5\u05D7.pdf` is Hebrew for
+      // "report.pdf" and is a file name like any other. (Escaped rather than
+      // pasted so that this file reads the same everywhere.)
+      const rightToLeftName = '\u05D3\u05D5\u05D7.pdf';
+
+      final payload = parseWithCorrupted(
+        SharedFileLinkParams.name,
+        rightToLeftName,
+      );
+
+      expect(payload.name, rightToLeftName);
     });
 
     test('an unknown cipher is dropped', () {

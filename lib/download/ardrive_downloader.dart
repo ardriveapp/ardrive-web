@@ -23,6 +23,9 @@ const gcmMacLengthBytes = 16;
 /// Defaults to [decryptTransactionDataStream]. It is injectable so that resume
 /// can be exercised with an offset-sensitive stand-in in environments where
 /// the WebCrypto native library is not loadable.
+///
+/// [gcmTooLargeToBuffer] is the caller's assertion that an AES-GCM file cannot
+/// be buffered and MAC-verified; see [_ArDriveDownloader._getFileStream].
 typedef PrivateStreamDecryptor = Future<Stream<Uint8List>> Function(
   String cipher,
   Uint8List cipherIv,
@@ -30,6 +33,7 @@ typedef PrivateStreamDecryptor = Future<Stream<Uint8List>> Function(
   Uint8List keyData,
   int fileSize, {
   int startOffsetBytes,
+  bool gcmTooLargeToBuffer,
 });
 
 /// Builds the integrity checker for a transaction, or an
@@ -105,10 +109,16 @@ abstract class ArDriveDownloader {
     DownloadSource? source,
     PrivateStreamDecryptor? decryptStream,
     IntegrityVerifierFactory? verifierFactory,
+    Duration? resumeBackoffStep,
   }) {
     // F24: no download path may decrypt AES-GCM without checking the MAC any
     // more. Disarm the class so that an accidental reuse throws instead of
     // quietly handing back unauthenticated plaintext.
+    //
+    // The one file that cannot obey this is one too large to hold in memory;
+    // it goes through [AesGcmStream.unauthenticatedTooLargeToBuffer], which is
+    // deliberately not governed by this switch and is reachable from exactly
+    // one place ([_ArDriveDownloader._getFileStream]).
     AesGcmStream.allowUnauthenticatedGcmDecryption = false;
 
     return _ArDriveDownloader(
@@ -118,6 +128,7 @@ abstract class ArDriveDownloader {
       source: source,
       decryptStream: decryptStream,
       verifierFactory: verifierFactory,
+      resumeBackoffStep: resumeBackoffStep,
     );
   }
 }
@@ -127,6 +138,10 @@ class _ArDriveDownloader implements ArDriveDownloader {
   final ArDriveIO _ardriveIo;
   final ArweaveService _arweave;
   final PrivateStreamDecryptor _decryptStream;
+
+  /// How long to wait before the nth consecutive resume attempt. Injectable so
+  /// tests can prove the loop terminates without spending the wall clock on it.
+  final Duration _resumeBackoffStep;
 
   late final DownloadSource _source;
   late final IntegrityVerifierFactory _verifierFactory;
@@ -138,7 +153,9 @@ class _ArDriveDownloader implements ArDriveDownloader {
     DownloadSource? source,
     PrivateStreamDecryptor? decryptStream,
     IntegrityVerifierFactory? verifierFactory,
-  }) : _decryptStream = decryptStream ?? decryptTransactionDataStream {
+    Duration? resumeBackoffStep,
+  })  : _decryptStream = decryptStream ?? decryptTransactionDataStream,
+        _resumeBackoffStep = resumeBackoffStep ?? _defaultResumeBackoffStep {
     _source = source ?? GatewayDownloadSource(_arweave);
     _verifierFactory = verifierFactory ?? _dataItemVerifierFor;
   }
@@ -175,6 +192,23 @@ class _ArDriveDownloader implements ArDriveDownloader {
   /// that hiccups repeatedly still finishes.
   static const _maxResumeAttempts = 3;
 
+  /// The ceiling that never resets.
+  ///
+  /// [_maxResumeAttempts] alone cannot bound the loop: a gateway that dribbles
+  /// a single byte and drops the connection *has* made progress, so it earns a
+  /// fresh budget every time and the download reconnects forever. Genuine
+  /// progress is still not punished — a download that recovers cleanly a dozen
+  /// times is pathological by any measure, and restarting is a better answer
+  /// than an invisible infinite loop.
+  static const _maxTotalResumeAttempts = 12;
+
+  /// Grows with consecutive failures, so a gateway that is refusing to serve
+  /// is not hammered. Reset along with [_maxResumeAttempts]'s counter, so a
+  /// download that recovers pays the small delay again rather than the large
+  /// one.
+  static const _defaultResumeBackoffStep = Duration(milliseconds: 250);
+  static const _maxResumeBackoff = Duration(seconds: 4);
+
   /// The integrity lookup runs alongside the first bytes; this bounds how long
   /// it may hold up the *tap*, never the download itself.
   static const _integrityLookupTimeout = Duration(seconds: 10);
@@ -198,9 +232,14 @@ class _ArDriveDownloader implements ArDriveDownloader {
     final isPrivateFile =
         fileKey != null && cipher != null && cipherIvString != null;
 
-    // §3.1 — every AES-GCM file, on every platform, is buffered and
-    // authenticated before anything reaches the disk.
-    if (!isManifest && isPrivateFile && cipher == Cipher.aes256gcm) {
+    // §3.1 — every AES-GCM file that *can* be held in memory, on every
+    // platform, is buffered and authenticated before anything reaches the
+    // disk. The larger ones fall through to the streaming path below, which
+    // reports an honest verdict instead of refusing to download at all.
+    if (!isManifest &&
+        isPrivateFile &&
+        cipher == Cipher.aes256gcm &&
+        fileSize <= DownloadPolicy.maxBufferedCiphertextBytes) {
       return _downloadAuthenticatedGcmAndSave(
         txId: txId,
         fileSize: fileSize,
@@ -268,17 +307,52 @@ class _ArDriveDownloader implements ArDriveDownloader {
 
   /// Writes [file] out, reporting save progress as a percentage.
   ///
-  /// This is the save half of [downloadFile], unchanged, extracted so that the
-  /// buffered AES-GCM path and the streaming path share one implementation.
+  /// This is the save half of [downloadFile], extracted so that the buffered
+  /// AES-GCM path and the streaming path share one implementation.
+  ///
+  /// The downloader owns the `finalize` completer, and it is the only party
+  /// that can answer the question the savers ask with it: *should what you
+  /// wrote be kept?* It says `true` the moment the last byte has been handed
+  /// over, and `false` on a cancel.
+  ///
+  /// That ownership is not a detail. `DartIOFileSaver.saveStream`
+  /// (`packages/ardrive_io/lib/src/mobile/mobile_io.dart`) blocks on
+  /// `finalize.future` *after* it has written the whole file, so a downloader
+  /// that only completed it on cancel left every mobile save hanging at 100%
+  /// — and the only way to unblock it, pressing Cancel, deleted the finished
+  /// file. The web savers complete it themselves, which is why only mobile
+  /// ever showed it.
   Stream<double> _saveToDisk(IOFile file) {
     final finalize = Completer<bool>();
 
-    Future.any([
-      _cancelWithReason.future.then((_) => false),
-    ]).then((value) => finalize.complete(value)).catchError((e) {
-      logger.d('Download aborted');
-      finalize.complete(false);
-    });
+    void settleFinalize(bool keepWhatWasWritten) {
+      if (!finalize.isCompleted) finalize.complete(keepWhatWasWritten);
+    }
+
+    unawaited(_cancelWithReason.future.then(
+      (_) {
+        logger.d('Download aborted');
+        settleFinalize(false);
+      },
+      onError: (Object _) => settleFinalize(false),
+    ));
+
+    // The savers turn a failure of the *source* stream into `saveResult:
+    // false` (`web_io.dart`'s `on Exception`, `mobile_io.dart`'s `catch`),
+    // which is indistinguishable from a cancel by the time it gets here.
+    // Watching the stream ourselves is what keeps a dead gateway from being
+    // reported as "Download cancelled".
+    Object? sourceError;
+    StackTrace? sourceStackTrace;
+
+    final observed = _ObservedIOFile(
+      file,
+      onDrained: () => settleFinalize(true),
+      onFailed: (e, s) {
+        sourceError ??= e;
+        sourceStackTrace ??= s;
+      },
+    );
 
     bool? saveResult;
     var bytesSaved = 0;
@@ -288,7 +362,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
     final progressController = StreamController<double>();
 
     final subscription =
-        _ardriveIo.saveFileStream(file, finalize).listen((saveStatus) {
+        _ardriveIo.saveFileStream(observed, finalize).listen((saveStatus) {
       if (saveStatus.saveResult == null) {
         final progress = saveStatus.bytesSaved / saveStatus.totalBytes;
         bytesSaved += saveStatus.bytesSaved;
@@ -301,25 +375,62 @@ class _ArDriveDownloader implements ArDriveDownloader {
       }
     });
 
-    subscription.onDone(() async {
-      if (_cancelWithReason.isCompleted || saveResult == false) {
-        progressController.addError(const DownloadCancelledException());
-      }
+    // A stream that ends in an error fires **both** `onError` and `onDone`, and
+    // either one can be the handler that settles this controller. Whichever
+    // arrives first wins; the second must not touch a closed controller, or the
+    // save fails with `Bad state: Cannot add event after closing` instead of
+    // with whatever actually went wrong.
+    var settled = false;
 
-      if (saveResult != false) {
-        logger.d('File saved with success');
+    void settle([Object? error, StackTrace? stackTrace]) {
+      if (settled) {
+        return;
+      }
+      settled = true;
+
+      if (error != null) {
+        progressController.addError(error, stackTrace);
       }
 
       progressController.close();
       subscription.cancel();
+    }
+
+    subscription.onDone(() {
+      final failure = sourceError;
+
+      if (failure != null) {
+        settle(failure, sourceStackTrace);
+      } else if (_cancelWithReason.isCompleted || saveResult == false) {
+        settle(const DownloadCancelledException());
+      } else {
+        logger.d('File saved with success');
+        settle();
+      }
     });
 
     subscription.onError((e, s) {
+      if (settled) {
+        return;
+      }
+
       logger.e(
         'Failed to download of save the file. Closing progressController...',
         e,
         s,
       );
+
+      final failure = sourceError;
+      if (failure != null) {
+        // The download is what broke; the save never had a chance.
+        settle(failure, sourceStackTrace);
+        return;
+      }
+
+      // This branch reports more than one error, and `settle` closes after the
+      // first, so it claims the controller up front and closes at the end.
+      settled = true;
+
       if (saveResult != true) {
         // verify if the download was aborted before starting the save
         if (bytesSaved == 0) {
@@ -331,6 +442,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
       // TODO: we can show a different message for different errors e.g. when `e` is ActionCanceledException
       progressController.addError(e);
       progressController.close();
+      subscription.cancel();
       return;
     });
 
@@ -431,9 +543,12 @@ class _ArDriveDownloader implements ArDriveDownloader {
   /// Fetches the whole ciphertext and returns the plaintext only if the AES-GCM
   /// tag verifies.
   ///
-  /// Bounded by construction — the uploader only picks AES-GCM below
-  /// [DownloadPolicy.maxBufferedCiphertextBytes] — and bounded again here, in
-  /// case a gateway streams more than the file claims.
+  /// Only reached for a file that claims to be at or under
+  /// [DownloadPolicy.maxBufferedCiphertextBytes] — its callers route the
+  /// larger ones to the streaming path — and bounded again here, in case a
+  /// gateway streams more than the file claims. The size check below is
+  /// therefore an assertion, not a policy: a caller that skipped the split
+  /// gets an error instead of an unbounded buffer.
   Future<Uint8List> _downloadAndAuthenticateGcm({
     required String txId,
     required int fileSize,
@@ -543,16 +658,33 @@ class _ArDriveDownloader implements ArDriveDownloader {
     final isPrivateFile =
         fileKey != null && cipher != null && cipherIvString != null;
 
+    // The narrow, deliberate exception to §3.1. See [_oversizedGcmCaveat].
+    var gcmTooLargeToBuffer = false;
+
     if (isPrivateFile) {
       if (cipher == Cipher.aes256gcm) {
-        // The tripwire for F24: streaming AES-GCM trims the tag and never
-        // checks it. Callers must route GCM through the buffered path.
-        throw StateError(
-          'AES-GCM must be buffered and MAC-verified, never streamed',
-        );
-      }
+        if (fileSize <= DownloadPolicy.maxBufferedCiphertextBytes) {
+          // The tripwire for F24: streaming AES-GCM trims the tag and never
+          // checks it. Every GCM file that fits in memory — which is every one
+          // this uploader has written since the GCM/CTR split — must go
+          // through the buffered path.
+          throw StateError(
+            'AES-GCM must be buffered and MAC-verified, never streamed',
+          );
+        }
 
-      if (cipher != Cipher.aes256ctr) {
+        // Above the cap there is no honest alternative. AES-GCM was ArDrive's
+        // only symmetric cipher for years (docs/ArweaveFS.md) and ardrive-cli
+        // still writes it at any size, so refusing here would mean a large
+        // legacy private file could not be downloaded at all. It streams,
+        // unauthenticated, and says so — see [_oversizedGcmCaveat].
+        gcmTooLargeToBuffer = true;
+        logger.w(
+          'AES-GCM file $txId is $fileSize bytes, over the '
+          '${DownloadPolicy.maxBufferedCiphertextBytes} byte buffer limit: '
+          'streaming it without checking its authentication tag.',
+        );
+      } else if (cipher != Cipher.aes256ctr) {
         logger.e('Unknown cipher: $cipher. Throwing exception.');
         throw Exception('Unknown cipher: $cipher');
       }
@@ -575,6 +707,17 @@ class _ArDriveDownloader implements ArDriveDownloader {
         : Future.value(StreamedDataItemVerifier.unavailable(
             'Integrity checking was not requested for this download'));
 
+    // Opened *before* the stream is handed to a saver, so that a gateway that
+    // 404s, rate-limits, or cannot be reached throws out of `downloadFile`
+    // itself. Inside the generator it would surface later, from within the
+    // saver, which swallows it into `saveResult: false` — and the user would
+    // be told they cancelled a download they never started, after being asked
+    // where to put it.
+    final firstResponse = await _source.open(
+      txId: txId,
+      verifyDownload: verifyDownload,
+    );
+
     return _resilientPlaintextStream(
       txId: txId,
       fileSize: fileSize,
@@ -583,8 +726,16 @@ class _ArDriveDownloader implements ArDriveDownloader {
       cipherIv: cipherIv,
       keyData: keyData,
       verifierFuture: verifierFuture,
+      firstResponse: firstResponse,
+      gcmTooLargeToBuffer: gcmTooLargeToBuffer,
+      integrityCaveat: gcmTooLargeToBuffer ? _oversizedGcmCaveat : null,
     );
   }
+
+  /// Why an oversized AES-GCM download cannot claim its cipher checked out.
+  static const _oversizedGcmCaveat =
+      'The file is larger than the buffered limit for AES-GCM, so its '
+      'authentication tag could not be checked';
 
   /// The file's plaintext, from byte 0 to the end, re-requesting from the last
   /// delivered byte whenever the transport dies mid-stream.
@@ -609,12 +760,17 @@ class _ArDriveDownloader implements ArDriveDownloader {
     required Uint8List? cipherIv,
     required Uint8List? keyData,
     required Future<StreamedDataItemVerifier> verifierFuture,
+    DownloadSourceResponse? firstResponse,
+    bool gcmTooLargeToBuffer = false,
+    String? integrityCaveat,
   }) async* {
     final encrypted = cipher != null;
 
     StreamedDataItemVerifier? verifier;
     var delivered = 0;
     var attempts = 0;
+    var totalAttempts = 0;
+    var pending = firstResponse;
 
     try {
       while (true) {
@@ -634,17 +790,32 @@ class _ArDriveDownloader implements ArDriveDownloader {
         }
 
         late final DownloadSourceResponse response;
-        try {
-          response = await _source.open(
-            txId: txId,
-            startOffsetBytes: resumeFrom,
-            verifyDownload: verifyDownload,
-          );
-        } catch (e) {
-          if (resumeFrom == 0 || attempts >= _maxResumeAttempts) rethrow;
-          attempts++;
-          _announceResume(txId, resumeFrom, attempts, e);
-          continue;
+        final prefetched = pending;
+        pending = null;
+
+        if (prefetched != null) {
+          // The caller already opened byte 0 so that a gateway failure would
+          // surface before anything else happened.
+          response = prefetched;
+        } else {
+          try {
+            response = await _source.open(
+              txId: txId,
+              startOffsetBytes: resumeFrom,
+              verifyDownload: verifyDownload,
+            );
+          } catch (e) {
+            if (resumeFrom == 0 ||
+                attempts >= _maxResumeAttempts ||
+                totalAttempts >= _maxTotalResumeAttempts) {
+              rethrow;
+            }
+            attempts++;
+            totalAttempts++;
+            _announceResume(txId, resumeFrom, attempts, e);
+            await _backOffBeforeResume(attempts);
+            continue;
+          }
         }
 
         // Branch on what came back, never on having sent the header.
@@ -682,6 +853,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
             keyData!,
             fileSize,
             startOffsetBytes: resumeFrom,
+            gcmTooLargeToBuffer: gcmTooLargeToBuffer,
           );
         }
 
@@ -706,30 +878,70 @@ class _ArDriveDownloader implements ArDriveDownloader {
         } catch (e) {
           response.cancel();
 
-          // An attempt that made progress earns a fresh budget.
+          // An attempt that made progress earns a fresh budget — but only
+          // against [_maxResumeAttempts]. [_maxTotalResumeAttempts] is what
+          // ends a gateway that dribbles a byte at a time.
           if (delivered > deliveredBefore) attempts = 0;
-          if (delivered == 0 || attempts >= _maxResumeAttempts) rethrow;
+          if (delivered == 0 ||
+              attempts >= _maxResumeAttempts ||
+              totalAttempts >= _maxTotalResumeAttempts) {
+            rethrow;
+          }
 
           attempts++;
+          totalAttempts++;
           _announceResume(
             txId,
             resumeOffsetFor(delivered, encrypted: encrypted),
             attempts,
             e,
           );
+          await _backOffBeforeResume(attempts);
         }
       }
     } finally {
       final settled = verifier;
       if (settled == null) {
-        _completeIntegrity(const DataItemIntegrityResult.notVerified(
-          'The download never delivered any bytes',
+        _completeIntegrity(DataItemIntegrityResult.notVerified(
+          integrityCaveat == null
+              ? 'The download never delivered any bytes'
+              : 'The download never delivered any bytes. $integrityCaveat',
         ));
       } else {
         // Deliberately not awaited: the verdict must never hold up the save.
-        unawaited(settled.finish().then(_completeIntegrity));
+        unawaited(settled.finish().then((result) {
+          _completeIntegrity(_withIntegrityCaveat(result, integrityCaveat));
+        }));
       }
     }
+  }
+
+  Future<void> _backOffBeforeResume(int attempt) {
+    final delay = _resumeBackoffStep * attempt;
+    return Future<void>.delayed(
+      delay > _maxResumeBackoff ? _maxResumeBackoff : delay,
+    );
+  }
+
+  /// Adds [caveat] to a verdict that did not reach one of its own.
+  ///
+  /// A `verified` or `failed` verdict is left alone: those come from the data
+  /// item signature over the very bytes that arrived (§3.4.2), which is a real
+  /// answer about this file and is not weakened — or improved — by the cipher
+  /// having no checkable tag. It is the *absence* of a verdict that needs to
+  /// name why nothing else was available.
+  static DataItemIntegrityResult _withIntegrityCaveat(
+    DataItemIntegrityResult result,
+    String? caveat,
+  ) {
+    if (caveat == null || !result.isNotVerified) return result;
+
+    final reason = result.reason;
+
+    return DataItemIntegrityResult.notVerified(
+      reason == null || reason.isEmpty ? caveat : '$reason. $caveat',
+      bytesHashed: result.bytesHashed,
+    );
   }
 
   void _announceResume(String txId, int offset, int attempt, Object cause) {
@@ -862,7 +1074,12 @@ class _ArDriveDownloader implements ArDriveDownloader {
     final isPrivateFile =
         fileKey != null && cipher != null && cipherIvString != null;
 
-    if (isPrivateFile && cipher == Cipher.aes256gcm) {
+    // Same split as [downloadFile]: buffer and authenticate what fits, stream
+    // what does not, so that a large legacy AES-GCM file is not singled out
+    // for refusal when the same size in AES-CTR streams without complaint.
+    if (isPrivateFile &&
+        cipher == Cipher.aes256gcm &&
+        fileSize <= DownloadPolicy.maxBufferedCiphertextBytes) {
       try {
         final plaintext = await _downloadAndAuthenticateGcm(
           txId: txId,
@@ -911,6 +1128,66 @@ class _ArDriveDownloader implements ArDriveDownloader {
     final data = await stream.toList();
 
     return Uint8List.fromList(data.expand((element) => element).toList());
+  }
+}
+
+/// An [IOFile] that tells the downloader how the saver's read of it ended.
+///
+/// The savers are the ones that pull the bytes, so without this the downloader
+/// cannot tell "the whole file was handed over" from "the gateway died
+/// halfway" — both arrive as the same `saveResult: false`. Delegates
+/// everything else untouched.
+class _ObservedIOFile implements IOFile {
+  _ObservedIOFile(
+    this._inner, {
+    required this.onDrained,
+    required this.onFailed,
+  });
+
+  final IOFile _inner;
+
+  /// Called once the saver has read the file to its end, without error.
+  final void Function() onDrained;
+
+  /// Called with the error that ended the read early.
+  final void Function(Object error, StackTrace stackTrace) onFailed;
+
+  @override
+  String get name => _inner.name;
+
+  @override
+  String get path => _inner.path;
+
+  @override
+  DateTime get lastModifiedDate => _inner.lastModifiedDate;
+
+  @override
+  String get contentType => _inner.contentType;
+
+  @override
+  FutureOr<int> get length => _inner.length;
+
+  @override
+  Future<Uint8List> readAsBytes() => _inner.readAsBytes();
+
+  @override
+  Future<String> readAsString() => _inner.readAsString();
+
+  @override
+  Stream<Uint8List> openReadStream([int start = 0, int? end]) async* {
+    // A ranged read says nothing about whether the whole file was delivered.
+    final isWholeFile = start == 0 && end == null;
+
+    try {
+      await for (final chunk in _inner.openReadStream(start, end)) {
+        yield chunk;
+      }
+    } catch (e, s) {
+      onFailed(e, s);
+      rethrow;
+    }
+
+    if (isWholeFile) onDrained();
   }
 }
 
@@ -1203,12 +1480,14 @@ class DownloadResumeNotSupportedException implements Exception {
       '${statusCode == null ? '' : ' (HTTP $statusCode)'}';
 }
 
-/// A file that claims to be AES-GCM is too large to buffer and authenticate.
+/// An AES-GCM download that was supposed to fit in memory does not.
 ///
-/// The uploader only picks AES-GCM below
-/// [DownloadPolicy.maxBufferedCiphertextBytes], so this means the file's
-/// metadata and its cipher disagree. Refusing is the safe answer: the
-/// alternative is streaming AES-GCM, which cannot check the tag at all.
+/// A file whose *declared* size is over
+/// [DownloadPolicy.maxBufferedCiphertextBytes] never gets here — it streams,
+/// unauthenticated and reported as such. This is the other case: a file that
+/// claimed to be small and then kept sending. The claim and the bytes
+/// disagree, so the download stops rather than growing a buffer without a
+/// bound.
 class DownloadTooLargeToAuthenticateException implements Exception {
   const DownloadTooLargeToAuthenticateException(
     this.txId,

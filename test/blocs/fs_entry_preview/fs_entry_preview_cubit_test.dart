@@ -60,12 +60,21 @@ class WaterfallGatewayFallback extends Mock implements DataGatewayFallback {
 /// exercised in a VM test at all without this seam.
 class FakePreviewObjectUrls extends PreviewObjectUrls {
   final List<String> created = [];
+
+  /// What each URL was made *out of*.
+  ///
+  /// The real one hands these bytes to a `<video>`; a fake that drops them on
+  /// the floor cannot tell plaintext from ciphertext, and "one URL was created"
+  /// is true either way.
+  final List<Uint8List> createdBytes = [];
+
   final List<String> revoked = [];
 
   @override
   String? create(Uint8List bytes, String contentType) {
     final url = 'blob:fake/${created.length}-$contentType';
     created.add(url);
+    createdBytes.add(bytes);
 
     return url;
   }
@@ -430,7 +439,17 @@ void main() {
         ).called(1);
 
         // The player is given the *decrypted* bytes, never the ciphertext.
+        // Passing the fetched bytes here instead would hand `<video>` the
+        // encrypted blob, and the count would not move.
         expect(objectUrls.created, hasLength(1));
+        expect(
+          objectUrls.createdBytes.single,
+          Uint8List.fromList([5, 6, 7, 8]),
+        );
+        expect(
+          objectUrls.createdBytes.single,
+          isNot(Uint8List.fromList([1, 2, 3, 4])),
+        );
       },
     );
 

@@ -71,6 +71,15 @@ enum AppUrlStrategy {
 ///    `/`, the build no longer works when served from a sub-path such as
 ///    `https://arweave.net/{manifestTxId}/`, only from an origin root
 ///    (`https://app.ardrive.io/`, an ArNS subdomain, a sandbox subdomain).
+/// 4. **A referrer policy in `web/index.html`** - `<meta name="referrer"
+///    content="strict-origin">`, already there and asserted by
+///    `test/utils/app_url_strategy_test.dart`. A hash route is never sent in a
+///    `Referer` header, so it costs nothing today; a *path* route is the whole
+///    link - `/share/{fileId}?v=2&n=...&ct=...&dtx=...&mtx=...` - and without
+///    this every subresource request the page makes carries it to the gateway
+///    it fetches from and to anything else the page talks to. `n` and `ct` are
+///    private-file secrets (§1.2), so this is not optional once the address bar
+///    holds them.
 ///
 /// ## Enabling it, once those exist
 ///

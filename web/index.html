@@ -6,6 +6,16 @@
     <meta name="description" content="Secure, permanent storage." />
 
     <!--
+      Never send a route in a `Referer` header. Under hash routing the browser
+      already strips the fragment, so this changes nothing today - and it is
+      what makes path routing safe to switch on: a `/share/{id}?v=2&n=...&ct=...`
+      address bar would otherwise ride along on every subresource request the
+      page makes, to gateways and any CDN among them, and `n` and `ct` are
+      private-file secrets. See lib/utils/app_url_strategy.dart.
+    -->
+    <meta name="referrer" content="strict-origin" />
+
+    <!--
       Legacy share-link boot shim - docs/FILE_SHARING_REDESIGN_PLAN.md §4.1.
       First script in the document: it must finish before Flutter reads the
       location.
@@ -114,8 +124,22 @@
     <link rel="preload" href="main.dart.js" as="script">
     <link rel="preload" href="splash/img/splash.svg" as="image">
 
-    <!-- Plausible Web Analytics (async, non-blocking) -->
-    <script defer data-domain="app.ardrive.io" src="https://plausible.io/js/plausible.js"></script>
+    <!--
+      Plausible's browser script is deliberately NOT loaded.
+
+      It sends `location.href` - fragment included - to plausible.io on load
+      and on every engagement event. On a share link that string can contain
+      the file key: on the hash route the key rides the pseudo-query
+      (`/#/file/{id}/view?...&k=<key>`), and under path routing it becomes
+      `#k=<key>`. Either way `location.href` carries it, so every recipient
+      who opened a key-in-link share would have handed the decryption key to
+      a third party before Flutter even booted. The same applied to
+      `?driveKey=` on drive links.
+
+      Analytics still work: `PlausibleEventTracker` POSTs to
+      https://plausible.io/api/event from Dart with a URL it synthesises from
+      an enum of known pages, so no secret can ride along.
+    -->
 
     <script defer src="https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js" ></script>
 
@@ -143,7 +167,6 @@
       - arweave-wallet.js (693 KB) — loaded on wallet generation
     -->
 
-    <!-- End Plausible Web Analytics -->
     <script>
       // The value below is injected by flutter build, do not touch.
       var serviceWorkerVersion = null;

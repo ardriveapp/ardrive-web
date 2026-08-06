@@ -58,6 +58,8 @@ class FakeDownloadSource implements DownloadSource {
   FakeDownloadSource(
     this.body, {
     this.failAfterBytesOnFirstOpen,
+    this.failAfterBytesOnEveryOpen,
+    this.errorOnOpen,
     this.honorsRange = true,
     this.chunkSize = 256,
   });
@@ -66,6 +68,14 @@ class FakeDownloadSource implements DownloadSource {
 
   /// Bytes to deliver on the first open before the connection drops.
   final int? failAfterBytesOnFirstOpen;
+
+  /// Bytes to deliver on *every* open before the connection drops — a gateway
+  /// that never manages to serve the whole file.
+  final int? failAfterBytesOnEveryOpen;
+
+  /// Thrown instead of answering, the way a gateway that is down, missing the
+  /// transaction, or rate-limiting behaves.
+  final Object? errorOnOpen;
 
   /// `false` reproduces arweave.net: the `Range` header is ignored.
   final bool honorsRange;
@@ -88,6 +98,9 @@ class FakeDownloadSource implements DownloadSource {
     verifyDownloadFlags.add(verifyDownload);
     _opens++;
 
+    final openError = errorOnOpen;
+    if (openError != null) throw openError;
+
     if (startOffsetBytes > 0 && !honorsRange) {
       return DownloadSourceResponse(
         stream: chunked(body, chunkSize),
@@ -98,7 +111,8 @@ class FakeDownloadSource implements DownloadSource {
     }
 
     final tail = Uint8List.sublistView(body, startOffsetBytes);
-    final failAfter = _opens == 1 ? failAfterBytesOnFirstOpen : null;
+    final failAfter = failAfterBytesOnEveryOpen ??
+        (_opens == 1 ? failAfterBytesOnFirstOpen : null);
 
     return DownloadSourceResponse(
       stream: failAfter == null
@@ -109,6 +123,99 @@ class FakeDownloadSource implements DownloadSource {
       cancel: () => cancelCount++,
     );
   }
+}
+
+/// A saver with the **real** mobile contract, bug for bug.
+///
+/// `DartIOFileSaver.saveStream`
+/// (`packages/ardrive_io/lib/src/mobile/mobile_io.dart`) does three things
+/// that [RecordingArDriveIO] does not, and every one of them hides a defect:
+///
+/// 1. it never completes `finalize` itself — it *waits* on it after the last
+///    byte is written, so a downloader that only answers on cancel hangs at
+///    100% forever;
+/// 2. `finalize` answering `false` deletes the file it just finished writing;
+/// 3. a failure of the source stream is caught and reported as
+///    `saveResult: false`, indistinguishable from a cancel.
+///
+/// [RecordingArDriveIO] completes `finalize` on the downloader's behalf, which
+/// is web's behaviour, and is exactly why a mobile-only hang could pass a full
+/// test suite. Anything about who settles `finalize` has to be tested here.
+class MobileShapedArDriveIO implements ArDriveIO {
+  final BytesBuilder _written = BytesBuilder(copy: false);
+
+  int saveFileStreamCalls = 0;
+  int saveFileCalls = 0;
+
+  /// Whether the finished file was thrown away because `finalize` said `false`.
+  bool deleted = false;
+
+  /// What is on disk when the dust settles.
+  Uint8List get savedBytes =>
+      deleted ? Uint8List(0) : Uint8List.fromList(_written.toBytes());
+
+  @override
+  Future<void> saveFile(IOFile file) async {
+    saveFileCalls++;
+    _written.add(await file.readAsBytes());
+  }
+
+  @override
+  Stream<SaveStatus> saveFileStream(
+      IOFile file, Completer<bool> finalize) async* {
+    saveFileStreamCalls++;
+
+    final totalBytes = await file.length;
+    var bytesSaved = 0;
+
+    yield SaveStatus(bytesSaved: bytesSaved, totalBytes: totalBytes);
+
+    try {
+      await for (final chunk in file.openReadStream()) {
+        // mobile_io.dart:194 — a cancel that arrives mid-write stops it.
+        if (finalize.isCompleted && (await finalize.future) == false) break;
+
+        _written.add(chunk);
+        bytesSaved += chunk.length;
+        yield SaveStatus(bytesSaved: bytesSaved, totalBytes: totalBytes);
+      }
+
+      // mobile_io.dart:212 — everything is written and flushed, and now the
+      // saver blocks until somebody else says whether to keep it.
+      final finalizeResult = await finalize.future;
+      if (!finalizeResult) deleted = true;
+
+      yield SaveStatus(
+        bytesSaved: bytesSaved,
+        totalBytes: totalBytes,
+        saveResult: finalizeResult,
+      );
+    } catch (_) {
+      // mobile_io.dart:223 — including a dead gateway.
+      yield SaveStatus(
+        bytesSaved: bytesSaved,
+        totalBytes: totalBytes,
+        saveResult: false,
+      );
+    }
+  }
+
+  @override
+  Future<IOFile> pickFile({
+    List<String>? allowedExtensions,
+    required FileSource fileSource,
+  }) =>
+      throw UnimplementedError();
+
+  @override
+  Future<List<IOFile>> pickFiles({
+    List<String>? allowedExtensions,
+    required FileSource fileSource,
+  }) =>
+      throw UnimplementedError();
+
+  @override
+  Future<IOFolder> pickFolder() => throw UnimplementedError();
 }
 
 /// Records what would have been written to disk.
@@ -181,6 +288,7 @@ Future<Stream<Uint8List>> positionalXorDecryptor(
   Uint8List keyData,
   int fileSize, {
   int startOffsetBytes = 0,
+  bool gcmTooLargeToBuffer = false,
 }) async {
   var position = startOffsetBytes;
 
@@ -224,6 +332,73 @@ StreamedDataItemVerifier realShapedVerifier(String txId) {
     target: '',
     tags: const [DataItemTag('Cipher', 'AES256-CTR')],
   );
+}
+
+/// Records every byte handed to the hash, so a test can assert *what* was fed
+/// and not merely how much.
+///
+/// The length alone can never tell the two candidates apart: ciphertext and
+/// plaintext are the same size, so `bytesHashed` is identical whether the tap
+/// sits before or after decryption. Only the bytes themselves distinguish the
+/// signed stream from the decrypted one.
+///
+/// [StreamedDataItemVerifier.tap] reaches the hash through [addChunk] and
+/// nothing else, so an override here sees exactly what the tap sees.
+class RecordingVerifier extends StreamedDataItemVerifier {
+  RecordingVerifier() : super.unavailable('recording what it is fed');
+
+  final BytesBuilder _fed = BytesBuilder(copy: false);
+
+  Uint8List get fedBytes => Uint8List.fromList(_fed.toBytes());
+
+  @override
+  Future<void> addChunk(Uint8List chunk) async {
+    _fed.add(chunk);
+
+    await super.addChunk(chunk);
+  }
+}
+
+/// A source whose body stops halfway and stays there until [release] is
+/// completed, so a test can act on a download that is genuinely in flight.
+class StallingDownloadSource implements DownloadSource {
+  StallingDownloadSource(this.body, {this.deliverBeforeStalling = 256});
+
+  final Uint8List body;
+
+  /// Bytes handed over before the stream goes quiet.
+  final int deliverBeforeStalling;
+
+  /// Completes once those bytes have been taken by the consumer.
+  final Completer<void> delivering = Completer<void>();
+
+  /// Completing this lets the rest of the body through.
+  final Completer<void> release = Completer<void>();
+
+  @override
+  Future<DownloadSourceResponse> open({
+    required String txId,
+    int startOffsetBytes = 0,
+    bool verifyDownload = false,
+  }) async {
+    return DownloadSourceResponse(
+      stream: _stalling(startOffsetBytes),
+      startOffsetBytes: startOffsetBytes,
+      statusCode: startOffsetBytes == 0 ? 200 : 206,
+    );
+  }
+
+  Stream<List<int>> _stalling(int startOffsetBytes) async* {
+    final pause = startOffsetBytes + deliverBeforeStalling;
+
+    yield Uint8List.sublistView(body, startOffsetBytes, pause);
+
+    if (!delivering.isCompleted) delivering.complete();
+
+    await release.future;
+
+    yield Uint8List.sublistView(body, pause);
+  }
 }
 
 /// A verifier whose verdict is held back until [gate] is completed, so a test

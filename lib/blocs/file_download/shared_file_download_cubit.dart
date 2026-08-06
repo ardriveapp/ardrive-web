@@ -7,6 +7,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
   final ARFSFileEntity revision;
   final ArweaveService _arweave;
   final ArDriveDownloader _arDriveDownloader;
+  final DownloadPolicy _downloadPolicy;
 
   SharedFileDownloadCubit({
     this.fileKey,
@@ -14,8 +15,10 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
     required ArweaveService arweave,
     required ArDriveCrypto crypto,
     required ArDriveDownloader arDriveDownloader,
+    DownloadPolicy downloadPolicy = const DownloadPolicy(),
   })  : _arweave = arweave,
         _arDriveDownloader = arDriveDownloader,
+        _downloadPolicy = downloadPolicy,
         super(FileDownloadStarting()) {
     verifyUploadLimitationsAndDownload();
   }
@@ -23,12 +26,15 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
   // TODO: we are duplicating code here, we should refactor this. Personal and Share file downloads are pretty similar
   // we must refactor to reuse the code and avoid duplication
   Future<void> verifyUploadLimitationsAndDownload() async {
-    if (await AppPlatform.isSafari()) {
-      if (revision.size > publicDownloadSafariSizeLimit) {
-        emit(const FileDownloadFailure(
-            FileDownloadFailureReason.browserDoesNotSupportLargeDownloads));
-        return;
-      }
+    // One decision, one place (F22) — see [DownloadPolicy.singleFileLimit].
+    final limit = await _downloadPolicy.singleFileLimit(
+      isPublic: fileKey == null,
+    );
+
+    final failure = singleFileLimitFailure(limit, revision.size);
+    if (failure != null) {
+      emit(FileDownloadFailure(failure));
+      return;
     }
 
     download();
@@ -137,7 +143,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    final reason = _classifyError(error);
+    final reason = classifyDownloadError(error);
     emit(FileDownloadFailure(reason));
     super.onError(error, stackTrace);
 
@@ -147,19 +153,5 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       error,
       stackTrace,
     );
-  }
-
-  static FileDownloadFailureReason _classifyError(Object error) {
-    if (error is DownloadFileNotFoundException) {
-      return FileDownloadFailureReason.fileNotFound;
-    }
-    if (error is DownloadRateLimitException) {
-      return FileDownloadFailureReason.rateLimited;
-    }
-    if (error is DownloadNetworkException ||
-        error is DownloadStalledException) {
-      return FileDownloadFailureReason.networkConnectionError;
-    }
-    return FileDownloadFailureReason.unknownError;
   }
 }

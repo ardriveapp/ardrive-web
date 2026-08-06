@@ -473,7 +473,34 @@ void main() {
       );
 
       expect(find.text('Verified'), findsNothing);
-      expect(find.textContaining("don't match"), findsNothing);
+      // The copy uses a typographic apostrophe (U+2019). An ASCII `'` here
+      // matches no widget on any state, which makes the assertion an
+      // expensive way of writing nothing.
+      expect(find.textContaining('don’t match'), findsNothing);
+      expect(find.text('Not checked'), findsOneWidget);
+    });
+
+    testWidgets('says so, once, when the link disagrees with the file',
+        (tester) async {
+      await pumpPage(tester, success(verification: LinkVerification.mismatch));
+
+      expect(find.textContaining('don’t match'), findsOneWidget);
+      expect(find.text('Verified'), findsNothing);
+
+      // A mismatch is a warning about the *link*, not a refusal: the file is
+      // still there and the recipient can still take it.
+      expect(
+        find.byKey(const ValueKey('sharedFileDownload_data-tx-newest')),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<ArDriveButton>(
+              find.byKey(const ValueKey('sharedFileDownload_data-tx-newest')),
+            )
+            .isDisabled,
+        isFalse,
+      );
     });
 
     testWidgets('offers a newer version without changing what Download fetches',

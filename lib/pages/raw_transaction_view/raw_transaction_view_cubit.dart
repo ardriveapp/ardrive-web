@@ -4,6 +4,7 @@ import 'package:ardrive/components/sandboxed_transaction_view/arweave_sandbox_ur
 import 'package:ardrive/pages/raw_transaction_view/raw_transaction_content.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/shared_file_link.dart';
 import 'package:ardrive/utils/validate_arweave_id.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -321,22 +322,37 @@ const int _maxNameLength = 120;
 
 /// Makes a stranger's filename safe to show and to save under.
 ///
-/// Path separators go because this string reaches a save dialog; control
-/// characters go because a name with a newline in it can misrepresent what a
-/// dialog is about to do. Nothing here is about rendering - a Flutter `Text`
-/// widget was never at risk - and everything here is about the two places the
-/// string leaves Flutter for.
+/// Path separators are replaced because this string reaches a save dialog and a
+/// name is not a path. Control and direction characters are not repaired at
+/// all: a name carrying one is dropped, and the page falls back to the
+/// transaction id - the one string here that is guaranteed to say what it is.
+/// That is the same rule the shared file schema applies to its own `n`
+/// ([SharedFileLinkPayload.unsafeNameCharacterPattern], which is also the
+/// pattern), and it matters for the same reason: `Q3-Report<U+202E>fdp.exe`
+/// reads as `Q3-Reportexe.pdf` in this card and in the operating system's save
+/// dialog while landing on disk as an executable.
+///
+/// Nothing here is about rendering - a Flutter `Text` widget was never at risk
+/// - and everything here is about the two places the string leaves Flutter for.
 String? _sanitiseName(String? name) {
   if (name == null) {
     return null;
   }
 
-  final cleaned = name
-      .replaceAll(RegExp(r'[\x00-\x1f\x7f]'), '')
-      .replaceAll(RegExp(r'[/\\]'), '_')
-      .trim();
+  // Trimmed before the check, so that a tag with a stray trailing newline
+  // keeps its name; a control character *inside* one is the deceptive case.
+  final cleaned = name.replaceAll(RegExp(r'[/\\]'), '_').trim();
 
   if (cleaned.isEmpty || cleaned == '.' || cleaned == '..') {
+    return null;
+  }
+
+  if (SharedFileLinkPayload.unsafeNameCharacterPattern.hasMatch(cleaned)) {
+    logger.w(
+      'Dropped the name of a transaction: it contains control or direction '
+      'characters.',
+    );
+
     return null;
   }
 

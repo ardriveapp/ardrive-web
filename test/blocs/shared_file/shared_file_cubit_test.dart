@@ -20,6 +20,10 @@ const driveId = '00000000-0000-0000-0000-000000000002';
 const folderId = '00000000-0000-0000-0000-000000000003';
 const ownerAddress = 'Zvp8dEkO3nQ2wX9yV8uT7sR6qP5oN4mL3kJ2iH1gF0e';
 
+/// Anyone at all. The address of whoever posted the metadata transaction a
+/// crafted link names - never the address that created the file.
+const strangerAddress = 'Ka9pQ2xV7bN4mL8jH3gF6dS1aZ0cX5vB2nM7kJ4hG1e';
+
 const dataTxId = 'FxgiSM3JOAsjnZF-Yzv2z7h-Io4K6GmCarhQ0qAUL6I';
 const metadataTxId = 'S1QzT9YbPo8iU7yT6rE5wQ4aS3dF2gH1jK0lZxCvBnM';
 const otherDataTxId = 'nS7hxbLQmk3W1o9zX2cV4bN5mL6kJ7hG8fD9sA0qWeR';
@@ -80,6 +84,7 @@ void main() {
     String dataTx = dataTxId,
     String metadataTx = metadataTxId,
     int size = 100,
+    String owner = ownerAddress,
   }) {
     final entity = FileEntity(
       id: fileId,
@@ -93,7 +98,7 @@ void main() {
     );
 
     entity.txId = metadataTx;
-    entity.ownerAddress = ownerAddress;
+    entity.ownerAddress = owner;
     entity.createdAt = createdAt;
 
     return entity;
@@ -528,6 +533,134 @@ void main() {
       // The page the link painted survives a failed check.
       expect(state.verification, LinkVerification.unavailable);
       expect(state.revision.dataTxId, dataTxId);
+    });
+
+    /// The metadata transaction a link names is fetched **by id**, and anyone
+    /// can post a transaction. A stranger who knows a circulating file id can
+    /// post ArFS metadata tagged with it, point its `Data-Tx-Id` at their own
+    /// bytes, and send a link whose every field agrees with that metadata. The
+    /// only thing that tells that apart from the real thing is who wrote it.
+    ///
+    /// The forgery below is deliberately self-consistent: the link and the
+    /// metadata agree on the name, the size, the type, the data transaction
+    /// and even the owner. Nothing but the authorship check stands between it
+    /// and an affirmative badge over a stranger's bytes.
+    void forgedMetadataFrom(String stranger) {
+      when(() => arweave.getTransactionDetails(any()))
+          .thenAnswer((_) async => _FakeMetadataTransaction(owner: stranger));
+      when(() => arweave.getEntityDataFromNetwork(txId: any(named: 'txId')))
+          .thenAnswer((_) async => metadataJson());
+      // What the file itself says, once the forgery has been rejected.
+      when(() => arweave.getFilePrivacyForId(any()))
+          .thenAnswer((_) async => DrivePrivacyTag.public);
+      when(() => arweave.getAllFileEntitiesWithId(any(), any())).thenAnswer(
+        (_) async => [
+          fileEntity(
+            createdAt: DateTime(2024, 2, 1),
+            dataTx: otherDataTxId,
+            metadataTx: otherMetadataTxId,
+            name: 'the-real-file.txt',
+          ),
+        ],
+      );
+    }
+
+    test('never verifies metadata the file\'s owner did not write', () async {
+      // The file has moved on since the link was made, which is what sends the
+      // check to the metadata transaction the link names rather than to the
+      // newest revision.
+      when(() => arweave.getLatestFileEntityWithId(any(), any())).thenAnswer(
+        (_) async => fileEntity(
+          createdAt: DateTime(2024, 2, 1),
+          dataTx: otherDataTxId,
+          metadataTx: otherMetadataTxId,
+          name: 'the-real-file.txt',
+        ),
+      );
+      forgedMetadataFrom(strangerAddress);
+
+      final cubit = createCubit(payload: v2Payload(owner: strangerAddress));
+
+      await cubit.backgroundWork;
+
+      final state = cubit.state as SharedFileLoadSuccess;
+
+      // A forged link is a mismatch, and can never be the green check.
+      expect(state.verification, LinkVerification.mismatch);
+      // And the page ends up on the file's own bytes, not the stranger's.
+      expect(state.revision.dataTxId, otherDataTxId);
+      expect(state.revision.name, 'the-real-file.txt');
+    });
+
+    test('probes the first writer when nothing else has said who owns the file',
+        () async {
+      // The newest revision could not be read, so the owner-scoped query
+      // answered nothing. The first-writer probe is what is left, and it is the
+      // same one every GraphQL path already makes.
+      when(() => arweave.getLatestFileEntityWithId(any(), any()))
+          .thenAnswer((_) async => null);
+      when(() => arweave.getOwnerForFileEntityWithId(any()))
+          .thenAnswer((_) async => ownerAddress);
+      forgedMetadataFrom(strangerAddress);
+
+      final cubit = createCubit(payload: v2Payload(owner: strangerAddress));
+
+      await cubit.backgroundWork;
+
+      final state = cubit.state as SharedFileLoadSuccess;
+
+      expect(state.verification, LinkVerification.mismatch);
+      verify(() => arweave.getOwnerForFileEntityWithId(fileId)).called(1);
+    });
+
+    test('resolves the owner behind the paint, never in front of it', () async {
+      when(() => arweave.getLatestFileEntityWithId(any(), any()))
+          .thenAnswer((_) async => null);
+      when(() => arweave.getOwnerForFileEntityWithId(any()))
+          .thenAnswer((_) async => ownerAddress);
+      forgedMetadataFrom(strangerAddress);
+
+      final cubit = createCubit(payload: v2Payload(owner: strangerAddress));
+
+      // The paint happened while the constructor ran, authorship check and all.
+      expect(cubit.state, isA<SharedFileLoadSuccess>());
+      verifyZeroInteractions(arweave);
+
+      await cubit.backgroundWork;
+    });
+
+    test('does not verify a link that asserted nothing to verify', () async {
+      // `?v=2&mtx=...` and not one field more. Everything the page shows was
+      // resolved from the chain, so there is nothing the link could have been
+      // right or wrong about.
+      when(() => arweave.getTransactionDetails(any()))
+          .thenAnswer((_) async => _FakeMetadataTransaction());
+      when(() => arweave.getEntityDataFromNetwork(txId: any(named: 'txId')))
+          .thenAnswer((_) async => metadataJson());
+      when(() => arweave.getLatestFileEntityWithId(any(), any())).thenAnswer(
+        (_) async => fileEntity(createdAt: DateTime(2024, 1, 1)),
+      );
+
+      final cubit = createCubit(
+        payload: v2Payload(
+          dataTx: null,
+          owner: null,
+          name: null,
+          size: null,
+          contentType: null,
+        ),
+      );
+
+      await expectLater(
+        cubit.stream,
+        emitsThrough(isA<SharedFileLoadSuccess>()),
+      );
+
+      await cubit.backgroundWork;
+
+      final state = cubit.state as SharedFileLoadSuccess;
+
+      expect(state.verification, LinkVerification.unavailable);
     });
   });
 

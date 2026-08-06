@@ -209,27 +209,159 @@ void main() {
 
   });
 
-  test('a file too large for the buffered path is refused, not streamed',
-      () async {
-    final harness = build(ciphertextWithMac);
+  // A file larger than DownloadPolicy.maxBufferedCiphertextBytes cannot have
+  // its MAC checked — there is nowhere to hold it. Refusing it outright is not
+  // an option either: AES-GCM was ArDrive's only symmetric cipher for years
+  // and ardrive-cli still writes it at any size, so the refusal broke large
+  // legacy private files that used to download fine.
+  //
+  // The answer is the one AES-CTR has always given: stream it, and say plainly
+  // that nothing vouched for the bytes.
+  group('an AES-GCM file too large to buffer', () {
+    // What the decryptor was told. The declared file size is 200 MiB while the
+    // body is small, which is what lets a unit test reach the branch at all.
+    late List<bool> oversizedFlags;
 
-    final progress = await harness.downloader.downloadFile(
-      txId: txId,
-      // Larger than any file the uploader would have encrypted with AES-GCM.
-      fileSize: const MiB(200).size,
-      fileName: fileName,
-      lastModifiedDate: lastModified,
-      contentType: 'application/pdf',
-      isManifest: false,
-      fileKey: fileKey,
-      cipher: Cipher.aes256gcm,
-      cipherIvString: cipherIvString,
-    );
+    Future<Stream<Uint8List>> recordingDecryptor(
+      String cipher,
+      Uint8List cipherIv,
+      Stream<Uint8List> ciphertextStream,
+      Uint8List keyData,
+      int fileSize, {
+      int startOffsetBytes = 0,
+      bool gcmTooLargeToBuffer = false,
+    }) {
+      oversizedFlags.add(gcmTooLargeToBuffer);
 
-    final errors = await drainProgress(progress);
+      return positionalXorDecryptor(
+        cipher,
+        cipherIv,
+        ciphertextStream,
+        keyData,
+        fileSize,
+        startOffsetBytes: startOffsetBytes,
+        gcmTooLargeToBuffer: gcmTooLargeToBuffer,
+      );
+    }
 
-    expect(errors.whereType<DownloadTooLargeToAuthenticateException>(),
-        isNotEmpty);
-    expect(harness.io.saveFileStreamCalls, 0);
+    final body = pseudoRandomBytes(4096, seed: 21);
+    final oversizedFileSize = const MiB(200).size;
+
+    setUp(() => oversizedFlags = []);
+
+    ({ArDriveDownloader downloader, RecordingArDriveIO io}) buildStreaming() {
+      final io = RecordingArDriveIO();
+
+      return (
+        downloader: ArDriveDownloader(
+          ioFileAdapter: IOFileAdapter(),
+          ardriveIo: io,
+          arweave: MockArweaveService(),
+          source: FakeDownloadSource(body),
+          decryptStream: recordingDecryptor,
+          verifierFactory: (id) async =>
+              StreamedDataItemVerifier.unavailable('not under test'),
+        ),
+        io: io,
+      );
+    }
+
+    test('downloads by streaming instead of being refused', () async {
+      final harness = buildStreaming();
+
+      final progress = await harness.downloader.downloadFile(
+        txId: txId,
+        fileSize: oversizedFileSize,
+        fileName: fileName,
+        lastModifiedDate: lastModified,
+        contentType: 'application/pdf',
+        isManifest: false,
+        fileKey: fileKey,
+        cipher: Cipher.aes256gcm,
+        cipherIvString: cipherIvString,
+      );
+
+      final errors = await drainProgress(progress);
+
+      expect(errors.whereType<DownloadTooLargeToAuthenticateException>(),
+          isEmpty);
+      expect(errors, isEmpty);
+      expect(harness.io.savedBytes, positionalXorPlaintext(body));
+      expect(harness.io.saveFileStreamCalls, 1);
+    });
+
+    test('asks for the unauthenticated decryptor explicitly', () async {
+      final harness = buildStreaming();
+
+      await drainProgress(await harness.downloader.downloadFile(
+        txId: txId,
+        fileSize: oversizedFileSize,
+        fileName: fileName,
+        lastModifiedDate: lastModified,
+        contentType: 'application/pdf',
+        isManifest: false,
+        fileKey: fileKey,
+        cipher: Cipher.aes256gcm,
+        cipherIvString: cipherIvString,
+      ));
+
+      expect(oversizedFlags, [true]);
+    });
+
+    test('reports notVerified, and says why', () async {
+      final harness = buildStreaming();
+
+      await drainProgress(await harness.downloader.downloadFile(
+        txId: txId,
+        fileSize: oversizedFileSize,
+        fileName: fileName,
+        lastModifiedDate: lastModified,
+        contentType: 'application/pdf',
+        isManifest: false,
+        fileKey: fileKey,
+        cipher: Cipher.aes256gcm,
+        cipherIvString: cipherIvString,
+      ));
+
+      final verdict = await harness.downloader.integrity;
+
+      expect(verdict.verdict, DataItemIntegrityVerdict.notVerified);
+      expect(verdict.isVerified, isFalse);
+      expect(verdict.reason, contains('authentication tag could not be'));
+    });
+
+    test('a file that fits is never routed here, whatever else changes',
+        () async {
+      // The streaming decryptor throws if it is reached at all: under the cap
+      // there is no legitimate way to it.
+      final io = RecordingArDriveIO();
+      final downloader = ArDriveDownloader(
+        ioFileAdapter: IOFileAdapter(),
+        ardriveIo: io,
+        arweave: MockArweaveService(),
+        source: FakeDownloadSource(ciphertextWithMac),
+        decryptStream: (a, b, c, d, e,
+                {int startOffsetBytes = 0,
+                bool gcmTooLargeToBuffer = false}) =>
+            throw StateError('a GCM file under the cap must be MAC-verified'),
+      );
+
+      final progress = await downloader.downloadFile(
+        txId: txId,
+        fileSize: plaintext.length,
+        fileName: fileName,
+        lastModifiedDate: lastModified,
+        contentType: 'application/pdf',
+        isManifest: false,
+        fileKey: fileKey,
+        cipher: Cipher.aes256gcm,
+        cipherIvString: cipherIvString,
+      );
+
+      expect(await drainProgress(progress), isEmpty);
+      expect(io.savedBytes, plaintext);
+      expect((await downloader.integrity).isVerified, isTrue);
+    });
   });
+
 }

@@ -66,6 +66,14 @@ Future<Uint8List> decryptTransactionData(
 /// It must be a multiple of `AesStream.blockLengthBytes`; misaligned offsets
 /// throw instead of decrypting to garbage.
 ///
+/// [gcmTooLargeToBuffer] is the caller's assertion that an AES-GCM ciphertext
+/// cannot be held in memory, and therefore cannot have its MAC checked. It is
+/// the only way to stream AES-GCM once
+/// `AesGcmStream.allowUnauthenticatedGcmDecryption` has been disarmed, and it
+/// obliges the caller to report the result as unverified. See
+/// [AesGcmStream.unauthenticatedTooLargeToBuffer]. It has no effect on
+/// AES-CTR.
+///
 /// Throws a [TransactionDecryptionException] if decryption fails.
 Future<Stream<Uint8List>> decryptTransactionDataStream(
   String cipher,
@@ -74,8 +82,13 @@ Future<Stream<Uint8List>> decryptTransactionDataStream(
   Uint8List keyData,
   int dataSize, {
   int startOffsetBytes = 0,
+  bool gcmTooLargeToBuffer = false,
 }) async {
-  final impl = await cipherStreamDecryptImpl(cipher, keyData: keyData);
+  final impl = await cipherStreamDecryptImpl(
+    cipher,
+    keyData: keyData,
+    gcmTooLargeToBuffer: gcmTooLargeToBuffer,
+  );
 
   // final cipherIv = utils.decodeBase64ToBytes(cipherIvString);
 

@@ -85,4 +85,10 @@ enum FileDownloadFailureReason {
   networkConnectionError,
   fileNotFound,
   rateLimited,
+
+  /// The bytes kept coming past the size the file claimed, so the download
+  /// could not be held in memory long enough to check its authentication tag
+  /// and was stopped. Nothing was written. Retrying is pointless: the file's
+  /// metadata and its data disagree.
+  fileTooLargeToVerify,
 }

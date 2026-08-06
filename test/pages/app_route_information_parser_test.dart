@@ -746,19 +746,40 @@ void main() {
       );
     });
 
-    test('a drive link is written back exactly as hash routing writes it',
+    test('a drive link keeps its key out of the half a server is sent',
         () async {
-      // Drive links are untouched this cycle, under either strategy.
+      // Drive links are untouched this cycle, under either strategy (plan
+      // §1.1: `/#/drives/{driveId}…`, "Unchanged this cycle"), so the drive
+      // key is still an ordinary query parameter.
       final routePath = await parse(
         '/drives/$driveId?name=My%20Drive'
         '&$driveKeyQueryParamName=$validDriveKey',
       );
 
+      final location = restore(routePath);
+
       expect(
-        restore(routePath),
+        location,
         parser.restoreRouteInformation(routePath).uri.toString(),
+        reason: 'the parser does not branch on the strategy for drive routes',
       );
-      expect(restore(routePath), startsWith('/drives/$driveId?'));
+      expect(location, startsWith('/drives/$driveId?'));
+      expect(location, contains(validDriveKey));
+
+      // Which is only safe while drive routes stay hash-rooted. This is the
+      // URL the address bar would actually hold on the build that ships...
+      final url = '${kAppUrlStrategy.linkPrefix}$location';
+
+      // ...and the half of it the browser sends to the host.
+      expect(
+        url.split('#').first,
+        isNot(contains(validDriveKey)),
+        reason: 'a private drive key would reach the server on every page '
+            'load and every refresh, and land in its access log. Serving '
+            'drive routes on the path strategy has to wait until the key '
+            'moves out of the query (plan §1.1 leaves drive links alone this '
+            'cycle).',
+      );
     });
 
     test('restores a round trip', () async {

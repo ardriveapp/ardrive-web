@@ -17,10 +17,10 @@ final publicDownloadFirefoxSizeLimit = const GiB(2).size;
 
 /// Safari's single-file ceiling.
 ///
-/// [DownloadPolicy.singleFileLimit] is the one place that decides with this
-/// value. The two download cubits still read it directly
-/// (`shared_file_download_cubit.dart`, `personal_file_download_cubit.dart`);
-/// migrating them onto the policy is the follow-up that closes F22.
+/// [DownloadPolicy.singleFileLimit] is the one place that reads this value
+/// (F22): both download cubits ask the policy rather than comparing against
+/// the constant themselves, so there is one rule to change and one rule to
+/// test.
 final publicDownloadSafariSizeLimit = const GiB(1).size;
 final publicDownloadMobileSizeLimit = const MiB(300).size;
 
@@ -82,7 +82,10 @@ class DownloadSizeLimit {
 /// down in one place and can be tested.
 ///
 /// Nothing here raises a ceiling. [singleFileLimit] and [bundleLimit] return
-/// exactly what the corresponding call sites enforce today.
+/// what the corresponding call sites enforce, with one deliberate
+/// consequence of putting the rule in one place: a shared-link download on a
+/// phone is now held to the same private-file ceiling a personal one has
+/// always been held to, instead of being the one flow with no ceiling at all.
 class DownloadPolicy {
   const DownloadPolicy({DeviceInfoPlugin? deviceInfo})
       : _deviceInfo = deviceInfo;

@@ -88,4 +88,21 @@ void main() {
       );
     });
   });
+
+  group('what web/index.html is served with', () {
+    final indexHtml = File('web/index.html').readAsStringSync();
+
+    test('never sends the app\'s own route in a Referer header', () {
+      // Harmless under hash routing, where the browser strips the fragment
+      // anyway - and a prerequisite for flipping to path routing, where the
+      // route *is* the link: `/share/{fileId}?v=2&n=...&ct=...` would ride
+      // along on every subresource request the page makes, gateways included,
+      // and `n` and `ct` are private-file secrets. See the prerequisite list in
+      // lib/utils/app_url_strategy.dart.
+      expect(
+        indexHtml,
+        contains('<meta name="referrer" content="strict-origin" />'),
+      );
+    });
+  });
 }
