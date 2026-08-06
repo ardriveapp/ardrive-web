@@ -1,0 +1,16 @@
+# https://docs.coderabbit.ai/guides/configure-coderabbit
+language: en-US
+
+reviews:
+  # Vendored third-party assets and generated code are not ours to review, and
+  # they dominate the file count: the pdf.js distribution alone is 173 files,
+  # 168 of them binary CJK character maps.
+  path_filters:
+    - '!web/js/pdfjs/**'
+    - '!web/js/*.min.js'
+    - '!**/*.g.dart'
+    - '!**/*.graphql.dart'
+    - '!lib/services/arweave/graphql/**'
+    - '!packages/ario_sdk/lib/src/models/**'
+    - '!drift_schemas/**'
+    - '!**/GeneratedPluginRegistrant.*'
