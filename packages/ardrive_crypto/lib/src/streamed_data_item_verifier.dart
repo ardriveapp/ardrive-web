@@ -183,6 +183,17 @@ class StreamedDataItemVerifier {
   /// This is what a resumed download calls. The bytes already on disk were
   /// hashed by a process that is gone, so a hash over the remainder alone
   /// would not match — reporting that as a failure would be a lie.
+  ///
+  /// It is also **how a verifier is disposed of**. A verifier that is
+  /// constructed and then never fed sits with [_verify] parked on
+  /// `verifyDataItem`, which is parked on [_ChunkFeed.stream] waiting for
+  /// chunks that will never come; the deep hash, the 512 byte owner and the
+  /// pending future all stay reachable for as long as something holds the
+  /// verifier. Cancelling the feed here is what unwinds that pipeline, so a
+  /// caller that gives up on a download — see `_PreparedStream` in
+  /// `lib/download/ardrive_downloader.dart` — calls this and is done. There is
+  /// deliberately no second `dispose` entry point: two ways to abandon one
+  /// check is one more than the number of things that can go wrong here.
   void markUnverifiable(String reason) {
     if (!isVerifying) return;
 
