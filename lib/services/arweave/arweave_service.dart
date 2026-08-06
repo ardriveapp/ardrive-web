@@ -232,7 +232,34 @@ class ArweaveService {
         );
   }
 
-  Future<TransactionCommonMixin?> getTransactionDetails(String txId) async {
+  /// The tags, owner address, block and bundle of a transaction.
+  ///
+  /// Callers that also need the fields the integrity verifier reads should call
+  /// [getTransactionDetailsWithSignature] instead - it is the same single
+  /// request, not an extra one.
+  Future<TransactionCommonMixin?> getTransactionDetails(String txId) =>
+      getTransactionDetailsWithSignature(txId);
+
+  /// The same single `TransactionDetails` request as [getTransactionDetails],
+  /// typed as the concrete query result so callers can also read what it takes
+  /// to recompute a data item's deep hash signature: `signature`,
+  /// `ownerKey.key` (the owner's full public key), `anchor` and `recipient`
+  /// (the data item's target), next to the `tags` and `bundledIn` of
+  /// `TransactionCommon`.
+  ///
+  /// `bundledIn != null` marks an L2 data item, the only case where those four
+  /// fields describe an ANS-104 deep hash. For an L1 transaction they describe
+  /// the L1 transaction itself, whose integrity comes from its `data_root`
+  /// instead.
+  ///
+  /// The schema declares all four non-null, so a gateway that does not index
+  /// one returns an empty string rather than null - indistinguishable from a
+  /// data item that genuinely carries no anchor or target (arweave.net returns
+  /// an empty `anchor` for L1 transactions that ar-io.dev returns in full). A
+  /// check that does not pass therefore means "could not verify", never
+  /// "tampered".
+  Future<TransactionDetails$Query$Transaction?>
+      getTransactionDetailsWithSignature(String txId) async {
     final query = await graphQLRetry.execute(TransactionDetailsQuery(
         variables: TransactionDetailsArguments(txId: txId)));
     return query.data?.transaction;

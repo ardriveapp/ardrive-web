@@ -22,7 +22,10 @@ FutureOr<DecryptStream> cipherStreamDecryptImpl(
   required Uint8List keyData,
 }) async {
   final Map<String, FutureOr<DecryptStream> Function(Uint8List)> ctrs = {
-    Cipher.aes256gcm: AesGcmStream.fromKeyData,
+    // NOTE: streaming AES-GCM does *not* verify the MAC — it trims the tag and
+    // decrypts with AES-CTR underneath. Anything decrypted through it must be
+    // authenticated another way. Prefer buffering + decryptTransactionData().
+    Cipher.aes256gcm: AesGcmStream.unauthenticated,
     Cipher.aes256ctr: AesCtrStream.fromKeyData,
   };
   final ctr = ctrs[cipherName];

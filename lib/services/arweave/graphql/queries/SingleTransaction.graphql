@@ -1,5 +1,14 @@
 query TransactionDetails($txId: ID!) {
   transaction(id: $txId) {
     ...TransactionCommon
+    signature
+    anchor
+    recipient
+    # `TransactionCommon` already selects `owner { address }`, so the public key
+    # has to be aliased: selecting `owner` twice would put two `owner` members
+    # of different types on the generated class.
+    ownerKey: owner {
+      key
+    }
   }
 }

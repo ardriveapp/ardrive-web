@@ -1,11 +1,11 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
-import 'package:ardrive/services/services.dart';
+import 'package:ardrive/pages/shared_file/shared_file_thumbnail.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Who and what this link points at, in the recipient's language.
 ///
@@ -23,6 +23,8 @@ class SharedFileIdentity extends StatelessWidget {
     this.size,
     this.contentType,
     this.thumbnailTxId,
+    this.fileKey,
+    this.thumbnailLoader,
     this.ownerAddress,
     this.verification,
     this.isPrivate = false,
@@ -40,6 +42,14 @@ class SharedFileIdentity extends StatelessWidget {
 
   /// `thn` - the file's thumbnail, shown in place of the type icon.
   final String? thumbnailTxId;
+
+  /// The recipient's access key, which a private file's thumbnail is encrypted
+  /// under just as the file is. `null` on every state that has no key, and
+  /// nothing is fetched for a private thumbnail without one.
+  final SecretKey? fileKey;
+
+  /// Injectable for tests; otherwise built from the service tree.
+  final SharedFileThumbnailLoader? thumbnailLoader;
 
   /// The address the file was shared by.
   final String? ownerAddress;
@@ -199,36 +209,21 @@ class SharedFileIdentity extends StatelessWidget {
       contentType ?? 'application/octet-stream',
       size: 24,
     );
-    final gatewayUrl = thumbnailTxId == null ? null : _gatewayUrl(context);
 
-    if (thumbnailTxId == null || gatewayUrl == null) {
+    if (thumbnailTxId == null) {
       return SizedBox(width: 44, height: 44, child: Center(child: icon));
     }
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(4),
-      child: SizedBox(
-        width: 44,
-        height: 44,
-        child: Image.network(
-          '$gatewayUrl/$thumbnailTxId',
-          fit: BoxFit.cover,
-          filterQuality: FilterQuality.high,
-          errorBuilder: (context, error, stackTrace) => Center(child: icon),
-        ),
-      ),
+    return SharedFileThumbnail(
+      txId: thumbnailTxId,
+      fallback: icon,
+      // A private file's thumbnail is encrypted under the same key as the file
+      // itself, so it renders once the recipient has unlocked the page and not
+      // before. Without a key nothing is even requested.
+      isPrivate: isPrivate,
+      fileKey: fileKey,
+      loader: thumbnailLoader,
     );
-  }
-
-  /// The gateway the thumbnail can be fetched from, or `null` when this page
-  /// is rendered without the app's service tree (widget tests, and later the
-  /// standalone viewer). A missing gateway costs a thumbnail, never the page.
-  String? _gatewayUrl(BuildContext context) {
-    try {
-      return '${context.read<ArweaveService>().client.api.gatewayUrl}';
-    } catch (_) {
-      return null;
-    }
   }
 
   /// `application/pdf` reads as `PDF`, `image/jpeg` as `JPEG`. The MIME type

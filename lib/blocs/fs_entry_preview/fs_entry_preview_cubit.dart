@@ -11,6 +11,7 @@ import 'package:ardrive/services/eml_parser/models/parsed_email.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/preview_object_urls.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart';
@@ -33,6 +34,14 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
   final SecretKey? _fileKey;
 
+  /// Makes a playable URL out of decrypted bytes. See [PreviewObjectUrls] for
+  /// what such a URL may - and may not - be handed to.
+  final PreviewObjectUrls _objectUrls;
+
+  /// Every URL [_objectUrls] has handed out, so the bytes behind them are
+  /// released when this cubit closes rather than living as long as the tab.
+  final List<String> _createdObjectUrls = [];
+
   StreamSubscription? _entrySubscription;
   static final ValueNotifier<ImagePreviewNotification?> imagePreviewNotifier =
       ValueNotifier<ImagePreviewNotification?>(null);
@@ -50,12 +59,14 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     required ArDriveCrypto crypto,
     SecretKey? fileKey,
     bool isSharedFile = false,
+    PreviewObjectUrls? objectUrls,
   })  : _driveDao = driveDao,
         _configService = configService,
         _profileCubit = profileCubit,
         _arweave = arweave,
         _crypto = crypto,
         _fileKey = fileKey,
+        _objectUrls = objectUrls ?? PreviewObjectUrls(),
         super(FsEntryPreviewInitial()) {
     if (isSharedFile) {
       _sharedFilePreview(maybeSelectedItem!, fileKey);
@@ -126,6 +137,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             fileKey != null,
             selectedItem,
             previewUrl,
+            contentType,
           );
           break;
 
@@ -134,18 +146,24 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             fileKey != null,
             selectedItem,
             previewUrl,
-          );
-          break;
-        case 'pdf':
-          _previewPdf(
-            fileKey != null,
-            selectedItem,
-            previewUrl,
+            contentType,
           );
           break;
         case 'text':
         case 'application':
         case 'message':
+          // PDFs are not read into the app at all, so the document size cap -
+          // which exists because documents are buffered and decoded here -
+          // does not apply to them.
+          if (pdfContentTypes.contains(contentType)) {
+            _previewPdf(
+              fileKey != null,
+              selectedItem,
+              previewUrl,
+            );
+            break;
+          }
+
           // Check file size for document preview
           if (file.size != null && file.size! > documentPreviewMaxFileSize) {
             emit(FsEntryPreviewUnavailable());
@@ -177,16 +195,37 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     }
   }
 
+  /// PDFs are handed to the browser, on the gateway's origin, never rendered
+  /// here.
+  ///
+  /// A PDF can carry JavaScript, so decrypting one into a blob URL and putting
+  /// it in an `<iframe>`/`<embed>` would run untrusted bytes as script on
+  /// `app.ardrive.io` - exactly what `docs/FILE_SHARING_REDESIGN_PLAN.md` §4.3
+  /// forbids, and it is load-bearing here because a recipient's access key can
+  /// be sitting in this origin's `sessionStorage`. Opening the gateway URL in a
+  /// new tab keeps the bytes off this origin entirely.
+  ///
+  /// That only works for bytes the gateway can serve as a PDF, so a private
+  /// file gets no preview: its ciphertext is not a PDF, and the plaintext only
+  /// exists in this tab. Rendering *that* needs a Flutter-native renderer which
+  /// decodes the bytes into widgets - no DOM, no origin - which is a dependency
+  /// decision, not a code change (see the report accompanying this work).
   void _previewPdf(
     bool isPrivate,
     FileDataTableItem selectedItem,
     String previewUrl,
   ) {
-    // TODO: Implement PDF preview support
-    // - For web: Could use iframe for public PDFs
-    // - For mobile: Need PDF viewer package
-    // - For private PDFs: Need to decrypt first
-    emit(FsEntryPreviewUnavailable());
+    final isPinFile = selectedItem.pinnedDataOwnerAddress != null;
+
+    if (isPrivate && !isPinFile) {
+      emit(FsEntryPreviewUnavailable());
+      return;
+    }
+
+    emit(FsEntryPreviewPdf(
+      previewUrl: previewUrl,
+      filename: selectedItem.name,
+    ));
   }
 
   Future<void> _preview() async {
@@ -246,11 +285,10 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
               case 'audio':
                 _previewAudio(
-                  fileItem.pinnedDataOwnerAddress ==
-                          null &&
-                      drive.isPrivate,
+                  drive.isPrivate,
                   fileItem,
                   previewUrl,
+                  contentType,
                 );
                 break;
               case 'video':
@@ -258,11 +296,21 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
                   drive.isPrivate,
                   fileItem,
                   previewUrl,
+                  contentType,
                 );
                 break;
               case 'text':
               case 'application':
               case 'message':
+                if (pdfContentTypes.contains(contentType)) {
+                  _previewPdf(
+                    drive.isPrivate,
+                    fileItem,
+                    previewUrl,
+                  );
+                  break;
+                }
+
                 // Check file size for document preview
                 if (file.size > documentPreviewMaxFileSize) {
                   emit(FsEntryPreviewUnavailable());
@@ -333,6 +381,15 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       case 'text':
       case 'application':
       case 'message':
+        if (pdfContentTypes.contains(contentType)) {
+          _previewPdf(
+            drive.isPrivate,
+            fileItem,
+            previewUrl,
+          );
+          break;
+        }
+
         // Check file size for document preview
         if (fileItem.size != null && fileItem.size! > documentPreviewMaxFileSize) {
           return;
@@ -372,9 +429,10 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         break;
       case 'audio':
         _previewAudio(
-          fileItem.pinnedDataOwnerAddress == null && drive.isPrivate,
+          drive.isPrivate,
           fileItem,
           previewUrl,
+          contentType,
         );
         break;
       case 'video':
@@ -382,6 +440,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           drive.isPrivate,
           fileItem,
           previewUrl,
+          contentType,
         );
         break;
       default:
@@ -549,30 +608,142 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     return fileKey;
   }
 
-  void _previewAudio(
-      bool isPrivate, FileDataTableItem selectedItem, previewUrl) {
-    if (isPrivate) {
-      emit(FsEntryPreviewUnavailable());
+  Future<void> _previewAudio(
+    bool isPrivate,
+    FileDataTableItem selectedItem,
+    String previewUrl,
+    String contentType,
+  ) async {
+    final url = await _mediaUrl(
+      isPrivate,
+      selectedItem,
+      previewUrl,
+      contentType,
+    );
+
+    if (url == null || isClosed) {
       return;
     }
 
     emit(FsEntryPreviewAudio(
-        filename: selectedItem.name, previewUrl: previewUrl));
-
-    return;
+        filename: selectedItem.name, previewUrl: url));
   }
 
-  void _previewVideo(
-      bool isPrivate, FileDataTableItem selectedItem, previewUrl) {
-    if (isPrivate) {
-      emit(FsEntryPreviewUnavailable());
+  Future<void> _previewVideo(
+    bool isPrivate,
+    FileDataTableItem selectedItem,
+    String previewUrl,
+    String contentType,
+  ) async {
+    final url = await _mediaUrl(
+      isPrivate,
+      selectedItem,
+      previewUrl,
+      contentType,
+    );
+
+    if (url == null || isClosed) {
       return;
     }
 
     emit(FsEntryPreviewVideo(
-        filename: selectedItem.name, previewUrl: previewUrl));
+        filename: selectedItem.name, previewUrl: url));
+  }
 
-    return;
+  /// The URL the player should play, or `null` when there is not going to be
+  /// one — in which case the state has already been set to say why.
+  ///
+  /// Public bytes stream straight from the gateway, as they always have.
+  /// Private bytes have no URL of their own — every gateway holds only
+  /// ciphertext — so under the preview cap they are fetched, decrypted, and
+  /// handed to the player from memory, which is the same shape as the image
+  /// path. Streaming a private file that is *over* the cap is Phase 2 work: it
+  /// needs the CTR start-offset decryptor to turn a byte range into plaintext.
+  ///
+  /// Pinned files are public bytes wearing a private drive's clothes, so they
+  /// take the public path.
+  Future<String?> _mediaUrl(
+    bool isPrivate,
+    FileDataTableItem selectedItem,
+    String previewUrl,
+    String contentType,
+  ) async {
+    final isPinFile = selectedItem.pinnedDataOwnerAddress != null;
+
+    if (!isPrivate || isPinFile) {
+      return previewUrl;
+    }
+
+    // The bytes are buffered whole, so the size gate runs before anything is
+    // fetched.
+    if (_emitOversizedIfOverLimit(selectedItem.size)) {
+      return null;
+    }
+
+    // A private file with no key is not a preview that failed; it is one that
+    // must never be attempted. Checked before a single byte is requested.
+    final fileKey = await _getFileKey(
+      fileId: selectedItem.id,
+      driveId: driveId,
+      isPrivate: true,
+      isPin: false,
+    );
+
+    if (fileKey == null) {
+      _emitUnavailable();
+      return null;
+    }
+
+    if (isClosed) {
+      return null;
+    }
+
+    emit(const FsEntryPreviewLoading());
+
+    // Deliberately not routed through the preview vault: that cache is
+    // unbounded, and media is the one preview type that can be a hundred
+    // megabytes of it.
+    Uint8List? dataBytes;
+
+    try {
+      dataBytes = await _fetchPreviewBytes(selectedItem.dataTxId);
+    } catch (e) {
+      logger.d('Could not fetch the bytes for a media preview: $e');
+      dataBytes = null;
+    }
+
+    if (dataBytes == null) {
+      _emitUnavailable();
+      return null;
+    }
+
+    final decryptedBytes = await _decodePrivateData(
+      dataBytes,
+      fileKey,
+      selectedItem.dataTxId,
+    );
+
+    if (decryptedBytes == null) {
+      _emitUnavailable();
+      return null;
+    }
+
+    final objectUrl = _objectUrls.create(decryptedBytes, contentType);
+
+    if (objectUrl == null) {
+      _emitUnavailable();
+      return null;
+    }
+
+    _createdObjectUrls.add(objectUrl);
+
+    return objectUrl;
+  }
+
+  void _emitUnavailable() {
+    if (!isClosed) {
+      emit(FsEntryPreviewUnavailable());
+    }
   }
 
   Future<void> _previewDocument(
@@ -867,7 +1038,11 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       case 'message':
         // Check if it's a document type we support
         final fullContentType = '$previewType/$fileExtension';
-        return documentContentTypes.contains(fullContentType);
+        // `application/pdf` is a first-segment `application` type, which is why
+        // the old `case 'pdf':` above could never be reached and PDFs were
+        // reported as unpreviewable.
+        return documentContentTypes.contains(fullContentType) ||
+            pdfContentTypes.contains(fullContentType);
       default:
         return false;
     }
@@ -875,6 +1050,15 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
   @override
   Future<void> close() async {
+    // Decrypted media outlives the widget that played it unless the URL is
+    // released, so a recipient who opens and closes a preview does not leave
+    // the plaintext sitting in the tab.
+    for (final objectUrl in _createdObjectUrls) {
+      _objectUrls.revoke(objectUrl);
+    }
+
+    _createdObjectUrls.clear();
+
     await _entrySubscription?.cancel();
     return super.close();
   }

@@ -1,11 +1,13 @@
 import 'dart:typed_data';
 
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
+import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/services/config/selected_gateway.dart';
+import 'package:ardrive/utils/preview_object_urls.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -52,6 +54,36 @@ class WaterfallGatewayFallback extends Mock implements DataGatewayFallback {
   }
 }
 
+/// A [PreviewObjectUrls] that hands out a URL without a browser behind it.
+///
+/// The real one only works on the web, so the private media path could not be
+/// exercised in a VM test at all without this seam.
+class FakePreviewObjectUrls extends PreviewObjectUrls {
+  final List<String> created = [];
+  final List<String> revoked = [];
+
+  @override
+  String? create(Uint8List bytes, String contentType) {
+    final url = 'blob:fake/${created.length}-$contentType';
+    created.add(url);
+
+    return url;
+  }
+
+  @override
+  void revoke(String url) => revoked.add(url);
+}
+
+/// A [PreviewObjectUrls] for a platform that has no in-memory media URL to
+/// give - every non-web build.
+class UnsupportedPreviewObjectUrls extends PreviewObjectUrls {
+  @override
+  String? create(Uint8List bytes, String contentType) => null;
+
+  @override
+  void revoke(String url) {}
+}
+
 const driveId = 'drive-id';
 const fileId = 'file-id';
 const dataTxId = 'data-tx-id';
@@ -61,13 +93,18 @@ const previewMaxFileSize = 1024 * 1024 * 100;
 const overLimitFileSize = previewMaxFileSize + 1;
 const underLimitFileSize = 1024 * 1024;
 
-FileDataTableItem createImageItem({required int size}) => FileDataTableItem(
+FileDataTableItem createItem({
+  required int size,
+  required String name,
+  required String contentType,
+}) =>
+    FileDataTableItem(
       driveId: driveId,
       lastUpdated: DateTime(2024),
-      name: 'photo.png',
+      name: name,
       size: size,
       dateCreated: DateTime(2024),
-      contentType: 'image/png',
+      contentType: contentType,
       index: 0,
       isOwner: true,
       fileId: fileId,
@@ -77,6 +114,30 @@ FileDataTableItem createImageItem({required int size}) => FileDataTableItem(
       metadataTx: null,
       dataTx: null,
       pinnedDataOwnerAddress: null,
+    );
+
+FileDataTableItem createImageItem({required int size}) => createItem(
+      size: size,
+      name: 'photo.png',
+      contentType: 'image/png',
+    );
+
+FileDataTableItem createVideoItem({required int size}) => createItem(
+      size: size,
+      name: 'clip.mp4',
+      contentType: 'video/mp4',
+    );
+
+FileDataTableItem createAudioItem({required int size}) => createItem(
+      size: size,
+      name: 'memo.mp3',
+      contentType: 'audio/mpeg',
+    );
+
+FileDataTableItem createPdfItem({required int size}) => createItem(
+      size: size,
+      name: 'Q3 Report.pdf',
+      contentType: 'application/pdf',
     );
 
 void main() {
@@ -134,6 +195,7 @@ void main() {
     required FileDataTableItem item,
     SecretKey? fileKey,
     DataGatewayFallback? gatewayFallback,
+    PreviewObjectUrls? objectUrls,
   }) {
     if (gatewayFallback != null) {
       when(() => mockArweaveService.gatewayFallback)
@@ -150,7 +212,23 @@ void main() {
       crypto: mockCrypto,
       fileKey: fileKey,
       isSharedFile: true,
+      objectUrls: objectUrls,
     );
+  }
+
+  /// Makes the whole private path work: bytes from the gateway, cipher tags
+  /// from the transaction, plaintext from the crypto.
+  void stubPrivateFetchAndDecrypt({
+    List<int> fetched = const [1, 2, 3, 4],
+    List<int> decrypted = const [5, 6, 7, 8],
+  }) {
+    when(() => mockGatewayFallback.fetchData(any(), any())).thenAnswer(
+      (_) async => http.Response.bytes(fetched, 200),
+    );
+    when(() => mockArweaveService.getTransactionDetails(any()))
+        .thenAnswer((_) async => MockTransactionCommonMixin());
+    when(() => mockCrypto.decryptDataFromTransaction(any(), any(), any()))
+        .thenAnswer((_) async => Uint8List.fromList(decrypted));
   }
 
   void expectNoBytesFetched() {
@@ -317,6 +395,266 @@ void main() {
         expect(waterfallGatewayFallback.attemptedGateways, [0, 1]);
         expect(cubit.state, isA<FsEntryPreviewUnavailable>());
         expect(cubit.state, isNot(isA<FsEntryPreviewOversized>()));
+      },
+    );
+  });
+
+  group('FsEntryPreviewCubit private media (F8)', () {
+    late FakePreviewObjectUrls objectUrls;
+
+    setUp(() => objectUrls = FakePreviewObjectUrls());
+
+    blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
+      'under-limit private video is fetched, decrypted and played from memory',
+      build: () {
+        stubPrivateFetchAndDecrypt();
+
+        return buildSharedFileCubit(
+          item: createVideoItem(size: underLimitFileSize),
+          fileKey: SecretKey([1, 2, 3]),
+          objectUrls: objectUrls,
+        );
+      },
+      wait: const Duration(milliseconds: 100),
+      expect: () => [
+        const FsEntryPreviewLoading(),
+        const FsEntryPreviewVideo(
+          previewUrl: 'blob:fake/0-video/mp4',
+          filename: 'clip.mp4',
+        ),
+      ],
+      verify: (cubit) {
+        verify(() => mockGatewayFallback.fetchData(dataTxId, any())).called(1);
+        verify(
+          () => mockCrypto.decryptDataFromTransaction(any(), any(), any()),
+        ).called(1);
+
+        // The player is given the *decrypted* bytes, never the ciphertext.
+        expect(objectUrls.created, hasLength(1));
+      },
+    );
+
+    blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
+      'under-limit private audio is fetched, decrypted and played from memory',
+      build: () {
+        stubPrivateFetchAndDecrypt();
+
+        return buildSharedFileCubit(
+          item: createAudioItem(size: underLimitFileSize),
+          fileKey: SecretKey([1, 2, 3]),
+          objectUrls: objectUrls,
+        );
+      },
+      wait: const Duration(milliseconds: 100),
+      expect: () => [
+        const FsEntryPreviewLoading(),
+        const FsEntryPreviewAudio(
+          previewUrl: 'blob:fake/0-audio/mpeg',
+          filename: 'memo.mp3',
+        ),
+      ],
+    );
+
+    blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
+      'over-limit private video emits oversized and never fetches the bytes',
+      build: () => buildSharedFileCubit(
+        item: createVideoItem(size: overLimitFileSize),
+        fileKey: SecretKey([1, 2, 3]),
+        objectUrls: objectUrls,
+      ),
+      wait: const Duration(milliseconds: 100),
+      verify: (cubit) {
+        expect(cubit.state, isA<FsEntryPreviewOversized>());
+        expectNoBytesFetched();
+        verifyNever(
+          () => mockCrypto.decryptDataFromTransaction(any(), any(), any()),
+        );
+      },
+    );
+
+    blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
+      'private video whose bytes cannot be played from memory is unavailable',
+      build: () {
+        stubPrivateFetchAndDecrypt();
+
+        return buildSharedFileCubit(
+          item: createVideoItem(size: underLimitFileSize),
+          fileKey: SecretKey([1, 2, 3]),
+          objectUrls: UnsupportedPreviewObjectUrls(),
+        );
+      },
+      wait: const Duration(milliseconds: 100),
+      verify: (cubit) {
+        expect(cubit.state, isA<FsEntryPreviewUnavailable>());
+        expect(cubit.state, isNot(isA<FsEntryPreviewOversized>()));
+      },
+    );
+
+    blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
+      'private video with no key is never fetched at all',
+      build: () {
+        final drive = MockDrive();
+        final driveSelectable = MockSelectable<Drive>();
+        final fileSelectable = MockSelectable<FileEntry>();
+
+        when(() => drive.privacy).thenReturn(DrivePrivacyTag.private);
+        when(() => mockDriveDao.driveById(driveId: driveId))
+            .thenReturn(driveSelectable);
+        when(() => driveSelectable.getSingleOrNull())
+            .thenAnswer((_) async => drive);
+        when(() => driveSelectable.getSingle()).thenAnswer((_) async => drive);
+        when(() => mockDriveDao.fileById(fileId: fileId))
+            .thenReturn(fileSelectable);
+        when(() => fileSelectable.watchSingle())
+            .thenAnswer((_) => const Stream<FileEntry>.empty());
+
+        // No profile and no drive key in memory: there is no way to read this
+        // file, so there is no reason to ask a gateway for it.
+        when(() => mockProfileCubit.state).thenReturn(ProfileLoggingOut());
+        when(() => mockDriveDao.getDriveKeyFromMemory(driveId))
+            .thenAnswer((_) async => null);
+
+        return FsEntryPreviewCubit(
+          driveId: driveId,
+          maybeSelectedItem: createVideoItem(size: underLimitFileSize),
+          driveDao: mockDriveDao,
+          configService: mockConfigService,
+          arweave: mockArweaveService,
+          profileCubit: mockProfileCubit,
+          crypto: mockCrypto,
+          objectUrls: objectUrls,
+        );
+      },
+      wait: const Duration(milliseconds: 100),
+      verify: (cubit) {
+        expect(cubit.state, isA<FsEntryPreviewUnavailable>());
+        expectNoBytesFetched();
+        verifyNever(
+          () => mockCrypto.decryptDataFromTransaction(any(), any(), any()),
+        );
+        expect(objectUrls.created, isEmpty);
+      },
+    );
+
+    blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
+      'private video survives a dead primary gateway',
+      build: () {
+        final waterfall = WaterfallGatewayFallback([
+          () => throw Exception('primary gateway is blackholed'),
+          () async => http.Response.bytes(<int>[9, 8, 7], 200),
+        ]);
+
+        when(() => mockArweaveService.getTransactionDetails(any()))
+            .thenAnswer((_) async => MockTransactionCommonMixin());
+        when(() => mockCrypto.decryptDataFromTransaction(any(), any(), any()))
+            .thenAnswer((_) async => Uint8List.fromList([5, 6, 7, 8]));
+
+        return buildSharedFileCubit(
+          item: createVideoItem(size: underLimitFileSize),
+          fileKey: SecretKey([1, 2, 3]),
+          gatewayFallback: waterfall,
+          objectUrls: objectUrls,
+        );
+      },
+      wait: const Duration(milliseconds: 100),
+      verify: (cubit) {
+        expect(cubit.state, isA<FsEntryPreviewVideo>());
+        expect(
+          (cubit.state as FsEntryPreviewVideo).previewUrl,
+          'blob:fake/0-video/mp4',
+        );
+      },
+    );
+
+    blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
+      'public video still streams straight from the gateway',
+      build: () => buildSharedFileCubit(
+        item: createVideoItem(size: underLimitFileSize),
+        objectUrls: objectUrls,
+      ),
+      wait: const Duration(milliseconds: 100),
+      expect: () => [
+        const FsEntryPreviewVideo(
+          previewUrl: '$gatewayUrl/$dataTxId',
+          filename: 'clip.mp4',
+        ),
+      ],
+      verify: (cubit) {
+        expectNoBytesFetched();
+        expect(objectUrls.created, isEmpty);
+      },
+    );
+
+    test('the bytes behind a preview are released when the cubit closes',
+        () async {
+      stubPrivateFetchAndDecrypt();
+
+      final cubit = buildSharedFileCubit(
+        item: createVideoItem(size: underLimitFileSize),
+        fileKey: SecretKey([1, 2, 3]),
+        objectUrls: objectUrls,
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await cubit.close();
+
+      expect(objectUrls.revoked, objectUrls.created);
+    });
+  });
+
+  group('FsEntryPreviewCubit PDF (F9)', () {
+    blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
+      'a public PDF is offered on the gateway origin, not rendered here',
+      build: () => buildSharedFileCubit(
+        item: createPdfItem(size: underLimitFileSize),
+      ),
+      wait: const Duration(milliseconds: 100),
+      // Asserted through `verify` rather than `expect`, like every other test
+      // here: the cubit starts resolving in its constructor, and the PDF path
+      // reaches its emit synchronously - before `blocTest` has subscribed - so
+      // the emission is never observed in the stream.
+      verify: (cubit) {
+        expect(
+          cubit.state,
+          const FsEntryPreviewPdf(
+            previewUrl: '$gatewayUrl/$dataTxId',
+            filename: 'Q3 Report.pdf',
+          ),
+        );
+
+        // Nothing about a PDF is read into the app: the browser fetches it
+        // itself, from an origin that is not this one.
+        expectNoBytesFetched();
+      },
+    );
+
+    blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
+      'a private PDF is not previewed, and nothing is fetched for it',
+      build: () => buildSharedFileCubit(
+        item: createPdfItem(size: underLimitFileSize),
+        fileKey: SecretKey([1, 2, 3]),
+      ),
+      wait: const Duration(milliseconds: 100),
+      verify: (cubit) {
+        expect(cubit.state, isA<FsEntryPreviewUnavailable>());
+        expect(cubit.state, isNot(isA<FsEntryPreviewOversized>()));
+        expectNoBytesFetched();
+      },
+    );
+
+    blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
+      'a type nothing can preview is still unavailable',
+      build: () => buildSharedFileCubit(
+        item: createItem(
+          size: underLimitFileSize,
+          name: 'archive.zip',
+          contentType: 'application/zip',
+        ),
+      ),
+      wait: const Duration(milliseconds: 100),
+      verify: (cubit) {
+        expect(cubit.state, isA<FsEntryPreviewUnavailable>());
+        expectNoBytesFetched();
       },
     );
   });

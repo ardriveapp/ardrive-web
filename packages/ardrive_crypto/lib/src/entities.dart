@@ -61,19 +61,30 @@ Future<Uint8List> decryptTransactionData(
 
 /// Decrypts the provided transaction details and data into a [Uint8List] using the provided key.
 ///
+/// [dataStream] may start partway into the ciphertext — a resumed or ranged
+/// download — by passing the byte offset it starts at as [startOffsetBytes].
+/// It must be a multiple of `AesStream.blockLengthBytes`; misaligned offsets
+/// throw instead of decrypting to garbage.
+///
 /// Throws a [TransactionDecryptionException] if decryption fails.
 Future<Stream<Uint8List>> decryptTransactionDataStream(
   String cipher,
   Uint8List cipherIv,
   Stream<Uint8List> dataStream,
   Uint8List keyData,
-  int dataSize,
-) async {
+  int dataSize, {
+  int startOffsetBytes = 0,
+}) async {
   final impl = await cipherStreamDecryptImpl(cipher, keyData: keyData);
 
   // final cipherIv = utils.decodeBase64ToBytes(cipherIvString);
 
-  final res = await impl.decryptStream(cipherIv, dataStream, dataSize);
+  final res = await impl.decryptStream(
+    cipherIv,
+    dataStream,
+    dataSize,
+    startOffsetBytes: startOffsetBytes,
+  );
   return res.stream;
 }
 

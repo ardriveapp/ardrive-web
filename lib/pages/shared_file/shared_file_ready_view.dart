@@ -108,9 +108,10 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
           name: name,
           size: size,
           contentType: revision.dataContentType ?? payload?.contentType,
-          // Only the link's `thn` is a transaction id; the revision's own
-          // `thumbnail` column holds the ArFS thumbnail record, not an id.
-          thumbnailTxId: payload?.thumbnailTxId,
+          thumbnailTxId: _thumbnailTxId(state, revision),
+          // A private file's thumbnail is encrypted under the file key, so the
+          // recipient's own access key is what renders it.
+          fileKey: state.fileKey,
           ownerAddress: state.ownerAddress ?? payload?.ownerAddress,
           verification: state.verification,
           isPrivate: state.fileKey != null,
@@ -177,6 +178,41 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
         ),
       ],
     );
+  }
+
+  /// The thumbnail to show beside the name, or `null` when the file has none.
+  ///
+  /// The link's `thn` is a transaction id and is preferred because it is there
+  /// before anything is resolved. A v1 link carries nothing, so once the
+  /// metadata has resolved the file's own ArFS thumbnail record is read
+  /// instead - the same record the drive explorer uses, minus the local-DB
+  /// drive lookup that a recipient can never satisfy (review F15).
+  String? _thumbnailTxId(SharedFileLoadSuccess state, FileRevision revision) {
+    final fromLink = state.payload?.thumbnailTxId;
+
+    if (fromLink != null && fromLink.isNotEmpty) {
+      return fromLink;
+    }
+
+    if (!state.detailsAreResolved) {
+      return null;
+    }
+
+    try {
+      final variants = DriveDataTableItemMapper.fromRevision(
+        FileRevisionBase.fromFileRevision(revision),
+        false,
+      ).thumbnail?.variants;
+
+      if (variants == null || variants.isEmpty) {
+        return null;
+      }
+
+      return variants.first.txId;
+    } catch (_) {
+      // A malformed thumbnail record costs a thumbnail, never the page.
+      return null;
+    }
   }
 
   /// Downloads [revision], and holds the target still until it is done.

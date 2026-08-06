@@ -1497,6 +1497,14 @@
   "@preview": {
     "description": "Action of previewing a file"
   },
+  "previewPdfOpen": "打开PDF",
+  "@previewPdfOpen": {
+    "description": "Button on the PDF preview card that opens the file in a new browser tab"
+  },
+  "previewPdfOpensInNewTab": "将在新标签页中打开，由你浏览器自带的PDF阅读器显示。",
+  "@previewPdfOpensInNewTab": {
+    "description": "Helper text on the PDF preview card, setting the expectation that the file opens in a new browser tab and is rendered there by the browser's own built-in PDF viewer rather than by ArDrive"
+  },
   "previewUnavailable": "预览不可用",
   "@previewUnavailable": {
     "description": "Shown when a file cannot be previewed in the app"

@@ -154,7 +154,13 @@ This **replaces** the current web streaming-GCM path (`ardrive_downloader.dart:2
 ### 3.2 CTR path (private, ≥ 100 MiB): stream → seek → resume
 
 1. Hedged fetch as a stream, stall detection kept (`ardrive_downloader.dart:276-325`).
-2. Decrypt via `AesCtrStream` with the new **start-offset parameter** (§0.2): `decryptTransformer(nonce, fileSize, {int startOffsetBytes = 0})`, asserting 16-byte alignment; resume offsets are aligned down to the 256 KiB chunk boundary.
+2. Decrypt via `AesCtrStream` with the new **start-offset parameter** (§0.2): `decryptTransformer(nonce, fileSize, {int startOffsetBytes = 0})`.
+
+   **[CORRECTED — implemented 2026-08-05.]** This section previously said resume offsets align down to the 256 KiB chunk boundary. That is **not** required. The true and only constraint is **16 bytes** (`AesStream.blockLengthBytes`): the transformer derives each chunk's counter from a running block offset that now *starts* at `startOffsetBytes ~/ 16`, and WebCrypto's AES-CTR keystream is a pure function of the block index, so the 256 KiB chunk grid simply restarts coherently from any 16-byte boundary. Resume therefore wastes ≤15 bytes rather than ≤256 KiB. Proven by tests at offsets that are deliberately *not* chunk-aligned (`chunkSize−16`, `chunkSize+16`, `2·chunkSize+16`, and the file's final block), each byte-identical to decrypt-then-slice. `AesStream.streamChunkSizeBytes` is still exported for anyone who wants chunk-aligned **Range** requests for network reasons — that is a separate concern from decryption correctness.
+
+   Two further constraints the original text missed:
+   - **The CTR counter field is 4 bytes**, capping streamed CTR/GCM at 64 GiB. Offsets at or beyond that are rejected with `ArgumentError` rather than failing obscurely inside `hex.decode`.
+   - **GCM's MAC trim had to become offset-relative** (`trimData(fileSize - startOffsetBytes)`). Getting this wrong truncates a resumed GCM stream by exactly the offset.
 3. Stream plaintext to disk via the existing StreamSaver path.
 4. **Resume**: on `DownloadStalledException`/network error with `bytesSaved > 0`, re-request `Range: bytes={alignedOffset}-` and continue. The `arweave` package's `download()` has no range parameter, so the resume request is a direct `GET {gateway}/{dtx}` with a `Range` header through the same client list and stall-detection wrapper; gateways that answer `200` instead of `206` fall back to restart-from-zero.
 

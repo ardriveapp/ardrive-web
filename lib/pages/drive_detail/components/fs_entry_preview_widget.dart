@@ -99,6 +99,13 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
           isSharePage: widget.isSharePage,
         );
 
+      case const (FsEntryPreviewPdf):
+        final pdfState = widget.state as FsEntryPreviewPdf;
+        return PdfPreviewWidget(
+          filename: pdfState.filename,
+          previewUrl: pdfState.previewUrl,
+        );
+
       default:
         // Any state without a dedicated branch renders nothing rather than
         // being blind-cast into a preview widget.

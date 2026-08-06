@@ -50,11 +50,24 @@ class FsEntryPreviewImage extends FsEntryPreviewSuccess {
   List<Object> get props => [previewUrl];
 }
 
+/// A PDF that can be opened outside the app.
+///
+/// [previewUrl] is a gateway URL for the *public* bytes of the file, and is
+/// only ever emitted for a file whose bytes are public: it is opened in a new
+/// tab, where the browser's own PDF viewer renders it on the gateway's origin
+/// rather than on this one. Nothing is rendered inline, because a PDF can carry
+/// JavaScript and `docs/FILE_SHARING_REDESIGN_PLAN.md` §4.3 forbids bytes from
+/// an untrusted transaction becoming script-capable content on the app origin.
 class FsEntryPreviewPdf extends FsEntryPreviewSuccess {
-  const FsEntryPreviewPdf({required super.previewUrl});
+  final String filename;
+
+  const FsEntryPreviewPdf({
+    required super.previewUrl,
+    required this.filename,
+  });
 
   @override
-  List<Object> get props => [previewUrl];
+  List<Object> get props => [previewUrl, filename];
 }
 
 class FsEntryPreviewAudio extends FsEntryPreviewSuccess {
