@@ -151,6 +151,8 @@ The cipher boundary **is** the architecture boundary. Selection key: the `c` fie
 
 This **replaces** the current web streaming-GCM path (`ardrive_downloader.dart:243-269`), closing F24: today web GCM downloads trim the MAC (`stream_aes.dart:141-148`). Mobile already does this (`ardrive_downloader.dart:81-104`); the change unifies platforms and deletes the `AesGcmStream` usage from the download path entirely. UI: progress to 100%, then a brief *"Verifying…"*, then save — the tag-at-the-end problem is moot (§0.4).
 
+**[CORRECTED — 2026-08-06.] "< 100 MiB" describes what *this* uploader writes, not what exists on chain.** The first implementation read the size bound as a guarantee and refused any AES-GCM file above `DownloadPolicy.maxBufferedCiphertextBytes`, which broke a file class that used to download fine: AES-GCM is what ArDrive used for *all* symmetric encryption for years (`ArweaveFS.md:43`) and what ardrive-cli still writes at any size. Above the cap the file therefore takes the §3.2 streaming path — decrypting through `AesGcmStream.unauthenticatedTooLargeToBuffer`, the one named exception to the kill switch — and its verdict falls back to §3.4.2's data item signature, with the missing MAC named in the reason whenever no verdict is reached. Below the cap nothing changed: buffer, verify, and write nothing on failure, with the streaming path still tripwired by a `StateError`.
+
 ### 3.2 CTR path (private, ≥ 100 MiB): stream → seek → resume
 
 1. Hedged fetch as a stream, stall detection kept (`ardrive_downloader.dart:276-325`).
