@@ -104,6 +104,8 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
         return PdfPreviewWidget(
           filename: pdfState.filename,
           previewUrl: pdfState.previewUrl,
+          pdfBytes: pdfState.pdfBytes,
+          canOpenOnGateway: pdfState.canOpenOnGateway,
         );
 
       default:

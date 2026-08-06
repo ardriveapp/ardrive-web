@@ -42,6 +42,10 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   /// released when this cubit closes rather than living as long as the tab.
   final List<String> _createdObjectUrls = [];
 
+  /// The data transaction whose PDF bytes are already in flight or already
+  /// rendered. See [_previewPdf].
+  String? _pdfDataTxId;
+
   StreamSubscription? _entrySubscription;
   static final ValueNotifier<ImagePreviewNotification?> imagePreviewNotifier =
       ValueNotifier<ImagePreviewNotification?>(null);
@@ -152,9 +156,10 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         case 'text':
         case 'application':
         case 'message':
-          // PDFs are not read into the app at all, so the document size cap -
-          // which exists because documents are buffered and decoded here -
-          // does not apply to them.
+          // A PDF is rasterised rather than decoded as text, so the document
+          // size cap - which exists because documents are decoded into a string
+          // here - is not the one that applies to it. [_previewPdf] applies the
+          // in-memory preview cap instead.
           if (pdfContentTypes.contains(contentType)) {
             _previewPdf(
               fileKey != null,
@@ -195,36 +200,117 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     }
   }
 
-  /// PDFs are handed to the browser, on the gateway's origin, never rendered
-  /// here.
+  /// A PDF's plaintext, for the rasteriser to turn into page images.
   ///
-  /// A PDF can carry JavaScript, so decrypting one into a blob URL and putting
-  /// it in an `<iframe>`/`<embed>` would run untrusted bytes as script on
-  /// `app.ardrive.io` - exactly what `docs/FILE_SHARING_REDESIGN_PLAN.md` §4.3
-  /// forbids, and it is load-bearing here because a recipient's access key can
-  /// be sitting in this origin's `sessionStorage`. Opening the gateway URL in a
-  /// new tab keeps the bytes off this origin entirely.
+  /// Public bytes come through the same gateway waterfall as every other
+  /// preview; private bytes are fetched and decrypted here, in memory, and go
+  /// straight into the viewer. Neither ever becomes a blob URL, a temp file, or
+  /// DOM: the viewer draws pages as images, so a PDF that carries JavaScript
+  /// carries it nowhere - which is what
+  /// `docs/FILE_SHARING_REDESIGN_PLAN.md` §4.3 requires of bytes from an
+  /// untrusted transaction, and it is load-bearing because a recipient's access
+  /// key can be sitting in this origin's `sessionStorage`.
   ///
-  /// That only works for bytes the gateway can serve as a PDF, so a private
-  /// file gets no preview: its ciphertext is not a PDF, and the plaintext only
-  /// exists in this tab. Rendering *that* needs a Flutter-native renderer which
-  /// decodes the bytes into widgets - no DOM, no origin - which is a dependency
-  /// decision, not a code change (see the report accompanying this work).
-  void _previewPdf(
+  /// A *public* file whose bytes will not come is not a dead end: the state
+  /// still carries the gateway URL, and the viewer degrades to offering it in a
+  /// new tab, which is all this path could ever do before. A private file has
+  /// no such URL, because every gateway holds only its ciphertext.
+  ///
+  /// [size] is the freshest size known for the file; the database row is more
+  /// current than the selected item when the drive explorer has just synced.
+  Future<void> _previewPdf(
     bool isPrivate,
     FileDataTableItem selectedItem,
-    String previewUrl,
-  ) {
+    String previewUrl, {
+    int? size,
+  }) async {
+    // Pinned files are public bytes wearing a private drive's clothes, so they
+    // take the public path.
     final isPinFile = selectedItem.pinnedDataOwnerAddress != null;
+    final isEncrypted = isPrivate && !isPinFile;
 
-    if (isPrivate && !isPinFile) {
-      emit(FsEntryPreviewUnavailable());
+    // The file is buffered whole to be rasterised, so the cap is checked before
+    // a single byte is requested.
+    if (_emitOversizedIfOverLimit(size ?? selectedItem.size)) {
       return;
+    }
+
+    // The drive explorer previews once immediately and again on every database
+    // change; a PDF can be a hundred megabytes, so the same one is not fetched
+    // twice. Claimed synchronously, before the first await, or two calls that
+    // arrive together would both get past it.
+    if (_pdfDataTxId == selectedItem.dataTxId) {
+      return;
+    }
+
+    _pdfDataTxId = selectedItem.dataTxId;
+
+    // A private file with no key is not a preview that fails; it is one that
+    // must never be attempted. Checked before anything is fetched, so the
+    // ciphertext of a file this viewer cannot read is never even requested.
+    SecretKey? fileKey;
+
+    if (isEncrypted) {
+      fileKey = await _getFileKey(
+        fileId: selectedItem.id,
+        driveId: driveId,
+        isPrivate: true,
+        isPin: false,
+      );
+
+      if (fileKey == null) {
+        _pdfDataTxId = null;
+        _emitUnavailable();
+        return;
+      }
+    }
+
+    if (isClosed) {
+      return;
+    }
+
+    emit(const FsEntryPreviewLoading());
+
+    // Deliberately not routed through the preview vault: that cache is
+    // unbounded, and a PDF is the other preview type that can be a hundred
+    // megabytes of it.
+    Uint8List? dataBytes;
+
+    try {
+      dataBytes = await _fetchPreviewBytes(selectedItem.dataTxId);
+    } catch (e) {
+      logger.d('Could not fetch the bytes for a PDF preview: $e');
+      dataBytes = null;
+    }
+
+    if (dataBytes != null && isEncrypted) {
+      dataBytes = await _decodePrivateData(
+        dataBytes,
+        fileKey!,
+        selectedItem.dataTxId,
+      );
+    }
+
+    if (isClosed) {
+      return;
+    }
+
+    if (dataBytes == null) {
+      // Nothing was rendered, so a later database change is free to try again.
+      _pdfDataTxId = null;
+
+      if (isEncrypted) {
+        // No plaintext, and no URL to offer instead.
+        _emitUnavailable();
+        return;
+      }
     }
 
     emit(FsEntryPreviewPdf(
       previewUrl: previewUrl,
       filename: selectedItem.name,
+      pdfBytes: dataBytes,
+      canOpenOnGateway: !isEncrypted,
     ));
   }
 
@@ -303,10 +389,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
               case 'application':
               case 'message':
                 if (pdfContentTypes.contains(contentType)) {
+                  // The database row is fresher than the selected item here.
                   _previewPdf(
                     drive.isPrivate,
                     fileItem,
                     previewUrl,
+                    size: file.size,
                   );
                   break;
                 }

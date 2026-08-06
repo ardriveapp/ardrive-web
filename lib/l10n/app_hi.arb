@@ -1505,6 +1505,20 @@
   "@previewPdfOpensInNewTab": {
     "description": "Helper text on the PDF preview card, setting the expectation that the file opens in a new browser tab and is rendered there by the browser's own built-in PDF viewer rather than by ArDrive"
   },
+  "previewPdfPageIndicator": "{pageCount} में से पेज {page}",
+  "@previewPdfPageIndicator": {
+    "description": "Page counter under the inline PDF viewer, e.g. 'Page 3 of 12'",
+    "placeholders": {
+      "page": {
+        "type": "int",
+        "example": "3"
+      },
+      "pageCount": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
   "previewUnavailable": "पूर्वावलोकन उपलब्ध नहीं है",
   "@previewUnavailable": {
     "description": "Shown when a file cannot be previewed in the app"

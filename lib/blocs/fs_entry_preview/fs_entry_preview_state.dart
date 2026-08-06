@@ -50,24 +50,46 @@ class FsEntryPreviewImage extends FsEntryPreviewSuccess {
   List<Object> get props => [previewUrl];
 }
 
-/// A PDF that can be opened outside the app.
+/// A PDF, as plaintext bytes this app rasterises itself.
 ///
-/// [previewUrl] is a gateway URL for the *public* bytes of the file, and is
-/// only ever emitted for a file whose bytes are public: it is opened in a new
-/// tab, where the browser's own PDF viewer renders it on the gateway's origin
-/// rather than on this one. Nothing is rendered inline, because a PDF can carry
-/// JavaScript and `docs/FILE_SHARING_REDESIGN_PLAN.md` §4.3 forbids bytes from
-/// an untrusted transaction becoming script-capable content on the app origin.
+/// [pdfBytes] is the *plaintext* of the file - fetched through the gateway
+/// waterfall for a public file, fetched and decrypted in memory for a private
+/// one - and is turned into page images by a rasteriser and painted as ordinary
+/// Flutter widgets. It is never handed to an `<iframe>`, `<embed>`, `<object>`
+/// or a blob URL: a PDF can carry JavaScript, and
+/// `docs/FILE_SHARING_REDESIGN_PLAN.md` §4.3 forbids bytes from an untrusted
+/// transaction becoming script-capable content on this origin - load-bearing,
+/// because a recipient's access key can be sitting in this origin's
+/// `sessionStorage`. Rasterising keeps the posture of the image preview: decode
+/// the bytes, paint the result, run nothing.
+///
+/// `null` when the bytes could not be had, which is not fatal for a public file
+/// - see [canOpenOnGateway].
+///
+/// [previewUrl] only means anything when [canOpenOnGateway] is set: a *public*
+/// file's bytes have a URL of their own, so a viewer that cannot render them
+/// can still offer to open them in a new tab, on the gateway's origin. A
+/// private file has no such URL - every gateway holds only its ciphertext - and
+/// gets no such offer.
 class FsEntryPreviewPdf extends FsEntryPreviewSuccess {
   final String filename;
+  final Uint8List? pdfBytes;
+  final bool canOpenOnGateway;
 
   const FsEntryPreviewPdf({
     required super.previewUrl,
     required this.filename,
+    this.pdfBytes,
+    this.canOpenOnGateway = false,
   });
 
   @override
-  List<Object> get props => [previewUrl, filename];
+  List<Object> get props => [
+        previewUrl,
+        filename,
+        canOpenOnGateway,
+        pdfBytes ?? const <int>[],
+      ];
 }
 
 class FsEntryPreviewAudio extends FsEntryPreviewSuccess {

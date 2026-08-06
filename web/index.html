@@ -29,6 +29,15 @@
     <script defer src="js/StreamSaver.min.js"></script>
     <script defer src="js/crypto_wallet_bridge.js"></script>
     <script defer src="js/lazy_loader.js"></script>
+    <!--
+      PDF.js 2.12.313, vendored under web/js/pdfjs/ - never from a CDN.
+      Loaded eagerly (deferred) because the pdfx web plugin asserts that
+      `pdfjsLib` exists when Flutter registers its plugins. The 1 MB worker and
+      the CJK cmaps beside it are fetched by pdf.js only when a PDF is actually
+      opened, so the cost here is pdf.min.js alone.
+    -->
+    <script defer src="js/pdfjs/pdf.min.js"></script>
+    <script defer src="js/pdfjs/pdfjs_config.js"></script>
     <link rel="preload" href="main.dart.js" as="script">
     <link rel="preload" href="splash/img/splash.svg" as="image">
 

@@ -602,43 +602,220 @@ void main() {
     });
   });
 
+  // A PDF is rasterised into page images and painted as Flutter widgets, so
+  // its bytes are read into the app like an image's - and, for a private file,
+  // decrypted here. What these tests hold down is where the bytes come from,
+  // that they never come at all when they must not, and that a public file
+  // still has the old open-in-a-new-tab escape hatch when they do not arrive.
   group('FsEntryPreviewCubit PDF (F9)', () {
+    late FakePreviewObjectUrls objectUrls;
+    late WaterfallGatewayFallback waterfallGatewayFallback;
+
+    setUp(() => objectUrls = FakePreviewObjectUrls());
+
     blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
-      'a public PDF is offered on the gateway origin, not rendered here',
-      build: () => buildSharedFileCubit(
-        item: createPdfItem(size: underLimitFileSize),
-      ),
+      'a public PDF survives a dead primary gateway',
+      build: () {
+        waterfallGatewayFallback = WaterfallGatewayFallback([
+          () => throw Exception('primary gateway is blackholed'),
+          () async => http.Response.bytes(<int>[9, 8, 7], 200),
+        ]);
+
+        return buildSharedFileCubit(
+          item: createPdfItem(size: underLimitFileSize),
+          gatewayFallback: waterfallGatewayFallback,
+          objectUrls: objectUrls,
+        );
+      },
       wait: const Duration(milliseconds: 100),
       // Asserted through `verify` rather than `expect`, like every other test
-      // here: the cubit starts resolving in its constructor, and the PDF path
-      // reaches its emit synchronously - before `blocTest` has subscribed - so
-      // the emission is never observed in the stream.
+      // here: the cubit starts resolving in its constructor, and the first
+      // emission lands before `blocTest` has subscribed.
       verify: (cubit) {
+        // The primary was tried and failed; the fallback served the bytes.
+        expect(waterfallGatewayFallback.attemptedGateways, [0, 1]);
+
         expect(
           cubit.state,
-          const FsEntryPreviewPdf(
+          FsEntryPreviewPdf(
             previewUrl: '$gatewayUrl/$dataTxId',
             filename: 'Q3 Report.pdf',
+            pdfBytes: Uint8List.fromList([9, 8, 7]),
+            canOpenOnGateway: true,
           ),
         );
 
-        // Nothing about a PDF is read into the app: the browser fetches it
-        // itself, from an origin that is not this one.
-        expectNoBytesFetched();
+        // Nothing is decrypted for a public file, and nothing becomes a URL:
+        // the bytes go to the rasteriser, in memory.
+        verifyNever(
+          () => mockCrypto.decryptDataFromTransaction(any(), any(), any()),
+        );
+        expect(objectUrls.created, isEmpty);
       },
     );
 
     blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
-      'a private PDF is not previewed, and nothing is fetched for it',
-      build: () => buildSharedFileCubit(
-        item: createPdfItem(size: underLimitFileSize),
-        fileKey: SecretKey([1, 2, 3]),
-      ),
+      'a private PDF is fetched, decrypted and rendered from memory',
+      build: () {
+        stubPrivateFetchAndDecrypt();
+
+        return buildSharedFileCubit(
+          item: createPdfItem(size: underLimitFileSize),
+          fileKey: SecretKey([1, 2, 3]),
+          objectUrls: objectUrls,
+        );
+      },
+      wait: const Duration(milliseconds: 100),
+      verify: (cubit) {
+        expect(cubit.state, isA<FsEntryPreviewPdf>());
+
+        final state = cubit.state as FsEntryPreviewPdf;
+
+        // The rasteriser is handed the *plaintext*, never the ciphertext.
+        expect(state.pdfBytes, Uint8List.fromList([5, 6, 7, 8]));
+
+        // And a private file gets no gateway offer: every gateway holds only
+        // its ciphertext.
+        expect(state.canOpenOnGateway, isFalse);
+
+        verify(() => mockGatewayFallback.fetchData(dataTxId, any())).called(1);
+        verify(
+          () => mockCrypto.decryptDataFromTransaction(any(), any(), any()),
+        ).called(1);
+
+        // No blob URL: the plaintext never leaves Dart memory.
+        expect(objectUrls.created, isEmpty);
+      },
+    );
+
+    blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
+      'a private PDF with no key is never fetched at all',
+      build: () {
+        final drive = MockDrive();
+        final driveSelectable = MockSelectable<Drive>();
+        final fileSelectable = MockSelectable<FileEntry>();
+
+        when(() => drive.privacy).thenReturn(DrivePrivacyTag.private);
+        when(() => mockDriveDao.driveById(driveId: driveId))
+            .thenReturn(driveSelectable);
+        when(() => driveSelectable.getSingleOrNull())
+            .thenAnswer((_) async => drive);
+        when(() => driveSelectable.getSingle()).thenAnswer((_) async => drive);
+        when(() => mockDriveDao.fileById(fileId: fileId))
+            .thenReturn(fileSelectable);
+        when(() => fileSelectable.watchSingle())
+            .thenAnswer((_) => const Stream<FileEntry>.empty());
+
+        // No profile and no drive key in memory: there is no way to read this
+        // file, so its ciphertext is not this page's to request.
+        when(() => mockProfileCubit.state).thenReturn(ProfileLoggingOut());
+        when(() => mockDriveDao.getDriveKeyFromMemory(driveId))
+            .thenAnswer((_) async => null);
+
+        return FsEntryPreviewCubit(
+          driveId: driveId,
+          maybeSelectedItem: createPdfItem(size: underLimitFileSize),
+          driveDao: mockDriveDao,
+          configService: mockConfigService,
+          arweave: mockArweaveService,
+          profileCubit: mockProfileCubit,
+          crypto: mockCrypto,
+          objectUrls: objectUrls,
+        );
+      },
       wait: const Duration(milliseconds: 100),
       verify: (cubit) {
         expect(cubit.state, isA<FsEntryPreviewUnavailable>());
         expect(cubit.state, isNot(isA<FsEntryPreviewOversized>()));
         expectNoBytesFetched();
+        verifyNever(
+          () => mockCrypto.decryptDataFromTransaction(any(), any(), any()),
+        );
+      },
+    );
+
+    blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
+      'an over-limit private PDF emits oversized and never fetches the bytes',
+      build: () => buildSharedFileCubit(
+        item: createPdfItem(size: overLimitFileSize),
+        fileKey: SecretKey([1, 2, 3]),
+        objectUrls: objectUrls,
+      ),
+      wait: const Duration(milliseconds: 100),
+      verify: (cubit) {
+        expect(cubit.state, isA<FsEntryPreviewOversized>());
+        expect(
+          (cubit.state as FsEntryPreviewOversized).maxFileSize,
+          previewMaxFileSize,
+        );
+        expectNoBytesFetched();
+        verifyNever(
+          () => mockCrypto.decryptDataFromTransaction(any(), any(), any()),
+        );
+      },
+    );
+
+    blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
+      'an over-limit public PDF emits oversized and never fetches the bytes',
+      build: () => buildSharedFileCubit(
+        item: createPdfItem(size: overLimitFileSize),
+        objectUrls: objectUrls,
+      ),
+      wait: const Duration(milliseconds: 100),
+      verify: (cubit) {
+        expect(cubit.state, isA<FsEntryPreviewOversized>());
+        expectNoBytesFetched();
+      },
+    );
+
+    blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
+      'a public PDF whose bytes never arrive keeps the gateway affordance',
+      build: () {
+        final waterfall = WaterfallGatewayFallback([
+          () => throw Exception('primary gateway is blackholed'),
+          () => throw Exception('fallback gateway is blackholed'),
+        ]);
+
+        return buildSharedFileCubit(
+          item: createPdfItem(size: underLimitFileSize),
+          gatewayFallback: waterfall,
+        );
+      },
+      wait: const Duration(milliseconds: 100),
+      verify: (cubit) {
+        // Nothing to rasterise, but the file's own gateway URL is still there
+        // to be opened in a new tab - which is all this path could ever do
+        // before it rendered anything.
+        expect(
+          cubit.state,
+          const FsEntryPreviewPdf(
+            previewUrl: '$gatewayUrl/$dataTxId',
+            filename: 'Q3 Report.pdf',
+            canOpenOnGateway: true,
+          ),
+        );
+      },
+    );
+
+    blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
+      'a private PDF whose bytes never arrive is unavailable',
+      build: () {
+        final waterfall = WaterfallGatewayFallback([
+          () => throw Exception('primary gateway is blackholed'),
+          () => throw Exception('fallback gateway is blackholed'),
+        ]);
+
+        return buildSharedFileCubit(
+          item: createPdfItem(size: underLimitFileSize),
+          fileKey: SecretKey([1, 2, 3]),
+          gatewayFallback: waterfall,
+        );
+      },
+      wait: const Duration(milliseconds: 100),
+      verify: (cubit) {
+        // No plaintext, and no URL to offer instead.
+        expect(cubit.state, isA<FsEntryPreviewUnavailable>());
+        expect(cubit.state, isNot(isA<FsEntryPreviewPdf>()));
       },
     );
 
