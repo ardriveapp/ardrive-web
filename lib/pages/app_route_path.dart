@@ -46,6 +46,21 @@ class AppRoutePath {
   /// stay authoritative so that v1 and v2 links present the key identically.
   final SharedFileLinkPayload? sharedFileLinkPayload;
 
+  /// The transaction the generalized viewer was asked for - `/view/{txId}`.
+  ///
+  /// Always a validated 43 character Arweave id; the route does not match
+  /// anything else, so nothing downstream has to re-check it.
+  final String? rawTransactionId;
+
+  /// `n` - the file name hint of a `/view/{txId}` link, validated by the same
+  /// rules as the shared file schema's (§1.3).
+  ///
+  /// A hint, never a fact: the viewer prefers what the gateway reports.
+  final String? rawTransactionName;
+
+  /// `ct` - the content type hint of a `/view/{txId}` link.
+  final String? rawTransactionContentType;
+
   const AppRoutePath({
     this.signingIn = false,
     this.getStarted = false,
@@ -59,6 +74,9 @@ class AppRoutePath {
     this.sharedRawFileKey,
     this.sharedFileKeyIsDamaged = false,
     this.sharedFileLinkPayload,
+    this.rawTransactionId,
+    this.rawTransactionName,
+    this.rawTransactionContentType,
   });
 
   /// Creates a route that lets the user sign in.
@@ -101,6 +119,19 @@ class AppRoutePath {
         sharedRawFileKey: sharedRawFileKey,
         sharedFileKeyIsDamaged: sharedFileKeyIsDamaged,
         sharedFileLinkPayload: linkPayload,
+      );
+
+  /// Creates a route that points at any Arweave transaction, ArDrive being the
+  /// friendly front end - `docs/FILE_SHARING_REDESIGN_PLAN.md` §1.3, §4.3.
+  factory AppRoutePath.rawTransaction({
+    required String txId,
+    String? name,
+    String? contentType,
+  }) =>
+      AppRoutePath(
+        rawTransactionId: txId,
+        rawTransactionName: name,
+        rawTransactionContentType: contentType,
       );
 
   factory AppRoutePath.unknown() => const AppRoutePath();

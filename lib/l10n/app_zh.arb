@@ -1573,6 +1573,54 @@
       }
     }
   },
+  "rawTransactionDownloadFailed": "无法保存此文件。",
+  "@rawTransactionDownloadFailed": {
+    "description": "Error shown on the transaction viewer when a transaction's bytes could not be saved to the device"
+  },
+  "rawTransactionGenericTitle": "Arweave 交易",
+  "@rawTransactionGenericTitle": {
+    "description": "Fallback title on the transaction viewer when the transaction carries no file name"
+  },
+  "rawTransactionHideSandboxedFrame": "隐藏",
+  "@rawTransactionHideSandboxedFrame": {
+    "description": "Button that closes the isolated inline frame on the transaction viewer"
+  },
+  "rawTransactionLinkDamaged": "这不是 Arweave 交易 ID。请检查链接后重试。",
+  "@rawTransactionLinkDamaged": {
+    "description": "Shown when the address in a transaction viewer link is not a valid Arweave transaction ID"
+  },
+  "rawTransactionNotFoundOnNetwork": "我们目前在网络上找不到此交易。它可能仍在同步中 — 请稍后重试。",
+  "@rawTransactionNotFoundOnNetwork": {
+    "description": "Shown on the transaction viewer when the transaction could not be found on the network yet"
+  },
+  "rawTransactionOpenOnGateway": "在网关上打开",
+  "@rawTransactionOpenOnGateway": {
+    "description": "Button that opens a transaction's contents on the gateway, in a new browser tab"
+  },
+  "rawTransactionOpenSandboxed": "在沙盒中打开",
+  "@rawTransactionOpenSandboxed": {
+    "description": "Button that opens contents which could execute code on the gateway's own isolated address, in a new browser tab"
+  },
+  "rawTransactionSandboxedNotice": "此文件可能会在浏览器中运行代码，因此 ArDrive 不会在这里显示它。请改为在网关自己的隔离地址上打开，在那里它无法访问你的 ArDrive 会话。",
+  "@rawTransactionSandboxedNotice": {
+    "description": "Explains why ArDrive declines to render contents that could execute code, and what the isolated alternative keeps them away from"
+  },
+  "rawTransactionShowSandboxedFrame": "在此处以沙盒方式显示",
+  "@rawTransactionShowSandboxedFrame": {
+    "description": "Button that reveals contents which could execute code inline, inside an isolated frame"
+  },
+  "rawTransactionSourceHeading": "源代码",
+  "@rawTransactionSourceHeading": {
+    "description": "Heading above the unexecuted source text of contents ArDrive declined to render"
+  },
+  "rawTransactionTypeMismatch": "此交易的内容与其声明的类型不一致。",
+  "@rawTransactionTypeMismatch": {
+    "description": "Caution shown when a transaction's bytes do not match the content type it declares"
+  },
+  "rawTransactionUnknownType": "ArDrive 无法判断这是哪种文件，因此只能下载。",
+  "@rawTransactionUnknownType": {
+    "description": "Shown on the transaction viewer when the contents cannot be identified, leaving download as the only action"
+  },
   "recreateFolderEmphasized": "重新创建文件夹",
   "@recreateFolderEmphasized": {
     "description": "Recreate a folder that failed to be minted"

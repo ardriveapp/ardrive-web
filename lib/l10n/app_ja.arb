@@ -1573,6 +1573,54 @@
       }
     }
   },
+  "rawTransactionDownloadFailed": "このファイルを保存できませんでした。",
+  "@rawTransactionDownloadFailed": {
+    "description": "Error shown on the transaction viewer when a transaction's bytes could not be saved to the device"
+  },
+  "rawTransactionGenericTitle": "Arweave トランザクション",
+  "@rawTransactionGenericTitle": {
+    "description": "Fallback title on the transaction viewer when the transaction carries no file name"
+  },
+  "rawTransactionHideSandboxedFrame": "非表示",
+  "@rawTransactionHideSandboxedFrame": {
+    "description": "Button that closes the isolated inline frame on the transaction viewer"
+  },
+  "rawTransactionLinkDamaged": "これは Arweave のトランザクション ID ではありません。リンクを確認して、もう一度お試しください。",
+  "@rawTransactionLinkDamaged": {
+    "description": "Shown when the address in a transaction viewer link is not a valid Arweave transaction ID"
+  },
+  "rawTransactionNotFoundOnNetwork": "現在、このトランザクションをネットワーク上で見つけられません。まだ反映の途中かもしれません。しばらくしてからもう一度お試しください。",
+  "@rawTransactionNotFoundOnNetwork": {
+    "description": "Shown on the transaction viewer when the transaction could not be found on the network yet"
+  },
+  "rawTransactionOpenOnGateway": "ゲートウェイで開く",
+  "@rawTransactionOpenOnGateway": {
+    "description": "Button that opens a transaction's contents on the gateway, in a new browser tab"
+  },
+  "rawTransactionOpenSandboxed": "サンドボックスで開く",
+  "@rawTransactionOpenSandboxed": {
+    "description": "Button that opens contents which could execute code on the gateway's own isolated address, in a new browser tab"
+  },
+  "rawTransactionSandboxedNotice": "このファイルはブラウザ内でコードを実行する可能性があるため、ArDrive はここでは表示しません。代わりに、ゲートウェイ自身の分離されたアドレスで開いてください。そこからは、あなたの ArDrive セッションに触れることはできません。",
+  "@rawTransactionSandboxedNotice": {
+    "description": "Explains why ArDrive declines to render contents that could execute code, and what the isolated alternative keeps them away from"
+  },
+  "rawTransactionShowSandboxedFrame": "サンドボックス内でここに表示",
+  "@rawTransactionShowSandboxedFrame": {
+    "description": "Button that reveals contents which could execute code inline, inside an isolated frame"
+  },
+  "rawTransactionSourceHeading": "ソースコード",
+  "@rawTransactionSourceHeading": {
+    "description": "Heading above the unexecuted source text of contents ArDrive declined to render"
+  },
+  "rawTransactionTypeMismatch": "このトランザクションの内容は、宣言されている種類と一致しません。",
+  "@rawTransactionTypeMismatch": {
+    "description": "Caution shown when a transaction's bytes do not match the content type it declares"
+  },
+  "rawTransactionUnknownType": "ArDrive はこれがどの種類のファイルか判別できないため、ダウンロードのみ可能です。",
+  "@rawTransactionUnknownType": {
+    "description": "Shown on the transaction viewer when the contents cannot be identified, leaving download as the only action"
+  },
   "recreateFolderEmphasized": "フォルダの再作成",
   "@recreateFolderEmphasized": {
     "description": "Recreate a folder that failed to be minted"

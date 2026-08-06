@@ -1,4 +1,5 @@
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/utils/app_url_strategy.dart';
 import 'package:ardrive/utils/link_generators.dart';
 import 'package:ardrive/utils/shared_file_link.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart' show Cipher;
@@ -134,6 +135,88 @@ void main() {
         final fileId = fileShareLink.pathSegments[1];
 
         expect(fileId, equals(testFile.id));
+      });
+
+      test('the hash route is what a link is rooted at by default', () {
+        // Byte for byte what ArDrive has always produced. The default URL
+        // strategy is hash routing and nothing about that has moved.
+        expect(
+          generatePublicFileShareLink(fileId: testFile.id).toString(),
+          'https://app.ardrive.io/#/file/${testFile.id}/view',
+        );
+      });
+
+      test('a public file link is rooted at /share under path routing', () {
+        expect(
+          generatePublicFileShareLink(
+            fileId: testFile.id,
+            strategy: AppUrlStrategy.path,
+          ).toString(),
+          'https://app.ardrive.io/share/${testFile.id}',
+        );
+      });
+
+      test('a private file link puts the key in the fragment under path '
+          'routing', () async {
+        // `?fileKey=` is safe on the hash route and only there: on a path
+        // route the query is sent to the server.
+        final link = await generatePrivateFileShareLink(
+          fileId: testFile.id,
+          fileKey: testFileKey,
+          strategy: AppUrlStrategy.path,
+        );
+
+        expect(
+          link.toString(),
+          'https://app.ardrive.io/share/${testFile.id}#k=$testFileKeyBase64',
+        );
+        expect(link.toString(), isNot(contains('fileKey')));
+        expect(
+          link.toString().split('#').first,
+          isNot(contains(testFileKeyBase64)),
+        );
+      });
+
+      test('a private file link keeps its v1 shape under hash routing',
+          () async {
+        final link = await generatePrivateFileShareLink(
+          fileId: testFile.id,
+          fileKey: testFileKey,
+        );
+
+        expect(
+          link.toString(),
+          'https://app.ardrive.io/#/file/${testFile.id}/view'
+          '?fileKey=$testFileKeyBase64',
+        );
+      });
+    });
+
+    group('drive share links are unaffected by the URL strategy', () {
+      // Drive links stay on the hash route this cycle (§1.1) - which is also
+      // what keeps them working once path routing is switched on, since the
+      // route parser resolves a route that arrives inside the fragment.
+      test('a public drive link is still a hash link', () {
+        expect(
+          generatePublicDriveShareLink(
+            driveId: 'driveId',
+            driveName: 'My Drive',
+          ).toString(),
+          'https://app.ardrive.io/#/drives/driveId?name=My+Drive',
+        );
+      });
+
+      test('a private drive link still carries its key in the query', () async {
+        const driveKeyBase64 = 'X123YZAB-CD4e5fgHIjKlmN6O7pqrStuVwxYzaBcd8E';
+
+        final link = await generatePrivateDriveShareLink(
+          driveId: 'driveId',
+          driveName: 'My Drive',
+          driveKey: SecretKey(decodeBase64ToBytes(driveKeyBase64)),
+        );
+
+        expect(link.toString(), startsWith('https://app.ardrive.io/#/drives/'));
+        expect(link.toString(), endsWith('&driveKey=$driveKeyBase64'));
       });
     });
 
@@ -296,6 +379,41 @@ void main() {
         expect(locationOf(link).fragment, isEmpty);
       });
 
+      test('places the key in a fragment on a path route', () {
+        // The placement the whole `#k=` design is for: on a path route the
+        // app has not spent the URL's one fragment, and the query is sent to
+        // the server, so the fragment is the only position left.
+        final link = generateFileShareLinkV2(
+          fileId: fileId,
+          payload: privatePayload(),
+          rawFileKey: fileKeyBase64,
+          strategy: AppUrlStrategy.path,
+        );
+
+        expect(link.toString(), startsWith('https://app.ardrive.io/share/'));
+        expect(link.toString(), endsWith('#k=$fileKeyBase64'));
+        expect(link.path, '/share/$fileId');
+        expect(link.fragment, 'k=$fileKeyBase64');
+        expect(link.queryParameters, expectedParameters(isPrivate: true));
+        // The half of the URL a server is sent carries no key.
+        expect(
+          link.toString().split('#').first,
+          isNot(contains(fileKeyBase64)),
+        );
+      });
+
+      test('a path route link is not prefixed with the hash route', () {
+        final link = generateFileShareLinkV2(
+          fileId: fileId,
+          payload: publicPayload(),
+          strategy: AppUrlStrategy.path,
+        );
+
+        expect(link.toString(), isNot(contains('/#')));
+        expect(link.path, '/share/$fileId');
+        expect(link.queryParameters, expectedParameters());
+      });
+
       test('refuses to place the key in a fragment on the hash route', () {
         // The hash route has already spent the URL's one fragment. Emitting a
         // second `#` does not fail on its own - the key would be percent
@@ -310,6 +428,19 @@ void main() {
             keyPlacement: SharedFileLinkKeyPlacement.fragment,
           ),
           throwsUnsupportedError,
+        );
+
+        // The refusal is about the hash route, not about the placement: the
+        // identical call is correct once the app is served on a path route.
+        expect(
+          () => generateFileShareLinkV2(
+            fileId: fileId,
+            payload: privatePayload(),
+            rawFileKey: fileKeyBase64,
+            keyPlacement: SharedFileLinkKeyPlacement.fragment,
+            strategy: AppUrlStrategy.path,
+          ),
+          returnsNormally,
         );
       });
 

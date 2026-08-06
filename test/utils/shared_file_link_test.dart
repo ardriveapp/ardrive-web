@@ -681,6 +681,47 @@ void main() {
         isNot(contains('k=')),
       );
     });
+
+    test('builds the legacy route by default', () {
+      expect(SharedFileLinkRoute.legacy.pathFor(fileId), '/file/$fileId/view');
+      expect(SharedFileLinkRoute.share.pathFor(fileId), '/share/$fileId');
+      expect(
+        buildSharedFileLinkLocation(fileId: fileId),
+        SharedFileLinkRoute.legacy.pathFor(fileId),
+      );
+    });
+
+    test('builds the /share route when asked', () {
+      const payload = SharedFileLinkPayload(dataTxId: dataTxId);
+
+      expect(
+        buildSharedFileLinkLocation(
+          fileId: fileId,
+          payload: payload,
+          route: SharedFileLinkRoute.share,
+        ),
+        '/share/$fileId?v=2&dtx=$dataTxId',
+      );
+    });
+
+    test('a v1 key moves to the fragment when the placement says so', () {
+      // What a keyed v1 link has to look like on a path route: `?fileKey=` is
+      // safe on the hash route and only there.
+      final location = buildSharedFileLinkLocation(
+        fileId: fileId,
+        rawFileKey: fileKey,
+        route: SharedFileLinkRoute.share,
+        keyPlacement: SharedFileLinkKeyPlacement.fragment,
+      );
+
+      expect(location, '/share/$fileId#k=$fileKey');
+      expect(location.split('#').first, isNot(contains(fileKey)));
+
+      final resolved = SharedFileLinkKey.resolve(Uri.parse(location));
+
+      expect(resolved.raw, fileKey);
+      expect(resolved.source, SharedFileLinkKeySource.fragment);
+    });
   });
 
   group('round trips of the example links of §1.3', () {

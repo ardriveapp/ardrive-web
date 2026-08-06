@@ -1573,6 +1573,54 @@
       }
     }
   },
+  "rawTransactionDownloadFailed": "यह फ़ाइल सहेजी नहीं जा सकी।",
+  "@rawTransactionDownloadFailed": {
+    "description": "Error shown on the transaction viewer when a transaction's bytes could not be saved to the device"
+  },
+  "rawTransactionGenericTitle": "Arweave ट्रांज़ैक्शन",
+  "@rawTransactionGenericTitle": {
+    "description": "Fallback title on the transaction viewer when the transaction carries no file name"
+  },
+  "rawTransactionHideSandboxedFrame": "छिपाएँ",
+  "@rawTransactionHideSandboxedFrame": {
+    "description": "Button that closes the isolated inline frame on the transaction viewer"
+  },
+  "rawTransactionLinkDamaged": "यह Arweave ट्रांज़ैक्शन ID नहीं है। लिंक जाँचें और फिर से प्रयास करें।",
+  "@rawTransactionLinkDamaged": {
+    "description": "Shown when the address in a transaction viewer link is not a valid Arweave transaction ID"
+  },
+  "rawTransactionNotFoundOnNetwork": "अभी हमें यह ट्रांज़ैक्शन नेटवर्क पर नहीं मिल रहा है। हो सकता है वह अब भी सेट हो रहा हो — थोड़ी देर बाद फिर से प्रयास करें।",
+  "@rawTransactionNotFoundOnNetwork": {
+    "description": "Shown on the transaction viewer when the transaction could not be found on the network yet"
+  },
+  "rawTransactionOpenOnGateway": "गेटवे पर खोलें",
+  "@rawTransactionOpenOnGateway": {
+    "description": "Button that opens a transaction's contents on the gateway, in a new browser tab"
+  },
+  "rawTransactionOpenSandboxed": "अलग जगह में खोलें",
+  "@rawTransactionOpenSandboxed": {
+    "description": "Button that opens contents which could execute code on the gateway's own isolated address, in a new browser tab"
+  },
+  "rawTransactionSandboxedNotice": "यह फ़ाइल ब्राउज़र में कोड चला सकती है, इसलिए ArDrive इसे यहाँ नहीं दिखाता। इसके बजाय इसे गेटवे के अपने अलग पते पर खोलें, जहाँ से यह आपके ArDrive सेशन तक नहीं पहुँच सकती।",
+  "@rawTransactionSandboxedNotice": {
+    "description": "Explains why ArDrive declines to render contents that could execute code, and what the isolated alternative keeps them away from"
+  },
+  "rawTransactionShowSandboxedFrame": "इसे यहीं, अलग रखकर दिखाएँ",
+  "@rawTransactionShowSandboxedFrame": {
+    "description": "Button that reveals contents which could execute code inline, inside an isolated frame"
+  },
+  "rawTransactionSourceHeading": "सोर्स कोड",
+  "@rawTransactionSourceHeading": {
+    "description": "Heading above the unexecuted source text of contents ArDrive declined to render"
+  },
+  "rawTransactionTypeMismatch": "इस ट्रांज़ैक्शन की सामग्री उस प्रकार से मेल नहीं खाती जिसका वह दावा करती है।",
+  "@rawTransactionTypeMismatch": {
+    "description": "Caution shown when a transaction's bytes do not match the content type it declares"
+  },
+  "rawTransactionUnknownType": "ArDrive यह नहीं बता सकता कि यह किस तरह की फ़ाइल है, इसलिए इसे सिर्फ़ डाउनलोड ही किया जा सकता है।",
+  "@rawTransactionUnknownType": {
+    "description": "Shown on the transaction viewer when the contents cannot be identified, leaving download as the only action"
+  },
   "recreateFolderEmphasized": "फ़ोल्डर फिर से बनाएं",
   "@recreateFolderEmphasized": {
     "description": "Recreate a folder that failed to be minted"

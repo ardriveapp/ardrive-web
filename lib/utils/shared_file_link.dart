@@ -11,9 +11,11 @@ import 'package:equatable/equatable.dart';
 // §1.2 for the normative field table and §1.3 for example links.
 //
 // The schema is transport independent by design. Phase 1 ships it on the hash
-// route (`/#/file/{fileId}/view?v=2&...`); Phase 3 moves the same parameters to
+// route (`/#/file/{fileId}/view?v=2&...`); Phase 3 puts the same parameters on
 // `/share/{fileId}?v=2&...`. Nothing here knows about either route apart from
-// `buildSharedFileLinkLocation`, which builds the Phase 1 shape.
+// [SharedFileLinkRoute] and `buildSharedFileLinkLocation`, which know both
+// shapes but not which one is live - that is the URL strategy's business
+// (`lib/utils/app_url_strategy.dart`).
 //
 // Three rules hold everywhere in this file:
 //
@@ -135,6 +137,36 @@ enum SharedFileLinkKeySource {
 
   /// The v1 `fileKey` parameter. Honored forever.
   legacyQuery,
+}
+
+/// The route shape a shared file link is written on.
+///
+/// Both shapes are parsed forever and under either URL strategy - see
+/// `docs/FILE_SHARING_REDESIGN_PLAN.md` §1.1 and §4.1. This only says which
+/// one a *newly built* link uses, which follows the active URL strategy
+/// (`AppUrlStrategy.sharedFileRoute`).
+enum SharedFileLinkRoute {
+  /// `/file/{fileId}/view` - the shape of every link ArDrive has produced, and
+  /// the shape the hash route keeps using.
+  legacy,
+
+  /// `/share/{fileId}` - the canonical route of §1.1, reachable only once the
+  /// host answers it with `index.html`.
+  share;
+
+  /// The first path segment of [legacy].
+  static const legacySegment = 'file';
+
+  /// The last path segment of [legacy].
+  static const legacyViewSegment = 'view';
+
+  /// The first path segment of [share].
+  static const shareSegment = 'share';
+
+  /// The route location this shape gives [fileId].
+  String pathFor(String fileId) => this == SharedFileLinkRoute.share
+      ? '/$shareSegment/$fileId'
+      : '/$legacySegment/$fileId/$legacyViewSegment';
 }
 
 /// Where a link builder should put the file key.
@@ -702,9 +734,15 @@ class SharedFileLinkPayload extends Equatable {
     return value;
   }
 
-  static String? _name(Map<String, String> parameters) {
-    final value = parameters[SharedFileLinkParams.name];
+  static String? _name(Map<String, String> parameters) =>
+      sanitizeName(parameters[SharedFileLinkParams.name]);
 
+  /// Validates a file name hint, returning `null` when it is absent or must be
+  /// dropped.
+  ///
+  /// Public because `/view/{txId}` carries the same `n` hint under the same
+  /// rules (§1.3) - one validator, not two that drift apart.
+  static String? sanitizeName(String? value) {
     if (value == null || value.isEmpty) {
       return null;
     }
@@ -752,9 +790,12 @@ class SharedFileLinkPayload extends Equatable {
     return size;
   }
 
-  static String? _contentType(Map<String, String> parameters) {
-    final value = parameters[SharedFileLinkParams.contentType];
+  static String? _contentType(Map<String, String> parameters) =>
+      sanitizeContentType(parameters[SharedFileLinkParams.contentType]);
 
+  /// Validates a content type hint, returning `null` when it is absent or must
+  /// be dropped. Shared with `/view/{txId}`'s `ct` hint, as [sanitizeName] is.
+  static String? sanitizeContentType(String? value) {
     if (value == null || value.isEmpty) {
       return null;
     }
@@ -850,35 +891,44 @@ class SharedFileLinkPayload extends Equatable {
   static final _controlCharacterPattern = RegExp(r'[\x00-\x1f\x7f]');
 }
 
-/// The route location of a shared file link - everything after the `#` on the
-/// hash route, which is exactly what
-/// `AppRouteInformationParser.restoreRouteInformation` returns and what a link
-/// builder appends to `{origin}/#`.
+/// The route location of a shared file link - what
+/// `AppRouteInformationParser.restoreRouteInformation` returns, and what a link
+/// builder appends to an origin (after `/#` on the hash route, directly on a
+/// path route).
 ///
 /// Pass a [payload] to build a v2 link and omit it to build a v1 link, which
 /// keeps the exact shape ArDrive has always produced.
 ///
+/// [route] picks the route shape; it follows the active URL strategy, and the
+/// default is the shape every link has always used.
+///
 /// The key is written into the position [keyPlacement] names, and only when
-/// there is one to write. Both positions live after the `#`, so the key is
-/// never sent to a server; when the app moves to path routing, only
-/// [SharedFileLinkKeyPlacement.fragment] stays safe.
+/// there is one to write. On the hash route both positions live after the `#`,
+/// so the key is never sent to a server either way; on a path route only
+/// [SharedFileLinkKeyPlacement.fragment] is safe.
 String buildSharedFileLinkLocation({
   required String fileId,
   SharedFileLinkPayload? payload,
   String? rawFileKey,
   SharedFileLinkKeyPlacement keyPlacement =
       SharedFileLinkKeyPlacement.hashQuery,
+  SharedFileLinkRoute route = SharedFileLinkRoute.legacy,
 }) {
-  final path = '/file/$fileId/view';
+  final path = route.pathFor(fileId);
   final candidateKey = rawFileKey ?? payload?.key.raw;
   final key =
       candidateKey == null || candidateKey.isEmpty ? null : candidateKey;
 
   if (payload == null) {
-    // v1: the key rides in `fileKey`, where every link ever generated put it,
-    // and nothing else travels at all.
-    return key == null
-        ? path
+    // v1: nothing but the key travels at all. In the query it keeps the
+    // `fileKey` name every link ever generated used; in a fragment it becomes
+    // `k`, which is the only name that position has ever had.
+    if (key == null) {
+      return path;
+    }
+
+    return keyPlacement == SharedFileLinkKeyPlacement.fragment
+        ? '$path#${SharedFileLinkParams.key}=${_encode(key)}'
         : '$path?${SharedFileLinkParams.legacyKey}=${_encode(key)}';
   }
 
