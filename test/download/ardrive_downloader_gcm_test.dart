@@ -16,7 +16,10 @@ import 'download_test_harness.dart';
 /// trims the 16 byte tag without ever checking it.
 ///
 /// These tests pin the replacement: one buffered, MAC-verified path for every
-/// platform, and nothing on disk until the tag has passed.
+/// platform, and no plaintext on disk until the tag has passed.
+///
+/// The web adds a wrinkle to *when*, not to what is verified — see the
+/// `on the web` group.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -98,6 +101,116 @@ void main() {
     expect(verdict.bytesHashed, plaintext.length);
   });
 
+  // Chrome only allows `window.showSaveFilePicker` while the click that led to
+  // it is still *transient user activation*, which expires seconds after the
+  // gesture. Buffering the whole ciphertext and asking afterwards means the
+  // picker is refused at the end of a complete, verified download — for every
+  // private file under the buffer cap, which is very nearly all of them. So on
+  // the web the saver is called first and the download runs inside the stream
+  // it reads.
+  group('on the web the save target is opened before the download', () {
+    const downloadOpened = 'opened the download';
+
+    ({
+      ArDriveDownloader downloader,
+      WebShapedArDriveIO io,
+      List<String> log,
+    }) buildWeb(Uint8List body) {
+      final log = <String>[];
+      final io = WebShapedArDriveIO(log);
+
+      return (
+        downloader: ArDriveDownloader(
+          ioFileAdapter: IOFileAdapter(),
+          ardriveIo: io,
+          arweave: MockArweaveService(),
+          source: FakeDownloadSource(
+            body,
+            onOpen: () => log.add(downloadOpened),
+          ),
+          saveTargetNeedsUserActivation: true,
+        ),
+        io: io,
+        log: log,
+      );
+    }
+
+    test('the picker opens before a byte is fetched, and the bytes that '
+        'follow are still verified', () async {
+      final harness = buildWeb(ciphertextWithMac);
+
+      final errors = await download(harness.downloader);
+
+      expect(errors, isEmpty);
+      expect(
+        harness.log.take(2),
+        [WebShapedArDriveIO.openedSaveTarget, downloadOpened],
+        reason: 'the picker has to run while the click is still fresh',
+      );
+      expect(harness.io.fileOnDisk, plaintext);
+      expect((await harness.downloader.integrity).isVerified, isTrue);
+    });
+
+    test('a tampered file leaves an empty file where the user chose to save, '
+        'never plaintext', () async {
+      final tampered = Uint8List.fromList(ciphertextWithMac);
+      tampered[1234] ^= 0x01;
+
+      final harness = buildWeb(tampered);
+
+      final errors = await download(harness.downloader);
+
+      expect(errors.whereType<DownloadIntegrityException>(), isNotEmpty);
+
+      // The price of opening the picker while the click is still fresh: the
+      // saver *was* called, and the file the picker created is still there.
+      // It never received a byte, and web_io's failure path does not remove
+      // it.
+      expect(harness.io.saveFileStreamCalls, 1);
+      expect(
+        harness.log,
+        [WebShapedArDriveIO.openedSaveTarget, downloadOpened],
+      );
+      expect(harness.io.fileOnDisk, isEmpty);
+
+      expect(
+        (await harness.downloader.integrity).verdict,
+        DataItemIntegrityVerdict.failed,
+      );
+    });
+
+    test('progress still only goes up, though the save starts first', () async {
+      final harness = buildWeb(ciphertextWithMac);
+
+      final progress = await harness.downloader.downloadFile(
+        txId: txId,
+        fileSize: plaintext.length,
+        fileName: fileName,
+        lastModifiedDate: lastModified,
+        contentType: 'application/pdf',
+        isManifest: false,
+        fileKey: fileKey,
+        cipher: Cipher.aes256gcm,
+        cipherIvString: cipherIvString,
+      );
+
+      final values = <double>[];
+      await progress.forEach(values.add);
+
+      expect(values, isNotEmpty);
+      expect(values.last, 100);
+
+      for (var i = 1; i < values.length; i++) {
+        expect(
+          values[i],
+          greaterThanOrEqualTo(values[i - 1]),
+          reason: 'the save reports 0% before the download has even started, '
+              'so it must not count until there is something to save',
+        );
+      }
+    });
+  });
+
   test('tampered AES-GCM ciphertext fails authentication and nothing is '
       'written', () async {
     final tampered = Uint8List.fromList(ciphertextWithMac);
@@ -115,7 +228,8 @@ void main() {
       txId,
     );
 
-    // The whole point: the saver was never even called.
+    // Off the web nothing is racing a user gesture, so the strongest form of
+    // the guarantee holds: the saver was never even called.
     expect(harness.io.saveFileStreamCalls, 0);
     expect(harness.io.saveFileCalls, 0);
     expect(harness.io.savedBytes, isEmpty);

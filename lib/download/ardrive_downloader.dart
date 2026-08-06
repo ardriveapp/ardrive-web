@@ -11,7 +11,7 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_utils/ardrive_utils.dart' show listIntToUint8ListTransformer;
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
-import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:http/http.dart' as http;
 
 /// The 16 byte AES-GCM authentication tag that the uploader concatenates onto
@@ -110,6 +110,7 @@ abstract class ArDriveDownloader {
     PrivateStreamDecryptor? decryptStream,
     IntegrityVerifierFactory? verifierFactory,
     Duration? resumeBackoffStep,
+    bool? saveTargetNeedsUserActivation,
   }) {
     // F24: no download path may decrypt AES-GCM without checking the MAC any
     // more. Disarm the class so that an accidental reuse throws instead of
@@ -129,6 +130,7 @@ abstract class ArDriveDownloader {
       decryptStream: decryptStream,
       verifierFactory: verifierFactory,
       resumeBackoffStep: resumeBackoffStep,
+      saveTargetNeedsUserActivation: saveTargetNeedsUserActivation,
     );
   }
 }
@@ -143,6 +145,30 @@ class _ArDriveDownloader implements ArDriveDownloader {
   /// tests can prove the loop terminates without spending the wall clock on it.
   final Duration _resumeBackoffStep;
 
+  /// Whether the saver has to be handed the file *before* its bytes exist.
+  ///
+  /// On the web it does. `ArDriveIO.saveFileStream` opens
+  /// `window.showSaveFilePicker`
+  /// (`packages/ardrive_io/lib/src/web/web_io.dart:95`) as its first act, and
+  /// Chrome only allows that while the click that started the download still
+  /// counts as *transient user activation* — a few seconds. A path that
+  /// downloads a whole file and asks the user where to put it afterwards is
+  /// rejected on a completed, verified download, which is exactly what
+  /// buffering AES-GCM did to every private file on Chrome.
+  ///
+  /// So on the web the picker is opened on the first turn and the download
+  /// runs inside [IOFile.openReadStream], which yields nothing until the MAC
+  /// has passed. The cost is that the picker has already created an empty file
+  /// at the chosen path by the time an integrity failure is known, so a
+  /// tampered file leaves 0 bytes behind instead of nothing at all. No
+  /// plaintext is ever written unauthenticated either way.
+  ///
+  /// Everywhere else there is no picker and no gesture to race
+  /// (`DartIOFileSaver.saveStream` writes straight to the downloads
+  /// directory), so nothing is opened at all until the MAC has passed and the
+  /// stronger guarantee is kept.
+  final bool _saveTargetNeedsUserActivation;
+
   late final DownloadSource _source;
   late final IntegrityVerifierFactory _verifierFactory;
 
@@ -154,8 +180,11 @@ class _ArDriveDownloader implements ArDriveDownloader {
     PrivateStreamDecryptor? decryptStream,
     IntegrityVerifierFactory? verifierFactory,
     Duration? resumeBackoffStep,
+    bool? saveTargetNeedsUserActivation,
   })  : _decryptStream = decryptStream ?? decryptTransactionDataStream,
-        _resumeBackoffStep = resumeBackoffStep ?? _defaultResumeBackoffStep {
+        _resumeBackoffStep = resumeBackoffStep ?? _defaultResumeBackoffStep,
+        _saveTargetNeedsUserActivation =
+            saveTargetNeedsUserActivation ?? kIsWeb {
     _source = source ?? GatewayDownloadSource(_arweave);
     _verifierFactory = verifierFactory ?? _dataItemVerifierFor;
   }
@@ -184,7 +213,8 @@ class _ArDriveDownloader implements ArDriveDownloader {
   Future<DataItemIntegrityResult> get integrity => _integrity.future;
 
   /// How much of the progress bar the buffered AES-GCM download owns. The
-  /// remainder belongs to the save, which only starts once the MAC has passed.
+  /// remainder belongs to the save, which cannot write a byte until the MAC
+  /// has passed, however early it is opened.
   static const _gcmDownloadProgressShare = 95.0;
 
   /// How many times a stream may be re-requested before the download gives up.
@@ -465,11 +495,18 @@ class _ArDriveDownloader implements ArDriveDownloader {
   /// Downloads an AES-GCM file into memory, verifies its MAC, and only then
   /// hands the plaintext to the saver.
   ///
+  /// The download never yields a byte until the tag has passed, so nothing
+  /// unauthenticated can be written whichever order the two halves run in. The
+  /// order itself is [_saveTargetNeedsUserActivation]'s: on the web the saver
+  /// is called first, so that the file picker opens while the click that asked
+  /// for the download is still fresh, and the download happens inside the
+  /// stream the saver reads. Everywhere else the MAC is checked first and the
+  /// saver is not called at all if it fails.
+  ///
   /// Progress runs 0 → [_gcmDownloadProgressShare] while the ciphertext
   /// arrives, pauses over the (fast) authentication step, and finishes on the
-  /// save. If authentication fails the stream errors with
-  /// [DownloadIntegrityException] and **nothing has been written**: the saver
-  /// has not been called at that point.
+  /// save. The saver's own first status arrives before the download on the
+  /// web, so it is not counted until there is something to save.
   Stream<double> _downloadAuthenticatedGcmAndSave({
     required String txId,
     required int fileSize,
@@ -483,57 +520,111 @@ class _ArDriveDownloader implements ArDriveDownloader {
   }) {
     final controller = StreamController<double>();
 
-    Future<void> run() async {
-      final plaintext = await _downloadAndAuthenticateGcm(
-        txId: txId,
-        fileSize: fileSize,
-        cipher: cipher,
-        cipherIvString: cipherIvString,
-        fileKey: fileKey,
-        verifyDownload: verifyDownload,
-        onProgress: (received, expected) {
-          if (controller.isClosed) return;
-          controller.add(
+    var authenticated = false;
+
+    void emit(double progress) {
+      if (!controller.isClosed) controller.add(progress);
+    }
+
+    // Everything that has to happen before a byte may be written.
+    Future<Uint8List> download() async {
+      try {
+        final plaintext = await _downloadAndAuthenticateGcm(
+          txId: txId,
+          fileSize: fileSize,
+          cipher: cipher,
+          cipherIvString: cipherIvString,
+          fileKey: fileKey,
+          verifyDownload: verifyDownload,
+          onProgress: (received, expected) => emit(
             (received / expected * _gcmDownloadProgressShare)
                 .clamp(0.0, _gcmDownloadProgressShare)
                 .toDouble(),
-          );
-        },
-      );
+          ),
+        );
 
-      // The MAC is the integrity check for this cipher (§3.4.1), and it has
-      // just passed over every byte.
-      _completeIntegrity(
-        DataItemIntegrityResult.verified(bytesHashed: plaintext.length),
-      );
+        // The MAC is the integrity check for this cipher (§3.4.1), and it has
+        // just passed over every byte.
+        _completeIntegrity(
+          DataItemIntegrityResult.verified(bytesHashed: plaintext.length),
+        );
 
-      final file = await _ioFileAdapter.fromData(
-        plaintext,
-        name: fileName,
-        lastModifiedDate: lastModifiedDate,
-        contentType: contentType,
-      );
+        authenticated = true;
+        emit(_gcmDownloadProgressShare);
 
-      await controller.addStream(
-        _saveToDisk(file).map(
-          (saveProgress) =>
-              _gcmDownloadProgressShare +
-              saveProgress * (100 - _gcmDownloadProgressShare) / 100,
-        ),
-      );
-    }
-
-    unawaited(
-      run().catchError((Object e, StackTrace s) {
+        return plaintext;
+      } catch (e) {
         _completeIntegrity(
           e is DownloadIntegrityException
               ? DataItemIntegrityResult.failed(e.reason)
               : DataItemIntegrityResult.notVerified(
                   'The download did not complete: $e'),
         );
-        if (!controller.isClosed) controller.addError(e, s);
-      }).whenComplete(() {
-        if (!controller.isClosed) controller.close();
+        rethrow;
+      }
+    }
+
+    // Whichever of the two below gets there first, the file is downloaded and
+    // authenticated exactly once.
+    Future<Uint8List>? started;
+    Future<Uint8List> authenticate() => started ??= download();
+
+    Future<void> run() async {
+      if (!_saveTargetNeedsUserActivation) await authenticate();
+
+      final file = await _ioFileAdapter.fromReadStreamGenerator(
+        // Read by the saver, which on the web has just finished asking the
+        // user where to put the file. Authentication happens here, so the
+        // stream errors instead of yielding when the tag does not check out —
+        // and the saver, seeing a source that failed, keeps nothing.
+        ([s, e]) async* {
+          yield await authenticate();
+        },
+        fileSize,
+        name: fileName,
+        lastModifiedDate: lastModifiedDate,
+        contentType: contentType,
+      );
+
+      // The save owns the last (100 - [_gcmDownloadProgressShare])%.
+      _saveToDisk(file).listen(
+        (saveProgress) {
+          if (!authenticated) return;
+          emit(_gcmDownloadProgressShare +
+              saveProgress * (100 - _gcmDownloadProgressShare) / 100);
+        },
+        onError: (Object e, StackTrace s) {
+          if (!controller.isClosed) controller.addError(e, s);
+        },
+        onDone: () {
+          // A saver can end without ever reading the stream — a dismissed file
+          // picker is the common one — and then nothing above has reached a
+          // verdict. [integrity] still has to answer. Already-settled verdicts
+          // win, so this only ever fills a gap.
+          _completeIntegrity(const DataItemIntegrityResult.notVerified(
+            'The file was never saved, so nothing checked its authentication '
+            'tag',
+          ));
+          if (!controller.isClosed) controller.close();
+        },
+        cancelOnError: false,
+      );
+    }
+
+    unawaited(
+      // Only reached when the save never started: once it has, it owns the
+      // controller and closes it. [authenticate] has already recorded a
+      // verdict for anything that went wrong inside it; this is the backstop
+      // for everything else, so that [integrity] can never hang.
+      run().catchError((Object e, StackTrace s) {
+        _completeIntegrity(
+          DataItemIntegrityResult.notVerified(
+              'The download did not complete: $e'),
+        );
+        if (!controller.isClosed) {
+          controller.addError(e, s);
+          controller.close();
+        }
       }),
     );
 
@@ -1435,9 +1526,14 @@ class DownloadCancelledException implements Exception {
 /// The bytes did not pass their cryptographic authentication check.
 ///
 /// Distinct from a network failure on purpose: this one means the file that
-/// arrived is not the file that was signed, and **nothing has been written to
-/// disk**. Retrying the same bytes will not help; the sender or the gateway is
-/// the problem.
+/// arrived is not the file that was signed, and **no plaintext has been
+/// written to disk**. Retrying the same bytes will not help; the sender or the
+/// gateway is the problem.
+///
+/// On the web the save target is opened before the check can possibly have
+/// run, because the file picker cannot outlive the click that asked for the
+/// download, so an *empty* file may be left where the user chose to save.
+/// Everywhere else nothing is created at all.
 class DownloadIntegrityException implements Exception {
   const DownloadIntegrityException(this.txId, this.reason);
 

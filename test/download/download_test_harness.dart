@@ -62,6 +62,7 @@ class FakeDownloadSource implements DownloadSource {
     this.errorOnOpen,
     this.honorsRange = true,
     this.chunkSize = 256,
+    this.onOpen,
   });
 
   final Uint8List body;
@@ -82,6 +83,10 @@ class FakeDownloadSource implements DownloadSource {
 
   final int chunkSize;
 
+  /// Called when a connection is opened, before a byte is served, so that a
+  /// test can place the download in sequence with what the saver was doing.
+  final void Function()? onOpen;
+
   final List<int> requestedOffsets = [];
   final List<bool> verifyDownloadFlags = [];
   int cancelCount = 0;
@@ -97,6 +102,7 @@ class FakeDownloadSource implements DownloadSource {
     requestedOffsets.add(startOffsetBytes);
     verifyDownloadFlags.add(verifyDownload);
     _opens++;
+    onOpen?.call();
 
     final openError = errorOnOpen;
     if (openError != null) throw openError;
@@ -192,6 +198,131 @@ class MobileShapedArDriveIO implements ArDriveIO {
       );
     } catch (_) {
       // mobile_io.dart:223 — including a dead gateway.
+      yield SaveStatus(
+        bytesSaved: bytesSaved,
+        totalBytes: totalBytes,
+        saveResult: false,
+      );
+    }
+  }
+
+  @override
+  Future<IOFile> pickFile({
+    List<String>? allowedExtensions,
+    required FileSource fileSource,
+  }) =>
+      throw UnimplementedError();
+
+  @override
+  Future<List<IOFile>> pickFiles({
+    List<String>? allowedExtensions,
+    required FileSource fileSource,
+  }) =>
+      throw UnimplementedError();
+
+  @override
+  Future<IOFolder> pickFolder() => throw UnimplementedError();
+}
+
+/// A saver with the **web** contract, including the two things about it that
+/// are not about bytes at all.
+///
+/// `WebIO.saveFileStream` (`packages/ardrive_io/lib/src/web/web_io.dart:71`):
+///
+/// 1. reads `file.length` and then opens `window.showSaveFilePicker` (:95)
+///    *before* it reads a single byte — and Chrome refuses the picker unless
+///    the click that led there is still **transient user activation**, which
+///    expires a few seconds after the gesture. A downloader that fetches the
+///    whole file first and asks the user where to put it second is refused at
+///    the end of a complete, successful download;
+/// 2. leaves a file behind. The picker creates the entry at the chosen path
+///    the moment the user confirms, and `handle.remove()` (:148) is reached
+///    only when `finalize` answers `false` — never from the `on Exception`
+///    path (:168) that a failed source stream lands in.
+///
+/// [RecordingArDriveIO] models neither, which is exactly why an ordering that
+/// cannot work on Chrome passed the whole suite. Anything about *when* the
+/// saver is called, or what survives a failure, has to be tested here.
+class WebShapedArDriveIO implements ArDriveIO {
+  WebShapedArDriveIO(this.log);
+
+  /// Appended to by this saver and, in these tests, by the download source, so
+  /// that their order is one list comparison.
+  final List<String> log;
+
+  static const openedSaveTarget = 'opened the save target';
+  static const wroteBytes = 'wrote bytes';
+  static const removedSaveTarget = 'removed the save target';
+
+  int saveFileStreamCalls = 0;
+  int saveFileCalls = 0;
+
+  /// Whether a file exists at the path the user chose.
+  bool saveTargetExists = false;
+
+  final BytesBuilder _written = BytesBuilder(copy: false);
+
+  /// What is on disk when the dust settles: `null` when no file was ever
+  /// created or it was removed again, and the bytes written otherwise — which
+  /// is an *empty* list when the picker created the file and nothing was ever
+  /// written into it.
+  Uint8List? get fileOnDisk =>
+      saveTargetExists ? Uint8List.fromList(_written.toBytes()) : null;
+
+  @override
+  Future<void> saveFile(IOFile file) async {
+    saveFileCalls++;
+    log.add(openedSaveTarget);
+    saveTargetExists = true;
+    _written.add(await file.readAsBytes());
+  }
+
+  @override
+  Stream<SaveStatus> saveFileStream(
+      IOFile file, Completer<bool> finalize) async* {
+    saveFileStreamCalls++;
+
+    // web_io.dart:85 — the picker cannot open until the size is known, so a
+    // file that has to be downloaded to answer `length` is already too late.
+    final totalBytes = await file.length;
+    var bytesSaved = 0;
+
+    // web_io.dart:95 — the call Chrome polices, and the one that creates the
+    // file at the chosen path.
+    log.add(openedSaveTarget);
+    saveTargetExists = true;
+
+    yield SaveStatus(bytesSaved: bytesSaved, totalBytes: totalBytes);
+
+    try {
+      await for (final chunk in file.openReadStream()) {
+        // web_io.dart:112 — a cancel that arrives mid-write stops it.
+        if (finalize.isCompleted && (await finalize.future) == false) break;
+
+        _written.add(chunk);
+        bytesSaved += chunk.length;
+        log.add(wroteBytes);
+        yield SaveStatus(bytesSaved: bytesSaved, totalBytes: totalBytes);
+      }
+
+      // web_io.dart:141 — the saver answers only if the downloader has not.
+      if (!finalize.isCompleted) finalize.complete(true);
+
+      final finalizeResult = await finalize.future;
+      if (!finalizeResult) {
+        // web_io.dart:148.
+        saveTargetExists = false;
+        log.add(removedSaveTarget);
+      }
+
+      yield SaveStatus(
+        bytesSaved: bytesSaved,
+        totalBytes: totalBytes,
+        saveResult: finalizeResult,
+      );
+    } on Exception {
+      // web_io.dart:168 — the source stream failed. Note what is *not* here:
+      // the file the picker created is not removed.
       yield SaveStatus(
         bytesSaved: bytesSaved,
         totalBytes: totalBytes,
