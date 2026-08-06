@@ -83,7 +83,15 @@
           // A shim that throws must not cost the user their page: the legacy
           // hash route resolves in the app either way, it just keeps its old
           // URL.
-          console.warn('Legacy share link shim failed', e);
+          //
+          // The caught error is deliberately NOT passed along. `target` ends
+          // in `#k=<key>`, and a browser that rejects a `replaceState` URL
+          // quotes that URL in the message it throws - so logging `e` would
+          // print the recipient's file key into the console, where an
+          // extension or a pasted "what does this say?" screenshot can carry
+          // it away. Same rule `lib/utils/shared_file_link.dart` follows: the
+          // reason travels, the value never does.
+          console.warn('Legacy share link shim failed');
         }
       })();
     </script>

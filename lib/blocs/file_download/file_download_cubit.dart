@@ -56,6 +56,12 @@ FileDownloadFailureReason classifyDownloadError(Object error) {
   if (error is DownloadTooLargeToAuthenticateException) {
     return FileDownloadFailureReason.fileTooLargeToVerify;
   }
+  // A file that failed its MAC check is the one failure that must never be
+  // offered a retry: the bytes are what they are, and the retryable dialog
+  // would invite the user to fetch them again forever.
+  if (error is DownloadIntegrityException) {
+    return FileDownloadFailureReason.integrityCheckFailed;
+  }
   return FileDownloadFailureReason.unknownError;
 }
 

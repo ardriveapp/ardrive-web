@@ -3,6 +3,8 @@
 import 'dart:html' as html;
 import 'dart:ui' as ui;
 
+import 'package:ardrive/components/sandboxed_transaction_view/sandboxed_view_type.dart';
+
 /// Whether this platform can show an isolated frame in the page.
 bool get sandboxedIframeIsSupported => true;
 
@@ -33,9 +35,9 @@ bool get sandboxedIframeIsSupported => true;
 String? registerSandboxedIframe(String url) {
   // One registration per call site rather than per build: the caller registers
   // once and holds the returned type, and a fresh type per URL keeps a second
-  // transaction from inheriting the first one's factory.
-  final viewType =
-      'sandboxed-transaction-${DateTime.now().microsecondsSinceEpoch}';
+  // transaction from inheriting the first one's factory. See
+  // [nextSandboxedViewType] for why that freshness cannot come from the clock.
+  final viewType = nextSandboxedViewType();
 
   // ignore: undefined_prefixed_name
   ui.platformViewRegistry.registerViewFactory(viewType, (int viewId) {

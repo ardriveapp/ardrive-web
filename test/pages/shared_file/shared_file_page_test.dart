@@ -19,6 +19,29 @@ import 'package:mocktail/mocktail.dart';
 class MockSharedFileCubit extends MockCubit<SharedFileState>
     implements SharedFileCubit {}
 
+/// A key store whose read is still in flight until [gate] is completed.
+///
+/// The real store answers out of `sessionStorage` in a microtask, which is
+/// fast enough that the race below is hard to hit and impossible to write a
+/// test for. It is still a race: `read` is a `Future`, the page is a state
+/// machine that keeps moving while it is pending, and nothing about a
+/// remembered key entitles it to land on whatever page it finds when it
+/// arrives.
+class GatedKeySession extends SharedFileKeySession {
+  GatedKeySession(this.gate, this.rememberedKey)
+      : super(store: SessionKeyValueStore.inMemory());
+
+  final Completer<void> gate;
+  final String rememberedKey;
+
+  @override
+  Future<String?> read(String fileId) async {
+    await gate.future;
+
+    return rememberedKey;
+  }
+}
+
 /// Widget tests for the recipient landing page
 /// (`docs/FILE_SHARING_REDESIGN_PLAN.md` §2).
 ///
@@ -354,6 +377,91 @@ void main() {
       await tester.pump();
 
       expect(storage[SharedFileKeySession.storageKey(fileId)], wellFormedKey);
+    });
+
+    testWidgets('a recipient who changes their mind while the key is being '
+        'checked is not overruled when it works', (tester) async {
+      final storage = <String, String>{};
+
+      await pumpPage(
+        tester,
+        locked(),
+        keySession: SharedFileKeySession(
+          store: SessionKeyValueStore.inMemory(storage),
+        ),
+      );
+
+      await tester.tap(find.byType(ArDriveCheckBox));
+      await tester.pump();
+
+      // Pasting a whole key submits it, so from here the page is holding the
+      // key it will write *if* it works.
+      await tester.enterText(find.byType(ArDriveTextField), wellFormedKey);
+      await tester.pump();
+
+      // Second thoughts, while the unlock is still in flight. Un-ticking
+      // clears what is stored; the key of the attempt that is running has to
+      // go with it, or it lands in session storage the moment the unlock
+      // succeeds - after the recipient said not to keep it.
+      await tester.tap(find.byType(ArDriveCheckBox));
+      await tester.pump();
+
+      states.add(success());
+      await tester.pump();
+
+      expect(storage, isEmpty);
+    });
+
+    testWidgets('a remembered key that arrives late never overrides what the '
+        'recipient typed', (tester) async {
+      // Both well formed, and deliberately different: the assertion is about
+      // *which* one is submitted.
+      const typedKey = 'ZYXWVUTSRQPONMLKJIHGFEDCBAzyxwvutsrqponmlkQ';
+      final gate = Completer<void>();
+
+      await pumpPage(
+        tester,
+        locked(),
+        keySession: GatedKeySession(gate, wellFormedKey),
+      );
+
+      await tester.enterText(find.byType(ArDriveTextField), typedKey);
+      await tester.pump();
+
+      verify(() => cubit.submit(typedKey)).called(1);
+
+      gate.complete();
+      await tester.pump();
+
+      verifyNever(() => cubit.submit(wellFormedKey));
+
+      final field = tester.widget<ArDriveTextField>(
+        find.byType(ArDriveTextField),
+      );
+
+      expect(field.controller?.text, typedKey);
+    });
+
+    testWidgets('a remembered key that arrives after the file is open does '
+        'not throw the page back to the gate', (tester) async {
+      final gate = Completer<void>();
+
+      await pumpPage(
+        tester,
+        locked(),
+        keySession: GatedKeySession(gate, wellFormedKey),
+      );
+
+      // Unlocked by some other route - the key was in the link, or the file
+      // turned out not to need one.
+      states.add(success());
+      await tester.pump();
+
+      gate.complete();
+      await tester.pump();
+
+      verifyNever(() => cubit.submit(any()));
+      expect(find.text('Download'), findsOneWidget);
     });
   });
 

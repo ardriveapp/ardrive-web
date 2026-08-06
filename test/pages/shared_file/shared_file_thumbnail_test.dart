@@ -9,7 +9,6 @@ import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 
 import '../../test_utils/mocks.dart';
@@ -21,11 +20,15 @@ class MockDataGatewayFallback extends Mock implements DataGatewayFallback {}
 class WaterfallGatewayFallback extends Mock implements DataGatewayFallback {
   WaterfallGatewayFallback(this.gateways);
 
-  final List<Future<http.Response> Function()> gateways;
+  final List<Future<Uint8List?> Function()> gateways;
   final List<int> attemptedGateways = [];
 
   @override
-  Future<http.Response> fetchData(String txId, Arweave primaryClient) async {
+  Future<Uint8List?> fetchDataAtMost(
+    String txId,
+    Arweave primaryClient, {
+    required int maxBytes,
+  }) async {
     Object? lastError;
 
     for (var i = 0; i < gateways.length; i++) {
@@ -124,9 +127,9 @@ void main() {
   }
 
   test('a public thumbnail comes back as it was fetched', () async {
-    when(() => mockGatewayFallback.fetchData(any(), any())).thenAnswer(
-      (_) async => http.Response.bytes(<int>[1, 2, 3], 200),
-    );
+    when(() => mockGatewayFallback.fetchDataAtMost(any(), any(),
+            maxBytes: any(named: 'maxBytes')))
+        .thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
 
     final bytes = await buildLoader().load(
       txId: thumbnailTxId,
@@ -134,16 +137,39 @@ void main() {
     );
 
     expect(bytes, Uint8List.fromList([1, 2, 3]));
-    verify(() => mockGatewayFallback.fetchData(thumbnailTxId, any())).called(1);
+    verify(() => mockGatewayFallback.fetchDataAtMost(thumbnailTxId, any(),
+        maxBytes: thumbnailPreviewMaxFileSize)).called(1);
     verifyNever(
       () => mockCrypto.decryptDataFromTransaction(any(), any(), any()),
     );
   });
 
+  test('a `thn` that names something enormous is never buffered whole',
+      () async {
+    // The size check used to run on `response.bodyBytes`, which is a check
+    // made *after* paying for every byte it rejects - and `thn` is a field the
+    // link's author chooses, so those bytes are somebody else's decision. The
+    // cap has to travel with the request.
+    when(() => mockGatewayFallback.fetchDataAtMost(any(), any(),
+        maxBytes: any(named: 'maxBytes'))).thenAnswer((_) async => null);
+
+    final bytes = await buildLoader().load(
+      txId: thumbnailTxId,
+      isPrivate: false,
+    );
+
+    expect(bytes, isNull);
+    verify(() => mockGatewayFallback.fetchDataAtMost(thumbnailTxId, any(),
+        maxBytes: thumbnailPreviewMaxFileSize)).called(1);
+    // The unbounded fetch is not an implementation detail this page may reach
+    // for: it hands back a fully buffered response.
+    verifyNever(() => mockGatewayFallback.fetchData(any(), any()));
+  });
+
   test('a dead primary gateway costs nothing', () async {
     final waterfall = WaterfallGatewayFallback([
       () => throw Exception('primary gateway is blackholed'),
-      () async => http.Response.bytes(<int>[9, 8, 7], 200),
+      () async => Uint8List.fromList([9, 8, 7]),
     ]);
 
     final bytes = await buildLoader(gatewayFallback: waterfall).load(
@@ -160,9 +186,9 @@ void main() {
     final transaction = MockTransactionCommonMixin();
     final fileKey = SecretKey([1, 2, 3]);
 
-    when(() => mockGatewayFallback.fetchData(any(), any())).thenAnswer(
-      (_) async => http.Response.bytes(<int>[1, 2, 3], 200),
-    );
+    when(() => mockGatewayFallback.fetchDataAtMost(any(), any(),
+            maxBytes: any(named: 'maxBytes')))
+        .thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
     when(() => mockArweaveService.getTransactionDetails(any()))
         .thenAnswer((_) async => transaction);
     when(() => mockCrypto.decryptDataFromTransaction(any(), any(), any()))
@@ -196,32 +222,19 @@ void main() {
     );
 
     expect(bytes, isNull);
-    verifyNever(() => mockGatewayFallback.fetchData(any(), any()));
+    verifyNever(() => mockGatewayFallback.fetchDataAtMost(any(), any(),
+        maxBytes: any(named: 'maxBytes')));
     verifyNever(() => mockArweaveService.getTransactionDetails(any()));
     verifyNever(
       () => mockCrypto.decryptDataFromTransaction(any(), any(), any()),
     );
   });
 
-  test('something too big to be a thumbnail is dropped', () async {
-    when(() => mockGatewayFallback.fetchData(any(), any())).thenAnswer(
-      (_) async => http.Response.bytes(
-        List<int>.filled(thumbnailPreviewMaxFileSize + 1, 0),
-        200,
-      ),
-    );
-
-    final bytes = await buildLoader().load(
-      txId: thumbnailTxId,
-      isPrivate: false,
-    );
-
-    expect(bytes, isNull);
-  });
-
   test('every gateway failing costs the thumbnail, not the page', () async {
-    when(() => mockGatewayFallback.fetchData(any(), any()))
-        .thenThrow(Exception('all gateways failed'));
+    when(() => mockGatewayFallback.fetchDataAtMost(any(), any(),
+        maxBytes: any(named: 'maxBytes'))).thenThrow(
+      Exception('all gateways failed'),
+    );
 
     final bytes = await buildLoader().load(
       txId: thumbnailTxId,
@@ -309,9 +322,9 @@ void main() {
   });
 
   test('a thumbnail that will not decrypt is dropped silently', () async {
-    when(() => mockGatewayFallback.fetchData(any(), any())).thenAnswer(
-      (_) async => http.Response.bytes(<int>[1, 2, 3], 200),
-    );
+    when(() => mockGatewayFallback.fetchDataAtMost(any(), any(),
+            maxBytes: any(named: 'maxBytes')))
+        .thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
     when(() => mockArweaveService.getTransactionDetails(any()))
         .thenAnswer((_) async => MockTransactionCommonMixin());
     when(() => mockCrypto.decryptDataFromTransaction(any(), any(), any()))

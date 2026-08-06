@@ -26,15 +26,28 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
   // TODO: we are duplicating code here, we should refactor this. Personal and Share file downloads are pretty similar
   // we must refactor to reuse the code and avoid duplication
   Future<void> verifyUploadLimitationsAndDownload() async {
-    // One decision, one place (F22) — see [DownloadPolicy.singleFileLimit].
-    final limit = await _downloadPolicy.singleFileLimit(
-      isPublic: fileKey == null,
-    );
+    try {
+      // One decision, one place (F22) — see [DownloadPolicy.singleFileLimit].
+      final limit = await _downloadPolicy.singleFileLimit(
+        isPublic: fileKey == null,
+      );
 
-    final failure = singleFileLimitFailure(limit, revision.size);
-    if (failure != null) {
-      emit(FileDownloadFailure(failure));
-      return;
+      final failure = singleFileLimitFailure(limit, revision.size);
+      if (failure != null) {
+        emit(FileDownloadFailure(failure));
+        return;
+      }
+    } catch (e) {
+      // This runs from the constructor with its future discarded, so an
+      // unhandled error here would leave the dialog on [FileDownloadStarting]
+      // for ever. [DownloadPolicy.singleFileLimit] reaches the device info
+      // platform channel to recognise Safari, and a channel that is not there
+      // must cost a size *check*, never the download. Same posture as
+      // [ProfileFileDownloadCubit.verifyUploadLimitationsAndDownload].
+      logger.d(
+        'Could not check the download size limit for shared file '
+        '${revision.id}; proceeding with the download. Error: $e',
+      );
     }
 
     download();

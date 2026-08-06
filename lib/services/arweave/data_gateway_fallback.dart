@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:ardrive/download/download_exceptions.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
@@ -22,6 +23,11 @@ class DataGatewayFallback {
   final ArioSDK _arioSDK;
   final Map<String, Arweave> _clientCache = {};
 
+  /// Injectable so [fetchDataAtMost] - the one method here that talks to a
+  /// gateway itself rather than through an [Arweave] client - can be tested
+  /// without a network.
+  final Client Function() _clientFactory;
+
   static const _maxGarFallbacks = 2;
   static const _garListTimeout = Duration(seconds: 5);
   static const _requestTimeout = Duration(seconds: 5);
@@ -35,7 +41,9 @@ class DataGatewayFallback {
 
   DataGatewayFallback({
     required ArioSDK arioSDK,
-  }) : _arioSDK = arioSDK;
+    Client Function()? clientFactory,
+  })  : _arioSDK = arioSDK,
+        _clientFactory = clientFactory ?? Client.new;
 
   /// Fetch transaction data with serial gateway fallback.
   ///
@@ -76,6 +84,116 @@ class DataGatewayFallback {
       throw TransactionNotFound(txId);
     }
     throw Exception('All gateways failed for tx $txId');
+  }
+
+  /// Fetch at most [maxBytes] of a transaction's data, through the same serial
+  /// waterfall as [fetchData].
+  ///
+  /// Returns `null` when the transaction turns out to be bigger than that, and
+  /// abandons the response the moment it says so — either because the gateway
+  /// declared a larger body or because it sent one byte too many. An oversized
+  /// transaction therefore costs [maxBytes], not its own size.
+  ///
+  /// This exists because [fetchData] cannot answer the question: it hands back
+  /// a fully buffered [Response], so a caller that only wants small data has
+  /// already paid for all of it by the time it can measure anything. That is
+  /// fine for data whose size the caller already knows, and wrong for data
+  /// whose id came out of somebody else's link (`thn` on a share link — see
+  /// `SharedFileThumbnailLoader`).
+  ///
+  /// Requested as `Range: bytes=0-{maxBytes}`. A gateway that honours it sends
+  /// no more than the cap; a gateway that ignores it (arweave.net does — see
+  /// `docs/FILE_SHARING_REDESIGN_PLAN.md` §3.2) is cut off by the running
+  /// count instead. Nothing here branches on having sent the header.
+  Future<Uint8List?> fetchDataAtMost(
+    String txId,
+    Arweave primaryClient, {
+    required int maxBytes,
+  }) async {
+    final clients = await _buildClientList(primaryClient);
+    Object? lastError;
+
+    for (final client in clients) {
+      final gatewayName = client.api.gatewayUrl.host;
+      final httpClient = _clientFactory();
+
+      try {
+        final request = Request(
+          'GET',
+          Uri.parse('${client.api.gatewayUrl.origin}/$txId'),
+        )..headers['Range'] = 'bytes=0-$maxBytes';
+
+        final response =
+            await httpClient.send(request).timeout(_requestTimeout);
+
+        if (response.statusCode < 200 || response.statusCode > 208) {
+          lastError = _ErrorFromStatus(response.statusCode, txId);
+          logger.w('Gateway $gatewayName failed for tx $txId: $lastError');
+          continue;
+        }
+
+        // The cheapest way to find out, and the one that costs no body at all:
+        // a `206` declares the length of the range it is about to send, and a
+        // `200` that ignored the header declares the whole transaction.
+        final declared = response.contentLength;
+
+        if (declared != null && declared > maxBytes) {
+          logger.d(
+            'Not fetching tx $txId: it declares $declared bytes, over the '
+            '$maxBytes byte cap',
+          );
+
+          return null;
+        }
+
+        final bytes = await _readAtMost(
+          response.stream.timeout(_requestTimeout),
+          maxBytes,
+        );
+
+        if (bytes == null) {
+          logger.d(
+            'Abandoned tx $txId part way through: it sent more than the '
+            '$maxBytes byte cap',
+          );
+        }
+
+        // Either the data, or a transaction that is too big to be what the
+        // caller asked for. Another gateway would answer the same, since it is
+        // the same transaction.
+        return bytes;
+      } catch (e) {
+        lastError = e;
+        logger.w('Gateway $gatewayName failed for tx $txId: $e');
+      } finally {
+        // Closes the connection whether it was read to the end, cut off at the
+        // cap, or never read at all.
+        httpClient.close();
+      }
+    }
+
+    throw Exception('All gateways failed for tx $txId: $lastError');
+  }
+
+  /// [body] collected, or `null` as soon as it passes [maxBytes].
+  ///
+  /// Leaving the loop early cancels the subscription, so the bytes after the
+  /// cap are never pulled.
+  static Future<Uint8List?> _readAtMost(
+    Stream<List<int>> body,
+    int maxBytes,
+  ) async {
+    final builder = BytesBuilder(copy: false);
+
+    await for (final chunk in body) {
+      builder.add(chunk);
+
+      if (builder.length > maxBytes) {
+        return null;
+      }
+    }
+
+    return builder.takeBytes();
   }
 
   /// Download a file with hedged (staggered parallel) gateway fallback.

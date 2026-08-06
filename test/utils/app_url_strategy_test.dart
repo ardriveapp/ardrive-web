@@ -79,6 +79,26 @@ void main() {
       expect(indexHtml, contains('history.replaceState'));
     });
 
+    test('never puts a caught error into the console', () {
+      // The URL the shim builds ends in `#k=<key>`, and a browser that refuses
+      // a `replaceState` quotes the URL it refused in the message it throws.
+      // Passing that error to `console.warn` would print the recipient's file
+      // key into a place an extension can read and a screenshot can carry
+      // away. `lib/utils/shared_file_link.dart` applies the same rule to the
+      // same value: the reason travels, the value never does.
+      expect(
+        indexHtml,
+        contains("console.warn('Legacy share link shim failed');"),
+      );
+      expect(
+        RegExp(r'console\.(warn|error|log)\([^)]*,\s*e\s*\)')
+            .hasMatch(indexHtml),
+        isFalse,
+        reason: 'the caught error is the one thing in this shim that can be '
+            'holding the key',
+      );
+    });
+
     test('runs before Flutter is loaded', () {
       // `replaceState` after the router has read the location would leave the
       // app on one route and the address bar on another.

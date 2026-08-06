@@ -48,19 +48,23 @@ class SharedFileThumbnailLoader {
     try {
       // The same waterfall the download path uses — primary, then GAR
       // gateways, then arweave.net — so one dead gateway costs nothing.
-      final response = await _arweave.gatewayFallback.fetchData(
+      //
+      // Bounded, and bounded *before* the bytes are buffered rather than after
+      // (`fetchDataAtMost`, not `fetchData`): a link is free to point `thn` at
+      // any transaction on the network, including a very large one, and this
+      // fetch starts on its own the moment the page paints. A size check that
+      // runs on `response.bodyBytes` has already paid for every byte it is
+      // about to reject.
+      final bytes = await _arweave.gatewayFallback.fetchDataAtMost(
         txId,
         _arweave.client,
+        maxBytes: thumbnailPreviewMaxFileSize,
       );
 
-      final bytes = response.bodyBytes;
-
-      // A link is free to point `thn` at any transaction, so what came back is
-      // only treated as a thumbnail if it is the size of one.
-      if (bytes.length > thumbnailPreviewMaxFileSize) {
-        logger.d(
-          'Ignoring an oversized thumbnail for tx $txId: ${bytes.length} bytes',
-        );
+      // Either nothing came back, or what came back is too big to be a
+      // thumbnail. Both cost the picture and nothing else.
+      if (bytes == null) {
+        logger.d('No thumbnail of a usable size for tx $txId');
 
         return null;
       }

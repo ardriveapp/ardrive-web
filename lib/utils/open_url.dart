@@ -16,17 +16,6 @@ import 'package:url_launcher/url_launcher.dart';
 /// gateways; production URLs are all `https`.
 const Set<String> allowedUrlSchemes = {'https', 'http'};
 
-/// Thrown instead of launching, when a URL is not something ArDrive will open.
-class UnsupportedUrlSchemeException implements Exception {
-  UnsupportedUrlSchemeException(this.url);
-
-  final String url;
-
-  @override
-  String toString() =>
-      'Refused to open a URL that is not http(s): $url';
-}
-
 /// The URL [url] should be launched as, or `null` when it must not be launched
 /// at all.
 ///
@@ -63,7 +52,24 @@ Uri? parseLaunchableUrl(String url) {
   return uri;
 }
 
-Future<void> openUrl({
+/// Hands [url] to the platform's launcher, if it is a URL ArDrive will open.
+///
+/// **Never throws, and never has to be awaited.** Nearly every call site is a
+/// tap handler that fires this and forgets it (`onTap: () => openUrl(...)`), so
+/// anything thrown from here becomes an unhandled asynchronous error in
+/// whatever zone happened to be running - which is precisely the kind of
+/// failure nobody sees until it is in production. Failure handling therefore
+/// lives here, once, rather than as a `try`/`catch` at each of the thirty-odd
+/// call sites: the two things that can go wrong (a URL ArDrive will not open,
+/// and a platform that will not open it) are both logged here and neither
+/// escapes.
+///
+/// Returns whether the launcher was asked to open it. A caller that has to
+/// *decide* something - whether to offer a link at all - should ask
+/// [parseLaunchableUrl] before it ever gets here, rather than treat this
+/// result as a decision, because a `false` from the launcher is not a
+/// statement about the URL.
+Future<bool> openUrl({
   required String url,
   bool openInWebview = false,
   String? webOnlyWindowName,
@@ -73,20 +79,28 @@ Future<void> openUrl({
   if (uri == null) {
     logger.e('Refused to open a URL that is not http(s): $url');
 
-    throw UnsupportedUrlSchemeException(url);
+    return false;
   }
 
   final mode = openInWebview
       ? LaunchMode.platformDefault
       : LaunchMode.externalApplication;
 
-  if (await canLaunchUrl(uri)) {
-    await launchUrl(
-      uri,
-      mode: mode,
-      webOnlyWindowName: webOnlyWindowName,
-    );
-  } else {
-    throw 'Could not launch $url';
+  try {
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(
+        uri,
+        mode: mode,
+        webOnlyWindowName: webOnlyWindowName,
+      );
+
+      return true;
+    }
+
+    logger.e('Could not launch $url: the platform will not handle it');
+  } catch (e, s) {
+    logger.e('Could not launch $url', e, s);
   }
+
+  return false;
 }

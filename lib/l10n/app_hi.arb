@@ -524,6 +524,14 @@
   "@downloadingFile": {
     "description": "File is being downloaded"
   },
+  "downloadIntegrityFailed": "इस फ़ाइल को सत्यापित नहीं किया जा सका",
+  "@downloadIntegrityFailed": {
+    "description": "Title of the download failure dialog shown when the downloaded bytes failed their cryptographic authentication check"
+  },
+  "downloadIntegrityFailedDescription": "जो फ़ाइल आई है वह अपलोड की गई फ़ाइल से मेल नहीं खाती, इसलिए कुछ भी सहेजा नहीं गया। दोबारा कोशिश करने से कोई फ़ायदा नहीं होगा — जिसने इसे साझा किया था, उनसे इसे फिर से भेजने के लिए कहें।",
+  "@downloadIntegrityFailedDescription": {
+    "description": "Description of the download failure dialog shown when the downloaded bytes failed their cryptographic authentication check. Says that nothing was written and that retrying cannot help"
+  },
   "downloadWalletKeyfile": "वॉलेट कीफाइल डाउनलोड करें ",
   "@downloadWalletKeyfile": {},
   "dragAndDropButtonTitle": "Json ब्राउज़ करें ",

@@ -524,6 +524,14 @@
   "@downloadingFile": {
     "description": "File is being downloaded"
   },
+  "downloadIntegrityFailed": "No se ha podido verificar este archivo",
+  "@downloadIntegrityFailed": {
+    "description": "Title of the download failure dialog shown when the downloaded bytes failed their cryptographic authentication check"
+  },
+  "downloadIntegrityFailedDescription": "El archivo que ha llegado no coincide con el que se subió, así que no se ha guardado nada. Volver a intentarlo no servirá de nada: pide a quien lo compartió que te lo envíe de nuevo.",
+  "@downloadIntegrityFailedDescription": {
+    "description": "Description of the download failure dialog shown when the downloaded bytes failed their cryptographic authentication check. Says that nothing was written and that retrying cannot help"
+  },
   "downloadWalletKeyfile": "Descargar archivo de claves del monedero",
   "@downloadWalletKeyfile": {},
   "dragAndDropButtonTitle": "Explorar Json",

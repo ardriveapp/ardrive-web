@@ -1,5 +1,6 @@
+import 'dart:async';
+
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -108,14 +109,13 @@ class _SandboxedTransactionViewState extends State<SandboxedTransactionView> {
     });
   }
 
-  Future<void> _open() async {
-    try {
-      await openUrl(url: widget.url, webOnlyWindowName: '_blank');
-    } catch (e) {
-      // A refused scheme lands here too: `openUrl` will not launch anything
-      // that is not http(s), and a sandbox URL that somehow was not one is a
-      // bug worth a log rather than a navigation.
-      logger.e('Could not open a transaction on its gateway sandbox origin', e);
-    }
+  /// Fire and forget, like every other outbound link in the app.
+  ///
+  /// A refused scheme is handled inside [openUrl] - it will not launch
+  /// anything that is not http(s), and it logs the refusal itself. A second
+  /// `try`/`catch` here would only log the same failure twice and would put
+  /// this one call site on a different contract from the other thirty.
+  void _open() {
+    unawaited(openUrl(url: widget.url, webOnlyWindowName: '_blank'));
   }
 }

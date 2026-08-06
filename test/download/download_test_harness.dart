@@ -349,6 +349,60 @@ class WebShapedArDriveIO implements ArDriveIO {
   Future<IOFolder> pickFolder() => throw UnimplementedError();
 }
 
+/// A saver that is asked to save and then never reads a byte.
+///
+/// This is what a dismissed `showSaveFilePicker` looks like from the
+/// downloader's side. `WebIO.saveFileStream`
+/// (`packages/ardrive_io/lib/src/web/web_io.dart:95,168`) opens the picker
+/// before it touches [IOFile.openReadStream], and a picker the user dismisses
+/// throws out of that call — so the saver reports `saveResult: false` without
+/// the read stream ever having been listened to.
+///
+/// Nothing else in this file models that, and it is the one shape in which
+/// everything the downloader opened *before* handing the stream over — the
+/// first gateway response, the integrity verifier — is left with nobody to
+/// close it.
+class DismissedPickerArDriveIO implements ArDriveIO {
+  int saveFileStreamCalls = 0;
+  int saveFileCalls = 0;
+
+  @override
+  Future<void> saveFile(IOFile file) async {
+    saveFileCalls++;
+  }
+
+  @override
+  Stream<SaveStatus> saveFileStream(
+      IOFile file, Completer<bool> finalize) async* {
+    saveFileStreamCalls++;
+
+    final totalBytes = await file.length;
+
+    yield SaveStatus(
+      bytesSaved: 0,
+      totalBytes: totalBytes,
+      saveResult: false,
+    );
+  }
+
+  @override
+  Future<IOFile> pickFile({
+    List<String>? allowedExtensions,
+    required FileSource fileSource,
+  }) =>
+      throw UnimplementedError();
+
+  @override
+  Future<List<IOFile>> pickFiles({
+    List<String>? allowedExtensions,
+    required FileSource fileSource,
+  }) =>
+      throw UnimplementedError();
+
+  @override
+  Future<IOFolder> pickFolder() => throw UnimplementedError();
+}
+
 /// Records what would have been written to disk.
 class RecordingArDriveIO implements ArDriveIO {
   final BytesBuilder saved = BytesBuilder(copy: false);

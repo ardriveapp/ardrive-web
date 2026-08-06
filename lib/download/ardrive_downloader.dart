@@ -285,6 +285,10 @@ class _ArDriveDownloader implements ArDriveDownloader {
 
     Stream<Uint8List> saveStream;
 
+    // What to let go of if the save ends without ever reading a byte. A
+    // manifest has nothing open; a file stream does. See [_PreparedStream].
+    var releaseIfUnread = _releaseNothing;
+
     try {
       if (isManifest) {
         saveStream = await _getManifestStream(txId);
@@ -293,7 +297,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
           'item stream',
         ));
       } else {
-        saveStream = await _getFileStream(
+        final prepared = await _getFileStream(
           txId: txId,
           fileSize: fileSize,
           fileName: fileName,
@@ -304,6 +308,9 @@ class _ArDriveDownloader implements ArDriveDownloader {
           cipherIvString: cipherIvString,
           verifyDownload: verifyDownload,
         );
+
+        saveStream = prepared.stream;
+        releaseIfUnread = prepared.release;
       }
     } catch (e) {
       // Nobody is left to reach a verdict; never leave [integrity] hanging.
@@ -313,15 +320,26 @@ class _ArDriveDownloader implements ArDriveDownloader {
       rethrow;
     }
 
-    final file = await _ioFileAdapter.fromReadStreamGenerator(
-      ([s, e]) => saveStream,
-      fileSize,
-      name: fileName,
-      lastModifiedDate: lastModifiedDate,
-    );
+    final IOFile file;
 
-    return _saveToDisk(file);
+    try {
+      file = await _ioFileAdapter.fromReadStreamGenerator(
+        ([s, e]) => saveStream,
+        fileSize,
+        name: fileName,
+        lastModifiedDate: lastModifiedDate,
+      );
+    } catch (e) {
+      // The stream was opened and will now never be handed to a saver.
+      releaseIfUnread();
+      rethrow;
+    }
+
+    return _saveToDisk(file, onSettled: releaseIfUnread);
   }
+
+  /// The release for a path that acquired nothing.
+  static void _releaseNothing() {}
 
   @override
   Future<void> abortDownload() {
@@ -345,6 +363,10 @@ class _ArDriveDownloader implements ArDriveDownloader {
   /// wrote be kept?* It says `true` the moment the last byte has been handed
   /// over, and `false` on a cancel.
   ///
+  /// [onSettled] runs once, when the save is over however it ended. It is how
+  /// a download that was opened eagerly gets released when the saver never
+  /// read it — see [_PreparedStream].
+  ///
   /// That ownership is not a detail. `DartIOFileSaver.saveStream`
   /// (`packages/ardrive_io/lib/src/mobile/mobile_io.dart`) blocks on
   /// `finalize.future` *after* it has written the whole file, so a downloader
@@ -352,7 +374,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
   /// — and the only way to unblock it, pressing Cancel, deleted the finished
   /// file. The web savers complete it themselves, which is why only mobile
   /// ever showed it.
-  Stream<double> _saveToDisk(IOFile file) {
+  Stream<double> _saveToDisk(IOFile file, {void Function()? onSettled}) {
     final finalize = Completer<bool>();
 
     void settleFinalize(bool keepWhatWasWritten) {
@@ -417,6 +439,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
         return;
       }
       settled = true;
+      onSettled?.call();
 
       if (error != null) {
         progressController.addError(error, stackTrace);
@@ -460,6 +483,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
       // This branch reports more than one error, and `settle` closes after the
       // first, so it claims the controller up front and closes at the end.
       settled = true;
+      onSettled?.call();
 
       if (saveResult != true) {
         // verify if the download was aborted before starting the save
@@ -731,7 +755,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
   // §3.2/§3.3 AES-CTR and public: stream, seek, resume.
   // ---------------------------------------------------------------------
 
-  Future<Stream<Uint8List>> _getFileStream({
+  Future<_PreparedStream> _getFileStream({
     required String txId,
     required int fileSize,
     required String fileName,
@@ -809,19 +833,72 @@ class _ArDriveDownloader implements ArDriveDownloader {
       verifyDownload: verifyDownload,
     );
 
-    return _resilientPlaintextStream(
-      txId: txId,
-      fileSize: fileSize,
-      verifyDownload: verifyDownload,
-      cipher: isPrivateFile ? cipher : null,
-      cipherIv: cipherIv,
-      keyData: keyData,
-      verifierFuture: verifierFuture,
-      firstResponse: firstResponse,
-      gcmTooLargeToBuffer: gcmTooLargeToBuffer,
-      integrityCaveat: gcmTooLargeToBuffer ? _oversizedGcmCaveat : null,
-    );
+    // ...which is why the caller is handed a release as well as a stream: what
+    // is opened eagerly cannot be released only by a generator that may never
+    // run. See [_PreparedStream].
+    var consumed = false;
+    var released = false;
+
+    Stream<Uint8List> plaintext() async* {
+      consumed = true;
+
+      yield* _resilientPlaintextStream(
+        txId: txId,
+        fileSize: fileSize,
+        verifyDownload: verifyDownload,
+        cipher: isPrivateFile ? cipher : null,
+        cipherIv: cipherIv,
+        keyData: keyData,
+        verifierFuture: verifierFuture,
+        firstResponse: firstResponse,
+        gcmTooLargeToBuffer: gcmTooLargeToBuffer,
+        integrityCaveat: gcmTooLargeToBuffer ? _oversizedGcmCaveat : null,
+      );
+    }
+
+    void release() {
+      // Once the generator has started it owns both of these, and its `finally`
+      // is what settles them.
+      if (consumed || released) return;
+      released = true;
+
+      logger.d(
+        'The download of $txId was never read; releasing the connection and '
+        'the integrity check that were opened for it.',
+      );
+
+      firstResponse.cancel();
+
+      // The verifier is a hash pipeline waiting on chunks that will now never
+      // arrive. [StreamedDataItemVerifier.markUnverifiable] cancels its feed,
+      // which unwinds the pending verification instead of leaving it parked
+      // for the lifetime of the app.
+      unawaited(
+        verifierFuture.then(
+          (verifier) => verifier.markUnverifiable(_neverReadCaveat),
+          // The factory answers with an `unavailable` verifier rather than an
+          // error, but an injected one need not, and nothing else is left to
+          // observe this future.
+          onError: (Object e) => logger.d(
+            'The integrity check for $txId could not even be prepared: $e',
+          ),
+        ),
+      );
+
+      // [_resilientPlaintextStream]'s `finally` is the usual answer to
+      // [integrity]; it never runs on this path, and an unanswered verdict is
+      // a future the caller can wait on for ever.
+      _completeIntegrity(
+        const DataItemIntegrityResult.notVerified(_neverReadCaveat),
+      );
+    }
+
+    return _PreparedStream(plaintext(), release);
   }
+
+  /// The verdict for a download that was opened and then abandoned.
+  static const _neverReadCaveat =
+      'The download was never read, so nothing checked its integrity';
 
   /// Why an oversized AES-GCM download cannot claim its cipher checked out.
   static const _oversizedGcmCaveat =
@@ -1192,9 +1269,12 @@ class _ArDriveDownloader implements ArDriveDownloader {
       }
     }
 
-    final Stream<Uint8List> stream;
+    // Nothing between here and the `toList` below can throw or await, so this
+    // path always listens to what it opened and never needs
+    // [_PreparedStream.release].
+    final _PreparedStream prepared;
     try {
-      stream = await _getFileStream(
+      prepared = await _getFileStream(
         txId: txId,
         fileSize: fileSize,
         fileName: fileName,
@@ -1216,10 +1296,36 @@ class _ArDriveDownloader implements ArDriveDownloader {
       rethrow;
     }
 
-    final data = await stream.toList();
+    final data = await prepared.stream.toList();
 
     return Uint8List.fromList(data.expand((element) => element).toList());
   }
+}
+
+/// A plaintext stream, plus the release of everything acquired to open it.
+///
+/// [_ArDriveDownloader._getFileStream] opens the first gateway response and
+/// starts the integrity verifier *before* it returns. That is deliberate: a
+/// gateway that 404s, rate-limits or cannot be reached has to throw out of
+/// `downloadFile` itself, because inside the generator it would surface from
+/// within the saver, which swallows it into `saveResult: false` — and the user
+/// would be told they cancelled a download they never started, after being
+/// asked where to put it.
+///
+/// The cost of opening early is that both resources are released only by the
+/// generator's `finally`, which does not run until something listens. A saver
+/// that ends without a single read — a dismissed `showSaveFilePicker` is the
+/// common case — would otherwise leave the connection open, the verifier's
+/// hash pipeline parked for the lifetime of the app, and the integrity verdict
+/// unanswered for a caller that awaits it.
+class _PreparedStream {
+  const _PreparedStream(this.stream, this.release);
+
+  final Stream<Uint8List> stream;
+
+  /// Releases the connection and the verifier, unless [stream] has been
+  /// listened to — in which case the generator owns them. Idempotent.
+  final void Function() release;
 }
 
 /// An [IOFile] that tells the downloader how the saver's read of it ended.

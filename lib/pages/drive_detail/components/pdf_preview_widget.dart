@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
@@ -115,12 +116,10 @@ class _PdfPreviewWidgetState extends State<PdfPreviewWidget> {
     setState(() => _renderFailed = true);
   }
 
-  Future<void> _open() async {
-    try {
-      await openUrl(url: widget.previewUrl, webOnlyWindowName: '_blank');
-    } catch (e) {
-      logger.e('Could not open a PDF preview in a new tab', e);
-    }
+  /// Fire and forget: [openUrl] never throws and logs its own failures, so a
+  /// second `try`/`catch` here would report the same one twice.
+  void _open() {
+    unawaited(openUrl(url: widget.previewUrl, webOnlyWindowName: '_blank'));
   }
 }
 

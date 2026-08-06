@@ -524,6 +524,14 @@
   "@downloadingFile": {
     "description": "File is being downloaded"
   },
+  "downloadIntegrityFailed": "このファイルを検証できませんでした",
+  "@downloadIntegrityFailed": {
+    "description": "Title of the download failure dialog shown when the downloaded bytes failed their cryptographic authentication check"
+  },
+  "downloadIntegrityFailedDescription": "届いたファイルはアップロードされたファイルと一致しないため、何も保存されていません。再試行しても解決しません。共有した相手にもう一度送ってもらってください。",
+  "@downloadIntegrityFailedDescription": {
+    "description": "Description of the download failure dialog shown when the downloaded bytes failed their cryptographic authentication check. Says that nothing was written and that retrying cannot help"
+  },
   "downloadWalletKeyfile": "ウォレットキーファイルのダウンロード",
   "@downloadWalletKeyfile": {},
   "dragAndDropButtonTitle": "Jsonをブラウズする",

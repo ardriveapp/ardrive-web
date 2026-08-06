@@ -185,6 +185,11 @@ class _SharedFilePageState extends State<SharedFilePage> {
         _rememberKey = value;
 
         if (!value) {
+          // Both halves matter. Forgetting only clears what is already
+          // stored; the key of an unlock that is *in flight* is held in
+          // [_keyToRemember] and would be written the moment it succeeded -
+          // after the recipient had said not to.
+          _keyToRemember = null;
           unawaited(_keySession.forget(_fileId));
         }
       }),
@@ -216,6 +221,18 @@ class _SharedFilePageState extends State<SharedFilePage> {
 
     _keySession.read(_fileId).then((rawKey) {
       if (!mounted || rawKey == null) {
+        return;
+      }
+
+      // The read is asynchronous, so the page it comes back to is not
+      // necessarily the page that asked. A remembered key must never overwrite
+      // what the recipient has since typed, never re-submit on top of an
+      // unlock that is already running, and above all never fire at a page
+      // that is no longer locked - which would throw an unlocked file back
+      // into the resolving state for no reason the recipient could see.
+      final stillLocked = cubit.state is SharedFileIsPrivate;
+
+      if (!stillLocked || _isUnlocking || _keyController.text.isNotEmpty) {
         return;
       }
 

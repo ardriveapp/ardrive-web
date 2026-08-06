@@ -39,6 +39,7 @@ void main() {
     DownloadSource source,
     ArDriveIO io, {
     Duration? resumeBackoffStep,
+    IntegrityVerifierFactory? verifierFactory,
   }) =>
       ArDriveDownloader(
         ioFileAdapter: IOFileAdapter(),
@@ -46,8 +47,9 @@ void main() {
         arweave: MockArweaveService(),
         source: source,
         decryptStream: positionalXorDecryptor,
-        verifierFactory: (id) async =>
-            StreamedDataItemVerifier.unavailable('not under test'),
+        verifierFactory: verifierFactory ??
+            (id) async =>
+                StreamedDataItemVerifier.unavailable('not under test'),
         resumeBackoffStep: resumeBackoffStep,
       );
 
@@ -254,6 +256,80 @@ void main() {
       final verdict =
           await downloader.integrity.timeout(const Duration(seconds: 10));
       expect(verdict.verdict, DataItemIntegrityVerdict.notVerified);
+    });
+  });
+
+  group('a download nobody ever reads', () {
+    // The connection and the integrity verifier are opened *before* the stream
+    // is handed to a saver, so that a gateway failure surfaces out of
+    // `downloadFile` instead of arriving later as "Download cancelled". That
+    // is deliberate and stays. What it introduced is this: both are released
+    // only from inside the generator, and the generator does not run until
+    // something listens. A saver that never listens is not exotic — it is a
+    // dismissed file picker.
+    test('releases the gateway connection that was opened for it', () async {
+      final io = DismissedPickerArDriveIO();
+      final source = FakeDownloadSource(ciphertext);
+      final downloader = build(source, io);
+
+      final errors = await drainProgress(await downloadPrivateCtr(downloader))
+          .timeout(const Duration(seconds: 10));
+
+      expect(io.saveFileStreamCalls, 1,
+          reason: 'the saver was reached; it simply never read anything');
+      expect(errors.whereType<DownloadCancelledException>(), isNotEmpty);
+
+      // One open, and it is closed again. Before the fix this stayed at 0: the
+      // response sat there holding a connection with nobody left to end it.
+      expect(source.requestedOffsets, [0]);
+      expect(source.cancelCount, 1);
+    });
+
+    test('answers the integrity verdict instead of leaving it pending forever',
+        () async {
+      final downloader = build(
+        FakeDownloadSource(ciphertext),
+        DismissedPickerArDriveIO(),
+      );
+
+      await drainProgress(await downloadPrivateCtr(downloader))
+          .timeout(const Duration(seconds: 10));
+
+      // `_resilientPlaintextStream`'s `finally` is what normally settles this,
+      // and it never ran. Without the fix this future never completes and the
+      // timeout is the failure.
+      final verdict =
+          await downloader.integrity.timeout(const Duration(seconds: 10));
+
+      expect(verdict.verdict, DataItemIntegrityVerdict.notVerified);
+      expect(verdict.reason, contains('never read'));
+    });
+
+    test('unwinds the integrity verifier that was started for it', () async {
+      // A real-shaped verifier, so that "still verifying" means something: it
+      // has a deep hash parked on a chunk feed that will now never be fed.
+      final verifier = realShapedVerifier(txId);
+
+      final downloader = build(
+        FakeDownloadSource(ciphertext),
+        DismissedPickerArDriveIO(),
+        verifierFactory: (id) async => verifier,
+      );
+
+      await drainProgress(await downloadPrivateCtr(downloader))
+          .timeout(const Duration(seconds: 10));
+      await downloader.integrity.timeout(const Duration(seconds: 10));
+
+      expect(
+        verifier.isVerifying,
+        isFalse,
+        reason: 'the verifier is still waiting for bytes that will never '
+            'arrive, and everything it holds is still reachable',
+      );
+      expect(
+        (await verifier.finish()).verdict,
+        DataItemIntegrityVerdict.notVerified,
+      );
     });
   });
 

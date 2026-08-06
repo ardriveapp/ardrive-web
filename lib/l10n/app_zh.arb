@@ -524,6 +524,14 @@
   "@downloadingFile": {
     "description": "File is being downloaded"
   },
+  "downloadIntegrityFailed": "无法验证此文件",
+  "@downloadIntegrityFailed": {
+    "description": "Title of the download failure dialog shown when the downloaded bytes failed their cryptographic authentication check"
+  },
+  "downloadIntegrityFailedDescription": "收到的文件与上传的文件不一致，因此未保存任何内容。重试也无济于事——请让分享该文件的人重新发送一次。",
+  "@downloadIntegrityFailedDescription": {
+    "description": "Description of the download failure dialog shown when the downloaded bytes failed their cryptographic authentication check. Says that nothing was written and that retrying cannot help"
+  },
   "downloadWalletKeyfile": "下载钱包密钥文件",
   "@downloadWalletKeyfile": {},
   "dragAndDropButtonTitle": "浏览 Json",

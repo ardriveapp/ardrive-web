@@ -185,6 +185,21 @@ class FileDownloadDialog extends StatelessWidget {
                     ),
                   ],
                 );
+              case FileDownloadFailureReason.integrityCheckFailed:
+                // Deliberately not retryable, and deliberately not phrased as
+                // a network problem: the bytes arrived, they simply are not
+                // the bytes that were signed. Nothing was saved.
+                return _modalWrapper(
+                  title: appLocalizationsOf(context).downloadIntegrityFailed,
+                  description: appLocalizationsOf(context)
+                      .downloadIntegrityFailedDescription,
+                  actions: [
+                    ModalAction(
+                      action: () => Navigator.pop(context),
+                      title: appLocalizationsOf(context).ok,
+                    ),
+                  ],
+                );
               case FileDownloadFailureReason.fileAboveLimit:
                 return _fileDownloadFailedDueToFileAbovePrivateLimit(context);
               case FileDownloadFailureReason.browserDoesNotSupportLargeDownloads:

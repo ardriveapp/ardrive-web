@@ -575,6 +575,14 @@
   "@downloadingFile": {
     "description": "File is being downloaded"
   },
+  "downloadIntegrityFailed": "This file could not be verified",
+  "@downloadIntegrityFailed": {
+    "description": "Title of the download failure dialog shown when the downloaded bytes failed their cryptographic authentication check"
+  },
+  "downloadIntegrityFailedDescription": "The file that arrived doesn’t match the file that was uploaded, so nothing was saved. Trying again won’t help — ask whoever shared it to send it again.",
+  "@downloadIntegrityFailedDescription": {
+    "description": "Description of the download failure dialog shown when the downloaded bytes failed their cryptographic authentication check. Says that nothing was written and that retrying cannot help"
+  },
   "downloadWalletKeyfile": "Download Wallet Keyfile",
   "@downloadWalletKeyfile": {},
   "dragAndDropButtonTitle": "Browse Json",

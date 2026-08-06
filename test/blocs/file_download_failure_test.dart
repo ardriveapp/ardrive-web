@@ -1,8 +1,18 @@
 import 'package:ardrive/blocs/file_download/file_download_cubit.dart';
+import 'package:ardrive/components/file_download_dialog.dart';
 import 'package:ardrive/download/ardrive_downloader.dart';
 import 'package:ardrive/download/download_exceptions.dart';
 import 'package:ardrive/download/download_policy.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+class MockFileDownloadCubit extends MockCubit<FileDownloadState>
+    implements FileDownloadCubit {}
 
 /// What the user is told when a download fails.
 ///
@@ -51,6 +61,23 @@ void main() {
       );
     });
 
+    test('a file that failed its authentication check is named as one, and '
+        'never offered a retry', () {
+      // The retryable dialog is what the fallback reason renders, and it is
+      // exactly wrong here: the bytes are what they are, so "Try again" is an
+      // invitation to fetch them and fail the same check for ever. Nothing was
+      // written either (§3.1), which the copy for this reason has to say.
+      expect(
+        classifyDownloadError(
+          const DownloadIntegrityException(
+            txId,
+            'The file did not pass its AES-GCM authentication check',
+          ),
+        ),
+        FileDownloadFailureReason.integrityCheckFailed,
+      );
+    });
+
     test('anything genuinely unrecognised still falls back', () {
       expect(
         classifyDownloadError(Exception('something else entirely')),
@@ -95,6 +122,71 @@ void main() {
         ),
         FileDownloadFailureReason.fileAboveLimit,
       );
+    });
+  });
+
+  group('what the dialog does with a reason', () {
+    Widget wrap(Widget child) {
+      return ArDriveTheme(
+        themeData: lightTheme(),
+        child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [Locale('en', '')],
+          home: Scaffold(body: child),
+        ),
+      );
+    }
+
+    Future<void> pumpFailure(
+      WidgetTester tester,
+      FileDownloadFailureReason reason,
+    ) async {
+      // Room for the whole modal, so nothing here is about layout.
+      tester.view.physicalSize = const Size(1200, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final cubit = MockFileDownloadCubit();
+
+      whenListen(
+        cubit,
+        const Stream<FileDownloadState>.empty(),
+        initialState: FileDownloadFailure(reason),
+      );
+
+      await tester.pumpWidget(
+        wrap(
+          BlocProvider<FileDownloadCubit>.value(
+            value: cubit,
+            child: const FileDownloadDialog(),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('offers a retry for a failure that a retry could fix',
+        (tester) async {
+      await pumpFailure(tester, FileDownloadFailureReason.unknownError);
+
+      expect(find.text('Try Again'), findsOneWidget);
+    });
+
+    testWidgets('never offers a retry for a file that failed its integrity '
+        'check, and says nothing was saved', (tester) async {
+      await pumpFailure(tester, FileDownloadFailureReason.integrityCheckFailed);
+
+      // The whole point of the typed reason: these bytes will fail the same
+      // check every time, so the retryable dialog would be an invitation to
+      // download them for ever.
+      expect(find.text('Try Again'), findsNothing);
+      expect(find.text('OK'), findsOneWidget);
+      expect(find.textContaining('nothing was saved'), findsOneWidget);
     });
   });
 }
