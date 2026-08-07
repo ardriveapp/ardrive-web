@@ -583,6 +583,52 @@
   "@downloadIntegrityFailedDescription": {
     "description": "Description of the download failure dialog shown when the downloaded bytes failed their cryptographic authentication check. Says that nothing was written and that retrying cannot help"
   },
+  "downloadMustRestart": "The download stopped",
+  "@downloadMustRestart": {
+    "description": "Title of the download failure dialog shown when the connection dropped and the download cannot be picked up where it left off"
+  },
+  "downloadMustRestartDescription": "The connection dropped, and this file can’t be picked up from where it left off. Starting over downloads it again from the beginning.",
+  "@downloadMustRestartDescription": {
+    "description": "Description of the download failure dialog shown when the download cannot be resumed. Says plainly that retrying restarts from the beginning rather than continuing"
+  },
+  "downloadNotVerified": "ArDrive couldn’t check this file against the original. That’s normal for some files and doesn’t mean anything is wrong.",
+  "@downloadNotVerified": {
+    "description": "Advisory line on the download success dialog when no integrity verdict could be reached. Must never imply the file is damaged: this outcome is routine"
+  },
+  "downloadReconnecting": "Reconnecting...",
+  "@downloadReconnecting": {
+    "description": "Status label that replaces Downloading while a download that lost its connection picks itself back up"
+  },
+  "downloadStartOver": "Start Over",
+  "@downloadStartOver": {
+    "description": "Action on the download failure dialog that restarts a download from the beginning. Deliberately not Try Again, which would imply the download continues from where it stopped"
+  },
+  "downloadVerificationFailed": "This file doesn’t match the original",
+  "@downloadVerificationFailed": {
+    "description": "Title of the download dialog shown when the saved file contradicts what was originally uploaded"
+  },
+  "downloadVerificationFailedDescription": "{fileName} was saved, but it doesn’t match what was originally uploaded — something changed it on the way to you. Don’t open it. Delete it, and ask whoever shared it to send it again.",
+  "@downloadVerificationFailedDescription": {
+    "description": "Description of the download dialog shown when the saved file contradicts what was originally uploaded. Unlike the not-verified advisory, this is a real problem and says what to do about it",
+    "placeholders": {
+      "fileName": {
+        "type": "String",
+        "example": "holiday.mp4"
+      }
+    }
+  },
+  "downloadVerified": "This file matches what was originally uploaded.",
+  "@downloadVerified": {
+    "description": "Quiet affirmative line on the download success dialog when the integrity check passed"
+  },
+  "downloadVerifying": "Checking this file...",
+  "@downloadVerifying": {
+    "description": "Title of the download dialog shown after the file is saved, while the integrity check is still running"
+  },
+  "downloadVerifyingDescription": "Your file has been saved. ArDrive is checking that it matches what was originally uploaded.",
+  "@downloadVerifyingDescription": {
+    "description": "Description of the download dialog shown while the integrity check runs. Says the file is already saved, because the check never holds up saving"
+  },
   "downloadWalletKeyfile": "Download Wallet Keyfile",
   "@downloadWalletKeyfile": {},
   "dragAndDropButtonTitle": "Browse Json",

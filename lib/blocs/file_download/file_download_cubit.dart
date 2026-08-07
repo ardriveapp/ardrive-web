@@ -11,6 +11,10 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/utils/logger.dart';
+// Only the verdict types: `ardrive_crypto` also exports a `Cipher`, which
+// `package:cryptography` below already defines.
+import 'package:ardrive_crypto/ardrive_crypto.dart'
+    show DataItemIntegrityResult, DataItemIntegrityVerdict;
 import 'package:ardrive_io/ardrive_io.dart' as io;
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -28,8 +32,106 @@ part 'shared_file_download_cubit.dart';
 abstract class FileDownloadCubit extends Cubit<FileDownloadState> {
   FileDownloadCubit(super.state);
 
+  StreamSubscription<DownloadResumeEvent>? _resumeSubscription;
+
   FutureOr<void> abortDownload() {}
   FutureOr<void> retryDownload() {}
+
+  /// How long the terminal state may wait on a verdict.
+  ///
+  /// [ArDriveDownloader.integrity] is documented to always complete, and every
+  /// path in the downloader settles it. This is the guard for the one that is
+  /// ever missed: the dialog is a `barrierDismissible: false` modal whose only
+  /// escape from "checking" is the state after it, so a verdict that never
+  /// arrives would trap the user in a download that has, in fact, finished.
+  static const _verdictTimeout = Duration(seconds: 20);
+
+  /// Turns [downloader]'s mid-stream recoveries into something the user can
+  /// see.
+  ///
+  /// A download that loses its connection and resumes keeps the same progress
+  /// number for as long as it takes to reconnect — nothing is arriving, so
+  /// nothing moves. Without this the bar is simply frozen, which is what a
+  /// hung app looks like.
+  ///
+  /// Only a determinate progress bar can look frozen, so only
+  /// [FileDownloadWithProgress] is upgraded; the earlier states already show an
+  /// indeterminate spinner that keeps turning. The flag clears on its own,
+  /// because the next progress tick builds a fresh state.
+  @protected
+  void watchForReconnects(ArDriveDownloader downloader) {
+    _resumeSubscription ??= downloader.resumeEvents.listen(
+      (event) {
+        // Cancelling a subscription does not un-queue what it has already been
+        // handed, and `emit` after `close` throws.
+        if (isClosed) return;
+
+        logger.d('Download is reconnecting: $event');
+
+        final current = state;
+        if (current is FileDownloadWithProgress && !current.isReconnecting) {
+          emit(current.asReconnecting());
+        }
+      },
+      // Nothing else observes this stream, and a download must not fail
+      // because the commentary on it did.
+      onError: (Object e) =>
+          logger.d('Could not report a download reconnect: $e'),
+    );
+  }
+
+  /// Ends a download whose bytes are all saved, with what the integrity check
+  /// made of them.
+  ///
+  /// Call this from the progress stream's `onDone` and **never before**: the
+  /// save must not wait on a verdict, so the verdict is collected only once
+  /// there is nothing left for it to hold up.
+  @protected
+  Future<void> emitFinishedWithIntegrity({
+    required ArDriveDownloader downloader,
+    required String fileName,
+  }) async {
+    if (isClosed || state is FileDownloadAborted) return;
+
+    emit(FileDownloadVerifying(fileName: fileName));
+
+    DataItemIntegrityResult result;
+
+    try {
+      result = await downloader.integrity.timeout(
+        _verdictTimeout,
+        onTimeout: () => const DataItemIntegrityResult.notVerified(
+          'The integrity check did not answer in time',
+        ),
+      );
+    } catch (e) {
+      // [ArDriveDownloader.integrity] is documented never to complete with an
+      // error, but a verdict that cannot be read is precisely what
+      // `notVerified` is for, and a download that finished must never be
+      // reported as failed because its commentary threw.
+      logger.d('Could not read the integrity verdict for $fileName: $e');
+      result = DataItemIntegrityResult.notVerified(
+        'The integrity check could not be read: $e',
+      );
+    }
+
+    if (isClosed || state is FileDownloadAborted) return;
+
+    logger.d('Integrity verdict for $fileName: $result');
+
+    emit(FileDownloadFinishedWithSuccess(
+      fileName: fileName,
+      integrity: result.verdict,
+    ));
+  }
+
+  @override
+  Future<void> close() {
+    unawaited(_resumeSubscription?.cancel());
+    _resumeSubscription = null;
+
+    return super.close();
+  }
 }
 
 /// What the UI should say about [error].
@@ -45,13 +147,15 @@ FileDownloadFailureReason classifyDownloadError(Object error) {
   if (error is DownloadRateLimitException) {
     return FileDownloadFailureReason.rateLimited;
   }
-  if (error is DownloadNetworkException ||
-      error is DownloadStalledException ||
-      // The transport could not be picked up where it left off. Retrying
-      // starts a clean download from byte 0, which is exactly the action the
-      // network failure dialog offers.
-      error is DownloadResumeNotSupportedException) {
+  if (error is DownloadNetworkException || error is DownloadStalledException) {
     return FileDownloadFailureReason.networkConnectionError;
+  }
+  // The transport could not be picked up where it left off, so the part that
+  // had already arrived is gone. Retrying is still the fix - it just starts
+  // from byte 0, and the dialog has to say so rather than let "try again" imply
+  // the download carries on from where the bar stopped.
+  if (error is DownloadResumeNotSupportedException) {
+    return FileDownloadFailureReason.downloadMustRestart;
   }
   if (error is DownloadTooLargeToAuthenticateException) {
     return FileDownloadFailureReason.fileTooLargeToVerify;

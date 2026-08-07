@@ -532,6 +532,52 @@
   "@downloadIntegrityFailedDescription": {
     "description": "Description of the download failure dialog shown when the downloaded bytes failed their cryptographic authentication check. Says that nothing was written and that retrying cannot help"
   },
+  "downloadMustRestart": "下载已中断",
+  "@downloadMustRestart": {
+    "description": "Title of the download failure dialog shown when the connection dropped and the download cannot be picked up where it left off"
+  },
+  "downloadMustRestartDescription": "连接已断开，此文件无法从中断处继续。重新开始将从头再次下载。",
+  "@downloadMustRestartDescription": {
+    "description": "Description of the download failure dialog shown when the download cannot be resumed. Says plainly that retrying restarts from the beginning rather than continuing"
+  },
+  "downloadNotVerified": "ArDrive 无法将此文件与原始文件进行核对。某些文件出现这种情况是正常的，并不表示有任何问题。",
+  "@downloadNotVerified": {
+    "description": "Advisory line on the download success dialog when no integrity verdict could be reached. Must never imply the file is damaged: this outcome is routine"
+  },
+  "downloadReconnecting": "正在重新连接...",
+  "@downloadReconnecting": {
+    "description": "Status label that replaces Downloading while a download that lost its connection picks itself back up"
+  },
+  "downloadStartOver": "重新开始",
+  "@downloadStartOver": {
+    "description": "Action on the download failure dialog that restarts a download from the beginning. Deliberately not Try Again, which would imply the download continues from where it stopped"
+  },
+  "downloadVerificationFailed": "此文件与原始文件不一致",
+  "@downloadVerificationFailed": {
+    "description": "Title of the download dialog shown when the saved file contradicts what was originally uploaded"
+  },
+  "downloadVerificationFailedDescription": "{fileName} 已保存，但与最初上传的文件不一致——它在传输途中被改动了。请不要打开它。请将其删除，并请分享者重新发送一次。",
+  "@downloadVerificationFailedDescription": {
+    "description": "Description of the download dialog shown when the saved file contradicts what was originally uploaded. Unlike the not-verified advisory, this is a real problem and says what to do about it",
+    "placeholders": {
+      "fileName": {
+        "type": "String",
+        "example": "holiday.mp4"
+      }
+    }
+  },
+  "downloadVerified": "此文件与最初上传的文件一致。",
+  "@downloadVerified": {
+    "description": "Quiet affirmative line on the download success dialog when the integrity check passed"
+  },
+  "downloadVerifying": "正在检查此文件...",
+  "@downloadVerifying": {
+    "description": "Title of the download dialog shown after the file is saved, while the integrity check is still running"
+  },
+  "downloadVerifyingDescription": "您的文件已保存。ArDrive 正在检查它是否与最初上传的文件一致。",
+  "@downloadVerifyingDescription": {
+    "description": "Description of the download dialog shown while the integrity check runs. Says the file is already saved, because the check never holds up saving"
+  },
   "downloadWalletKeyfile": "下载钱包密钥文件",
   "@downloadWalletKeyfile": {},
   "dragAndDropButtonTitle": "浏览 Json",

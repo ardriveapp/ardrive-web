@@ -532,6 +532,52 @@
   "@downloadIntegrityFailedDescription": {
     "description": "Description of the download failure dialog shown when the downloaded bytes failed their cryptographic authentication check. Says that nothing was written and that retrying cannot help"
   },
+  "downloadMustRestart": "La descarga se ha detenido",
+  "@downloadMustRestart": {
+    "description": "Title of the download failure dialog shown when the connection dropped and the download cannot be picked up where it left off"
+  },
+  "downloadMustRestartDescription": "Se ha perdido la conexión y este archivo no puede continuar desde donde se quedó. Si empiezas de nuevo, se descargará otra vez desde el principio.",
+  "@downloadMustRestartDescription": {
+    "description": "Description of the download failure dialog shown when the download cannot be resumed. Says plainly that retrying restarts from the beginning rather than continuing"
+  },
+  "downloadNotVerified": "ArDrive no ha podido comprobar este archivo con el original. Es algo normal en algunos archivos y no significa que haya ningún problema.",
+  "@downloadNotVerified": {
+    "description": "Advisory line on the download success dialog when no integrity verdict could be reached. Must never imply the file is damaged: this outcome is routine"
+  },
+  "downloadReconnecting": "Reconectando...",
+  "@downloadReconnecting": {
+    "description": "Status label that replaces Downloading while a download that lost its connection picks itself back up"
+  },
+  "downloadStartOver": "Empezar de nuevo",
+  "@downloadStartOver": {
+    "description": "Action on the download failure dialog that restarts a download from the beginning. Deliberately not Try Again, which would imply the download continues from where it stopped"
+  },
+  "downloadVerificationFailed": "Este archivo no coincide con el original",
+  "@downloadVerificationFailed": {
+    "description": "Title of the download dialog shown when the saved file contradicts what was originally uploaded"
+  },
+  "downloadVerificationFailedDescription": "{fileName} se ha guardado, pero no coincide con lo que se subió originalmente: algo lo ha modificado por el camino. No lo abras. Elimínalo y pide a quien lo compartió que te lo envíe de nuevo.",
+  "@downloadVerificationFailedDescription": {
+    "description": "Description of the download dialog shown when the saved file contradicts what was originally uploaded. Unlike the not-verified advisory, this is a real problem and says what to do about it",
+    "placeholders": {
+      "fileName": {
+        "type": "String",
+        "example": "holiday.mp4"
+      }
+    }
+  },
+  "downloadVerified": "Este archivo coincide con lo que se subió originalmente.",
+  "@downloadVerified": {
+    "description": "Quiet affirmative line on the download success dialog when the integrity check passed"
+  },
+  "downloadVerifying": "Comprobando este archivo...",
+  "@downloadVerifying": {
+    "description": "Title of the download dialog shown after the file is saved, while the integrity check is still running"
+  },
+  "downloadVerifyingDescription": "Tu archivo se ha guardado. ArDrive está comprobando que coincide con lo que se subió originalmente.",
+  "@downloadVerifyingDescription": {
+    "description": "Description of the download dialog shown while the integrity check runs. Says the file is already saved, because the check never holds up saving"
+  },
   "downloadWalletKeyfile": "Descargar archivo de claves del monedero",
   "@downloadWalletKeyfile": {},
   "dragAndDropButtonTitle": "Explorar Json",

@@ -532,6 +532,52 @@
   "@downloadIntegrityFailedDescription": {
     "description": "Description of the download failure dialog shown when the downloaded bytes failed their cryptographic authentication check. Says that nothing was written and that retrying cannot help"
   },
+  "downloadMustRestart": "ダウンロードが停止しました",
+  "@downloadMustRestart": {
+    "description": "Title of the download failure dialog shown when the connection dropped and the download cannot be picked up where it left off"
+  },
+  "downloadMustRestartDescription": "接続が切断され、このファイルは中断した位置から再開できません。最初からやり直すと、もう一度先頭からダウンロードします。",
+  "@downloadMustRestartDescription": {
+    "description": "Description of the download failure dialog shown when the download cannot be resumed. Says plainly that retrying restarts from the beginning rather than continuing"
+  },
+  "downloadNotVerified": "ArDrive はこのファイルを元のファイルと照合できませんでした。一部のファイルでは通常のことで、問題があるという意味ではありません。",
+  "@downloadNotVerified": {
+    "description": "Advisory line on the download success dialog when no integrity verdict could be reached. Must never imply the file is damaged: this outcome is routine"
+  },
+  "downloadReconnecting": "再接続しています...",
+  "@downloadReconnecting": {
+    "description": "Status label that replaces Downloading while a download that lost its connection picks itself back up"
+  },
+  "downloadStartOver": "最初からやり直す",
+  "@downloadStartOver": {
+    "description": "Action on the download failure dialog that restarts a download from the beginning. Deliberately not Try Again, which would imply the download continues from where it stopped"
+  },
+  "downloadVerificationFailed": "このファイルは元のファイルと一致しません",
+  "@downloadVerificationFailed": {
+    "description": "Title of the download dialog shown when the saved file contradicts what was originally uploaded"
+  },
+  "downloadVerificationFailedDescription": "{fileName} は保存されましたが、アップロードされた元のファイルと一致しません。届くまでの間に何かが変更されています。開かないでください。削除して、共有した相手にもう一度送ってもらってください。",
+  "@downloadVerificationFailedDescription": {
+    "description": "Description of the download dialog shown when the saved file contradicts what was originally uploaded. Unlike the not-verified advisory, this is a real problem and says what to do about it",
+    "placeholders": {
+      "fileName": {
+        "type": "String",
+        "example": "holiday.mp4"
+      }
+    }
+  },
+  "downloadVerified": "このファイルはアップロードされた元のファイルと一致しています。",
+  "@downloadVerified": {
+    "description": "Quiet affirmative line on the download success dialog when the integrity check passed"
+  },
+  "downloadVerifying": "このファイルを確認しています...",
+  "@downloadVerifying": {
+    "description": "Title of the download dialog shown after the file is saved, while the integrity check is still running"
+  },
+  "downloadVerifyingDescription": "ファイルは保存されました。ArDrive がアップロードされた元のファイルと一致するか確認しています。",
+  "@downloadVerifyingDescription": {
+    "description": "Description of the download dialog shown while the integrity check runs. Says the file is already saved, because the check never holds up saving"
+  },
   "downloadWalletKeyfile": "ウォレットキーファイルのダウンロード",
   "@downloadWalletKeyfile": {},
   "dragAndDropButtonTitle": "Jsonをブラウズする",

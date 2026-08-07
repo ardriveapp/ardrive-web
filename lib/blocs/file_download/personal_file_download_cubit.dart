@@ -44,7 +44,9 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
         _file = file,
         _downloader = downloader,
         _arfsRepository = arfsRepository,
-        super(FileDownloadStarting());
+        super(FileDownloadStarting()) {
+    watchForReconnects(_arDriveDownloader);
+  }
 
   Future<void> verifyUploadLimitationsAndDownload(SecretKey? cipherKey) async {
     try {
@@ -130,6 +132,10 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
               _downloadProgress.sink.add(FileDownloadProgress(progress / 100));
             }
 
+            // No verdict, deliberately: [io.ArDriveMobileDownloader] hands the
+            // transfer to the platform and never sees the bytes, so there is
+            // nothing to check them against. Reporting "could not be checked"
+            // would name the absence of something that was never attempted.
             emit(FileDownloadFinishedWithSuccess(fileName: _file.name));
             break;
           }
@@ -240,7 +246,11 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
         }
       },
       onDone: () {
-        emit(FileDownloadFinishedWithSuccess(fileName: _file.name));
+        // The bytes are on disk; only now is it safe to wait on the verdict.
+        unawaited(emitFinishedWithIntegrity(
+          downloader: _arDriveDownloader,
+          fileName: _file.name,
+        ));
       },
       cancelOnError: true,
     );

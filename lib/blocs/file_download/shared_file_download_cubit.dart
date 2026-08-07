@@ -20,6 +20,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
         _arDriveDownloader = arDriveDownloader,
         _downloadPolicy = downloadPolicy,
         super(FileDownloadStarting()) {
+    watchForReconnects(_arDriveDownloader);
     verifyUploadLimitationsAndDownload();
   }
 
@@ -136,7 +137,12 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       },
       onDone: () {
         logger.d('Download finished');
-        emit(FileDownloadFinishedWithSuccess(fileName: revision.name));
+
+        // The bytes are on disk; only now is it safe to wait on the verdict.
+        unawaited(emitFinishedWithIntegrity(
+          downloader: _arDriveDownloader,
+          fileName: revision.name,
+        ));
       },
       cancelOnError: true,
     );

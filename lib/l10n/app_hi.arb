@@ -532,6 +532,52 @@
   "@downloadIntegrityFailedDescription": {
     "description": "Description of the download failure dialog shown when the downloaded bytes failed their cryptographic authentication check. Says that nothing was written and that retrying cannot help"
   },
+  "downloadMustRestart": "डाउनलोड रुक गया",
+  "@downloadMustRestart": {
+    "description": "Title of the download failure dialog shown when the connection dropped and the download cannot be picked up where it left off"
+  },
+  "downloadMustRestartDescription": "कनेक्शन टूट गया और यह फ़ाइल वहाँ से आगे नहीं बढ़ सकती जहाँ रुकी थी। फिर से शुरू करने पर यह शुरुआत से दोबारा डाउनलोड होगी।",
+  "@downloadMustRestartDescription": {
+    "description": "Description of the download failure dialog shown when the download cannot be resumed. Says plainly that retrying restarts from the beginning rather than continuing"
+  },
+  "downloadNotVerified": "ArDrive इस फ़ाइल की मूल फ़ाइल से जाँच नहीं कर सका। कुछ फ़ाइलों के लिए यह सामान्य है और इसका मतलब यह नहीं कि कुछ गड़बड़ है।",
+  "@downloadNotVerified": {
+    "description": "Advisory line on the download success dialog when no integrity verdict could be reached. Must never imply the file is damaged: this outcome is routine"
+  },
+  "downloadReconnecting": "फिर से जुड़ रहे हैं...",
+  "@downloadReconnecting": {
+    "description": "Status label that replaces Downloading while a download that lost its connection picks itself back up"
+  },
+  "downloadStartOver": "फिर से शुरू करें",
+  "@downloadStartOver": {
+    "description": "Action on the download failure dialog that restarts a download from the beginning. Deliberately not Try Again, which would imply the download continues from where it stopped"
+  },
+  "downloadVerificationFailed": "यह फ़ाइल मूल फ़ाइल से मेल नहीं खाती",
+  "@downloadVerificationFailed": {
+    "description": "Title of the download dialog shown when the saved file contradicts what was originally uploaded"
+  },
+  "downloadVerificationFailedDescription": "{fileName} सहेज ली गई है, लेकिन यह मूल रूप से अपलोड की गई फ़ाइल से मेल नहीं खाती — रास्ते में इसमें कुछ बदल गया है। इसे न खोलें। इसे हटा दें और जिसने इसे साझा किया था उनसे दोबारा भेजने के लिए कहें।",
+  "@downloadVerificationFailedDescription": {
+    "description": "Description of the download dialog shown when the saved file contradicts what was originally uploaded. Unlike the not-verified advisory, this is a real problem and says what to do about it",
+    "placeholders": {
+      "fileName": {
+        "type": "String",
+        "example": "holiday.mp4"
+      }
+    }
+  },
+  "downloadVerified": "यह फ़ाइल मूल रूप से अपलोड की गई फ़ाइल से मेल खाती है।",
+  "@downloadVerified": {
+    "description": "Quiet affirmative line on the download success dialog when the integrity check passed"
+  },
+  "downloadVerifying": "इस फ़ाइल की जाँच हो रही है...",
+  "@downloadVerifying": {
+    "description": "Title of the download dialog shown after the file is saved, while the integrity check is still running"
+  },
+  "downloadVerifyingDescription": "आपकी फ़ाइल सहेज ली गई है। ArDrive जाँच रहा है कि यह मूल रूप से अपलोड की गई फ़ाइल से मेल खाती है।",
+  "@downloadVerifyingDescription": {
+    "description": "Description of the download dialog shown while the integrity check runs. Says the file is already saved, because the check never holds up saving"
+  },
   "downloadWalletKeyfile": "वॉलेट कीफाइल डाउनलोड करें ",
   "@downloadWalletKeyfile": {},
   "dragAndDropButtonTitle": "Json ब्राउज़ करें ",
