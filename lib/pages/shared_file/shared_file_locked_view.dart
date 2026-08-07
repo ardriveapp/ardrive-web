@@ -1,3 +1,4 @@
+import 'package:ardrive/pages/shared_file/shared_file_colors.dart';
 import 'package:ardrive/pages/shared_file/shared_file_identity.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/shared_file_link.dart';
@@ -62,10 +63,36 @@ class _SharedFileLockedViewState extends State<SharedFileLockedView> {
 
   int _previousLength = 0;
 
+  /// The gate's only real input, and where the caret starts on a locked page.
+  final FocusNode _keyFieldFocus = FocusNode();
+
   @override
   void initState() {
     super.initState();
     _previousLength = widget.controller.text.length;
+  }
+
+  @override
+  void dispose() {
+    _keyFieldFocus.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant SharedFileLockedView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Two moments hand the recipient something to do, and both should hand
+    // them the field to do it in: a key that came back rejected, and a check
+    // that has finished and re-enabled the field it had disabled - disabling a
+    // field drops the focus on the floor, and nothing picks it back up.
+    final wasRejected = widget.errorMessage != null &&
+        widget.errorMessage != oldWidget.errorMessage;
+    final checkFinished = oldWidget.isBusy && !widget.isBusy;
+
+    if (wasRejected || checkFinished) {
+      _keyFieldFocus.requestFocus();
+    }
   }
 
   @override
@@ -90,7 +117,7 @@ class _SharedFileLockedViewState extends State<SharedFileLockedView> {
           Text(
             appLocalizationsOf(context).sharedFileDetailsHiddenBySender,
             style: ArDriveTypography.body.captionRegular(
-              color: colors.themeFgSubtle,
+              color: SharedFileColors.subtle(context),
             ),
           ),
         ],
@@ -105,12 +132,13 @@ class _SharedFileLockedViewState extends State<SharedFileLockedView> {
         Text(
           appLocalizationsOf(context).sharedFileAccessKeySentSeparately,
           style: ArDriveTypography.body.captionRegular(
-            color: colors.themeFgSubtle,
+            color: SharedFileColors.subtle(context),
           ),
         ),
         const SizedBox(height: 16),
         ArDriveTextField(
           controller: widget.controller,
+          focusNode: _keyFieldFocus,
           autofocus: true,
           autocorrect: false,
           obscureText: true,
@@ -122,17 +150,9 @@ class _SharedFileLockedViewState extends State<SharedFileLockedView> {
           onFieldSubmitted: (_) => _submit(),
         ),
         const SizedBox(height: 12),
-        ArDriveCheckBox(
-          // [ArDriveCheckBox] reads `checked` once, in its own initState, so
-          // the key is what lets the page drive it - it is ticked for the
-          // recipient when a remembered key is restored.
-          key: ValueKey(widget.rememberKey),
-          title: appLocalizationsOf(context).sharedFileRememberKeyForThisTab,
-          checked: widget.rememberKey,
-          onChange: (value) => widget.onRememberChanged?.call(value),
-          titleStyle: ArDriveTypography.body.captionRegular(
-            color: colors.themeFgSubtle,
-          ),
+        _RememberKeyCheckBox(
+          isChecked: widget.rememberKey,
+          onChanged: (value) => widget.onRememberChanged?.call(value),
         ),
         const SizedBox(height: 16),
         ArDriveButton(
@@ -150,7 +170,7 @@ class _SharedFileLockedViewState extends State<SharedFileLockedView> {
           appLocalizationsOf(context).sharedFileAccessKeyStaysOnThisDevice,
           textAlign: TextAlign.center,
           style: ArDriveTypography.body.captionRegular(
-            color: colors.themeFgSubtle,
+            color: SharedFileColors.subtle(context),
           ),
         ),
       ],
@@ -202,5 +222,79 @@ class _SharedFileLockedViewState extends State<SharedFileLockedView> {
     });
 
     widget.onSubmit(rawKey);
+  }
+}
+
+/// "Remember this key for this tab", made reachable without a mouse.
+///
+/// [ArDriveCheckBox] is a bare [GestureDetector]: it is not in the focus order,
+/// it cannot be toggled from the keyboard, and it announces nothing to a screen
+/// reader. That is a design system gap this page cannot close on its own, so it
+/// closes it here - a hole in the middle of the only form a recipient ever
+/// fills in is not something to leave for later.
+///
+/// The checkbox keeps its own internal state and only reads `checked` in its
+/// `initState`, which is why the key on it matters: toggling from out here
+/// rebuilds it with the new value rather than fighting it.
+class _RememberKeyCheckBox extends StatefulWidget {
+  const _RememberKeyCheckBox({
+    required this.isChecked,
+    required this.onChanged,
+  });
+
+  final bool isChecked;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  State<_RememberKeyCheckBox> createState() => _RememberKeyCheckBoxState();
+}
+
+class _RememberKeyCheckBoxState extends State<_RememberKeyCheckBox> {
+  bool _isFocused = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+    final label = appLocalizationsOf(context).sharedFileRememberKeyForThisTab;
+
+    return Semantics(
+      checked: widget.isChecked,
+      label: label,
+      onTap: () => widget.onChanged(!widget.isChecked),
+      child: FocusableActionDetector(
+        onShowFocusHighlight: (isFocused) =>
+            setState(() => _isFocused = isFocused),
+        actions: {
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              widget.onChanged(!widget.isChecked);
+
+              return null;
+            },
+          ),
+        },
+        child: Container(
+          // A keyboard user has to be able to see where they are.
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: _isFocused ? colors.themeFgDefault : Colors.transparent,
+            ),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          padding: const EdgeInsets.all(2),
+          child: ExcludeSemantics(
+            child: ArDriveCheckBox(
+              key: ValueKey(widget.isChecked),
+              title: label,
+              checked: widget.isChecked,
+              onChange: widget.onChanged,
+              titleStyle: ArDriveTypography.body.captionRegular(
+                color: SharedFileColors.subtle(context),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

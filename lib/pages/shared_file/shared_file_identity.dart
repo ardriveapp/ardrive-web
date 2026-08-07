@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
+import 'package:ardrive/pages/shared_file/shared_file_colors.dart';
 import 'package:ardrive/pages/shared_file/shared_file_thumbnail.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
@@ -94,20 +95,31 @@ class SharedFileIdentity extends StatelessWidget {
         ),
         if (mismatch) ...[
           const SizedBox(height: 12),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ArDriveIcons.triangle(size: 16, color: colors.themeWarningFg),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  appLocalizationsOf(context).sharedFileLinkDetailsMismatch,
-                  style: ArDriveTypography.body.captionRegular(
+          MergeSemantics(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // The colour is the cue, the sentence is the message. The
+                // warning yellow clears 3:1 on both surfaces as a *graphic*,
+                // but not the 4.5:1 that caption text needs on the light
+                // theme, so the sentence itself is the default foreground.
+                ExcludeSemantics(
+                  child: ArDriveIcons.triangle(
+                    size: 16,
                     color: colors.themeWarningFg,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    appLocalizationsOf(context).sharedFileLinkDetailsMismatch,
+                    style: ArDriveTypography.body.captionRegular(
+                      color: colors.themeFgDefault,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ],
@@ -122,23 +134,27 @@ class SharedFileIdentity extends StatelessWidget {
       return const _SharedFileSkeletonBar(width: 180, height: 20);
     }
 
-    return Text(
-      name ??
-          (isPrivate
-              ? appLocalizationsOf(context).sharedFileEncryptedFileTitle
-              : appLocalizationsOf(context).sharedFileGenericTitle),
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
-      style: ArDriveTypography.headline.headline5Bold(
-        color: colors.themeFgDefault,
+    // The one heading on the page, and the thing a screen reader user is here
+    // for: what am I being given?
+    return Semantics(
+      header: true,
+      child: Text(
+        name ??
+            (isPrivate
+                ? appLocalizationsOf(context).sharedFileEncryptedFileTitle
+                : appLocalizationsOf(context).sharedFileGenericTitle),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: ArDriveTypography.headline.headline5Bold(
+          color: colors.themeFgDefault,
+        ),
       ),
     );
   }
 
   Widget _buildMeta(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
     final style = ArDriveTypography.body.captionRegular(
-      color: colors.themeFgSubtle,
+      color: SharedFileColors.subtle(context),
     );
 
     final parts = <Widget>[];
@@ -205,9 +221,15 @@ class SharedFileIdentity extends StatelessWidget {
 
   Widget _buildLeading(BuildContext context) {
     final thumbnailTxId = this.thumbnailTxId;
-    final icon = getIconForContentType(
-      contentType ?? 'application/octet-stream',
-      size: 24,
+
+    // Decorative in both places it is used: the file's type is already written
+    // out in words in the meta line, so reading the icon out as well would only
+    // say it twice.
+    final icon = ExcludeSemantics(
+      child: getIconForContentType(
+        contentType ?? 'application/octet-stream',
+        size: 24,
+      ),
     );
 
     if (thumbnailTxId == null) {
@@ -217,6 +239,10 @@ class SharedFileIdentity extends StatelessWidget {
     return SharedFileThumbnail(
       txId: thumbnailTxId,
       fallback: icon,
+      // The picture is of the file, so the file's own name is what it is a
+      // picture of. Falls back to nothing rather than to a label that says
+      // "image": an unnamed thumbnail is decoration.
+      semanticLabel: name,
       // A private file's thumbnail is encrypted under the same key as the file
       // itself, so it renders once the recipient has unlocked the page and not
       // before. Without a key nothing is even requested.
@@ -263,6 +289,10 @@ class SharedFileIdentity extends StatelessWidget {
 /// unavailable read as neutral - a recipient must not be told that something
 /// is wrong when all that happened is that a check has not finished, or that
 /// the link carried nothing to check against.
+///
+/// The state is never carried by the tick and the colour alone: every one of
+/// these has a word next to it, and that word is what a screen reader is given
+/// - the icon beside it is excluded so that the badge reads once, as one thing.
 class SharedFileVerificationBadge extends StatelessWidget {
   const SharedFileVerificationBadge({super.key, required this.verification});
 
@@ -273,14 +303,15 @@ class SharedFileVerificationBadge extends StatelessWidget {
     final colors = ArDriveTheme.of(context).themeData.colors;
 
     if (verification == LinkVerification.verified) {
+      // `themeSuccessDefault` is `green.400` in both themes and reads at
+      // ~2.2:1 on the light card, so the badge takes the token that passes.
+      final color = SharedFileColors.success(context);
+
       return _badge(
         context,
-        icon: ArDriveIcons.checkCirle(
-          size: 14,
-          color: colors.themeSuccessDefault,
-        ),
+        icon: ArDriveIcons.checkCirle(size: 14, color: color),
         label: appLocalizationsOf(context).sharedFileLinkVerified,
-        color: colors.themeSuccessDefault,
+        color: color,
       );
     }
 
@@ -289,7 +320,7 @@ class SharedFileVerificationBadge extends StatelessWidget {
         context,
         icon: ArDriveIcons.triangle(size: 14, color: colors.themeWarningFg),
         label: appLocalizationsOf(context).sharedFileLinkDetailsMismatch,
-        color: colors.themeWarningFg,
+        color: colors.themeFgDefault,
       );
     }
 
@@ -298,7 +329,7 @@ class SharedFileVerificationBadge extends StatelessWidget {
         context,
         icon: null,
         label: appLocalizationsOf(context).sharedFileLinkChecking,
-        color: colors.themeFgSubtle,
+        color: SharedFileColors.subtle(context),
       );
     }
 
@@ -308,7 +339,7 @@ class SharedFileVerificationBadge extends StatelessWidget {
       context,
       icon: null,
       label: appLocalizationsOf(context).sharedFileLinkNotChecked,
-      color: colors.themeFgSubtle,
+      color: SharedFileColors.subtle(context),
     );
   }
 
@@ -318,18 +349,20 @@ class SharedFileVerificationBadge extends StatelessWidget {
     required String label,
     required Color color,
   }) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (icon != null) ...[
-          icon,
-          const SizedBox(width: 4),
+    return MergeSemantics(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            ExcludeSemantics(child: icon),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: ArDriveTypography.body.captionRegular(color: color),
+          ),
         ],
-        Text(
-          label,
-          style: ArDriveTypography.body.captionRegular(color: color),
-        ),
-      ],
+      ),
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/shared_file/shared_file_key_session.dart';
 import 'package:ardrive/pages/shared_file/shared_file_page.dart';
+import 'package:ardrive/pages/shared_file/shared_file_ready_view.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/session_key_value_store.dart';
 import 'package:ardrive/utils/shared_file_link.dart';
@@ -156,11 +157,12 @@ void main() {
     WidgetTester tester,
     SharedFileState initialState, {
     SharedFileKeySession? keySession,
+    // Tall enough that the whole card is laid out and tappable, and narrower
+    // than the 950px the desktop fork needs, so every test that is not about
+    // the layout gets the phone column.
+    Size surface = const Size(800, 1600),
   }) async {
-    // Tall enough that the whole card is laid out and tappable; the page is a
-    // single scrolling column, so nothing depends on this being a phone or a
-    // monitor.
-    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.physicalSize = surface;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
@@ -718,6 +720,136 @@ void main() {
       await tester.pump();
 
       verify(() => cubit.showSharedRevision()).called(1);
+    });
+  });
+
+  group('layout', () {
+    // A phone in portrait, and a laptop. 950 is where `responsive_builder`
+    // calls a screen a desktop, so 1440 is comfortably one and 390 is
+    // comfortably not.
+    const phone = Size(390, 844);
+    const laptop = Size(1440, 1000);
+
+    const downloadButton = ValueKey('sharedFileDownload_data-tx-newest');
+
+    /// The width of the one card the page is built around.
+    double cardWidth(WidgetTester tester) =>
+        tester.getSize(find.byType(ArDriveCard).first).width;
+
+    testWidgets('gives the recipient one narrow column on a phone',
+        (tester) async {
+      await pumpPage(tester, success(), surface: phone);
+
+      // A single column: no pane to put a preview in, and the card is the
+      // reading width it has always been.
+      expect(find.byKey(sharedFilePreviewPaneKey), findsNothing);
+      expect(cardWidth(tester), lessThanOrEqualTo(400));
+
+      await tester.ensureVisible(find.byKey(downloadButton));
+      await tester.pump();
+
+      final download = tester.getRect(find.byKey(downloadButton));
+
+      expect(download.left, greaterThanOrEqualTo(0));
+      expect(download.right, lessThanOrEqualTo(phone.width));
+      expect(download.top, greaterThanOrEqualTo(0));
+      expect(download.bottom, lessThanOrEqualTo(phone.height));
+      // The primary action, full width of the column and comfortably over the
+      // 44px a control on a touch screen needs.
+      expect(download.width, greaterThan(300));
+      expect(download.height, greaterThanOrEqualTo(44));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('opens out into two panes on a desktop screen', (tester) async {
+      await pumpPage(tester, success(), surface: laptop);
+
+      // The regression this fixes: the ready card used to be capped at the
+      // phone's 400px on a monitor, so the preview had 400px to live in.
+      expect(cardWidth(tester), greaterThan(400));
+
+      await tester.ensureVisible(find.byKey(downloadButton));
+      await tester.pump();
+
+      // Measured after any scrolling, so that the two rectangles are in the
+      // same coordinates.
+      final pane = tester.getRect(find.byKey(sharedFilePreviewPaneKey));
+      final download = tester.getRect(find.byKey(downloadButton));
+
+      // The pane is reserved whether or not the preview is open, so that
+      // opening it moves nothing, and it is wide enough to be worth opening.
+      expect(pane.height, 420);
+      expect(pane.width, greaterThan(400));
+
+      expect(download.left, greaterThanOrEqualTo(0));
+      expect(download.right, lessThanOrEqualTo(laptop.width));
+      expect(download.top, greaterThanOrEqualTo(0));
+      expect(download.bottom, lessThanOrEqualTo(laptop.height));
+      expect(download.height, greaterThanOrEqualTo(44));
+
+      // Download stays a button, not a 1000px banner, and it stays on the
+      // reading side of the card - to the left of the preview, and above it,
+      // so it is the first thing found by eye, pointer and Tab key alike.
+      expect(download.width, lessThanOrEqualTo(368));
+      expect(download.right, lessThanOrEqualTo(pane.left));
+      expect(download.top, lessThan(pane.bottom));
+      expect(tester.takeException(), isNull);
+    });
+
+    // An overflow is an exception in a widget test, so what these two assert is
+    // that the fullest card there is - a name nobody would type by hand, a
+    // version notice above it, both drawers open - lays out at all. A card that
+    // ran off the side of the screen would take the exception with it.
+    SharedFileLoadSuccess crowded() => success(
+          newerVersionAvailable: true,
+          revision: fileRevision(
+            name: 'A file with a name nobody would ever choose to type out by '
+                'hand, but which the sender chose anyway.pdf',
+          ),
+          activityRevisions: [fileRevision()],
+          activityStatus: SharedFileActivityStatus.loaded,
+        );
+
+    Future<void> openBothDrawers(WidgetTester tester) async {
+      // An open drawer can push the card past the bottom of a phone, so each
+      // header is scrolled to before it is pressed.
+      for (final drawer in [
+        find.byType(ExpansionTile).first,
+        find.byType(ExpansionTile).last,
+      ]) {
+        await tester.ensureVisible(drawer);
+        await tester.pumpAndSettle();
+        await tester.tap(drawer);
+        await tester.pumpAndSettle();
+      }
+    }
+
+    testWidgets('never overflows a phone', (tester) async {
+      await pumpPage(tester, crowded(), surface: phone);
+      await openBothDrawers(tester);
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('never overflows a desktop screen', (tester) async {
+      await pumpPage(tester, crowded(), surface: laptop);
+      await openBothDrawers(tester);
+
+      expect(tester.takeException(), isNull);
+      // Still two panes with the card at its fullest.
+      expect(find.byKey(sharedFilePreviewPaneKey), findsOneWidget);
+    });
+
+    testWidgets('leaves the key gate narrow on a desktop screen',
+        (tester) async {
+      // Deliberate, and the opposite of the ready card: a key field stretched
+      // across a monitor is worse than one that is 400px wide, so only the
+      // state that hosts the preview is allowed the extra room.
+      await pumpPage(tester, locked(), surface: laptop);
+
+      expect(cardWidth(tester), lessThanOrEqualTo(400));
+      expect(find.byKey(sharedFilePreviewPaneKey), findsNothing);
+      expect(tester.takeException(), isNull);
     });
   });
 

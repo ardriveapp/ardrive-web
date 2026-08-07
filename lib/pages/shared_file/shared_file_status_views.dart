@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:ardrive/pages/shared_file/shared_file_colors.dart';
 import 'package:ardrive/pages/shared_file/shared_file_identity.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/shared_file_link.dart';
@@ -19,7 +20,6 @@ class SharedFileResolvingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
     final payload = this.payload;
     final detailsAreHidden = payload?.detailsAreHidden ?? false;
     final showEmbeddedDetails = payload != null && !detailsAreHidden;
@@ -49,7 +49,7 @@ class SharedFileResolvingView extends StatelessWidget {
               child: Text(
                 appLocalizationsOf(context).sharedFileLoadingDetails,
                 style: ArDriveTypography.body.captionRegular(
-                  color: colors.themeFgSubtle,
+                  color: SharedFileColors.subtle(context),
                 ),
               ),
             ),
@@ -131,11 +131,13 @@ class _SharedFileNotFoundViewState extends State<SharedFileNotFoundView> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    // Not `themeFgSubtle`: at ~2.7:1 on the light card it is under the 3:1 a
+    // graphic needs, and this icon is the state of the page.
+    final iconColor = SharedFileColors.subtle(context);
 
     if (widget.mayStillBePropagating) {
       return _SharedFileMessage(
-        icon: ArDriveIcons.cloudSync(size: 32, color: colors.themeFgSubtle),
+        icon: ArDriveIcons.cloudSync(size: 32, color: iconColor),
         message: _secondsRemaining > 0
             ? appLocalizationsOf(context)
                 .sharedFileStillPropagating(_secondsRemaining)
@@ -144,7 +146,7 @@ class _SharedFileNotFoundViewState extends State<SharedFileNotFoundView> {
     }
 
     return _SharedFileMessage(
-      icon: ArDriveIcons.fileX(size: 32, color: colors.themeFgSubtle),
+      icon: ArDriveIcons.fileX(size: 32, color: iconColor),
       // An attempt was spent, so the file was expected to be there: the honest
       // answer is that we cannot find it *right now*, not that it is not real.
       message: widget.retryAttempt > 0
@@ -189,10 +191,11 @@ class SharedFileNetworkErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
-
     return _SharedFileMessage(
-      icon: ArDriveIcons.triangle(size: 32, color: colors.themeFgSubtle),
+      icon: ArDriveIcons.triangle(
+        size: 32,
+        color: SharedFileColors.subtle(context),
+      ),
       message: appLocalizationsOf(context).sharedFileNetworkTrouble,
       actionLabel: appLocalizationsOf(context).sharedFileRetry,
       onAction: onRetry,
@@ -209,10 +212,11 @@ class SharedFileLinkErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
-
     return _SharedFileMessage(
-      icon: ArDriveIcons.fileX(size: 32, color: colors.themeFgSubtle),
+      icon: ArDriveIcons.fileX(
+        size: 32,
+        color: SharedFileColors.subtle(context),
+      ),
       message: appLocalizationsOf(context).sharedFileLinkIncomplete,
     );
   }
@@ -241,7 +245,8 @@ class _SharedFileMessage extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 8),
-        Center(child: icon),
+        // The sentence under it says the same thing, in words.
+        Center(child: ExcludeSemantics(child: icon)),
         const SizedBox(height: 16),
         Text(
           message,

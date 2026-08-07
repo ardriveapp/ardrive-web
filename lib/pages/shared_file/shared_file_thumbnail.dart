@@ -105,6 +105,7 @@ class SharedFileThumbnail extends StatefulWidget {
     this.isPrivate = false,
     this.size = 44,
     this.loader,
+    this.semanticLabel,
   });
 
   /// `thn` from the link.
@@ -112,6 +113,11 @@ class SharedFileThumbnail extends StatefulWidget {
 
   /// Rendered until the bytes arrive, and forever if they never do.
   final Widget fallback;
+
+  /// What the picture is of, for a screen reader. `null` leaves the image
+  /// unlabelled, which is the honest answer for a file whose name has not
+  /// arrived yet.
+  final String? semanticLabel;
 
   /// The recipient's access key, for a private file's encrypted thumbnail.
   final SecretKey? fileKey;
@@ -204,6 +210,7 @@ class _SharedFileThumbnailState extends State<SharedFileThumbnail> {
           bytes,
           fit: BoxFit.cover,
           filterQuality: FilterQuality.high,
+          semanticLabel: widget.semanticLabel,
           errorBuilder: (context, error, stackTrace) =>
               Center(child: widget.fallback),
         ),
