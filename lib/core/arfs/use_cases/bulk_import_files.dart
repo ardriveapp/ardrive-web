@@ -419,17 +419,23 @@ class BulkImportFiles {
                   : 5,
           taskQueue: fileEntries,
           onWorkerError: (file, error) {
+            // The WorkerPool passes both the failed TASK and its exception.
+            // Preserve the exception (and its originalError) so payment
+            // rejections stay detectable, and record every failed file so
+            // BulkImportResult stays truthful (imported + failures == total).
             logger.e('Bulk import worker error', error, StackTrace.current);
-            // Record the failure so BulkImportResult carries it (with its
-            // originalError) — the pool otherwise swallows task exceptions.
+            final manifestFile =
+                file.dataTxId != null ? fileDataTxIdToFile[file.dataTxId] : null;
+            final path = manifestFile?.path ?? file.name ?? 'unknown';
             failures.add(error is FileImportFailure
                 ? error
                 : FileImportFailure(
-                    path: file.name ?? '',
+                    path: path,
                     dataTxId: file.dataTxId ?? '',
                     error: error.toString(),
                     originalError: error,
                   ));
+            onFileFailure?.call(path);
           },
           execute: (file) async {
             if (_isCancelled) {
@@ -451,6 +457,10 @@ class BulkImportFiles {
               manifestTxId: manifestTxId,
               originalOwnerAddress: originalOwnerAddress,
             );
+
+            // WorkerPool discards execute's return value, so successful
+            // imports must be collected here for BulkImportResult.
+            importedFiles.add(fileEntry);
 
             onFileUploadSuccess?.call(file.name!);
 

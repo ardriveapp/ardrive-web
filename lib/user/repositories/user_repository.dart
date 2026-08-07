@@ -30,6 +30,8 @@ abstract class UserRepository {
 }
 
 class _UserRepository implements UserRepository {
+  static const _walletBalanceLoginTimeout = Duration(seconds: 5);
+
   final ProfileDao _profileDao;
   final ArweaveService _arweave;
   final ArioSDK _arioSDK;
@@ -55,16 +57,15 @@ class _UserRepository implements UserRepository {
     }
 
     final profileDetails = await _profileDao.loadDefaultProfile(password);
+    final walletAddress = await profileDetails.wallet.getAddress();
 
     final user = User(
       profileType: ProfileType.values[profileDetails.details.profileType],
       wallet: profileDetails.wallet,
       cipherKey: profileDetails.key,
       password: password,
-      walletAddress: await profileDetails.wallet.getAddress(),
-      walletBalance: await _arweave.getWalletBalance(
-        await profileDetails.wallet.getAddress(),
-      ),
+      walletAddress: walletAddress,
+      walletBalance: await _getWalletBalanceSafely(walletAddress),
       errorFetchingIOTokens: false,
       sourceWalletAddress: profileDetails.details.sourceWalletAddress,
     );
@@ -72,6 +73,22 @@ class _UserRepository implements UserRepository {
     logger.d('Loaded user');
 
     return user;
+  }
+
+  /// Fetching the balance at login is best-effort: unlocking a locally stored
+  /// profile must not fail or hang because the balance endpoint is
+  /// unavailable. On error or timeout we fall back to zero and ArDriveAuth
+  /// refreshes the balance asynchronously right after login.
+  Future<BigInt> _getWalletBalanceSafely(String walletAddress) async {
+    try {
+      return await _arweave
+          .getWalletBalance(walletAddress)
+          .timeout(_walletBalanceLoginTimeout);
+    } catch (e) {
+      logger
+          .w('Failed to fetch wallet balance during login, defaulting to 0: $e');
+      return BigInt.zero;
+    }
   }
 
   @override

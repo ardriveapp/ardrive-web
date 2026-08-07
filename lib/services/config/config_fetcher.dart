@@ -62,10 +62,33 @@ class ConfigFetcher {
     final defaultVersion = defaultConfig.configVersion ?? 1;
 
     if (storedVersion < defaultVersion) {
-      // The stored config is from a previous release. Replace it.
-      // Any developer-specific customizations will be reset, which is acceptable.
-      await saveConfigOnDevToolsPrefs(defaultConfig);
-      return defaultConfig;
+      // The stored config is from a previous release. Replace it, but
+      // preserve gateway choices that differ from the PREVIOUS defaults:
+      // those were set deliberately (settings UI, AR.IO detection, or a
+      // custom endpoint) and silently resetting them would break users on
+      // networks where the new default is unreachable.
+      const previousDefaultGqlGateway = 'https://ardrive.net';
+      const previousDefaultDataGatewayUrl = 'https://turbo-gateway.com';
+
+      var migrated = defaultConfig;
+
+      final storedGqlGateway = storedConfig.arweaveGatewayUrl;
+      if (storedGqlGateway != null &&
+          storedGqlGateway != previousDefaultGqlGateway &&
+          storedGqlGateway != defaultConfig.arweaveGatewayUrl) {
+        migrated = migrated.copyWith(arweaveGatewayUrl: storedGqlGateway);
+      }
+
+      final storedDataGateway = storedConfig.arweaveGatewayForDataRequest;
+      if (storedDataGateway.url != previousDefaultDataGatewayUrl &&
+          storedDataGateway.url !=
+              defaultConfig.arweaveGatewayForDataRequest.url) {
+        migrated =
+            migrated.copyWith(arweaveGatewayForDataRequest: storedDataGateway);
+      }
+
+      await saveConfigOnDevToolsPrefs(migrated);
+      return migrated;
     }
 
     // The stored config is up-to-date.

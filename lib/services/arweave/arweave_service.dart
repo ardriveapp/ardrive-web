@@ -152,6 +152,18 @@ class ArweaveService {
   /// Cache for drive signatures (immutable on-chain, never change).
   final Map<String, DriveSignatureEntity?> _cachedDriveSignatures = {};
 
+  /// Single [MetadataCache] instance reused across all sync batches.
+  /// Previously a new cache was rebuilt from SharedPreferences for every
+  /// parsed batch of every drive during sync.
+  MetadataCache? _metadataCache;
+
+  Future<MetadataCache> _getMetadataCache() async {
+    _metadataCache ??= await MetadataCache.fromCacheStore(
+      await newSharedPreferencesCacheStore(),
+    );
+    return _metadataCache!;
+  }
+
   /// Clears the cached result of [getUniqueUserDriveEntityTxs] and entity data.
   /// Call after creating/updating a drive or after a full sync completes.
   void clearUserDriveTxsCache() {
@@ -545,9 +557,7 @@ class ArweaveService {
       );
     }
 
-    final metadataCache = await MetadataCache.fromCacheStore(
-      await newSharedPreferencesCacheStore(),
-    );
+    final metadataCache = await _getMetadataCache();
 
     final blockHistory = <BlockEntities>[];
 
@@ -1735,9 +1745,13 @@ class ArweaveService {
 
   /// Fetches transaction info for multiple transactions in batches.
   /// Returns a stream of transaction info batches.
+  ///
+  /// The batch size matches the query's `first: 100` page size (the same
+  /// pattern as [getTransactionConfirmations] and [getLicenseAssertions]),
+  /// so each batch resolves in a single request.
   Stream<Map<String, TxInfo>> getInfoOfTxsToBePinned(
     List<String> transactionIds, {
-    int batchSize = 5,
+    int batchSize = 100,
   }) async* {
     for (var i = 0; i < transactionIds.length; i += batchSize) {
       final end = (i + batchSize < transactionIds.length)

@@ -28,6 +28,10 @@ class AppConfig {
   final String? solanaAntProgramId;
   final int maxConcurrentDataFetches;
 
+  /// Maximum number of drives synced concurrently during a full sync.
+  final int maxConcurrentDriveSyncs;
+
+
   AppConfig({
     this.arweaveGatewayUrl,
     this.arweaveGatewayForDataRequest = const SelectedGateway(
@@ -51,6 +55,7 @@ class AppConfig {
     this.solanaArnsProgramId,
     this.solanaAntProgramId,
     this.maxConcurrentDataFetches = 5,
+    this.maxConcurrentDriveSyncs = 50,
   });
 
   AppConfig copyWith({
@@ -73,6 +78,7 @@ class AppConfig {
     String? solanaArnsProgramId,
     String? solanaAntProgramId,
     int? maxConcurrentDataFetches,
+    int? maxConcurrentDriveSyncs,
   }) {
     return AppConfig(
       arweaveGatewayUrl:
@@ -102,6 +108,8 @@ class AppConfig {
       solanaAntProgramId: solanaAntProgramId ?? this.solanaAntProgramId,
       maxConcurrentDataFetches:
           maxConcurrentDataFetches ?? this.maxConcurrentDataFetches,
+      maxConcurrentDriveSyncs:
+          maxConcurrentDriveSyncs ?? this.maxConcurrentDriveSyncs,
     );
   }
 

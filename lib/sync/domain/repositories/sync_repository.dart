@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/constants.dart';
@@ -26,6 +25,7 @@ import 'package:ardrive/sync/domain/sync_cancellation_token.dart';
 import 'package:ardrive/sync/domain/sync_failure_simulator.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/sync/utils/batch_processor.dart';
+import 'package:ardrive/sync/utils/bounded_worker_pool.dart';
 import 'package:ardrive/sync/utils/network_transaction_utils.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -36,7 +36,6 @@ import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
@@ -125,7 +124,6 @@ abstract class SyncRepository {
     required ConfigService configService,
     required BatchProcessor batchProcessor,
     required SnapshotValidationService snapshotValidationService,
-    required ARNSRepository arnsRepository,
     required UserPreferencesRepository userPreferencesRepository,
   }) {
     return _SyncRepository(
@@ -134,7 +132,6 @@ abstract class SyncRepository {
       configService: configService,
       batchProcessor: batchProcessor,
       snapshotValidationService: snapshotValidationService,
-      arnsRepository: arnsRepository,
       userPreferencesRepository: userPreferencesRepository,
     );
   }
@@ -146,7 +143,6 @@ class _SyncRepository implements SyncRepository {
   final ConfigService _configService;
   final BatchProcessor _batchProcessor;
   final SnapshotValidationService _snapshotValidationService;
-  final ARNSRepository _arnsRepository;
   final UserPreferencesRepository _userPreferencesRepository;
 
   final Map<String, GhostFolder> _ghostFolders = {};
@@ -171,15 +167,13 @@ class _SyncRepository implements SyncRepository {
     required ConfigService configService,
     required BatchProcessor batchProcessor,
     required SnapshotValidationService snapshotValidationService,
-    required ARNSRepository arnsRepository,
     required UserPreferencesRepository userPreferencesRepository,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _configService = configService,
         _snapshotValidationService = snapshotValidationService,
         _batchProcessor = batchProcessor,
-        _userPreferencesRepository = userPreferencesRepository,
-        _arnsRepository = arnsRepository;
+        _userPreferencesRepository = userPreferencesRepository;
 
   @override
   Stream<SyncProgress> syncAllDrives({
@@ -206,13 +200,6 @@ class _SyncRepository implements SyncRepository {
     String? walletAddress;
     if (wallet != null) {
       walletAddress = await wallet.getAddress();
-
-      _arnsRepository
-          .getAntRecordsForWallet(walletAddress, update: true)
-          .catchError((e) {
-        logger.e('Error getting ANT records for wallet. Continuing...', e);
-        return Future.value(<ANTRecord>[]);
-      });
     }
 
     // Sync the contents of each drive attached in the app.
@@ -423,10 +410,13 @@ class _SyncRepository implements SyncRepository {
     // Track if sync was cancelled
     bool wasCancelled = false;
 
-    // Start the async work but don't wait for it yet
-    // Using Future.wait with eagerError: false to continue even if some drives fail
-    Future.wait(
-      drivesToSync.map((drive) async {
+    // Start the async work but don't wait for it yet. Drives are synced
+    // through a bounded worker pool (config.maxConcurrentDriveSyncs at a time) so
+    // large accounts don't fan out one full sync pipeline per drive at once;
+    // like Future.wait(eagerError: false), all drives are processed even if
+    // some fail.
+    final driveSyncTasks =
+        drivesToSync.map((drive) => () async {
         try {
           // Check for cancellation before starting each drive
           token.checkCancellation();
@@ -441,8 +431,12 @@ class _SyncRepository implements SyncRepository {
                 ? 0
                 : _calculateSyncLastBlockHeight(drive.lastBlockHeight ?? 0),
             currentBlockHeight: currentBlockHeight,
-            transactionParseBatchSize:
-                200 ~/ (syncProgress.drivesCount - syncProgress.drivesSynced),
+            transactionParseBatchSize: calculateTransactionParseBatchSize(
+              drivesCount: syncProgress.drivesCount,
+              drivesSynced: syncProgress.drivesSynced,
+              maxConcurrentDriveSyncs:
+                  _configService.config.maxConcurrentDriveSyncs.clamp(1, 64),
+            ),
             ownerAddress: drive.ownerAddress,
             txFechedCallback: txFechedCallback,
             cancellationToken: token,
@@ -502,8 +496,11 @@ class _SyncRepository implements SyncRepository {
           );
           syncProgressController.add(syncProgress);
         }
-      }),
-      eagerError: false, // Continue processing even if some drives fail
+      }).toList();
+
+    runBoundedWorkers(
+      tasks: driveSyncTasks,
+      maxConcurrent: _configService.config.maxConcurrentDriveSyncs.clamp(1, 64),
     ).then((_) async {
       try {
         // If sync was cancelled during drive sync, add error to stream
@@ -586,9 +583,6 @@ class _SyncRepository implements SyncRepository {
         }
         // Clear cached transaction IDs now that we've used them
         SnapshotItemOnChain.clearAllCachedTransactionIds();
-        _arnsRepository
-            .waitForARNSRecordsToUpdate()
-            .then((value) => _arnsRepository.saveAllFilesWithAssignedNames());
         final hasHiddenItems = await _driveDao.hasHiddenItems().getSingle();
         await _userPreferencesRepository.saveUserHasHiddenItem(hasHiddenItems);
         await _userPreferencesRepository.load();
@@ -2159,9 +2153,22 @@ class _SyncRepository implements SyncRepository {
         continue;
       }
 
-      newRevisions.add(revision);
-      latestRevisions[entity.id!] = revision;
-      latestRevisionsCache[entity.id!] = revision;
+      // Guard against out-of-order arrival (pagination phase restarts can
+      // interleave heights): only a strictly newer revision may become the
+      // latest, mirroring the file-revision logic above.
+      if (latestRevisions.containsKey(entity.id)) {
+        final latestRevision = latestRevisions[entity.id];
+        if (revision.dateCreated.value
+            .isAfter(latestRevision!.dateCreated.value)) {
+          latestRevisions[entity.id!] = revision;
+          latestRevisionsCache[entity.id!] = revision;
+          newRevisions.add(revision);
+        }
+      } else {
+        latestRevisions[entity.id!] = revision;
+        latestRevisionsCache[entity.id!] = revision;
+        newRevisions.add(revision);
+      }
     }
     final newNetworkTransactions =
         createNetworkTransactionsCompanionsForFolders(
@@ -2186,6 +2193,26 @@ class _SyncRepository implements SyncRepository {
 
 const fetchPhaseWeight = 0.1;
 const parsePhaseWeight = 0.9;
+
+/// Splits the 200-transaction parse budget across the drives that still need
+/// syncing, clamped so the result is always at least 1. Without the clamp,
+/// wallets with more than 200 drives would compute a batch size of 0 and
+/// [BatchProcessor.batchProcess] would throw, failing every drive sync.
+int calculateTransactionParseBatchSize({
+  required int drivesCount,
+  required int drivesSynced,
+  required int maxConcurrentDriveSyncs,
+}) {
+  final remainingDrives = max(1, drivesCount - drivesSynced);
+  // Only [maxConcurrentDriveSyncs] drives sync at once, so divide the parse
+  // budget across the drives ACTUALLY running concurrently rather than all
+  // remaining ones. Dividing by every remaining drive under-shoots the batch
+  // size once the account exceeds the concurrency bound (e.g. 200 drives ->
+  // batch 1 instead of ~4), needlessly slowing large-account syncs.
+  final concurrentDrives =
+      min(remainingDrives, max(1, maxConcurrentDriveSyncs));
+  return max(1, 200 ~/ concurrentDrives);
+}
 
 /// Computes the refreshed file entries from the provided revisions and returns them as a map keyed by their ids.
 Future<Map<String, FileEntriesCompanion>>

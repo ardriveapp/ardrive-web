@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:ardrive/download/download_exceptions.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
+import 'package:ardrive/utils/key_value_store.dart';
+import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ario_sdk/ario_sdk.dart';
@@ -33,9 +36,109 @@ class DataGatewayFallback {
   /// SnapshotValidationService) to avoid duplicate Solana RPC calls.
   List<Gateway>? cachedGateways;
 
+  static const _garCacheKey = 'gar_gateways_cache_v1';
+
+  KeyValueStore? _store;
+
   DataGatewayFallback({
     required ArioSDK arioSDK,
-  }) : _arioSDK = arioSDK;
+    KeyValueStore? store,
+  })  : _arioSDK = arioSDK,
+        _store = store;
+
+  Future<KeyValueStore?> _getStore() async {
+    if (_store != null) return _store;
+    try {
+      _store = await LocalKeyValueStore.getInstance();
+    } catch (e) {
+      logger.w('GAR cache store unavailable: $e');
+    }
+    return _store;
+  }
+
+  /// Returns the gateway list while fetching from the network at most once
+  /// ever: memory cache → persisted cache → single SDK fetch (persisted on
+  /// success). The gateway registry rarely changes, so we avoid hitting the
+  /// Solana RPC on every session; explicit refreshes go through
+  /// [refreshGateways] (e.g. from the gateway settings screen).
+  Future<List<Gateway>>? _getGatewaysFuture;
+
+  Future<List<Gateway>> getGatewaysCached() {
+    // Memoize the in-flight future: concurrent first callers (e.g. several
+    // drive syncs validating snapshots at once) must share one fetch.
+    return _getGatewaysFuture ??= _getGatewaysCachedImpl();
+  }
+
+  Future<List<Gateway>> _getGatewaysCachedImpl() async {
+    if (cachedGateways != null) return cachedGateways!;
+
+    final persisted = await _loadPersistedGateways();
+    if (persisted != null) {
+      cachedGateways = persisted;
+      return persisted;
+    }
+
+    try {
+      final fetched = await _arioSDK
+          .getGateways()
+          .timeout(_garListTimeout, onTimeout: () => <Gateway>[]);
+      cachedGateways = fetched;
+      if (fetched.isNotEmpty) {
+        await _persistGateways(fetched);
+      }
+    } catch (e) {
+      // RPC failed — cache empty list in memory so we don't retry every call
+      logger.w('GAR list unavailable, will not retry this session: $e');
+      cachedGateways = [];
+    }
+    return cachedGateways!;
+  }
+
+  /// Force-refreshes the gateway list from the network and persists the
+  /// result. User-initiated only (refresh action in gateway settings).
+  ///
+  /// Unlike [getGatewaysCached], a stalled RPC throws ([TimeoutException])
+  /// instead of returning an empty list, so the caller can surface an error
+  /// state with a retry affordance rather than silently showing no gateways.
+  /// The existing cache and persisted list are left untouched on failure.
+  Future<List<Gateway>> refreshGateways() async {
+    final fetched = await _arioSDK.getGateways().timeout(_garListTimeout);
+    cachedGateways = fetched;
+    _getGatewaysFuture = null; // next cached read observes the refresh
+    if (fetched.isNotEmpty) {
+      await _persistGateways(fetched);
+    }
+    return fetched;
+  }
+
+  Future<List<Gateway>?> _loadPersistedGateways() async {
+    try {
+      final store = await _getStore();
+      final raw = await store?.getString(_garCacheKey);
+      if (raw == null) return null;
+      final decoded = (json.decode(raw) as List)
+          .map((e) => Gateway.fromJson(e as Map<String, dynamic>))
+          .toList();
+      // An empty persisted list carries no value; treat as not cached so the
+      // next session retries the fetch.
+      return decoded.isEmpty ? null : decoded;
+    } catch (e) {
+      logger.w('Failed to load persisted GAR list, refetching: $e');
+      return null;
+    }
+  }
+
+  Future<void> _persistGateways(List<Gateway> gateways) async {
+    try {
+      final store = await _getStore();
+      await store?.putString(
+        _garCacheKey,
+        json.encode(gateways.map((g) => g.toJson()).toList()),
+      );
+    } catch (e) {
+      logger.w('Failed to persist GAR list: $e');
+    }
+  }
 
   /// Fetch transaction data with serial gateway fallback.
   ///
@@ -193,20 +296,10 @@ class DataGatewayFallback {
     final primaryHost = primaryClient.api.gatewayUrl.host;
 
     try {
-      if (cachedGateways == null) {
-        try {
-          cachedGateways = await _arioSDK
-              .getGateways()
-              .timeout(_garListTimeout, onTimeout: () => <Gateway>[]);
-        } catch (e) {
-          // Solana RPC failed — cache empty list so we don't retry every call
-          logger.w('GAR list unavailable for fallback, will not retry: $e');
-          cachedGateways = [];
-        }
-      }
+      final gateways = await getGatewaysCached();
 
       var added = 0;
-      for (final gw in cachedGateways!) {
+      for (final gw in gateways) {
         if (added >= _maxGarFallbacks) break;
         if (gw.settings.fqdn == primaryHost) continue;
         clients.add(_getOrCreateClient(gw.settings.fqdn));

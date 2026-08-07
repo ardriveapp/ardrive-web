@@ -9,6 +9,9 @@ abstract class GarEvent extends Equatable {
 
 final class GetGateways extends GarEvent {}
 
+/// User-initiated refresh of the gateway list from the network.
+final class RefreshGateways extends GarEvent {}
+
 final class SelectGateway extends GarEvent {
   final Gateway gateway;
 

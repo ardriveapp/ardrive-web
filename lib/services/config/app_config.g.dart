@@ -33,6 +33,7 @@ AppConfig _$AppConfigFromJson(Map<String, dynamic> json) => AppConfig(
       solanaArnsProgramId: json['solanaArnsProgramId'] as String?,
       solanaAntProgramId: json['solanaAntProgramId'] as String?,
       maxConcurrentDataFetches: json['maxConcurrentDataFetches'] as int? ?? 5,
+      maxConcurrentDriveSyncs: json['maxConcurrentDriveSyncs'] as int? ?? 50,
     );
 
 Map<String, dynamic> _$AppConfigToJson(AppConfig instance) => <String, dynamic>{
@@ -56,4 +57,5 @@ Map<String, dynamic> _$AppConfigToJson(AppConfig instance) => <String, dynamic>{
       'solanaArnsProgramId': instance.solanaArnsProgramId,
       'solanaAntProgramId': instance.solanaAntProgramId,
       'maxConcurrentDataFetches': instance.maxConcurrentDataFetches,
+      'maxConcurrentDriveSyncs': instance.maxConcurrentDriveSyncs,
     };

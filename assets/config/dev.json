@@ -1,5 +1,5 @@
 {
-  "configVersion": 2,
+  "configVersion": 3,
   "defaultArweaveGatewayUrl": "https://ar-io.dev",
   "defaultArweaveGatewayForDataRequest": {
     "label": "AR.IO Testnet",
@@ -12,5 +12,6 @@
   "allowedDataItemSizeForTurbo": 100000,
   "stripePublishableKey": "pk_test_51JUAtwC8apPOWkDLh2FPZkQkiKZEkTo6wqgLCtQoClL6S4l2jlbbc5MgOdwOUdU9Tn93NNvqAGbu115lkJChMikG00XUfTmo2z",
   "uploadThumbnails": true,
-  "autoSync": false
+  "autoSync": false,
+  "maxConcurrentDriveSyncs": 50
 }

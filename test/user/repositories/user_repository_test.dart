@@ -101,6 +101,31 @@ void main() {
             .called(1);
       });
 
+      test(
+          'should still return a user with zero balance when the balance '
+          'fetch fails', () async {
+        when(() => mockArweaveService.getWalletBalance(any()))
+            .thenThrow(Exception('gateway unavailable'));
+
+        final result = await userRepository.getUser(rightPassword);
+
+        expect(result, isNotNull);
+        expect(result!.walletBalance, BigInt.zero);
+        expect(result.walletAddress, await wallet.getAddress());
+      });
+
+      test(
+          'should still return a user with zero balance when the balance '
+          'fetch rejects asynchronously', () async {
+        when(() => mockArweaveService.getWalletBalance(any())).thenAnswer(
+            (_) async => throw Exception('gateway timed out'));
+
+        final result = await userRepository.getUser(rightPassword);
+
+        expect(result, isNotNull);
+        expect(result!.walletBalance, BigInt.zero);
+      });
+
       test('should return null if there is no profile', () async {
         when(() => mockProfileDao.getDefaultProfile())
             .thenAnswer((_) async => Future.value(null));
