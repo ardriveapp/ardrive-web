@@ -21,13 +21,27 @@ void main() {
   // key that disagrees with [validFileKey].
   const validDriveKey = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQ';
 
-  // 43 base64url characters: the shape of every Arweave id.
-  const dataTxId = 'nS7hxbLQmk3W1o9zX2cV4bN5mL6kJ7hG8fD9sA0qWeR';
+  // 43 base64url characters that decode to 32 bytes: the shape of every
+  // Arweave id, and the same canonicality rule the keys above follow. A v2
+  // payload stores ids as bytes, so an id that will not decode cannot travel.
+  const dataTxId = 'nS7hxbLQmk3W1o9zX2cV4bN5mL6kJ7hG8fD9sA0qWeQ';
   const metadataTxId = 'S1QzT9YbPo8iU7yT6rE5wQ4aS3dF2gH1jK0lZxCvBnM';
-  const ownerAddress = 'Zvp8dEkO3nQ2wX9yV8uT7sR6qP5oN4mL3kJ2iH1gF0e';
+  const ownerAddress = 'Zvp8dEkO3nQ2wX9yV8uT7sR6qP5oN4mL3kJ2iH1gF0c';
 
   // 12 IV bytes, base64url encoded.
   const cipherIv = '9tR2kX0pLmQz8sQ1';
+
+  /// The keyless private link of the design plan §1.3, as a payload.
+  const sharedPayload = SharedFileLinkPayload(
+    dataTxId: dataTxId,
+    metadataTxId: metadataTxId,
+    ownerAddress: ownerAddress,
+    name: 'Q3 Report.pdf',
+    size: 4821133,
+    contentType: 'application/pdf',
+    cipher: Cipher.aes256gcm,
+    cipherIv: cipherIv,
+  );
 
   late AppRouteInformationParser parser;
 
@@ -114,10 +128,12 @@ void main() {
 
   group('shared file routes, v2 payload', () {
     // The keyless private link of the design plan §1.3, on the Phase 1 hash
-    // route.
-    const v2Link = '/file/$fileId/view?v=2&dtx=$dataTxId&mtx=$metadataTxId'
-        '&own=$ownerAddress&n=Q3%20Report.pdf&s=4821133'
-        '&ct=application%2Fpdf&c=AES256-GCM&iv=$cipherIv';
+    // route. Built through the builder rather than typed out: the payload is
+    // packed, and a hand-written one here would only be testing this file's
+    // arithmetic. `test/utils/shared_file_link_test.dart` is where the layout
+    // itself is pinned.
+    final v2Link =
+        buildSharedFileLinkLocation(fileId: fileId, payload: sharedPayload);
 
     test('parses the payload of a keyless private link', () async {
       final routePath = await parse(v2Link);
@@ -143,8 +159,18 @@ void main() {
       expect(routePath.sharedFileKeyIsDamaged, isFalse);
     });
 
-    test('one malformed field never costs the rest of the payload', () async {
-      final routePath = await parse('$v2Link&s=four%20million');
+    test('a field that cannot be encoded never costs the rest', () async {
+      // A size the payload cannot spell - eight bytes where the schema carries
+      // six - reached by rebuilding the link around it. The field-by-field
+      // corruption matrix lives with the layout, in
+      // `test/utils/shared_file_link_test.dart`; what this asserts is that the
+      // route parser sees the same partial payload the decoder produces.
+      final routePath = await parse(
+        buildSharedFileLinkLocation(
+          fileId: fileId,
+          payload: sharedPayload.copyWith(size: 1 << 60),
+        ),
+      );
 
       final payload = routePath.sharedFileLinkPayload;
 
@@ -152,6 +178,21 @@ void main() {
       expect(payload!.size, isNull);
       expect(payload.dataTxId, dataTxId);
       expect(payload.name, 'Q3 Report.pdf');
+      expect(payload.contentType, 'application/pdf');
+    });
+
+    test('a payload cut in transit still names the file to fetch', () async {
+      // What a chat client does to a long link. The reader keeps the fields
+      // before the cut, and `dtx` - the one that starts the download - is
+      // first in the layout for exactly this reason.
+      final cut = v2Link.substring(0, v2Link.indexOf('?d=') + 3 + 48);
+      final routePath = await parse(cut);
+
+      expect(routePath.sharedFileId, fileId);
+      expect(routePath.sharedFileLinkPayload, isNotNull);
+      expect(routePath.sharedFileLinkPayload!.dataTxId, dataTxId);
+      expect(routePath.sharedFileLinkPayload!.name, isNull);
+      expect(routePath.sharedFileLinkPayload!.cipher, Cipher.aes256gcm);
     });
 
     test('takes the key from the v2 parameter', () async {
@@ -227,22 +268,34 @@ void main() {
       expect(routePath.sharedRawFileKey, isNull);
     });
 
-    test('a link where nothing is well formed still resolves', () async {
+    test('a payload that is not a payload still resolves the route', () async {
+      // A `d` nothing can read is a link with no payload, which is a v1 link:
+      // the file resolves over GraphQL, and the route and the key damage are
+      // reported exactly as they would be on any other link.
       final routePath = await parse(
-        '/file/$fileId/view?v=2&dtx=!&mtx=!&own=!&s=nope&c=ROT13&iv=!'
-        '&pin=maybe&hid=maybe&k=nope&unknown=ignored',
+        '/file/$fileId/view?d=not%20a%20payload!&k=nope&unknown=ignored',
       );
 
       expect(routePath.sharedFileId, fileId);
-      expect(routePath.sharedFileLinkPayload, isNotNull);
-      expect(routePath.sharedFileLinkPayload!.dataTxId, isNull);
-      expect(routePath.sharedFileLinkPayload!.isPinned, isFalse);
+      expect(routePath.sharedFileLinkPayload, isNull);
       expect(routePath.sharedFileKeyIsDamaged, isTrue);
+      expect(routePath.sharedRawFileKey, isNull);
+    });
+
+    test('an oversized payload never reaches the decoder', () async {
+      final oversized = 'A' * (SharedFileLinkPayload.maxEncodedLength + 1);
+      final routePath = await parse('/file/$fileId/view?d=$oversized');
+
+      expect(routePath.sharedFileId, fileId);
+      expect(routePath.sharedFileLinkPayload, isNull);
     });
 
     test('an unsupported version falls back to the v1 path', () async {
+      // A v3 link read by a v2 build. Everything is resolved from the chain,
+      // which cannot be wrong about anything the link asserted.
+      final future = sharedPayload.copyWith(version: 9).encode();
       final routePath = await parse(
-        '${v2Link.replaceFirst('?v=2', '?v=9')}'
+        '/file/$fileId/view?d=$future'
         '&$fileKeyQueryParamName=$validFileKey',
       );
 
@@ -281,11 +334,18 @@ void main() {
     });
 
     test('a v2 payload survives a round trip', () async {
+      // Every field at once, pinned and hidden, with the second cipher and a
+      // key: what has to come back out of the address bar unchanged.
       final routePath = await parse(
-        '/file/$fileId/view?v=2&pin=1&hid=1&dtx=$dataTxId&mtx=$metadataTxId'
-        '&own=$ownerAddress&n=Q3%20Report.pdf&s=4821133'
-        '&ct=application%2Fpdf&c=AES256-CTR&iv=$cipherIv'
-        '&k=$validFileKey',
+        buildSharedFileLinkLocation(
+          fileId: fileId,
+          payload: sharedPayload.copyWith(
+            isPinned: true,
+            detailsAreHidden: true,
+            cipher: Cipher.aes256ctr,
+          ),
+          rawFileKey: validFileKey,
+        ),
       );
 
       final restored = await roundTrip(routePath);
@@ -295,12 +355,18 @@ void main() {
         restored.sharedFileLinkPayload,
         routePath.sharedFileLinkPayload,
       );
+      expect(restored.sharedFileLinkPayload!.isPinned, isTrue);
+      expect(restored.sharedFileLinkPayload!.detailsAreHidden, isTrue);
+      expect(restored.sharedFileLinkPayload!.cipher, Cipher.aes256ctr);
       expect(restored.sharedRawFileKey, validFileKey);
       expect(restored.sharedFileKeyIsDamaged, isFalse);
     });
 
     test('the restored key never lands anywhere a server would see', () async {
-      final routePath = await parse('/file/$fileId/view?v=2&k=$validFileKey');
+      final routePath = await parse(
+        '/file/$fileId/view'
+        '?d=${const SharedFileLinkPayload().encode()}&k=$validFileKey',
+      );
 
       final location = parser.restoreRouteInformation(routePath).uri.toString();
 
@@ -564,10 +630,11 @@ void main() {
           // fragment and is rewritten onto `/share`; nothing may be lost.
           final routePath = await parse(
             hashLinkLocation(
-              '/file/$fileId/view?v=2&dtx=$dataTxId&mtx=$metadataTxId'
-              '&own=$ownerAddress&n=Q3%20Report.pdf&s=4821133'
-              '&ct=application%2Fpdf&c=AES256-GCM&iv=$cipherIv'
-              '&k=$validFileKey',
+              buildSharedFileLinkLocation(
+                fileId: fileId,
+                payload: sharedPayload,
+                rawFileKey: validFileKey,
+              ),
               strategy,
             ),
           );
@@ -671,9 +738,13 @@ void main() {
 
     test('the §1.3 example link parses on the /share route', () async {
       final routePath = await parse(
-        '/share/$fileId?v=2&dtx=$dataTxId&mtx=$metadataTxId'
-        '&own=$ownerAddress&n=Q3%20Report.pdf&s=4821133'
-        '&ct=application%2Fpdf&c=AES256-GCM&iv=$cipherIv#k=$validFileKey',
+        buildSharedFileLinkLocation(
+          fileId: fileId,
+          payload: sharedPayload,
+          rawFileKey: validFileKey,
+          route: SharedFileLinkRoute.share,
+          keyPlacement: SharedFileLinkKeyPlacement.fragment,
+        ),
       );
 
       expect(routePath.sharedFileId, fileId);
@@ -719,16 +790,26 @@ void main() {
     test('a v2 link keeps its payload in the query and its key out of it',
         () async {
       final routePath = await parse(
-        '/file/$fileId/view?v=2&dtx=$dataTxId&n=Q3%20Report.pdf'
-        '&k=$validFileKey',
+        buildSharedFileLinkLocation(
+          fileId: fileId,
+          payload: sharedPayload,
+          rawFileKey: validFileKey,
+        ),
       );
 
       final location = restore(routePath);
 
-      expect(location, startsWith('/share/$fileId?v=2'));
-      expect(location, contains('dtx=$dataTxId'));
+      expect(
+        location,
+        startsWith('/share/$fileId?${SharedFileLinkParams.payload}='),
+      );
       expect(location, endsWith('#k=$validFileKey'));
       expect(location.split('#').first, isNot(contains(validFileKey)));
+      // The payload made the move whole, not just the route.
+      expect(
+        SharedFileLinkPayload.tryParse(Uri.parse(location))?.dataTxId,
+        dataTxId,
+      );
     });
 
     test('a keyless link restores to the bare route', () async {
@@ -784,7 +865,13 @@ void main() {
 
     test('restores a round trip', () async {
       final routePath = await parse(
-        '/share/$fileId?v=2&dtx=$dataTxId&n=Q3%20Report.pdf#k=$validFileKey',
+        buildSharedFileLinkLocation(
+          fileId: fileId,
+          payload: sharedPayload,
+          rawFileKey: validFileKey,
+          route: SharedFileLinkRoute.share,
+          keyPlacement: SharedFileLinkKeyPlacement.fragment,
+        ),
       );
 
       final restored = await pathParser.parseRouteInformation(

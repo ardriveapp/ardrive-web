@@ -41,11 +41,12 @@ void main() {
   const fileId = '8f3c2a10-6f4e-4c7a-9b2e-1d2f3a4b5c6d';
   const rootFolderId = '00000000-0000-0000-0000-000000000003';
 
-  // The ids of the design plan's example links, §1.3.
-  const dataTxId = 'nS7hxbLQmk3W1o9zX2cV4bN5mL6kJ7hG8fD9sA0qWeR';
+  // The ids of the design plan's example links, §1.3 - canonical, so that they
+  // decode to the 32 bytes a payload stores them as.
+  const dataTxId = 'nS7hxbLQmk3W1o9zX2cV4bN5mL6kJ7hG8fD9sA0qWeQ';
   const metadataTxId = 'S1QzT9YbPo8iU7yT6rE5wQ4aS3dF2gH1jK0lZxCvBnM';
-  const ownerAddress = 'Zvp8dEkO3nQ2wX9yV8uT7sR6qP5oN4mL3kJ2iH1gF0e';
-  const bundledInTxId = 'oLd7hxbLQmk3W1o9zX2cV4bN5mL6kJ7hG8fD9sA0qWe';
+  const ownerAddress = 'Zvp8dEkO3nQ2wX9yV8uT7sR6qP5oN4mL3kJ2iH1gF0c';
+  const bundledInTxId = 'oLd7hxbLQmk3W1o9zX2cV4bN5mL6kJ7hG8fD9sA0qWc';
   const thumbnailTxId = 'oLdzT9YbPo8iU7yT6rE5wQ4aS3dF2gH1jK0lZxCvBn0';
 
   // 12 IV bytes are 16 base64url characters.
@@ -70,6 +71,20 @@ void main() {
 
   Map<String, String> parametersOf(FileShareLoadSuccess state) =>
       locationOf(state.fileShareLink).queryParameters;
+
+  /// What the built link actually asserts, read back out of it.
+  ///
+  /// The link's fields are packed into one parameter, so the only honest way to
+  /// ask what a share dialog produced is to decode it - which is also what the
+  /// recipient does.
+  SharedFileLinkPayload payloadOf(FileShareLoadSuccess state) {
+    final payload =
+        SharedFileLinkPayload.tryParse(locationOf(state.fileShareLink));
+
+    expect(payload, isNotNull, reason: 'no payload in ${state.fileShareLink}');
+
+    return payload!;
+  }
 
   Future<void> insertDrive({required String privacy}) async {
     var drive = DrivesCompanion.insert(
@@ -250,17 +265,24 @@ void main() {
       verify: (cubit) {
         final state = cubit.state as FileShareLoadSuccess;
 
-        expect(parametersOf(state), {
-          SharedFileLinkParams.version: '2',
-          SharedFileLinkParams.dataTxId: dataTxId,
-          SharedFileLinkParams.metadataTxId: metadataTxId,
-          SharedFileLinkParams.owner: ownerAddress,
-          SharedFileLinkParams.name: fileName,
-          SharedFileLinkParams.size: '$fileSize',
-          SharedFileLinkParams.contentType: contentType,
-          SharedFileLinkParams.bundledIn: bundledInTxId,
-          SharedFileLinkParams.thumbnailTxId: thumbnailTxId,
-        });
+        expect(
+          payloadOf(state),
+          const SharedFileLinkPayload(
+            dataTxId: dataTxId,
+            metadataTxId: metadataTxId,
+            ownerAddress: ownerAddress,
+            name: fileName,
+            size: fileSize,
+            contentType: contentType,
+            bundledInTxId: bundledInTxId,
+            thumbnailTxId: thumbnailTxId,
+          ),
+        );
+        expect(
+          parametersOf(state).keys,
+          [SharedFileLinkParams.payload],
+          reason: 'a v2 link is one packed parameter and, at most, a key',
+        );
 
         expect(state.isPublicFile, isTrue);
         expect(state.fileName, fileName);
@@ -278,11 +300,8 @@ void main() {
 
       final state = await loaded(createCubit());
 
-      expect(
-        parametersOf(state).containsKey(SharedFileLinkParams.thumbnailTxId),
-        isFalse,
-      );
-      expect(parametersOf(state)[SharedFileLinkParams.dataTxId], dataTxId);
+      expect(payloadOf(state).thumbnailTxId, isNull);
+      expect(payloadOf(state).dataTxId, dataTxId);
     });
 
     test('a file with no revision row still gets a link, without mtx',
@@ -291,15 +310,9 @@ void main() {
 
       final state = await loaded(createCubit());
 
-      expect(
-        parametersOf(state).containsKey(SharedFileLinkParams.metadataTxId),
-        isFalse,
-      );
-      expect(parametersOf(state)[SharedFileLinkParams.dataTxId], dataTxId);
-      expect(
-        parametersOf(state)[SharedFileLinkParams.thumbnailTxId],
-        thumbnailTxId,
-      );
+      expect(payloadOf(state).metadataTxId, isNull);
+      expect(payloadOf(state).dataTxId, dataTxId);
+      expect(payloadOf(state).thumbnailTxId, thumbnailTxId);
     });
   });
 
@@ -326,13 +339,12 @@ void main() {
               isTrue,
             )
             .having(
-              (s) => parametersOf(s),
-              'parameters',
-              allOf(
-                containsPair(SharedFileLinkParams.dataTxId, dataTxId),
-                isNot(contains(SharedFileLinkParams.cipher)),
-                isNot(contains(SharedFileLinkParams.cipherIv)),
-              ),
+              (s) => payloadOf(s),
+              'payload',
+              isA<SharedFileLinkPayload>()
+                  .having((p) => p.dataTxId, 'dataTxId', dataTxId)
+                  .having((p) => p.cipher, 'cipher', isNull)
+                  .having((p) => p.cipherIv, 'cipherIv', isNull),
             ),
         isA<FileShareLoadSuccess>()
             .having(
@@ -341,12 +353,11 @@ void main() {
               isFalse,
             )
             .having(
-              (s) => parametersOf(s),
-              'parameters',
-              allOf(
-                containsPair(SharedFileLinkParams.cipher, Cipher.aes256gcm),
-                containsPair(SharedFileLinkParams.cipherIv, cipherIv),
-              ),
+              (s) => payloadOf(s),
+              'payload',
+              isA<SharedFileLinkPayload>()
+                  .having((p) => p.cipher, 'cipher', Cipher.aes256gcm)
+                  .having((p) => p.cipherIv, 'cipherIv', cipherIv),
             ),
       ]),
     );
@@ -355,19 +366,22 @@ void main() {
         () async {
       final state = await loaded(createCubit());
 
-      expect(parametersOf(state), {
-        SharedFileLinkParams.version: '2',
-        SharedFileLinkParams.dataTxId: dataTxId,
-        SharedFileLinkParams.metadataTxId: metadataTxId,
-        SharedFileLinkParams.owner: ownerAddress,
-        SharedFileLinkParams.name: fileName,
-        SharedFileLinkParams.size: '$fileSize',
-        SharedFileLinkParams.contentType: contentType,
-        SharedFileLinkParams.cipher: Cipher.aes256gcm,
-        SharedFileLinkParams.cipherIv: cipherIv,
-        SharedFileLinkParams.bundledIn: bundledInTxId,
-        SharedFileLinkParams.thumbnailTxId: thumbnailTxId,
-      });
+      expect(
+        payloadOf(state),
+        const SharedFileLinkPayload(
+          dataTxId: dataTxId,
+          metadataTxId: metadataTxId,
+          ownerAddress: ownerAddress,
+          name: fileName,
+          size: fileSize,
+          contentType: contentType,
+          cipher: Cipher.aes256gcm,
+          cipherIv: cipherIv,
+          bundledInTxId: bundledInTxId,
+          thumbnailTxId: thumbnailTxId,
+        ),
+      );
+      expect(parametersOf(state).keys, [SharedFileLinkParams.payload]);
 
       expect(state.isPublicFile, isFalse);
       expect(state.keyIsInLink, isFalse);
@@ -409,56 +423,54 @@ void main() {
 
     test('hiding the details omits n, s and ct and sets hid', () async {
       final cubit = createCubit();
-      await loaded(cubit);
+      final shownFirst = await loaded(cubit);
+      final shownLength = shownFirst.fileShareLink.toString().length;
 
       cubit.setDetailsAreHidden(true);
 
       final state = cubit.state as FileShareLoadSuccess;
-      final parameters = parametersOf(state);
+      final payload = payloadOf(state);
 
       expect(state.detailsAreHidden, isTrue);
-      expect(parameters[SharedFileLinkParams.hidden], '1');
-      expect(parameters.containsKey(SharedFileLinkParams.name), isFalse);
-      expect(parameters.containsKey(SharedFileLinkParams.size), isFalse);
-      expect(parameters.containsKey(SharedFileLinkParams.contentType), isFalse);
+      expect(payload.detailsAreHidden, isTrue);
+      expect(payload.name, isNull);
+      expect(payload.size, isNull);
+      expect(payload.contentType, isNull);
+      // The name is not merely unspelled: the bytes are not in the link, so
+      // there is nothing for a reader of the payload to decode either.
       expect(state.fileShareLink.toString(), isNot(contains('Report')));
+      expect(
+        state.fileShareLink.toString().length,
+        lessThan(shownLength),
+      );
 
       // The rest of the link is untouched: hiding is not a downgrade.
-      expect(parameters[SharedFileLinkParams.dataTxId], dataTxId);
-      expect(parameters[SharedFileLinkParams.cipher], Cipher.aes256gcm);
-      expect(parameters[SharedFileLinkParams.cipherIv], cipherIv);
+      expect(payload.dataTxId, dataTxId);
+      expect(payload.cipher, Cipher.aes256gcm);
+      expect(payload.cipherIv, cipherIv);
 
       cubit.setDetailsAreHidden(false);
 
       final shown = cubit.state as FileShareLoadSuccess;
 
-      expect(
-        parametersOf(shown).containsKey(SharedFileLinkParams.hidden),
-        isFalse,
-      );
-      expect(parametersOf(shown)[SharedFileLinkParams.name], fileName);
+      expect(payloadOf(shown).detailsAreHidden, isFalse);
+      expect(payloadOf(shown).name, fileName);
     });
 
     test('pinning sets pin and leaves live links without it', () async {
       final cubit = createCubit();
       final live = await loaded(cubit);
 
-      expect(
-        parametersOf(live).containsKey(SharedFileLinkParams.pinned),
-        isFalse,
-      );
+      expect(payloadOf(live).isPinned, isFalse);
 
       cubit.setPinnedToCurrentVersion(true);
 
       final pinned = cubit.state as FileShareLoadSuccess;
 
       expect(pinned.isPinned, isTrue);
-      expect(parametersOf(pinned)[SharedFileLinkParams.pinned], '1');
-      expect(parametersOf(pinned)[SharedFileLinkParams.dataTxId], dataTxId);
-      expect(
-        parametersOf(pinned)[SharedFileLinkParams.metadataTxId],
-        metadataTxId,
-      );
+      expect(payloadOf(pinned).isPinned, isTrue);
+      expect(payloadOf(pinned).dataTxId, dataTxId);
+      expect(payloadOf(pinned).metadataTxId, metadataTxId);
     });
 
     test('a failed cipher lookup still yields a usable link', () async {
@@ -466,20 +478,16 @@ void main() {
           .thenAnswer((_) async => throw Exception('gateway is unreachable'));
 
       final state = await loaded(createCubit());
-      final parameters = parametersOf(state);
+      final payload = payloadOf(state);
 
-      expect(parameters.containsKey(SharedFileLinkParams.cipher), isFalse);
-      expect(parameters.containsKey(SharedFileLinkParams.cipherIv), isFalse);
+      expect(payload.cipher, isNull);
+      expect(payload.cipherIv, isNull);
       expect(state.isLoadingCipherDetails, isFalse);
       expect(state.fileKeyBase64, await expectedFileKey());
 
       // Everything else is still there, so the recipient pays one GraphQL
       // request at download time and nothing more (§1.2).
-      final payload =
-          SharedFileLinkPayload.tryParse(locationOf(state.fileShareLink));
-
-      expect(payload, isNotNull);
-      expect(payload!.hasFastPathTarget, isTrue);
+      expect(payload.hasFastPathTarget, isTrue);
       expect(payload.hasCipherDetails, isFalse);
       expect(payload.name, fileName);
     });
@@ -490,11 +498,8 @@ void main() {
 
       final state = await loaded(createCubit());
 
-      expect(
-        parametersOf(state).containsKey(SharedFileLinkParams.cipher),
-        isFalse,
-      );
-      expect(parametersOf(state)[SharedFileLinkParams.dataTxId], dataTxId);
+      expect(payloadOf(state).cipher, isNull);
+      expect(payloadOf(state).dataTxId, dataTxId);
     });
   });
 

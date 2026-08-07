@@ -46,49 +46,129 @@ GCM ⇔ `< 100 MiB` ⇔ small enough to buffer, and the buffered `cryptography` 
 
 Everything except `k` is non-secret. `c`/`iv` are public on-chain tags (`docs/ArweaveFS.md:43,121-122`); ciphertext length is public; filename/content-type are private-file secrets *only if the sharer hides them* (decision 2: embedded by default, hide toggle).
 
+**[REVISED — 2026-08-07.] The fields below travel packed, in one query parameter, not as named parameters.** The first draft of this schema spelled every field out (`?v=2&dtx=…&mtx=…&own=…&n=…`). It never shipped — it existed only on the unmerged branch — so it was replaced rather than migrated, and there are no v1-style compatibility obligations for it. v1 `?fileKey=` links are unaffected and permanent. See §1.2.1 for the wire format and §1.2.2 for what the change bought.
+
 | Field | Type | Where | Required | Secret | Absent ⇒ client behavior |
 |---|---|---|---|---|---|
 | `{fileId}` | uuid, path segment | path | yes | no | — (route doesn't match) |
-| `v` | int, `2` | query | yes for v2 semantics | no | Treat as v1: full GQL resolution (today's resolver, plus Phase-0 fixes) |
-| `dtx` | txid (43 ch) | query | no, but required for the fast path | no | Resolve `dataTxId` via GQL before any fetch; page shows skeleton meanwhile |
-| `mtx` | txid | query | no | no | Skip background verification (badge shows "Unverified link"); freshness check anchors on `own`+fileId GQL only |
-| `own` | address (43 ch) | query | no | no | Owner resolved from `mtx` fetch, else first-writer GQL probe (`arweave_service.dart:1299+`) |
-| `n` | filename, URL-encoded, ≤120 ch | query | no | no (sensitive; hide-toggle omits it) | Header shows "Shared file" (public) / "Encrypted file" (private) until metadata resolves or decrypts |
-| `s` | int bytes | query | no | no | No size chip; preview budget checks fall back to post-`mtx` values; download progress switches to indeterminate until Content-Length arrives |
-| `ct` | MIME, URL-encoded | query | no | no (same toggle as `n`) | Infer from `n`; else `application/octet-stream` → download-only card |
-| `c` | `AES256-GCM` \| `AES256-CTR` | query | private files: yes | no | One `getTransactionDetails` GQL at download/preview time (today's behavior, `shared_file_download_cubit.dart:69-77`) |
-| `iv` | base64, 12 bytes | query | private files: yes | no | Same GQL fallback as `c` |
-| `pin` | `1` | query | no | no | Absent = **live semantics** (decision 1): freshness check runs and *offers* newer; present = pinned: freshness check still runs but banner says "newer version exists" without changing the download target |
-| `in` | txid (`bundledIn`) | query | no | no | None — diagnostic only |
-| `thn` | txid of thumbnail | query | no | no | Type icon instead of thumbnail image |
-| `hid` | `1` (name/size hidden by sharer) | query | no | no | Absent = fields were embedded or link is legacy; presence only tunes locked-page copy ("The sender chose to hide the file's details until unlocked") |
+| `d` | packed payload, base64url | query | yes for v2 semantics | no | Treat as v1: full GQL resolution (today's resolver, plus Phase-0 fixes) |
+| version | byte 0 of `d`, `2` | payload | yes | no | A version this build does not know ⇒ the whole payload is dropped and the link resolves as v1 |
+| `dtx` | txid, 32 bytes | payload | no, but required for the fast path | no | Resolve `dataTxId` via GQL before any fetch; page shows skeleton meanwhile |
+| `mtx` | txid, 32 bytes | payload | no | no | Skip background verification (badge shows "Unverified link"); freshness check anchors on `own`+fileId GQL only |
+| `own` | address, 32 bytes | payload | no | no | Owner resolved from `mtx` fetch, else first-writer GQL probe (`arweave_service.dart:1299+`); the "Shared by" line appears when it lands |
+| `n` | filename, UTF-8, ≤120 ch and ≤255 bytes | payload | no | no (sensitive; hide-toggle omits it) | Header shows "Shared file" (public) / "Encrypted file" (private) until metadata resolves or decrypts |
+| `s` | int bytes, ≤6 bytes big endian | payload | no | no | No size chip; preview budget checks fall back to post-`mtx` values; download progress switches to indeterminate until Content-Length arrives |
+| `ct` | MIME: a table code, or UTF-8 | payload | no | no (same toggle as `n`) | Infer from `n`; else `application/octet-stream` → download-only card |
+| `c` | `AES256-GCM` \| `AES256-CTR`, 2 bits | payload | private files: yes | no | One `getTransactionDetails` GQL at download/preview time (today's behavior, `shared_file_download_cubit.dart:69-77`) |
+| `iv` | 12 bytes | payload | private files: yes | no | Same GQL fallback as `c` |
+| `pin` | 1 bit | payload | no | no | Absent = **live semantics** (decision 1): freshness check runs and *offers* newer; present = pinned: freshness check still runs but banner says "newer version exists" without changing the download target |
+| `in` | txid (`bundledIn`), record tag 1 | payload | no | no | None — diagnostic only |
+| `thn` | txid of thumbnail, record tag 2 | payload | no | no | Type icon instead of thumbnail image |
+| `hid` | 1 bit (name/size hidden by sharer) | payload | no | no | Absent = fields were embedded or link is legacy; presence only tunes locked-page copy ("The sender chose to hide the file's details until unlocked") |
 | `k` | base64url file key (43 ch) | **fragment** `#k=` | never | **YES** | **The normal case** (decision 4: key-in-link is opt-in, default off) → Locked state (§2, `LOCKED`) |
 
 Rules:
 
-- `k` may **never** appear in path or query. The share dialog writes it only into the fragment, and only when the opt-in checkbox is set.
-- Unknown params are ignored; every field degrades independently (the table's last column is normative).
+- `k` may **never** appear in path or query, and is **never** part of `d`. The share dialog writes it only into the fragment (or, on the hash route, into the hash query, which no server sees), and only when the opt-in checkbox is set. Keeping it out of the payload is what makes it independently placeable.
+- Unknown parameters are ignored, and so are unknown payload records; every field degrades independently (the table's last column is normative).
 - All fields are copied from the local Drift DB at share time (see review §4.1) except `c`/`iv`, which cost one `getTransactionDetails` GQL in `FileShareCubit` — the sharer is online in-app, non-blocking for the dialog (populate link when it resolves; the dialog already has an async load state, `file_share_dialog.dart:69-70`).
+- **Every id in a payload must be canonical**: 43 base64url characters that decode to exactly 32 bytes, which means the final character's low 2 bits are zero (`Q`, alphabet index 16, qualifies; `q`, index 42, does not). Real transaction ids and owner addresses always are. An id that is not is dropped by the builder, because a payload stores it as the bytes it claims to be and there is nothing to store. The examples in this document used to violate this and cost two rounds of test failures; `isCanonical32ByteId` in `lib/utils/shared_file_link.dart` is now the one check, shared with file keys.
+
+#### 1.2.1 The wire format of `d`
+
+`d` is the base64url encoding, without padding, of:
+
+```text
+byte 0     schema version, always 2
+byte 1     flags
+             bit 0     pin
+             bit 1     hid
+             bits 2-3  cipher: 0 absent, 1 AES256-GCM, 2 AES256-CTR, 3 unassigned
+             bits 4-7  reserved, ignored on the way in
+byte 2     which fixed fields follow, read in ascending bit order
+             bit 0  dtx  32 bytes
+             bit 1  mtx  32 bytes
+             bit 2  own  32 bytes
+             bit 3  iv   12 bytes
+             bit 4  s    one length byte (1-6) then big endian bytes
+             bit 5  n    one length byte then UTF-8
+             bit 6  ct   one code byte; 0 means a length byte and UTF-8 follow,
+                         anything else is an index into the content type table
+             bit 7  records follow
+bytes 3..  the fields the bitmap named, in bit order
+then       records to the end of the payload: tag, length, `length` bytes
+             tag 1  in   32 bytes
+             tag 2  thn  32 bytes
+             any other tag is skipped by its length
+```
+
+**Degradation.** Every field is skippable by something the reader has already seen — a fixed field by its known width, a variable one by its length byte, a record by its length byte — so the reader stops exactly where the damage is and keeps everything before it. `dtx` is first in the layout because it is the field that starts the download: a link a chat client cut in half still names the bytes to fetch. A payload that cannot be decoded at all yields no payload, which is a v1 link, which resolves over GraphQL and therefore cannot be wrong about anything.
+
+**Extension.** Add a record tag and leave the version at 2: older builds skip the tag by its length and keep every other field. Bump the version only for a change that reshapes the header, and accept that older builds then drop the payload whole. The content type table (`_contentTypeTable`) is **append-only** for the same reason — reordering it silently changes what every link already sent means.
+
+**Limits.** `d` is refused above 2048 characters, which is roughly double the largest payload the builder can produce.
+
+#### 1.2.2 What the packing bought, measured
+
+Character counts for the four links the share dialog produces, on the Phase 1 hash route, for `Q3 Report.pdf` (4,821,133 bytes, `application/pdf`) with `dtx`, `mtx` and `own`. Asserted in `test/utils/link_generators_test.dart`.
+
+| Variant | Named parameters | Packed | Saved |
+|---|---|---|---|
+| Public | 268 | **232** | 36 (13.4%) |
+| Private, keyless | 301 | **248** | 53 (17.6%) |
+| Private, key in link | 347 | **294** | 53 (15.3%) |
+| Pinned + hidden | 264 | **222** | 42 (15.9%) |
+
+With `in` and `thn` also present — what a real Turbo upload share carries — the same four are 363/396/442/359 named and 322/338/384/313 packed, an 11–15% saving.
+
+**Why it is 15% and not 50%.** A 43-character Arweave id *is* base64url of 32 bytes; re-encoding it inside a larger base64url blob costs exactly the same 42.7 characters. Packing therefore recovers the parameter names and separators (~40 characters), the `AES256-GCM` spelling (10 → 2 bits), the decimal size, and — via the content type table — long MIME types, where the win is real: `application/vnd.openxmlformats-officedocument.wordprocessingml.document` costs 77 characters as `&ct=…` percent-encoded and 1 byte as a table code. It cannot compress the ids, because they are already incompressible 32-byte hashes.
+
+**Where the remaining characters are.** Of a 232-character public link, 71 are the origin and route (`https://app.ardrive.io/#/file/{uuid}/view`) and 128 are the three ids. The two levers left, both deliberately not pulled here:
+
+1. **Drop `own` — 43 characters, taking the four variants to 189/205/251/180 (28–32%).** The resolver does not need it: it is never a query input. It is used in exactly two places (`lib/blocs/shared_file/shared_file_cubit.dart`) — `_successFromPayload`, which paints "Shared by {address}" before any network call, and `_reconcile`, as one of five claims the link makes about the file. Forgery detection does **not** depend on it: authorship is established independently by comparing the `mtx` transaction's author against the first-writer probe for the fileId (`_fileOwnerAddress`), so `own`'s reconcile claim is a redundant check. Dropping it costs the "Shared by" line for the few hundred milliseconds until the background metadata fetch resolves the owner (the row is conditional on a non-empty address, so it appears rather than changing), and drops the reconcile from five claims to four. That is a product call about what the recipient sees on first paint, not an engineering one, and it is a one-line change in `FileShareCubit._buildLink`.
+2. **Shorten the route — about 22 characters.** `/file/{36-char uuid}/view` spends 47 characters on 16 bytes of uuid. A `/f/{22-char base64url uuid}` shape would recover most of it, but it is a new route to parse forever, it is not something the boot shim knows, and a corrupt id there is a dead link rather than a degraded one. Out of scope for an encoding change.
+
+**On opacity.** The packed payload is not human-readable, and that is a real cost: a support person reading a link over the phone can no longer see the filename and size in it. Three things make it an acceptable trade. The recipient loses nothing — the READY card shows exactly those fields, instantly and without a network call, which is the whole point of the payload. Diagnostics keep it: `SharedFileLinkPayload.toString()` prints every field, with `n`/`ct` redacted because they are secrets. And there is a small gain on the other side: `n` and `ct` are private-file secrets when embedded, and today they sit in cleartext in the address bar, in browser history and in every screenshot. base64url is an encoding and not a secret — anyone who wants the filename can decode it — but it does mean a shoulder-surfer, a screen share or a Slack unfurl preview no longer leaks it in passing. If support needs it back, the answer is a "link details" inspector in the app, not a readable link.
 
 ### 1.3 Example URLs
 
+The payload is opaque by construction, so what follows is a real, decodable example rather than an illustrative one. Every id here is canonical (§1.2), and the packed forms below round trip through `SharedFileLinkPayload.decode`.
+
 ```text
-# Public file (live semantics)
-https://app.ardrive.io/share/8f3c2a10-6f4e-4c7a-9b2e-1d2f3a4b5c6d?v=2&dtx=nS7hxbLQmk3W1o9zX2cV4bN5mL6kJ7hG8fD9sA0qWeR&mtx=S1QzT9YbPo8iU7yT6rE5wQ4aS3dF2gH1jK0lZxCvBnM&own=Zvp8dEkO3nQ2wX9yV8uT7sR6qP5oN4mL3kJ2iH1gF0e&n=Q3%20Report.pdf&s=4821133&ct=application%2Fpdf
-
-# Private file, keyless (the default; key sent out of band)
-https://app.ardrive.io/share/8f3c2a10-…?v=2&dtx=nS7h…&mtx=S1Qz…&own=Zvp8…&n=Q3%20Report.pdf&s=4821133&ct=application%2Fpdf&c=AES256-GCM&iv=9tR2kX0pLmQz
-
-# Private file, key-in-link (explicit opt-in)
-https://app.ardrive.io/share/8f3c2a10-…?v=2&dtx=nS7h…&mtx=S1Qz…&own=Zvp8…&n=Q3%20Report.pdf&s=4821133&ct=application%2Fpdf&c=AES256-GCM&iv=9tR2kX0pLmQz#k=aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789AbCdEfG
-
-# Pinned to a specific version (private, keyless, name hidden)
-https://app.ardrive.io/share/8f3c2a10-…?v=2&pin=1&hid=1&dtx=oLd7hxbLQmk3W1o9zX2cV4bN5mL6kJ7hG8fD9sA0qWe&mtx=oLdzT9YbPo8iU7yT6rE5wQ4aS3dF2gH1jK0lZxCvBn0&own=Zvp8…&s=4821133&c=AES256-CTR&iv=8sQ1jW9oKlPy
-
-# Generalized viewer: any Arweave transaction, ArDrive as friendly front end
-https://app.ardrive.io/view/nS7hxbLQmk3W1o9zX2cV4bN5mL6kJ7hG8fD9sA0qWeR
-https://app.ardrive.io/view/nS7hxbLQmk3W1o9zX2cV4bN5mL6kJ7hG8fD9sA0qWeR?n=talk.mp4&ct=video%2Fmp4
+# The fields of the example, before packing
+dtx = nS7hxbLQmk3W1o9zX2cV4bN5mL6kJ7hG8fD9sA0qWeQ
+mtx = S1QzT9YbPo8iU7yT6rE5wQ4aS3dF2gH1jK0lZxCvBnM
+own = Zvp8dEkO3nQ2wX9yV8uT7sR6qP5oN4mL3kJ2iH1gF0c
+n   = Q3 Report.pdf
+s   = 4821133
+ct  = application/pdf
+iv  = 9tR2kX0pLmQz8sQ1
+k   = ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopQ
 ```
+
+```text
+# Public file (live semantics) - 232 characters
+https://app.ardrive.io/#/file/8f3c2a10-6f4e-4c7a-9b2e-1d2f3a4b5c6d/view?d=AgB_nS7hxbLQmk3W1o9zX2cV4bN5mL6kJ7hG8fD9sA0qWeRLVDNP1hs-jyJTvJPqsTnBDhpLd0XaAfWMrSVnEK8Gc2b6fHRJDt50NsF_clfLk-7Eeqj-aDeJi95Cdoh9YBdHA0mQjQ1RMyBSZXBvcnQucGRmAQ
+
+# Private file, keyless (the default; key sent out of band) - 248 characters
+https://app.ardrive.io/#/file/8f3c2a10-…/view?d=AgR_…
+
+# Private file, key-in-link (explicit opt-in) - 294 characters
+https://app.ardrive.io/#/file/8f3c2a10-…/view?d=AgR_…&k=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopQ
+
+# The same, on the Phase 3 path route, where the key moves to the fragment
+https://app.ardrive.io/share/8f3c2a10-…?d=AgR_…#k=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopQ
+
+# Pinned to a specific version (private, keyless, name and size hidden) - 222 characters
+https://app.ardrive.io/#/file/8f3c2a10-…/view?d=Ags…
+
+# Generalized viewer: any Arweave transaction, ArDrive as friendly front end.
+# This route has no payload of its own, so `n` and `ct` stay spelled out.
+https://app.ardrive.io/view/nS7hxbLQmk3W1o9zX2cV4bN5mL6kJ7hG8fD9sA0qWeQ
+https://app.ardrive.io/view/nS7hxbLQmk3W1o9zX2cV4bN5mL6kJ7hG8fD9sA0qWeQ?n=talk.mp4&ct=video%2Fmp4
+```
+
+Reading the public example: `Ag` is version 2, the flags byte is `0x00` (live, details shown, no cipher), the bitmap byte is `0x7f` (everything but records), then `dtx`, `mtx`, `own`, the size `03 49 90 8d`, the name `0d "Q3 Report.pdf"`, and the content type code `01` — `application/pdf`.
 
 `/view/{txId}` v1 accepts only `n`/`ct` hints and serves **public content only** (no `c`/`iv`/`k`): an encrypted blob without ArFS context renders as the download-only card. Extending it to encrypted raw txs is a later, separate decision.
 
@@ -212,7 +292,7 @@ Legacy `https://app.ardrive.io/#/file/{id}/view?fileKey=K` links are permanent a
 
 - **Parser support stays forever**: the existing fragment-route parsing (`app_route_information_parser.dart:55-74`) is retained (with the F4 guard), so legacy links work even with path URL strategy enabled — on load the server sees only `/`, and the client reads the hash.
 - **Boot shim** (small JS in `web/index.html`, runs before Flutter): if `location.hash` matches `#/file/{id}/view`, rewrite via `history.replaceState` to `/share/{id}` — moving any legacy `fileKey` **into the fragment as `#k=`**, never into the query. `replaceState` performs no network request, so the key never leaves the browser during migration. Drive-link hashes are left untouched this cycle.
-- **Hosting**: path strategy requires SPA rewrites (`/share/*`, `/view/*` → `index.html`) on the app host and on AR.IO-gateway-served deployments. This is the one infrastructure dependency of Phase 3; until it lands, v2 links ship on the hash route (`/#/file/{id}/view?v=2&…`) with identical schema — the schema is transport-independent by design.
+- **Hosting**: path strategy requires SPA rewrites (`/share/*`, `/view/*` → `index.html`) on the app host and on AR.IO-gateway-served deployments. This is the one infrastructure dependency of Phase 3; until it lands, v2 links ship on the hash route (`/#/file/{id}/view?d=…`) with identical schema — the schema is transport-independent by design, and the packed payload is one parameter either way.
 
 ### 4.2 Key-source precedence
 

@@ -8,10 +8,11 @@
     <!--
       Never send a route in a `Referer` header. Under hash routing the browser
       already strips the fragment, so this changes nothing today - and it is
-      what makes path routing safe to switch on: a `/share/{id}?v=2&n=...&ct=...`
-      address bar would otherwise ride along on every subresource request the
-      page makes, to gateways and any CDN among them, and `n` and `ct` are
-      private-file secrets. See lib/utils/app_url_strategy.dart.
+      what makes path routing safe to switch on: a `/share/{id}?d=...` address
+      bar would otherwise ride along on every subresource request the page
+      makes, to gateways and any CDN among them. The payload being packed is no
+      defence: base64url is an encoding, and `n` and `ct` are private-file
+      secrets. See lib/utils/app_url_strategy.dart.
     -->
     <meta name="referrer" content="strict-origin" />
 
