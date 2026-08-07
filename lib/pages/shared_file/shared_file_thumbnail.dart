@@ -104,6 +104,7 @@ class SharedFileThumbnail extends StatefulWidget {
     this.fileKey,
     this.isPrivate = false,
     this.size = 44,
+    this.fit = BoxFit.cover,
     this.loader,
     this.semanticLabel,
   });
@@ -125,6 +126,11 @@ class SharedFileThumbnail extends StatefulWidget {
   final bool isPrivate;
 
   final double size;
+
+  /// How the picture fills its square. `cover` crops it to a tidy tile, which
+  /// is what a 44px avatar beside a name wants; the preview pane wants the
+  /// whole picture, so it asks for `contain`.
+  final BoxFit fit;
 
   /// Injectable for tests; otherwise built from the service tree.
   final SharedFileThumbnailLoader? loader;
@@ -208,7 +214,7 @@ class _SharedFileThumbnailState extends State<SharedFileThumbnail> {
         height: widget.size,
         child: Image.memory(
           bytes,
-          fit: BoxFit.cover,
+          fit: widget.fit,
           filterQuality: FilterQuality.high,
           semanticLabel: widget.semanticLabel,
           errorBuilder: (context, error, stackTrace) =>

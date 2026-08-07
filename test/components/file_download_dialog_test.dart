@@ -19,6 +19,12 @@ class MockFileDownloadCubit extends MockCubit<FileDownloadState>
 /// Phase 2 and told nobody. These are the assertions that a verdict is on
 /// screen at all - and, just as importantly, that the two harmless ones do not
 /// read like the harmful one.
+/// The warning triangle, which only the outcomes that really are a problem are
+/// allowed to wear.
+final Finder _alertIcon = find.byWidgetPredicate(
+  (widget) => widget is ArDriveIcon && widget.icon == ArDriveIconsData.triangle,
+);
+
 void main() {
   Widget wrap(Widget child) {
     return ArDriveTheme(
@@ -149,6 +155,40 @@ void main() {
       expect(find.text('OK'), findsOneWidget);
     });
 
+    testWidgets('a failed verdict does not look like the success it replaces',
+        (tester) async {
+      // Every ArDrive modal wears the same red strip, so the words were the
+      // only thing telling this outcome apart from "Download finished!". The
+      // alert icon beside the title is what carries it at a glance.
+      await pumpState(
+        tester,
+        const FileDownloadFinishedWithSuccess(
+          fileName: 'holiday.mp4',
+          integrity: DataItemIntegrityVerdict.failed,
+        ),
+      );
+
+      expect(_alertIcon, findsOneWidget);
+    });
+
+    testWidgets('neither harmless verdict borrows the alert icon',
+        (tester) async {
+      for (final verdict in [
+        DataItemIntegrityVerdict.verified,
+        DataItemIntegrityVerdict.notVerified,
+      ]) {
+        await pumpState(
+          tester,
+          FileDownloadFinishedWithSuccess(
+            fileName: 'holiday.mp4',
+            integrity: verdict,
+          ),
+        );
+
+        expect(_alertIcon, findsNothing, reason: '$verdict');
+      }
+    });
+
     testWidgets('a download that was never checked says nothing about checks',
         (tester) async {
       // The mobile public download hands the transfer to the platform and
@@ -194,6 +234,54 @@ void main() {
       expect(find.byType(ArDriveProgressBar), findsOneWidget);
       // Cancelling a download that is trying to recover is still an option.
       expect(find.text('Cancel'), findsOneWidget);
+    });
+
+    testWidgets('the stall shows in the bar and not only in the word above it',
+        (tester) async {
+      Color fill() => tester
+          .widget<ArDriveProgressBar>(find.byType(ArDriveProgressBar))
+          .indicatorColor!;
+
+      await pumpState(tester, downloading);
+      final moving = fill();
+
+      await pumpState(tester, downloading.asReconnecting());
+      final stalled = fill();
+
+      // Not an indeterminate sweep - 62% is true and a resume keeps it. The
+      // bar goes inactive instead, so a glance at it is enough to tell that
+      // nothing is arriving.
+      expect(stalled, isNot(moving));
+    });
+  });
+
+  group('the progress layout', () {
+    const downloading = FileDownloadWithProgress(
+      fileName: 'holiday.mp4',
+      progress: 62,
+      fileSize: 5000000,
+      contentType: 'video/mp4',
+    );
+
+    testWidgets('the bar starts where the text it measures starts',
+        (tester) async {
+      await pumpState(tester, downloading);
+
+      // The bar used to begin at the modal's content edge while everything it
+      // describes began 56px further in, past the type icon.
+      expect(
+        tester.getTopLeft(find.byType(ArDriveProgressBar)).dx,
+        tester.getTopLeft(find.text('holiday.mp4')).dx,
+      );
+    });
+
+    testWidgets('the reading is not jammed against the bar', (tester) async {
+      await pumpState(tester, downloading);
+
+      final barRight = tester.getTopRight(find.byType(ArDriveProgressBar)).dx;
+      final readingLeft = tester.getTopLeft(find.text('62%')).dx;
+
+      expect(readingLeft - barRight, greaterThanOrEqualTo(8));
     });
   });
 }

@@ -576,9 +576,14 @@ class AnimatedTextFieldLabelState extends State<AnimatedTextFieldLabel> {
             );
           },
           child: widget.showing
-              ? SizedBox(
-                  height: 22,
+              // A minimum rather than a fixed height. The reserved 22 is what
+              // keeps a field from jumping as a message appears; it was also
+              // clipping every message that needed a second line - the one
+              // moment a text field has something the reader has to read. A
+              // long message now grows the label instead of losing half of it.
+              ? ConstrainedBox(
                   key: const ValueKey(true),
+                  constraints: const BoxConstraints(minHeight: 22),
                   child: TextFieldLabel(
                     style: widget.style,
                     text: widget.text ?? '',

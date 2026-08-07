@@ -1857,7 +1857,7 @@
   "@sharedFileLoadFailure": {
     "description": "Error shown on the shared file page when the file details could not be loaded because of a network or gateway failure"
   },
-  "sharedFileLoadingDetails": "ファイルの詳細を読み込んでいます…",
+  "sharedFileLoadingDetails": "ファイルの詳細を読み込んでいます...",
   "@sharedFileLoadingDetails": {
     "description": "Shown on the shared file page while the file's details are being resolved"
   },
@@ -1881,6 +1881,10 @@
   "@sharedFilePermanentFileSharing": {
     "description": "Tagline shown under the ArDrive logo on the shared file page"
   },
+  "sharedFilePreviewPaneHint": "ダウンロードせずに、このファイルをここでプレビューできます。",
+  "@sharedFilePreviewPaneHint": {
+    "description": "Caption in the preview pane of the shared file page, on a desktop screen, saying what pressing Preview will do"
+  },
   "sharedFilePreviewUnsupported": "このファイルはここではプレビューできません。開くにはダウンロードしてください。",
   "@sharedFilePreviewUnsupported": {
     "description": "Shown on the shared file page when the file cannot be previewed in the browser"
@@ -1897,7 +1901,7 @@
   "@sharedFileRetry": {
     "description": "Button that tries loading the shared file again"
   },
-  "sharedFileRetryingNow": "再試行しています…",
+  "sharedFileRetryingNow": "再試行しています...",
   "@sharedFileRetryingNow": {
     "description": "Shown when the automatic retry for a shared file is running"
   },
@@ -1919,7 +1923,7 @@
   "@sharedFileShowingLatestVersion": {
     "description": "Notice shown to the recipient of a pinned link once they have asked for the latest version, telling them the page no longer shows the version the sender linked to"
   },
-  "sharedFileStillPropagating": "このファイルはアップロードされたばかりで、まだネットワーク全体に広がっている途中かもしれません。{seconds} 秒後に再試行します…",
+  "sharedFileStillPropagating": "このファイルはアップロードされたばかりで、まだネットワーク全体に広がっている途中かもしれません。{seconds} 秒後に再試行します...",
   "@sharedFileStillPropagating": {
     "description": "Shown while a just-uploaded shared file has not spread across the network yet, counting down the seconds to the next automatic retry",
     "placeholders": {
@@ -1989,7 +1993,7 @@
   "@shareFileHideDetailsDescription": {
     "description": "Helper text explaining what the recipient sees when the file's details are hidden from the share link"
   },
-  "shareFileIncludeKeyInLink": "キーをリンクに含める — リンクを持つ人は誰でもファイルを開けます",
+  "shareFileIncludeKeyInLink": "キーをリンクに含める：リンクを持つ人は誰でもファイルを開けます",
   "@shareFileIncludeKeyInLink": {
     "description": "Label of the checkbox that embeds the access key in the share link, which makes the link alone enough to open the file"
   },

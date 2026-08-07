@@ -316,50 +316,69 @@ class _PdfFallbackCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final theme = ArDriveTheme.of(context);
+    final colors = theme.themeData.colors;
 
+    // `themeFgSubtle` is `grey.500` in both themes, which reads at ~2.7:1 on
+    // the light surface this card is painted on. The caption underneath the
+    // button is a sentence, so it takes the token that passes in the theme it
+    // is actually in.
+    final captionColor =
+        theme.isLight() ? colors.themeFgMuted : colors.themeFgSubtle;
+
+    // Sized by its content rather than by whatever box it is handed. Both of
+    // its callers centre it - the details panel with an [Align], the shared
+    // file page with the preview pane's own [Center] - and a card that filled
+    // its box left a short message stranded in the middle of a tall empty
+    // band on a phone.
     return Padding(
       padding: const EdgeInsets.all(24),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            getIconForContentType('application/pdf', size: 40),
-            const SizedBox(height: 12),
-            Text(
-              filename,
-              maxLines: 2,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-              style: ArDriveTypography.body.bodyBold(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          getIconForContentType('application/pdf', size: 40),
+          const SizedBox(height: 12),
+          Text(
+            filename,
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            style: ArDriveTypography.body.bodyBold(
+              color: colors.themeFgDefault,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (onOpen != null) ...[
+            // Secondary, not primary. On the shared file page this card sits
+            // beside a red Download button, and a page with two equally loud
+            // calls to action has told the recipient nothing about which one
+            // it wants them to press.
+            ArDriveButton(
+              style: ArDriveButtonStyle.secondary,
+              icon: ArDriveIcons.newWindow(
+                size: 20,
                 color: colors.themeFgDefault,
               ),
+              text: appLocalizationsOf(context).previewPdfOpen,
+              onPressed: onOpen!,
             ),
-            const SizedBox(height: 16),
-            if (onOpen != null) ...[
-              ArDriveButton(
-                icon: ArDriveIcons.newWindow(size: 20, color: Colors.white),
-                text: appLocalizationsOf(context).previewPdfOpen,
-                onPressed: onOpen!,
+            const SizedBox(height: 8),
+            Text(
+              appLocalizationsOf(context).previewPdfOpensInNewTab,
+              textAlign: TextAlign.center,
+              style: ArDriveTypography.body.captionRegular(
+                color: captionColor,
               ),
-              const SizedBox(height: 8),
-              Text(
-                appLocalizationsOf(context).previewPdfOpensInNewTab,
-                textAlign: TextAlign.center,
-                style: ArDriveTypography.body.captionRegular(
-                  color: colors.themeFgSubtle,
-                ),
+            ),
+          ] else
+            Text(
+              appLocalizationsOf(context).previewUnavailable,
+              textAlign: TextAlign.center,
+              style: ArDriveTypography.body.captionRegular(
+                color: captionColor,
               ),
-            ] else
-              Text(
-                appLocalizationsOf(context).previewUnavailable,
-                textAlign: TextAlign.center,
-                style: ArDriveTypography.body.captionRegular(
-                  color: colors.themeFgSubtle,
-                ),
-              ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }

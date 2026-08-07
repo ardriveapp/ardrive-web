@@ -13,6 +13,7 @@ import 'package:ardrive/pages/drive_detail/drive_detail_page.dart'
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/pages/shared_file/shared_file_colors.dart';
 import 'package:ardrive/pages/shared_file/shared_file_identity.dart';
+import 'package:ardrive/pages/shared_file/shared_file_thumbnail.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/file_revision_base.dart';
@@ -77,6 +78,18 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   /// the download button exactly where it was.
   static const double _previewPaneHeight = 420;
 
+  /// How much room the phone column gives a preview that needs a box of its
+  /// own - an image, a video, a rasterised PDF. A preview whose content is a
+  /// sentence gets the height of the sentence; see [_previewFillsItsBox].
+  static const double _inlinePreviewHeight = 360;
+
+  /// The largest the file's own thumbnail is drawn in the preview pane.
+  ///
+  /// ArDrive generates thumbnails at a 100px minimum edge, so this is roughly
+  /// twice the source and about as far as one can be enlarged before it starts
+  /// to look like a mistake.
+  static const double _panePictureSize = 200;
+
   bool _isPreviewOpen = false;
 
   /// Whether a download is in flight.
@@ -113,7 +126,7 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ..._buildNotice(context),
+        ..._buildNotice(context, isWide: false),
         ..._buildActions(context, revision, previewIsInline: true),
         const SizedBox(height: 12),
         _buildFooter(context),
@@ -137,7 +150,7 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ..._buildNotice(context),
+        ..._buildNotice(context, isWide: true),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -171,7 +184,7 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   }
 
   /// The version notice, when there is one, above both panes.
-  List<Widget> _buildNotice(BuildContext context) {
+  List<Widget> _buildNotice(BuildContext context, {required bool isWide}) {
     final state = widget.state;
 
     // Nothing may move the target while bytes are on their way, and nothing may
@@ -181,6 +194,7 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
     if (state.isPinned && state.showsLatestRevision) {
       return [
         SharedFileLatestVersionNotice(
+          isWide: isWide,
           isDisabled: !canChangeRevision,
           onPressed: () => _changeRevision(
             () => context.read<SharedFileCubit>().showSharedRevision(),
@@ -194,6 +208,7 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
       return [
         SharedFileFreshnessBanner(
           isPinned: state.isPinned,
+          isWide: isWide,
           isDisabled: !canChangeRevision,
           onPressed: () => _changeRevision(
             () => context.read<SharedFileCubit>().showLatestRevision(),
@@ -234,7 +249,10 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
         name: name,
         size: size,
         contentType: revision.dataContentType ?? payload?.contentType,
-        thumbnailTxId: _thumbnailTxId(state, revision),
+        // On the desktop card the picture belongs in the pane, at a size worth
+        // looking at. Showing it twice, 400px apart, would be one thumbnail
+        // fetch too many and one picture too many.
+        thumbnailTxId: previewIsInline ? _thumbnailTxId(state, revision) : null,
         // A private file's thumbnail is encrypted under the file key, so the
         // recipient's own access key is what renders it.
         fileKey: state.fileKey,
@@ -256,22 +274,14 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
         text: appLocalizationsOf(context).download,
       ),
       // The preview reads the file through its drive, which only the
-      // resolved metadata knows about.
-      if (state.detailsAreResolved) ...[
+      // resolved metadata knows about. On the desktop card the toggle lives in
+      // the pane it acts on, so this column carries it only on a phone.
+      if (previewIsInline && state.detailsAreResolved) ...[
         const SizedBox(height: 8),
-        ArDriveButton(
-          style: ArDriveButtonStyle.tertiary,
-          onPressed: () => setState(() => _isPreviewOpen = !_isPreviewOpen),
-          text: _isPreviewOpen
-              ? appLocalizationsOf(context).sharedFileHidePreview
-              : appLocalizationsOf(context).preview,
-        ),
-        if (previewIsInline && _isPreviewOpen) ...[
+        _buildPreviewToggle(context),
+        if (_isPreviewOpen) ...[
           const SizedBox(height: 8),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 360, minHeight: 120),
-            child: _buildPreview(context, revision),
-          ),
+          _buildPreview(context, revision, isInline: true),
         ],
       ],
       if (state.fileKey != null) ...[
@@ -317,38 +327,132 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   /// resizes the page, and the download button would move out from under the
   /// pointer that is about to press it.
   ///
-  /// Closed it holds the file's type icon, open it holds the preview, and it is
-  /// the same size either way - including on the fast path, where the metadata
-  /// has not resolved and there is no Preview button to press yet.
+  /// What it must not be is empty. A 580x430 box holding one 40px glyph reads
+  /// as something that failed to load, so at rest the pane shows the file's own
+  /// thumbnail when the link carried one - real content, already fetched, and
+  /// the closest thing to the file itself that costs nothing - and otherwise a
+  /// deliberate placeholder that says what the pane is for. The bar along the
+  /// bottom is the only thing that opens and closes the preview, and it sits in
+  /// the same place in both states so that pressing it never moves it out from
+  /// under the pointer or drops the keyboard's focus.
+  ///
+  /// Nothing here is fetched before it is asked for. Opening the preview
+  /// automatically would spend every desktop recipient's bandwidth on bytes
+  /// they may only have wanted to download - up to `previewMaxFileSize`, which
+  /// is 100 MiB - so the pane fills itself with what the page already has.
   Widget _buildPreviewPane(BuildContext context, FileRevision revision) {
     final colors = ArDriveTheme.of(context).themeData.colors;
-    final contentType =
-        revision.dataContentType ?? widget.state.payload?.contentType;
-
-    // Decorative: the file's type is already written out beside its name, in
-    // words.
-    final placeholder = ExcludeSemantics(
-      child: getIconForContentType(
-        contentType ?? 'application/octet-stream',
-        size: 64,
-        color: SharedFileColors.subtle(context),
-      ),
-    );
 
     return Container(
       key: sharedFilePreviewPaneKey,
       height: _previewPaneHeight,
-      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: colors.themeBgCanvas,
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: colors.themeBorderDefault),
       ),
       clipBehavior: Clip.antiAlias,
-      // Centred the way `DetailsPanel` centres the same widget.
-      child: Center(
-        child: _isPreviewOpen ? _buildPreview(context, revision) : placeholder,
+      child: Column(
+        children: [
+          Expanded(
+            // Centred the way `DetailsPanel` centres the same widget.
+            child: Center(
+              child: _isPreviewOpen
+                  ? _buildPreview(context, revision, isInline: false)
+                  : _buildPaneAtRest(context, revision),
+            ),
+          ),
+          if (widget.state.detailsAreResolved) _buildPaneBar(context),
+        ],
       ),
+    );
+  }
+
+  /// The pane before anything has been asked of it.
+  Widget _buildPaneAtRest(BuildContext context, FileRevision revision) {
+    final state = widget.state;
+    final contentType = revision.dataContentType ?? state.payload?.contentType;
+    final thumbnailTxId = _thumbnailTxId(state, revision);
+
+    // Decorative in both branches: the file's name and type are written out in
+    // words in the column beside this one.
+    final icon = ExcludeSemantics(
+      child: getIconForContentType(
+        contentType ?? 'application/octet-stream',
+        size: 40,
+        color: SharedFileColors.subtle(context),
+      ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (thumbnailTxId != null)
+            SharedFileThumbnail(
+              txId: thumbnailTxId,
+              size: _panePictureSize,
+              // The picture is of the file, and here it is the picture the
+              // recipient came to look at rather than a 44px decoration.
+              fit: BoxFit.contain,
+              semanticLabel: revision.name.isEmpty ? null : revision.name,
+              isPrivate: state.fileKey != null,
+              fileKey: state.fileKey,
+              fallback: _buildIconTile(context, icon),
+            )
+          else
+            _buildIconTile(context, icon),
+          const SizedBox(height: 16),
+          Text(
+            state.detailsAreResolved
+                ? appLocalizationsOf(context).sharedFilePreviewPaneHint
+                : appLocalizationsOf(context).sharedFileLoadingDetails,
+            textAlign: TextAlign.center,
+            style: ArDriveTypography.body.captionRegular(
+              color: SharedFileColors.subtle(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// The type icon, given enough weight to read as a placeholder rather than as
+  /// a stray glyph in a large empty box.
+  Widget _buildIconTile(BuildContext context, Widget icon) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+
+    return Container(
+      width: 96,
+      height: 96,
+      decoration: BoxDecoration(
+        color: colors.themeBgSubtle,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Center(child: icon),
+    );
+  }
+
+  /// The pane's own footer: one control, in one place, in both states.
+  Widget _buildPaneBar(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: colors.themeBorderDefault)),
+      ),
+      child: Center(child: _buildPreviewToggle(context)),
+    );
+  }
+
+  Widget _buildPreviewToggle(BuildContext context) {
+    return ArDriveButton(
+      style: ArDriveButtonStyle.tertiary,
+      onPressed: () => setState(() => _isPreviewOpen = !_isPreviewOpen),
+      text: _isPreviewOpen
+          ? appLocalizationsOf(context).sharedFileHidePreview
+          : appLocalizationsOf(context).preview,
     );
   }
 
@@ -441,9 +545,13 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   /// for a preview they may never open - which is also why the wide layout
   /// reserves *space* for the preview rather than opening one.
   ///
-  /// The caller bounds it: the phone column with a [ConstrainedBox], the
-  /// desktop card with the pane's own height.
-  Widget _buildPreview(BuildContext context, FileRevision revision) {
+  /// The desktop card bounds it with the pane's own height. The phone column
+  /// bounds only what needs bounding: see [_previewFillsItsBox].
+  Widget _buildPreview(
+    BuildContext context,
+    FileRevision revision, {
+    required bool isInline,
+  }) {
     final item = DriveDataTableItemMapper.fromRevision(
       FileRevisionBase.fromFileRevision(revision),
       false,
@@ -463,33 +571,87 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
       ),
       child: BlocBuilder<FsEntryPreviewCubit, FsEntryPreviewState>(
         builder: (context, previewState) {
-          // [FsEntryPreviewOversized] extends [FsEntryPreviewUnavailable], and
-          // has its own honest message about the size cap, so only the plain
-          // unavailable case is rewritten here.
-          if (previewState is FsEntryPreviewUnavailable &&
-              previewState is! FsEntryPreviewOversized) {
-            return Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                appLocalizationsOf(context).sharedFilePreviewUnsupported,
-                textAlign: TextAlign.center,
-                style: ArDriveTypography.body.captionRegular(
-                  color: SharedFileColors.subtle(context),
-                ),
-              ),
-            );
+          final preview = _buildPreviewBody(context, previewState, item);
+
+          if (!isInline) {
+            return preview;
           }
 
-          return FsEntryPreviewWidget(
-            key: ValueKey(item.id),
-            state: previewState,
-            isSharePage: true,
-            canNavigateThroughImages: false,
-            previewCubit: context.read<FsEntryPreviewCubit>(),
-          );
+          // On a phone the preview is part of a scrolling column, so a state
+          // whose content is one sentence gets the height of one sentence. A
+          // fixed 360 band around it left dead space above and below it and
+          // pushed the drawers under it off the screen.
+          return _previewFillsItsBox(previewState)
+              ? SizedBox(height: _inlinePreviewHeight, child: preview)
+              : preview;
         },
       ),
     );
+  }
+
+  Widget _buildPreviewBody(
+    BuildContext context,
+    FsEntryPreviewState previewState,
+    ArDriveDataTableItem item,
+  ) {
+    // [FsEntryPreviewOversized] extends [FsEntryPreviewUnavailable]. Both are
+    // a sentence in a box, and both are rendered here rather than by
+    // [FsEntryPreviewWidget], whose versions of them fill whatever box they
+    // are handed.
+    if (previewState is FsEntryPreviewOversized) {
+      return _buildPreviewMessage(
+        context,
+        appLocalizationsOf(context)
+            .filePreviewTooLarge(filesize(previewState.maxFileSize)),
+      );
+    }
+
+    if (previewState is FsEntryPreviewUnavailable) {
+      return _buildPreviewMessage(
+        context,
+        appLocalizationsOf(context).sharedFilePreviewUnsupported,
+      );
+    }
+
+    return FsEntryPreviewWidget(
+      key: ValueKey(item.id),
+      state: previewState,
+      isSharePage: true,
+      canNavigateThroughImages: false,
+      previewCubit: context.read<FsEntryPreviewCubit>(),
+    );
+  }
+
+  Widget _buildPreviewMessage(BuildContext context, String message) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Text(
+        message,
+        textAlign: TextAlign.center,
+        style: ArDriveTypography.body.captionRegular(
+          color: SharedFileColors.subtle(context),
+        ),
+      ),
+    );
+  }
+
+  /// Whether [previewState] is one that wants a box of its own.
+  ///
+  /// An image, a video, a document and a rasterised PDF all need somewhere to
+  /// be; so does the spinner that precedes them, or the column would jump the
+  /// moment the bytes arrived. A PDF with no bytes degrades to a card the size
+  /// of its own content, and so do the two message states, which are handled
+  /// here rather than by [FsEntryPreviewWidget].
+  bool _previewFillsItsBox(FsEntryPreviewState previewState) {
+    if (previewState is FsEntryPreviewUnavailable) {
+      return false;
+    }
+
+    if (previewState is FsEntryPreviewPdf) {
+      return previewState.pdfBytes != null;
+    }
+
+    return true;
   }
 }
 
@@ -510,11 +672,16 @@ class SharedFileFreshnessBanner extends StatelessWidget {
     super.key,
     required this.isPinned,
     required this.onPressed,
+    this.isWide = false,
     this.isDisabled = false,
   });
 
   final bool isPinned;
   final VoidCallback onPressed;
+
+  /// Whether there is room to put the action beside the message.
+  final bool isWide;
+
   final bool isDisabled;
 
   @override
@@ -525,6 +692,7 @@ class SharedFileFreshnessBanner extends StatelessWidget {
           ? appLocalizationsOf(context).sharedFileViewLatest
           : appLocalizationsOf(context).sharedFileGetLatest,
       onPressed: onPressed,
+      isWide: isWide,
       isDisabled: isDisabled,
     );
   }
@@ -540,10 +708,15 @@ class SharedFileLatestVersionNotice extends StatelessWidget {
   const SharedFileLatestVersionNotice({
     super.key,
     required this.onPressed,
+    this.isWide = false,
     this.isDisabled = false,
   });
 
   final VoidCallback onPressed;
+
+  /// Whether there is room to put the action beside the message.
+  final bool isWide;
+
   final bool isDisabled;
 
   @override
@@ -552,6 +725,7 @@ class SharedFileLatestVersionNotice extends StatelessWidget {
       message: appLocalizationsOf(context).sharedFileShowingLatestVersion,
       actionLabel: appLocalizationsOf(context).sharedFileViewSharedVersion,
       onPressed: onPressed,
+      isWide: isWide,
       isDisabled: isDisabled,
     );
   }
@@ -563,12 +737,14 @@ class _SharedFileNoticeCard extends StatelessWidget {
     required this.message,
     required this.actionLabel,
     required this.onPressed,
+    required this.isWide,
     required this.isDisabled,
   });
 
   final String message;
   final String actionLabel;
   final VoidCallback onPressed;
+  final bool isWide;
   final bool isDisabled;
 
   @override
@@ -579,58 +755,79 @@ class _SharedFileNoticeCard extends StatelessWidget {
     final foreground = SharedFileColors.onNotice(context);
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(isWide ? 4 : 12),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(4),
       ),
-      // The action sits below the message rather than beside it. A row of
-      // [Expanded] text next to a button sized to its own label overflows as
-      // soon as the label is long - and these labels are sentences, on a card
-      // capped at 400px, read mostly on phones.
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // The sentence next to it says everything the icon does, so the
-              // icon is not read out as well.
-              ExcludeSemantics(
-                child: ArDriveIcons.info(size: 16, color: foreground),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  message,
-                  style: ArDriveTypography.body.captionRegular(
-                    color: foreground,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: ArDriveButton(
-              style: ArDriveButtonStyle.tertiary,
-              isDisabled: isDisabled,
-              // A tertiary [ArDriveButton] is an [ArDriveTextButton], which is
-              // handed nothing but a label and a callback: `isDisabled` styles
-              // the other two variants and does nothing here. Withdrawing the
-              // callback is what takes the button out of the focus order and
-              // tells a screen reader it is unavailable, which is what should
-              // happen while a version change is in flight.
-              onPressed: isDisabled ? null : onPressed,
-              text: actionLabel,
-            ),
-          ),
-        ],
-      ),
+      child: isWide
+          ? _buildRow(context, foreground)
+          : _buildColumn(context, foreground),
     );
   }
+
+  /// On the wide card the notice is a bar: one line, the sentence on the left
+  /// and the action on the right. Stacked across 1040px it was a short sentence
+  /// pinned to one corner, a link pinned to another and a hundred pixels of
+  /// empty grey in between.
+  Widget _buildRow(BuildContext context, Color foreground) {
+    return Row(
+      children: [
+        const SizedBox(width: 8),
+        _buildIcon(foreground),
+        const SizedBox(width: 8),
+        Expanded(child: _buildMessage(foreground)),
+        const SizedBox(width: 16),
+        _buildAction(),
+      ],
+    );
+  }
+
+  /// On a phone the action sits below the message. A row of [Expanded] text
+  /// next to a button sized to its own label overflows as soon as the label is
+  /// long - and these labels are sentences, on a card capped at 400px.
+  Widget _buildColumn(BuildContext context, Color foreground) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildIcon(foreground),
+            const SizedBox(width: 8),
+            Expanded(child: _buildMessage(foreground)),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Align(alignment: Alignment.centerRight, child: _buildAction()),
+      ],
+    );
+  }
+
+  /// The sentence next to it says everything the icon does, so the icon is not
+  /// read out as well.
+  Widget _buildIcon(Color foreground) => ExcludeSemantics(
+        child: ArDriveIcons.info(size: 16, color: foreground),
+      );
+
+  Widget _buildMessage(Color foreground) => Text(
+        message,
+        style: ArDriveTypography.body.captionRegular(color: foreground),
+      );
+
+  Widget _buildAction() => ArDriveButton(
+        style: ArDriveButtonStyle.tertiary,
+        isDisabled: isDisabled,
+        // A tertiary [ArDriveButton] is an [ArDriveTextButton], which is handed
+        // nothing but a label and a callback: `isDisabled` styles the other two
+        // variants and does nothing here. Withdrawing the callback is what
+        // takes the button out of the focus order and tells a screen reader it
+        // is unavailable, which is what should happen while a version change is
+        // in flight.
+        onPressed: isDisabled ? null : onPressed,
+        text: actionLabel,
+      );
 }
 
 /// Where the protocol lives: collapsed by default, one tap away, and the only

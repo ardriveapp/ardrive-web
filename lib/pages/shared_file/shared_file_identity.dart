@@ -152,11 +152,43 @@ class SharedFileIdentity extends StatelessWidget {
     );
   }
 
+  /// What the file is, and who it came from.
+  ///
+  /// Two lines, not one wrapping list. The first says what the file is - a
+  /// size and a type, both short, both about the bytes. The second says where
+  /// it came from, and whether the link's claim about that held up.
+  ///
+  /// The two used to be one [Wrap] of dot-separated items, which put a
+  /// separator in the wrap in its own right: when the sender dropped to the
+  /// next line the dot it belonged to stayed behind, and the card read
+  /// `4.60 MiB · PDF ·`, pointing at nothing. Separators now travel with the
+  /// item they introduce, and the one place that reliably wrapped is not a
+  /// wrap any more.
   Widget _buildMeta(BuildContext context) {
     final style = ArDriveTypography.body.captionRegular(
       color: SharedFileColors.subtle(context),
     );
 
+    final facts = _buildFacts(context, style);
+    final provenance = _buildProvenance(context, style);
+
+    if (facts == null && provenance == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (facts != null) facts,
+        if (facts != null && provenance != null) const SizedBox(height: 4),
+        if (provenance != null) provenance,
+      ],
+    );
+  }
+
+  /// The size and the type, or `null` when neither is known yet.
+  Widget? _buildFacts(BuildContext context, TextStyle style) {
     final parts = <Widget>[];
 
     if (size != null) {
@@ -171,49 +203,57 @@ class SharedFileIdentity extends StatelessWidget {
       parts.add(Text(typeLabel, style: style));
     }
 
-    final ownerAddress = this.ownerAddress;
-
-    if (ownerAddress != null && ownerAddress.isNotEmpty) {
-      parts.add(
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Text(
-                appLocalizationsOf(context)
-                    .sharedFileSharedBy(_shortAddress(ownerAddress)),
-                style: style,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            if (verification != null &&
-                verification != LinkVerification.mismatch) ...[
-              const SizedBox(width: 6),
-              SharedFileVerificationBadge(verification: verification!),
-            ],
-          ],
-        ),
-      );
-    }
-
     if (parts.isEmpty) {
-      return const SizedBox.shrink();
+      return null;
     }
 
-    // A wrap, not a row: on a narrow phone the sender line drops to its own
-    // line instead of ellipsing the size away.
+    // Still a wrap rather than a row, and the separator is part of the item
+    // after it, so a narrow enough card breaks the line without stranding a
+    // dot at the end of it.
     return Wrap(
       spacing: 8,
       runSpacing: 4,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        for (var i = 0; i < parts.length; i++) ...[
-          if (i > 0)
-            Text(
-              '·',
-              style: style,
+        for (var i = 0; i < parts.length; i++)
+          if (i == 0)
+            parts[i]
+          else
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('·', style: style),
+                const SizedBox(width: 8),
+                Flexible(child: parts[i]),
+              ],
             ),
-          parts[i],
+      ],
+    );
+  }
+
+  /// Who shared the file, and how the link's claims about it checked out.
+  Widget? _buildProvenance(BuildContext context, TextStyle style) {
+    final ownerAddress = this.ownerAddress;
+
+    if (ownerAddress == null || ownerAddress.isEmpty) {
+      return null;
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: Text(
+            appLocalizationsOf(context)
+                .sharedFileSharedBy(_shortAddress(ownerAddress)),
+            style: style,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (verification != null &&
+            verification != LinkVerification.mismatch) ...[
+          const SizedBox(width: 6),
+          SharedFileVerificationBadge(verification: verification!),
         ],
       ],
     );
