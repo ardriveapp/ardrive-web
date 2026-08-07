@@ -149,12 +149,22 @@ class TurboUploadService {
       // code only checked top-level `maxItemBytes`, which the current service
       // does not return, so it silently fell back to the config value.
       final freeTier = data is Map ? data['freeTier'] : null;
-      final value = (freeTier is Map ? freeTier['maxItemBytes'] : null) ??
-          (data is Map
-              ? (data['freeUploadLimitBytes'] ?? data['maxItemBytes'])
-              : null);
-      if (value is num && value > 0) {
-        _serverMaxItemBytes = value.toInt();
+
+      // Each candidate is validated *before* the priority order is applied,
+      // not after. `??` picks the first non-null, so a present-but-unusable
+      // `freeTier.maxItemBytes` - a string, a negative, a zero - used to mask
+      // a perfectly good `freeUploadLimitBytes` sitting beside it and drop the
+      // service back to the stale config value this fix exists to stop using.
+      final value = [
+        freeTier is Map ? freeTier['maxItemBytes'] : null,
+        data is Map ? data['freeUploadLimitBytes'] : null,
+        data is Map ? data['maxItemBytes'] : null,
+      ]
+          .map(_wholePositiveBytes)
+          .firstWhere((bytes) => bytes != null, orElse: () => null);
+
+      if (value != null) {
+        _serverMaxItemBytes = value;
         logger.d('Turbo free item size limit from /v1/info: '
             '$_serverMaxItemBytes bytes');
       }
@@ -163,6 +173,27 @@ class TurboUploadService {
           .w('Could not fetch turbo /v1/info; using configured item size: $e');
     }
   }
+}
+
+/// A `/v1/info` cap candidate as a byte count, or `null` when it is not one.
+///
+/// Whole and positive, both deliberately:
+///
+/// * A fractional value is rejected rather than truncated. `0.5` truncates to
+///   `0`, and a zero cap is not the same as no cap - `maxFreeItemSizeBytes`
+///   would return it in preference to the configured fallback, and *nothing*
+///   would qualify for a free upload.
+/// * Infinity and NaN are rejected before `toInt()`, which throws on them.
+int? _wholePositiveBytes(Object? candidate) {
+  if (candidate is! num || !candidate.isFinite || candidate <= 0) {
+    return null;
+  }
+
+  if (candidate is double && candidate.truncateToDouble() != candidate) {
+    return null;
+  }
+
+  return candidate.toInt();
 }
 
 /// True when [error] indicates the upload service rejected an operation for
