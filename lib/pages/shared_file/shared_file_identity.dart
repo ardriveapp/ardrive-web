@@ -145,8 +145,17 @@ class SharedFileIdentity extends StatelessWidget {
                 : appLocalizationsOf(context).sharedFileGenericTitle),
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
-        style: ArDriveTypography.headline.headline5Bold(
+        // `heading5` from the newer scale, not `headline.headline5Bold` from
+        // the legacy one. The legacy style is 22px at w800 - the heaviest
+        // weight in the system - and is what `ardrive_ui` gives button labels
+        // and modal titles, so the file name was set exactly as heavy as the
+        // Download button directly beneath it and won a shouting match with
+        // it. 20px at w700 still reads as the page's one heading without
+        // competing with the primary action, and it is the scale
+        // `details_panel.dart` uses, which is the surface this page replaced.
+        style: ArDriveTypographyNew.of(context).heading5(
           color: colors.themeFgDefault,
+          fontWeight: ArFontWeight.bold,
         ),
       ),
     );
