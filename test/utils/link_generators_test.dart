@@ -222,12 +222,15 @@ void main() {
 
     group('v2 file share link generator tests', () {
       // The ids of the design plan's example links, §1.3. Every Arweave id is
-      // 43 base64url characters.
+      // 43 base64url characters *that decode to 32 bytes* - see
+      // [isCanonical32ByteId], and the note in
+      // `test/utils/shared_file_link_test.dart` about why that second half
+      // matters now.
       const fileId = '8f3c2a10-6f4e-4c7a-9b2e-1d2f3a4b5c6d';
-      const dataTxId = 'nS7hxbLQmk3W1o9zX2cV4bN5mL6kJ7hG8fD9sA0qWeR';
+      const dataTxId = 'nS7hxbLQmk3W1o9zX2cV4bN5mL6kJ7hG8fD9sA0qWeQ';
       const metadataTxId = 'S1QzT9YbPo8iU7yT6rE5wQ4aS3dF2gH1jK0lZxCvBnM';
-      const ownerAddress = 'Zvp8dEkO3nQ2wX9yV8uT7sR6qP5oN4mL3kJ2iH1gF0e';
-      const bundledInTxId = 'oLd7hxbLQmk3W1o9zX2cV4bN5mL6kJ7hG8fD9sA0qWe';
+      const ownerAddress = 'Zvp8dEkO3nQ2wX9yV8uT7sR6qP5oN4mL3kJ2iH1gF0c';
+      const bundledInTxId = 'oLd7hxbLQmk3W1o9zX2cV4bN5mL6kJ7hG8fD9sA0qWc';
       const thumbnailTxId = 'oLdzT9YbPo8iU7yT6rE5wQ4aS3dF2gH1jK0lZxCvBn0';
 
       // 12 IV bytes are 16 base64url characters.
@@ -279,27 +282,38 @@ void main() {
       Uri locationOf(Uri link) =>
           Uri.parse(link.toString().replaceFirst('/#', ''));
 
-      Map<String, String> expectedParameters({
+      /// What a link should assert, as the payload a reader gets back.
+      SharedFileLinkPayload expectedPayload({
         bool isPrivate = false,
         bool isPinned = false,
         bool detailsAreHidden = false,
         String? key,
+        SharedFileLinkKeySource keySource = SharedFileLinkKeySource.query,
       }) =>
-          {
-            SharedFileLinkParams.version: '2',
-            if (isPinned) SharedFileLinkParams.pinned: '1',
-            if (detailsAreHidden) SharedFileLinkParams.hidden: '1',
-            SharedFileLinkParams.dataTxId: dataTxId,
-            SharedFileLinkParams.metadataTxId: metadataTxId,
-            SharedFileLinkParams.owner: ownerAddress,
-            if (!detailsAreHidden) SharedFileLinkParams.name: fileName,
-            if (!detailsAreHidden) SharedFileLinkParams.size: '$fileSize',
-            if (!detailsAreHidden)
-              SharedFileLinkParams.contentType: contentType,
-            if (isPrivate) SharedFileLinkParams.cipher: Cipher.aes256gcm,
-            if (isPrivate) SharedFileLinkParams.cipherIv: cipherIv,
-            if (key != null) SharedFileLinkParams.key: key,
-          };
+          SharedFileLinkPayload(
+            dataTxId: dataTxId,
+            metadataTxId: metadataTxId,
+            ownerAddress: ownerAddress,
+            name: detailsAreHidden ? null : fileName,
+            size: detailsAreHidden ? null : fileSize,
+            contentType: detailsAreHidden ? null : contentType,
+            cipher: isPrivate ? Cipher.aes256gcm : null,
+            cipherIv: isPrivate ? cipherIv : null,
+            isPinned: isPinned,
+            detailsAreHidden: detailsAreHidden,
+            key: key == null
+                ? SharedFileLinkKey.absent
+                : SharedFileLinkKey.parse(key, source: keySource),
+          );
+
+      /// The payload [link] actually carries, read back out of it.
+      SharedFileLinkPayload payloadOf(Uri link) {
+        final payload = SharedFileLinkPayload.tryParse(locationOf(link));
+
+        expect(payload, isNotNull, reason: 'no payload in $link');
+
+        return payload!;
+      }
 
       test('a public file link carries every locally known field and no key',
           () {
@@ -312,17 +326,31 @@ void main() {
 
         expect(link.toString(), startsWith('https://app.ardrive.io/#/file/'));
         expect(location.path, '/file/$fileId/view');
-        expect(location.queryParameters, expectedParameters());
+        expect(payloadOf(link), expectedPayload());
+        expect(
+          location.queryParameters.keys,
+          [SharedFileLinkParams.payload],
+          reason: 'a v2 link is one packed parameter and, at most, a key',
+        );
         expect(location.fragment, isEmpty);
       });
 
-      test('a public file link percent encodes the file name', () {
+      test('a public file link never has to escape the file name', () {
+        // The name is bytes inside base64url now, so a space - or a `&`, or a
+        // `#` - is no longer one character away from ending the query.
+        const awkward = 'Q3 & Q4 #final.pdf';
         final link = generateFileShareLinkV2(
           fileId: fileId,
-          payload: publicPayload(),
+          payload: publicPayload().copyWith(name: awkward),
         );
 
-        expect(link.toString(), contains('n=Q3%20Report.pdf'));
+        expect(
+          locationOf(link).query,
+          matches(RegExp(r'^d=[A-Za-z0-9_-]+$')),
+        );
+        expect(link.toString(), isNot(contains('%')));
+        expect(link.toString(), isNot(contains(awkward)));
+        expect(payloadOf(link).name, awkward);
       });
 
       test('a private file link is keyless by default', () {
@@ -331,10 +359,7 @@ void main() {
           payload: privatePayload(),
         );
 
-        expect(
-          locationOf(link).queryParameters,
-          expectedParameters(isPrivate: true),
-        );
+        expect(payloadOf(link), expectedPayload(isPrivate: true));
         expect(link.toString(), isNot(contains(fileKeyBase64)));
       });
 
@@ -351,10 +376,7 @@ void main() {
           ),
         );
 
-        expect(
-          locationOf(link).queryParameters,
-          expectedParameters(isPrivate: true),
-        );
+        expect(payloadOf(link), expectedPayload(isPrivate: true));
         expect(
           locationOf(link).queryParameters,
           isNot(contains(SharedFileLinkParams.key)),
@@ -370,8 +392,12 @@ void main() {
         );
 
         expect(
-          locationOf(link).queryParameters,
-          expectedParameters(isPrivate: true, key: fileKeyBase64),
+          payloadOf(link),
+          expectedPayload(isPrivate: true, key: fileKeyBase64),
+        );
+        expect(
+          locationOf(link).queryParameters[SharedFileLinkParams.key],
+          fileKeyBase64,
         );
         // The whole query sits after the `#`, so the key is never sent to a
         // server even in this position.
@@ -394,7 +420,14 @@ void main() {
         expect(link.toString(), endsWith('#k=$fileKeyBase64'));
         expect(link.path, '/share/$fileId');
         expect(link.fragment, 'k=$fileKeyBase64');
-        expect(link.queryParameters, expectedParameters(isPrivate: true));
+        expect(
+          SharedFileLinkPayload.tryParse(link),
+          expectedPayload(
+            isPrivate: true,
+            key: fileKeyBase64,
+            keySource: SharedFileLinkKeySource.fragment,
+          ),
+        );
         // The half of the URL a server is sent carries no key.
         expect(
           link.toString().split('#').first,
@@ -411,7 +444,7 @@ void main() {
 
         expect(link.toString(), isNot(contains('/#')));
         expect(link.path, '/share/$fileId');
-        expect(link.queryParameters, expectedParameters());
+        expect(SharedFileLinkPayload.tryParse(link), expectedPayload());
       });
 
       test('refuses to place the key in a fragment on the hash route', () {
@@ -462,10 +495,7 @@ void main() {
           rawFileKey: '',
         );
 
-        expect(
-          locationOf(link).queryParameters,
-          expectedParameters(isPrivate: true),
-        );
+        expect(payloadOf(link), expectedPayload(isPrivate: true));
       });
 
       test('a pinned link sets pin and keeps every other field', () {
@@ -475,8 +505,8 @@ void main() {
         );
 
         expect(
-          locationOf(link).queryParameters,
-          expectedParameters(isPrivate: true, isPinned: true),
+          payloadOf(link),
+          expectedPayload(isPrivate: true, isPinned: true),
         );
       });
 
@@ -486,19 +516,22 @@ void main() {
           payload: privatePayload(detailsAreHidden: true),
         );
 
-        final parameters = locationOf(link).queryParameters;
+        final payload = payloadOf(link);
 
         expect(
-          parameters,
-          expectedParameters(isPrivate: true, detailsAreHidden: true),
+          payload,
+          expectedPayload(isPrivate: true, detailsAreHidden: true),
         );
-        expect(parameters.containsKey(SharedFileLinkParams.name), isFalse);
-        expect(parameters.containsKey(SharedFileLinkParams.size), isFalse);
-        expect(
-          parameters.containsKey(SharedFileLinkParams.contentType),
-          isFalse,
-        );
+        expect(payload.name, isNull);
+        expect(payload.size, isNull);
+        expect(payload.contentType, isNull);
+        expect(payload.detailsAreHidden, isTrue);
+        // Not even in an encoding a reader could undo: the bytes are not there.
         expect(link.toString(), isNot(contains('Report')));
+        expect(
+          payload.encode().length,
+          lessThan(privatePayload().encode().length),
+        );
       });
 
       test('a link without cipher details is still a usable v2 link', () {
@@ -525,15 +558,13 @@ void main() {
           payload: publicPayload().copyWith(name: longName),
         );
 
-        final name =
-            locationOf(link).queryParameters[SharedFileLinkParams.name];
+        // A dropped `n` is what an untruncated name would have cost us.
+        final name = payloadOf(link).name;
 
         expect(name, hasLength(SharedFileLinkPayload.maxNameLength));
-        expect(name, longName.substring(0, SharedFileLinkPayload.maxNameLength));
-        // A dropped `n` is what an untruncated name would have cost us.
         expect(
-          SharedFileLinkPayload.tryParse(locationOf(link))?.name,
-          isNotNull,
+          name,
+          longName.substring(0, SharedFileLinkPayload.maxNameLength),
         );
       });
 
@@ -564,6 +595,73 @@ void main() {
         expect(payload.detailsAreHidden, isFalse);
         expect(payload.key.raw, fileKeyBase64);
         expect(payload.key.isUsable, isTrue);
+      });
+
+      // The whole point of packing the payload was that the readable schema
+      // produced links that chat clients truncate, mail clients wrap and QR
+      // encoders inflate. That is a claim about a number, so the number is
+      // asserted rather than described - and when a new field moves it, the
+      // person adding the field is the one who gets to decide whether the
+      // trade is worth it.
+      //
+      // The readable schema's lengths, for the same four links, were 268 /
+      // 301 / 347 / 264. Everything below is measured against those.
+      group('the length of a link', () {
+        test('a public link is 232 characters, down from 268', () {
+          expect(
+            generateFileShareLinkV2(fileId: fileId, payload: publicPayload())
+                .toString(),
+            hasLength(232),
+          );
+        });
+
+        test('a private keyless link is 248 characters, down from 301', () {
+          expect(
+            generateFileShareLinkV2(fileId: fileId, payload: privatePayload())
+                .toString(),
+            hasLength(248),
+          );
+        });
+
+        test('a private link with the key is 294 characters, down from 347',
+            () {
+          expect(
+            generateFileShareLinkV2(
+              fileId: fileId,
+              payload: privatePayload(),
+              rawFileKey: fileKeyBase64,
+            ).toString(),
+            hasLength(294),
+          );
+        });
+
+        test('a pinned, hidden link is 222 characters, down from 264', () {
+          expect(
+            generateFileShareLinkV2(
+              fileId: fileId,
+              payload: privatePayload(isPinned: true, detailsAreHidden: true),
+            ).toString(),
+            hasLength(222),
+          );
+        });
+
+        test('the fixed cost of a link is the route, not the payload', () {
+          // 71 of those characters are the origin and the route, which no
+          // encoding can touch: `https://app.ardrive.io/#/file/{uuid}/view`.
+          // The next lever is not a denser payload - base64url of raw bytes is
+          // already exactly as dense as a 43 character id - it is one fewer id
+          // in the link. See §1.2.
+          final route = generatePublicFileShareLink(fileId: fileId).toString();
+
+          expect(route, hasLength(71));
+          expect(
+            generateFileShareLinkV2(fileId: fileId, payload: publicPayload())
+                .toString()
+                .length,
+            route.length + '?d='.length + 158,
+            reason: 'the payload of a public link is 118 bytes',
+          );
+        });
       });
     });
   });

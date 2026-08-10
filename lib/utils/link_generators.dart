@@ -78,9 +78,12 @@ Future<Uri> generatePrivateFileShareLink({
 ///
 /// [keyPlacement] defaults to the only position that is safe under [strategy].
 ///
-/// The name is truncated to [SharedFileLinkPayload.maxNameLength] here rather
-/// than at the call site, since a longer name is dropped wholesale by the
-/// parser and a truncated hint beats no hint.
+/// The name is truncated to [SharedFileLinkPayload.maxNameLength] *characters*
+/// here rather than at the call site, since a longer name is dropped wholesale
+/// by the parser and a truncated hint beats no hint. The payload truncates
+/// again if those characters do not fit in 255 UTF-8 bytes - two different
+/// limits, both of them about the same thing, and the encoder is the only place
+/// that can know about the second one.
 Uri generateFileShareLinkV2({
   required FileID fileId,
   required SharedFileLinkPayload payload,

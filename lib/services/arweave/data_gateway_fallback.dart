@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:ardrive/download/download_exceptions.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/logger.dart';
-import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/arweave.dart' as arweave_pkg;
@@ -23,9 +22,9 @@ class DataGatewayFallback {
   final ArioSDK _arioSDK;
   final Map<String, Arweave> _clientCache = {};
 
-  /// Injectable so [fetchDataAtMost] - the one method here that talks to a
-  /// gateway itself rather than through an [Arweave] client - can be tested
-  /// without a network.
+  /// Injectable so the methods here that talk to a gateway themselves rather
+  /// than through an [Arweave] client - [fetchDataAtMost] and the manifest
+  /// fetch - can be tested without a network.
   final Client Function() _clientFactory;
 
   static const _maxGarFallbacks = 2;
@@ -101,14 +100,46 @@ class DataGatewayFallback {
   /// whose id came out of somebody else's link (`thn` on a share link — see
   /// `SharedFileThumbnailLoader`).
   ///
-  /// Requested as `Range: bytes=0-{maxBytes}`. A gateway that honours it sends
-  /// no more than the cap; a gateway that ignores it (arweave.net does — see
-  /// `docs/FILE_SHARING_REDESIGN_PLAN.md` §3.2) is cut off by the running
-  /// count instead. Nothing here branches on having sent the header.
+  /// How the cap is asked for and enforced is [_fetchStreamed]'s.
   Future<Uint8List?> fetchDataAtMost(
     String txId,
     Arweave primaryClient, {
     required int maxBytes,
+  }) =>
+      _fetchStreamed(txId, primaryClient, maxBytes: maxBytes);
+
+  /// A file's whole data, through the same serial waterfall.
+  ///
+  /// [fetchData] is the wrong tool for a file. It caps each gateway attempt at
+  /// [_requestTimeout] and the whole waterfall at [_totalFetchTimeout], and
+  /// those cover the *body* as well as the headers - correct for a metadata
+  /// transaction, and hopeless for the hundreds of megabytes a multi-file
+  /// download asks for. This applies the two timeouts a file transfer wants
+  /// instead: one to reach the headers, and one to the *gap* between chunks, so
+  /// a large but healthy transfer is never mistaken for a dead gateway.
+  ///
+  /// Buffered whole, like the single-gateway fetch it replaces. Callers that
+  /// want the bytes as they arrive want [downloadWithFallback].
+  Future<Uint8List> fetchFileData(String txId, Arweave primaryClient) async {
+    // Only ever null when a cap was given and the transaction passed it.
+    return (await _fetchStreamed(txId, primaryClient))!;
+  }
+
+  /// The waterfall both streamed fetches share.
+  ///
+  /// With a [maxBytes] cap, requested as `Range: bytes=0-{maxBytes}` and
+  /// answered with `null` the moment the transaction turns out to be bigger -
+  /// either because the gateway declared a larger body or because it sent one
+  /// byte too many. A gateway that honours the header sends no more than the
+  /// cap; a gateway that ignores it (arweave.net does — see
+  /// `docs/FILE_SHARING_REDESIGN_PLAN.md` §3.2) is cut off by the running count
+  /// instead. Nothing here branches on having sent the header.
+  ///
+  /// Without one, the body is read to its end and `null` is never returned.
+  Future<Uint8List?> _fetchStreamed(
+    String txId,
+    Arweave primaryClient, {
+    int? maxBytes,
   }) async {
     final clients = await _buildClientList(primaryClient);
     Object? lastError;
@@ -121,7 +152,11 @@ class DataGatewayFallback {
         final request = Request(
           'GET',
           Uri.parse('${client.api.gatewayUrl.origin}/$txId'),
-        )..headers['Range'] = 'bytes=0-$maxBytes';
+        );
+
+        if (maxBytes != null) {
+          request.headers['Range'] = 'bytes=0-$maxBytes';
+        }
 
         final response =
             await httpClient.send(request).timeout(_requestTimeout);
@@ -137,7 +172,7 @@ class DataGatewayFallback {
         // `200` that ignored the header declares the whole transaction.
         final declared = response.contentLength;
 
-        if (declared != null && declared > maxBytes) {
+        if (maxBytes != null && declared != null && declared > maxBytes) {
           logger.d(
             'Not fetching tx $txId: it declares $declared bytes, over the '
             '$maxBytes byte cap',
@@ -178,17 +213,17 @@ class DataGatewayFallback {
   /// [body] collected, or `null` as soon as it passes [maxBytes].
   ///
   /// Leaving the loop early cancels the subscription, so the bytes after the
-  /// cap are never pulled.
+  /// cap are never pulled. A `null` [maxBytes] reads the body to its end.
   static Future<Uint8List?> _readAtMost(
     Stream<List<int>> body,
-    int maxBytes,
+    int? maxBytes,
   ) async {
     final builder = BytesBuilder(copy: false);
 
     await for (final chunk in body) {
       builder.add(chunk);
 
-      if (builder.length > maxBytes) {
+      if (maxBytes != null && builder.length > maxBytes) {
         return null;
       }
     }
@@ -354,17 +389,35 @@ class DataGatewayFallback {
     throw _ErrorFromStatus(response.statusCode, txId);
   }
 
+  /// A manifest's own bytes, from the gateway's `/raw/` endpoint.
+  ///
+  /// Read as bytes, and never as text that is then re-encoded. A manifest is
+  /// UTF-8 JSON whose `paths` map is keyed by file names, so any drive with an
+  /// emoji or a CJK character in a file name has a manifest that is not
+  /// Latin-1. `Response(String, int)` encodes with latin1 - that is
+  /// `package:http`'s default when no `content-type` charset says otherwise -
+  /// and throws on the first character it cannot represent. That throw used to
+  /// land in the waterfall's `catch`, be counted as this gateway failing, and
+  /// reach the user as "all gateways failed" once every gateway had returned
+  /// the same perfectly good manifest.
   Future<Response> _tryManifestGateway(Arweave client, String txId) async {
-    final url = '${client.api.gatewayUrl.origin}/raw/$txId';
-    final response =
-        await ArDriveHTTP().get(url: url).timeout(_requestTimeout);
+    final httpClient = _clientFactory();
 
-    final statusCode = response.statusCode ?? 0;
-    if (statusCode >= 200 && statusCode <= 208) {
-      return Response(response.data, statusCode);
+    try {
+      final response = await httpClient
+          .get(Uri.parse('${client.api.gatewayUrl.origin}/raw/$txId'))
+          .timeout(_requestTimeout);
+
+      if (response.statusCode >= 200 && response.statusCode <= 208) {
+        return response;
+      }
+
+      throw _ErrorFromStatus(response.statusCode, txId);
+    } finally {
+      // The body is fully buffered by the time `get` returns, so there is
+      // nothing left to read off this connection either way.
+      httpClient.close();
     }
-
-    throw _ErrorFromStatus(statusCode, txId);
   }
 
   Arweave _getOrCreateClient(String fqdn) {

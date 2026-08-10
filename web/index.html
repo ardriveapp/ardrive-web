@@ -8,10 +8,11 @@
     <!--
       Never send a route in a `Referer` header. Under hash routing the browser
       already strips the fragment, so this changes nothing today - and it is
-      what makes path routing safe to switch on: a `/share/{id}?v=2&n=...&ct=...`
-      address bar would otherwise ride along on every subresource request the
-      page makes, to gateways and any CDN among them, and `n` and `ct` are
-      private-file secrets. See lib/utils/app_url_strategy.dart.
+      what makes path routing safe to switch on: a `/share/{id}?d=...` address
+      bar would otherwise ride along on every subresource request the page
+      makes, to gateways and any CDN among them. The payload being packed is no
+      defence: base64url is an encoding, and `n` and `ct` are private-file
+      secrets. See lib/utils/app_url_strategy.dart.
     -->
     <meta name="referrer" content="strict-origin" />
 
@@ -151,16 +152,55 @@
       an enum of known pages, so no secret can ride along.
     -->
 
-    <script defer src="https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js" ></script>
+    <!--
+      pica 9.0.1, vendored under web/js/pica/ - never from a CDN, for the same
+      reason as pdf.js above: this build is permanent on Arweave and could never
+      be patched, and a CDN script breaks under the strict CSP an AR.IO gateway
+      serves. It was also the last unpinned third party with full run of this
+      origin, which is the origin a recipient's file key sits on.
 
-    <!-- Ethers.js for Ethereum wallet interactions -->
-    <!-- Load after saving/restoring define to avoid require.js conflict in debug mode -->
+      Read as the global `window.pica` by the `flutter_image_compress_web`
+      plugin on every resize (`jsWindow.pica()` in its src/pica.dart). The
+      plugin bundles an `assets/pica.min.js` of its own but never injects it,
+      so that global is the only copy there is: without it thumbnailing throws.
+      Reached from Dart through `FlutterImageCompress.compressWithList` in
+      packages/ardrive_utils/lib/src/generate_thumbnail.dart.
+
+      Loaded eagerly (deferred) at 35 KB - small enough that lazy-loading it
+      would cost more in moving parts than the bytes are worth.
+    -->
+    <script defer src="js/pica/pica.min.js"></script>
+
+    <!--
+      ethers 6.11.1, vendored under web/js/ethers/ - never from a CDN, same
+      reasoning as pdf.js and pica above.
+
+      Read as the global `window.ethers` by the Ethereum wallet and crypto
+      top-up paths - wallet_signer_cache_web.dart derives a public key through
+      `ethers.hashMessage` and `ethers.SigningKey`, crypto_payment_service_web
+      .dart calls `ethers.getBytes`, both under
+      lib/turbo/services/implementations/ - and by web/js/crypto_wallet_bridge.js.
+
+      THE DEFINE JUGGLING BELOW IS LOAD-BEARING; keep it. This is a UMD bundle,
+      so it tests `typeof define === "function" && define.amd` before anything
+      else and registers itself as an anonymous AMD module - never assigning
+      `window.ethers` - whenever require.js is present, as it is in debug
+      builds. Clearing `window.define` across the load forces the global branch,
+      and `onload` puts the original back. web/js/lazy_loader.js does the same
+      dance for arweave-wallet.js. This stays a hand-injected script rather than
+      a plain `defer` tag because a `defer` tag gives no hook to clear and
+      restore `define` around the load.
+
+      500 KB, eager, and only ever needed by Ethereum wallet flows - the one
+      script here with a real case for moving behind LazyLoader. Left eager in
+      this change because the define juggling has to survive the move intact.
+    -->
     <script>
       (function() {
         var _define = window.define;
         window.define = undefined;
         var script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/ethers@6.11.1/dist/ethers.umd.min.js';
+        script.src = 'js/ethers/ethers.umd.min.js';
         script.onload = function() {
           window.define = _define;
         };

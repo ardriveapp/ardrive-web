@@ -286,8 +286,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                   },
                                   child: DetailsPanel(
                                     currentDrive: driveDetailState.drive,
-                                    drivePrivacy:
-                                        driveDetailState.drive.privacy,
                                     item: driveDetailState.selectedItem!,
                                     canNavigateThroughImages: false,
                                   ),
@@ -343,8 +341,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                         ),
                                         child: DetailsPanel(
                                           item: driveDetailState.selectedItem!,
-                                          drivePrivacy:
-                                              driveDetailState.drive.privacy,
                                           canNavigateThroughImages: false,
                                           currentDrive: driveDetailState.drive,
                                         ),
@@ -861,8 +857,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                   driveDetailState.selectedItem != null
                               ? DetailsPanel(
                                   currentDrive: driveDetailState.currentDrive,
-                                  drivePrivacy:
-                                      driveDetailState.currentDrive.privacy,
                                   item: driveDetailState.selectedItem!,
                                   onNextImageNavigation: () {
                                     context
@@ -938,7 +932,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           },
           child: DetailsPanel(
             currentDrive: driveDetailLoadSuccessState.currentDrive,
-            drivePrivacy: driveDetailLoadSuccessState.currentDrive.privacy,
             item: driveDetailLoadSuccessState.selectedItem!,
             onNextImageNavigation: () {
               context

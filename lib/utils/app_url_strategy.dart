@@ -75,11 +75,12 @@ enum AppUrlStrategy {
 ///    content="strict-origin">`, already there and asserted by
 ///    `test/utils/app_url_strategy_test.dart`. A hash route is never sent in a
 ///    `Referer` header, so it costs nothing today; a *path* route is the whole
-///    link - `/share/{fileId}?v=2&n=...&ct=...&dtx=...&mtx=...` - and without
-///    this every subresource request the page makes carries it to the gateway
-///    it fetches from and to anything else the page talks to. `n` and `ct` are
-///    private-file secrets (§1.2), so this is not optional once the address bar
-///    holds them.
+///    link - `/share/{fileId}?d=...` - and without this every subresource
+///    request the page makes carries it to the gateway it fetches from and to
+///    anything else the page talks to. The payload being packed does not make
+///    this optional: base64url is an encoding, not a secret, and `n` and `ct`
+///    are private-file secrets (§1.2). It only means the leak needs one decode
+///    step rather than none.
 ///
 /// ## Enabling it, once those exist
 ///

@@ -532,6 +532,52 @@
   "@downloadIntegrityFailedDescription": {
     "description": "Description of the download failure dialog shown when the downloaded bytes failed their cryptographic authentication check. Says that nothing was written and that retrying cannot help"
   },
+  "downloadMustRestart": "La descarga se ha detenido",
+  "@downloadMustRestart": {
+    "description": "Title of the download failure dialog shown when the connection dropped and the download cannot be picked up where it left off"
+  },
+  "downloadMustRestartDescription": "Se ha perdido la conexión y este archivo no puede continuar desde donde se quedó. Si empiezas de nuevo, se descargará otra vez desde el principio.",
+  "@downloadMustRestartDescription": {
+    "description": "Description of the download failure dialog shown when the download cannot be resumed. Says plainly that retrying restarts from the beginning rather than continuing"
+  },
+  "downloadNotVerified": "ArDrive no ha podido comprobar este archivo con el original. Es algo normal en algunos archivos y no significa que haya ningún problema.",
+  "@downloadNotVerified": {
+    "description": "Advisory line on the download success dialog when no integrity verdict could be reached. Must never imply the file is damaged: this outcome is routine"
+  },
+  "downloadReconnecting": "Reconectando...",
+  "@downloadReconnecting": {
+    "description": "Status label that replaces Downloading while a download that lost its connection picks itself back up"
+  },
+  "downloadStartOver": "Empezar de nuevo",
+  "@downloadStartOver": {
+    "description": "Action on the download failure dialog that restarts a download from the beginning. Deliberately not Try Again, which would imply the download continues from where it stopped"
+  },
+  "downloadVerificationFailed": "Este archivo no coincide con el original",
+  "@downloadVerificationFailed": {
+    "description": "Title of the download dialog shown when the saved file contradicts what was originally uploaded"
+  },
+  "downloadVerificationFailedDescription": "{fileName} se ha guardado, pero no coincide con lo que se subió originalmente: algo lo ha modificado por el camino. No lo abras. Elimínalo y pide a quien lo compartió que te lo envíe de nuevo.",
+  "@downloadVerificationFailedDescription": {
+    "description": "Description of the download dialog shown when the saved file contradicts what was originally uploaded. Unlike the not-verified advisory, this is a real problem and says what to do about it",
+    "placeholders": {
+      "fileName": {
+        "type": "String",
+        "example": "holiday.mp4"
+      }
+    }
+  },
+  "downloadVerified": "Este archivo coincide con lo que se subió originalmente.",
+  "@downloadVerified": {
+    "description": "Quiet affirmative line on the download success dialog when the integrity check passed"
+  },
+  "downloadVerifying": "Comprobando este archivo...",
+  "@downloadVerifying": {
+    "description": "Title of the download dialog shown after the file is saved, while the integrity check is still running"
+  },
+  "downloadVerifyingDescription": "Tu archivo se ha guardado. ArDrive está comprobando que coincide con lo que se subió originalmente.",
+  "@downloadVerifyingDescription": {
+    "description": "Description of the download dialog shown while the integrity check runs. Says the file is already saved, because the check never holds up saving"
+  },
   "downloadWalletKeyfile": "Descargar archivo de claves del monedero",
   "@downloadWalletKeyfile": {},
   "dragAndDropButtonTitle": "Explorar Json",
@@ -1811,7 +1857,7 @@
   "@sharedFileLoadFailure": {
     "description": "Error shown on the shared file page when the file details could not be loaded because of a network or gateway failure"
   },
-  "sharedFileLoadingDetails": "Cargando los detalles del archivo…",
+  "sharedFileLoadingDetails": "Cargando los detalles del archivo...",
   "@sharedFileLoadingDetails": {
     "description": "Shown on the shared file page while the file's details are being resolved"
   },
@@ -1835,6 +1881,10 @@
   "@sharedFilePermanentFileSharing": {
     "description": "Tagline shown under the ArDrive logo on the shared file page"
   },
+  "sharedFilePreviewPaneHint": "Previsualiza este archivo aquí, sin descargarlo.",
+  "@sharedFilePreviewPaneHint": {
+    "description": "Caption in the preview pane of the shared file page, on a desktop screen, saying what pressing Preview will do"
+  },
   "sharedFilePreviewUnsupported": "Este archivo no se puede previsualizar aquí. Descárgalo para abrirlo.",
   "@sharedFilePreviewUnsupported": {
     "description": "Shown on the shared file page when the file cannot be previewed in the browser"
@@ -1851,7 +1901,7 @@
   "@sharedFileRetry": {
     "description": "Button that tries loading the shared file again"
   },
-  "sharedFileRetryingNow": "Reintentando ahora…",
+  "sharedFileRetryingNow": "Reintentando ahora...",
   "@sharedFileRetryingNow": {
     "description": "Shown when the automatic retry for a shared file is running"
   },
@@ -1873,7 +1923,7 @@
   "@sharedFileShowingLatestVersion": {
     "description": "Notice shown to the recipient of a pinned link once they have asked for the latest version, telling them the page no longer shows the version the sender linked to"
   },
-  "sharedFileStillPropagating": "Este archivo se acaba de subir y puede que todavía se esté propagando por la red. Reintentando en {seconds} s…",
+  "sharedFileStillPropagating": "Este archivo se acaba de subir y puede que todavía se esté propagando por la red. Reintentando en {seconds} s...",
   "@sharedFileStillPropagating": {
     "description": "Shown while a just-uploaded shared file has not spread across the network yet, counting down the seconds to the next automatic retry",
     "placeholders": {
@@ -1939,7 +1989,7 @@
   "@shareFileHideDetails": {
     "description": "Label of the toggle that keeps the file's name, size and type out of the share link"
   },
-  "shareFileHideDetailsDescription": "Si los ocultas, el destinatario no verá nada del archivo —ni su nombre, ni su tamaño, ni su tipo— hasta que lo desbloquee.",
+  "shareFileHideDetailsDescription": "Si los ocultas, el destinatario no verá nada del archivo (ni su nombre, ni su tamaño, ni su tipo) hasta que lo desbloquee.",
   "@shareFileHideDetailsDescription": {
     "description": "Helper text explaining what the recipient sees when the file's details are hidden from the share link"
   },

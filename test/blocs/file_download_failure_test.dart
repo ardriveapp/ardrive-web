@@ -14,6 +14,12 @@ import 'package:flutter_test/flutter_test.dart';
 class MockFileDownloadCubit extends MockCubit<FileDownloadState>
     implements FileDownloadCubit {}
 
+/// The warning triangle, which only the failures that really are alarming are
+/// allowed to wear.
+final Finder _alertIcon = find.byWidgetPredicate(
+  (widget) => widget is ArDriveIcon && widget.icon == ArDriveIconsData.triangle,
+);
+
 /// What the user is told when a download fails.
 ///
 /// Both cubits used to keep private copies of this mapping, and both had
@@ -43,12 +49,16 @@ void main() {
       );
     });
 
-    test('a resume that cannot be spliced is a network problem, and retrying '
-        'from zero is the fix the dialog already offers', () {
+    test('a resume that cannot be spliced is named as a restart, not as a '
+        'generic network problem', () {
+      // Retrying *is* the fix, so this is not the integrity dialog's dead end.
+      // But the bytes already delivered are gone, so it is not the network
+      // dialog either: that one offers "Try Again", which to somebody watching
+      // a bar sit at 80% promises the remaining 20%.
       expect(
         classifyDownloadError(
             const DownloadResumeNotSupportedException(txId, 1232, 200)),
-        FileDownloadFailureReason.networkConnectionError,
+        FileDownloadFailureReason.downloadMustRestart,
       );
     });
 
@@ -187,6 +197,23 @@ void main() {
       expect(find.text('Try Again'), findsNothing);
       expect(find.text('OK'), findsOneWidget);
       expect(find.textContaining('nothing was saved'), findsOneWidget);
+      // Corrupted bytes are not a routine transport hiccup, and the modal has
+      // to look like it: same alert treatment as the post-save verdict.
+      expect(_alertIcon, findsOneWidget);
+    });
+
+    testWidgets('a download that cannot be resumed offers a restart, and does '
+        'not call it trying again', (tester) async {
+      await pumpFailure(tester, FileDownloadFailureReason.downloadMustRestart);
+
+      expect(find.text('Start Over'), findsOneWidget);
+      // "Try Again" next to a bar that stopped at 80% promises the last 20%,
+      // and this is precisely the failure where that cannot be delivered.
+      expect(find.text('Try Again'), findsNothing);
+      expect(find.textContaining('from the beginning'), findsOneWidget);
+      // A dropped connection is an inconvenience, not an alarm. Spending the
+      // alert icon here would spend it everywhere.
+      expect(_alertIcon, findsNothing);
     });
   });
 }

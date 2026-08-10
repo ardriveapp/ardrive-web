@@ -60,7 +60,6 @@ class DetailsPanel extends StatefulWidget {
   const DetailsPanel({
     super.key,
     required this.item,
-    required this.drivePrivacy,
     this.currentDrive,
     this.onPreviousImageNavigation,
     this.onNextImageNavigation,
@@ -68,7 +67,6 @@ class DetailsPanel extends StatefulWidget {
   });
 
   final ArDriveDataTableItem item;
-  final Privacy drivePrivacy;
   final Drive? currentDrive;
   final Function()? onPreviousImageNavigation;
   final Function()? onNextImageNavigation;
@@ -811,7 +809,6 @@ class _DetailsPanelState extends State<DetailsPanel> {
           title = appLocalizationsOf(context).fileWasCreatedWithName(file.name);
         }
         leading = _DownloadOrPreview(
-          privacy: widget.drivePrivacy,
           fileRevision: file,
         );
 
@@ -832,7 +829,6 @@ class _DetailsPanelState extends State<DetailsPanel> {
       case RevisionAction.uploadNewVersion:
         title = appLocalizationsOf(context).fileHadANewRevision;
         leading = _DownloadOrPreview(
-          privacy: widget.drivePrivacy,
           fileRevision: file,
         );
 
@@ -1110,11 +1106,9 @@ class DetailsPanelItem extends StatelessWidget {
 
 class _DownloadOrPreview extends StatelessWidget {
   const _DownloadOrPreview({
-    required this.privacy,
     required this.fileRevision,
   });
 
-  final String privacy;
   final ARFSFileEntity fileRevision;
 
   @override
@@ -1122,7 +1116,6 @@ class _DownloadOrPreview extends StatelessWidget {
     return ArDriveIconButton(
       onPressed: () {
         return downloadOrPreviewRevision(
-          drivePrivacy: privacy,
           context: context,
           revision: fileRevision,
         );
@@ -1158,7 +1151,6 @@ class _FileRevisionOptions extends StatelessWidget {
 }
 
 void downloadOrPreviewRevision({
-  required String drivePrivacy,
   required BuildContext context,
   required ARFSFileEntity revision,
 }) {

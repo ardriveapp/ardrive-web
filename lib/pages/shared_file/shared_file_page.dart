@@ -11,14 +11,19 @@ import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.da
 import 'package:ardrive/utils/shared_file_link.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 
 /// The recipient's landing page: usually the first and only thing someone ever
 /// sees of ArDrive.
 ///
 /// It renders the state machine of `docs/FILE_SHARING_REDESIGN_PLAN.md` §2 -
-/// resolving, locked, ready, not found, network trouble - as one column that
-/// works the same on a phone as on a monitor. Everything the recipient needs
-/// is above the fold; everything a protocol needs is behind a disclosure.
+/// resolving, locked, ready, not found, network trouble. Everything the
+/// recipient needs is above the fold; everything a protocol needs is behind a
+/// disclosure.
+///
+/// Every state is the same reading column on a phone. On a desktop screen one
+/// of them - the ready card, the only one with a file to show - opens out into
+/// two panes; see [_buildFrame].
 ///
 /// The page owns three things the individual state views must not: the key
 /// text field's controller (so a rejected key survives the reload that
@@ -78,10 +83,35 @@ class _SharedFilePageState extends State<SharedFilePage> {
     return Material(
       child: BlocConsumer<SharedFileCubit, SharedFileState>(
         listener: _onStateChanged,
-        builder: (context, state) => SharedFileFrame(
-          child: _buildState(context, state),
+        // The app's own way of forking a layout (`drive_detail_page.dart`,
+        // `details_panel.dart`). `tablet` is deliberately not supplied: the
+        // package falls back to `mobile` for 600-950px, and a 700px window is
+        // a phone-shaped reading column, not half a desktop.
+        builder: (context, state) => ScreenTypeLayout.builder(
+          mobile: (context) => _buildFrame(context, state, isWide: false),
+          desktop: (context) => _buildFrame(context, state, isWide: true),
         ),
       ),
+    );
+  }
+
+  /// The frame, sized for the state inside it.
+  ///
+  /// Only the ready card has anything to do with the extra width - it is the
+  /// one that hosts the preview. The gate, the spinner and the error cards read
+  /// better narrow and stay narrow at every screen size.
+  Widget _buildFrame(
+    BuildContext context,
+    SharedFileState state, {
+    required bool isWide,
+  }) {
+    final isWideReady = isWide && state is SharedFileLoadSuccess;
+
+    return SharedFileFrame(
+      maxWidth: isWideReady
+          ? SharedFileFrame.maxWideContentWidth
+          : SharedFileFrame.maxContentWidth,
+      child: _buildState(context, state, isWide: isWideReady),
     );
   }
 
@@ -110,9 +140,13 @@ class _SharedFilePageState extends State<SharedFilePage> {
     }
   }
 
-  Widget _buildState(BuildContext context, SharedFileState state) {
+  Widget _buildState(
+    BuildContext context,
+    SharedFileState state, {
+    required bool isWide,
+  }) {
     if (state is SharedFileLoadSuccess) {
-      return SharedFileReadyView(state: state);
+      return SharedFileReadyView(state: state, isWide: isWide);
     }
 
     if (state is SharedFileIsPrivate) {
