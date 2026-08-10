@@ -912,9 +912,18 @@ class ArweaveService {
       final userAddress = await wallet.getAddress();
       final driveTxs = await getUniqueUserDriveEntityTxs(userAddress);
 
+      // Sync's drive-discovery phase, and its only caller is
+      // `_SyncRepository.updateUserDrives`. It reads the configured gateway
+      // only, like every other sync read: this fires once per drive
+      // transaction, so leaving it on the waterfall meant a user with a dozen
+      // drives opened a dozen fan-outs to GAR gateways on every sync - which
+      // is exactly the cost this change exists to remove.
+      //
+      // A drive whose metadata cannot be read is dropped from this pass, as
+      // before; the full sync below re-reads it.
       final driveResponses = await Future.wait(
         driveTxs.map((e) => _gatewayFallback
-            .fetchData(e.id, client)
+            .fetchDataForSync(e.id, client)
             .then<Response?>((r) => r)
             .catchError((_) => null)),
       );
