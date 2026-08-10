@@ -2,6 +2,7 @@ import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/services/config/selected_gateway.dart';
 import 'package:ardrive/sync/data/snapshot_validation_service.dart';
+import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -9,6 +10,15 @@ import 'package:mocktail/mocktail.dart';
 class _MockConfigService extends Mock implements ConfigService {}
 
 class _MockArioSDK extends Mock implements ArioSDK {}
+
+/// The only member [SnapshotValidationService] reads off a snapshot item.
+///
+/// A real [SnapshotItemOnChain] would drag a GraphQL node and a byte source in
+/// with it, none of which the validation path touches.
+class _FakeSnapshotItem extends Fake implements SnapshotItem {
+  @override
+  final String txId = 'Iw3hSMB1kQ9Vpp5rUwx5Z4kv7cKzYwzZ_-7QK4mUuTc';
+}
 
 void main() {
   group('SnapshotValidationService', () {
@@ -42,11 +52,20 @@ void main() {
       final arioSDK = _MockArioSDK();
       final service = SnapshotValidationService(configService: configService);
 
-      final verified = await service.validateSnapshotItems([]);
+      // A nonempty list, so validation actually runs: an empty one returns
+      // before the loop and would assert nothing at all.
+      final verified = await service.validateSnapshotItems([
+        _FakeSnapshotItem(),
+      ]);
 
+      // The configured gateway is unreachable, so the snapshot is rejected -
+      // and on `dev` this is the point where the service would have reached
+      // for the GAR list to try a second gateway.
       expect(verified, isEmpty);
-      // Nothing in this service can reach the SDK any more.
-      verifyNever(() => arioSDK.getGateways());
+
+      // Vacuous on its own, since the service is never handed this SDK. It is
+      // the compile-time signature above that proves the branch is gone; this
+      // documents the intent at the call site.
       verifyZeroInteractions(arioSDK);
     });
   });
