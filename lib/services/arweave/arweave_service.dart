@@ -921,11 +921,25 @@ class ArweaveService {
       //
       // A drive whose metadata cannot be read is dropped from this pass, as
       // before; the full sync below re-reads it.
-      final driveResponses = await Future.wait(
-        driveTxs.map((e) => _gatewayFallback
-            .fetchDataForSync(e.id, client)
-            .then<Response?>((r) => r)
-            .catchError((_) => null)),
+      // Bounded, not an unbounded `Future.wait` over every drive transaction.
+      // Now that this reads one gateway instead of fanning out across
+      // several, an unbounded burst is all aimed at that single host - and a
+      // user with many drives would open every connection at once. Same limit
+      // the metadata reads use.
+      final driveResponses = List<Response?>.filled(driveTxs.length, null);
+
+      await runPooled(
+        concurrency:
+            _configService.config.maxConcurrentDataFetches.clamp(1, 100),
+        itemCount: driveTxs.length,
+        task: (i) async {
+          try {
+            driveResponses[i] =
+                await _gatewayFallback.fetchDataForSync(driveTxs[i].id, client);
+          } catch (_) {
+            // A drive we cannot read is dropped from this pass, as before.
+          }
+        },
       );
 
       // Cache raw bytes for reuse by getLatestDriveEntityWithId (e.g., during
@@ -1510,15 +1524,20 @@ class ArweaveService {
       }
 
       final chunkStarts = [for (var i = 0; i < ids.length; i += chunkSize) i];
-      // Process the chunks in bounded-concurrency batches.
-      for (var b = 0; b < chunkStarts.length; b += maxConcurrent) {
-        final batch = chunkStarts.skip(b).take(maxConcurrent);
-        try {
-          await Future.wait(batch.map(queryChunk));
-        } catch (e) {
-          logger.e('Error getting transactions confirmations on exception', e);
-          rethrow;
-        }
+
+      // A pool, not a chunked `Future.wait`. Batching these meant each batch
+      // waited for its slowest query before the next started, so one slow
+      // chunk left the other workers idle - the same barrier that cost the
+      // metadata reads above, on the confirmation queries this time.
+      try {
+        await runPooled(
+          concurrency: maxConcurrent,
+          itemCount: chunkStarts.length,
+          task: (i) => queryChunk(chunkStarts[i]),
+        );
+      } catch (e) {
+        logger.e('Error getting transactions confirmations on exception', e);
+        rethrow;
       }
     }
 
