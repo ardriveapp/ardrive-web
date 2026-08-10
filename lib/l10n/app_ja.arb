@@ -257,6 +257,10 @@
   "@cookieConsentBodyPart1": {},
   "cookieConsentBodyPart2": "「同意する」をクリックすると、クッキーの使用に同意したことになります。",
   "@cookieConsentBodyPart2": {},
+  "copyAccessKey": "キーをコピーする",
+  "@copyAccessKey": {
+    "description": "Label of the button that copies the access key on the share file dialog"
+  },
   "copyBundleTxID": "バンドルTx IDをコピーする",
   "@copyBundleTxID": {
     "description": "Copy transaction ID of the Bundle transaction"
@@ -496,9 +500,21 @@
   "@download": {
     "description": "Action of downloading a file"
   },
+  "downloadCancelled": "ダウンロードをキャンセルしました",
+  "@downloadCancelled": {
+    "description": "Title of the dialog shown when a download is cancelled"
+  },
+  "downloadCancelledDescription": "ダウンロードはキャンセルされました",
+  "@downloadCancelledDescription": {
+    "description": "Description of the dialog shown when a download is cancelled"
+  },
   "downloadFinished": "ダウンロードが完了しました！",
   "@downloadFinished": {
     "description": "Download finished"
+  },
+  "downloading": "ダウンロード中",
+  "@downloading": {
+    "description": "Status label shown while a file is being downloaded"
   },
   "downloadingCSV": "CSVをダウンロード中…",
   "@downloadingCSV": {
@@ -507,6 +523,14 @@
   "downloadingFile": "ファイルのダウンロード中...",
   "@downloadingFile": {
     "description": "File is being downloaded"
+  },
+  "downloadIntegrityFailed": "このファイルを検証できませんでした",
+  "@downloadIntegrityFailed": {
+    "description": "Title of the download failure dialog shown when the downloaded bytes failed their cryptographic authentication check"
+  },
+  "downloadIntegrityFailedDescription": "届いたファイルはアップロードされたファイルと一致しないため、何も保存されていません。再試行しても解決しません。共有した相手にもう一度送ってもらってください。",
+  "@downloadIntegrityFailedDescription": {
+    "description": "Description of the download failure dialog shown when the downloaded bytes failed their cryptographic authentication check. Says that nothing was written and that retrying cannot help"
   },
   "downloadWalletKeyfile": "ウォレットキーファイルのダウンロード",
   "@downloadWalletKeyfile": {},
@@ -773,6 +797,30 @@
   "@fileFailedToDownloadFileAbovePublicLimit": {
     "description": "Download failure message when a file is too big"
   },
+  "downloadNetworkError": "ネットワークエラー",
+  "@downloadNetworkError": {
+    "description": "Title for network error during download"
+  },
+  "downloadNetworkErrorDescription": "ダウンロードサーバーに接続できませんでした。接続を確認して、もう一度お試しください。",
+  "@downloadNetworkErrorDescription": {
+    "description": "Description for network error during download"
+  },
+  "downloadFileNotFound": "ファイルが見つかりません",
+  "@downloadFileNotFound": {
+    "description": "Title when downloaded file is not found on any gateway"
+  },
+  "downloadFileNotFoundDescription": "このファイルはネットワーク上で見つかりませんでした。最近アップロードされ、まだ処理中の可能性があります。",
+  "@downloadFileNotFoundDescription": {
+    "description": "Description when downloaded file is not found"
+  },
+  "downloadRateLimited": "リクエストが多すぎます",
+  "@downloadRateLimited": {
+    "description": "Title when download is rate limited"
+  },
+  "downloadRateLimitedDescription": "ダウンロードサーバーが混雑しています。しばらく待ってから、もう一度お試しください。",
+  "@downloadRateLimitedDescription": {
+    "description": "Description when download is rate limited"
+  },
   "fileHadANewRevision": "このファイルの新バージョンがアップロードされました。",
   "@fileHadANewRevision": {
     "description": "File activity (journal): new revision"
@@ -788,6 +836,16 @@
   "fileName": "ファイル名",
   "@fileName": {
     "description": "The name of certain file"
+  },
+  "filePreviewTooLarge": "このファイルはプレビューするには大きすぎます（上限 {maxSize}）。ダウンロードしてご覧ください。",
+  "@filePreviewTooLarge": {
+    "description": "Shown instead of a preview when the file is larger than the in-memory preview limit",
+    "placeholders": {
+      "maxSize": {
+        "type": "String",
+        "example": "100 MiB"
+      }
+    }
   },
   "fileSize": "ファイルサイズ",
   "@fileSize": {
@@ -1447,6 +1505,32 @@
   "@preview": {
     "description": "Action of previewing a file"
   },
+  "previewPdfOpen": "PDFを開く",
+  "@previewPdfOpen": {
+    "description": "Button on the PDF preview card that opens the file in a new browser tab"
+  },
+  "previewPdfOpensInNewTab": "新しいタブで開き、お使いのブラウザに備わっているPDFビューアーで表示されます。",
+  "@previewPdfOpensInNewTab": {
+    "description": "Helper text on the PDF preview card, setting the expectation that the file opens in a new browser tab and is rendered there by the browser's own built-in PDF viewer rather than by ArDrive"
+  },
+  "previewPdfPageIndicator": "{pageCount} ページ中 {page} ページ目",
+  "@previewPdfPageIndicator": {
+    "description": "Page counter under the inline PDF viewer, e.g. 'Page 3 of 12'",
+    "placeholders": {
+      "page": {
+        "type": "int",
+        "example": "3"
+      },
+      "pageCount": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
+  "previewUnavailable": "プレビューは利用できません",
+  "@previewUnavailable": {
+    "description": "Shown when a file cannot be previewed in the app"
+  },
   "previous": "前へ",
   "@previous": {
     "description": "Action of going to the previous page"
@@ -1496,6 +1580,54 @@
         "example": "10:00"
       }
     }
+  },
+  "rawTransactionDownloadFailed": "このファイルを保存できませんでした。",
+  "@rawTransactionDownloadFailed": {
+    "description": "Error shown on the transaction viewer when a transaction's bytes could not be saved to the device"
+  },
+  "rawTransactionGenericTitle": "Arweave トランザクション",
+  "@rawTransactionGenericTitle": {
+    "description": "Fallback title on the transaction viewer when the transaction carries no file name"
+  },
+  "rawTransactionHideSandboxedFrame": "非表示",
+  "@rawTransactionHideSandboxedFrame": {
+    "description": "Button that closes the isolated inline frame on the transaction viewer"
+  },
+  "rawTransactionLinkDamaged": "これは Arweave のトランザクション ID ではありません。リンクを確認して、もう一度お試しください。",
+  "@rawTransactionLinkDamaged": {
+    "description": "Shown when the address in a transaction viewer link is not a valid Arweave transaction ID"
+  },
+  "rawTransactionNotFoundOnNetwork": "現在、このトランザクションをネットワーク上で見つけられません。まだ反映の途中かもしれません。しばらくしてからもう一度お試しください。",
+  "@rawTransactionNotFoundOnNetwork": {
+    "description": "Shown on the transaction viewer when the transaction could not be found on the network yet"
+  },
+  "rawTransactionOpenOnGateway": "ゲートウェイで開く",
+  "@rawTransactionOpenOnGateway": {
+    "description": "Button that opens a transaction's contents on the gateway, in a new browser tab"
+  },
+  "rawTransactionOpenSandboxed": "サンドボックスで開く",
+  "@rawTransactionOpenSandboxed": {
+    "description": "Button that opens contents which could execute code on the gateway's own isolated address, in a new browser tab"
+  },
+  "rawTransactionSandboxedNotice": "このファイルはブラウザ内でコードを実行する可能性があるため、ArDrive はここでは表示しません。代わりに、ゲートウェイ自身の分離されたアドレスで開いてください。そこからは、あなたの ArDrive セッションに触れることはできません。",
+  "@rawTransactionSandboxedNotice": {
+    "description": "Explains why ArDrive declines to render contents that could execute code, and what the isolated alternative keeps them away from"
+  },
+  "rawTransactionShowSandboxedFrame": "サンドボックス内でここに表示",
+  "@rawTransactionShowSandboxedFrame": {
+    "description": "Button that reveals contents which could execute code inline, inside an isolated frame"
+  },
+  "rawTransactionSourceHeading": "ソースコード",
+  "@rawTransactionSourceHeading": {
+    "description": "Heading above the unexecuted source text of contents ArDrive declined to render"
+  },
+  "rawTransactionTypeMismatch": "このトランザクションの内容は、宣言されている種類と一致しません。",
+  "@rawTransactionTypeMismatch": {
+    "description": "Caution shown when a transaction's bytes do not match the content type it declares"
+  },
+  "rawTransactionUnknownType": "ArDrive はこれがどの種類のファイルか判別できないため、ダウンロードのみ可能です。",
+  "@rawTransactionUnknownType": {
+    "description": "Shown on the transaction viewer when the contents cannot be identified, leaving download as the only action"
   },
   "recreateFolderEmphasized": "フォルダの再作成",
   "@recreateFolderEmphasized": {
@@ -1591,9 +1723,193 @@
   "@sharedDrivesEmphasized": {
     "description": "Sub-header for the shared drives list. Emphasized with upper case"
   },
+  "sharedFileAccessKeyMalformed": "アクセスキーの形式ではありません。43文字である必要があります。",
+  "@sharedFileAccessKeyMalformed": {
+    "description": "Inline error shown on the shared file page when the pasted access key has the wrong shape, before anything is sent to the network"
+  },
+  "sharedFileAccessKeySentSeparately": "共有した人がキーを別の手段で送っています。ファイルを開くには、下に貼り付けてください。",
+  "@sharedFileAccessKeySentSeparately": {
+    "description": "Text on the shared file page telling the recipient that the sender sent the access key through a different channel"
+  },
+  "sharedFileAccessKeyStaysOnThisDevice": "アクセスキーはこの端末に留まり、ArDrive に送信されることはありません。",
+  "@sharedFileAccessKeyStaysOnThisDevice": {
+    "description": "Reassurance shown under the access key field on the shared file page"
+  },
+  "sharedFileDetailsDrawerTitle": "ファイルの詳細",
+  "@sharedFileDetailsDrawerTitle": {
+    "description": "Title of the collapsed drawer holding the technical details of a shared file"
+  },
+  "sharedFileDetailsHiddenBySender": "送信者は、ロックが解除されるまでこのファイルの詳細を隠すことを選びました。",
+  "@sharedFileDetailsHiddenBySender": {
+    "description": "Shown on the locked shared file page when the sender chose to keep the file's name, size and type out of the link"
+  },
+  "sharedFileDetailsLicense": "ライセンス",
+  "@sharedFileDetailsLicense": {
+    "description": "Label of the license row in the shared file details drawer"
+  },
+  "sharedFileDetailsMetadata": "メタデータ",
+  "@sharedFileDetailsMetadata": {
+    "description": "Label of the metadata transaction row in the shared file details drawer"
+  },
+  "sharedFileDetailsOwner": "共有者",
+  "@sharedFileDetailsOwner": {
+    "description": "Label of the owner address row in the shared file details drawer"
+  },
+  "sharedFileDetailsTransaction": "トランザクション",
+  "@sharedFileDetailsTransaction": {
+    "description": "Label of the data transaction row in the shared file details drawer"
+  },
+  "sharedFileEncryptedFileTitle": "暗号化されたファイル",
+  "@sharedFileEncryptedFileTitle": {
+    "description": "Fallback title on the shared file page when a private file's name is not known yet"
+  },
+  "sharedFileGenericTitle": "共有ファイル",
+  "@sharedFileGenericTitle": {
+    "description": "Fallback title on the shared file page when a public file's name is not known yet"
+  },
+  "sharedFileGetLatest": "最新版を取得",
+  "@sharedFileGetLatest": {
+    "description": "Button that fetches the newest version of a shared file"
+  },
+  "sharedFileHidePreview": "プレビューを閉じる",
+  "@sharedFileHidePreview": {
+    "description": "Button that closes the preview on the shared file page"
+  },
   "sharedFileIsEncrypted": "このファイルは暗号化されています。",
   "@sharedFileIsEncrypted": {
     "description": "Description that says the file is encrypted on shared file page"
+  },
+  "sharedFileKeyIncorrect": "そのキーでは開けませんでした。文字が欠けていないか確認して、もう一度お試しください。",
+  "@sharedFileKeyIncorrect": {
+    "description": "Inline error shown under the file key field on the shared file page when the provided key cannot unlock the file"
+  },
+  "sharedFileLinkChecking": "確認中",
+  "@sharedFileLinkChecking": {
+    "description": "Badge shown while the link's claims about the file are still being checked"
+  },
+  "sharedFileLinkDetailsMismatch": "ファイルの詳細がリンクと一致しません",
+  "@sharedFileLinkDetailsMismatch": {
+    "description": "Warning shown when the details carried by the link do not match the file's own record"
+  },
+  "sharedFileLinkIncomplete": "このリンクは不完全なようです。送信者にもう一度送ってもらってください。",
+  "@sharedFileLinkIncomplete": {
+    "description": "Shown when the shared link itself is missing the information needed to open a file, so only the sender can fix it"
+  },
+  "sharedFileLinkKeyDamaged": "このリンクのキーが破損しているようです。送信者にリンクを再送してもらうか、下にキーを貼り付けてください。",
+  "@sharedFileLinkKeyDamaged": {
+    "description": "Inline error under the file key field when the key in the link could not be decoded"
+  },
+  "sharedFileLinkNotChecked": "未確認",
+  "@sharedFileLinkNotChecked": {
+    "description": "Neutral badge shown when the link carried nothing that could be checked against the file"
+  },
+  "sharedFileLinkVerified": "確認済み",
+  "@sharedFileLinkVerified": {
+    "description": "Badge shown when the details carried by the link match the file's own record"
+  },
+  "sharedFileLoadFailure": "このファイルを読み込めませんでした。接続を確認して、もう一度お試しください。",
+  "@sharedFileLoadFailure": {
+    "description": "Error shown on the shared file page when the file details could not be loaded because of a network or gateway failure"
+  },
+  "sharedFileLoadingDetails": "ファイルの詳細を読み込んでいます…",
+  "@sharedFileLoadingDetails": {
+    "description": "Shown on the shared file page while the file's details are being resolved"
+  },
+  "sharedFileNetworkTrouble": "ネットワークに接続できません。接続を確認して、もう一度お試しください。",
+  "@sharedFileNetworkTrouble": {
+    "description": "Shown on the shared file page when the network cannot be reached"
+  },
+  "sharedFileNewerVersionAvailable": "このファイルの新しいバージョンがあります。",
+  "@sharedFileNewerVersionAvailable": {
+    "description": "Banner shown when the shared file has a version newer than the one the link points at"
+  },
+  "sharedFileNotFoundOnNetwork": "現在、このファイルをネットワーク上で見つけられません。まだ反映の途中かもしれません。しばらくしてからもう一度お試しください。",
+  "@sharedFileNotFoundOnNetwork": {
+    "description": "Shown on the shared file page when the file could not be found after the automatic retries"
+  },
+  "sharedFilePasteAccessKey": "アクセスキーを貼り付け",
+  "@sharedFilePasteAccessKey": {
+    "description": "Placeholder of the access key field on the shared file page"
+  },
+  "sharedFilePermanentFileSharing": "永続的なファイル共有",
+  "@sharedFilePermanentFileSharing": {
+    "description": "Tagline shown under the ArDrive logo on the shared file page"
+  },
+  "sharedFilePreviewUnsupported": "このファイルはここではプレビューできません。開くにはダウンロードしてください。",
+  "@sharedFilePreviewUnsupported": {
+    "description": "Shown on the shared file page when the file cannot be previewed in the browser"
+  },
+  "sharedFileProtectedWithAccessKey": "このファイルはアクセスキーで保護されています。",
+  "@sharedFileProtectedWithAccessKey": {
+    "description": "Heading of the locked shared file page, telling the recipient that an access key is needed to open the file"
+  },
+  "sharedFileRememberKeyForThisTab": "このタブでこのキーを記憶する",
+  "@sharedFileRememberKeyForThisTab": {
+    "description": "Label of the checkbox that keeps the access key for the current browser tab"
+  },
+  "sharedFileRetry": "再試行",
+  "@sharedFileRetry": {
+    "description": "Button that tries loading the shared file again"
+  },
+  "sharedFileRetryingNow": "再試行しています…",
+  "@sharedFileRetryingNow": {
+    "description": "Shown when the automatic retry for a shared file is running"
+  },
+  "sharedFileSharedBy": "{address} が共有",
+  "@sharedFileSharedBy": {
+    "description": "Shows the shortened wallet address the shared file was shared by",
+    "placeholders": {
+      "address": {
+        "type": "String",
+        "example": "Zvp8dE...gF0e"
+      }
+    }
+  },
+  "sharedFileSharedVersion": "共有中",
+  "@sharedFileSharedVersion": {
+    "description": "Marks, in the version history, the version the shared link points at"
+  },
+  "sharedFileShowingLatestVersion": "現在、最新バージョンを表示しています。送られてきたリンクは、それより前のバージョンを指しています。",
+  "@sharedFileShowingLatestVersion": {
+    "description": "Notice shown to the recipient of a pinned link once they have asked for the latest version, telling them the page no longer shows the version the sender linked to"
+  },
+  "sharedFileStillPropagating": "このファイルはアップロードされたばかりで、まだネットワーク全体に広がっている途中かもしれません。{seconds} 秒後に再試行します…",
+  "@sharedFileStillPropagating": {
+    "description": "Shown while a just-uploaded shared file has not spread across the network yet, counting down the seconds to the next automatic retry",
+    "placeholders": {
+      "seconds": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "sharedFileStoredPermanently": "このファイルは永続的に保存されており、いつでもダウンロードできます。",
+  "@sharedFileStoredPermanently": {
+    "description": "Reassurance shown at the bottom of the shared file page"
+  },
+  "sharedFileUnlockedWithAccessKey": "あなたのアクセスキーでロックを解除しました。ほかの人にとっては、このファイルは暗号化されたままです。",
+  "@sharedFileUnlockedWithAccessKey": {
+    "description": "Shown after a private shared file has been unlocked with an access key"
+  },
+  "sharedFileUnlockFile": "ファイルのロックを解除",
+  "@sharedFileUnlockFile": {
+    "description": "Button that submits the access key on the shared file page"
+  },
+  "sharedFileVersionHistoryTitle": "バージョン履歴",
+  "@sharedFileVersionHistoryTitle": {
+    "description": "Title of the collapsed drawer holding the version history of a shared file"
+  },
+  "sharedFileVersionHistoryUnavailable": "現在、バージョン履歴を読み込めませんでした。",
+  "@sharedFileVersionHistoryUnavailable": {
+    "description": "Shown in the version history drawer when the revisions could not be loaded"
+  },
+  "sharedFileViewLatest": "最新版を見る",
+  "@sharedFileViewLatest": {
+    "description": "Button that opens the newest version of a shared file when the link is pinned to an older one"
+  },
+  "sharedFileViewSharedVersion": "共有されたバージョンを見る",
+  "@sharedFileViewSharedVersion": {
+    "description": "Button that takes the recipient back to the version the sender actually shared, after they have viewed the latest one"
   },
   "shareDrive": "ドライブを共有する",
   "@shareDrive": {
@@ -1610,6 +1926,46 @@
   "shareFile": "ファイルを共有する",
   "@shareFile": {
     "description": "The action of sharing a file link"
+  },
+  "shareFileAccessKeyLabel": "アクセスキー",
+  "@shareFileAccessKeyLabel": {
+    "description": "Label of the read-only field holding the access key on the share file dialog"
+  },
+  "shareFileFinishingLink": "このファイルの暗号化情報をまだ追加しています。リンクはすでに使用できます。",
+  "@shareFileFinishingLink": {
+    "description": "Helper text on the share file dialog while the file's encryption details are still being fetched, reassuring the sharer that the link already works"
+  },
+  "shareFileHideDetails": "ファイルの詳細を隠す",
+  "@shareFileHideDetails": {
+    "description": "Label of the toggle that keeps the file's name, size and type out of the share link"
+  },
+  "shareFileHideDetailsDescription": "隠すと、受信者はロックを解除するまで、名前もサイズも種類も、このファイルについて何も見ることができません。",
+  "@shareFileHideDetailsDescription": {
+    "description": "Helper text explaining what the recipient sees when the file's details are hidden from the share link"
+  },
+  "shareFileIncludeKeyInLink": "キーをリンクに含める — リンクを持つ人は誰でもファイルを開けます",
+  "@shareFileIncludeKeyInLink": {
+    "description": "Label of the checkbox that embeds the access key in the share link, which makes the link alone enough to open the file"
+  },
+  "shareFileKeyInLinkWarning": "このリンクだけでファイルが開けるようになりました。ファイル本体と同じように扱ってください。",
+  "@shareFileKeyInLinkWarning": {
+    "description": "Warning shown once the access key has been embedded in the share link"
+  },
+  "shareFileLinkLabel": "リンク",
+  "@shareFileLinkLabel": {
+    "description": "Label of the read-only field holding the share link on the share file dialog"
+  },
+  "shareFilePinToThisVersion": "このバージョンのみにリンクする",
+  "@shareFilePinToThisVersion": {
+    "description": "Label of the toggle that pins the share link to the version of the file being shared"
+  },
+  "shareFilePinToThisVersionDescription": "新しいバージョンをアップロードしても、受信者には常にこのバージョンが渡されます。",
+  "@shareFilePinToThisVersionDescription": {
+    "description": "Helper text explaining that a pinned share link keeps pointing at the version being shared"
+  },
+  "shareFileSendKeySeparately": "キーはリンクとは別の手段で送ってください。リンクとキーを同じメッセージで送れば、何も守られません。",
+  "@shareFileSendKeySeparately": {
+    "description": "Helper text telling the sharer to send the access key through a different channel than the share link"
   },
   "shareFileWithOthers": "他の人とファイルを共有する",
   "@shareFileWithOthers": {

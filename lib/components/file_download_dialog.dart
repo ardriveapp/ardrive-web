@@ -185,9 +185,27 @@ class FileDownloadDialog extends StatelessWidget {
                     ),
                   ],
                 );
+              case FileDownloadFailureReason.integrityCheckFailed:
+                // Deliberately not retryable, and deliberately not phrased as
+                // a network problem: the bytes arrived, they simply are not
+                // the bytes that were signed. Nothing was saved.
+                return _modalWrapper(
+                  title: appLocalizationsOf(context).downloadIntegrityFailed,
+                  description: appLocalizationsOf(context)
+                      .downloadIntegrityFailedDescription,
+                  actions: [
+                    ModalAction(
+                      action: () => Navigator.pop(context),
+                      title: appLocalizationsOf(context).ok,
+                    ),
+                  ],
+                );
               case FileDownloadFailureReason.fileAboveLimit:
                 return _fileDownloadFailedDueToFileAbovePrivateLimit(context);
               case FileDownloadFailureReason.browserDoesNotSupportLargeDownloads:
+              // Same message: from the user's side both mean "this file is
+              // larger than this download can handle, and nothing was saved".
+              case FileDownloadFailureReason.fileTooLargeToVerify:
                 return _fileDownloadFailedDueToAboveBrowserLimit(context);
             }
           } else if (state is FileDownloadWarning) {
@@ -385,7 +403,7 @@ class FileDownloadDialog extends StatelessWidget {
                         AnimatedSwitcher(
                           duration: const Duration(seconds: 1),
                           child: Text(
-                            'Downloading',
+                            appLocalizationsOf(context).downloading,
                             style: ArDriveTypography.body.buttonNormalBold(
                               color: ArDriveTheme.of(context)
                                   .themeData
@@ -469,8 +487,8 @@ class FileDownloadDialog extends StatelessWidget {
 
   ArDriveStandardModalNew _fileDownloadAbortedDialog(BuildContext context) {
     return _modalWrapper(
-      title: 'Download cancelled',
-      description: 'The download was cancelled',
+      title: appLocalizationsOf(context).downloadCancelled,
+      description: appLocalizationsOf(context).downloadCancelledDescription,
       actions: [
         ModalAction(
           action: () => Navigator.pop(context),

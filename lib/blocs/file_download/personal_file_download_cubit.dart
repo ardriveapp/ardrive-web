@@ -26,6 +26,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
   final io.ArDriveMobileDownloader _downloader;
   final ArDriveDownloader _arDriveDownloader;
   final ARFSRepository _arfsRepository;
+  final DownloadPolicy _downloadPolicy;
 
   ProfileFileDownloadCubit({
     required ARFSFileEntity file,
@@ -35,7 +36,9 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     required ArDriveDownloader arDriveDownloader,
     required ARFSRepository arfsRepository,
     required ArDriveCrypto crypto,
-  })  : _driveDao = driveDao,
+    DownloadPolicy downloadPolicy = const DownloadPolicy(),
+  })  : _downloadPolicy = downloadPolicy,
+        _driveDao = driveDao,
         _arweave = arweave,
         _arDriveDownloader = arDriveDownloader,
         _file = file,
@@ -45,12 +48,18 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
   Future<void> verifyUploadLimitationsAndDownload(SecretKey? cipherKey) async {
     try {
-      if (await AppPlatform.isSafari()) {
-        if (_file.size > publicDownloadSafariSizeLimit) {
-          emit(const FileDownloadFailure(
-              FileDownloadFailureReason.browserDoesNotSupportLargeDownloads));
-          return;
-        }
+      final drive = await _arfsRepository.getDriveById(_file.driveId);
+
+      // One decision, one place (F22): the Safari ceiling and the mobile
+      // private-file ceiling are both [DownloadPolicy]'s to state.
+      final limit = await _downloadPolicy.singleFileLimit(
+        isPublic: drive.drivePrivacy == DrivePrivacy.public,
+      );
+
+      final failure = singleFileLimitFailure(limit, _file.size);
+      if (failure != null) {
+        emit(FileDownloadFailure(failure));
+        return;
       }
     } catch (e) {
       logger.d(
@@ -259,7 +268,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    final reason = _classifyError(error);
+    final reason = classifyDownloadError(error);
     emit(FileDownloadFailure(reason));
 
     super.onError(error, stackTrace);
@@ -270,19 +279,5 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       error,
       stackTrace,
     );
-  }
-
-  static FileDownloadFailureReason _classifyError(Object error) {
-    if (error is DownloadFileNotFoundException) {
-      return FileDownloadFailureReason.fileNotFound;
-    }
-    if (error is DownloadRateLimitException) {
-      return FileDownloadFailureReason.rateLimited;
-    }
-    if (error is DownloadNetworkException ||
-        error is DownloadStalledException) {
-      return FileDownloadFailureReason.networkConnectionError;
-    }
-    return FileDownloadFailureReason.unknownError;
   }
 }

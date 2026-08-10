@@ -41,6 +41,7 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/components/unpreviewable_content.dart';
 import 'package:ardrive/pages/drive_detail/components/document_preview_widget.dart';
 import 'package:ardrive/pages/drive_detail/components/email_preview_widget.dart';
+import 'package:ardrive/pages/drive_detail/components/pdf_preview_widget.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/pages/no_drives/no_drives_page.dart';
 import 'package:ardrive/search/search_modal.dart';
@@ -285,7 +286,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                   },
                                   child: DetailsPanel(
                                     currentDrive: driveDetailState.drive,
-                                    isSharePage: false,
                                     drivePrivacy:
                                         driveDetailState.drive.privacy,
                                     item: driveDetailState.selectedItem!,
@@ -343,7 +343,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                         ),
                                         child: DetailsPanel(
                                           item: driveDetailState.selectedItem!,
-                                          isSharePage: false,
                                           drivePrivacy:
                                               driveDetailState.drive.privacy,
                                           canNavigateThroughImages: false,
@@ -862,7 +861,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                   driveDetailState.selectedItem != null
                               ? DetailsPanel(
                                   currentDrive: driveDetailState.currentDrive,
-                                  isSharePage: false,
                                   drivePrivacy:
                                       driveDetailState.currentDrive.privacy,
                                   item: driveDetailState.selectedItem!,
@@ -940,7 +938,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           },
           child: DetailsPanel(
             currentDrive: driveDetailLoadSuccessState.currentDrive,
-            isSharePage: false,
             drivePrivacy: driveDetailLoadSuccessState.currentDrive.privacy,
             item: driveDetailLoadSuccessState.selectedItem!,
             onNextImageNavigation: () {

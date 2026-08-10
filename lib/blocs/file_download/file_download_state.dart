@@ -85,4 +85,16 @@ enum FileDownloadFailureReason {
   networkConnectionError,
   fileNotFound,
   rateLimited,
+
+  /// The bytes kept coming past the size the file claimed, so the download
+  /// could not be held in memory long enough to check its authentication tag
+  /// and was stopped. Nothing was written. Retrying is pointless: the file's
+  /// metadata and its data disagree.
+  fileTooLargeToVerify,
+
+  /// The bytes that arrived are not the bytes that were signed - an AES-GCM
+  /// authentication tag that did not match (§3.1). **Nothing was written**,
+  /// and retrying cannot help: the same bytes would fail the same check. The
+  /// dialog for this one therefore offers no "Try again".
+  integrityCheckFailed,
 }
