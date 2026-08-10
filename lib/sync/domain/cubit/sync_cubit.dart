@@ -53,6 +53,27 @@ class SyncCubit extends Cubit<SyncState> {
   SyncProgress _syncProgress = SyncProgress.initial();
   SyncCancellationToken? _currentSyncToken;
 
+  Map<String, List<String>> _lastSyncSkippedEntityTxIdsByDrive = const {};
+
+  /// Transaction ids of entities the most recent sync could not read, keyed by
+  /// drive id. Retained on the cubit — not just on the terminal state — so it
+  /// survives a plain [SyncIdle] completion, which is the common case when
+  /// items are skipped but no drive outright fails.
+  ///
+  /// This is currently the only record that anything was dropped. A later pass
+  /// renders it as "failed files"; persisting and retrying these across syncs
+  /// is described in `docs/SYNC_SKIPPED_ENTITY_PERSISTENCE.md`.
+  Map<String, List<String>> get lastSyncSkippedEntityTxIdsByDrive =>
+      _lastSyncSkippedEntityTxIdsByDrive;
+
+  int get lastSyncSkippedEntityCount => _lastSyncSkippedEntityTxIdsByDrive
+      .values
+      .fold(0, (sum, txIds) => sum + txIds.length);
+
+  void _captureSkippedEntities(SyncProgress progress) {
+    _lastSyncSkippedEntityTxIdsByDrive = progress.skippedEntityTxIdsByDrive;
+  }
+
   SyncCubit({
     required ProfileCubit profileCubit,
     required ActivityCubit activityCubit,
@@ -383,6 +404,8 @@ class SyncCubit extends Cubit<SyncState> {
 
     unawaited(_updateContext());
 
+    _captureSkippedEntities(_syncProgress);
+
     // Check if sync completed with errors (only for non-cancelled syncs)
     if (_syncProgress.hasErrors) {
       logger.w('Sync completed with ${_syncProgress.failedQueries} errors');
@@ -391,6 +414,8 @@ class SyncCubit extends Cubit<SyncState> {
         totalDrives: _syncProgress.drivesCount,
         failedDriveIds: _syncProgress.failedDriveIds,
         errorMessages: _syncProgress.errorMessages,
+        skippedEntityCount: _syncProgress.skippedEntityCount,
+        skippedEntityTxIdsByDrive: _syncProgress.skippedEntityTxIdsByDrive,
       ));
     } else {
       emit(SyncIdle());
@@ -526,6 +551,8 @@ class SyncCubit extends Cubit<SyncState> {
 
     _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
 
+    _captureSkippedEntities(_syncProgress);
+
     // Check if sync completed with errors
     if (_syncProgress.hasErrors) {
       logger.w('Single drive sync completed with errors');
@@ -534,6 +561,8 @@ class SyncCubit extends Cubit<SyncState> {
         totalDrives: _syncProgress.drivesCount,
         failedDriveIds: _syncProgress.failedDriveIds,
         errorMessages: _syncProgress.errorMessages,
+        skippedEntityCount: _syncProgress.skippedEntityCount,
+        skippedEntityTxIdsByDrive: _syncProgress.skippedEntityTxIdsByDrive,
       ));
     } else {
       emit(SyncIdle());

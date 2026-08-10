@@ -493,6 +493,43 @@ class ArweaveService {
     }
   }
 
+  /// Runs [task] for every index in `0..itemCount-1`, keeping at most
+  /// [concurrency] in flight and starting the next index as soon as any one
+  /// completes.
+  ///
+  /// This is a sliding window, not a chunked `Future.wait`. A chunked barrier
+  /// idles every other slot until the slowest member of the chunk returns, so
+  /// one slow or failing item costs the whole chunk its duration.
+  ///
+  /// [task] owns its error handling — a task that throws aborts the run.
+  @visibleForTesting
+  static Future<void> runPooled({
+    required int concurrency,
+    required int itemCount,
+    required Future<void> Function(int index) task,
+  }) async {
+    if (itemCount <= 0) return;
+
+    final workerCount = concurrency < 1
+        ? 1
+        : (concurrency < itemCount ? concurrency : itemCount);
+
+    // Shared cursor. Claiming an index is synchronous, so two workers can
+    // never take the same one.
+    var nextIndex = 0;
+
+    Future<void> worker() async {
+      while (true) {
+        final i = nextIndex;
+        if (i >= itemCount) return;
+        nextIndex++;
+        await task(i);
+      }
+    }
+
+    await Future.wait(List.generate(workerCount, (_) => worker()));
+  }
+
   /// Get the metadata of transactions
   ///
   /// mounts the `blockHistory`
@@ -507,43 +544,60 @@ class ArweaveService {
     int? currentBlockHeight,
   }) async {
     // Limit concurrent data fetches to avoid overwhelming the gateway.
-    // Uses chunked Future.wait — processes maxConcurrent at a time.
+    //
+    // Sliding window, not chunked Future.wait: workers pull the next index as
+    // soon as they finish, so exactly maxConcurrent fetches stay in flight.
+    // A chunked barrier would idle every other slot until the slowest member
+    // of the chunk returned — and with the 2-attempt sync retry, one dead
+    // transaction stalls its whole chunk for ~10s.
     final maxConcurrent =
         _configService.config.maxConcurrentDataFetches.clamp(1, 100);
     final entityDatas = List<Uint8List>.filled(entityTxs.length, Uint8List(0));
 
-    for (var start = 0; start < entityTxs.length; start += maxConcurrent) {
-      final end = (start + maxConcurrent < entityTxs.length)
-          ? start + maxConcurrent
-          : entityTxs.length;
+    /// Metadata reads that failed outright. These entities are skipped for
+    /// this sync — see the note on [_getEntityData] for why that can be a
+    /// permanent drop, and `docs/SYNC_SKIPPED_ENTITY_PERSISTENCE.md` for the
+    /// planned fix. Surfaced so callers can report them instead of losing them.
+    final skippedTxIds = <String>[];
 
-      await Future.wait(
-        List.generate(end - start, (j) {
-          final i = start + j;
-          final entity = entityTxs[i].transactionCommonMixin;
-          final tags = HashMap.fromIterable(
-            entity.tags,
-            key: (tag) => tag.name,
-            value: (tag) => tag.value,
-          );
+    await runPooled(
+      concurrency: maxConcurrent,
+      itemCount: entityTxs.length,
+      task: (i) async {
+        final entity = entityTxs[i].transactionCommonMixin;
+        final tags = HashMap.fromIterable(
+          entity.tags,
+          key: (tag) => tag.name,
+          value: (tag) => tag.value,
+        );
 
-          if (driveKey != null && tags[EntityTag.cipherIv] == null) {
-            return Future.value();
-          }
-          if (tags[EntityTag.entityType] == EntityTypeTag.snapshot) {
-            return Future.value();
-          }
+        // Entities we never fetch. Leave entityDatas[i] at its empty default
+        // and release the slot immediately.
+        if (driveKey != null && tags[EntityTag.cipherIv] == null) {
+          return;
+        }
+        if (tags[EntityTag.entityType] == EntityTypeTag.snapshot) {
+          return;
+        }
 
-          return _getEntityData(
-            entityId: entity.id,
-            driveId: driveId,
-            isPrivate: driveKey != null,
-          ).then((data) {
-            entityDatas[i] = data;
-          });
-        }),
-      );
-    }
+        // _getEntityData never throws — a failed read skips only this entity
+        // and must never abort the run.
+        final data = await _getEntityData(
+          entityId: entity.id,
+          driveId: driveId,
+          isPrivate: driveKey != null,
+        );
+
+        if (data == null) {
+          skippedTxIds.add(entity.id);
+          return;
+        }
+
+        // Positional write — callers rely on entityDatas aligning with
+        // entityTxs, so results are never appended.
+        entityDatas[i] = data;
+      },
+    );
 
     final metadataCache = await MetadataCache.fromCacheStore(
       await newSharedPreferencesCacheStore(),
@@ -636,9 +690,17 @@ class ArweaveService {
       block.entities.removeWhere((e) => e!.ownerAddress != ownerAddress);
     }
 
+    if (skippedTxIds.isNotEmpty) {
+      logger.w(
+        'Skipped ${skippedTxIds.length} entities in drive $driveId: their '
+        'metadata could not be read. They will not appear in this sync.',
+      );
+    }
+
     return DriveEntityHistory(
       blockHistory.isNotEmpty ? blockHistory.last.blockHeight : lastBlockHeight,
       blockHistory,
+      skippedTxIds: skippedTxIds,
     );
   }
 
@@ -657,7 +719,20 @@ class ArweaveService {
     return privateDriveTxs.isNotEmpty;
   }
 
-  Future<Uint8List> _getEntityData({
+  /// Returns the entity's metadata bytes, or `null` if they could not be read.
+  ///
+  /// KNOWN ISSUE — a `null` here is a silent, potentially permanent drop, and
+  /// it predates the single-gateway sync change. The caller substitutes empty
+  /// bytes, the entity fails to parse (swallowed at the `on
+  /// EntityTransactionParseException` in
+  /// [createDriveEntityHistoryFromTransactions]) and never reaches
+  /// `blockHistory` — while the drive's watermark advances regardless. Only a
+  /// user-initiated deep sync reliably recovers it.
+  ///
+  /// Full evidence and the planned fix (persist skipped items and retry them
+  /// across syncs) are in `docs/SYNC_SKIPPED_ENTITY_PERSISTENCE.md`. Until
+  /// then the tx ids are at least reported on `SyncProgress` rather than lost.
+  Future<Uint8List?> _getEntityData({
     required String entityId,
     required String driveId,
     required bool isPrivate,
@@ -674,9 +749,10 @@ class ArweaveService {
       return cachedData;
     }
 
-    return getEntityDataFromNetwork(txId: txId).catchError((e) {
-      logger.e('Failed to get entity data from network', e);
-      return Uint8List(0);
+    return getEntityDataFromNetwork(txId: txId).then<Uint8List?>((d) => d)
+        .catchError((e) {
+      logger.e('Failed to get entity data from network for tx $txId', e);
+      return null;
     });
   }
 
@@ -707,8 +783,13 @@ class ArweaveService {
     return null;
   }
 
+  /// Reads entity metadata for the **sync** path.
+  ///
+  /// Uses [DataGatewayFallback.fetchDataForSync] — configured gateway only,
+  /// one retry, one last-resort hop, no GAR and therefore no Solana RPC.
+  /// Download/preview/thumbnail/share paths keep the full waterfall.
   Future<Uint8List> getEntityDataFromNetwork({required String txId}) async {
-    final Response data = await _gatewayFallback.fetchData(txId, client);
+    final Response data = await _gatewayFallback.fetchDataForSync(txId, client);
     return data.bodyBytes;
   }
 
@@ -1780,7 +1861,16 @@ class DriveEntityHistory {
   /// A list of block entities, ordered by ascending block height.
   final List<BlockEntities> blockHistory;
 
-  DriveEntityHistory(this.lastBlockHeight, this.blockHistory);
+  /// Transactions whose metadata could not be read, and which were therefore
+  /// left out of [blockHistory]. Surfaced so the sync layer can count and
+  /// report them rather than dropping them silently.
+  final List<String> skippedTxIds;
+
+  DriveEntityHistory(
+    this.lastBlockHeight,
+    this.blockHistory, {
+    this.skippedTxIds = const [],
+  });
 }
 
 /// The entities present in a particular block.

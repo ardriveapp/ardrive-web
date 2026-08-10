@@ -47,13 +47,27 @@ class SyncCompleteWithErrors extends SyncState {
   final List<String> failedDriveIds;
   final Map<String, String> errorMessages;
 
+  /// Entities dropped from this sync because their metadata could not be read.
+  /// See [SyncCubit.lastSyncSkippedEntityTxIdsByDrive].
+  final int skippedEntityCount;
+  final Map<String, List<String>> skippedEntityTxIdsByDrive;
+
   SyncCompleteWithErrors({
     required this.failedDrives,
     required this.totalDrives,
     required this.failedDriveIds,
     required this.errorMessages,
+    this.skippedEntityCount = 0,
+    this.skippedEntityTxIdsByDrive = const {},
   });
 
   @override
-  List<Object> get props => [failedDrives, totalDrives, failedDriveIds, errorMessages];
+  List<Object> get props => [
+        failedDrives,
+        totalDrives,
+        failedDriveIds,
+        errorMessages,
+        skippedEntityCount,
+        skippedEntityTxIdsByDrive,
+      ];
 }
