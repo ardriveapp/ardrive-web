@@ -86,7 +86,11 @@ class DataGatewayFallback {
   /// each, so a slow or flaky primary turns into minutes of serial timeouts.
   /// Worst case here is [syncMaxAttempts] attempts / ~10.3s.
   ///
-  /// A 404 is not retried — the same host will not change its mind.
+  /// A 404 is retried like any other failure: a gateway that has not
+  /// finished indexing a transaction answers 404 for it and 200 a moment
+  /// later. [TransactionNotFound] is reported only when *every* attempt
+  /// returned 404 — a 500 followed by a 404 is an unwell gateway, not an
+  /// absent transaction.
   ///
   /// Callers must treat a failure as "skip this item", and must record the tx
   /// id so it is not lost. See the note on `ArweaveService._getEntityData` and
@@ -104,6 +108,8 @@ class DataGatewayFallback {
   Future<Response> _syncFetch(String txId, Arweave primaryClient) async {
     final gatewayName = primaryClient.api.gatewayUrl.host;
 
+    var allAttempts404 = true;
+
     for (var attempt = 1; attempt <= syncMaxAttempts; attempt++) {
       try {
         return await _tryGateway(primaryClient, txId);
@@ -117,7 +123,17 @@ class DataGatewayFallback {
         //
         // The last attempt still reports it as not found, so a genuinely
         // absent transaction keeps its typed error.
-        if (e.statusCode == 404 && attempt == syncMaxAttempts) {
+        if (e.statusCode != 404) {
+          allAttempts404 = false;
+        }
+
+        // `TransactionNotFound` is a claim that the transaction is absent, so
+        // only every attempt agreeing earns it. A 500 followed by a 404 says
+        // the gateway was unwell, not that the data is gone, and reporting it
+        // as not-found would state more than we know.
+        if (e.statusCode == 404 &&
+            attempt == syncMaxAttempts &&
+            allAttempts404) {
           logger.w('Gateway $gatewayName returned 404 for sync tx $txId '
               'on every attempt');
           throw TransactionNotFound(txId);
@@ -125,6 +141,8 @@ class DataGatewayFallback {
         logger.w('Gateway $gatewayName failed for sync tx $txId '
             '(attempt $attempt/$syncMaxAttempts): $e');
       } catch (e) {
+        // A timeout or a socket error is not a 404 either.
+        allAttempts404 = false;
         logger.w('Gateway $gatewayName failed for sync tx $txId '
             '(attempt $attempt/$syncMaxAttempts): $e');
       }

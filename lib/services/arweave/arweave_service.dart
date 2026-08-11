@@ -1005,12 +1005,24 @@ class ArweaveService {
 
       final drivesById = <String?, DriveEntity>{};
       final drivesWithKey = <DriveEntity, DriveKey?>{};
+
+      /// Drives whose newest transaction was reached but could not be used.
+      ///
+      /// `getUniqueUserDriveEntityTxs` dedupes **per page**, so the same
+      /// Drive-Id can appear on more than one page and the list is newest
+      /// first. Skipping the newest without recording it would let an older
+      /// revision take its place and write stale metadata - worse than the
+      /// drive simply being late.
+      final handledDriveIds = <String?>{};
       for (var i = 0; i < driveTxs.length; i++) {
         if (driveResponses[i] == null) continue;
         final driveTx = driveTxs[i];
 
         // Ignore drive entity transactions which we already have newer entities for.
-        if (drivesById.containsKey(driveTx.getTag(EntityTag.driveId))) {
+        final txDriveId = driveTx.getTag(EntityTag.driveId);
+
+        if (drivesById.containsKey(txDriveId) ||
+            handledDriveIds.contains(txDriveId)) {
           continue;
         }
 
@@ -1039,10 +1051,12 @@ class ArweaveService {
                     wallet, driveTx.getTag(EntityTag.driveId)!);
               } catch (e) {
                 logger.w(
-                  'Could not read the drive signature for '
-                  '${driveTx.getTag(EntityTag.driveId)}; skipping this drive '
-                  'for this pass: $e',
+                  'Could not read the drive signature for $txDriveId; '
+                  'skipping this drive for this pass: $e',
                 );
+                // Claim the id so an older transaction for the same drive on
+                // a later page cannot quietly stand in for the newest one.
+                handledDriveIds.add(txDriveId);
                 continue;
               }
             }
