@@ -77,7 +77,25 @@ void main() {
       expect(DataGatewayFallback.syncMaxAttempts, 2);
     });
 
-    test('does not retry a 404 — the same host will not change its mind',
+    test('retries a 404, because a gateway mid-index answers one', () async {
+      // Observed in the wild: a drive signature 404ed once and resolved on the
+      // retry. The gateway had the transaction, it just had not indexed it
+      // yet. Treating the first 404 as final cost a whole drive.
+      var calls = 0;
+      when(() => primaryApi.getSandboxedTx(txId)).thenAnswer((_) async {
+        calls++;
+        return calls == 1
+            ? Response('not found', 404)
+            : Response('metadata', 200);
+      });
+
+      final response = await fallback.fetchDataForSync(txId, primaryClient);
+
+      expect(response.statusCode, 200);
+      expect(calls, 2);
+    });
+
+    test('reports a transaction absent from every attempt as not found',
         () async {
       when(() => primaryApi.getSandboxedTx(txId))
           .thenAnswer((_) async => Response('not found', 404));
@@ -87,7 +105,44 @@ void main() {
         throwsA(isA<TransactionNotFound>()),
       );
 
-      verify(() => primaryApi.getSandboxedTx(txId)).called(1);
+      // Bounded: a genuinely missing transaction still costs only the two
+      // attempts every other sync read gets.
+      verify(() => primaryApi.getSandboxedTx(txId)).called(2);
+    });
+
+    test('a 500 then a 404 is not reported as not found', () async {
+      // Only every attempt agreeing earns `TransactionNotFound`. A gateway
+      // that errored once and 404ed once has not told us the data is absent.
+      var calls = 0;
+      when(() => primaryApi.getSandboxedTx(txId)).thenAnswer((_) async {
+        calls++;
+        return calls == 1
+            ? Response('boom', 500)
+            : Response('not found', 404);
+      });
+
+      await expectLater(
+        fallback.fetchDataForSync(txId, primaryClient),
+        throwsA(allOf(isA<Exception>(), isNot(isA<TransactionNotFound>()))),
+      );
+
+      expect(calls, 2);
+    });
+
+    test('a thrown error then a 404 is not reported as not found', () async {
+      var calls = 0;
+      when(() => primaryApi.getSandboxedTx(txId)).thenAnswer((_) async {
+        calls++;
+        if (calls == 1) throw Exception('socket closed');
+        return Response('not found', 404);
+      });
+
+      await expectLater(
+        fallback.fetchDataForSync(txId, primaryClient),
+        throwsA(allOf(isA<Exception>(), isNot(isA<TransactionNotFound>()))),
+      );
+
+      expect(calls, 2);
     });
 
     test('never consults the GAR, so no Solana RPC is issued on the sync path',

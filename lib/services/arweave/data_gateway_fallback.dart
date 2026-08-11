@@ -86,7 +86,11 @@ class DataGatewayFallback {
   /// each, so a slow or flaky primary turns into minutes of serial timeouts.
   /// Worst case here is [syncMaxAttempts] attempts / ~10.3s.
   ///
-  /// A 404 is not retried — the same host will not change its mind.
+  /// A 404 is retried like any other failure: a gateway that has not
+  /// finished indexing a transaction answers 404 for it and 200 a moment
+  /// later. [TransactionNotFound] is reported only when *every* attempt
+  /// returned 404 — a 500 followed by a 404 is an unwell gateway, not an
+  /// absent transaction.
   ///
   /// Callers must treat a failure as "skip this item", and must record the tx
   /// id so it is not lost. See the note on `ArweaveService._getEntityData` and
@@ -104,18 +108,41 @@ class DataGatewayFallback {
   Future<Response> _syncFetch(String txId, Arweave primaryClient) async {
     final gatewayName = primaryClient.api.gatewayUrl.host;
 
+    var allAttempts404 = true;
+
     for (var attempt = 1; attempt <= syncMaxAttempts; attempt++) {
       try {
         return await _tryGateway(primaryClient, txId);
       } on _ErrorFromStatus catch (e) {
-        if (e.statusCode == 404) {
-          // Retrying the same host cannot turn a 404 into a 200.
-          logger.w('Gateway $gatewayName returned 404 for sync tx $txId');
+        // A 404 is NOT treated as final here, and the reasoning that said it
+        // was is wrong for this case. A gateway that has not finished indexing
+        // a transaction answers 404 for it, and answers 200 a moment later -
+        // observed in the wild on a drive signature that 404ed once and
+        // resolved on the retry. Spending the second attempt is cheap; losing
+        // a drive because its gateway was a beat behind is not.
+        //
+        // The last attempt still reports it as not found, so a genuinely
+        // absent transaction keeps its typed error.
+        if (e.statusCode != 404) {
+          allAttempts404 = false;
+        }
+
+        // `TransactionNotFound` is a claim that the transaction is absent, so
+        // only every attempt agreeing earns it. A 500 followed by a 404 says
+        // the gateway was unwell, not that the data is gone, and reporting it
+        // as not-found would state more than we know.
+        if (e.statusCode == 404 &&
+            attempt == syncMaxAttempts &&
+            allAttempts404) {
+          logger.w('Gateway $gatewayName returned 404 for sync tx $txId '
+              'on every attempt');
           throw TransactionNotFound(txId);
         }
         logger.w('Gateway $gatewayName failed for sync tx $txId '
             '(attempt $attempt/$syncMaxAttempts): $e');
       } catch (e) {
+        // A timeout or a socket error is not a 404 either.
+        allAttempts404 = false;
         logger.w('Gateway $gatewayName failed for sync tx $txId '
             '(attempt $attempt/$syncMaxAttempts): $e');
       }
