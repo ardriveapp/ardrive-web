@@ -47,6 +47,13 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   StreamSubscription? _syncSubscription;
   bool _initialLoadComplete = false;
   bool _isExplicitSync = false;
+
+  /// Bumped by every [openFolder]. Cancelling `_folderSubscription` does not
+  /// cancel a callback that already began awaiting, so an in-flight load can
+  /// still emit after the user has navigated somewhere else in the same drive
+  /// - where the `_driveId` checks cannot see it, because the drive did not
+  /// change. Callbacks capture this and drop their result if it moved on.
+  int _folderLoadGeneration = 0;
   final _defaultAvailableRowsPerPage = [25, 50, 75, 100];
 
   List<ArDriveDataTableItem> _selectedItems = [];
@@ -140,6 +147,33 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     });
   }
 
+  /// Whether this drive's root folder metadata has actually been read.
+  ///
+  /// [DriveDetailLoadUnsynced] is entered when the root folder has no
+  /// revision, so every path that leaves it has to test the same thing.
+  /// Gating recovery on `lastBlockHeight` instead lets the two conditions
+  /// disagree, and this is exactly the codebase where they do: a sync that
+  /// writes the root revision and then fails before advancing the watermark
+  /// leaves readable metadata behind a drive pinned on "Drive Not Synced",
+  /// where the sync button only re-emits the same state.
+  ///
+  /// `lastBlockHeight` is still honoured, because a drive synced by an earlier
+  /// build may have advanced its watermark and is by definition synced.
+  Future<bool> _hasRootFolderMetadata(Drive drive) async {
+    if ((drive.lastBlockHeight ?? 0) > 0) {
+      return true;
+    }
+
+    final rootFolderRevision = await _driveDao
+        .latestFolderRevisionByFolderId(
+          driveId: drive.id,
+          folderId: drive.rootFolderId,
+        )
+        .getSingleOrNull();
+
+    return rootFolderRevision != null;
+  }
+
   /// Called when sync completes. Re-checks drive state if we're showing
   /// unsynced or loading state, and loads the drive content if now available.
   Future<void> _onSyncCompleted() async {
@@ -165,7 +199,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         return;
       }
 
-      if (drive.lastBlockHeight != null && drive.lastBlockHeight! > 0) {
+      if (await _hasRootFolderMetadata(drive)) {
+        if (isClosed || state is! DriveDetailLoadUnsynced) return;
+
         openFolder(folderId: drive.rootFolderId, otherDriveId: capturedDriveId);
       }
     }
@@ -231,6 +267,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     DriveOrder contentOrderBy = DriveOrder.name,
     OrderingMode contentOrderingMode = OrderingMode.asc,
   }) async {
+    // Claimed before the first await, so anything already in flight for a
+    // previous folder is stale from here on even when the drive is unchanged.
+    final loadGeneration = ++_folderLoadGeneration;
+
     /// always wait for the current sync to finish before opening a new folder
     await _syncCubit.waitCurrentSync();
 
@@ -355,7 +395,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 )
                 .getSingleOrNull();
 
-            if (isClosed || driveId != _driveId) {
+            if (isClosed ||
+                driveId != _driveId ||
+                loadGeneration != _folderLoadGeneration) {
               return;
             }
 
@@ -383,6 +425,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             driveId: driveId,
           );
 
+          if (isClosed ||
+              driveId != _driveId ||
+              loadGeneration != _folderLoadGeneration) {
+            return;
+          }
+
           if (state != null) {
             emit(
               state.copyWith(
@@ -403,6 +451,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             );
           } else {
             final columnsVisibility = await getTableColumnVisibility();
+
+            if (isClosed ||
+                driveId != _driveId ||
+                loadGeneration != _folderLoadGeneration) {
+              return;
+            }
 
             emit(
               DriveDetailLoadSuccess(
@@ -748,7 +802,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         return;
       }
 
-      if (drive.lastBlockHeight != null && drive.lastBlockHeight! > 0) {
+      final hasRootFolderMetadata = await _hasRootFolderMetadata(drive);
+
+      if (isClosed || _driveId != driveId) return;
+
+      if (hasRootFolderMetadata) {
         openFolder(folderId: rootFolderId, otherDriveId: driveId);
       } else {
         emit(DriveDetailLoadUnsynced(drive: drive));
@@ -802,8 +860,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         return;
       }
 
-      if (drive.lastBlockHeight == null || drive.lastBlockHeight == 0) {
-        // Sync reported success but drive content wasn't actually synced
+      final hasRootFolderMetadata = await _hasRootFolderMetadata(drive);
+
+      if (isClosed || _driveId != driveId) return;
+
+      if (!hasRootFolderMetadata) {
+        // Sync reported success but the drive's root metadata never arrived
         emit(DriveDetailLoadUnsynced(drive: drive));
         return;
       }
