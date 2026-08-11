@@ -155,6 +155,23 @@ void main() {
       await fallback.fetchData(txId, primaryClient);
       verify(() => arioSDK.getGateways()).called(1);
     });
+
+    test('a drive signature read on the sync path never reaches the GAR',
+        () async {
+      // Drive discovery fetches this for every private drive whose key is not
+      // already in memory. It used to go through `getDriveSignatureForDrive`,
+      // which is the login path and uses the waterfall — putting the fan-out
+      // back into sync one drive at a time.
+      const signatureTxId = 'gPzMbUCLZ_1lJ6mCLQK4vGLtiOTKn1TfnCU8gLuLBLM';
+
+      when(() => primaryApi.getSandboxedTx(signatureTxId))
+          .thenAnswer((_) async => Response('signature', 200));
+
+      await fallback.fetchDataForSync(signatureTxId, primaryClient);
+
+      verifyNever(() => arioSDK.getGateways());
+      expect(fallback.cachedGateways, isNull);
+    });
   });
 
   group('ArweaveService.runPooled', () {

@@ -879,10 +879,34 @@ class ArweaveService {
     return firstTx;
   }
 
+  /// The drive signature, read through the multi-gateway waterfall.
+  ///
+  /// This is the login path (`ArDriveAuth`), where one unreachable gateway
+  /// must not cost someone their session. Sync reads the same signature
+  /// through [getDriveSignatureForDriveOnSync] instead.
   Future<DriveSignatureEntity?> getDriveSignatureForDrive(
     Wallet wallet,
     String driveId,
-  ) async {
+  ) =>
+      _getDriveSignature(wallet, driveId, forSync: false);
+
+  /// The drive signature as **sync** reads it: the configured gateway only.
+  ///
+  /// Drive discovery needs this for every private drive whose key is not
+  /// already in memory. Routing it through the waterfall would have put the
+  /// fan-out back into the sync path by the side door, one drive at a time.
+  @visibleForTesting
+  Future<DriveSignatureEntity?> getDriveSignatureForDriveOnSync(
+    Wallet wallet,
+    String driveId,
+  ) =>
+      _getDriveSignature(wallet, driveId, forSync: true);
+
+  Future<DriveSignatureEntity?> _getDriveSignature(
+    Wallet wallet,
+    String driveId, {
+    required bool forSync,
+  }) async {
     // Drive signatures are immutable on-chain — cache permanently once fetched
     if (_cachedDriveSignatures.containsKey(driveId)) {
       return _cachedDriveSignatures[driveId];
@@ -891,7 +915,9 @@ class ArweaveService {
     final driveSignatureTx = await getDriveSignatureTxForDrive(wallet, driveId);
 
     final driveSignatureData = driveSignatureTx != null
-        ? await _gatewayFallback.fetchData(driveSignatureTx.id, client)
+        ? await (forSync
+            ? _gatewayFallback.fetchDataForSync(driveSignatureTx.id, client)
+            : _gatewayFallback.fetchData(driveSignatureTx.id, client))
         : null;
 
     final driveSignature =
@@ -973,7 +999,7 @@ class ArweaveService {
             final signatureType = DriveSignatureType.fromString(sigTypeTag);
 
             final driveSignature = signatureType == DriveSignatureType.v1
-                ? await getDriveSignatureForDrive(
+                ? await getDriveSignatureForDriveOnSync(
                     wallet, driveTx.getTag(EntityTag.driveId)!)
                 : null;
 
