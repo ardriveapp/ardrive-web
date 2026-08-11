@@ -19,6 +19,8 @@ class SyncProgress extends LinearProgress {
     this.statusMessage,
     this.isSingleDriveSync = false,
     this.driveName,
+    this.skippedEntityCount = 0,
+    this.skippedEntityTxIdsByDrive = const {},
   });
 
   factory SyncProgress.initial() {
@@ -73,8 +75,23 @@ class SyncProgress extends LinearProgress {
   final bool isSingleDriveSync; // true if syncing a single drive
   final String? driveName; // name of the drive being synced (for single drive sync)
 
+  /// Number of entities left out of this sync because their metadata could not
+  /// be read from the configured gateway.
+  final int skippedEntityCount;
+
+  /// The skipped entities' transaction ids, keyed by drive id. This is the
+  /// only record that anything was dropped — a later pass surfaces these as
+  /// "failed files" in the UI. See `docs/SYNC_SKIPPED_ENTITY_PERSISTENCE.md`.
+  final Map<String, List<String>> skippedEntityTxIdsByDrive;
+
+  /// Flat list of every skipped transaction id, drive association discarded.
+  List<String> get skippedEntityTxIds =>
+      [...skippedEntityTxIdsByDrive.values.expand((txIds) => txIds)];
+
   // Helper getters
   bool get hasErrors => failedQueries > 0;
+
+  bool get hasSkippedEntities => skippedEntityCount > 0;
   bool get isPartialSync => hasErrors && progress >= 1.0;
   bool get isCompleteWithErrors => progress >= 1.0 && hasErrors;
 
@@ -91,6 +108,8 @@ class SyncProgress extends LinearProgress {
     Object? statusMessage = _absent,
     bool? isSingleDriveSync,
     Object? driveName = _absent,
+    int? skippedEntityCount,
+    Map<String, List<String>>? skippedEntityTxIdsByDrive,
   }) {
     return SyncProgress(
       numberOfEntities: numberOfEntities ?? this.numberOfEntities,
@@ -109,6 +128,9 @@ class SyncProgress extends LinearProgress {
       isSingleDriveSync: isSingleDriveSync ?? this.isSingleDriveSync,
       driveName:
           driveName == _absent ? this.driveName : driveName as String?,
+      skippedEntityCount: skippedEntityCount ?? this.skippedEntityCount,
+      skippedEntityTxIdsByDrive:
+          skippedEntityTxIdsByDrive ?? this.skippedEntityTxIdsByDrive,
     );
   }
 }

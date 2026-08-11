@@ -11,13 +11,19 @@ import 'package:http/http.dart';
 
 /// Provides data gateway fallback resilience.
 ///
-/// Metadata fetches use serial waterfall (primary → GAR → arweave.net) to
-/// avoid unnecessary requests during high-volume sync operations.
+/// Two distinct read paths live here:
 ///
-/// File downloads use hedged (staggered parallel) requests since they are
-/// single user-initiated operations where latency matters.
+/// * **Sync reads** ([fetchDataForSync]) use the configured gateway only, with
+///   a single retry, then skip the item. No GAR, therefore no Solana RPC.
+///   Sync is high volume, so per-item attempt count dominates.
 ///
-/// Fallback order: primary → up to 2 GAR gateways → arweave.net
+/// * **Everything else** — downloads, previews, thumbnails and shared links —
+///   keeps the full waterfall (primary → up to 2 GAR gateways → arweave.net).
+///   These are single user-initiated operations where a recipient with one
+///   dead gateway must still get their file, so breadth beats latency.
+///
+/// File downloads additionally use hedged (staggered parallel) requests since
+/// they are single user-initiated operations where latency matters.
 class DataGatewayFallback {
   final ArioSDK _arioSDK;
   final Map<String, Arweave> _clientCache = {};
@@ -33,6 +39,17 @@ class DataGatewayFallback {
   static const _totalFetchTimeout = Duration(seconds: 25);
   static const _hedgeDelay = Duration(milliseconds: 1500);
   static const _downloadTimeout = Duration(seconds: 15);
+
+  /// Attempts made against the configured gateway by [fetchDataForSync].
+  static const syncMaxAttempts = 2;
+
+  /// Delay before the single same-gateway retry in [fetchDataForSync].
+  static const _syncRetryDelay = Duration(milliseconds: 300);
+
+  /// Upper bound for one sync read. By construction the attempts already sum
+  /// to ~10.3s; this only guards against an attempt that outlives its own
+  /// timeout.
+  static const _syncTotalFetchTimeout = Duration(seconds: 15);
 
   /// Cached gateway list — shared with other services (e.g.
   /// SnapshotValidationService) to avoid duplicate Solana RPC calls.
@@ -56,6 +73,62 @@ class DataGatewayFallback {
       logger.w('Total fetch timeout exceeded for tx $txId');
       throw Exception('Total fetch timeout exceeded for tx $txId');
     });
+  }
+
+  /// Fetch transaction data for **sync** metadata reads.
+  ///
+  /// Reads the configured gateway only: one attempt, one retry on a transient
+  /// failure, then give up so the caller can skip the item and carry on. Never
+  /// consults the GAR, so no Solana RPC is issued on the sync path.
+  ///
+  /// Sync issues hundreds of these per run, where per-item attempt count
+  /// dominates: the [fetchData] waterfall costs up to 4 serial attempts at 5s
+  /// each, so a slow or flaky primary turns into minutes of serial timeouts.
+  /// Worst case here is [syncMaxAttempts] attempts / ~10.3s.
+  ///
+  /// A 404 is not retried — the same host will not change its mind.
+  ///
+  /// Callers must treat a failure as "skip this item", and must record the tx
+  /// id so it is not lost. See the note on `ArweaveService._getEntityData` and
+  /// `docs/SYNC_SKIPPED_ENTITY_PERSISTENCE.md`.
+  ///
+  /// If every attempt 404s, throws [TransactionNotFound].
+  Future<Response> fetchDataForSync(String txId, Arweave primaryClient) async {
+    return _syncFetch(txId, primaryClient)
+        .timeout(_syncTotalFetchTimeout, onTimeout: () {
+      logger.w('Total sync fetch timeout exceeded for tx $txId');
+      throw Exception('Total sync fetch timeout exceeded for tx $txId');
+    });
+  }
+
+  Future<Response> _syncFetch(String txId, Arweave primaryClient) async {
+    final gatewayName = primaryClient.api.gatewayUrl.host;
+
+    for (var attempt = 1; attempt <= syncMaxAttempts; attempt++) {
+      try {
+        return await _tryGateway(primaryClient, txId);
+      } on _ErrorFromStatus catch (e) {
+        if (e.statusCode == 404) {
+          // Retrying the same host cannot turn a 404 into a 200.
+          logger.w('Gateway $gatewayName returned 404 for sync tx $txId');
+          throw TransactionNotFound(txId);
+        }
+        logger.w('Gateway $gatewayName failed for sync tx $txId '
+            '(attempt $attempt/$syncMaxAttempts): $e');
+      } catch (e) {
+        logger.w('Gateway $gatewayName failed for sync tx $txId '
+            '(attempt $attempt/$syncMaxAttempts): $e');
+      }
+
+      if (attempt < syncMaxAttempts) {
+        await Future.delayed(_syncRetryDelay);
+      }
+    }
+
+    throw Exception(
+      'Gateway $gatewayName failed for sync tx $txId '
+      'after $syncMaxAttempts attempts',
+    );
   }
 
   Future<Response> _serialFetch(String txId, Arweave primaryClient) async {

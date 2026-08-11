@@ -493,7 +493,6 @@ class AppState extends State<App> {
             batchProcessor: BatchProcessor(),
             snapshotValidationService: SnapshotValidationService(
               configService: configService,
-              arioSDK: ArioSDKFactory().create(),
             ),
             arnsRepository: _.read<ARNSRepository>(),
             userPreferencesRepository: _.read<UserPreferencesRepository>(),

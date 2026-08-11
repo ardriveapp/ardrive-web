@@ -152,6 +152,44 @@ class _SyncRepository implements SyncRepository {
   final Map<String, GhostFolder> _ghostFolders = {};
   final Set<String> _folderIds = <String>{};
 
+  /// Entities skipped this sync because their metadata could not be read,
+  /// keyed by drive id. Reported on [SyncProgress] so a later pass can surface
+  /// "failed files" in the UI.
+  ///
+  /// In-memory only — cleared at the start of each sync. Persisting these (so
+  /// they are retried across syncs instead of relying on the 240-block
+  /// look-back) is the follow-up described in
+  /// `docs/SYNC_SKIPPED_ENTITY_PERSISTENCE.md`.
+  final Map<String, Set<String>> _skippedEntityTxIdsByDrive = {};
+
+  int get _skippedEntityCount => _skippedEntityTxIdsByDrive.values
+      .fold(0, (sum, txIds) => sum + txIds.length);
+
+  Map<String, List<String>> get _skippedEntityTxIdsByDriveSnapshot => {
+        for (final entry in _skippedEntityTxIdsByDrive.entries)
+          entry.key: [...entry.value],
+      };
+
+  void _recordSkippedEntities(String driveId, List<String> txIds) {
+    if (txIds.isEmpty) return;
+    _skippedEntityTxIdsByDrive
+        .putIfAbsent(driveId, () => <String>{})
+        .addAll(txIds);
+  }
+
+  void _logSkippedEntities() {
+    if (_skippedEntityTxIdsByDrive.isEmpty) return;
+    logger.w(
+      'Sync skipped $_skippedEntityCount entities across '
+      '${_skippedEntityTxIdsByDrive.length} drive(s); their metadata could '
+      'not be read from the configured gateway. '
+      'See docs/SYNC_SKIPPED_ENTITY_PERSISTENCE.md',
+    );
+    for (final entry in _skippedEntityTxIdsByDrive.entries) {
+      logger.w('Drive ${entry.key} skipped tx ids: ${entry.value.join(', ')}');
+    }
+  }
+
   /// Maximum number of transactions to hold in memory during streaming sync.
   /// Larger values = better throughput, higher memory usage
   /// Smaller values = lower memory usage, more frequent DB commits
@@ -196,6 +234,7 @@ class _SyncRepository implements SyncRepository {
     // Clear shared state from any previous sync to prevent stale data
     _ghostFolders.clear();
     _folderIds.clear();
+    _skippedEntityTxIdsByDrive.clear();
 
     // The address of the currently logged-in wallet. All pending transactions
     // are uploads made by this wallet, so scoping the status query by it lets
@@ -241,10 +280,6 @@ class _SyncRepository implements SyncRepository {
         'Retrying for get the current block height',
       ),
     );
-
-    // Share gateway fallback reference so snapshot validation and data fetching
-    // use the same gateway cache (avoids duplicate Solana RPC calls)
-    _snapshotValidationService.gatewayFallback = _arweave.gatewayFallback;
 
     // Probe for drive activity to skip unchanged drives.
     // Partition drives: never-synced drives always need full sync and would
@@ -639,8 +674,11 @@ class _SyncRepository implements SyncRepository {
         syncProgress = syncProgress.copyWith(
           progress: 1.0,
           statusMessage: 'Sync complete',
+          skippedEntityCount: _skippedEntityCount,
+          skippedEntityTxIdsByDrive: _skippedEntityTxIdsByDriveSnapshot,
         );
         syncProgressController.add(syncProgress);
+        _logSkippedEntities();
 
         // Close the controller when everything is done
         logger.d('Sync completed successfully, closing controller');
@@ -740,6 +778,7 @@ class _SyncRepository implements SyncRepository {
     // Clear shared state from any previous sync to prevent stale data
     _ghostFolders.clear();
     _folderIds.clear();
+    _skippedEntityTxIdsByDrive.clear();
 
     // Get the specific drive
     final drive =
@@ -923,8 +962,11 @@ class _SyncRepository implements SyncRepository {
         syncProgress = syncProgress.copyWith(
           progress: 1.0,
           statusMessage: 'Sync complete',
+          skippedEntityCount: _skippedEntityCount,
+          skippedEntityTxIdsByDrive: _skippedEntityTxIdsByDriveSnapshot,
         );
         syncProgressController.add(syncProgress);
+        _logSkippedEntities();
 
         logger.d('Single drive sync completed successfully, closing controller');
         await syncProgressController.close();
@@ -1918,6 +1960,8 @@ class _SyncRepository implements SyncRepository {
             ownerAddress: ownerAddress,
             currentBlockHeight: currentBlockHeight,
           );
+
+          _recordSkippedEntities(drive.id, entityHistory.skippedTxIds);
 
           // Create entries for all the new revisions of file and folders in this drive.
           final newEntities = entityHistory.blockHistory
