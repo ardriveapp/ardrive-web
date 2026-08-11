@@ -330,6 +330,41 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             }
           }
 
+          final driveIsEmpty = folderContents.files.isEmpty &&
+              folderContents.subfolders.isEmpty;
+
+          // A drive that renders with nothing in it is ambiguous: it may be
+          // genuinely empty, or its contents may simply never have synced.
+          // Telling someone their drive is empty when we have not actually
+          // read it reads as "my data is gone", so only claim emptiness we
+          // can back up. Otherwise fall through to DriveDetailLoadUnsynced,
+          // which already says "Drive Not Synced" and offers to sync.
+          //
+          // The root folder's revision is the honest signal for that. A drive
+          // created in this app writes one at creation time
+          // (DriveCreateCubit), and sync writes one when the real metadata
+          // lands - but a drive merely discovered by updateUserDrives has only
+          // the placeholder folder row until then. lastBlockHeight cannot
+          // answer this: it defaults to 0, so a freshly created empty drive is
+          // indistinguishable from one that has never synced.
+          if (driveIsEmpty && folderContents.folder.id == drive.rootFolderId) {
+            final rootFolderRevision = await _driveDao
+                .latestFolderRevisionByFolderId(
+                  driveId: driveId,
+                  folderId: drive.rootFolderId,
+                )
+                .getSingleOrNull();
+
+            if (isClosed || driveId != _driveId) {
+              return;
+            }
+
+            if (rootFolderRevision == null) {
+              emit(DriveDetailLoadUnsynced(drive: drive));
+              return;
+            }
+          }
+
           final currentFolderContents = parseEntitiesToDatatableItem(
             folder: folderContents,
             isOwner: isDriveOwner(_auth, drive.ownerAddress),
@@ -362,8 +397,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 availableRowsPerPage: availableRowsPerPage,
                 currentFolderContents: currentFolderContents,
                 pathSegments: pathSegments,
-                driveIsEmpty: folderContents.files.isEmpty &&
-                    folderContents.subfolders.isEmpty,
+                driveIsEmpty: driveIsEmpty,
                 showSelectedItemDetails: _selectedItem != null,
               ),
             );
@@ -382,8 +416,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 contentOrderingMode: contentOrderingMode,
                 rowsPerPage: availableRowsPerPage.first,
                 availableRowsPerPage: availableRowsPerPage,
-                driveIsEmpty: folderContents.files.isEmpty &&
-                    folderContents.subfolders.isEmpty,
+                driveIsEmpty: driveIsEmpty,
                 multiselect: false,
                 currentFolderContents: currentFolderContents,
                 columnVisibility: columnsVisibility,

@@ -256,6 +256,51 @@ void main() {
       expect(rootFolder.parentFolderId, isNull);
     });
 
+    /// What tells "genuinely empty" apart from "never synced". A drive created
+    /// in-app writes a root folder revision at creation time, and sync writes
+    /// one when the real metadata lands; a drive merely discovered by
+    /// `updateUserDrives` has only the placeholder until then. Claiming a drive
+    /// is empty on weaker evidence reads to the user as data loss.
+    test('a discovered drive has no root folder revision until one syncs',
+        () async {
+      await driveDao.updateUserDrives({driveEntity(): null}, null);
+
+      final beforeSync = await driveDao
+          .latestFolderRevisionByFolderId(
+            driveId: otherDriveId,
+            folderId: otherRootFolderId,
+          )
+          .getSingleOrNull();
+
+      expect(beforeSync, isNull,
+          reason: 'the placeholder must not read as synced metadata');
+
+      // lastBlockHeight cannot stand in for this: it defaults to 0, so it
+      // cannot tell a freshly created empty drive from an unsynced one.
+      final drive =
+          await driveDao.driveById(driveId: otherDriveId).getSingle();
+      expect(drive.lastBlockHeight, equals(0));
+
+      await driveDao.insertFolderRevision(
+        FolderRevisionsCompanion.insert(
+          folderId: otherRootFolderId,
+          driveId: otherDriveId,
+          name: 'Real Root Name',
+          metadataTxId: 'metadata-tx-id',
+          action: RevisionAction.create,
+        ),
+      );
+
+      final afterSync = await driveDao
+          .latestFolderRevisionByFolderId(
+            driveId: otherDriveId,
+            folderId: otherRootFolderId,
+          )
+          .getSingleOrNull();
+
+      expect(afterSync, isNotNull);
+    });
+
     test('writeDriveEntity() writes a root folder too', () async {
       await driveDao.writeDriveEntity(name: driveName, entity: driveEntity());
 
