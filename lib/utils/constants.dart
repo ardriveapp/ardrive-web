@@ -51,6 +51,13 @@ const List<String> pdfContentTypes = [
 // Maximum file size for document preview (25MB for text files)
 const int documentPreviewMaxFileSize = 1024 * 1024 * 25;
 
+/// Maximum size of a thumbnail that will be buffered to paint a 44px preview.
+///
+/// ArFS thumbnails are small JPEG variants of the file, so anything bigger than
+/// this is not a thumbnail — most likely a share link pointing `thn` at an
+/// unrelated transaction — and is dropped in favour of the type icon.
+const int thumbnailPreviewMaxFileSize = 1024 * 512;
+
 const profileQueryMaxRetries = 6;
 
 const String hasAcceptedCookiePolicyKey = 'hasAcceptedCookiePolicy';

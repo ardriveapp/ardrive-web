@@ -16,6 +16,7 @@ import 'package:ardrive/drive_explorer/multi_thumbnail_creation/multi_thumbnail_
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
+import 'package:ardrive/pages/raw_transaction_view/raw_transaction_view_page.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/shared/blocs/private_drive_migration/private_drive_migration_bloc.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
@@ -26,6 +27,7 @@ import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/shared_file_link.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart';
@@ -48,12 +50,22 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   String? sharedFileId;
   SecretKey? sharedFileKey;
   String? sharedRawFileKey;
+  bool sharedFileKeyIsDamaged = false;
+
+  /// The v2 payload the shared file link embedded, or `null` for a v1 link.
+  SharedFileLinkPayload? sharedFileLinkPayload;
+
+  /// The transaction `/view/{txId}` was asked for, and its optional hints.
+  String? rawTransactionId;
+  String? rawTransactionName;
+  String? rawTransactionContentType;
 
   bool canAnonymouslyShowDriveDetail(ProfileState profileState) =>
       profileState is ProfileUnavailable && tryingToViewDrive;
   bool get tryingToViewDrive => driveId != null;
   bool get tryingToViewSharedPrivateDrive => sharedDriveKey != null;
   bool get isViewingSharedFile => sharedFileId != null;
+  bool get isViewingRawTransaction => rawTransactionId != null;
 
   @override
   AppRoutePath get currentConfiguration => AppRoutePath(
@@ -67,6 +79,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
         sharedFileId: sharedFileId,
         sharedFileKey: sharedFileKey,
         sharedRawFileKey: sharedRawFileKey,
+        sharedFileKeyIsDamaged: sharedFileKeyIsDamaged,
+        sharedFileLinkPayload: sharedFileLinkPayload,
+        rawTransactionId: rawTransactionId,
+        rawTransactionName: rawTransactionName,
+        rawTransactionContentType: rawTransactionContentType,
       );
 
   @override
@@ -108,8 +125,13 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               // and not anonymously viewing a drive, redirect them to sign in.
               //
               // Additionally, redirect the user to sign in if they are logging out.
-              final showingAnonymousRoute =
-                  anonymouslyShowDriveDetail || isViewingSharedFile;
+              //
+              // `/view/{txId}` is anonymous for the same reason a shared file
+              // link is: a recipient who was sent a link has no account and
+              // needs none.
+              final showingAnonymousRoute = anonymouslyShowDriveDetail ||
+                  isViewingSharedFile ||
+                  isViewingRawTransaction;
 
               if (!signingIn &&
                   !gettingStarted &&
@@ -144,10 +166,24 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   create: (_) => SharedFileCubit(
                     fileId: sharedFileId!,
                     fileKey: sharedFileKey,
+                    linkKeyIsDamaged: sharedFileKeyIsDamaged,
+                    // `null` for a v1 link; the cubit then resolves the file
+                    // over GraphQL exactly as it always has.
+                    linkPayload: sharedFileLinkPayload,
                     arweave: context.read<ArweaveService>(),
                     licenseService: context.read<LicenseService>(),
                   ),
-                  child: SharedFilePage(),
+                  child: const SharedFilePage(),
+                );
+              } else if (isViewingRawTransaction) {
+                // Keyed on the id for the same reason the shared file branch
+                // above is: moving between two `/view` links must rebuild the
+                // page rather than reuse its state.
+                shell = RawTransactionViewPage(
+                  key: ValueKey(rawTransactionId),
+                  txId: rawTransactionId!,
+                  name: rawTransactionName,
+                  contentType: rawTransactionContentType,
                 );
               } else if (signingIn) {
                 shell = const LoginPage();
@@ -355,6 +391,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     sharedFileId = configuration.sharedFileId;
     sharedFileKey = configuration.sharedFileKey;
     sharedRawFileKey = configuration.sharedRawFileKey;
+    sharedFileKeyIsDamaged = configuration.sharedFileKeyIsDamaged;
+    sharedFileLinkPayload = configuration.sharedFileLinkPayload;
+    rawTransactionId = configuration.rawTransactionId;
+    rawTransactionName = configuration.rawTransactionName;
+    rawTransactionContentType = configuration.rawTransactionContentType;
   }
 
   void clearState() {
@@ -368,6 +409,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     sharedFileId = null;
     sharedFileKey = null;
     sharedRawFileKey = null;
+    sharedFileKeyIsDamaged = false;
+    sharedFileLinkPayload = null;
+    rawTransactionId = null;
+    rawTransactionName = null;
+    rawTransactionContentType = null;
   }
 }
 

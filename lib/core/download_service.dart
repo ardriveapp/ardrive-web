@@ -1,8 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:ardrive/services/arweave/arweave.dart';
-import 'package:ardrive_http/ardrive_http.dart';
-import 'package:arweave/arweave.dart' as arweave;
 
 abstract class DownloadService {
   Future<Uint8List> download(String fileTxId, bool isManifest);
@@ -12,6 +10,13 @@ abstract class DownloadService {
       _DownloadService(arweaveService);
 }
 
+/// Every fetch here goes through [DataGatewayFallback], the same waterfall
+/// (primary → GAR → arweave.net) the rest of the app reads data with.
+///
+/// This used to name one gateway by hand, which made a manifest import, a
+/// multi-file download, or a password login fail outright whenever the
+/// configured gateway was down - even though the data was sitting on every
+/// other gateway in the network.
 class _DownloadService implements DownloadService {
   _DownloadService(this._arweave);
 
@@ -19,17 +24,22 @@ class _DownloadService implements DownloadService {
 
   @override
   Future<Uint8List> download(String fileTxId, bool isManifest) async {
-    final urlString = isManifest
-        ? '${_arweave.client.api.gatewayUrl.origin}/raw/$fileTxId'
-        : '${_arweave.client.api.gatewayUrl.origin}/$fileTxId';
+    // A manifest has to be read from `/raw/`, or the gateway resolves it to the
+    // file its index points at instead of handing back the manifest itself.
+    if (isManifest) {
+      final response = await _arweave.gatewayFallback.fetchManifestWithFallback(
+        fileTxId,
+        _arweave.client,
+      );
 
-    final dataRes = await ArDriveHTTP().getAsBytes(urlString);
-
-    if (dataRes.statusCode == 200) {
-      return dataRes.data;
+      return response.bodyBytes;
     }
 
-    throw Exception('Download failed');
+    // Deliberately not `fetchData`: this call carries whole files - a
+    // multi-file download reaches for hundreds of megabytes - and `fetchData`
+    // caps a gateway attempt at five seconds of *body*, which no such transfer
+    // would survive.
+    return _arweave.gatewayFallback.fetchFileData(fileTxId, _arweave.client);
   }
 
   @override
@@ -40,11 +50,11 @@ class _DownloadService implements DownloadService {
       return Stream.fromIterable([data.toList()]);
     }
 
-    final downloadResponse = await arweave.download(
+    final (stream, _) = await _arweave.gatewayFallback.downloadWithFallback(
       txId: fileTxId,
-      arweave: _arweave.client,
+      primaryClient: _arweave.client,
     );
 
-    return downloadResponse.$1;
+    return stream;
   }
 }

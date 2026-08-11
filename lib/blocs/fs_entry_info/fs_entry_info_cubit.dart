@@ -19,7 +19,6 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
   final DriveDao _driveDao;
   final LicenseService _licenseService;
   final ArweaveService _arweave;
-  final String? _ownerAddress;
 
   StreamSubscription? _entrySubscription;
 
@@ -29,15 +28,9 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
     required DriveDao driveDao,
     required LicenseService licenseService,
     required ArweaveService arweave,
-    bool isSharedFile = false,
-    // Supplied in the case isSharedFile == true
-    List<FileRevision>? maybeRevisions,
-    LicenseState? maybeLicenseState,
-    String? ownerAddress,
   })  : _driveDao = driveDao,
         _licenseService = licenseService,
         _arweave = arweave,
-        _ownerAddress = ownerAddress,
         super(FsEntryInfoInitial()) {
     final selectedItem = maybeSelectedItem;
     if (selectedItem != null) {
@@ -76,11 +69,12 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
             required DateTime lastUpdated,
             required DateTime dateCreated,
           }) async {
-            // Revision must either come from DB (preferred) or [SharedFileCubit]
+            // The stream this runs on only fires for a file row that exists,
+            // and a file row is written in the same transaction as its first
+            // revision, so there is always one to read.
             final latestRevision = await _driveDao
-                    .latestFileRevisionByFileId(driveId: driveId, fileId: id)
-                    .getSingleOrNull() ??
-                maybeRevisions!.first;
+                .latestFileRevisionByFileId(driveId: driveId, fileId: id)
+                .getSingle();
 
             LicenseState? licenseState;
             if (latestRevision.licenseTxId != null) {
@@ -93,49 +87,31 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
                 final companion = license.toCompanion(true);
                 licenseState = _licenseService.fromCompanion(companion);
               } else {
-                // 2. Fall back to pre-supplied state (shared file page)
-                // 3. Or fetch on-demand from network and cache to DB
-                licenseState = maybeLicenseState ??
-                    await _fetchAndCacheLicense(latestRevision);
+                // 2. Or fetch on-demand from network and cache to DB
+                licenseState = await _fetchAndCacheLicense(latestRevision);
               }
             }
 
-            // For shared files, use the provided owner address
-            // For regular files, try to get it from the revision
-            final ownerAddress = _ownerAddress ?? 
-                latestRevision.originalOwner ?? 
-                latestRevision.pinnedDataOwnerAddress;
-            
             emit(FsEntryFileInfoSuccess(
               name: name,
               lastUpdated: lastUpdated,
               dateCreated: dateCreated,
               metadataTxId: latestRevision.metadataTxId,
               licenseState: licenseState,
-              ownerAddress: ownerAddress,
             ));
           }
-          if (isSharedFile) {
-            selectedItem is FileDataTableItem;
-            fileHandler(
-              selectedItem.id,
-              name: selectedItem.name,
-              lastUpdated: selectedItem.lastUpdated,
-              dateCreated: selectedItem.dateCreated,
-            );
-          } else {
-            _entrySubscription = _driveDao
-                .fileById(fileId: selectedItem.id)
-                .watchSingle()
-                .listen(
-                  (fileEntry) => fileHandler(
-                    fileEntry.id,
-                    name: fileEntry.name,
-                    lastUpdated: fileEntry.lastUpdated,
-                    dateCreated: fileEntry.dateCreated,
-                  ),
-                );
-          }
+
+          _entrySubscription = _driveDao
+              .fileById(fileId: selectedItem.id)
+              .watchSingle()
+              .listen(
+                (fileEntry) => fileHandler(
+                  fileEntry.id,
+                  name: fileEntry.name,
+                  lastUpdated: fileEntry.lastUpdated,
+                  dateCreated: fileEntry.dateCreated,
+                ),
+              );
           break;
         default:
           _entrySubscription = _driveDao
@@ -197,8 +173,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
       // owner is the data uploader (the pinned data owner for pinned files);
       // for assertions and regular files it is the drive owner. Resolved best
       // effort — when unknown the query is left unscoped.
-      final licenseOwner = _ownerAddress ??
-          revision.pinnedDataOwnerAddress ??
+      final licenseOwner = revision.pinnedDataOwnerAddress ??
           revision.originalOwner ??
           (await _driveDao
                   .driveById(driveId: revision.driveId)

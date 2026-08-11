@@ -61,19 +61,43 @@ Future<Uint8List> decryptTransactionData(
 
 /// Decrypts the provided transaction details and data into a [Uint8List] using the provided key.
 ///
+/// [dataStream] may start partway into the ciphertext — a resumed or ranged
+/// download — by passing the byte offset it starts at as [startOffsetBytes].
+/// It must be a multiple of `AesStream.blockLengthBytes`; misaligned offsets
+/// throw instead of decrypting to garbage.
+///
+/// [gcmTooLargeToBuffer] is the caller's assertion that an AES-GCM ciphertext
+/// cannot be held in memory, and therefore cannot have its MAC checked. It is
+/// the only way to stream AES-GCM once
+/// `AesGcmStream.allowUnauthenticatedGcmDecryption` has been disarmed, and it
+/// obliges the caller to report the result as unverified. See
+/// [AesGcmStream.unauthenticatedTooLargeToBuffer]. It has no effect on
+/// AES-CTR.
+///
 /// Throws a [TransactionDecryptionException] if decryption fails.
 Future<Stream<Uint8List>> decryptTransactionDataStream(
   String cipher,
   Uint8List cipherIv,
   Stream<Uint8List> dataStream,
   Uint8List keyData,
-  int dataSize,
-) async {
-  final impl = await cipherStreamDecryptImpl(cipher, keyData: keyData);
+  int dataSize, {
+  int startOffsetBytes = 0,
+  bool gcmTooLargeToBuffer = false,
+}) async {
+  final impl = await cipherStreamDecryptImpl(
+    cipher,
+    keyData: keyData,
+    gcmTooLargeToBuffer: gcmTooLargeToBuffer,
+  );
 
   // final cipherIv = utils.decodeBase64ToBytes(cipherIvString);
 
-  final res = await impl.decryptStream(cipherIv, dataStream, dataSize);
+  final res = await impl.decryptStream(
+    cipherIv,
+    dataStream,
+    dataSize,
+    startOffsetBytes: startOffsetBytes,
+  );
   return res.stream;
 }
 

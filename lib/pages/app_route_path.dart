@@ -1,4 +1,5 @@
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/utils/shared_file_link.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
 
@@ -24,6 +25,42 @@ class AppRoutePath {
   /// The private key of the corresponding shared file, encoded as Base64.
   final String? sharedRawFileKey;
 
+  /// Whether the link carried a file key that could not be decoded.
+  ///
+  /// The key is dropped when that happens - links get truncated and mangled in
+  /// transit all the time - so [sharedFileKey] is `null` just like it is for a
+  /// link that never carried a key. This flag is what tells the two apart, so
+  /// that the recipient can be told the link itself is damaged instead of being
+  /// left to guess why the key they were sent is not being used.
+  final bool sharedFileKeyIsDamaged;
+
+  /// Everything a v2 shared file link embedded, parsed.
+  ///
+  /// `null` for a v1 link - every link ArDrive produced before this schema -
+  /// which the shared file page resolves over GraphQL exactly as it always
+  /// has. A payload lets the page paint the file's details with no network
+  /// round trip at all.
+  ///
+  /// The payload's own key ([SharedFileLinkPayload.key]) is the same key
+  /// [sharedFileKey] and [sharedFileKeyIsDamaged] were derived from; those two
+  /// stay authoritative so that v1 and v2 links present the key identically.
+  final SharedFileLinkPayload? sharedFileLinkPayload;
+
+  /// The transaction the generalized viewer was asked for - `/view/{txId}`.
+  ///
+  /// Always a validated 43 character Arweave id; the route does not match
+  /// anything else, so nothing downstream has to re-check it.
+  final String? rawTransactionId;
+
+  /// `n` - the file name hint of a `/view/{txId}` link, validated by the same
+  /// rules as the shared file schema's (§1.3).
+  ///
+  /// A hint, never a fact: the viewer prefers what the gateway reports.
+  final String? rawTransactionName;
+
+  /// `ct` - the content type hint of a `/view/{txId}` link.
+  final String? rawTransactionContentType;
+
   const AppRoutePath({
     this.signingIn = false,
     this.getStarted = false,
@@ -35,6 +72,11 @@ class AppRoutePath {
     this.sharedFileId,
     this.sharedFileKey,
     this.sharedRawFileKey,
+    this.sharedFileKeyIsDamaged = false,
+    this.sharedFileLinkPayload,
+    this.rawTransactionId,
+    this.rawTransactionName,
+    this.rawTransactionContentType,
   });
 
   /// Creates a route that lets the user sign in.
@@ -68,11 +110,28 @@ class AppRoutePath {
     required String sharedFileId,
     SecretKey? sharedFilePk,
     String? sharedRawFileKey,
+    bool sharedFileKeyIsDamaged = false,
+    SharedFileLinkPayload? linkPayload,
   }) =>
       AppRoutePath(
         sharedFileId: sharedFileId,
         sharedFileKey: sharedFilePk,
         sharedRawFileKey: sharedRawFileKey,
+        sharedFileKeyIsDamaged: sharedFileKeyIsDamaged,
+        sharedFileLinkPayload: linkPayload,
+      );
+
+  /// Creates a route that points at any Arweave transaction, ArDrive being the
+  /// friendly front end - `docs/FILE_SHARING_REDESIGN_PLAN.md` §1.3, §4.3.
+  factory AppRoutePath.rawTransaction({
+    required String txId,
+    String? name,
+    String? contentType,
+  }) =>
+      AppRoutePath(
+        rawTransactionId: txId,
+        rawTransactionName: name,
+        rawTransactionContentType: contentType,
       );
 
   factory AppRoutePath.unknown() => const AppRoutePath();

@@ -134,7 +134,11 @@ class WebIO implements ArDriveIO {
       ardriveIODebugPrint('Closing file...');
       writer.releaseLock();
       await writable.close();
-      finalize.complete(true);
+
+      // The caller owns [finalize] and may already have settled it — it is the
+      // one that knows whether the bytes it fed us were the whole file. Only
+      // answer for it when it has not answered.
+      if (!finalize.isCompleted) finalize.complete(true);
 
       ardriveIODebugPrint('Finalizing saveFileStream...');
 
@@ -206,7 +210,8 @@ class WebIO implements ArDriveIO {
 
       ardriveIODebugPrint('writer ready');
 
-      finalize.complete(true);
+      // See [_saveFileSystemAccessApi]: the caller may already have settled it.
+      if (!finalize.isCompleted) finalize.complete(true);
 
       final finalizeResult = await finalize.future;
 

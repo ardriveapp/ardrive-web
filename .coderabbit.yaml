@@ -1,0 +1,21 @@
+# https://docs.coderabbit.ai/guides/configure-coderabbit
+language: en-US
+
+reviews:
+  # Vendored third-party assets and generated code are not ours to review.
+  #
+  # Note what is deliberately NOT excluded: `web/js/pdfjs/pdfjs_config.js`. It
+  # is our file living in a vendored directory - it sets the worker path and
+  # documents the CVE-2024-4367 mitigation - so only the upstream bundles
+  # beside it are filtered out.
+  path_filters:
+    - '!web/js/pdfjs/*.min.js'
+    - '!web/js/pdfjs/LICENSE'
+    - '!web/js/pdfjs/cmaps/**'
+    - '!web/js/*.min.js'
+    - '!**/*.g.dart'
+    - '!**/*.graphql.dart'
+    - '!lib/services/arweave/graphql/**'
+    - '!packages/ario_sdk/lib/src/models/**'
+    - '!drift_schemas/**'
+    - '!**/GeneratedPluginRegistrant.*'

@@ -1,242 +1,284 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/components/components.dart';
-import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
-import 'package:ardrive/misc/resources.dart';
-import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
-import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/pages/shared_file/shared_file_frame.dart';
+import 'package:ardrive/pages/shared_file/shared_file_key_session.dart';
+import 'package:ardrive/pages/shared_file/shared_file_locked_view.dart';
+import 'package:ardrive/pages/shared_file/shared_file_ready_view.dart';
+import 'package:ardrive/pages/shared_file/shared_file_status_views.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/file_revision_base.dart';
-import 'package:ardrive/utils/filesize.dart';
-import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
-import 'package:ardrive/utils/show_general_dialog.dart';
-import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive/utils/shared_file_link.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
-import '../../components/details_panel.dart';
-import '../drive_detail/components/drive_explorer_item_tile.dart';
+/// The recipient's landing page: usually the first and only thing someone ever
+/// sees of ArDrive.
+///
+/// It renders the state machine of `docs/FILE_SHARING_REDESIGN_PLAN.md` §2 -
+/// resolving, locked, ready, not found, network trouble. Everything the
+/// recipient needs is above the fold; everything a protocol needs is behind a
+/// disclosure.
+///
+/// Every state is the same reading column on a phone. On a desktop screen one
+/// of them - the ready card, the only one with a file to show - opens out into
+/// two panes; see [_buildFrame].
+///
+/// The page owns three things the individual state views must not: the key
+/// text field's controller (so a rejected key survives the reload that
+/// rejected it), the "remember while this tab is open" choice, and the
+/// tab-scoped key store.
+class SharedFilePage extends StatefulWidget {
+  const SharedFilePage({super.key, this.keySession});
 
-/// [SharedFilePage] displays details of a shared file and controls for downloading and previewing it
-/// from a parent [SharedFileCubit].
-class SharedFilePage extends StatelessWidget {
-  final _fileKeyController = TextEditingController();
+  /// Injectable so a widget test can observe what the page remembers without a
+  /// browser session storage behind it.
+  final SharedFileKeySession? keySession;
 
-  SharedFilePage({super.key}) {
+  @override
+  State<SharedFilePage> createState() => _SharedFilePageState();
+}
+
+class _SharedFilePageState extends State<SharedFilePage> {
+  /// Lives on the page, not on the locked gate: submitting a key tears the
+  /// gate down and rebuilds it, and losing the recipient's text at exactly the
+  /// moment they were told it was wrong would be the cruelest possible moment
+  /// to lose it.
+  final TextEditingController _keyController = TextEditingController();
+
+  late final SharedFileKeySession _keySession;
+  late final String _fileId;
+
+  bool _rememberKey = false;
+
+  /// Whether the load in progress is a key being checked, as opposed to the
+  /// page's first resolution. The locked gate stays on screen for the former.
+  bool _isUnlocking = false;
+
+  bool _hasTriedRememberedKey = false;
+
+  /// The key to write to session storage once - and only once - it is known to
+  /// work.
+  String? _keyToRemember;
+
+  @override
+  void initState() {
+    super.initState();
+
     PlausibleEventTracker.trackPageview(page: PlausiblePageView.sharedFilePage);
+
+    _keySession = widget.keySession ?? SharedFileKeySession();
+    _fileId = context.read<SharedFileCubit>().fileId;
+  }
+
+  @override
+  void dispose() {
+    _keyController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Material(
       child: BlocConsumer<SharedFileCubit, SharedFileState>(
-        buildWhen: (previous, current) {
-          return current is! SharedFileKeyInvalid;
-        },
-        listener: (context, state) {
-          if (state is SharedFileKeyInvalid) {
-            showArDriveDialog(
-              context,
-              content: ArDriveStandardModal(
-                title: appLocalizationsOf(context).error,
-                description: appLocalizationsOf(context).invalidKeyFile,
-              ),
-            );
-          }
-        },
-        builder: (context, state) {
-          Widget activityPanel(SharedFileLoadSuccess state) {
-            return DetailsPanel(
-              item: DriveDataTableItemMapper.fromRevision(
-                FileRevisionBase.fromFileRevision(state.fileRevisions.first),
-                false,
-              ),
-              isSharePage: true,
-              fileKey: state.fileKey,
-              revisions: state.fileRevisions,
-              licenseState: state.latestLicense,
-              ownerAddress: state.ownerAddress,
-              drivePrivacy: state.fileKey != null ? 'private' : 'public',
-              canNavigateThroughImages: false,
-            );
-          }
-
-          return ScreenTypeLayout.builder(
-            desktop: (context) => Container(
-              color:
-                  ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (state is SharedFileLoadSuccess) ...{
-                      Flexible(
-                        flex: 1,
-                        child: activityPanel(state),
-                      )
-                    } else ...{
-                      _buildShareCard(context, state)
-                    }
-                  ],
-                ),
-              ),
-            ),
-            mobile: (context) => SizedBox(
-              height: MediaQuery.of(context).size.height,
-              child: state is SharedFileLoadSuccess
-                  ? Row(children: [Expanded(child: activityPanel(state))])
-                  : _buildShareCard(context, state),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildShareCard(BuildContext context, SharedFileState state) {
-    return ArDriveCard(
-      backgroundColor:
-          ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
-      elevation: 2,
-      content: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: 400,
-              minWidth: kMediumDialogWidth,
-              minHeight: 256,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                ScreenTypeLayout.builder(
-                  desktop: (context) => Row(
-                    children: [
-                      ArDriveImage(
-                        image: AssetImage(
-                          // TODO: replace with ArDriveTheme .isLight method
-                          ArDriveTheme.of(context).themeData.name == 'light'
-                              ? Resources.images.brand.blackLogo2
-                              : Resources.images.brand.whiteLogo2,
-                        ),
-                        height: 80,
-                        fit: BoxFit.contain,
-                      ),
-                    ],
-                  ),
-                  mobile: (context) => Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ArDriveImage(
-                        image: AssetImage(
-                          // TODO: replace with ArDriveTheme .isLight method
-                          ArDriveTheme.of(context).themeData.name == 'light'
-                              ? Resources.images.brand.blackLogo2
-                              : Resources.images.brand.whiteLogo2,
-                        ),
-                        height: 55,
-                        fit: BoxFit.contain,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-                if (state is SharedFileIsPrivate) ...[
-                  Text(appLocalizationsOf(context).sharedFileIsEncrypted),
-                  const SizedBox(height: 16),
-                  ArDriveTextField(
-                    controller: _fileKeyController,
-                    autofocus: true,
-                    obscureText: true,
-                    hintText: appLocalizationsOf(context).enterFileKey,
-                    onFieldSubmitted: (_) => context
-                        .read<SharedFileCubit>()
-                        .submit(_fileKeyController.text),
-                  ),
-                  const SizedBox(height: 16),
-                  ArDriveButton(
-                    onPressed: () => context
-                        .read<SharedFileCubit>()
-                        .submit(_fileKeyController.text),
-                    text: appLocalizationsOf(context).unlock,
-                  ),
-                ],
-                if (state is SharedFileLoadInProgress)
-                  const CircularProgressIndicator()
-                else if (state is SharedFileLoadSuccess) ...{
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: DriveExplorerItemTileLeading(
-                      item: DriveDataTableItemMapper.fromRevision(
-                        FileRevisionBase.fromFileRevision(
-                            state.fileRevisions.first),
-                        false, // in this page we don't have the information about the current drive, so it's impossible to know if the file is from the user logged in
-                      ),
-                    ),
-                    title: Text(
-                      state.fileRevisions.first.name,
-                      style: ArDriveTypography.body.buttonLargeBold(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDefault,
-                      ),
-                    ),
-                    subtitle: Text(
-                      filesize(state.fileRevisions.first.size),
-                      style: ArDriveTypography.body.buttonNormalRegular(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeAccentDisabled,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  ArDriveButton(
-                    icon: ArDriveIcons.download(color: Colors.white),
-                    onPressed: () {
-                      final file = ARFSFactory().getARFSFileFromFileRevision(
-                        state.fileRevisions.first,
-                      );
-                      return promptToDownloadSharedFile(
-                        revision: file,
-                        context: context,
-                        fileKey: state.fileKey,
-                      );
-                    },
-                    text: appLocalizationsOf(context).download,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildReturnToAppLink(context),
-                } else if (state is SharedFileNotFound) ...{
-                  const Icon(Icons.error_outline, size: 36),
-                  const SizedBox(height: 16),
-                  Text(
-                    appLocalizationsOf(context).specifiedFileDoesNotExist,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  _buildReturnToAppLink(context),
-                }
-              ],
-            ),
-          ),
+        listener: _onStateChanged,
+        // The app's own way of forking a layout (`drive_detail_page.dart`,
+        // `details_panel.dart`). `tablet` is deliberately not supplied: the
+        // package falls back to `mobile` for 600-950px, and a 700px window is
+        // a phone-shaped reading column, not half a desktop.
+        builder: (context, state) => ScreenTypeLayout.builder(
+          mobile: (context) => _buildFrame(context, state, isWide: false),
+          desktop: (context) => _buildFrame(context, state, isWide: true),
         ),
       ),
     );
   }
 
-  Widget _buildReturnToAppLink(BuildContext context) {
-    return ArDriveButton(
-      style: ArDriveButtonStyle.tertiary,
-      onPressed: () => openUrl(url: Resources.ardrivePublicSiteLink),
-      text: appLocalizationsOf(context).whatIsArDrive,
+  /// The frame, sized for the state inside it.
+  ///
+  /// Only the ready card has anything to do with the extra width - it is the
+  /// one that hosts the preview. The gate, the spinner and the error cards read
+  /// better narrow and stay narrow at every screen size.
+  Widget _buildFrame(
+    BuildContext context,
+    SharedFileState state, {
+    required bool isWide,
+  }) {
+    final isWideReady = isWide && state is SharedFileLoadSuccess;
+
+    return SharedFileFrame(
+      maxWidth: isWideReady
+          ? SharedFileFrame.maxWideContentWidth
+          : SharedFileFrame.maxContentWidth,
+      child: _buildState(context, state, isWide: isWideReady),
     );
+  }
+
+  void _onStateChanged(BuildContext context, SharedFileState state) {
+    if (state is! SharedFileLoadInProgress) {
+      _isUnlocking = false;
+    }
+
+    if (state is SharedFileKeyInvalid) {
+      // A remembered key that stopped working is dropped rather than offered
+      // again: it would re-submit itself on every reload and strand the
+      // recipient behind an error they never typed.
+      _keyToRemember = null;
+      unawaited(_keySession.forget(_fileId));
+
+      return;
+    }
+
+    if (state is SharedFileLoadSuccess) {
+      final rawKey = _keyToRemember;
+      _keyToRemember = null;
+
+      if (rawKey != null) {
+        unawaited(_keySession.remember(_fileId, rawKey));
+      }
+    }
+  }
+
+  Widget _buildState(
+    BuildContext context,
+    SharedFileState state, {
+    required bool isWide,
+  }) {
+    if (state is SharedFileLoadSuccess) {
+      return SharedFileReadyView(state: state, isWide: isWide);
+    }
+
+    if (state is SharedFileIsPrivate) {
+      // Driven from here rather than from the listener because the page can
+      // *start* locked - a listener never fires for the state it opens on.
+      _tryRememberedKey(context);
+
+      return _buildLocked(context, payload: state.payload);
+    }
+
+    if (state is SharedFileKeyInvalid) {
+      // A key that never survived the link is a damaged link, not a wrong key:
+      // the recipient has to ask the sender for the link again, while a key
+      // they type by hand still unlocks the file from this same gate.
+      return _buildLocked(
+        context,
+        payload: state.payload,
+        errorMessage: state.linkKeyIsDamaged
+            ? appLocalizationsOf(context).sharedFileLinkKeyDamaged
+            : appLocalizationsOf(context).sharedFileKeyIncorrect,
+      );
+    }
+
+    if (state is SharedFileLinkDamaged) {
+      // The link named no file at all, so there is nothing to look up and
+      // nothing to retry: only the sender can fix this one.
+      return const SharedFileLinkErrorView();
+    }
+
+    if (state is SharedFileLoadInProgress) {
+      if (_isUnlocking) {
+        return _buildLocked(context, payload: state.payload, isBusy: true);
+      }
+
+      return SharedFileResolvingView(payload: state.payload);
+    }
+
+    if (state is SharedFileNotFound) {
+      // The resolver owns the retry schedule; this card only shows it. See
+      // [SharedFileNotFoundView].
+      return SharedFileNotFoundView(
+        mayStillBePropagating: state.mayStillBePropagating,
+        retryAttempt: state.retryAttempt,
+        onRetry: () => context.read<SharedFileCubit>().retry(),
+      );
+    }
+
+    if (state is SharedFileLoadFailure) {
+      return SharedFileNetworkErrorView(
+        onRetry: () => context.read<SharedFileCubit>().retry(),
+      );
+    }
+
+    return const SharedFileResolvingView();
+  }
+
+  Widget _buildLocked(
+    BuildContext context, {
+    SharedFileLinkPayload? payload,
+    String? errorMessage,
+    bool isBusy = false,
+  }) {
+    return SharedFileLockedView(
+      controller: _keyController,
+      payload: payload,
+      errorMessage: errorMessage,
+      rememberKey: _rememberKey,
+      isBusy: isBusy,
+      onRememberChanged: (value) => setState(() {
+        _rememberKey = value;
+
+        if (!value) {
+          // Both halves matter. Forgetting only clears what is already
+          // stored; the key of an unlock that is *in flight* is held in
+          // [_keyToRemember] and would be written the moment it succeeded -
+          // after the recipient had said not to.
+          _keyToRemember = null;
+          unawaited(_keySession.forget(_fileId));
+        }
+      }),
+      onSubmit: (rawKey) => _submitKey(context, rawKey),
+    );
+  }
+
+  void _submitKey(BuildContext context, String rawKey) {
+    setState(() {
+      _isUnlocking = true;
+      _keyToRemember = _rememberKey ? rawKey : null;
+    });
+
+    context.read<SharedFileCubit>().submit(rawKey);
+  }
+
+  /// Unlocks with the key this tab already accepted, if there is one.
+  ///
+  /// Runs at most once per page: a key that fails is forgotten by
+  /// [_onStateChanged], and nothing re-reads it afterwards.
+  void _tryRememberedKey(BuildContext context) {
+    if (_hasTriedRememberedKey) {
+      return;
+    }
+
+    _hasTriedRememberedKey = true;
+
+    final cubit = context.read<SharedFileCubit>();
+
+    _keySession.read(_fileId).then((rawKey) {
+      if (!mounted || rawKey == null) {
+        return;
+      }
+
+      // The read is asynchronous, so the page it comes back to is not
+      // necessarily the page that asked. A remembered key must never overwrite
+      // what the recipient has since typed, never re-submit on top of an
+      // unlock that is already running, and above all never fire at a page
+      // that is no longer locked - which would throw an unlocked file back
+      // into the resolving state for no reason the recipient could see.
+      final stillLocked = cubit.state is SharedFileIsPrivate;
+
+      if (!stillLocked || _isUnlocking || _keyController.text.isNotEmpty) {
+        return;
+      }
+
+      _keyController.text = rawKey;
+
+      setState(() {
+        _rememberKey = true;
+        _isUnlocking = true;
+        _keyToRemember = rawKey;
+      });
+
+      cubit.submit(rawKey);
+    });
   }
 }
