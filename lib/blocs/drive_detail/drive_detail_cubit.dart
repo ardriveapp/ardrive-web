@@ -399,17 +399,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     _folderSubscription?.onError((e) async {
       if (e is FolderNotFoundInDriveException) {
-        // Check if the drive is unsynced (metadata only, no content)
-        final drive =
-            await _driveDao.driveById(driveId: e.driveId).getSingleOrNull();
-        if (drive != null &&
-            (drive.lastBlockHeight == null || drive.lastBlockHeight == 0)) {
-          // Drive exists but content hasn't been synced - show sync options
-          emit(DriveDetailLoadUnsynced(drive: drive));
-        } else {
-          // Drive is being set up or has an issue
-          emit(DriveInitialLoading());
-        }
+        await _handleFolderNotFound(e.driveId);
         return;
       }
 
@@ -813,16 +803,29 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     }
   }
 
+  /// The drive's root folder row is missing, so the explorer cannot mount it.
+  ///
+  /// `DriveDao._rootFolderPlaceholder` makes this structurally unreachable for
+  /// any drive written since, and heals already-affected drives on their next
+  /// sync. It is still handled rather than asserted away: whichever way a drive
+  /// gets here, it has to land somewhere the user can act from.
+  ///
+  /// Both outcomes are states a later sync recovers from on its own -
+  /// [DriveDetailLoadUnsynced] is re-checked by [_onSyncCompleted], and it
+  /// renders the drive with whatever did sync. The previous
+  /// [DriveInitialLoading] was a dead end: no retry, no action, and nothing
+  /// that re-triggers it.
   Future<void> _handleFolderNotFound(String driveId) async {
     final drive =
         await _driveDao.driveById(driveId: driveId).getSingleOrNull();
     if (isClosed) return;
-    if (drive != null &&
-        (drive.lastBlockHeight == null || drive.lastBlockHeight == 0)) {
-      emit(DriveDetailLoadUnsynced(drive: drive));
-    } else {
-      emit(DriveInitialLoading());
+
+    if (drive == null) {
+      emit(DriveDetailLoadNotFound());
+      return;
     }
+
+    emit(DriveDetailLoadUnsynced(drive: drive));
   }
 
   @override

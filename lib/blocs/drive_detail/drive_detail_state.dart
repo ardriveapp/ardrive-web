@@ -138,8 +138,14 @@ class DriveDetailLoadSuccess extends DriveDetailState {
 /// the user's profile.
 class DriveDetailLoadNotFound extends DriveDetailState {}
 
-/// [DriveDetailLoadUnsynced] means that the drive metadata exists but its content
-/// has not been synced yet (lastBlockHeight == 0 or null).
+/// [DriveDetailLoadUnsynced] means the drive's metadata exists but its content
+/// is not (yet) locally available to open.
+///
+/// Two ways in: the drive has never been synced (`lastBlockHeight` 0 or null),
+/// or it synced but its root folder row is missing, so the explorer has no
+/// folder to mount. Both are recoverable and both are re-checked by
+/// `DriveDetailCubit._onSyncCompleted`, which opens the drive once the content
+/// lands.
 class DriveDetailLoadUnsynced extends DriveDetailState {
   final Drive drive;
   final bool showDriveInfo;

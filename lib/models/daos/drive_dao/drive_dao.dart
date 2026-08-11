@@ -326,6 +326,43 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return foldersWithName.isNotEmpty || filesWithName.isNotEmpty;
   }
 
+  /// A stand-in row for a drive's root folder.
+  ///
+  /// A drive row whose `rootFolderId` has no matching folder row cannot be
+  /// opened at all: [watchFolderContents] drops the missing folder with a
+  /// `.where` and its combined stream then never emits, stranding the explorer
+  /// on a spinner that nothing retries. That happens whenever the root
+  /// folder's own metadata transaction fails to resolve during sync while the
+  /// drive entity itself resolves fine - and `rootFolderId` is known from the
+  /// drive entity either way, so the row can always be written.
+  ///
+  /// Two deliberate choices:
+  ///
+  /// * **Insert with [InsertMode.insertOrIgnore].** This must never overwrite a
+  ///   real root folder that already synced, and it is re-run on every sync, so
+  ///   it also heals drives already in this state rather than only preventing
+  ///   new ones.
+  /// * **Not marked `isGhost`.** `FolderRevisionCompanionExtensions
+  ///   .toEntryCompanion` omits `isGhost`, so the upsert that lands the real
+  ///   metadata leaves absent columns untouched and the flag would stick
+  ///   forever. `parentFolderId` is left null for the same care: [createGhosts]
+  ///   points a ghost at `drive.rootFolderId`, which for the root itself would
+  ///   be a self-reference - which is why that method excludes root folders and
+  ///   why this is a placeholder rather than a ghost.
+  FolderEntriesCompanion _rootFolderPlaceholder({
+    required DriveID driveId,
+    required FolderID rootFolderId,
+    required String name,
+  }) =>
+      FolderEntriesCompanion.insert(
+        id: rootFolderId,
+        driveId: driveId,
+        name: name,
+        isHidden: const Value(false),
+        // TODO: path is not used in the app, so it's not necessary to set it
+        path: '',
+      );
+
   /// Adds or updates the user's drives with the provided drive entities.
   Future<void> updateUserDrives(
     Map<DriveEntity, DriveKey?> driveEntities,
@@ -358,6 +395,16 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
               driveCompanion,
               onConflict: DoUpdate(
                   (dynamic _) => driveCompanion.copyWith(dateCreated: null)),
+            );
+
+            b.insert(
+              folderEntries,
+              _rootFolderPlaceholder(
+                driveId: entity.id!,
+                rootFolderId: entity.rootFolderId!,
+                name: entity.name!,
+              ),
+              mode: InsertMode.insertOrIgnore,
             );
           }
         },
@@ -398,6 +445,15 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     await into(drives).insert(
       companion,
       onConflict: DoUpdate((_) => companion.copyWith(dateCreated: null)),
+    );
+
+    await into(folderEntries).insert(
+      _rootFolderPlaceholder(
+        driveId: entity.id!,
+        rootFolderId: entity.rootFolderId!,
+        name: name,
+      ),
+      mode: InsertMode.insertOrIgnore,
     );
   }
 
