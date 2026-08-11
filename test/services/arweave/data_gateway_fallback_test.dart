@@ -77,7 +77,25 @@ void main() {
       expect(DataGatewayFallback.syncMaxAttempts, 2);
     });
 
-    test('does not retry a 404 — the same host will not change its mind',
+    test('retries a 404, because a gateway mid-index answers one', () async {
+      // Observed in the wild: a drive signature 404ed once and resolved on the
+      // retry. The gateway had the transaction, it just had not indexed it
+      // yet. Treating the first 404 as final cost a whole drive.
+      var calls = 0;
+      when(() => primaryApi.getSandboxedTx(txId)).thenAnswer((_) async {
+        calls++;
+        return calls == 1
+            ? Response('not found', 404)
+            : Response('metadata', 200);
+      });
+
+      final response = await fallback.fetchDataForSync(txId, primaryClient);
+
+      expect(response.statusCode, 200);
+      expect(calls, 2);
+    });
+
+    test('reports a transaction absent from every attempt as not found',
         () async {
       when(() => primaryApi.getSandboxedTx(txId))
           .thenAnswer((_) async => Response('not found', 404));
@@ -87,7 +105,9 @@ void main() {
         throwsA(isA<TransactionNotFound>()),
       );
 
-      verify(() => primaryApi.getSandboxedTx(txId)).called(1);
+      // Bounded: a genuinely missing transaction still costs only the two
+      // attempts every other sync read gets.
+      verify(() => primaryApi.getSandboxedTx(txId)).called(2);
     });
 
     test('never consults the GAR, so no Solana RPC is issued on the sync path',

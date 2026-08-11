@@ -108,9 +108,18 @@ class DataGatewayFallback {
       try {
         return await _tryGateway(primaryClient, txId);
       } on _ErrorFromStatus catch (e) {
-        if (e.statusCode == 404) {
-          // Retrying the same host cannot turn a 404 into a 200.
-          logger.w('Gateway $gatewayName returned 404 for sync tx $txId');
+        // A 404 is NOT treated as final here, and the reasoning that said it
+        // was is wrong for this case. A gateway that has not finished indexing
+        // a transaction answers 404 for it, and answers 200 a moment later -
+        // observed in the wild on a drive signature that 404ed once and
+        // resolved on the retry. Spending the second attempt is cheap; losing
+        // a drive because its gateway was a beat behind is not.
+        //
+        // The last attempt still reports it as not found, so a genuinely
+        // absent transaction keeps its typed error.
+        if (e.statusCode == 404 && attempt == syncMaxAttempts) {
+          logger.w('Gateway $gatewayName returned 404 for sync tx $txId '
+              'on every attempt');
           throw TransactionNotFound(txId);
         }
         logger.w('Gateway $gatewayName failed for sync tx $txId '

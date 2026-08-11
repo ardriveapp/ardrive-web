@@ -1025,10 +1025,27 @@ class ArweaveService {
             final sigTypeTag = driveTx.getTag(EntityTag.signatureType) ?? '1';
             final signatureType = DriveSignatureType.fromString(sigTypeTag);
 
-            final driveSignature = signatureType == DriveSignatureType.v1
-                ? await getDriveSignatureForDriveOnSync(
-                    wallet, driveTx.getTag(EntityTag.driveId)!)
-                : null;
+            // Contained deliberately. This was the one unguarded await in the
+            // loop, and a gateway hiccup on a single drive's signature threw
+            // all the way out of drive discovery and killed the entire sync -
+            // before any drive had synced at all. Every other failure here
+            // drops one drive and carries on; this one now does too, and the
+            // drive is picked up on the next pass.
+            DriveSignatureEntity? driveSignature;
+
+            if (signatureType == DriveSignatureType.v1) {
+              try {
+                driveSignature = await getDriveSignatureForDriveOnSync(
+                    wallet, driveTx.getTag(EntityTag.driveId)!);
+              } catch (e) {
+                logger.w(
+                  'Could not read the drive signature for '
+                  '${driveTx.getTag(EntityTag.driveId)}; skipping this drive '
+                  'for this pass: $e',
+                );
+                continue;
+              }
+            }
 
             driveKey = await _crypto.deriveDriveKey(
                 wallet,
