@@ -442,19 +442,25 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       }
     }
 
-    await into(drives).insert(
-      companion,
-      onConflict: DoUpdate((_) => companion.copyWith(dateCreated: null)),
-    );
+    // One transaction so the drive and its root folder land together. Written
+    // separately, a stream observer could catch the gap between them and see
+    // exactly the drive-without-a-root-folder state this placeholder exists to
+    // rule out. `updateUserDrives` gets this for free from `db.batch`.
+    await db.transaction(() async {
+      await into(drives).insert(
+        companion,
+        onConflict: DoUpdate((_) => companion.copyWith(dateCreated: null)),
+      );
 
-    await into(folderEntries).insert(
-      _rootFolderPlaceholder(
-        driveId: entity.id!,
-        rootFolderId: entity.rootFolderId!,
-        name: name,
-      ),
-      mode: InsertMode.insertOrIgnore,
-    );
+      await into(folderEntries).insert(
+        _rootFolderPlaceholder(
+          driveId: entity.id!,
+          rootFolderId: entity.rootFolderId!,
+          name: name,
+        ),
+        mode: InsertMode.insertOrIgnore,
+      );
+    });
   }
 
   Future<DrivesCompanion> _addDriveKeyToDriveCompanion(

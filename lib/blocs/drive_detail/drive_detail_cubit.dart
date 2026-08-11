@@ -818,7 +818,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   Future<void> _handleFolderNotFound(String driveId) async {
     final drive =
         await _driveDao.driveById(driveId: driveId).getSingleOrNull();
-    if (isClosed) return;
+    // The drive can be switched out from under this query. Emitting after that
+    // would put the previous drive's state on the new drive's screen.
+    if (isClosed || _driveId != driveId) return;
 
     if (drive == null) {
       emit(DriveDetailLoadNotFound());
