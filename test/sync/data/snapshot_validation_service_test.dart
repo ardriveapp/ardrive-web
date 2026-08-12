@@ -225,6 +225,15 @@ void main() {
         final service = SnapshotValidationService(
           configService: configService,
           clientFactory: () {
+            // Checked here rather than only at the end: asserting after the
+            // fact would still pass if a regression started the next probe
+            // while the abandoned one was still open, which is the thing
+            // being prevented.
+            if (clients.isNotEmpty) {
+              expect(clients.last.closed, isTrue,
+                  reason: 'the previous probe must be cancelled before the '
+                      'next one is started');
+            }
             final client = _CloseTrackingClient(
               MockClient((_) async {
                 // The first probe never answers; the second does.

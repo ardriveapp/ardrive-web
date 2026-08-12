@@ -83,10 +83,26 @@ class DataGatewayFallback {
   /// Delay before the single same-gateway retry in [fetchDataForSync].
   static const _syncRetryDelay = Duration(milliseconds: 300);
 
-  /// Upper bound for one sync read. By construction the attempts already sum
-  /// to ~10.3s; this only guards against an attempt that outlives its own
-  /// timeout.
-  static const _syncTotalFetchTimeout = Duration(seconds: 15);
+  /// Upper bound for one sync read.
+  ///
+  /// This has to clear what the attempts themselves can spend, or it silently
+  /// becomes the real limit: [syncMaxAttempts] attempts at [_requestTimeout]
+  /// plus one [_syncRetryDelay] is 20.3s, so a 15s cap - correct when an
+  /// attempt was 5s - would cut the second attempt off at 4.7s and make the
+  /// retry weaker than the try it was retrying.
+  ///
+  /// It is a backstop against an attempt that outlives its own timeout, not a
+  /// budget in its own right, so it sits just above that sum.
+  static const _syncTotalFetchTimeout = Duration(seconds: 22);
+
+  /// Exposed so a test can assert the relationship between these budgets
+  /// rather than restate their values, which is what drifted.
+  @visibleForTesting
+  static const syncRequestTimeoutForTest = _requestTimeout;
+  @visibleForTesting
+  static const syncRetryDelayForTest = _syncRetryDelay;
+  @visibleForTesting
+  static const syncTotalFetchTimeoutForTest = _syncTotalFetchTimeout;
 
   /// Cached gateway list — shared with other services (e.g.
   /// SnapshotValidationService) to avoid duplicate Solana RPC calls.

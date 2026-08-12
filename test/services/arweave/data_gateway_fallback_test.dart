@@ -179,6 +179,22 @@ void main() {
     /// warm gateway serves in ~8s - so under the metadata budget it could
     /// never finish on any connection slower than ~9 MB/s, however many times
     /// it was retried.
+    /// The outer cap must clear what the attempts can actually spend, or it
+    /// quietly becomes the real limit and the second attempt gets less time
+    /// than the first - a retry weaker than the try it is retrying.
+    test('the total budget outlasts every attempt it allows', () {
+      final attemptsCost = DataGatewayFallback.syncRequestTimeoutForTest *
+              DataGatewayFallback.syncMaxAttempts +
+          DataGatewayFallback.syncRetryDelayForTest *
+              (DataGatewayFallback.syncMaxAttempts - 1);
+
+      expect(
+        DataGatewayFallback.syncTotalFetchTimeoutForTest,
+        greaterThan(attemptsCost),
+        reason: 'the cap must not truncate the last attempt',
+      );
+    });
+
     group('large bodies', () {
       /// Scaled down so the test does not spend the real budgets, which are
       /// measured in tens of seconds. What is asserted is that `largeBody`
