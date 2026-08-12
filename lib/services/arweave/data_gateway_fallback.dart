@@ -43,6 +43,13 @@ class DataGatewayFallback {
   /// Attempts made against the configured gateway by [fetchDataForSync].
   static const syncMaxAttempts = 2;
 
+  /// Attempts against the configured gateway inside the [fetchData] waterfall,
+  /// spent only when it answers 404.
+  static const _primaryAttemptsOn404 = 2;
+
+  /// Delay before that retry.
+  static const _primaryRetryDelay = Duration(milliseconds: 300);
+
   /// Delay before the single same-gateway retry in [fetchDataForSync].
   static const _syncRetryDelay = Duration(milliseconds: 300);
 
@@ -164,18 +171,47 @@ class DataGatewayFallback {
 
     for (final client in clients) {
       final gatewayName = client.api.gatewayUrl.host;
-      try {
-        final response = await _tryGateway(client, txId);
-        if (client != primaryClient) {
-          logger.i('Fallback gateway $gatewayName succeeded for tx $txId');
+      final isPrimary = client == primaryClient;
+
+      // The configured gateway gets one extra attempt, and only on a 404.
+      // [_syncFetch] already spends one for the same reason - a gateway that
+      // has not finished indexing a transaction answers 404 for it and 200 a
+      // moment later - and the reasoning holds at least as well here, because
+      // walking away from the primary is worst for exactly the data most
+      // likely to be a beat behind. Something just uploaded through Turbo can
+      // be on the configured gateway and not yet anywhere else, so falling
+      // through on its first 404 reaches gateways that are further behind it,
+      // not ahead of it.
+      //
+      // Deliberately not extended to timeouts or socket errors: those have
+      // already spent their [_requestTimeout] and say the gateway is unwell
+      // rather than a beat behind, so the next gateway is the better bet and
+      // the total budget stays intact.
+      final attempts = isPrimary ? _primaryAttemptsOn404 : 1;
+
+      for (var attempt = 1; attempt <= attempts; attempt++) {
+        var retryable = false;
+
+        try {
+          final response = await _tryGateway(client, txId);
+          if (!isPrimary) {
+            logger.i('Fallback gateway $gatewayName succeeded for tx $txId');
+          }
+          return response;
+        } on _ErrorFromStatus catch (e) {
+          if (e.statusCode != 404) all404 = false;
+          retryable = e.statusCode == 404;
+          logger.w('Gateway $gatewayName failed for tx $txId: $e');
+        } catch (e) {
+          all404 = false;
+          logger.w('Gateway $gatewayName failed for tx $txId: $e');
         }
-        return response;
-      } on _ErrorFromStatus catch (e) {
-        if (e.statusCode != 404) all404 = false;
-        logger.w('Gateway $gatewayName failed for tx $txId: $e');
-      } catch (e) {
-        all404 = false;
-        logger.w('Gateway $gatewayName failed for tx $txId: $e');
+
+        if (!retryable) break;
+
+        if (attempt < attempts) {
+          await Future.delayed(_primaryRetryDelay);
+        }
       }
     }
 

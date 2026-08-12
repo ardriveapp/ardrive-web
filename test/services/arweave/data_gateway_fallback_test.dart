@@ -211,6 +211,63 @@ void main() {
       verify(() => arioSDK.getGateways()).called(1);
     });
 
+    /// A gateway mid-index answers 404 and then 200 a moment later, which
+    /// `fetchDataForSync` already accounts for. Walking away from the
+    /// configured gateway on its first 404 is worst for exactly the data most
+    /// likely to be behind: something just uploaded through Turbo can be on
+    /// the configured gateway and nowhere else yet.
+    test('retries the configured gateway once on a 404, then succeeds',
+        () async {
+      var attempts = 0;
+      when(() => primaryApi.getSandboxedTx(txId)).thenAnswer((_) async {
+        attempts++;
+        return attempts == 1
+            ? Response('not found', 404)
+            : Response('metadata', 200);
+      });
+
+      final response = await fallback.fetchData(txId, primaryClient);
+
+      expect(response.statusCode, 200);
+      expect(response.body, 'metadata');
+      verify(() => primaryApi.getSandboxedTx(txId)).called(2);
+    });
+
+    /// The extra attempt is for a gateway that is a beat behind, not one that
+    /// is unwell. A refusal or an error has already cost its timeout and says
+    /// the next gateway is the better bet.
+    test('does not retry the configured gateway on a non-404 failure',
+        () async {
+      // arweave.net as the primary so it is the only client in the list, which
+      // keeps the assertion about retries free of any real network call.
+      when(() => primaryApi.gatewayUrl)
+          .thenReturn(Uri.parse('https://arweave.net'));
+      when(() => primaryApi.getSandboxedTx(txId))
+          .thenAnswer((_) async => Response('server error', 500));
+
+      await expectLater(
+        fallback.fetchData(txId, primaryClient),
+        throwsA(isA<Object>()),
+      );
+
+      verify(() => primaryApi.getSandboxedTx(txId)).called(1);
+    });
+
+    test('a persistent 404 on the configured gateway is still not found',
+        () async {
+      when(() => primaryApi.gatewayUrl)
+          .thenReturn(Uri.parse('https://arweave.net'));
+      when(() => primaryApi.getSandboxedTx(txId))
+          .thenAnswer((_) async => Response('not found', 404));
+
+      await expectLater(
+        fallback.fetchData(txId, primaryClient),
+        throwsA(isA<TransactionNotFound>()),
+      );
+
+      verify(() => primaryApi.getSandboxedTx(txId)).called(2);
+    });
+
     test('a drive signature read on the sync path never reaches the GAR',
         () async {
       // Drive discovery fetches this for every private drive whose key is not
