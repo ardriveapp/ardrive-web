@@ -47,12 +47,14 @@ class SnapshotValidationService {
   /// pays the tail on every failure and still cannot outwait an unbounded one.
   /// Short probes are right, but only if they are spread out: retrying 300ms
   /// after a timeout just lands inside the same cold read and hangs again,
-  /// spending the whole budget to be told the same thing. These delays put the
-  /// four probes at roughly t=0s, 6s, 14s and 25s, so the later ones get a
-  /// chance to land after a cold read has finished and the answer is cached.
+  /// spending the whole budget to be told the same thing. Against the 10s
+  /// [_defaultHeadTimeout], these delays start the four probes at roughly
+  /// t=0s, 11s, 24s and 40s, so the later ones get a chance to land after a
+  /// cold read has finished and the answer is cached.
   ///
-  /// Worst case is ~30s for a snapshot that never answers. That is the right
-  /// trade against re-walking its block range, which costs minutes.
+  /// Worst case is ~50s for a snapshot that never answers once, and the common
+  /// case is one probe of well under a second. That is the right trade against
+  /// re-walking its block range, which costs minutes.
   static const _defaultRetryDelays = <Duration>[
     Duration(seconds: 1),
     Duration(seconds: 3),
@@ -64,17 +66,30 @@ class SnapshotValidationService {
   /// One probe, plus one more after each delay.
   int get _maxAttempts => _retryDelays.length + 1;
 
-  /// Injectable so the retry behaviour can be tested without a network and
-  /// without spending its real delays in wall-clock time.
-  final http.Client _httpClient;
+  /// Builds the client for a single probe.
+  ///
+  /// One client per attempt, rather than one for the service, because
+  /// `Future.timeout` abandons a response without cancelling the request that
+  /// would have produced it. Closing the client does cancel it, and a probe
+  /// that has timed out is exactly a request nothing is waiting for any more.
+  ///
+  /// Left pending they accumulate: four attempts across three concurrent
+  /// validations is up to twelve requests outstanding against a gateway
+  /// already too slow to answer one. On the web that is the worse half of the
+  /// problem - browsers cap concurrent connections per host at around six, so
+  /// abandoned probes would crowd out the reads sync makes to the same
+  /// gateway immediately afterwards.
+  ///
+  /// Injectable so the retry behaviour can be tested without a network.
+  final http.Client Function() _clientFactory;
 
   SnapshotValidationService({
     required ConfigService configService,
-    @visibleForTesting http.Client? httpClient,
+    @visibleForTesting http.Client Function()? clientFactory,
     @visibleForTesting List<Duration>? retryDelays,
     @visibleForTesting Duration? headTimeout,
   })  : _configService = configService,
-        _httpClient = httpClient ?? http.Client(),
+        _clientFactory = clientFactory ?? http.Client.new,
         _retryDelays = retryDelays ?? _defaultRetryDelays,
         _headTimeout = headTimeout ?? _defaultHeadTimeout;
 
@@ -129,10 +144,13 @@ class SnapshotValidationService {
   /// remains available, which is why the budget here is what it is.
   Future<bool> _validateSnapshot(String txId, String primaryUrl) async {
     for (var attempt = 1; attempt <= _maxAttempts; attempt++) {
+      final client = _clientFactory();
+
       try {
-        final response = await _httpClient
-            .head(Uri.parse('$primaryUrl/$txId'))
-            .timeout(_headTimeout);
+        final response =
+            await client.head(Uri.parse('$primaryUrl/$txId')).timeout(
+                  _headTimeout,
+                );
 
         if (response.statusCode == 200 || response.statusCode == 302) {
           return true;
@@ -158,6 +176,10 @@ class SnapshotValidationService {
       } catch (e) {
         logger.w('Snapshot $txId: HEAD error '
             '(attempt $attempt/$_maxAttempts): $e');
+      } finally {
+        // Cancels the request if this attempt timed out, and is harmless once
+        // a response has arrived - a HEAD has no body left to read.
+        client.close();
       }
 
       if (attempt < _maxAttempts) {

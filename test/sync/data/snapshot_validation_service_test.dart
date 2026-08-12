@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/services/config/selected_gateway.dart';
@@ -8,6 +10,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart';
 import 'package:http/testing.dart';
 import 'package:mocktail/mocktail.dart';
+
+/// Records whether the service closed it, which is how a timed-out request is
+/// cancelled without the `AbortableRequest` that `http` 1.5.0 would provide.
+class _CloseTrackingClient extends BaseClient {
+  _CloseTrackingClient(this._inner);
+
+  final Client _inner;
+  bool closed = false;
+
+  @override
+  Future<StreamedResponse> send(BaseRequest request) => _inner.send(request);
+
+  @override
+  void close() {
+    closed = true;
+    _inner.close();
+  }
+}
 
 class _MockConfigService extends Mock implements ConfigService {}
 
@@ -98,7 +118,7 @@ void main() {
 
         final service = SnapshotValidationService(
           configService: configService,
-          httpClient: client,
+          clientFactory: () => client,
           retryDelays: noDelays(3),
         );
 
@@ -115,7 +135,7 @@ void main() {
 
         final service = SnapshotValidationService(
           configService: configService,
-          httpClient: client,
+          clientFactory: () => client,
           retryDelays: noDelays(3),
         );
 
@@ -134,7 +154,7 @@ void main() {
 
         final service = SnapshotValidationService(
           configService: configService,
-          httpClient: client,
+          clientFactory: () => client,
           retryDelays: noDelays(3),
         );
 
@@ -156,7 +176,7 @@ void main() {
 
         final service = SnapshotValidationService(
           configService: configService,
-          httpClient: client,
+          clientFactory: () => client,
           retryDelays: noDelays(3),
         );
 
@@ -180,7 +200,7 @@ void main() {
 
         final service = SnapshotValidationService(
           configService: configService,
-          httpClient: client,
+          clientFactory: () => client,
           retryDelays: noDelays(3),
           headTimeout: const Duration(milliseconds: 100),
         );
@@ -190,6 +210,45 @@ void main() {
           hasLength(1),
         );
         expect(calls, 2);
+      });
+
+      /// `Future.timeout` abandons the response but does not cancel the
+      /// request behind it. Left pending, four attempts across three
+      /// concurrent validations is up to twelve requests outstanding against a
+      /// gateway already too slow to answer one - and on the web, where
+      /// browsers cap connections per host at around six, those would crowd
+      /// out the reads sync makes to the same gateway next. Closing the
+      /// client is what cancels them.
+      test('cancels a timed-out probe before the next one', () async {
+        final clients = <_CloseTrackingClient>[];
+
+        final service = SnapshotValidationService(
+          configService: configService,
+          clientFactory: () {
+            final client = _CloseTrackingClient(
+              MockClient((_) async {
+                // The first probe never answers; the second does.
+                if (clients.length == 1) {
+                  await Completer<Response>().future;
+                }
+                return Response('', 200);
+              }),
+            );
+            clients.add(client);
+            return client;
+          },
+          retryDelays: noDelays(3),
+          headTimeout: const Duration(milliseconds: 100),
+        );
+
+        expect(
+          await service.validateSnapshotItems([_FakeSnapshotItem()]),
+          hasLength(1),
+        );
+        expect(clients, hasLength(2), reason: 'the probe was retried');
+        expect(clients.first.closed, isTrue,
+            reason: 'the abandoned request must be cancelled, not left '
+                'pending against a struggling gateway');
       });
 
       /// The band this change exists for. Measured against turbo-gateway,
@@ -208,7 +267,7 @@ void main() {
 
         final service = SnapshotValidationService(
           configService: configService,
-          httpClient: client,
+          clientFactory: () => client,
           retryDelays: noDelays(3),
           headTimeout: const Duration(seconds: 1),
         );
