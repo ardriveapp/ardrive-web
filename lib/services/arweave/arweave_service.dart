@@ -1112,11 +1112,25 @@ class ArweaveService {
   /// by that owner.
   ///
   /// Returns `null` if no valid drive is found or the provided `driveKey` is incorrect.
+  /// Reads the drive entity for [driveId].
+  ///
+  /// [configuredGatewayOnly] picks which read policy the data fetch uses.
+  /// Leave it false for a single read a user is waiting on and can retry -
+  /// attaching a drive by id - where breadth wins and the full waterfall is
+  /// worth its cost.
+  ///
+  /// Pass it for reads on the login and drive-discovery path. Those look like
+  /// user-initiated reads and behave like sync: they run at startup, several
+  /// at a time, with the user watching a spinner. The waterfall is the wrong
+  /// trade there - it walks up to four gateways serially and asks
+  /// `ArioSDK.getGateways()` for the list, which costs a Solana RPC on the
+  /// startup path. See [DataGatewayFallback.fetchDataForSync].
   Future<DriveEntity?> getLatestDriveEntityWithId(
     String driveId, {
     String? driveOwner,
     SecretKey? driveKey,
     int maxRetries = defaultMaxRetries,
+    bool configuredGatewayOnly = false,
   }) async {
     driveOwner ??= await getOwnerForDriveEntityWithId(driveId);
 
@@ -1165,7 +1179,10 @@ class ArweaveService {
       // Use cached bytes if available (e.g., from getUniqueUserDriveEntities)
       final cachedBytes = _cachedEntityDataBytes[fileTx.id];
       final entityBytes = cachedBytes ??
-          (await _gatewayFallback.fetchData(fileTx.id, client)).bodyBytes;
+          (await (configuredGatewayOnly
+                  ? _gatewayFallback.fetchDataForSync(fileTx.id, client)
+                  : _gatewayFallback.fetchData(fileTx.id, client)))
+              .bodyBytes;
 
       try {
         return await DriveEntity.fromTransaction(

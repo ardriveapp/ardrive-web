@@ -187,6 +187,7 @@ void main() {
               driveKey: any(named: 'driveKey'),
               maxRetries: any(named: 'maxRetries'),
               driveOwner: any(named: 'driveOwner'),
+              configuredGatewayOnly: any(named: 'configuredGatewayOnly'),
             ),
           ).thenAnswer(
             (invocation) => Future.value(
@@ -259,6 +260,7 @@ void main() {
               driveKey: any(named: 'driveKey'),
               maxRetries: any(named: 'maxRetries'),
               driveOwner: any(named: 'driveOwner'),
+              configuredGatewayOnly: any(named: 'configuredGatewayOnly'),
             ),
           ).thenAnswer(
             (invocation) => Future.value(
@@ -674,6 +676,7 @@ void main() {
             driveKey: any(named: 'driveKey'),
             maxRetries: any(named: 'maxRetries'),
             driveOwner: any(named: 'driveOwner'),
+            configuredGatewayOnly: any(named: 'configuredGatewayOnly'),
           ),
         ).thenAnswer((invocation) => Future.value(DriveEntity(
               id: 'some_id',
@@ -746,6 +749,7 @@ void main() {
             driveKey: any(named: 'driveKey'),
             maxRetries: any(named: 'maxRetries'),
             driveOwner: any(named: 'driveOwner'),
+            configuredGatewayOnly: any(named: 'configuredGatewayOnly'),
           ),
         ).thenAnswer((invocation) => Future.value(DriveEntity(
               id: 'some_id',
