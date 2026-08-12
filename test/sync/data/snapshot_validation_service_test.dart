@@ -57,6 +57,7 @@ void main() {
       final service = SnapshotValidationService(
         configService: configService,
         retryDelays: List<Duration>.filled(3, Duration.zero),
+        headTimeout: const Duration(milliseconds: 100),
       );
 
       // A nonempty list, so validation actually runs: an empty one returns
@@ -171,8 +172,8 @@ void main() {
         final client = MockClient((_) async {
           calls++;
           if (calls == 1) {
-            // Outlives the 5s head timeout.
-            await Future<void>.delayed(const Duration(seconds: 6));
+            // Outlives the injected timeout below.
+            await Future<void>.delayed(const Duration(milliseconds: 400));
           }
           return Response('', 200);
         });
@@ -181,6 +182,7 @@ void main() {
           configService: configService,
           httpClient: client,
           retryDelays: noDelays(3),
+          headTimeout: const Duration(milliseconds: 100),
         );
 
         expect(
@@ -188,6 +190,35 @@ void main() {
           hasLength(1),
         );
         expect(calls, 2);
+      });
+
+      /// The band this change exists for. Measured against turbo-gateway,
+      /// healthy answers arrived at 5.85s and 6.08s - a gateway that had to
+      /// fetch before it could answer, not a failure. The old 5s cutoff threw
+      /// those away and re-walked the whole block range instead.
+      test('accepts an answer that is slow but arrives within the timeout',
+          () async {
+        var calls = 0;
+        final client = MockClient((_) async {
+          calls++;
+          // Comfortably slow, but inside the budget.
+          await Future<void>.delayed(const Duration(milliseconds: 300));
+          return Response('', 200);
+        });
+
+        final service = SnapshotValidationService(
+          configService: configService,
+          httpClient: client,
+          retryDelays: noDelays(3),
+          headTimeout: const Duration(seconds: 1),
+        );
+
+        expect(
+          await service.validateSnapshotItems([_FakeSnapshotItem()]),
+          hasLength(1),
+          reason: 'a slow gateway is not an unavailable snapshot',
+        );
+        expect(calls, 1, reason: 'no retry needed when the answer arrives');
       });
     });
   });

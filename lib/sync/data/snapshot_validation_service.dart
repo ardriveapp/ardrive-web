@@ -9,8 +9,24 @@ import 'package:http/http.dart' as http;
 class SnapshotValidationService {
   final ConfigService _configService;
 
-  static const _headTimeout = Duration(seconds: 5);
+  /// How long one probe waits before being abandoned.
+  ///
+  /// Ten seconds, not five. Measured across three live snapshots of one drive
+  /// (Aug 2026), turbo-gateway answered 12 probes in 0.68-6.08s with a single
+  /// hang - and two of those, at 5.85s and 6.08s, were healthy answers that a
+  /// 5s cutoff threw away. Nothing about that band is a failure; it is a
+  /// gateway that had to fetch before it could answer.
+  ///
+  /// It is not raised further than that. A hung read here does not come back
+  /// in 20s or 30s - it did not come back within 45 - so a bigger number buys
+  /// no successes and delays every rejection. Ten clears the observed healthy
+  /// band with margin and stops there; the retries below cover the rest.
+  static const _defaultHeadTimeout = Duration(seconds: 10);
+
   static const _maxConcurrentValidations = 3;
+
+  /// Injectable so a timeout can be exercised in a test without spending one.
+  final Duration _headTimeout;
 
   /// Delay *before* each retry, indexed by the attempt just finished.
   ///
@@ -56,9 +72,11 @@ class SnapshotValidationService {
     required ConfigService configService,
     @visibleForTesting http.Client? httpClient,
     @visibleForTesting List<Duration>? retryDelays,
+    @visibleForTesting Duration? headTimeout,
   })  : _configService = configService,
         _httpClient = httpClient ?? http.Client(),
-        _retryDelays = retryDelays ?? _defaultRetryDelays;
+        _retryDelays = retryDelays ?? _defaultRetryDelays,
+        _headTimeout = headTimeout ?? _defaultHeadTimeout;
 
   Future<List<SnapshotItem>> validateSnapshotItems(
     List<SnapshotItem> snapshotItems,
