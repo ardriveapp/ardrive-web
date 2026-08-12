@@ -815,8 +815,19 @@ class ArweaveService {
   /// Uses [DataGatewayFallback.fetchDataForSync] — configured gateway only,
   /// one retry, one last-resort hop, no GAR and therefore no Solana RPC.
   /// Download/preview/thumbnail/share paths keep the full waterfall.
-  Future<Uint8List> getEntityDataFromNetwork({required String txId}) async {
-    final Response data = await _gatewayFallback.fetchDataForSync(txId, client);
+  /// [largeBody] gives the read the budget a snapshot needs. The default is
+  /// sized for metadata - a few hundred bytes - and a snapshot body is tens of
+  /// megabytes, which cannot finish inside it at any realistic connection
+  /// speed. See [DataGatewayFallback.largeBodyRequestTimeout].
+  Future<Uint8List> getEntityDataFromNetwork({
+    required String txId,
+    bool largeBody = false,
+  }) async {
+    final Response data = await _gatewayFallback.fetchDataForSync(
+      txId,
+      client,
+      largeBody: largeBody,
+    );
     return data.bodyBytes;
   }
 
