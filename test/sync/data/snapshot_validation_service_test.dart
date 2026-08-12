@@ -130,8 +130,18 @@ void main() {
         expect(calls, 4);
       });
 
-      test('a 302 to a sandbox host counts as available', () async {
-        final client = MockClient((_) async => Response('', 302));
+      /// A gateway 302s `/{txId}` to its own sandbox subdomain and serves the
+      /// body there, and every client this runs on follows that. A 302 that
+      /// survives to be inspected is therefore a chain that did not complete,
+      /// so the body was never reached - and one of this user's dead
+      /// snapshots answers exactly that way, 302 on the first hop and 404 on
+      /// the host it points at.
+      test('an unfollowed redirect is not proof the body is there', () async {
+        var calls = 0;
+        final client = MockClient((_) async {
+          calls++;
+          return Response('', 302);
+        });
 
         final service = SnapshotValidationService(
           configService: configService,
@@ -141,8 +151,10 @@ void main() {
 
         expect(
           await service.validateSnapshotItems([_FakeSnapshotItem()]),
-          hasLength(1),
+          isEmpty,
+          reason: 'availability is unproven until the body host answers',
         );
+        expect(calls, 4, reason: 'a 302 is transient, so it is retried');
       });
 
       test('spends every attempt before rejecting', () async {

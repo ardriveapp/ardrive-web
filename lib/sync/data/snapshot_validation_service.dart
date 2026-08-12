@@ -152,7 +152,20 @@ class SnapshotValidationService {
                   _headTimeout,
                 );
 
-        if (response.statusCode == 200 || response.statusCode == 302) {
+        // Only a completed redirect chain counts.
+        //
+        // A gateway answers `/{txId}` with a 302 to its own sandbox subdomain
+        // and serves the body from there, and every client this runs on
+        // follows that: `BrowserClient` cannot be told not to, and `IOClient`
+        // follows by default. So a 302 that reaches this line is a chain that
+        // did *not* complete - the redirect limit was hit, or following was
+        // disabled - which is precisely the case where the body was never
+        // reached and availability is unproven.
+        //
+        // Accepting it anyway would validate exactly the snapshot this
+        // service exists to reject: one of this user's dead snapshots answers
+        // 302 on the first hop and 404 on the sandbox host it points at.
+        if (response.statusCode == 200) {
           return true;
         }
 
