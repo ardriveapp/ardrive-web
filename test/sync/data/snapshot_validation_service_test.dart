@@ -5,6 +5,8 @@ import 'package:ardrive/sync/data/snapshot_validation_service.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart';
+import 'package:http/testing.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockConfigService extends Mock implements ConfigService {}
@@ -50,7 +52,12 @@ void main() {
     test('rejects a snapshot without ever asking for a gateway list',
         () async {
       final arioSDK = _MockArioSDK();
-      final service = SnapshotValidationService(configService: configService);
+      // Zero delays: this asserts the GAR is never consulted, not the backoff,
+      // and the real delays are measured in seconds.
+      final service = SnapshotValidationService(
+        configService: configService,
+        retryDelays: List<Duration>.filled(3, Duration.zero),
+      );
 
       // A nonempty list, so validation actually runs: an empty one returns
       // before the loop and would assert nothing at all.
@@ -67,6 +74,121 @@ void main() {
       // the compile-time signature above that proves the branch is gone; this
       // documents the intent at the call site.
       verifyZeroInteractions(arioSDK);
+    });
+
+    /// Measured against turbo-gateway.com (Aug 2026), a snapshot HEAD is
+    /// bimodal: sub-second when the gateway can answer from cache, and 23s or
+    /// no answer at all within 45s when it cannot. Two attempts lose a
+    /// perfectly good snapshot to that, and rejecting one costs a GraphQL
+    /// re-walk of its whole block range.
+    group('retry budget', () {
+      /// Zero delays so the test does not spend the real backoff, which is
+      /// deliberately measured in seconds.
+      List<Duration> noDelays(int retries) =>
+          List<Duration>.filled(retries, Duration.zero);
+
+      test('keeps probing past the old two-attempt budget', () async {
+        var calls = 0;
+        final client = MockClient((_) async {
+          calls++;
+          // Fails more times than the previous budget allowed for.
+          return calls < 4 ? Response('', 500) : Response('', 200);
+        });
+
+        final service = SnapshotValidationService(
+          configService: configService,
+          httpClient: client,
+          retryDelays: noDelays(3),
+        );
+
+        final verified =
+            await service.validateSnapshotItems([_FakeSnapshotItem()]);
+
+        expect(verified, hasLength(1),
+            reason: 'a snapshot that answers on the 4th probe is still usable');
+        expect(calls, 4);
+      });
+
+      test('a 302 to a sandbox host counts as available', () async {
+        final client = MockClient((_) async => Response('', 302));
+
+        final service = SnapshotValidationService(
+          configService: configService,
+          httpClient: client,
+          retryDelays: noDelays(3),
+        );
+
+        expect(
+          await service.validateSnapshotItems([_FakeSnapshotItem()]),
+          hasLength(1),
+        );
+      });
+
+      test('spends every attempt before rejecting', () async {
+        var calls = 0;
+        final client = MockClient((_) async {
+          calls++;
+          return Response('', 404);
+        });
+
+        final service = SnapshotValidationService(
+          configService: configService,
+          httpClient: client,
+          retryDelays: noDelays(3),
+        );
+
+        expect(
+          await service.validateSnapshotItems([_FakeSnapshotItem()]),
+          isEmpty,
+        );
+        expect(calls, 4);
+      });
+
+      /// A refusal is a decision the same host repeats, so spending the budget
+      /// on it only delays the GraphQL fallback.
+      test('gives up immediately on a non-retryable refusal', () async {
+        var calls = 0;
+        final client = MockClient((_) async {
+          calls++;
+          return Response('', 403);
+        });
+
+        final service = SnapshotValidationService(
+          configService: configService,
+          httpClient: client,
+          retryDelays: noDelays(3),
+        );
+
+        expect(
+          await service.validateSnapshotItems([_FakeSnapshotItem()]),
+          isEmpty,
+        );
+        expect(calls, 1);
+      });
+
+      test('a timeout is retried like any other transient failure', () async {
+        var calls = 0;
+        final client = MockClient((_) async {
+          calls++;
+          if (calls == 1) {
+            // Outlives the 5s head timeout.
+            await Future<void>.delayed(const Duration(seconds: 6));
+          }
+          return Response('', 200);
+        });
+
+        final service = SnapshotValidationService(
+          configService: configService,
+          httpClient: client,
+          retryDelays: noDelays(3),
+        );
+
+        expect(
+          await service.validateSnapshotItems([_FakeSnapshotItem()]),
+          hasLength(1),
+        );
+        expect(calls, 2);
+      });
     });
   });
 }

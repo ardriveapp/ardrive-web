@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class SnapshotValidationService {
@@ -11,19 +12,53 @@ class SnapshotValidationService {
   static const _headTimeout = Duration(seconds: 5);
   static const _maxConcurrentValidations = 3;
 
-  /// Attempts against the configured gateway before a snapshot is rejected.
+  /// Delay *before* each retry, indexed by the attempt just finished.
   ///
-  /// Two, the same budget a sync metadata read gets - and the case for it is
-  /// stronger here. Losing a metadata read costs one entity; losing a snapshot
-  /// costs its entire block range, which sync then has to re-query over
-  /// GraphQL. The expensive failure should not be the one with fewer chances.
-  static const _maxAttempts = 2;
+  /// Its length sets the retry budget. Losing a metadata read costs one
+  /// entity; losing a snapshot costs its entire block range, which sync then
+  /// re-queries over GraphQL - for an old drive that is thousands of
+  /// transactions and the ghost folders that come with them. The expensive
+  /// failure should not be the one given the fewest chances, so this budget is
+  /// deliberately larger than a metadata read's.
+  ///
+  /// Measured against turbo-gateway.com on a live snapshot (Aug 2026), the
+  /// response time is bimodal rather than merely slow: 0.69s, 0.96s and 22.9s
+  /// on three tries, and no response at all within 45s on the other two. The
+  /// shape is consistent with a cold read fetching the data before it can
+  /// answer, and answering from cache once it has.
+  ///
+  /// That shape decides the strategy. A longer timeout is the wrong lever - it
+  /// pays the tail on every failure and still cannot outwait an unbounded one.
+  /// Short probes are right, but only if they are spread out: retrying 300ms
+  /// after a timeout just lands inside the same cold read and hangs again,
+  /// spending the whole budget to be told the same thing. These delays put the
+  /// four probes at roughly t=0s, 6s, 14s and 25s, so the later ones get a
+  /// chance to land after a cold read has finished and the answer is cached.
+  ///
+  /// Worst case is ~30s for a snapshot that never answers. That is the right
+  /// trade against re-walking its block range, which costs minutes.
+  static const _defaultRetryDelays = <Duration>[
+    Duration(seconds: 1),
+    Duration(seconds: 3),
+    Duration(seconds: 6),
+  ];
 
-  static const _retryDelay = Duration(milliseconds: 300);
+  final List<Duration> _retryDelays;
+
+  /// One probe, plus one more after each delay.
+  int get _maxAttempts => _retryDelays.length + 1;
+
+  /// Injectable so the retry behaviour can be tested without a network and
+  /// without spending its real delays in wall-clock time.
+  final http.Client _httpClient;
 
   SnapshotValidationService({
     required ConfigService configService,
-  }) : _configService = configService;
+    @visibleForTesting http.Client? httpClient,
+    @visibleForTesting List<Duration>? retryDelays,
+  })  : _configService = configService,
+        _httpClient = httpClient ?? http.Client(),
+        _retryDelays = retryDelays ?? _defaultRetryDelays;
 
   Future<List<SnapshotItem>> validateSnapshotItems(
     List<SnapshotItem> snapshotItems,
@@ -63,18 +98,21 @@ class SnapshotValidationService {
 
   /// Validates a snapshot is available on the configured gateway.
   ///
-  /// Single HEAD against the configured gateway; anything other than 200/302
-  /// rejects the snapshot and sync falls back to GQL for that range, which is
-  /// correct (just slower) in every case.
+  /// Up to [_maxAttempts] HEADs against the configured gateway, spaced by
+  /// [_retryDelays]; anything other than 200/302 on every one of them rejects
+  /// the snapshot, and sync falls back to GQL for that range - correct, but
+  /// expensive enough that it is worth several probes to avoid.
   ///
-  /// There is deliberately no GAR fallback here. It only ever ran for
-  /// transient errors, and it cost a Solana RPC via `ArioSDK.getGateways()` —
-  /// the sync path must not issue one. Rejecting a snapshot is cheap and safe;
-  /// paying a Solana round-trip to maybe save a GQL range is not.
+  /// There is deliberately no GAR fallback here, and no second host of any
+  /// kind. The GAR cost a Solana RPC via `ArioSDK.getGateways()`, which the
+  /// sync path must not issue; reaching past the configured gateway to a
+  /// hardcoded one is a product decision that has been made the other way.
+  /// Spending more attempts on the configured gateway is the resilience that
+  /// remains available, which is why the budget here is what it is.
   Future<bool> _validateSnapshot(String txId, String primaryUrl) async {
     for (var attempt = 1; attempt <= _maxAttempts; attempt++) {
       try {
-        final response = await http
+        final response = await _httpClient
             .head(Uri.parse('$primaryUrl/$txId'))
             .timeout(_headTimeout);
 
@@ -105,7 +143,7 @@ class SnapshotValidationService {
       }
 
       if (attempt < _maxAttempts) {
-        await Future.delayed(_retryDelay);
+        await Future.delayed(_retryDelays[attempt - 1]);
       }
     }
 
