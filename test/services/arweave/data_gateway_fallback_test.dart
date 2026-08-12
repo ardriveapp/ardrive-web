@@ -183,14 +183,14 @@ void main() {
     /// quietly becomes the real limit and the second attempt gets less time
     /// than the first - a retry weaker than the try it is retrying.
     test('the total budget outlasts every attempt it allows', () {
-      final attemptsCost = DataGatewayFallback.syncRequestTimeoutForTest *
-              DataGatewayFallback.syncMaxAttempts +
-          DataGatewayFallback.syncRetryDelayForTest *
-              (DataGatewayFallback.syncMaxAttempts - 1);
+      const budgets = DataGatewayFallback.syncBudgets;
+      const attempts = DataGatewayFallback.syncMaxAttempts;
 
       expect(
-        DataGatewayFallback.syncTotalFetchTimeoutForTest,
-        greaterThan(attemptsCost),
+        budgets.total,
+        greaterThan(
+          budgets.request * attempts + budgets.retryDelay * (attempts - 1),
+        ),
         reason: 'the cap must not truncate the last attempt',
       );
     });

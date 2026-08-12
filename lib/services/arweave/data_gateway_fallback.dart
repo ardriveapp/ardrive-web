@@ -5,9 +5,9 @@ import 'package:ardrive/download/download_exceptions.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ario_sdk/ario_sdk.dart';
-import 'package:flutter/foundation.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/arweave.dart' as arweave_pkg;
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart';
 
 /// Provides data gateway fallback resilience.
@@ -95,14 +95,15 @@ class DataGatewayFallback {
   /// budget in its own right, so it sits just above that sum.
   static const _syncTotalFetchTimeout = Duration(seconds: 22);
 
-  /// Exposed so a test can assert the relationship between these budgets
-  /// rather than restate their values, which is what drifted.
+  /// The sync read budgets, together, so a test can assert the relationship
+  /// between them rather than restate their values - restating them is what
+  /// drifted when [_requestTimeout] changed and the cap did not.
   @visibleForTesting
-  static const syncRequestTimeoutForTest = _requestTimeout;
-  @visibleForTesting
-  static const syncRetryDelayForTest = _syncRetryDelay;
-  @visibleForTesting
-  static const syncTotalFetchTimeoutForTest = _syncTotalFetchTimeout;
+  static const syncBudgets = (
+    request: _requestTimeout,
+    retryDelay: _syncRetryDelay,
+    total: _syncTotalFetchTimeout,
+  );
 
   /// Cached gateway list — shared with other services (e.g.
   /// SnapshotValidationService) to avoid duplicate Solana RPC calls.
