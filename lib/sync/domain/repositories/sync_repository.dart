@@ -1658,8 +1658,12 @@ class _SyncRepository implements SyncRepository {
       // thousands of transactions and minutes of work. At info level
       // deliberately: when a sync is inexplicably slow, this is the first
       // thing worth seeing, and it is one line per drive.
+      // `Range.end` is inclusive - `isInRange` tests `value <= end`, and
+      // `union` treats `end + 1 == start` as contiguous - so the count has to
+      // include both endpoints. Without the +1 a single-block range reports
+      // zero, which is the one number this line must never print wrongly.
       int blocksIn(HeightRange r) =>
-          r.rangeSegments.fold(0, (sum, s) => sum + (s.end - s.start));
+          r.rangeSegments.fold(0, (sum, s) => sum + (s.end - s.start + 1));
 
       final fromSnapshots = blocksIn(snapshotDriveHistory.subRanges);
       final fromGql = blocksIn(gqlDriveHistorySubRanges);
