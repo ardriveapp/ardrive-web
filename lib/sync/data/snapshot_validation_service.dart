@@ -200,8 +200,8 @@ class SnapshotValidationService {
       }
     }
 
-    logger.w('Snapshot $txId rejected after $_maxAttempts attempts, '
-        'falling back to GQL for its range');
+    logger.w('[snapshot] $txId unreachable on $primaryUrl after '
+        '$_maxAttempts attempts, so its block range falls back to GraphQL');
 
     return false;
   }

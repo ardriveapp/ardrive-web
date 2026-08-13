@@ -294,6 +294,8 @@ class ArweaveService {
     required String ownerAddress,
   }) async* {
     String cursor = '';
+    var yielded = 0;
+    var page = 0;
 
     while (true) {
       try {
@@ -308,6 +310,17 @@ class ArweaveService {
           ),
         );
         final edges = snapshotEntityHistoryQuery.data!.transactions.edges;
+        page++;
+        yielded += edges.length;
+
+        // What the index actually returned, before anything downstream
+        // filters it. This is the number that separates "the gateway did not
+        // tell us about the snapshot" from "we knew about it and could not
+        // use it" - the two have completely different fixes, and without this
+        // they look identical from the outside.
+        logger.i('[snapshot] gql page $page for $driveIds (min block '
+            '$minBlockHeight): ${edges.length} found');
+
         for (final edge in edges) {
           yield edge.node;
         }
@@ -324,11 +337,22 @@ class ArweaveService {
           break;
         }
       } catch (e) {
-        logger.e('Error fetching snapshots for drives $driveIds', e);
-        logger.i('These drives will fall back to GQL');
+        // Note what was already yielded: the caller keeps those, so a failure
+        // here can leave a drive with *some* of its snapshots - typically the
+        // newest, since the query is HEIGHT_DESC - rather than none. That
+        // reads downstream as a smaller snapshot than expected rather than an
+        // error, so the count matters as much as the exception.
+        logger.e(
+          '[snapshot] gql failed for $driveIds after $yielded found '
+          'across $page page(s); those already found are still used, the '
+          'rest of the range falls back to GraphQL',
+          e,
+        );
         break;
       }
     }
+
+    logger.i('[snapshot] gql returned $yielded total for $driveIds');
   }
 
   /// Probes which drives have any new transactions since [minBlockHeight].

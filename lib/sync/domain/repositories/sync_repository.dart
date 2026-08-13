@@ -1588,10 +1588,9 @@ class _SyncRepository implements SyncRepository {
     // Wrap snapshot processing in try/finally to ensure disposal
     try {
       if (_configService.config.enableSyncFromSnapshot) {
-        logger.i('Syncing from snapshot: ${drive.id}');
-
         // Use prefetched snapshots if available (batched query),
         // otherwise fall back to per-drive query
+        final source = prefetchedSnapshots != null ? 'prefetched' : 'per-drive';
         final snapshotsStream = prefetchedSnapshots != null
             ? Stream.fromIterable(prefetchedSnapshots)
             : _arweave.getAllSnapshotsOfDrive(
@@ -1603,10 +1602,29 @@ class _SyncRepository implements SyncRepository {
           arweave: _arweave,
         ).toList();
 
+        logger.i('[snapshot] $driveId: ${snapshotItems.length} usable '
+            'from $source source (above block $lastBlockHeight)');
+
+        final beforeValidation = snapshotItems.length;
         List<SnapshotItem> snapshotsVerified = await _snapshotValidationService
             .validateSnapshotItems(snapshotItems);
 
+        if (snapshotsVerified.length != beforeValidation) {
+          final rejected = snapshotItems
+              .where((i) => !snapshotsVerified.contains(i))
+              .map((i) => i.txId)
+              .join(', ');
+          logger.w('[snapshot] $driveId: '
+              '${snapshotsVerified.length}/$beforeValidation available; '
+              'unreachable: $rejected');
+        } else if (beforeValidation > 0) {
+          logger.i('[snapshot] $driveId: all $beforeValidation available');
+        }
+
         snapshotItems = snapshotsVerified;
+      } else {
+        logger.i('[snapshot] $driveId: disabled by config '
+            '(enableSyncFromSnapshot)');
       }
 
       final SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
@@ -1633,6 +1651,26 @@ class _SyncRepository implements SyncRepository {
         driveId: driveId,
         ownerAddress: ownerAddress,
       );
+
+      // The line that says whether this sync took the fast path. Blocks served
+      // from a snapshot are read from one already-downloaded body; blocks left
+      // to GraphQL are walked a page at a time, which for an old drive is
+      // thousands of transactions and minutes of work. At info level
+      // deliberately: when a sync is inexplicably slow, this is the first
+      // thing worth seeing, and it is one line per drive.
+      int blocksIn(HeightRange r) =>
+          r.rangeSegments.fold(0, (sum, s) => sum + (s.end - s.start));
+
+      final fromSnapshots = blocksIn(snapshotDriveHistory.subRanges);
+      final fromGql = blocksIn(gqlDriveHistorySubRanges);
+
+      if (snapshotItems.isEmpty) {
+        logger.i('[snapshot] $driveId: none usable - walking all $fromGql '
+            'blocks over GraphQL');
+      } else {
+        logger.i('[snapshot] $driveId: $fromSnapshots blocks from '
+            '${snapshotItems.length} snapshot(s), $fromGql over GraphQL');
+      }
 
       logger.d(
           'Total range to query for: ${totalRangeToQueryFor.rangeSegments}\n'
