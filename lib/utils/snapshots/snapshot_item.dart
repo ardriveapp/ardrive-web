@@ -90,8 +90,18 @@ abstract class SnapshotItem implements SegmentedGQLData {
     required ArweaveService arweave,
     @visibleForTesting String? fakeSource,
   }) async* {
+    // Blocks already synced, which a snapshot need not cover again.
+    //
+    // Guarded on `> 0` rather than just non-null. A never-synced drive arrives
+    // here with 0, and `Range(0, 0)` is not "nothing is obscured" - `Range` is
+    // inclusive at both ends, so it obscures block 0. The snapshot's range
+    // then starts at 1, the difference against the total range leaves a
+    // one-block hole, and sync spends a whole GraphQL query asking about the
+    // genesis block, which cannot hold an ArFS transaction. No data was ever
+    // at risk; it is a round trip per drive per first sync, for nothing.
     HeightRange obscuredByAccumulator = HeightRange(rangeSegments: [
-      if (lastBlockHeight != null) Range(start: 0, end: lastBlockHeight),
+      if (lastBlockHeight != null && lastBlockHeight > 0)
+        Range(start: 0, end: lastBlockHeight),
     ]);
 
     await for (SnapshotEntityTransaction item in itemsStream) {

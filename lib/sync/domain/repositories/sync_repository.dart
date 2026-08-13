@@ -415,10 +415,12 @@ class _SyncRepository implements SyncRepository {
               ? syncedHeights.reduce(min)
               : 0;
 
+          var queryFailed = false;
           final snapshotsStream = _arweave.getAllSnapshotsForDrives(
             ownerDrives.map((d) => d.id).toList(),
             minBlock,
             ownerAddress: entry.key,
+            onQueryFailure: () => queryFailed = true,
           );
 
           await for (final snapshot in snapshotsStream) {
@@ -434,11 +436,31 @@ class _SyncRepository implements SyncRepository {
               logger.w('Snapshot ${snapshot.id} has no Drive-Id tag, skipping');
             }
           }
+
+          // Record an answer for every drive the query covered, including the
+          // ones it found nothing for. `_syncDrive` reads a missing entry as
+          // "nobody asked" and asks again per drive, so without this a drive
+          // with no snapshots pays for a second, identical query on every
+          // sync - the batch already told us the answer was none.
+          //
+          // Only when the query ran to completion: if it gave up part-way, a
+          // drive it never reached would be recorded as having none, and the
+          // per-drive fallback that exists for exactly that case would be
+          // suppressed.
+          if (!queryFailed) {
+            for (final drive in ownerDrives) {
+              prefetchedSnapshots.putIfAbsent(drive.id, () => []);
+            }
+          }
         }
 
+        final withSnapshots =
+            prefetchedSnapshots.values.where((v) => v.isNotEmpty).length;
         logger.i(
-            'Prefetched ${prefetchedSnapshots.values.expand((v) => v).length} '
-            'snapshots across ${prefetchedSnapshots.length} drives');
+            '[snapshot] prefetched '
+            '${prefetchedSnapshots.values.expand((v) => v).length} '
+            'for $withSnapshots of ${prefetchedSnapshots.length} drive(s); '
+            'the rest are known to have none and will not be re-queried');
       } catch (e) {
         logger.w('Snapshot prefetch failed, will fetch per-drive: $e');
         prefetchedSnapshots.clear();

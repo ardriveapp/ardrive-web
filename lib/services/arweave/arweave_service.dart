@@ -288,10 +288,18 @@ class ArweaveService {
   /// Caller should filter results by Drive-Id tag and pass each drive's
   /// subset to [SnapshotItem.instantiateAll] with that drive's own
   /// lastBlockHeight to preserve per-drive state isolation.
+  /// [onQueryFailure] fires if the query gave up part-way.
+  ///
+  /// The stream ends the same way either way - a failure is logged and the
+  /// iteration stops - so a caller cannot otherwise tell "this drive has no
+  /// snapshots" from "we stopped asking". The batched prefetch needs that
+  /// distinction: without it, every snapshot-less drive looks unanswered and
+  /// gets asked again individually.
   Stream<SnapshotEntityTransaction> getAllSnapshotsForDrives(
     List<String> driveIds,
     int? minBlockHeight, {
     required String ownerAddress,
+    void Function()? onQueryFailure,
   }) async* {
     String cursor = '';
     var yielded = 0;
@@ -348,6 +356,7 @@ class ArweaveService {
           'rest of the range falls back to GraphQL',
           e,
         );
+        onQueryFailure?.call();
         break;
       }
     }
