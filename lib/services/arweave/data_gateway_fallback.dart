@@ -7,6 +7,7 @@ import 'package:ardrive/utils/logger.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/arweave.dart' as arweave_pkg;
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart';
 
 /// Provides data gateway fallback resilience.
@@ -35,7 +36,36 @@ class DataGatewayFallback {
 
   static const _maxGarFallbacks = 2;
   static const _garListTimeout = Duration(seconds: 5);
-  static const _requestTimeout = Duration(seconds: 5);
+  /// How long one gateway read waits before being abandoned.
+  ///
+  /// Ten seconds, not five. Sync reads run through [ArweaveService.runPooled],
+  /// a worker pool with a shared cursor, so a read that hangs occupies one of
+  /// its `maxConcurrentDataFetches` slots while the other workers keep pulling
+  /// new items. A longer wait therefore costs throughput on one slot rather
+  /// than stalling the sync, which is what makes it affordable to be patient
+  /// enough for a gateway that is a beat behind rather than broken.
+  static const _requestTimeout = Duration(seconds: 10);
+
+  /// Per-read budget for a body measured in tens of megabytes.
+  ///
+  /// [_requestTimeout] is sized for the metadata reads that dominate sync -
+  /// a few hundred bytes each, hundreds of them. A snapshot is the same call
+  /// with four orders of magnitude more body: this drive's newest is 43.9 MiB,
+  /// and a warm gateway serves it in ~8s at ~5.7 MB/s. Under the metadata
+  /// budget it could never finish, on any connection slower than ~9 MB/s, no
+  /// matter how many times it was retried.
+  ///
+  /// Sixty seconds covers that body down to about 0.75 MB/s. Being generous is
+  /// cheap here in a way it is not for metadata: this is one request per
+  /// snapshot rather than one per entity, its availability has already been
+  /// established by a HEAD before the download starts
+  /// (`SnapshotValidationService`), and the alternative to waiting is
+  /// re-walking the snapshot's whole block range over GraphQL, which costs
+  /// minutes.
+  static const largeBodyRequestTimeout = Duration(seconds: 60);
+
+  /// Total budget for a large-body read, covering both attempts.
+  static const largeBodyTotalTimeout = Duration(seconds: 130);
   static const _totalFetchTimeout = Duration(seconds: 25);
   static const _hedgeDelay = Duration(milliseconds: 1500);
   static const _downloadTimeout = Duration(seconds: 15);
@@ -53,20 +83,47 @@ class DataGatewayFallback {
   /// Delay before the single same-gateway retry in [fetchDataForSync].
   static const _syncRetryDelay = Duration(milliseconds: 300);
 
-  /// Upper bound for one sync read. By construction the attempts already sum
-  /// to ~10.3s; this only guards against an attempt that outlives its own
-  /// timeout.
-  static const _syncTotalFetchTimeout = Duration(seconds: 15);
+  /// Upper bound for one sync read.
+  ///
+  /// This has to clear what the attempts themselves can spend, or it silently
+  /// becomes the real limit: [syncMaxAttempts] attempts at [_requestTimeout]
+  /// plus one [_syncRetryDelay] is 20.3s, so a 15s cap - correct when an
+  /// attempt was 5s - would cut the second attempt off at 4.7s and make the
+  /// retry weaker than the try it was retrying.
+  ///
+  /// It is a backstop against an attempt that outlives its own timeout, not a
+  /// budget in its own right, so it sits just above that sum.
+  static const _syncTotalFetchTimeout = Duration(seconds: 22);
+
+  /// The sync read budgets, together, so a test can assert the relationship
+  /// between them rather than restate their values - restating them is what
+  /// drifted when [_requestTimeout] changed and the cap did not.
+  @visibleForTesting
+  static const syncBudgets = (
+    request: _requestTimeout,
+    retryDelay: _syncRetryDelay,
+    total: _syncTotalFetchTimeout,
+  );
 
   /// Cached gateway list — shared with other services (e.g.
   /// SnapshotValidationService) to avoid duplicate Solana RPC calls.
   List<Gateway>? cachedGateways;
 
+  /// Injectable so a test can prove that [fetchDataForSync]'s `largeBody`
+  /// routes to a different budget without spending either of them.
+  final Duration _syncRequestTimeout;
+  final Duration _syncLargeBodyRequestTimeout;
+
   DataGatewayFallback({
     required ArioSDK arioSDK,
     Client Function()? clientFactory,
+    @visibleForTesting Duration? syncRequestTimeout,
+    @visibleForTesting Duration? syncLargeBodyRequestTimeout,
   })  : _arioSDK = arioSDK,
-        _clientFactory = clientFactory ?? Client.new;
+        _clientFactory = clientFactory ?? Client.new,
+        _syncRequestTimeout = syncRequestTimeout ?? _requestTimeout,
+        _syncLargeBodyRequestTimeout =
+            syncLargeBodyRequestTimeout ?? largeBodyRequestTimeout;
 
   /// Fetch transaction data with serial gateway fallback.
   ///
@@ -89,9 +146,9 @@ class DataGatewayFallback {
   /// consults the GAR, so no Solana RPC is issued on the sync path.
   ///
   /// Sync issues hundreds of these per run, where per-item attempt count
-  /// dominates: the [fetchData] waterfall costs up to 4 serial attempts at 5s
-  /// each, so a slow or flaky primary turns into minutes of serial timeouts.
-  /// Worst case here is [syncMaxAttempts] attempts / ~10.3s.
+  /// dominates: the [fetchData] waterfall costs up to 4 serial attempts, so a
+  /// slow or flaky primary turns into minutes of serial timeouts. Worst case
+  /// here is [syncMaxAttempts] attempts against one host.
   ///
   /// A 404 is retried like any other failure: a gateway that has not
   /// finished indexing a transaction answers 404 for it and 200 a moment
@@ -104,22 +161,41 @@ class DataGatewayFallback {
   /// `docs/SYNC_SKIPPED_ENTITY_PERSISTENCE.md`.
   ///
   /// If every attempt 404s, throws [TransactionNotFound].
-  Future<Response> fetchDataForSync(String txId, Arweave primaryClient) async {
-    return _syncFetch(txId, primaryClient)
-        .timeout(_syncTotalFetchTimeout, onTimeout: () {
+  ///
+  /// [largeBody] switches to [largeBodyRequestTimeout], for reads whose body
+  /// is measured in megabytes rather than bytes - snapshots. The default
+  /// budget is sized for metadata and cannot finish one.
+  Future<Response> fetchDataForSync(
+    String txId,
+    Arweave primaryClient, {
+    bool largeBody = false,
+  }) async {
+    return _syncFetch(txId, primaryClient, largeBody: largeBody).timeout(
+        largeBody ? largeBodyTotalTimeout : _syncTotalFetchTimeout,
+        onTimeout: () {
       logger.w('Total sync fetch timeout exceeded for tx $txId');
       throw Exception('Total sync fetch timeout exceeded for tx $txId');
     });
   }
 
-  Future<Response> _syncFetch(String txId, Arweave primaryClient) async {
+  Future<Response> _syncFetch(
+    String txId,
+    Arweave primaryClient, {
+    bool largeBody = false,
+  }) async {
     final gatewayName = primaryClient.api.gatewayUrl.host;
 
     var allAttempts404 = true;
 
     for (var attempt = 1; attempt <= syncMaxAttempts; attempt++) {
       try {
-        return await _tryGateway(primaryClient, txId);
+        return await _tryGateway(
+          primaryClient,
+          txId,
+          requestTimeout: largeBody
+              ? _syncLargeBodyRequestTimeout
+              : _syncRequestTimeout,
+        );
       } on _ErrorFromStatus catch (e) {
         // A 404 is NOT treated as final here, and the reasoning that said it
         // was is wrong for this case. A gateway that has not finished indexing
@@ -513,10 +589,14 @@ class DataGatewayFallback {
     return clients;
   }
 
-  Future<Response> _tryGateway(Arweave client, String txId) async {
+  Future<Response> _tryGateway(
+    Arweave client,
+    String txId, {
+    Duration? requestTimeout,
+  }) async {
     final response = await client.api
         .getSandboxedTx(txId)
-        .timeout(_requestTimeout);
+        .timeout(requestTimeout ?? _requestTimeout);
 
     if (response.statusCode >= 200 && response.statusCode <= 208) {
       return response;

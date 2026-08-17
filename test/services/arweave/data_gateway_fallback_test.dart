@@ -172,6 +172,76 @@ void main() {
       verify(() => primaryApi.getSandboxedTx(txId)).called(2);
       verifyNever(() => arioSDK.getGateways());
     });
+
+    /// The default budget is sized for the metadata reads that dominate sync,
+    /// a few hundred bytes each. A snapshot is the same call with a body four
+    /// orders of magnitude larger - this user's newest is 43.9 MiB, which a
+    /// warm gateway serves in ~8s - so under the metadata budget it could
+    /// never finish on any connection slower than ~9 MB/s, however many times
+    /// it was retried.
+    /// The outer cap must clear what the attempts can actually spend, or it
+    /// quietly becomes the real limit and the second attempt gets less time
+    /// than the first - a retry weaker than the try it is retrying.
+    test('the total budget outlasts every attempt it allows', () {
+      const budgets = DataGatewayFallback.syncBudgets;
+      const attempts = DataGatewayFallback.syncMaxAttempts;
+
+      expect(
+        budgets.total,
+        greaterThan(
+          budgets.request * attempts + budgets.retryDelay * (attempts - 1),
+        ),
+        reason: 'the cap must not truncate the last attempt',
+      );
+    });
+
+    group('large bodies', () {
+      /// Scaled down so the test does not spend the real budgets, which are
+      /// measured in tens of seconds. What is asserted is that `largeBody`
+      /// routes to the larger of the two, and that the default cannot carry a
+      /// body that outlives it.
+      late DataGatewayFallback scaled;
+
+      setUp(() {
+        scaled = DataGatewayFallback(
+          arioSDK: arioSDK,
+          syncRequestTimeout: const Duration(milliseconds: 100),
+          syncLargeBodyRequestTimeout: const Duration(seconds: 5),
+        );
+      });
+
+      test('a snapshot-sized read outlives the metadata budget', () async {
+        when(() => primaryApi.getSandboxedTx(txId)).thenAnswer((_) async {
+          await Future<void>.delayed(const Duration(milliseconds: 400));
+          return Response('a snapshot body', 200);
+        });
+
+        final response = await scaled.fetchDataForSync(
+          txId,
+          primaryClient,
+          largeBody: true,
+        );
+
+        expect(response.statusCode, 200);
+        expect(response.body, 'a snapshot body');
+        verify(() => primaryApi.getSandboxedTx(txId)).called(1);
+      });
+
+      test('the same read fails on the default budget', () async {
+        when(() => primaryApi.getSandboxedTx(txId)).thenAnswer((_) async {
+          await Future<void>.delayed(const Duration(milliseconds: 400));
+          return Response('a snapshot body', 200);
+        });
+
+        // Times out, retries, times out again - which is what a 44 MiB
+        // snapshot did against a budget meant for metadata.
+        await expectLater(
+          scaled.fetchDataForSync(txId, primaryClient),
+          throwsA(isA<Exception>()),
+        );
+        verify(() => primaryApi.getSandboxedTx(txId)).called(2);
+      });
+    });
   });
 
   group('waterfall preserved for non-sync paths', () {

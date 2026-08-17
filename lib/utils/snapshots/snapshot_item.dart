@@ -224,7 +224,10 @@ class SnapshotItemOnChain implements SnapshotItem {
     if (_prefetchFuture != null) {
       return _cachedSource = await _prefetchFuture!;
     }
-    final dataBytes = await _arweave.getEntityDataFromNetwork(txId: txId);
+    final dataBytes = await _arweave.getEntityDataFromNetwork(
+      txId: txId,
+      largeBody: true,
+    );
     final dataBytesAsString = String.fromCharCodes(dataBytes);
     return _cachedSource = dataBytesAsString;
   }
@@ -235,7 +238,7 @@ class SnapshotItemOnChain implements SnapshotItem {
     if (_cachedSource != null || _prefetchFuture != null) return;
     logger.d('Prefetching snapshot $txId');
     _prefetchFuture = _arweave
-        .getEntityDataFromNetwork(txId: txId)
+        .getEntityDataFromNetwork(txId: txId, largeBody: true)
         .then((bytes) => String.fromCharCodes(bytes));
   }
 
