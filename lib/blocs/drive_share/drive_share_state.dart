@@ -48,6 +48,16 @@ class DriveShareLoadSuccess extends DriveShareState {
         keyIsInLink,
         driveKeyBase64,
       ];
+
+  /// Equatable stringifies [props] in debug builds, and one of them is a drive
+  /// key. Same redaction, for the same reason, as [FileShareLoadSuccess].
+  ///
+  /// The link is printed whole: it is only a secret when the sharer embedded
+  /// the key in it, and [keyIsInLink] says when that is.
+  @override
+  String toString() => 'DriveShareLoadSuccess(drive: ${drive.id}, '
+      'isFolder: $isFolder, keyIsInLink: $keyIsInLink, '
+      'driveKey: ${driveKeyBase64 == null ? 'none' : '<redacted>'})';
 }
 
 /// [DriveShareLoadFail] shows failiure states in the UI.

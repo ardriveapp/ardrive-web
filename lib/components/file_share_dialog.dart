@@ -42,28 +42,13 @@ class FileShareDialog extends StatefulWidget {
 }
 
 class FileShareDialogState extends State<FileShareDialog> {
-  final shareLinkController = TextEditingController();
-  final fileKeyController = TextEditingController();
-
-  @override
-  void dispose() {
-    shareLinkController.dispose();
-    fileKeyController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    return BlocConsumer<FileShareCubit, FileShareState>(
-      listener: (context, state) {
-        if (state is FileShareLoadSuccess) {
-          shareLinkController.text = state.fileShareLink.toString();
-          fileKeyController.text = state.fileKeyBase64 ?? '';
-        }
-      },
+    return BlocBuilder<FileShareCubit, FileShareState>(
       builder: (context, state) => ArDriveStandardModalNew(
         width: kLargeDialogWidth,
         scrollableContent: true,
@@ -133,7 +118,6 @@ class FileShareDialogState extends State<FileShareDialog> {
                 ),
               CopyableShareArtifact(
                 label: appLocalizationsOf(context).shareFileLinkLabel,
-                controller: shareLinkController,
                 text: state.fileShareLink.toString(),
                 copyLabel: appLocalizationsOf(context).copyLink,
                 revealLabel: appLocalizationsOf(context).shareDriveRevealLink,
@@ -155,7 +139,6 @@ class FileShareDialogState extends State<FileShareDialog> {
                 const SizedBox(height: 16),
                 CopyableShareArtifact(
                   label: appLocalizationsOf(context).shareFileAccessKeyLabel,
-                  controller: fileKeyController,
                   text: state.fileKeyBase64!,
                   copyLabel: appLocalizationsOf(context).copyAccessKey,
                   revealLabel: appLocalizationsOf(context).shareFileRevealKey,

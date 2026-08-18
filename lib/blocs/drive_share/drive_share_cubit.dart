@@ -27,6 +27,11 @@ class DriveShareCubit extends Cubit<DriveShareState> {
   /// handed over separately by default.
   bool _keyIsInLink = false;
 
+  /// Which load is current. A load that is not the newest by the time it
+  /// finishes has been overtaken and must not emit - the same generation guard
+  /// [SharedFileCubit] uses.
+  int _generation = 0;
+
   DriveShareCubit({
     required this.drive,
     this.folderId,
@@ -57,6 +62,14 @@ class DriveShareCubit extends Cubit<DriveShareState> {
   /// [DriveShareLoadInProgress] and the dialog would spin forever, which is
   /// exactly what a missing drive key used to do.
   Future<void> loadDriveShareDetails() async {
+    final generation = ++_generation;
+
+    // Captured once. Read twice - once to build the link and once to describe
+    // it - two loads racing after a fast double-toggle could emit a link built
+    // with the key in it while labelling it keyless, and the dialog would then
+    // render a key-bearing link unmasked.
+    final keyIsInLink = _keyIsInLink;
+
     emit(DriveShareLoadInProgress());
 
     try {
@@ -72,10 +85,16 @@ class DriveShareCubit extends Cubit<DriveShareState> {
               driveId: drive.id,
               driveKey: driveKey.key,
               folderId: folderId,
-              includeKey: _keyIsInLink,
+              includeKey: keyIsInLink,
             );
 
-      if (isClosed) {
+      // Extracted before the guard so that no await sits between the checks
+      // below and the emit.
+      final driveKeyBase64 = driveKey == null
+          ? null
+          : encodeBytesToBase64(await driveKey.key.extractBytes());
+
+      if (isClosed || generation != _generation) {
         return;
       }
 
@@ -84,12 +103,10 @@ class DriveShareCubit extends Cubit<DriveShareState> {
           drive: drive,
           driveShareLink: driveShareLink,
           isFolder: folderId != null,
-          keyIsInLink: _keyIsInLink,
+          keyIsInLink: keyIsInLink,
           // The key is offered as its own artifact so the sharer can send it
           // through a different channel than the link.
-          driveKeyBase64: driveKey == null
-              ? null
-              : encodeBytesToBase64(await driveKey.key.extractBytes()),
+          driveKeyBase64: driveKeyBase64,
         ),
       );
     } catch (e, stacktrace) {
@@ -101,7 +118,7 @@ class DriveShareCubit extends Cubit<DriveShareState> {
         stacktrace,
       );
 
-      if (isClosed) {
+      if (isClosed || generation != _generation) {
         return;
       }
 

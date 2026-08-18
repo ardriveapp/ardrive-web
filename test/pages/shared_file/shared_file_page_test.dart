@@ -72,7 +72,7 @@ void main() {
       name: name,
       parentFolderId: 'parent-folder-id',
       size: size,
-      lastModifiedDate: DateTime.utc(2024, 3, 3),
+      lastModifiedDate: DateTime.utc(2023, 11, 9),
       dataContentType: dataContentType,
       metadataTxId: 'metadata-tx',
       dataTxId: dataTxId,
@@ -507,10 +507,18 @@ void main() {
       expect(find.text('File type'), findsOneWidget);
       expect(find.text('application/pdf'), findsOneWidget);
 
+      // Distinct dates, so each row is pinned to its own field rather than
+      // both matching one string.
       expect(find.text('Date created'), findsOneWidget);
       expect(
         find.text(formatDateToUtcString(DateTime.utc(2024, 3, 3))),
         findsWidgets,
+      );
+
+      expect(find.text('Last updated'), findsOneWidget);
+      expect(
+        find.text(formatDateToUtcString(DateTime.utc(2023, 11, 9))),
+        findsOneWidget,
       );
     });
 

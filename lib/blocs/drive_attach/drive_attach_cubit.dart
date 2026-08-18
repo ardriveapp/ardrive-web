@@ -101,7 +101,22 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
           // moving that read later would silently discard it.
           if (driveNameController.text.isEmpty &&
               driveKeyController.text.isNotEmpty) {
-            await driveNameLoader();
+            // Guarded: this runs inside a microtask started from the
+            // constructor whose future nobody awaits, so a network or decode
+            // failure in here would otherwise surface as an unhandled
+            // asynchronous error. A name that will not resolve is not fatal -
+            // the auto-submit below is simply skipped and the form stays open
+            // for the recipient to act on, which is what a keyless link
+            // already does.
+            try {
+              await driveNameLoader();
+            } catch (e, stacktrace) {
+              logger.e(
+                'Failed to resolve the name of the shared drive',
+                e,
+                stacktrace,
+              );
+            }
 
             if (isClosed) return;
           }

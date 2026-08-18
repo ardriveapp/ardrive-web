@@ -491,6 +491,22 @@ class _DriveExplorerItemTileTrailingState
         ],
         ArDriveDropdownItem(
           onClick: () {
+            promptToShareDrive(
+              context: context,
+              drive: widget.drive,
+              folderId: item.id,
+            );
+          },
+          content: _buildItem(
+            appLocalizationsOf(context).shareFolder,
+            ArDriveIcons.share(
+              size: defaultIconSize,
+            ),
+            height: height,
+          ),
+        ),
+        ArDriveDropdownItem(
+          onClick: () {
             final bloc = context.read<DriveDetailCubit>();
 
             bloc.selectDataItem(item);

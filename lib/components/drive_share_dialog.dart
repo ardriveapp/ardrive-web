@@ -36,15 +36,6 @@ class DriveShareDialog extends StatefulWidget {
 }
 
 class DriveShareDialogState extends State<DriveShareDialog> {
-  final shareLinkController = TextEditingController();
-  final driveKeyController = TextEditingController();
-
-  @override
-  void dispose() {
-    shareLinkController.dispose();
-    driveKeyController.dispose();
-    super.dispose();
-  }
 
   @override
   void initState() {
@@ -53,13 +44,7 @@ class DriveShareDialogState extends State<DriveShareDialog> {
 
   @override
   Widget build(BuildContext context) =>
-      BlocConsumer<DriveShareCubit, DriveShareState>(
-        listener: (context, state) {
-          if (state is DriveShareLoadSuccess) {
-            shareLinkController.text = state.driveShareLink.toString();
-            driveKeyController.text = state.driveKeyBase64 ?? '';
-          }
-        },
+      BlocBuilder<DriveShareCubit, DriveShareState>(
         builder: (context, state) {
           final typography = ArDriveTypographyNew.of(context);
 
@@ -82,7 +67,6 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                   else if (state is DriveShareLoadSuccess) ...{
                     CopyableShareArtifact(
                       label: appLocalizationsOf(context).shareFileLinkLabel,
-                      controller: shareLinkController,
                       text: state.driveShareLink.toString(),
                       copyLabel: appLocalizationsOf(context).copyLink,
                       revealLabel:
@@ -98,7 +82,6 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                       CopyableShareArtifact(
                         label: appLocalizationsOf(context)
                             .shareDriveAccessKeyLabel,
-                        controller: driveKeyController,
                         text: state.driveKeyBase64!,
                         copyLabel: appLocalizationsOf(context).copyAccessKey,
                         revealLabel:

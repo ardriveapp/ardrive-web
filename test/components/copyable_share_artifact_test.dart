@@ -11,10 +11,10 @@ void main() {
         child: MaterialApp(home: Scaffold(body: child)),
       );
 
-  Widget artifact({required bool isSecret}) => CopyableShareArtifact(
+  Widget artifact({required bool isSecret, String text = secret}) =>
+      CopyableShareArtifact(
         label: 'Access key',
-        controller: TextEditingController(text: secret),
-        text: secret,
+        text: text,
         copyLabel: 'Copy',
         revealLabel: 'Show access key',
         isSecret: isSecret,
@@ -65,6 +65,39 @@ void main() {
 
       // And back, so the sharer can re-hide it without closing the dialog.
       await tester.tap(find.byTooltip('Show access key'));
+      await tester.pump();
+
+      expect(isObscured(tester), isTrue);
+    });
+
+    testWidgets('a synchronously available value is shown, not swallowed',
+        (tester) async {
+      // The component owns its controller precisely so this holds. When each
+      // dialog filled a controller from a bloc listener instead, a cubit that
+      // reached success synchronously - which the public drive path does -
+      // never fired the listener, and the field rendered empty.
+      await tester.pumpWidget(wrap(artifact(isSecret: false, text: 'a-link')));
+
+      expect(
+        tester.widget<EditableText>(find.byType(EditableText)).controller.text,
+        'a-link',
+      );
+    });
+
+    testWidgets('revealing one secret does not reveal the next',
+        (tester) async {
+      // Ticking "include the key in the link" swaps the value underneath a
+      // revealed field. The new value must start masked again.
+      await tester.pumpWidget(wrap(artifact(isSecret: true)));
+
+      await tester.tap(find.byTooltip('Show access key'));
+      await tester.pump();
+
+      expect(isObscured(tester), isFalse);
+
+      await tester.pumpWidget(
+        wrap(artifact(isSecret: true, text: 'a-different-secret')),
+      );
       await tester.pump();
 
       expect(isObscured(tester), isTrue);

@@ -519,15 +519,18 @@ class SharedFileCubit extends Cubit<SharedFileState> {
         // The link names the exact revision that was shared, so the key is
         // tried against it directly: one lookup by transaction id instead of an
         // owner probe followed by a latest-revision query.
-        final shared = await _fetchSharedRevision(metadataTxId, fileKey);
+        final shared = await _bounded(
+          _fetchSharedRevision(metadataTxId, fileKey),
+          'trying the key against the revision the link names',
+        );
 
         if (shared == null) {
           // The link's metadata transaction is not on the network. The key may
           // still be perfectly good, so fall back to resolving the file the
           // long way rather than blaming the key.
-          final file = await _arweave.getLatestFileEntityWithId(
-            fileId,
-            fileKey,
+          final file = await _bounded(
+            _arweave.getLatestFileEntityWithId(fileId, fileKey),
+            'looking up the newest revision to try the key against',
           );
 
           if (file == null) {

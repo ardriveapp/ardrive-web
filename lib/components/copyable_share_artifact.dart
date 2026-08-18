@@ -18,13 +18,20 @@ import 'package:flutter/material.dart';
 /// the key itself, or a link with the key embedded - is masked here until the
 /// sharer deliberately reveals it.
 ///
-/// Masking never blocks the common path: [text] is copied from the value the
-/// caller passed, not from what the field displays, so Copy works while masked.
+/// Masking never blocks the common path: Copy puts [text] on the clipboard, not
+/// what the field displays, so it works while the field is showing dots.
+///
+/// ## Why the controller lives here
+///
+/// [text] is the whole input. An earlier version took a controller and left
+/// each dialog to fill it from a bloc listener, which silently broke for any
+/// cubit that reached its success state synchronously: a listener does not fire
+/// for the state a bloc is already in, so the field rendered empty. Owning the
+/// controller means the field always shows what it was given.
 class CopyableShareArtifact extends StatefulWidget {
   const CopyableShareArtifact({
     super.key,
     required this.label,
-    required this.controller,
     required this.text,
     required this.copyLabel,
     required this.revealLabel,
@@ -32,11 +39,8 @@ class CopyableShareArtifact extends StatefulWidget {
   });
 
   final String label;
-  final TextEditingController controller;
 
-  /// What the copy button puts on the clipboard. Taken from the caller rather
-  /// than from [controller], which is only how the value is displayed - and
-  /// which may be showing dots.
+  /// The value displayed, and the value Copy puts on the clipboard.
   final String text;
 
   final String copyLabel;
@@ -53,7 +57,31 @@ class CopyableShareArtifact extends StatefulWidget {
 }
 
 class _CopyableShareArtifactState extends State<CopyableShareArtifact> {
+  late final TextEditingController _controller =
+      TextEditingController(text: widget.text);
+
   bool _isRevealed = false;
+
+  @override
+  void didUpdateWidget(covariant CopyableShareArtifact oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.text != widget.text) {
+      _controller.text = widget.text;
+
+      // A revealed secret stays revealed only for as long as it is the same
+      // secret. Ticking "include the key in the link" swaps a keyless link for
+      // one that carries the key, and that new value must not inherit the
+      // previous one's revealed state.
+      _isRevealed = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +103,7 @@ class _CopyableShareArtifactState extends State<CopyableShareArtifact> {
             // nothing.
             key: ValueKey(isMasked),
             label: widget.label,
-            controller: widget.controller,
+            controller: _controller,
             isEnabled: false,
             obscureText: isMasked,
             // Deliberately not the field's own `showObfuscationToggle`: it
