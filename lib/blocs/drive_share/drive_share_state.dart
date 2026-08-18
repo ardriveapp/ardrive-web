@@ -21,6 +21,9 @@ class DriveShareLoadSuccess extends DriveShareState {
   /// Whether the link points at one folder rather than the whole drive.
   final bool isFolder;
 
+  /// The shared folder's name, when a folder is what is being shared.
+  final String? folderName;
+
   /// Whether the drive key is embedded in [driveShareLink].
   final bool keyIsInLink;
 
@@ -33,6 +36,7 @@ class DriveShareLoadSuccess extends DriveShareState {
     required this.drive,
     required this.driveShareLink,
     this.isFolder = false,
+    this.folderName,
     this.keyIsInLink = false,
     this.driveKeyBase64,
   });
@@ -45,6 +49,7 @@ class DriveShareLoadSuccess extends DriveShareState {
         drive,
         driveShareLink,
         isFolder,
+        folderName,
         keyIsInLink,
         driveKeyBase64,
       ];

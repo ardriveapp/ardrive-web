@@ -298,6 +298,7 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
         revision: revision,
         ownerAddress: state.ownerAddress ?? payload?.ownerAddress,
         licenseName: state.latestLicense?.meta.nameWithShortName,
+        detailsAreResolved: state.detailsAreResolved,
       ),
       SharedFileVersionsDrawer(
         revisions: state.activityRevisions,
@@ -838,11 +839,21 @@ class SharedFileDetailsDrawer extends StatelessWidget {
     required this.revision,
     this.ownerAddress,
     this.licenseName,
+    this.detailsAreResolved = true,
   });
 
   final FileRevision revision;
   final String? ownerAddress;
   final String? licenseName;
+
+  /// Whether [revision] holds the file's own record rather than what the link
+  /// claimed.
+  ///
+  /// A v2 link carries no timestamps, so until the metadata resolves the dates
+  /// on [revision] are the epoch placeholder. Showing those would put
+  /// "1970-01-01" in front of a recipient as though it were the upload date,
+  /// which is worse than showing nothing.
+  final bool detailsAreResolved;
 
   @override
   Widget build(BuildContext context) {
@@ -866,16 +877,18 @@ class SharedFileDetailsDrawer extends StatelessWidget {
             value: contentType,
             canCopy: false,
           ),
-        _SharedFileDetailRow(
-          label: appLocalizationsOf(context).dateCreated,
-          value: formatDateToUtcString(revision.dateCreated),
-          canCopy: false,
-        ),
-        _SharedFileDetailRow(
-          label: appLocalizationsOf(context).lastUpdated,
-          value: formatDateToUtcString(revision.lastModifiedDate),
-          canCopy: false,
-        ),
+        if (detailsAreResolved) ...[
+          _SharedFileDetailRow(
+            label: appLocalizationsOf(context).dateCreated,
+            value: formatDateToUtcString(revision.dateCreated),
+            canCopy: false,
+          ),
+          _SharedFileDetailRow(
+            label: appLocalizationsOf(context).lastUpdated,
+            value: formatDateToUtcString(revision.lastModifiedDate),
+            canCopy: false,
+          ),
+        ],
         _SharedFileDetailRow(
           label: appLocalizationsOf(context).fileID,
           value: revision.fileId,

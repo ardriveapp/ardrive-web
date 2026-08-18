@@ -489,22 +489,26 @@ class _DriveExplorerItemTileTrailingState
           ),
           if (isOwner) hideFileDropdownItem(context, item),
         ],
-        ArDriveDropdownItem(
-          onClick: () {
-            promptToShareDrive(
-              context: context,
-              drive: widget.drive,
-              folderId: item.id,
-            );
-          },
-          content: _buildItem(
-            appLocalizationsOf(context).shareFolder,
-            ArDriveIcons.share(
-              size: defaultIconSize,
+        // Not offered for a ghost folder: its metadata was never found, so a
+        // link naming it points the recipient at nothing.
+        if (!item.isGhostFolder)
+          ArDriveDropdownItem(
+            onClick: () {
+              promptToShareDrive(
+                context: context,
+                drive: widget.drive,
+                folderId: item.id,
+                folderName: item.name,
+              );
+            },
+            content: _buildItem(
+              appLocalizationsOf(context).shareFolder,
+              ArDriveIcons.share(
+                size: defaultIconSize,
+              ),
+              height: height,
             ),
-            height: height,
           ),
-        ),
         ArDriveDropdownItem(
           onClick: () {
             final bloc = context.read<DriveDetailCubit>();
@@ -913,13 +917,14 @@ class EntityActionsMenu extends StatelessWidget {
         ],
         // Guarded rather than assumed: this menu is also built in places that
         // do not know the drive, and a folder link needs it for the key.
-        if (drive != null)
+        if (drive != null && !item.isGhostFolder)
           ArDriveDropdownItem(
             onClick: () {
               promptToShareDrive(
                 context: context,
                 drive: drive!,
                 folderId: item.id,
+                folderName: item.name,
               );
             },
             content: _buildItem(

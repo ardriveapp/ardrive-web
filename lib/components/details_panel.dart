@@ -1211,6 +1211,7 @@ class DetailsPanelToolbar extends StatelessWidget {
                     context: context,
                     drive: drive,
                     folderId: item.id,
+                    folderName: item.name,
                   );
                 } else if (item is DriveDataItem) {
                   promptToShareDrive(

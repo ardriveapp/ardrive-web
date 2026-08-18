@@ -2342,6 +2342,10 @@
   "@shareFolder": {
     "description": "The action of sharing a link to a folder"
   },
+  "shareDriveKeylessNotice": "The link alone won’t open this drive. The person you send it to also needs the access key above.",
+  "@shareDriveKeylessNotice": {
+    "description": "Explains that a private drive link without the key embedded needs the key sent separately"
+  },
   "shareDriveAccessKeyLabel": "Drive access key",
   "@shareDriveAccessKeyLabel": {
     "description": "Label of the field holding the drive key handed over alongside a private drive link"

@@ -73,6 +73,8 @@ void main() {
     String dataTxId = 'data-tx-newest',
     int size = 4821133,
     String? dataContentType = 'application/pdf',
+    DateTime? lastModifiedDate,
+    DateTime? dateCreated,
   }) {
     return FileRevision(
       fileId: fileId,
@@ -80,11 +82,11 @@ void main() {
       name: name,
       parentFolderId: 'parent-folder-id',
       size: size,
-      lastModifiedDate: DateTime.utc(2023, 11, 9),
+      lastModifiedDate: lastModifiedDate ?? DateTime.utc(2023, 11, 9),
       dataContentType: dataContentType,
       metadataTxId: 'metadata-tx',
       dataTxId: dataTxId,
-      dateCreated: DateTime.utc(2024, 3, 3),
+      dateCreated: dateCreated ?? DateTime.utc(2024, 3, 3),
       action: RevisionAction.create,
       isHidden: false,
     );
@@ -605,6 +607,38 @@ void main() {
       expect(download.isDisabled, isTrue);
       // Nor a preview it cannot fetch.
       expect(find.text('Preview'), findsNothing);
+    });
+
+    testWidgets('shows no dates until the file\'s own record has them',
+        (tester) async {
+      // A v2 link carries no timestamps, so the revision it paints from holds
+      // the epoch placeholder until the metadata resolves. Rendering that puts
+      // "1970-01-01" in front of a recipient as though it were the upload
+      // date - worse than showing nothing, and worse than the placeholder was
+      // ever meant to be.
+      await pumpPage(
+        tester,
+        SharedFileLoadSuccess(
+          fileRevisions: [
+            fileRevision(
+              lastModifiedDate: DateTime.fromMillisecondsSinceEpoch(0),
+              dateCreated: DateTime.fromMillisecondsSinceEpoch(0),
+            ),
+          ],
+          verification: LinkVerification.pending,
+          detailsAreResolved: false,
+        ),
+      );
+
+      await tester.tap(find.byType(ExpansionTile).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Date created'), findsNothing);
+      expect(find.text('Last updated'), findsNothing);
+      expect(find.textContaining('1970'), findsNothing);
+
+      // The type still shows: the link really did carry it.
+      expect(find.text('File type'), findsOneWidget);
     });
 
     testWidgets('shows the verification badge the link earned', (tester) async {

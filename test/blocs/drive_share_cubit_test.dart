@@ -41,9 +41,11 @@ void main() {
 
   Future<Drive> drive() => driveDao.driveById(driveId: driveId).getSingle();
 
-  DriveShareCubit cubit(Drive d, {String? folderId}) => DriveShareCubit(
+  DriveShareCubit cubit(Drive d, {String? folderId, String? folderName}) =>
+      DriveShareCubit(
         drive: d,
         folderId: folderId,
+        folderName: folderName,
         driveDao: driveDao,
         profileCubit: profileCubit,
       );
@@ -240,6 +242,36 @@ void main() {
       // drive route as soon as it saw a key, which lost the folder.
       expect(link, contains('/folders/$folderId'));
       expect(link, contains('driveKey='));
+    });
+
+    test('a folder share carries the folder\'s own name', () async {
+      // The dialog confirms what is being shared. Described by the drive's
+      // name, a folder share would confirm the wrong thing.
+      const folderId = 'c4d9dc2c-5d4c-6e3d-ac4f-8f3c2d5e6f70';
+
+      await insertDrive(isPrivate: false);
+
+      final success = await settled(
+        cubit(await drive(), folderId: folderId, folderName: 'Q4 Photos'),
+      ) as DriveShareLoadSuccess;
+
+      expect(success.folderName, 'Q4 Photos');
+      expect(success.isFolder, isTrue);
+    });
+
+    test('the drive key never reaches the state\'s stringification', () async {
+      // Equatable stringifies props in debug builds, and one of them is a key.
+      when(() => profileCubit.state).thenReturn(ProfilePromptAdd());
+
+      await insertDrive(isPrivate: true);
+      await driveDao.putDriveKeyInMemory(driveID: driveId, driveKey: driveKey);
+
+      final success =
+          await settled(cubit(await drive())) as DriveShareLoadSuccess;
+
+      expect(success.driveKeyBase64, isNotNull);
+      expect(success.toString(), contains('<redacted>'));
+      expect(success.toString(), isNot(contains(success.driveKeyBase64!)));
     });
 
     test('a private drive resolves to a link carrying its key', () async {

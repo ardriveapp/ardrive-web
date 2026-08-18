@@ -18,6 +18,9 @@ class DriveShareCubit extends Cubit<DriveShareState> {
   /// The folder being shared, or `null` when the whole drive is.
   final FolderID? folderId;
 
+  /// The folder's own name, for the dialog to confirm what is being shared.
+  final String? folderName;
+
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
 
@@ -35,6 +38,7 @@ class DriveShareCubit extends Cubit<DriveShareState> {
   DriveShareCubit({
     required this.drive,
     this.folderId,
+    this.folderName,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
   })  : _driveDao = driveDao,
@@ -103,6 +107,7 @@ class DriveShareCubit extends Cubit<DriveShareState> {
           drive: drive,
           driveShareLink: driveShareLink,
           isFolder: folderId != null,
+          folderName: folderName,
           keyIsInLink: keyIsInLink,
           // The key is offered as its own artifact so the sharer can send it
           // through a different channel than the link.

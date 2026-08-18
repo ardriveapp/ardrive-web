@@ -9,10 +9,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Shares [drive], or - when [folderId] is given - one folder inside it.
+///
+/// [folderName] is what the dialog shows the sharer they are sharing. Without
+/// it a folder share is described by its *drive's* name, which is the wrong
+/// thing to confirm before copying a link.
 Future<void> promptToShareDrive({
   required BuildContext context,
   required Drive drive,
   String? folderId,
+  String? folderName,
 }) =>
     showArDriveDialog(
       context,
@@ -20,6 +25,7 @@ Future<void> promptToShareDrive({
         create: (_) => DriveShareCubit(
           drive: drive,
           folderId: folderId,
+          folderName: folderName,
           driveDao: context.read<DriveDao>(),
           profileCubit: context.read<ProfileCubit>(),
         ),
@@ -36,12 +42,6 @@ class DriveShareDialog extends StatefulWidget {
 }
 
 class DriveShareDialogState extends State<DriveShareDialog> {
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
   @override
   Widget build(BuildContext context) =>
       BlocBuilder<DriveShareCubit, DriveShareState>(
@@ -53,8 +53,6 @@ class DriveShareDialogState extends State<DriveShareDialog> {
             title: state is DriveShareLoadSuccess && state.isFolder
                 ? appLocalizationsOf(context).shareFolderWithOthers
                 : appLocalizationsOf(context).shareDriveWithOthers,
-            description:
-                state is DriveShareLoadSuccess ? state.drive.name : null,
             scrollableContent: true,
             content: SizedBox(
               width: kLargeDialogWidth,
@@ -65,6 +63,23 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                   if (state is DriveShareLoadInProgress)
                     const Center(child: CircularProgressIndicator())
                   else if (state is DriveShareLoadSuccess) ...{
+                    // What is being shared, confirmed before the sharer copies
+                    // anything. Not the modal's `description`, which it only
+                    // renders when there is no `content` - so this dialog never
+                    // showed one.
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        state.folderName ?? state.drive.name,
+                        style: typography.paragraphNormal(
+                          fontWeight: ArFontWeight.semiBold,
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colorTokens
+                              .textHigh,
+                        ),
+                      ),
+                    ),
                     CopyableShareArtifact(
                       label: appLocalizationsOf(context).shareFileLinkLabel,
                       text: state.driveShareLink.toString(),
@@ -140,11 +155,17 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                     },
                     const SizedBox(height: 16),
                     Text(
+                      // A keyless private link does *not* grant access on its
+                      // own, so it must not be described as though it does -
+                      // that copy predates the key ever being optional.
                       state.drive.isPublic
                           ? appLocalizationsOf(context)
                               .anyoneCanAccessThisDrivePublic
-                          : appLocalizationsOf(context)
-                              .anyoneCanAccessThisDrivePrivate,
+                          : state.keyIsInLink
+                              ? appLocalizationsOf(context)
+                                  .anyoneCanAccessThisDrivePrivate
+                              : appLocalizationsOf(context)
+                                  .shareDriveKeylessNotice,
                       style: typography.paragraphLarge(),
                     ),
                   } else if (state is DriveShareLoadFail)
