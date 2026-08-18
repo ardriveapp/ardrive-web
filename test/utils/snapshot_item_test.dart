@@ -292,6 +292,56 @@ void main() {
           );
         },
       );
+
+      /// A never-synced drive arrives with `lastBlockHeight: 0`, which is not
+      /// the same as having synced block 0. `Range` is inclusive at both ends,
+      /// so obscuring `Range(0, 0)` cut the genesis block out of the
+      /// snapshot's range and left sync to ask GraphQL about a single block
+      /// that cannot hold an ArFS transaction - a round trip per drive, per
+      /// first sync, for nothing.
+      test(
+        'a never-synced drive keeps block 0 inside the snapshot range',
+        () async {
+          final totalSnapshotRange = Range(start: 0, end: 10);
+
+          final String snapshotItemSource = await fakeSnapshotSource(
+            totalSnapshotRange,
+          );
+
+          final SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+              snapshotTx =
+              SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+                  .fromJson(
+            {
+              'id': 'tx-id',
+              'bundledIn': {'id': 'ASDASDASDASDASDASD'},
+              'owner': {'address': '1234567890'},
+              'tags': [
+                {'name': 'Block-Start', 'value': '0'},
+                {'name': 'Block-End', 'value': '10'},
+                {'name': 'Drive-Id', 'value': 'DRIVE_ID'},
+              ],
+              'block': {
+                'height': 11,
+                'timestamp': DateTime.now().microsecondsSinceEpoch
+              }
+            },
+          );
+
+          final allItems = await SnapshotItem.instantiateAll(
+            Stream.fromIterable([snapshotTx]),
+            lastBlockHeight: 0,
+            arweave: arweave,
+            fakeSource: snapshotItemSource,
+          ).toList();
+
+          expect(
+            allItems.single.subRanges.rangeSegments.single,
+            Range(start: 0, end: 10),
+            reason: 'the snapshot covers its whole range, block 0 included',
+          );
+        },
+      );
     });
 
     group('getDataForTxId method', () {

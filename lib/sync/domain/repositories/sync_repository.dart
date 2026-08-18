@@ -415,10 +415,12 @@ class _SyncRepository implements SyncRepository {
               ? syncedHeights.reduce(min)
               : 0;
 
+          var queryFailed = false;
           final snapshotsStream = _arweave.getAllSnapshotsForDrives(
             ownerDrives.map((d) => d.id).toList(),
             minBlock,
             ownerAddress: entry.key,
+            onQueryFailure: () => queryFailed = true,
           );
 
           await for (final snapshot in snapshotsStream) {
@@ -434,11 +436,31 @@ class _SyncRepository implements SyncRepository {
               logger.w('Snapshot ${snapshot.id} has no Drive-Id tag, skipping');
             }
           }
+
+          // Record an answer for every drive the query covered, including the
+          // ones it found nothing for. `_syncDrive` reads a missing entry as
+          // "nobody asked" and asks again per drive, so without this a drive
+          // with no snapshots pays for a second, identical query on every
+          // sync - the batch already told us the answer was none.
+          //
+          // Only when the query ran to completion: if it gave up part-way, a
+          // drive it never reached would be recorded as having none, and the
+          // per-drive fallback that exists for exactly that case would be
+          // suppressed.
+          if (!queryFailed) {
+            for (final drive in ownerDrives) {
+              prefetchedSnapshots.putIfAbsent(drive.id, () => []);
+            }
+          }
         }
 
+        final withSnapshots =
+            prefetchedSnapshots.values.where((v) => v.isNotEmpty).length;
         logger.i(
-            'Prefetched ${prefetchedSnapshots.values.expand((v) => v).length} '
-            'snapshots across ${prefetchedSnapshots.length} drives');
+            '[snapshot] prefetched '
+            '${prefetchedSnapshots.values.expand((v) => v).length} '
+            'for $withSnapshots of ${prefetchedSnapshots.length} drive(s); '
+            'the rest are known to have none and will not be re-queried');
       } catch (e) {
         logger.w('Snapshot prefetch failed, will fetch per-drive: $e');
         prefetchedSnapshots.clear();
@@ -1876,6 +1898,24 @@ class _SyncRepository implements SyncRepository {
       logger.i(
           'Drive ${drive.name} completed parse phase. Progress by block height: $fetchPhasePercentage%. Starting parse phase. Sync duration: $syncDriveTotalTime ms. Fetching used ${(averageBetweenFetchAndGet * 100).toStringAsFixed(2)}% of drive sync process');
     } finally {
+      // Where this drive's entity metadata actually came from. A snapshot
+      // that covers a range but serves none of its metadata is indis-
+      // tinguishable, from the outside, from one that is working - both look
+      // like "3 snapshots loaded" followed by a long sync. This is the line
+      // that tells them apart.
+      //
+      // Drained here rather than at the end of the happy path, for the same
+      // reason the cache below is: a sync that throws or is cancelled would
+      // otherwise leave its counts behind, and they are keyed by drive - so
+      // the next sync of that drive would add to them and report a total that
+      // never happened. Cancelling mid-sync is a normal thing to do.
+      final hits = _arweave.snapshotMetadataHits.remove(drive.id) ?? 0;
+      final misses = _arweave.snapshotMetadataMisses.remove(drive.id) ?? 0;
+      if (hits + misses > 0) {
+        logger.i('[snapshot] ${drive.id}: $hits entity metadata read(s) from '
+            'snapshots, $misses fetched from the gateway');
+      }
+
       // Always dispose snapshot cache, even on error or cancellation
       await SnapshotItemOnChain.dispose(drive.id);
       logger.d('Disposed snapshot cache for drive ${drive.id}');
