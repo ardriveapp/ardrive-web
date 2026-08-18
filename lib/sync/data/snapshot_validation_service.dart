@@ -132,9 +132,10 @@ class SnapshotValidationService {
   /// Validates a snapshot is available on the configured gateway.
   ///
   /// Up to [_maxAttempts] HEADs against the configured gateway, spaced by
-  /// [_retryDelays]; anything other than 200/302 on every one of them rejects
-  /// the snapshot, and sync falls back to GQL for that range - correct, but
-  /// expensive enough that it is worth several probes to avoid.
+  /// [_retryDelays]; anything other than 200 on every one of them rejects the
+  /// snapshot, and sync falls back to GQL for that range - correct, but
+  /// expensive enough that it is worth several probes to avoid. A 302 counts
+  /// as a failure rather than a success; see the note on the status check.
   ///
   /// There is deliberately no GAR fallback here, and no second host of any
   /// kind. The GAR cost a Solana RPC via `ArioSDK.getGateways()`, which the

@@ -1897,18 +1897,25 @@ class _SyncRepository implements SyncRepository {
 
       logger.i(
           'Drive ${drive.name} completed parse phase. Progress by block height: $fetchPhasePercentage%. Starting parse phase. Sync duration: $syncDriveTotalTime ms. Fetching used ${(averageBetweenFetchAndGet * 100).toStringAsFixed(2)}% of drive sync process');
+    } finally {
       // Where this drive's entity metadata actually came from. A snapshot
       // that covers a range but serves none of its metadata is indis-
       // tinguishable, from the outside, from one that is working - both look
       // like "3 snapshots loaded" followed by a long sync. This is the line
       // that tells them apart.
+      //
+      // Drained here rather than at the end of the happy path, for the same
+      // reason the cache below is: a sync that throws or is cancelled would
+      // otherwise leave its counts behind, and they are keyed by drive - so
+      // the next sync of that drive would add to them and report a total that
+      // never happened. Cancelling mid-sync is a normal thing to do.
       final hits = _arweave.snapshotMetadataHits.remove(drive.id) ?? 0;
       final misses = _arweave.snapshotMetadataMisses.remove(drive.id) ?? 0;
       if (hits + misses > 0) {
         logger.i('[snapshot] ${drive.id}: $hits entity metadata read(s) from '
             'snapshots, $misses fetched from the gateway');
       }
-    } finally {
+
       // Always dispose snapshot cache, even on error or cancellation
       await SnapshotItemOnChain.dispose(drive.id);
       logger.d('Disposed snapshot cache for drive ${drive.id}');
