@@ -28,13 +28,10 @@ class DriveShareLoadSuccess extends DriveShareState {
 }
 
 /// [DriveShareLoadFail] shows failiure states in the UI.
+///
+/// Carries no message: the dialog owns the copy so that it can be localized,
+/// which a cubit with no [BuildContext] cannot do. This is the same shape the
+/// file share dialog's failure states use.
 class DriveShareLoadFail extends DriveShareState {
-  final String message;
-
-  const DriveShareLoadFail({
-    required this.message,
-  });
-
-  @override
-  List<Object> get props => [message];
+  const DriveShareLoadFail();
 }

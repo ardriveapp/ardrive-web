@@ -1,7 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/utils/link_generators.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -25,40 +25,73 @@ class DriveShareCubit extends Cubit<DriveShareState> {
     loadDriveShareDetails();
   }
 
+  /// Builds the share link for [drive], or fails in a way the dialog can show.
+  ///
+  /// Everything here runs inside the guard on purpose. This method is called
+  /// from the constructor body and its future is never awaited, so anything it
+  /// throws becomes an unhandled asynchronous error: the cubit would stay in
+  /// [DriveShareLoadInProgress] and the dialog would spin forever, which is
+  /// exactly what a missing drive key used to do.
   Future<void> loadDriveShareDetails() async {
-    late Uri driveShareLink;
     emit(DriveShareLoadInProgress());
 
-    if (drive.isPrivate) {
-      DriveKey? driveKey;
-      if (_profileCubit.state is ProfileLoggedIn) {
-        final profileKey =
-            (_profileCubit.state as ProfileLoggedIn).user.cipherKey;
-        driveKey = await _driveDao.getDriveKey(drive.id, profileKey);
-      } else {
-        driveKey = await _driveDao.getDriveKeyFromMemory(drive.id);
+    try {
+      final driveShareLink = drive.isPrivate
+          ? await _privateDriveShareLink()
+          : generatePublicDriveShareLink(
+              driveId: drive.id,
+              driveName: drive.name,
+            );
+
+      if (isClosed) {
+        return;
       }
-      if (driveKey != null) {
-        driveShareLink = await generatePrivateDriveShareLink(
-          driveId: drive.id,
-          driveName: drive.name,
-          driveKey: driveKey.key,
-        );
-      } else {
-        throw StateError('Drive key not found');
-      }
-    } else {
-      driveShareLink = generatePublicDriveShareLink(
-        driveId: drive.id,
-        driveName: drive.name,
+
+      emit(
+        DriveShareLoadSuccess(
+          drive: drive,
+          driveShareLink: driveShareLink,
+        ),
       );
+    } catch (e, stacktrace) {
+      // The drive id is safe to log; the key never is, and nothing here puts
+      // one in the message.
+      logger.e(
+        'Failed to build the share link for drive ${drive.id}',
+        e,
+        stacktrace,
+      );
+
+      if (isClosed) {
+        return;
+      }
+
+      emit(const DriveShareLoadFail());
+    }
+  }
+
+  /// The link for a private drive, which needs the drive key to be reachable.
+  ///
+  /// The key comes from the profile when one is signed in, and from the
+  /// in-memory store otherwise - a drive attached in this session but never
+  /// persisted. Neither is guaranteed, and a [StateError] here is a real
+  /// outcome rather than a should-never-happen: it lands on the failure state
+  /// above.
+  Future<Uri> _privateDriveShareLink() async {
+    final profileState = _profileCubit.state;
+
+    final driveKey = profileState is ProfileLoggedIn
+        ? await _driveDao.getDriveKey(drive.id, profileState.user.cipherKey)
+        : await _driveDao.getDriveKeyFromMemory(drive.id);
+
+    if (driveKey == null) {
+      throw StateError('Drive key not found');
     }
 
-    emit(
-      DriveShareLoadSuccess(
-        drive: drive,
-        driveShareLink: driveShareLink,
-      ),
+    return generatePrivateDriveShareLink(
+      driveId: drive.id,
+      driveName: drive.name,
+      driveKey: driveKey.key,
     );
   }
 }

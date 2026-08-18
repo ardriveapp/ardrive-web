@@ -2334,6 +2334,18 @@
   "@shareDriveWithOthers": {
     "description": "The action of sharing a drive link"
   },
+  "shareDriveFailure": "We couldn’t create a share link for this drive. Check your connection and try again.",
+  "@shareDriveFailure": {
+    "description": "Shown in the share drive dialog when the link could not be built, most often because the drive key could not be read"
+  },
+  "shareDriveRevealLink": "Show link",
+  "@shareDriveRevealLink": {
+    "description": "Accessibility label for the control that reveals a masked share link"
+  },
+  "shareFileRevealKey": "Show access key",
+  "@shareFileRevealKey": {
+    "description": "Accessibility label for the control that reveals a masked access key"
+  },
   "shareFailedFile": "The file you are attempting to share is invalid and cannot be shared.",
   "@shareFailedFile": {
     "description": "Failed file share dialog text"

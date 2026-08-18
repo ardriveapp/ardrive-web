@@ -1,5 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/components/copy_button.dart';
+import 'package:ardrive/components/copyable_share_artifact.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -42,7 +42,12 @@ class DriveShareDialogState extends State<DriveShareDialog> {
 
   @override
   Widget build(BuildContext context) =>
-      BlocBuilder<DriveShareCubit, DriveShareState>(
+      BlocConsumer<DriveShareCubit, DriveShareState>(
+        listener: (context, state) {
+          if (state is DriveShareLoadSuccess) {
+            shareLinkController.text = state.driveShareLink.toString();
+          }
+        },
         builder: (context, state) {
           final typography = ArDriveTypographyNew.of(context);
 
@@ -60,50 +65,18 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                   if (state is DriveShareLoadInProgress)
                     const Center(child: CircularProgressIndicator())
                   else if (state is DriveShareLoadSuccess) ...{
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Flexible(
-                          child: Container(
-                            padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
-                            decoration: BoxDecoration(
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colorTokens
-                                  .inputDisabled,
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colorTokens
-                                    .strokeMid,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    state.driveShareLink.toString(),
-                                    style: typography.paragraphNormal(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colorTokens
-                                          .textXLow,
-                                      fontWeight: ArFontWeight.semiBold,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                CopyButton(
-                                  text: state.driveShareLink.toString(),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
+                    CopyableShareArtifact(
+                      label: appLocalizationsOf(context).shareDriveWithOthers,
+                      controller: shareLinkController,
+                      text: state.driveShareLink.toString(),
+                      copyLabel: appLocalizationsOf(context).copyLink,
+                      revealLabel:
+                          appLocalizationsOf(context).shareDriveRevealLink,
+                      // A private drive's link carries the drive key, which
+                      // decrypts every file and folder name in the drive and
+                      // cannot be rotated. A public drive's link is not a
+                      // secret and is left legible.
+                      isSecret: state.drive.isPrivate,
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -115,11 +88,30 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                       style: typography.paragraphLarge(),
                     ),
                   } else if (state is DriveShareLoadFail)
-                    Text(state.message)
+                    Text(
+                      appLocalizationsOf(context).shareDriveFailure,
+                      style: typography.paragraphNormal(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colorTokens
+                            .textMid,
+                      ),
+                    ),
                 ],
               ),
             ),
             actions: [
+              if (state is DriveShareLoadFail) ...[
+                ModalAction(
+                  action: () => Navigator.pop(context),
+                  title: appLocalizationsOf(context).cancel,
+                ),
+                ModalAction(
+                  action: () =>
+                      context.read<DriveShareCubit>().loadDriveShareDetails(),
+                  title: appLocalizationsOf(context).tryAgain,
+                ),
+              ],
               if (state is DriveShareLoadSuccess)
                 ModalAction(
                   action: () => Navigator.pop(context),
