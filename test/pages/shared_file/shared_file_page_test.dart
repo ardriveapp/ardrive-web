@@ -4,7 +4,6 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/shared_file/shared_file_key_session.dart';
 import 'package:ardrive/pages/shared_file/shared_file_page.dart';
-import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/pages/shared_file/shared_file_ready_view.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/session_key_value_store.dart';
@@ -59,6 +58,15 @@ void main() {
 
   late MockSharedFileCubit cubit;
   late StreamController<SharedFileState> states;
+
+  /// The value rendered beside [label] in the details drawer, scoped to that
+  /// label's own row.
+  Finder detailRowValue(String label, String value) => find.descendant(
+        of: find
+            .ancestor(of: find.text(label), matching: find.byType(Row))
+            .first,
+        matching: find.text(value),
+      );
 
   FileRevision fileRevision({
     String name = 'Q3 Report.pdf',
@@ -504,20 +512,18 @@ void main() {
       await tester.tap(find.byType(ExpansionTile).first);
       await tester.pumpAndSettle();
 
-      expect(find.text('File type'), findsOneWidget);
-      expect(find.text('application/pdf'), findsOneWidget);
-
-      // Distinct dates, so each row is pinned to its own field rather than
-      // both matching one string.
-      expect(find.text('Date created'), findsOneWidget);
+      // Each value is scoped to the row its label is in, so two rows cannot
+      // satisfy each other's assertion - a swap between created and modified
+      // would otherwise still pass. The expected strings are literal rather
+      // than run through `formatDateToUtcString`, which would let a formatter
+      // change rewrite the production output and the expectation together.
+      expect(detailRowValue('File type', 'application/pdf'), findsOneWidget);
       expect(
-        find.text(formatDateToUtcString(DateTime.utc(2024, 3, 3))),
-        findsWidgets,
+        detailRowValue('Date created', '2024-03-03 00:00:00 GMT+0'),
+        findsOneWidget,
       );
-
-      expect(find.text('Last updated'), findsOneWidget);
       expect(
-        find.text(formatDateToUtcString(DateTime.utc(2023, 11, 9))),
+        detailRowValue('Last updated', '2023-11-09 00:00:00 GMT+0'),
         findsOneWidget,
       );
     });
