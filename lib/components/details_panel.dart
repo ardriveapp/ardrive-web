@@ -1190,7 +1190,9 @@ class DetailsPanelToolbar extends StatelessWidget {
           const SizedBox(
             width: 16,
           ),
-          if (item is FileDataTableItem || item is DriveDataItem)
+          if (item is FileDataTableItem ||
+              item is DriveDataItem ||
+              item is FolderDataTableItem)
             _buildActionIcon(
               tooltip: _getShareTooltip(item, context),
               icon: ArDriveIcons.share(size: defaultIconSize),
@@ -1200,6 +1202,15 @@ class DetailsPanelToolbar extends StatelessWidget {
                     context: context,
                     driveId: item.driveId,
                     fileId: item.id,
+                  );
+                } else if (item is FolderDataTableItem) {
+                  // A folder link is a drive link that names a folder, and it
+                  // carries the drive key for the same reason - a folder in a
+                  // private drive cannot be read without it.
+                  promptToShareDrive(
+                    context: context,
+                    drive: drive,
+                    folderId: item.id,
                   );
                 } else if (item is DriveDataItem) {
                   promptToShareDrive(
@@ -1303,6 +1314,8 @@ class DetailsPanelToolbar extends StatelessWidget {
   String _getShareTooltip(ArDriveDataTableItem item, BuildContext context) {
     if (item is FileDataTableItem) {
       return appLocalizationsOf(context).shareFile;
+    } else if (item is FolderDataTableItem) {
+      return appLocalizationsOf(context).shareFolder;
     } else if (item is DriveDataItem) {
       return appLocalizationsOf(context).shareDrive;
     } else {

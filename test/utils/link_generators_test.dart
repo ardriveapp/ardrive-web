@@ -47,6 +47,7 @@ void main() {
         final webShareUri = await generatePrivateDriveShareLink(
           driveId: testPrivateDrive.id,
           driveKey: testPrivateDriveKey,
+          includeKey: true,
         );
         // Remove # delimiter as it messes with Uri parsing outside of app route
         // information parser
@@ -206,7 +207,24 @@ void main() {
         );
       });
 
-      test('a private drive link still carries its key in the query', () async {
+      test('a private drive link carries its key when the sharer opts in',
+          () async {
+        const driveKeyBase64 = 'X123YZAB-CD4e5fgHIjKlmN6O7pqrStuVwxYzaBcd8E';
+
+        final link = await generatePrivateDriveShareLink(
+          driveId: 'driveId',
+          driveKey: SecretKey(decodeBase64ToBytes(driveKeyBase64)),
+          includeKey: true,
+        );
+
+        expect(link.toString(), startsWith('https://app.ardrive.io/#/drives/'));
+        expect(link.toString(), endsWith('?driveKey=$driveKeyBase64'));
+      });
+
+      test('a private drive link is keyless unless asked otherwise', () async {
+        // The default matters more than the capability: a drive key opens
+        // every file in the drive for the life of the drive and cannot be
+        // rotated, so embedding one is a deliberate act.
         const driveKeyBase64 = 'X123YZAB-CD4e5fgHIjKlmN6O7pqrStuVwxYzaBcd8E';
 
         final link = await generatePrivateDriveShareLink(
@@ -214,8 +232,38 @@ void main() {
           driveKey: SecretKey(decodeBase64ToBytes(driveKeyBase64)),
         );
 
-        expect(link.toString(), startsWith('https://app.ardrive.io/#/drives/'));
-        expect(link.toString(), endsWith('?driveKey=$driveKeyBase64'));
+        expect(link.toString(), 'https://app.ardrive.io/#/drives/driveId');
+        expect(link.toString(), isNot(contains(driveKeyBase64)));
+      });
+
+      test('a folder link names the folder under its drive', () async {
+        expect(
+          generatePublicDriveShareLink(
+            driveId: 'driveId',
+            driveName: 'My Drive',
+            folderId: 'folderId',
+          ).toString(),
+          'https://app.ardrive.io/#/drives/driveId/folders/folderId'
+          '?name=My+Drive',
+        );
+      });
+
+      test('a private folder link keeps the folder and the key together',
+          () async {
+        const driveKeyBase64 = 'X123YZAB-CD4e5fgHIjKlmN6O7pqrStuVwxYzaBcd8E';
+
+        final link = await generatePrivateDriveShareLink(
+          driveId: 'driveId',
+          driveKey: SecretKey(decodeBase64ToBytes(driveKeyBase64)),
+          folderId: 'folderId',
+          includeKey: true,
+        );
+
+        expect(
+          link.toString(),
+          'https://app.ardrive.io/#/drives/driveId/folders/folderId'
+          '?driveKey=$driveKeyBase64',
+        );
       });
 
       test('a private drive link does not carry the drive name', () async {

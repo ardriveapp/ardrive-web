@@ -8,15 +8,18 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+/// Shares [drive], or - when [folderId] is given - one folder inside it.
 Future<void> promptToShareDrive({
   required BuildContext context,
   required Drive drive,
+  String? folderId,
 }) =>
     showArDriveDialog(
       context,
       content: BlocProvider(
         create: (_) => DriveShareCubit(
           drive: drive,
+          folderId: folderId,
           driveDao: context.read<DriveDao>(),
           profileCubit: context.read<ProfileCubit>(),
         ),
@@ -34,6 +37,14 @@ class DriveShareDialog extends StatefulWidget {
 
 class DriveShareDialogState extends State<DriveShareDialog> {
   final shareLinkController = TextEditingController();
+  final driveKeyController = TextEditingController();
+
+  @override
+  void dispose() {
+    shareLinkController.dispose();
+    driveKeyController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -46,6 +57,7 @@ class DriveShareDialogState extends State<DriveShareDialog> {
         listener: (context, state) {
           if (state is DriveShareLoadSuccess) {
             shareLinkController.text = state.driveShareLink.toString();
+            driveKeyController.text = state.driveKeyBase64 ?? '';
           }
         },
         builder: (context, state) {
@@ -53,9 +65,12 @@ class DriveShareDialogState extends State<DriveShareDialog> {
 
           return ArDriveStandardModalNew(
             width: kLargeDialogWidth,
-            title: appLocalizationsOf(context).shareDriveWithOthers,
+            title: state is DriveShareLoadSuccess && state.isFolder
+                ? appLocalizationsOf(context).shareFolderWithOthers
+                : appLocalizationsOf(context).shareDriveWithOthers,
             description:
                 state is DriveShareLoadSuccess ? state.drive.name : null,
+            scrollableContent: true,
             content: SizedBox(
               width: kLargeDialogWidth,
               child: Column(
@@ -66,18 +81,80 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                     const Center(child: CircularProgressIndicator())
                   else if (state is DriveShareLoadSuccess) ...{
                     CopyableShareArtifact(
-                      label: appLocalizationsOf(context).shareDriveWithOthers,
+                      label: appLocalizationsOf(context).shareFileLinkLabel,
                       controller: shareLinkController,
                       text: state.driveShareLink.toString(),
                       copyLabel: appLocalizationsOf(context).copyLink,
                       revealLabel:
                           appLocalizationsOf(context).shareDriveRevealLink,
-                      // A private drive's link carries the drive key, which
-                      // decrypts every file and folder name in the drive and
-                      // cannot be rotated. A public drive's link is not a
-                      // secret and is left legible.
-                      isSecret: state.drive.isPrivate,
+                      // Only a link the sharer chose to embed the key in holds
+                      // a secret. A keyless link - the default - is not worth
+                      // hiding, and hiding it would suggest it is dangerous to
+                      // share, which is the opposite of the point.
+                      isSecret: state.keyIsInLink,
                     ),
+                    if (state.hasSeparateKeyArtifact) ...{
+                      const SizedBox(height: 16),
+                      CopyableShareArtifact(
+                        label: appLocalizationsOf(context)
+                            .shareDriveAccessKeyLabel,
+                        controller: driveKeyController,
+                        text: state.driveKeyBase64!,
+                        copyLabel: appLocalizationsOf(context).copyAccessKey,
+                        revealLabel:
+                            appLocalizationsOf(context).shareFileRevealKey,
+                        isSecret: true,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          appLocalizationsOf(context)
+                              .shareDriveSendKeySeparately,
+                          style: typography.paragraphSmall(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colorTokens
+                                .textLow,
+                          ),
+                        ),
+                      ),
+                    },
+                    if (state.drive.isPrivate) ...{
+                      const SizedBox(height: 16),
+                      ArDriveCheckBox(
+                        // The checkbox only reads `checked` when it is first
+                        // built, so the key forces a fresh one whenever the
+                        // cubit's answer changes.
+                        key: ValueKey(state.keyIsInLink),
+                        checked: state.keyIsInLink,
+                        title: appLocalizationsOf(context)
+                            .shareDriveIncludeKeyInLink,
+                        titleStyle: typography.paragraphSmall(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colorTokens
+                              .textMid,
+                        ),
+                        onChange: (value) =>
+                            context.read<DriveShareCubit>().setKeyIsInLink(
+                                  value,
+                                ),
+                      ),
+                      if (state.keyIsInLink)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            appLocalizationsOf(context)
+                                .shareDriveKeyInLinkWarning,
+                            style: typography.paragraphSmall(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colorTokens
+                                  .strokeRed,
+                            ),
+                          ),
+                        ),
+                    },
                     const SizedBox(height: 16),
                     Text(
                       state.drive.isPublic

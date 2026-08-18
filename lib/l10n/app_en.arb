@@ -2334,6 +2334,30 @@
   "@shareDriveWithOthers": {
     "description": "The action of sharing a drive link"
   },
+  "shareFolderWithOthers": "Share folder with others",
+  "@shareFolderWithOthers": {
+    "description": "Title of the dialog that shares a link to one folder"
+  },
+  "shareFolder": "Share folder",
+  "@shareFolder": {
+    "description": "The action of sharing a link to a folder"
+  },
+  "shareDriveAccessKeyLabel": "Drive access key",
+  "@shareDriveAccessKeyLabel": {
+    "description": "Label of the field holding the drive key handed over alongside a private drive link"
+  },
+  "shareDriveIncludeKeyInLink": "Include the key in the link",
+  "@shareDriveIncludeKeyInLink": {
+    "description": "Checkbox that embeds the drive key in the share link instead of handing it over separately"
+  },
+  "shareDriveKeyInLinkWarning": "Anyone with this link can open every file in the drive, including files added later. A drive key cannot be changed.",
+  "@shareDriveKeyInLinkWarning": {
+    "description": "Warning shown when the sharer chooses to embed the drive key in the link"
+  },
+  "shareDriveSendKeySeparately": "Send this key separately from the link.",
+  "@shareDriveSendKeySeparately": {
+    "description": "Helper text under the drive key field explaining the two-artifact handover"
+  },
   "shareDriveFailure": "We couldn’t create a share link for this drive. Check your connection and try again.",
   "@shareDriveFailure": {
     "description": "Shown in the share drive dialog when the link could not be built, most often because the drive key could not be read"

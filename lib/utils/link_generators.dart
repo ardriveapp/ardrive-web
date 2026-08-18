@@ -12,14 +12,28 @@ import 'package:flutter/foundation.dart';
 /// build points back at that preview build. Everywhere else, app.ardrive.io.
 String shareLinkOrigin() => kIsWeb ? Uri.base.origin : linkOriginProduction;
 
+/// A share link for a public drive, or for one folder inside it.
+///
+/// The name rides along because a public drive's name is not a secret and it
+/// saves the recipient's client a lookup. See [generatePrivateDriveShareLink]
+/// for why the private variant carries none.
 Uri generatePublicDriveShareLink({
   required final DriveID driveId,
   required final String driveName,
+  final FolderID? folderId,
 }) {
-  final driveShareLink =
-      '${shareLinkOrigin()}/#/drives/$driveId?name=${Uri.encodeQueryComponent(driveName)}';
+  final driveShareLink = '${shareLinkOrigin()}'
+      '${_driveLocation(driveId: driveId, folderId: folderId)}'
+      '?name=${Uri.encodeQueryComponent(driveName)}';
+
   return Uri.parse(driveShareLink);
 }
+
+/// The route location of a drive, or of a folder within it.
+String _driveLocation({required DriveID driveId, FolderID? folderId}) =>
+    folderId == null
+        ? '/#/drives/$driveId'
+        : '/#/drives/$driveId/folders/$folderId';
 
 /// A share link for a private drive.
 ///
@@ -33,15 +47,35 @@ Uri generatePublicDriveShareLink({
 /// real name from the drive's own record as soon as the key is in hand
 /// (`DriveAttachCubit.driveNameLoader`), so the name in the link was only ever
 /// a pre-fill that the chain immediately overwrote.
+/// [includeKey] embeds the drive key in the link.
+///
+/// Off by default, and off is what the share dialog uses unless the sharer
+/// opts in. A drive key opens every file and every folder name in the drive
+/// for the life of the drive, and - unlike a password - **it cannot be
+/// rotated**. A link that carries one is a link whose key is in every forward,
+/// screenshot and unfurl of the message it travelled in. The keyless link and
+/// the key are handed over as two artifacts, meant for two channels, exactly
+/// as a private file's are.
+///
+/// A recipient who opens a keyless link is not stuck: the attach form asks for
+/// the key, validates it, and reads the drive's real name off the chain once
+/// it has one.
 Future<Uri> generatePrivateDriveShareLink({
   required final DriveID driveId,
   required final SecretKey driveKey,
+  final FolderID? folderId,
+  final bool includeKey = false,
 }) async {
+  final location =
+      '${shareLinkOrigin()}${_driveLocation(driveId: driveId, folderId: folderId)}';
+
+  if (!includeKey) {
+    return Uri.parse(location);
+  }
+
   final driveKeyBase64 = encodeBytesToBase64(await driveKey.extractBytes());
 
-  return Uri.parse(
-    '${shareLinkOrigin()}/#/drives/$driveId?driveKey=$driveKeyBase64',
-  );
+  return Uri.parse('$location?driveKey=$driveKeyBase64');
 }
 
 Uri generatePublicFileShareLink({

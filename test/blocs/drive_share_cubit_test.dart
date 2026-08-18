@@ -41,8 +41,9 @@ void main() {
 
   Future<Drive> drive() => driveDao.driveById(driveId: driveId).getSingle();
 
-  DriveShareCubit cubit(Drive d) => DriveShareCubit(
+  DriveShareCubit cubit(Drive d, {String? folderId}) => DriveShareCubit(
         drive: d,
+        folderId: folderId,
         driveDao: driveDao,
         profileCubit: profileCubit,
       );
@@ -152,6 +153,95 @@ void main() {
       await expectation;
     });
 
+    test('a private drive link is keyless by default', () async {
+      // A drive key opens every file in the drive, for the life of the drive,
+      // and cannot be rotated. It is handed over as its own artifact unless
+      // the sharer deliberately embeds it.
+      when(() => profileCubit.state).thenReturn(ProfilePromptAdd());
+
+      await insertDrive(isPrivate: true);
+      await driveDao.putDriveKeyInMemory(driveID: driveId, driveKey: driveKey);
+
+      final state = await settled(cubit(await drive()));
+
+      expect(state, isA<DriveShareLoadSuccess>());
+
+      final success = state as DriveShareLoadSuccess;
+
+      expect(success.driveShareLink.toString(), isNot(contains('driveKey')));
+      expect(success.keyIsInLink, isFalse);
+      // The key is still offered, just not inside the link.
+      expect(success.hasSeparateKeyArtifact, isTrue);
+      expect(success.driveKeyBase64, isNotNull);
+    });
+
+    test('opting in embeds the key and retires the separate artifact',
+        () async {
+      when(() => profileCubit.state).thenReturn(ProfilePromptAdd());
+
+      await insertDrive(isPrivate: true);
+      await driveDao.putDriveKeyInMemory(driveID: driveId, driveKey: driveKey);
+
+      final c = cubit(await drive());
+
+      await settled(c);
+      await c.setKeyIsInLink(true);
+
+      final success = c.state as DriveShareLoadSuccess;
+
+      expect(success.driveShareLink.toString(), contains('driveKey='));
+      expect(success.keyIsInLink, isTrue);
+      expect(success.hasSeparateKeyArtifact, isFalse);
+    });
+
+    test('a public drive has no key artifact to offer', () async {
+      await insertDrive(isPrivate: false);
+
+      final success = await settled(cubit(await drive()))
+          as DriveShareLoadSuccess;
+
+      expect(success.driveKeyBase64, isNull);
+      expect(success.hasSeparateKeyArtifact, isFalse);
+    });
+
+    test('a folder link names the folder inside the drive', () async {
+      const folderId = 'c4d9dc2c-5d4c-6e3d-ac4f-8f3c2d5e6f70';
+
+      await insertDrive(isPrivate: false);
+
+      final success =
+          await settled(cubit(await drive(), folderId: folderId))
+              as DriveShareLoadSuccess;
+
+      expect(
+        success.driveShareLink.toString(),
+        contains('/#/drives/$driveId/folders/$folderId'),
+      );
+      expect(success.isFolder, isTrue);
+    });
+
+    test('a private folder link can carry the drive key when opted in',
+        () async {
+      const folderId = 'c4d9dc2c-5d4c-6e3d-ac4f-8f3c2d5e6f70';
+
+      when(() => profileCubit.state).thenReturn(ProfilePromptAdd());
+
+      await insertDrive(isPrivate: true);
+      await driveDao.putDriveKeyInMemory(driveID: driveId, driveKey: driveKey);
+
+      final c = cubit(await drive(), folderId: folderId);
+
+      await settled(c);
+      await c.setKeyIsInLink(true);
+
+      final link = (c.state as DriveShareLoadSuccess).driveShareLink.toString();
+
+      // Both halves have to survive together: the parser used to return the
+      // drive route as soon as it saw a key, which lost the folder.
+      expect(link, contains('/folders/$folderId'));
+      expect(link, contains('driveKey='));
+    });
+
     test('a private drive resolves to a link carrying its key', () async {
       // Signed out, so the key comes from the in-memory vault - the path a
       // drive attached this session but never persisted takes.
@@ -163,12 +253,13 @@ void main() {
         driveKey: driveKey,
       );
 
-      final state = await settled(cubit(await drive()));
+      final c = cubit(await drive());
 
-      expect(state, isA<DriveShareLoadSuccess>());
+      await settled(c);
+      await c.setKeyIsInLink(true);
 
       expect(
-        (state as DriveShareLoadSuccess).driveShareLink.toString(),
+        (c.state as DriveShareLoadSuccess).driveShareLink.toString(),
         contains('driveKey='),
       );
     });

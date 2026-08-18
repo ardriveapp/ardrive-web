@@ -99,11 +99,24 @@ class AppRoutePath {
       );
 
   /// Creates a route that points to a folder in a particular drive.
+  ///
+  /// Carries the drive key for the same reason [driveDetail] does: a folder
+  /// inside a private drive cannot be read without it, and a link that names
+  /// one has nowhere else to put it.
   factory AppRoutePath.folderDetail({
     required String driveId,
     required String driveFolderId,
+    String? driveName,
+    DriveKey? sharedDrivePk,
+    String? sharedRawDriveKey,
   }) =>
-      AppRoutePath(driveId: driveId, driveFolderId: driveFolderId);
+      AppRoutePath(
+        driveId: driveId,
+        driveFolderId: driveFolderId,
+        driveName: driveName,
+        sharedDriveKey: sharedDrivePk,
+        sharedRawDriveKey: sharedRawDriveKey,
+      );
 
   /// Creates a route that points to a particular shared file.
   factory AppRoutePath.sharedFile({

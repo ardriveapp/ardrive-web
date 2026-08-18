@@ -895,6 +895,24 @@ class EntityActionsMenu extends StatelessWidget {
           ),
           hideFileDropdownItem(context, item),
         ],
+        // Guarded rather than assumed: this menu is also built in places that
+        // do not know the drive, and a folder link needs it for the key.
+        if (drive != null)
+          ArDriveDropdownItem(
+            onClick: () {
+              promptToShareDrive(
+                context: context,
+                drive: drive!,
+                folderId: item.id,
+              );
+            },
+            content: _buildItem(
+              appLocalizationsOf(context).shareFolder,
+              ArDriveIcons.share(
+                size: defaultIconSize,
+              ),
+            ),
+          ),
         if (withInfo) _buildInfoOption(context),
       ];
     } else if (item is DriveDataItem) {

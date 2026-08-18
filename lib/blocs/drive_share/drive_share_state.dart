@@ -5,7 +5,7 @@ abstract class DriveShareState extends Equatable {
   const DriveShareState();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 /// [DriveShareLoadInProgress] means that the drive share details are being loaded.
@@ -18,13 +18,36 @@ class DriveShareLoadSuccess extends DriveShareState {
   /// The link to share access of this drive with.
   final Uri driveShareLink;
 
+  /// Whether the link points at one folder rather than the whole drive.
+  final bool isFolder;
+
+  /// Whether the drive key is embedded in [driveShareLink].
+  final bool keyIsInLink;
+
+  /// The drive key, for the sharer to hand over separately.
+  ///
+  /// `null` for a public drive, which has none.
+  final String? driveKeyBase64;
+
   const DriveShareLoadSuccess({
     required this.drive,
     required this.driveShareLink,
+    this.isFolder = false,
+    this.keyIsInLink = false,
+    this.driveKeyBase64,
   });
 
+  /// Whether the key travels as its own artifact rather than inside the link.
+  bool get hasSeparateKeyArtifact => driveKeyBase64 != null && !keyIsInLink;
+
   @override
-  List<Object> get props => [drive, driveShareLink];
+  List<Object?> get props => [
+        drive,
+        driveShareLink,
+        isFolder,
+        keyIsInLink,
+        driveKeyBase64,
+      ];
 }
 
 /// [DriveShareLoadFail] shows failiure states in the UI.
