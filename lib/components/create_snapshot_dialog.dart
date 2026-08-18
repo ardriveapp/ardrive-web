@@ -131,7 +131,6 @@ Widget _explanationDialog(BuildContext context, Drive drive) {
 
   return ArDriveStandardModalNew(
     title: appLocalizationsOf(context).newSnapshot,
-    width: kMediumDialogWidth,
     content: Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -261,7 +260,6 @@ Widget _successDialog(BuildContext context, String driveName) {
 
   return ArDriveStandardModalNew(
     title: appLocalizationsOf(context).snapshotSuceeded,
-    width: kMediumDialogWidth,
     content: Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -298,7 +296,6 @@ Widget _failureDialog(
 
   return ArDriveStandardModalNew(
     title: appLocalizationsOf(context).snapshotFailed,
-    width: kMediumDialogWidth,
     content: Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -339,7 +336,6 @@ Widget _insufficientBalanceDialog(
 
   return ArDriveStandardModalNew(
     title: appLocalizationsOf(context).insufficientARForUpload,
-    width: kMediumDialogWidth,
     content: Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
