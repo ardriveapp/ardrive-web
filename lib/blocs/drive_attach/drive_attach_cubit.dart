@@ -90,6 +90,22 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
             );
           }
 
+          // A private share link no longer carries the drive's name - it is a
+          // secret, and it is recoverable from the drive's own record once the
+          // key is in hand. Resolve it here so the auto-attach below still
+          // has one.
+          //
+          // Deliberately resolved *before* `submit()` rather than inside it:
+          // `submit()` reads the name controller up front so that a name the
+          // user typed by hand is the one the drive is attached under, and
+          // moving that read later would silently discard it.
+          if (driveNameController.text.isEmpty &&
+              driveKeyController.text.isNotEmpty) {
+            await driveNameLoader();
+
+            if (isClosed) return;
+          }
+
           if (driveNameController.text.isNotEmpty &&
               driveKeyController.text.isNotEmpty) {
             submit();

@@ -4,6 +4,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/shared_file/shared_file_key_session.dart';
 import 'package:ardrive/pages/shared_file/shared_file_page.dart';
+import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/pages/shared_file/shared_file_ready_view.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/session_key_value_store.dart';
@@ -488,6 +489,29 @@ void main() {
 
       expect(find.text('data-tx-newest'), findsOneWidget);
       expect(find.text('metadata-tx'), findsOneWidget);
+    });
+
+    testWidgets(
+        'the details drawer states the type and when the file was uploaded',
+        (tester) async {
+      // A recipient sent a link by a stranger has almost nothing to judge the
+      // file by, and the upload date is the strongest signal available. It
+      // used to appear nowhere on this page: the drawer listed only ids, and
+      // the sole date on the page sat inside the version history, which is
+      // collapsed and not fetched until opened.
+      await pumpPage(tester, success());
+
+      await tester.tap(find.byType(ExpansionTile).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('File type'), findsOneWidget);
+      expect(find.text('application/pdf'), findsOneWidget);
+
+      expect(find.text('Date created'), findsOneWidget);
+      expect(
+        find.text(formatDateToUtcString(DateTime.utc(2024, 3, 3))),
+        findsWidgets,
+      );
     });
 
     testWidgets('asks for the version history only when it is opened',

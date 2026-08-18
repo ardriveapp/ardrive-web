@@ -100,6 +100,35 @@ class SharedFileCubit extends Cubit<SharedFileState> {
 
   Future<void>? _backgroundWork;
 
+  /// The longest a single network read here may take before it is abandoned.
+  ///
+  /// The data path has been bounded for a long time - [DataGatewayFallback]
+  /// gives every fetch a request timeout, a total timeout and a hedge. The
+  /// GraphQL reads that run *in front of* it had nothing: [GraphQLRetry]
+  /// retries a call that fails, but sets no timeout, so a connection that
+  /// errors is retried and a connection that simply hangs is not. This page
+  /// would sit on its skeleton forever.
+  ///
+  /// Sized well above a healthy read and well below a recipient's patience.
+  /// Anything that trips it lands in the load failure state, which already
+  /// offers Retry.
+  static const defaultReadTimeout = Duration(seconds: 15);
+
+  final Duration _readTimeout;
+
+  /// Bounds [future], naming [what] so a timeout is legible in the log.
+  ///
+  /// A [TimeoutException] is deliberately left to propagate: every caller on
+  /// the critical path already handles a failed read, either by degrading to
+  /// another resolution path or by emitting the failure state.
+  Future<T> _bounded<T>(Future<T> future, String what) => future.timeout(
+        _readTimeout,
+        onTimeout: () => throw TimeoutException(
+          'Timed out after ${_readTimeout.inSeconds}s while $what',
+          _readTimeout,
+        ),
+      );
+
   SharedFileCubit({
     required this.fileId,
     this.fileKey,
@@ -109,10 +138,12 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     required licenseService,
     ArDriveCrypto? crypto,
     Duration propagationRetryDelay = const Duration(seconds: 3),
+    Duration readTimeout = defaultReadTimeout,
   })  : _arweave = arweave,
         _licenseService = licenseService,
         _crypto = crypto ?? ArDriveCrypto(),
         _propagationRetryDelay = propagationRetryDelay,
+        _readTimeout = readTimeout,
         // A v2 link can paint its skeleton with the real name and size before
         // a single byte has been fetched.
         super(SharedFileLoadInProgress(payload: linkPayload)) {
@@ -276,9 +307,9 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     emit(current.copyWith(activityStatus: SharedFileActivityStatus.loading));
 
     try {
-      final entities = await _arweave.getAllFileEntitiesWithId(
-        fileId,
-        fileKey,
+      final entities = await _bounded(
+        _arweave.getAllFileEntitiesWithId(fileId, fileKey),
+        'reading the file\'s version history',
       );
 
       if (_isStale(resolution)) {
@@ -357,7 +388,10 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     FileEntity? latest;
 
     try {
-      latest = await _arweave.getLatestFileEntityWithId(fileId, fileKey);
+      latest = await _bounded(
+        _arweave.getLatestFileEntityWithId(fileId, fileKey),
+        'checking for a newer revision',
+      );
     } catch (e, stacktrace) {
       logger.e(
         'Failed to load the newest revision of the shared file',
@@ -596,7 +630,10 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     _SharedRevision? shared;
 
     try {
-      shared = await _fetchSharedRevision(metadataTxId, fileKey);
+      shared = await _bounded(
+        _fetchSharedRevision(metadataTxId, fileKey),
+        'reading the metadata transaction the link names',
+      );
     } on EntityTransactionParseException {
       if (_isStale(resolution)) {
         return true;
@@ -725,7 +762,10 @@ class SharedFileCubit extends Cubit<SharedFileState> {
         emit(SharedFileLoadInProgress(payload: linkPayload));
       }
 
-      final privacy = await _arweave.getFilePrivacyForId(fileId);
+      final privacy = await _bounded(
+        _arweave.getFilePrivacyForId(fileId),
+        'looking up whether the file is private',
+      );
 
       if (_isStale(resolution)) {
         return;
@@ -735,9 +775,9 @@ class SharedFileCubit extends Cubit<SharedFileState> {
         _emitLocked(linkPayload);
         return;
       }
-      final allEntities = await _arweave.getAllFileEntitiesWithId(
-        fileId,
-        fileKey,
+      final allEntities = await _bounded(
+        _arweave.getAllFileEntitiesWithId(fileId, fileKey),
+        'reading the file\'s revisions',
       );
 
       if (_isStale(resolution)) {
@@ -764,9 +804,9 @@ class SharedFileCubit extends Cubit<SharedFileState> {
         // revisions are in reverse chronological order, so first is most recent
         final target = _targetRevision(revisions);
         final latestLicense = target.licenseTxId != null
-            ? await fetchLicenseForRevision(
-                target,
-                owner: ownerAddress,
+            ? await _bounded(
+                fetchLicenseForRevision(target, owner: ownerAddress),
+                'reading the file\'s license',
               )
             : null;
 

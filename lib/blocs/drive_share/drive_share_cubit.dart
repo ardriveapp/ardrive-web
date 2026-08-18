@@ -90,7 +90,6 @@ class DriveShareCubit extends Cubit<DriveShareState> {
 
     return generatePrivateDriveShareLink(
       driveId: drive.id,
-      driveName: drive.name,
       driveKey: driveKey.key,
     );
   }

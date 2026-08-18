@@ -849,9 +849,33 @@ class SharedFileDetailsDrawer extends StatelessWidget {
     final ownerAddress = this.ownerAddress;
     final licenseName = this.licenseName;
 
+    final contentType = revision.dataContentType;
+
     return _SharedFileDrawer(
       title: appLocalizationsOf(context).sharedFileDetailsDrawerTitle,
       children: [
+        // Type and dates lead, ahead of the identifiers. A recipient who was
+        // sent a link by a stranger has almost no way to judge what they are
+        // looking at, and *when it was uploaded* is the most useful signal
+        // they have - it was previously nowhere on this page, and the only
+        // date anywhere sat inside the version history, which is collapsed and
+        // not fetched until it is opened.
+        if (contentType != null && contentType.isNotEmpty)
+          _SharedFileDetailRow(
+            label: appLocalizationsOf(context).fileType,
+            value: contentType,
+            canCopy: false,
+          ),
+        _SharedFileDetailRow(
+          label: appLocalizationsOf(context).dateCreated,
+          value: formatDateToUtcString(revision.dateCreated),
+          canCopy: false,
+        ),
+        _SharedFileDetailRow(
+          label: appLocalizationsOf(context).lastUpdated,
+          value: formatDateToUtcString(revision.lastModifiedDate),
+          canCopy: false,
+        ),
         _SharedFileDetailRow(
           label: appLocalizationsOf(context).fileID,
           value: revision.fileId,

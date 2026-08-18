@@ -155,6 +155,7 @@ void main() {
     bool linkKeyIsDamaged = false,
     SharedFileLinkPayload? payload,
     ArDriveCrypto? crypto,
+    Duration readTimeout = SharedFileCubit.defaultReadTimeout,
   }) =>
       SharedFileCubit(
         fileId: id,
@@ -166,6 +167,7 @@ void main() {
         crypto: crypto,
         // The propagation retries are the behavior under test, not the wait.
         propagationRetryDelay: Duration.zero,
+        readTimeout: readTimeout,
       );
 
   setUpAll(() {
@@ -188,6 +190,41 @@ void main() {
 
         return createCubit();
       },
+      expect: () => [isA<SharedFileLoadFailure>()],
+    );
+
+    blocTest<SharedFileCubit, SharedFileState>(
+      'gives up on a read that hangs rather than waiting forever',
+      build: () {
+        // Not a failure - silence. `GraphQLRetry` retries a call that throws,
+        // but sets no timeout, so a connection that never answers was never
+        // retried and never abandoned either: the page sat on its skeleton
+        // for as long as the tab stayed open. A completer that is never
+        // completed is exactly that gateway.
+        when(() => arweave.getFilePrivacyForId(any()))
+            .thenAnswer((_) => Completer<String?>().future);
+
+        return createCubit(
+          readTimeout: const Duration(milliseconds: 50),
+        );
+      },
+      wait: const Duration(milliseconds: 200),
+      expect: () => [isA<SharedFileLoadFailure>()],
+    );
+
+    blocTest<SharedFileCubit, SharedFileState>(
+      'gives up on a hanging revision read too',
+      build: () {
+        when(() => arweave.getFilePrivacyForId(any()))
+            .thenAnswer((_) async => DrivePrivacyTag.public);
+        when(() => arweave.getAllFileEntitiesWithId(any(), any()))
+            .thenAnswer((_) => Completer<List<FileEntity>>().future);
+
+        return createCubit(
+          readTimeout: const Duration(milliseconds: 50),
+        );
+      },
+      wait: const Duration(milliseconds: 200),
       expect: () => [isA<SharedFileLoadFailure>()],
     );
 

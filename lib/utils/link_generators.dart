@@ -21,15 +21,26 @@ Uri generatePublicDriveShareLink({
   return Uri.parse(driveShareLink);
 }
 
+/// A share link for a private drive.
+///
+/// Deliberately carries no `name`. A private drive's name is a secret of
+/// exactly the kind the file link schema added its `hid` flag to protect - a
+/// drive called "Q4 Layoffs" leaks whether or not the key sits beside it, and
+/// a URL is the least private place a string can live: browser history, the
+/// address bar, screenshots, and every unfurl preview.
+///
+/// Nothing is lost by omitting it. The recipient's attach flow resolves the
+/// real name from the drive's own record as soon as the key is in hand
+/// (`DriveAttachCubit.driveNameLoader`), so the name in the link was only ever
+/// a pre-fill that the chain immediately overwrote.
 Future<Uri> generatePrivateDriveShareLink({
   required final DriveID driveId,
-  required final String driveName,
   required final SecretKey driveKey,
 }) async {
   final driveKeyBase64 = encodeBytesToBase64(await driveKey.extractBytes());
 
   return Uri.parse(
-    '${generatePublicDriveShareLink(driveName: driveName, driveId: driveId)}&driveKey=$driveKeyBase64',
+    '${shareLinkOrigin()}/#/drives/$driveId?driveKey=$driveKeyBase64',
   );
 }
 

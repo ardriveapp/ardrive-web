@@ -46,7 +46,6 @@ void main() {
           () async {
         final webShareUri = await generatePrivateDriveShareLink(
           driveId: testPrivateDrive.id,
-          driveName: testPrivateDrive.name,
           driveKey: testPrivateDriveKey,
         );
         // Remove # delimiter as it messes with Uri parsing outside of app route
@@ -59,8 +58,9 @@ void main() {
         final driveKey = driveShareLink.queryParameters['driveKey'];
 
         expect(driveId, equals(testPrivateDrive.id));
-        expect(driveName, equals(testPrivateDrive.name));
         expect(driveKey, equals(testPrivateDriveKeyBase64));
+        // The name is the drive's secret, not part of the handover.
+        expect(driveName, isNull);
       });
       test(
           'generatePublicDriveShareLink generates the correct link for a public drive',
@@ -211,12 +211,26 @@ void main() {
 
         final link = await generatePrivateDriveShareLink(
           driveId: 'driveId',
-          driveName: 'My Drive',
           driveKey: SecretKey(decodeBase64ToBytes(driveKeyBase64)),
         );
 
         expect(link.toString(), startsWith('https://app.ardrive.io/#/drives/'));
-        expect(link.toString(), endsWith('&driveKey=$driveKeyBase64'));
+        expect(link.toString(), endsWith('?driveKey=$driveKeyBase64'));
+      });
+
+      test('a private drive link does not carry the drive name', () async {
+        // The name of a private drive is as sensitive as the names of the
+        // files inside it, and the recipient's attach flow reads the real one
+        // off the chain as soon as the key is in hand.
+        const driveKeyBase64 = 'X123YZAB-CD4e5fgHIjKlmN6O7pqrStuVwxYzaBcd8E';
+
+        final link = await generatePrivateDriveShareLink(
+          driveId: 'driveId',
+          driveKey: SecretKey(decodeBase64ToBytes(driveKeyBase64)),
+        );
+
+        expect(link.toString(), isNot(contains('name=')));
+        expect(link.toString(), isNot(contains('Layoffs')));
       });
     });
 
