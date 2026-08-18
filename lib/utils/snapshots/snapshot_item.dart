@@ -299,15 +299,24 @@ class SnapshotItemOnChain implements SnapshotItem {
 
       final isInRange = range.isInRange(node.block?.height ?? -1);
       if (isInRange) {
-        yield DriveEntityHistoryTransactionModel(transactionCommonMixin: node);
-        yielded++;
-
+        // Cached before the yield, not after.
+        //
+        // `yield` suspends this generator until the consumer asks for the
+        // next item, so anything after it runs *later* than the consumer's
+        // handling of the item just emitted. A consumer that reads an
+        // entity's metadata as soon as it receives the transaction would
+        // therefore find nothing cached and fetch it from the gateway
+        // instead - the one thing the snapshot exists to avoid. Writing
+        // first makes the metadata available the moment the transaction is.
         final String? data = item['jsonMetadata'];
         if (data != null) {
           final TxID txId = node.id;
           final Uint8List dataAsBytes = Uint8List.fromList(utf8.encode(data));
           await _setDataForTxId(driveId, txId, dataAsBytes);
         }
+
+        yield DriveEntityHistoryTransactionModel(transactionCommonMixin: node);
+        yielded++;
       } else {
         skipped++;
       }

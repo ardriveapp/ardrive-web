@@ -152,6 +152,12 @@ class ArweaveService {
   /// Cache for drive signatures (immutable on-chain, never change).
   final Map<String, DriveSignatureEntity?> _cachedDriveSignatures = {};
 
+  /// Entity metadata reads served from a drive's snapshot, and those that had
+  /// to go to the gateway instead. Keyed by drive id, reported by sync when a
+  /// drive finishes. See [_getEntityData].
+  final Map<String, int> snapshotMetadataHits = {};
+  final Map<String, int> snapshotMetadataMisses = {};
+
   /// Clears the cached result of [getUniqueUserDriveEntityTxs] and entity data.
   /// Call after creating/updating a drive or after a full sync completes.
   void clearUserDriveTxsCache() {
@@ -806,8 +812,17 @@ class ArweaveService {
     );
 
     if (cachedData != null) {
+      snapshotMetadataHits.update(driveId, (v) => v + 1, ifAbsent: () => 1);
       return cachedData;
     }
+
+    // Every miss is a network round trip for a few hundred bytes, and sync
+    // makes one of these per entity. Whether a drive's entities come from its
+    // snapshot or from the gateway is the difference between one download and
+    // tens of thousands of requests, and until now nothing said which was
+    // happening. Counted rather than logged per entity: at 40k entities a log
+    // line each would be the slowest part of the sync.
+    snapshotMetadataMisses.update(driveId, (v) => v + 1, ifAbsent: () => 1);
 
     return getEntityDataFromNetwork(txId: txId).then<Uint8List?>((d) => d)
         .catchError((e) {
