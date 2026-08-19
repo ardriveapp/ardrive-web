@@ -942,6 +942,10 @@ void main() {
             },
             'folder_entries': {'rows': []},
             'file_entries': {'rows': []},
+            'drive_revisions': {'rows': []},
+            'folder_revisions': {'rows': []},
+            'file_revisions': {'rows': []},
+            'licenses': {'rows': []},
           },
         })) as Map<String, dynamic>;
 
@@ -965,11 +969,41 @@ void main() {
       expect(DriveStateExport.fromJson(payload).drive.name, 'a drive');
     });
 
-    test('treats an absent section as empty', () {
-      final payload = minimalPayload();
-      (payload['sections'] as Map).remove('file_entries');
+    /// The failure this guard exists for passes every other check.
+    ///
+    /// A producer built before revisions travelled signs a three-section
+    /// payload at this same version. Its signature verifies, its
+    /// `Entity-Count` is right, its coverage claim is honest — and the drive
+    /// it restores renders an empty file list, because `file_entries` is
+    /// joined to `network_transactions` through revisions that never arrived.
+    /// An absent section and an empty one are indistinguishable on the wire
+    /// and mean opposite things, so absence has to be refused.
+    test('rejects a section it knows but the payload omits', () {
+      for (final section in driveStateSectionNames) {
+        final payload = minimalPayload();
+        (payload['sections'] as Map).remove(section);
 
-      expect(DriveStateExport.fromJson(payload).files, isEmpty);
+        expect(
+          () => DriveStateExport.fromJson(payload),
+          throwsA(
+            isA<DriveStateFormatException>()
+                .having(
+                    (e) => e.error, 'error', DriveStateFormatError.malformed)
+                .having((e) => e.message, 'message', contains(section)),
+          ),
+          reason: 'omitting "$section" should be refused, not read as empty',
+        );
+      }
+    });
+
+    test('accepts a known section that is present but empty', () {
+      final payload = minimalPayload();
+
+      final export = DriveStateExport.fromJson(payload);
+
+      expect(export.files, isEmpty);
+      expect(export.fileRevisions, isEmpty);
+      expect(export.licenses, isEmpty);
     });
 
     test('rejects a version it could misread, with a distinct reason', () {

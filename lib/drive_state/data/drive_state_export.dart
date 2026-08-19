@@ -60,6 +60,21 @@ const String folderRevisionsSectionName = 'folder_revisions';
 const String fileRevisionsSectionName = 'file_revisions';
 const String licensesSectionName = 'licenses';
 
+/// Every section a payload of this format version must carry.
+///
+/// Order matters only for the message a refusal prints. Presence is what is
+/// checked — see [DriveStateExport.fromJson] for why an absent section cannot
+/// be read as an empty one.
+const List<String> driveStateSectionNames = [
+  driveSectionName,
+  folderEntriesSectionName,
+  fileEntriesSectionName,
+  driveRevisionsSectionName,
+  folderRevisionsSectionName,
+  fileRevisionsSectionName,
+  licensesSectionName,
+];
+
 const String _sectionsKey = 'sections';
 const String _versionKey = 'version';
 const String _rowsKey = 'rows';
@@ -235,9 +250,28 @@ class DriveStateExport extends Equatable {
 
   /// The exact inverse of [toJson].
   ///
-  /// Sections and fields this build does not know are ignored rather than
-  /// rejected (§6): a reader takes what it knows, so a producer can add a
-  /// section without stranding older clients.
+  /// Extensibility here is deliberately **asymmetric**, and the asymmetry is
+  /// the point (§6):
+  ///
+  ///  * a section this build does not know is **ignored**, so a producer can
+  ///    add an optional one without stranding older clients;
+  ///  * a section this build *does* know and the payload omits is
+  ///    **rejected**, because a reader cannot tell an absent section from an
+  ///    empty one, and the two mean opposite things.
+  ///
+  /// The second half is not hypothetical. Before revisions travelled, this
+  /// payload had three sections and the same version number. A producer built
+  /// from that commit would sign a payload that verifies, carries a correct
+  /// `Entity-Count`, claims honest coverage — and imports into a drive whose
+  /// file list renders **empty**, because the file rows are joined through
+  /// revisions that were never there. Every check would pass and the user
+  /// would lose their drive's contents on screen with nothing logged.
+  ///
+  /// So: a known section must be present, even if its rows array is empty.
+  /// [toJson] always writes all of them, so this costs a correct producer
+  /// nothing. A future version that adds a *load-bearing* section raises
+  /// [driveStateFormatVersion] instead, which the check above already turns
+  /// into a clean refusal by older readers.
   factory DriveStateExport.fromJson(Map<String, dynamic> json) {
     final version = json[_versionKey];
     if (version is! int) {
@@ -254,6 +288,18 @@ class DriveStateExport extends Equatable {
     }
 
     final sections = _asMap(json[_sectionsKey], _sectionsKey);
+
+    final missing = driveStateSectionNames
+        .where((name) => !sections.containsKey(name))
+        .toList();
+    if (missing.isNotEmpty) {
+      throw DriveStateFormatException(
+        DriveStateFormatError.malformed,
+        'payload is missing the ${missing.join(', ')} '
+        'section${missing.length == 1 ? '' : 's'}',
+      );
+    }
+
     final driveRows = _rowsOf(sections, driveSectionName);
     if (driveRows.length != 1) {
       throw DriveStateFormatException(

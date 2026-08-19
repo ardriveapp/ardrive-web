@@ -539,6 +539,8 @@ The payload is a container of named sections, and the rule that makes extension
 safe is the separation of **additive** from **breaking**:
 
 - **Unknown sections are skipped**, not rejected. A reader takes what it knows.
+- **Known sections are required**, even when empty. See below — this is the
+  half that is easy to get wrong.
 - **Unknown tags are ignored** — already how ArFS works.
 - **`State-Version` bumps only when an older reader would *misinterpret* the
   payload**, never for an addition. Bumping on additions locks out clients that
@@ -546,6 +548,33 @@ safe is the separation of **additive** from **breaking**:
 
 Anything later — aggregate totals, additional indexes, whatever is wanted in six
 months — arrives as a new section that existing clients ignore.
+
+### 6.1 Why a known section must be present even when empty
+
+The two halves of the first rule look symmetric and are not. On the wire, an
+**absent** section and an **empty** one are indistinguishable, and they mean
+opposite things: "I have nothing to say about this table" versus "this table is
+empty". A reader that treats absence as emptiness silently believes the second
+whenever a producer meant the first.
+
+This is not hypothetical; it is how this format nearly shipped. An early
+revision carried three sections — the drive row and its folder and file
+entries — with no revisions. A producer built from that revision signs a
+payload that:
+
+- verifies against the drive owner's wallet;
+- carries a correct `Entity-Count`, which counts entities, not revisions;
+- claims coverage its tags agree with.
+
+Every check passes. And the drive it restores shows an **empty file list**,
+because a file row is only visible through a join to its newest revision's
+transactions — so entries without revisions render nothing at all. The user
+sees a drive they know has files, containing none, with nothing in any log.
+
+Hence the asymmetry. A section this build knows must be present; its rows array
+may be empty, which is a producer saying something rather than saying nothing.
+A load-bearing section added later raises `State-Version`, which older readers
+already refuse cleanly — the one case the third rule above is *for*.
 
 ---
 
