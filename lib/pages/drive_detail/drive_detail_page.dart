@@ -30,6 +30,7 @@ import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/dev_tools/shortcut_handler.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
+import 'package:ardrive/drive_state/presentation/drive_state_creation_modal.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
@@ -634,6 +635,30 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                             ),
                                           ),
                                         ),
+                                        // Private drives only: the artifact is
+                                        // sealed under the drive key, and a
+                                        // public drive has none. Owner only:
+                                        // an artifact signed by anyone else is
+                                        // rejected by every importer.
+                                        if (isDriveOwner &&
+                                            driveDetailState
+                                                    .currentDrive.privacy ==
+                                                DrivePrivacyTag.private)
+                                          ArDriveDropdownItem(
+                                            onClick: () {
+                                              promptToCreateDriveState(
+                                                context,
+                                                drive: driveDetailState
+                                                    .currentDrive,
+                                              );
+                                            },
+                                            content: _buildItem(
+                                              'Publish Drive State',
+                                              ArDriveIcons.upload(
+                                                size: defaultIconSize,
+                                              ),
+                                            ),
+                                          ),
                                         ArDriveDropdownItem(
                                           onClick: () {
                                             context
