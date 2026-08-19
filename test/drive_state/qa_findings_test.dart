@@ -20,9 +20,13 @@ import '../test_utils/utils.dart';
 
 /// Independent QA findings against the drive state artifact.
 ///
-/// Every test here is expected to FAIL against the branch as it stands. Each
-/// one is a defect, not a preference, and each is written the way a user meets
-/// it rather than the way the code is shaped.
+/// Every test here **failed** when it was written, against the branch as it
+/// then stood. Each one is a defect, not a preference, and each is written the
+/// way a user meets it rather than the way the code is shaped. They all pass
+/// now; they are kept because the defects they describe are the ones this
+/// format is most likely to reacquire — a file whose parent never travelled, a
+/// stand-in row outranking the real one, a drive row pointing at a folder
+/// nobody carries.
 void main() {
   const driveId = 'drive-id';
   const rootFolderId = 'root-folder-id';

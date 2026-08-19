@@ -403,6 +403,29 @@ disagreement, including one only in the minor — "the minor changes nothing thi
 reader dispatches on" is true, and is not a reason to believe the half anybody
 can rewrite.
 
+**The sections.** Seven, named for the tables they carry, each an object with
+a `rows` array. All seven are required and any may be empty (§6.1).
+
+| section | carries |
+|---|---|
+| `drives` | exactly one row: the drive itself, minus its key material, sync cursor and watermark |
+| `folder_entries` | current folder rows |
+| `file_entries` | current file rows, including `thumbnail`, `pinnedDataOwnerAddress`, `assignedNames`, `licenseTxId`, `isHidden` and both custom-metadata columns |
+| `drive_revisions` | every drive revision |
+| `folder_revisions` | every folder revision |
+| `file_revisions` | every file revision, not only the newest (D2) |
+| `licenses` | licence rows for the files carried |
+
+**Two tables are deliberately absent, and a reader must not expect them.**
+`network_transactions` is **derived on import**, not carried: it is four
+columns, fully reconstructible from the revisions, and it has no `driveId` — so
+publishing it would publish rows about the producer's *other* drives to
+everyone holding this drive's key. A reader rebuilds it from the revision rows
+it just imported. `arns_records` and `ant_records` are likewise not carried
+(D10); the drive-side fact travels as `assignedNames` on the file rows.
+
+Nothing else in the local database travels. `profiles` never does.
+
 **`coverage` is load-bearing, not informational.**
 
 ```json
