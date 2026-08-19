@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
@@ -8,7 +7,7 @@ import 'package:ardrive_uploader/ardrive_uploader.dart'
     show maxSizeSupportedByGCMEncryption;
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
-import 'package:cryptography/cryptography.dart' show SecretKey;
+import 'package:cryptography/cryptography.dart' show SecretKey, Sha256;
 
 /// Why a drive state artifact could not be produced, or could not be opened.
 ///
@@ -25,7 +24,7 @@ enum DriveStateEnvelopeFailure {
   /// authentication needs a manifest integrity design that does not exist yet.
   plaintextTooLarge,
 
-  /// The owner's wallet did not produce a signature.
+  /// The owner's wallet did not produce a signed data item.
   signingFailed,
 
   /// gzip produced nothing for a payload it was given.
@@ -43,20 +42,21 @@ enum DriveStateEnvelopeFailure {
   /// serving bodies that arrived wrong; this is the check that catches them.
   decryptionFailed,
 
-  /// The decrypted bytes are not a gzip stream.
+  /// The signed data item's data is not a gzip stream.
   decompressionFailed,
 
-  /// The decompressed bytes are not a drive state frame, or the frame's own
-  /// lengths do not add up.
+  /// The decrypted bytes cannot be an ANS-104 data item at all: too short to
+  /// hold one, or carrying an owner key that cannot be read back out. Bytes
+  /// that are the right shape but do not verify are [signatureInvalid], not
+  /// this.
   malformedFrame,
 
-  /// The frame is a version of the container format this client does not know.
-  unsupportedFrameVersion,
-
-  /// The frame is signed with a scheme this client cannot verify.
+  /// The data item is signed with a scheme this client cannot verify. ANS-104
+  /// numbers these in the first two bytes of an item; only 1 (Arweave) can be
+  /// checked here.
   unsupportedSignatureType,
 
-  /// The frame is signed by a wallet that is not the drive's owner. The
+  /// The data item is signed by a wallet that is not the drive's owner. The
   /// signature may well be valid — it is simply not the owner's.
   ownerMismatch,
 
@@ -168,71 +168,78 @@ class DriveStateOpenResult {
 /// Seals a drive state payload into the body of an ArFS `drive-state` entity,
 /// and opens one again.
 ///
-/// The order of operations is the format, and it is not negotiable
-/// (proposal 2.2 and 3.3):
-///
 /// ```
-/// serialise  ->  sign (owner wallet)  ->  gzip  ->  AES256-GCM
+/// serialise  ->  gzip  ->  sign (ANS-104 data item)  ->  AES256-GCM
 /// ```
 ///
-/// Signing the *plaintext* binds the owner to the content rather than to a
-/// particular encoding, so an artifact verifies the same whether it arrived as
-/// a top level transaction or as a bundled data item — the latter has no L1
-/// header, so its owner is otherwise knowable only through a GraphQL indexer.
-/// Compressing before encrypting is the only order that compresses at all.
+/// ## Why a data item, and not a bare signature
 ///
-/// Opening runs the exact inverse, and rejects rather than throws. Serialising
-/// the payload is not this codec's job: it is handed bytes and hands bytes
-/// back.
+/// The owner's signature has to travel *inside* the artifact. A reader that
+/// fetches `GET https://gateway/<txid>` receives the data and nothing else,
+/// and `GET /tx/<id>` is a 404 for anything that arrived bundled — so an
+/// artifact whose authorship lived in the L1 header could only be attributed
+/// through a GraphQL indexer, which this design will not depend on
+/// (`docs/DRIVE_STATE_ARTIFACT.md` §4.2).
 ///
-/// ## The frame
+/// The carrier for that signature is an ANS-104 data item, signed through the
+/// same seam every ArDrive upload already uses: [DataItem.sign] with an
+/// [ArweaveSigner], the shape of `ArweaveService.prepareBundledDataItem` and
+/// `BDISigner`. That choice is not decoration. ArConnect and Wander have
+/// deprecated arbitrary-data signing, so a codec that called `wallet.sign` on
+/// a payload of its own devising would never produce an artifact at all for an
+/// extension user, while data item signing is the one path those wallets still
+/// grant.
 ///
-/// The signature has to travel with the payload it covers, so the compressed,
-/// encrypted body is a small self-describing frame rather than the payload
-/// alone. All integers are big-endian, and none is 64 bit — `ByteData` has no
-/// `getUint64` on the web.
+/// Being a real data item rather than a bespoke frame also means the bytes are
+/// checkable by anything that speaks ANS-104, and that the parsing and the
+/// verification are the package's rather than ours.
 ///
-/// ```
-/// offset  size  field
-///      0     8  magic, ASCII "ARDRVSTA"
-///      8     2  frame version, uint16
-///     10     2  signature type, as ANS-104 numbers them (1 = Arweave)
-///     12     4  owner length, uint32
-///     16     4  signature length, uint32
-///     20     4  payload length, uint32
-///     24     n  owner (the signing wallet's public key)
-///      .     n  signature over the payload
-///      .     n  payload  <- always last, and always to the end of the frame
-/// ```
+/// ## Why gzip is inside the signature
 ///
-/// The owner travels in the frame because verification must not depend on how
-/// the artifact was found. The address is derived from it and checked against
-/// the drive's known owner, so carrying it grants nothing: a frame naming a
-/// different key is rejected before its signature is even examined.
+/// The item's data is the *compressed* payload, so the signature covers the
+/// bytes a reader is holding before it has decompressed anything. Authorship
+/// is settled before any of the payload is expanded, and a body the owner did
+/// not sign never reaches the decompressor at all. Compressing before
+/// encrypting remains the only order that compresses.
 ///
-/// The payload is signed exactly as given, with no domain separator of this
-/// codec's own. The container it carries names its own type and version
-/// (D1), which is where a reader learns what it is looking at.
+/// The item carries no tags, no target and no anchor: the ArFS tags that make
+/// an artifact discoverable live on the enclosing transaction, and the less
+/// this signature covers beyond the payload, the fewer ways there are for the
+/// two to disagree.
+///
+/// Opening runs the exact inverse — decrypt, parse and verify the data item,
+/// confirm the signer is the drive's owner, decompress — and rejects rather
+/// than throws. Serialising the payload is not this codec's job: it is handed
+/// bytes and hands bytes back.
 class DriveStateEnvelopeCodec {
   final ArDriveCrypto _crypto;
 
   DriveStateEnvelopeCodec({ArDriveCrypto? crypto})
       : _crypto = crypto ?? ArDriveCrypto();
 
-  /// The version of the frame layout this codec writes.
-  static const int frameVersion = 1;
+  /// The only ANS-104 signature scheme this codec writes, and the only one it
+  /// can check: every other [SignatureConfig] in the package throws
+  /// `UnimplementedError` out of its verifier.
+  static final SignatureConfig _signatureConfig = SignatureConfig.arweave;
 
-  /// The frame's first eight bytes.
-  static final Uint8List magic = ascii.encode('ARDRVSTA');
+  /// The ANS-104 signature type field: the first two bytes of a data item,
+  /// little endian.
+  static const int _signatureTypeLength = 2;
 
-  static const int _headerLength = 24;
+  /// The shortest run of bytes that could be an Arweave signed data item:
+  /// signature type, signature, owner, an absent target and anchor, and the
+  /// two eight byte tag counts. Anything below this is not a small data item,
+  /// it is not a data item.
+  static final int _minimumDataItemLength = _signatureTypeLength +
+      _signatureConfig.signatureLength +
+      _signatureConfig.publicKeyLength +
+      1 + // target present flag
+      1 + // anchor present flag
+      8 + // number of tags
+      8; // number of tag bytes
 
-  /// Passed to the wallet so a signing prompt, and our own logs, can say what
-  /// is being signed.
-  static const String _signContext = 'drive-state';
-
-  /// Signs [plaintext] with [wallet], compresses it, and encrypts it under
-  /// [driveKey].
+  /// Compresses [plaintext], signs it with [wallet] as an ANS-104 data item,
+  /// and encrypts that item under [driveKey].
   ///
   /// Refuses, rather than throws, when the payload is too large for AES-GCM or
   /// the wallet will not sign.
@@ -253,46 +260,33 @@ class DriveStateEnvelopeCodec {
       );
     }
 
-    final String owner;
-    final Uint8List signature;
-    try {
-      owner = await wallet.getOwner();
-      signature = await wallet.sign(plaintext, _signContext);
-    } catch (e) {
-      return DriveStateSealResult.refused(
-        DriveStateEnvelopeFailure.signingFailed,
-        'The owner wallet did not sign the payload: $e',
-      );
-    }
-
-    final Uint8List ownerKey;
-    try {
-      ownerKey = utils.decodeBase64ToBytes(owner);
-    } catch (e) {
-      return DriveStateSealResult.refused(
-        DriveStateEnvelopeFailure.signingFailed,
-        'The owner wallet did not return a readable public key: $e',
-      );
-    }
-
-    final frame = _buildFrame(
-      owner: ownerKey,
-      signature: signature,
-      payload: plaintext,
-    );
-
-    final compressed = GZipEncoder().encode(frame);
+    final compressed = GZipEncoder().encode(plaintext);
     if (compressed == null) {
       return const DriveStateSealResult.refused(
         DriveStateEnvelopeFailure.compressionFailed,
-        'gzip returned nothing for the signed frame',
+        'gzip returned nothing for the payload',
       );
     }
 
-    final secretBox = await _crypto.encrypt(
-      compressed is Uint8List ? compressed : Uint8List.fromList(compressed),
-      driveKey,
-    );
+    final Uint8List signedItem;
+    try {
+      final item = DataItem.withBlobData(data: _asBytes(compressed))
+        ..setOwner(await wallet.getOwner());
+
+      // The upload path's seam, unchanged: a data item signature, which is
+      // what ArConnect and Wander still grant, rather than arbitrary bytes,
+      // which they no longer do.
+      await item.sign(ArweaveSigner(wallet));
+
+      signedItem = (await item.asBinary()).takeBytes();
+    } catch (e) {
+      return DriveStateSealResult.refused(
+        DriveStateEnvelopeFailure.signingFailed,
+        'The owner wallet did not sign a data item for the payload: $e',
+      );
+    }
+
+    final secretBox = await _crypto.encrypt(signedItem, driveKey);
 
     return DriveStateSealResult.sealed(
       DriveStateEnvelope(
@@ -303,8 +297,8 @@ class DriveStateEnvelopeCodec {
     );
   }
 
-  /// Decrypts [envelope] under [driveKey], decompresses it, and returns the
-  /// payload only if it was signed by [expectedOwnerAddress].
+  /// Decrypts [envelope] under [driveKey] and returns its payload only if the
+  /// data item inside verifies and was signed by [expectedOwnerAddress].
   ///
   /// Never throws: every way this can go wrong is a
   /// [DriveStateEnvelopeFailure] the caller logs before falling back.
@@ -328,9 +322,9 @@ class DriveStateEnvelopeCodec {
       );
     }
 
-    final Uint8List compressed;
+    final Uint8List binary;
     try {
-      compressed = await _crypto.decrypt(
+      binary = await _crypto.decrypt(
         envelope.body,
         driveKey,
         envelope.cipherIv,
@@ -342,40 +336,67 @@ class DriveStateEnvelopeCodec {
       );
     }
 
-    final List<int> framed;
-    try {
-      framed = GZipDecoder().decodeBytes(compressed);
-    } catch (e) {
+    if (binary.lengthInBytes < _minimumDataItemLength) {
       return DriveStateOpenResult.failed(
-        DriveStateEnvelopeFailure.decompressionFailed,
-        'The decrypted body is not a gzip stream: $e',
+        DriveStateEnvelopeFailure.malformedFrame,
+        '${binary.lengthInBytes} bytes cannot hold an ANS-104 data item, '
+        'which is at least $_minimumDataItemLength',
       );
     }
 
-    final _Frame frame;
+    // Read before parsing, because the signature type is what says how long
+    // the signature and owner fields are. Handing the parser a config that
+    // disagrees would not fail loudly; it would read the item at the wrong
+    // offsets.
+    final signatureType = _readSignatureType(binary);
+    if (signatureType != _signatureConfig.signatureType) {
+      return DriveStateOpenResult.failed(
+        DriveStateEnvelopeFailure.unsupportedSignatureType,
+        'Signature type $signatureType cannot be verified by this client',
+      );
+    }
+
+    final ProcessedDataItem item;
     try {
-      frame = _readFrame(
-        framed is Uint8List ? framed : Uint8List.fromList(framed),
+      // Parses the item and checks its signature in one pass, throwing when
+      // the signature does not verify. Nothing downstream of here is reached
+      // by bytes nobody signed.
+      item = await processDataItem(
+        dataItemStreamGenerator: () => Stream.value(binary),
+        id: await _idOf(binary),
+        length: binary.lengthInBytes,
+        signatureConfig: _signatureConfig,
       );
-    } on _FrameRejected catch (e) {
-      return DriveStateOpenResult.failed(e.failure, e.reason);
+    } catch (e) {
+      // Everything this can throw past the checks above says the same thing:
+      // whatever these bytes are, the owner did not sign them. That covers a
+      // signature that verifies to false, and equally a structure that never
+      // got far enough to be checked — RSA-PSS verification raises an `Error`
+      // rather than returning false on a signature it cannot even decode, so
+      // there is no honest line to draw between "damaged" and "unsigned"
+      // here, and drawing one on exception messages would be worse than not
+      // drawing it. The structural failures this codec *can* name for the log
+      // are the two checks above, which run first for exactly that reason.
+      return DriveStateOpenResult.failed(
+        DriveStateEnvelopeFailure.signatureInvalid,
+        'The data item does not carry a valid owner signature over these '
+        'bytes: $e',
+      );
     }
 
-    final owner = utils.encodeBytesToBase64(frame.owner);
-
-    // The address is checked before the signature deliberately. It is the
-    // cheap half of the question, and it is the half that distinguishes "not
-    // the owner's artifact" from "the owner's artifact, damaged" in the log.
     final String signerAddress;
     try {
-      signerAddress = await utils.ownerToAddress(owner);
+      signerAddress = await utils.ownerToAddress(item.owner);
     } catch (e) {
       return DriveStateOpenResult.failed(
         DriveStateEnvelopeFailure.malformedFrame,
-        'The frame does not carry a readable owner key: $e',
+        'The data item does not carry a readable owner key: $e',
       );
     }
 
+    // The signature has already been checked by this point, so a mismatch
+    // here means exactly one thing and the log can say it: somebody else's
+    // perfectly valid artifact.
     if (signerAddress != expectedOwnerAddress) {
       return DriveStateOpenResult.failed(
         DriveStateEnvelopeFailure.ownerMismatch,
@@ -384,146 +405,59 @@ class DriveStateEnvelopeCodec {
       );
     }
 
-    final bool verified;
+    final Uint8List compressed;
     try {
-      verified = await SignatureConfig.arweave.verify(
-        frame.payload,
-        frame.signature,
-        owner,
+      compressed = await _collect(item.dataStreamGenerator);
+    } on Error catch (e) {
+      return DriveStateOpenResult.failed(
+        DriveStateEnvelopeFailure.malformedFrame,
+        'The data item\'s data could not be read back: $e',
       );
+    }
+
+    final List<int> plaintext;
+    try {
+      plaintext = GZipDecoder().decodeBytes(compressed);
     } catch (e) {
       return DriveStateOpenResult.failed(
-        DriveStateEnvelopeFailure.signatureInvalid,
-        'The signature could not be checked: $e',
+        DriveStateEnvelopeFailure.decompressionFailed,
+        'The signed data is not a gzip stream: $e',
       );
     }
 
-    if (!verified) {
-      return DriveStateOpenResult.failed(
-        DriveStateEnvelopeFailure.signatureInvalid,
-        'The payload is not what $signerAddress signed',
-      );
-    }
-
-    return DriveStateOpenResult.opened(frame.payload, signerAddress);
+    return DriveStateOpenResult.opened(_asBytes(plaintext), signerAddress);
   }
 
-  Uint8List _buildFrame({
-    required Uint8List owner,
-    required Uint8List signature,
-    required Uint8List payload,
-  }) {
-    final frame = Uint8List(
-      _headerLength + owner.length + signature.length + payload.length,
+  /// The ANS-104 signature type: two bytes, little endian, at offset zero.
+  int _readSignatureType(Uint8List binary) => utils.byteArrayToLong(
+        Uint8List.sublistView(binary, 0, _signatureTypeLength),
+      );
+
+  /// A data item's id is *defined* as the SHA-256 of its signature, so it is
+  /// derived here rather than carried alongside: there is no bundle header to
+  /// read one out of, and a value stored next to the body would be a value an
+  /// attacker could choose. [processDataItem] asks for it so it can reject
+  /// items whose bundle header and body disagree, a check that does not apply
+  /// to an item travelling alone — the authorship question is settled by the
+  /// signature check that follows it, not by this.
+  Future<String> _idOf(Uint8List binary) async {
+    final signature = Uint8List.sublistView(
+      binary,
+      _signatureTypeLength,
+      _signatureTypeLength + _signatureConfig.signatureLength,
     );
-    final header = ByteData.sublistView(frame, 0, _headerLength);
 
-    frame.setRange(0, magic.length, magic);
-    header.setUint16(8, frameVersion);
-    header.setUint16(10, SignatureConfig.arweave.signatureType);
-    header.setUint32(12, owner.length);
-    header.setUint32(16, signature.length);
-    header.setUint32(20, payload.length);
-
-    var offset = _headerLength;
-    frame.setRange(offset, offset + owner.length, owner);
-    offset += owner.length;
-    frame.setRange(offset, offset + signature.length, signature);
-    offset += signature.length;
-    frame.setRange(offset, offset + payload.length, payload);
-
-    return frame;
+    return utils.encodeBytesToBase64((await Sha256().hash(signature)).bytes);
   }
 
-  _Frame _readFrame(Uint8List framed) {
-    if (framed.length < _headerLength) {
-      throw _FrameRejected(
-        DriveStateEnvelopeFailure.malformedFrame,
-        '${framed.length} bytes is shorter than the $_headerLength byte '
-        'frame header',
-      );
+  Future<Uint8List> _collect(DataStreamGenerator generator) async {
+    final builder = BytesBuilder(copy: false);
+    await for (final chunk in generator()) {
+      builder.add(chunk);
     }
-
-    for (var i = 0; i < magic.length; i++) {
-      if (framed[i] != magic[i]) {
-        throw const _FrameRejected(
-          DriveStateEnvelopeFailure.malformedFrame,
-          'The decompressed body does not start with a drive state frame',
-        );
-      }
-    }
-
-    final header = ByteData.sublistView(framed, 0, _headerLength);
-    final version = header.getUint16(8);
-    if (version != frameVersion) {
-      throw _FrameRejected(
-        DriveStateEnvelopeFailure.unsupportedFrameVersion,
-        'Frame version $version, but this client writes $frameVersion',
-      );
-    }
-
-    final signatureType = header.getUint16(10);
-    if (signatureType != SignatureConfig.arweave.signatureType) {
-      throw _FrameRejected(
-        DriveStateEnvelopeFailure.unsupportedSignatureType,
-        'Signature type $signatureType cannot be verified by this client',
-      );
-    }
-
-    final ownerLength = header.getUint32(12);
-    final signatureLength = header.getUint32(16);
-    final payloadLength = header.getUint32(20);
-
-    if (ownerLength != SignatureConfig.arweave.publicKeyLength ||
-        signatureLength != SignatureConfig.arweave.signatureLength) {
-      throw _FrameRejected(
-        DriveStateEnvelopeFailure.malformedFrame,
-        'An Arweave signed frame carries a '
-        '${SignatureConfig.arweave.publicKeyLength} byte owner and a '
-        '${SignatureConfig.arweave.signatureLength} byte signature, not '
-        '$ownerLength and $signatureLength',
-      );
-    }
-
-    final expectedLength =
-        _headerLength + ownerLength + signatureLength + payloadLength;
-    if (framed.length != expectedLength) {
-      throw _FrameRejected(
-        DriveStateEnvelopeFailure.malformedFrame,
-        'The frame declares $expectedLength bytes but is ${framed.length}',
-      );
-    }
-
-    var offset = _headerLength;
-    final owner = Uint8List.sublistView(framed, offset, offset + ownerLength);
-    offset += ownerLength;
-    final signature =
-        Uint8List.sublistView(framed, offset, offset + signatureLength);
-    offset += signatureLength;
-    final payload =
-        Uint8List.sublistView(framed, offset, offset + payloadLength);
-
-    return _Frame(owner: owner, signature: signature, payload: payload);
+    return builder.takeBytes();
   }
-}
 
-class _Frame {
-  final Uint8List owner;
-  final Uint8List signature;
-  final Uint8List payload;
-
-  const _Frame({
-    required this.owner,
-    required this.signature,
-    required this.payload,
-  });
-}
-
-/// Thrown only inside [DriveStateEnvelopeCodec._readFrame], and turned into a
-/// [DriveStateOpenResult] before it can escape.
-class _FrameRejected implements Exception {
-  final DriveStateEnvelopeFailure failure;
-  final String reason;
-
-  const _FrameRejected(this.failure, this.reason);
+  static Uint8List _asBytes(List<int> bytes) =>
+      bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
 }

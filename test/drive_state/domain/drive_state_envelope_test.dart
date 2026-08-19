@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:archive/archive.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart' show Cipher;
 import 'package:ardrive_uploader/ardrive_uploader.dart'
     show maxSizeSupportedByGCMEncryption;
 import 'package:arweave/arweave.dart';
+import 'package:arweave/utils.dart' as utils;
 import 'package:cryptography/cryptography.dart' show AesGcm, SecretKey;
 import 'package:test/test.dart';
 
@@ -23,21 +23,25 @@ void main() {
   late SecretKey driveKey;
   late Uint8List plaintext;
 
-  /// The inverse of the seal, up to but not including the frame: what a
+  /// Offsets into an Arweave signed ANS-104 data item. The tests know the
+  /// layout on purpose: reaching a particular field is how you prove the codec
+  /// notices when that field is wrong.
+  const signatureStart = 2;
+  const signatureLength = 512;
+  const ownerLength = 512;
+  const tagsStart =
+      signatureStart + signatureLength + ownerLength + 1 /* target */ + 1;
+
+  /// The inverse of the seal, up to but not including the data item: what a
   /// tampering test needs in order to put different bytes inside a body that
   /// still decrypts.
-  Future<Uint8List> unsealFrame(DriveStateEnvelope envelope) async {
-    final compressed =
-        await crypto.decrypt(envelope.body, driveKey, envelope.cipherIv);
-    return Uint8List.fromList(GZipDecoder().decodeBytes(compressed));
-  }
+  Future<Uint8List> unsealItem(DriveStateEnvelope envelope) async =>
+      crypto.decrypt(envelope.body, driveKey, envelope.cipherIv);
 
-  /// Seals arbitrary bytes the way [DriveStateEnvelopeCodec.seal] would, so a
-  /// test can hand the codec a body that is validly encrypted but wrong
+  /// Encrypts arbitrary bytes the way [DriveStateEnvelopeCodec.seal] would, so
+  /// a test can hand the codec a body that is validly encrypted but wrong
   /// inside.
-  Future<DriveStateEnvelope> sealBytes(List<int> frame,
-      {bool compress = true}) async {
-    final body = compress ? GZipEncoder().encode(frame)! : frame;
+  Future<DriveStateEnvelope> sealBytes(List<int> body) async {
     final secretBox = await crypto.encrypt(Uint8List.fromList(body), driveKey);
 
     return DriveStateEnvelope(
@@ -46,12 +50,22 @@ void main() {
     );
   }
 
+  /// A genuinely signed data item over [data], for the cases where the item
+  /// has to be valid and it is its *contents* that are wrong.
+  Future<Uint8List> signedItemOver(List<int> data, Wallet wallet) async {
+    final item = DataItem.withBlobData(data: Uint8List.fromList(data))
+      ..setOwner(await wallet.getOwner());
+    await item.sign(ArweaveSigner(wallet));
+
+    return (await item.asBinary()).takeBytes();
+  }
+
   setUpAll(() async {
     owner = await Wallet.generate();
     ownerAddress = await owner.getAddress();
     driveKey = await aesGcm.newSecretKey();
     // Compressible, like the JSON container this carries in production, and
-    // long enough that gzip and the frame both have something to do.
+    // long enough that gzip and the data item both have something to do.
     plaintext = Uint8List.fromList(utf8.encode(
       jsonEncode({
         'version': 1,
@@ -91,6 +105,44 @@ void main() {
           String.fromCharCodes(envelope.body).contains('entity-0'),
           isFalse,
         );
+      });
+
+      test('seals an ANS-104 data item the owner signed, not a bespoke frame',
+          () async {
+        final result = await codec.seal(
+          plaintext: plaintext,
+          driveKey: driveKey,
+          wallet: owner,
+        );
+
+        final binary = await unsealItem(result.envelope!);
+
+        // Signature type 1, Arweave, little endian in the first two bytes.
+        expect(binary[0], 1);
+        expect(binary[1], 0);
+
+        // The owner travels in the item itself, which is the entire point:
+        // a reader that only has these bytes can still name the signer.
+        final itemOwner = utils.encodeBytesToBase64(
+          binary.sublist(
+            signatureStart + signatureLength,
+            signatureStart + signatureLength + ownerLength,
+          ),
+        );
+        expect(await utils.ownerToAddress(itemOwner), ownerAddress);
+
+        // No tags, no target, no anchor: the flags are both 'absent' and the
+        // tag count is zero.
+        expect(binary[signatureStart + signatureLength + ownerLength], 0);
+        expect(binary[signatureStart + signatureLength + ownerLength + 1], 0);
+        expect(
+          utils.byteArrayToLong(binary.sublist(tagsStart, tagsStart + 8)),
+          0,
+        );
+
+        // And the item's data is the gzipped payload, so the signature covers
+        // compressed bytes rather than expanded ones.
+        expect(binary.length, lessThan(plaintext.length));
       });
 
       test('refuses a payload sitting exactly on the AES-GCM boundary',
@@ -273,14 +325,14 @@ void main() {
       });
 
       test('rejects a payload the owner did not sign', () async {
-        // Rewrite the last byte of the frame. The payload is always last, so
+        // Rewrite the last byte of the data item. The data is always last, so
         // this changes what was signed without touching the owner key or the
         // signature, then re-seals it so the body still decrypts.
-        final frame = await unsealFrame(sealed);
-        frame[frame.length - 1] ^= 0xFF;
+        final binary = await unsealItem(sealed);
+        binary[binary.length - 1] ^= 0xFF;
 
         final result = await codec.open(
-          envelope: await sealBytes(frame),
+          envelope: await sealBytes(binary),
           driveKey: driveKey,
           expectedOwnerAddress: ownerAddress,
         );
@@ -289,50 +341,42 @@ void main() {
         expect(result.failure, DriveStateEnvelopeFailure.signatureInvalid);
       });
 
-      test('rejects a body that is not a gzip stream', () async {
-        final result = await codec.open(
-          envelope: await sealBytes(
-            utf8.encode('this was never compressed'),
-            compress: false,
-          ),
-          driveKey: driveKey,
-          expectedOwnerAddress: ownerAddress,
-        );
-
-        expect(result.failure, DriveStateEnvelopeFailure.decompressionFailed);
-      });
-
-      test('rejects bytes that decompress to something that is not a frame',
-          () async {
-        final result = await codec.open(
-          envelope: await sealBytes(utf8.encode('not a drive state frame')),
-          driveKey: driveKey,
-          expectedOwnerAddress: ownerAddress,
-        );
-
-        expect(result.failure, DriveStateEnvelopeFailure.malformedFrame);
-      });
-
-      test('rejects a frame that does not carry the format\'s magic bytes',
-          () async {
-        final frame = await unsealFrame(sealed);
-        frame[0] ^= 0xFF;
+      test('rejects a data item whose signature was replaced', () async {
+        // The other half of the same question: leave the signed bytes alone
+        // and break the signature instead. Nothing else about the item is
+        // wrong, so only the verification can catch this.
+        final binary = await unsealItem(sealed);
+        binary[signatureStart] ^= 0xFF;
 
         final result = await codec.open(
-          envelope: await sealBytes(frame),
+          envelope: await sealBytes(binary),
           driveKey: driveKey,
           expectedOwnerAddress: ownerAddress,
         );
 
         expect(result.isOpened, isFalse);
-        expect(result.failure, DriveStateEnvelopeFailure.malformedFrame);
+        expect(result.plaintext, isNull);
+        expect(result.failure, DriveStateEnvelopeFailure.signatureInvalid);
       });
 
-      test('rejects a frame whose declared lengths do not add up', () async {
-        final frame = await unsealFrame(sealed);
-
+      test('rejects signed data that is not a gzip stream', () async {
+        // A real data item, really signed by the owner, whose data is simply
+        // not compressed. Authorship is fine; the contents are not.
         final result = await codec.open(
-          envelope: await sealBytes(frame.sublist(0, frame.length - 1)),
+          envelope: await sealBytes(
+            await signedItemOver(utf8.encode('never compressed'), owner),
+          ),
+          driveKey: driveKey,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(result.isOpened, isFalse);
+        expect(result.failure, DriveStateEnvelopeFailure.decompressionFailed);
+      });
+
+      test('rejects bytes too short to be a data item at all', () async {
+        final result = await codec.open(
+          envelope: await sealBytes(utf8.encode('not a data item')),
           driveKey: driveKey,
           expectedOwnerAddress: ownerAddress,
         );
@@ -340,31 +384,36 @@ void main() {
         expect(result.failure, DriveStateEnvelopeFailure.malformedFrame);
       });
 
-      test('rejects a frame written by a later version of the format',
+      test('rejects a data item whose tag lengths run off the end', () async {
+        final binary = await unsealItem(sealed);
+        // The eight bytes at tagsStart + 8 are the size of the tag section.
+        // Claim far more of them than the item contains.
+        for (var i = 0; i < 6; i++) {
+          binary[tagsStart + 8 + i] = 0xFF;
+        }
+
+        final result = await codec.open(
+          envelope: await sealBytes(binary),
+          driveKey: driveKey,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        // Structurally hopeless bytes and unsigned bytes are the same
+        // rejection: the owner did not sign this, whatever it is.
+        expect(result.isOpened, isFalse);
+        expect(result.plaintext, isNull);
+        expect(result.failure, DriveStateEnvelopeFailure.signatureInvalid);
+      });
+
+      test('rejects a data item signed with a scheme it cannot verify',
           () async {
-        final frame = await unsealFrame(sealed);
-        frame[9] = DriveStateEnvelopeCodec.frameVersion + 1;
-
-        final result = await codec.open(
-          envelope: await sealBytes(frame),
-          driveKey: driveKey,
-          expectedOwnerAddress: ownerAddress,
-        );
-
-        expect(
-          result.failure,
-          DriveStateEnvelopeFailure.unsupportedFrameVersion,
-        );
-      });
-
-      test('rejects a frame signed with a scheme it cannot verify', () async {
-        final frame = await unsealFrame(sealed);
+        final binary = await unsealItem(sealed);
         // Signature type 4 is Solana in ANS-104's numbering, which this
-        // client has no verifier for.
-        frame[11] = 4;
+        // client has no verifier for. The field is little endian.
+        binary[0] = 4;
 
         final result = await codec.open(
-          envelope: await sealBytes(frame),
+          envelope: await sealBytes(binary),
           driveKey: driveKey,
           expectedOwnerAddress: ownerAddress,
         );
@@ -386,6 +435,47 @@ void main() {
         expect(result.isOpened, isFalse);
         expect(result.failure, DriveStateEnvelopeFailure.ownerMismatch);
       });
+    });
+
+    test('a sealed artifact survives a full round trip through gzip and GCM',
+        () async {
+      // Deliberately incompressible, so the gzip layer is exercised on data
+      // it cannot shrink as well as on the JSON above.
+      final awkward = Uint8List.fromList(
+        List.generate(4096, (i) => (i * 31 + 7) % 251),
+      );
+
+      final result = await codec.seal(
+        plaintext: awkward,
+        driveKey: driveKey,
+        wallet: owner,
+      );
+
+      final opened = await codec.open(
+        envelope: result.envelope!,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(opened.isOpened, isTrue, reason: opened.toString());
+      expect(opened.plaintext, equals(awkward));
+    });
+
+    test('opens an empty payload', () async {
+      final result = await codec.seal(
+        plaintext: Uint8List(0),
+        driveKey: driveKey,
+        wallet: owner,
+      );
+
+      final opened = await codec.open(
+        envelope: result.envelope!,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(opened.isOpened, isTrue, reason: opened.toString());
+      expect(opened.plaintext, isEmpty);
     });
   });
 }
