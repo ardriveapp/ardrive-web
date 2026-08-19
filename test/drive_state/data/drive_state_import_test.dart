@@ -876,7 +876,7 @@ void main() {
               FolderEntriesCompanion.insert(
                 id: 'local-child',
                 driveId: driveId,
-                parentFolderId: Value(nestedFolderId),
+                parentFolderId: const Value(nestedFolderId),
                 name: 'local-child',
                 path: '',
               ),
