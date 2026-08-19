@@ -25,6 +25,8 @@ AppConfig _$AppConfigFromJson(Map<String, dynamic> json) => AppConfig(
       enableSyncFromSnapshot: json['enableSyncFromSnapshot'] as bool? ?? true,
       enableSyncFromDriveState:
           json['enableSyncFromDriveState'] as bool? ?? false,
+      enableDriveStatePublishing:
+          json['enableDriveStatePublishing'] as bool? ?? false,
       stripePublishableKey: json['stripePublishableKey'] as String,
       autoSync: json['autoSync'] as bool? ?? true,
       uploadThumbnails: json['uploadThumbnails'] as bool? ?? true,
@@ -49,6 +51,7 @@ Map<String, dynamic> _$AppConfigToJson(AppConfig instance) => <String, dynamic>{
       'autoSyncIntervalInSeconds': instance.autoSyncIntervalInSeconds,
       'enableSyncFromSnapshot': instance.enableSyncFromSnapshot,
       'enableSyncFromDriveState': instance.enableSyncFromDriveState,
+      'enableDriveStatePublishing': instance.enableDriveStatePublishing,
       'stripePublishableKey': instance.stripePublishableKey,
       'autoSync': instance.autoSync,
       'uploadThumbnails': instance.uploadThumbnails,

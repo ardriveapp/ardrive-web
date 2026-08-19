@@ -104,8 +104,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
 
     const graphqlSuffix = '/graphql';
 
-    final ArDriveDevToolOption arweaveGatewayUrlOption =
-        ArDriveDevToolOption(
+    final ArDriveDevToolOption arweaveGatewayUrlOption = ArDriveDevToolOption(
       name: 'arweaveGatewayUrl',
       value: config.arweaveGatewayUrl,
       onChange: (value) {
@@ -269,6 +268,27 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.bool,
     );
 
+    /// The switch that decides whether the New menu offers to publish a drive
+    /// state artifact at all.
+    ///
+    /// Here rather than only in `assets/config/*.json` because the asset file
+    /// is re-read only when its `configVersion` grows, and bumping that resets
+    /// every other stored preference. Turning this on is a deliberate act with
+    /// a cost behind it, so it belongs somewhere a person has to go looking.
+    final ArDriveDevToolOption enableDriveStatePublishingOption =
+        ArDriveDevToolOption(
+      name: 'enableDriveStatePublishing',
+      value: config.enableDriveStatePublishing,
+      onChange: (value) {
+        setState(() {
+          configService.updateAppConfig(
+            config.copyWith(enableDriveStatePublishing: value),
+          );
+        });
+      },
+      type: ArDriveDevToolOptionType.bool,
+    );
+
     // --- Solana / AR.IO SDK options ---
 
     void reinitArioSdk(AppConfig cfg) {
@@ -354,14 +374,10 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
         setState(() {
           final c = config.copyWith(
             solanaRpcUrl: 'https://api.devnet.solana.com',
-            solanaCoreProgramId:
-                '8Njx9wPkXiNzDCgjwVsJFRjpAEV34gGW3n8DzX3V23m1',
-            solanaGarProgramId:
-                '7WsDTrtZBsfKtnP33XkjuqXCY69JE7n4QVYpynqJCFxz',
-            solanaArnsProgramId:
-                '6EZNezcg4rc5hnh8HG34vGquT3WpW5xXypzPb24uyEpp',
-            solanaAntProgramId:
-                'DbHbRwUD1oAn1mrDSqtWtvwGcNrmhWdD2g8L4xmeQ7NX',
+            solanaCoreProgramId: '8Njx9wPkXiNzDCgjwVsJFRjpAEV34gGW3n8DzX3V23m1',
+            solanaGarProgramId: '7WsDTrtZBsfKtnP33XkjuqXCY69JE7n4QVYpynqJCFxz',
+            solanaArnsProgramId: '6EZNezcg4rc5hnh8HG34vGquT3WpW5xXypzPb24uyEpp',
+            solanaAntProgramId: 'DbHbRwUD1oAn1mrDSqtWtvwGcNrmhWdD2g8L4xmeQ7NX',
           );
           configService.updateAppConfig(c);
           reinitArioSdk(c);
@@ -375,6 +391,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       useTurboOption,
       useTurboPaymentOption,
       enableSyncFromSnapshotOption,
+      enableDriveStatePublishingOption,
       stripePublishableKey,
       allowedDataItemSizeForTurboOption,
       arweaveGatewayUrlOption,
