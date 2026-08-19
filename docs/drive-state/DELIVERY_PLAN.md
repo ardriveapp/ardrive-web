@@ -11,29 +11,44 @@ Tracks the ArFS addition across every repository it touches. The proposal is
 
 ## Findings that shape the downstream work
 
-Two things checked in the sibling repositories, both of which change the plan
-from what the proposal assumed:
+**Corrected.** An earlier revision of this plan claimed `ardrive-core-js` had no
+snapshot support and that a CLI comment referencing `parseSnapshotData` was
+stale. Both were wrong — read from a checkout sitting on an old feature branch
+rather than `origin/master`. The error is recorded rather than quietly edited
+out, because it is the same stale-checkout failure the agentic framework warns
+about, and it made the downstream work look larger and lonelier than it is.
 
-**1. `ardrive-core-js` has no snapshot support at all.** Its `entityTypeValues`
-(`src/types/type_guards.ts:7`) is `drive | file | folder | drive-signature` —
-there is no `snapshot`, and no `parseSnapshotData` anywhere in the source. So
-adding `drive-state` there is not "one more rollup format beside snapshots"; it
-would be the **first** rollup artifact core-js can read. That is a larger piece
-of work than the proposal's §8 implied, and it is also the higher-value one:
-core-js is what every non-web client builds drive state through.
+What `origin/master` actually has:
 
-**2. The CLI creates snapshots through its own utility**
-(`src/utils/snapshots/create_snapshot.ts`), not through core-js. A comment in
-`src/commands/create_snapshot.ts:74` says the body shape is "dictated by
-core-js's own `parseSnapshotData`" — **that function does not exist in
-core-js**. The comment is stale or aspirational, and anyone reasoning from it
-would be misled. Worth correcting regardless of this feature.
+- **A complete `src/snapshots/` module** (16 files): `range`, `height_range`,
+  `snapshot_obscuring`, `drive_history_composite`, `snapshot_query`,
+  `snapshot_data`, `snapshot_tags`, `snapshot_types`.
+- **`parseSnapshotData` is real and in use** — `src/arfs/arfsdao_anonymous.ts`
+  reads snapshot bodies through it. The CLI comment attributing the body shape
+  to it is accurate.
+- The module deliberately mirrors this app's `lib/utils/snapshots/`: the same
+  `Range` / `HeightRange` / obscuring / composite concepts, under the same
+  names.
 
-Consequence: the CLI can *produce* a rollup that nothing in core-js can
-*consume*. The drive-state work should not repeat that split — the reader
-belongs in core-js, where every client can reach it.
+Three consequences, all favourable:
 
----
+1. **The composition machinery already exists.** A drive-state artifact is one
+   more obscuring range in core-js exactly as it is here, so §3 is mirroring a
+   proven structure rather than inventing one.
+2. **The read path is the model to copy.** `parseSnapshotData` →
+   `arfsdao_anonymous` is precisely the seam a drive-state reader slots beside.
+3. **One real gap remains:** `src/snapshots/index.ts` states these are *"NOT yet
+   wired into the live listing path — that integration (composite merge, entity
+   cache) is a later phase."* So core-js can parse and compose snapshots but does
+   not yet use them when listing a drive. Drive-state should not overtake that;
+   it should land behind or alongside the same integration, or it will be a
+   reader nothing calls.
+
+Note `entityTypeValues` (`src/types/type_guards.ts`) still lists only
+`drive | file | folder | drive-signature` — snapshots are identified by their
+own `snapshot_tags.ts` constants instead. Either convention works for
+`drive-state`; matching `snapshot_tags.ts` keeps rollup formats consistent with
+each other.
 
 ## 1. ardrive-web — the reference implementation
 
@@ -71,13 +86,15 @@ implementers should know irrespective of this addition.
 
 ## 3. ardrive-core-js — the reader every other client inherits
 
+Mirrors the existing `src/snapshots/` module rather than inventing a structure.
+
 | | Item | Status |
 |---|---|---|
-| 3.1 | Add `DRIVE_STATE: 'drive-state'` to `entityTypeValues` (`src/types/type_guards.ts`) | ⬜ |
-| 3.2 | Envelope reader: decrypt → parse data item → verify signature → gunzip → sections. Must match ardrive-web byte for byte | ⬜ |
+| 3.1 | `src/drive_state/` beside `src/snapshots/`: `drive_state_tags.ts`, `drive_state_types.ts`, `drive_state_query.ts`, `drive_state_data.ts` — same shapes, same naming | ⬜ |
+| 3.2 | Envelope reader: decrypt → parse ANS-104 data item → verify signature → gunzip → sections. Must match ardrive-web byte for byte | ⬜ |
 | 3.3 | Section deserialisation to core-js's own entity types — **not** a port of this app's column names (proposal §8) | ⬜ |
-| 3.4 | Discovery by GraphQL, owner-filtered | ⬜ |
-| 3.5 | Compose into the existing listing path so a client covers `Block-End → head` by GraphQL | ⬜ |
+| 3.4 | Reuse `snapshot_obscuring` / `height_range` / `drive_history_composite` for range composition. Do not write a second mechanism | ⬜ |
+| 3.5 | Wire into the live listing path in `arfsdao_anonymous`, beside `parseSnapshotData`. **Sequenced with core-js's own pending snapshot integration** (`src/snapshots/index.ts` notes it is not yet wired in) so drive-state does not overtake it | ⬜ 🔒 coordinate with the desktop work |
 | 3.6 | Cross-implementation test: an artifact produced by ardrive-web opens in core-js and yields identical entities | ⬜ **the acceptance test for the whole feature** |
 
 3.6 is the one that matters. Until an artifact written by one implementation is
@@ -88,9 +105,9 @@ read by another, "cross-client format" is an assertion, not a fact.
 | | Item | Status |
 |---|---|---|
 | 4.1 | `ardrive create-drive-state` — produce and upload an artifact. The CLI is the better producer for a large drive: real bandwidth, no browser connection limits | ⬜ |
-| 4.2 | Route it through core-js rather than a CLI-local utility, so the split described above is not repeated | ⬜ |
+| 4.2 | Route it through core-js's `src/drive_state/` rather than a CLI-local utility, so production and consumption share one implementation | ⬜ |
 | 4.3 | `--dry-run` that prepares and reports size without uploading, mirroring the existing snapshot command's flag | ⬜ |
-| 4.4 | Correct the stale `parseSnapshotData` comment (`src/commands/create_snapshot.ts:74`) | ⬜ |
+| 4.4 | ~~Correct the stale `parseSnapshotData` comment~~ — withdrawn; the comment is accurate | ✅ n/a |
 
 ---
 
