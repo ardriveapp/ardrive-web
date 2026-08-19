@@ -57,6 +57,35 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// navigation away from the drive still discards the folder as it always has.
   String? _pendingFolderDriveId;
 
+  /// Reconciles the folder in view with the drive that has just been selected.
+  ///
+  /// Selecting a different drive discards the folder, which is what ordinary
+  /// navigation wants - a folder from the drive you just left is stale. The one
+  /// exception is the drive a folder link named: it becomes selected *because*
+  /// of that link, so its folder is the whole point rather than a leftover.
+  ///
+  /// Extracted from the listener that calls it so it can be tested without
+  /// standing up the whole app shell.
+  @visibleForTesting
+  void onDriveSelected(String? selectedDriveId) {
+    final selectedDriveChanged = driveId != selectedDriveId;
+
+    final isTheLinkedDrive = _pendingFolderDriveId != null &&
+        _pendingFolderDriveId == selectedDriveId;
+
+    if (selectedDriveChanged && !isTheLinkedDrive) {
+      driveFolderId = null;
+    }
+
+    // One shot. Released as soon as it is honored, so navigating away from the
+    // drive and back lands at its root rather than jumping to the old folder.
+    if (isTheLinkedDrive) {
+      _pendingFolderDriveId = null;
+    }
+
+    driveId = selectedDriveId;
+  }
+
   DriveKey? sharedDriveKey;
   String? sharedRawDriveKey;
 
@@ -209,24 +238,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 shell = BlocListener<DrivesCubit, DrivesState>(
                   listener: (context, state) {
                     if (state is DrivesLoadSuccess) {
-                      final selectedDriveChanged =
-                          driveId != state.selectedDriveId;
-
-                      // The drive a folder link named has just become the
-                      // selected one, so its folder is not stale - it is the
-                      // whole point of the link.
-                      final isTheLinkedDrive = _pendingFolderDriveId != null &&
-                          _pendingFolderDriveId == state.selectedDriveId;
-
-                      if (selectedDriveChanged && !isTheLinkedDrive) {
-                        driveFolderId = null;
-                      }
-
-                      if (isTheLinkedDrive) {
-                        _pendingFolderDriveId = null;
-                      }
-
-                      driveId = state.selectedDriveId;
+                      onDriveSelected(state.selectedDriveId);
                       notifyListeners();
                     }
                   },
