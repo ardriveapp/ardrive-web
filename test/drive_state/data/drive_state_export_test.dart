@@ -235,10 +235,10 @@ void main() {
         rootFolderFileCount: 1,
         nestedFolderFileCount: 0,
       );
-      await db.driveDao.writeToDrive(DrivesCompanion(
+      await db.driveDao.writeToDrive(const DrivesCompanion(
         id: Value(driveId),
-        syncCursor: const Value('an-endpoint-specific-cursor'),
-        lastBlockHeight: const Value(1814228),
+        syncCursor: Value('an-endpoint-specific-cursor'),
+        lastBlockHeight: Value(1814228),
       ));
 
       final encoded = jsonEncode((await exportDriveState(db.driveDao, driveId))
