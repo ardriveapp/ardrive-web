@@ -96,6 +96,74 @@ void main() {
 
         expect(tagsOf(tx)[EntityTag.blockStart], '0');
       });
+
+      /// A missing tag is not a programming slip that a debug build will catch
+      /// for you. `assert` is compiled out of release, so a release client
+      /// would interpolate the null, publish `Block-End: null`, pay for it,
+      /// and hand every reader — including itself, which parses these with
+      /// `int.parse` — a transaction that can never be used. Tags are
+      /// immutable, so before the transaction exists is the only place to
+      /// stop it.
+      ///
+      /// `flutter test` runs with asserts enabled, so a test that only proved
+      /// "it throws" would prove nothing about release. These assert on the
+      /// message instead: an `AssertionError` carries no field names, and a
+      /// stripped assert carries nothing at all.
+      group('refuses to tag an incomplete entity, in release as in debug', () {
+        void expectRefusal(DriveStateEntity incomplete, String tag) {
+          expect(
+            () => incomplete.addEntityTagsToTransaction(Transaction()),
+            throwsA(
+              isA<StateError>().having((e) => e.message, 'message',
+                  allOf(contains(tag), contains('no reader can use'))),
+            ),
+          );
+        }
+
+        test('a null Block-End', () {
+          expectRefusal(entity()..blockEnd = null, 'Block-End');
+        });
+
+        test('a null Entity-Count', () {
+          expectRefusal(entity()..entityCount = null, 'Entity-Count');
+        });
+
+        test('a null Cipher-IV', () {
+          expectRefusal(entity()..cipherIv = null, 'Cipher-IV');
+        });
+
+        test('names every missing tag at once, so one fix is enough', () {
+          final incomplete = entity()
+            ..id = null
+            ..blockEnd = null
+            ..cipher = null;
+
+          expect(
+            () => incomplete.addEntityTagsToTransaction(Transaction()),
+            throwsA(isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              allOf(
+                contains('Drive-State-Id'),
+                contains('Block-End'),
+                contains('Cipher'),
+              ),
+            )),
+          );
+        });
+
+        test('writes no tag at all when it refuses', () {
+          // Half a tag set on a transaction that is then signed anyway would
+          // be the same permanent mistake with a different shape.
+          final tx = Transaction();
+
+          expect(
+            () => (entity()..blockEnd = null).addEntityTagsToTransaction(tx),
+            throwsA(isA<StateError>()),
+          );
+          expect(tx.tags, isEmpty);
+        });
+      });
     });
 
     group('asTransaction', () {

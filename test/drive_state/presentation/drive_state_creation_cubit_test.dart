@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:ardrive/blocs/blocs.dart';
@@ -534,6 +535,168 @@ void main() {
             .having((s) => s.message, 'message', contains('Nothing was spent')),
       ],
     );
+  });
+
+  /// The modal that owns this cubit is dismissible, and both of its long steps
+  /// are awaits: preparation seals a real payload, publishing is a network
+  /// upload. A user who closes the dialog while either is in flight closes the
+  /// cubit, and the await then returns into it.
+  ///
+  /// `emit` on a closed cubit throws, and in `prepare` the throw lands in the
+  /// method's own `catch`, which emits again and throws again — that second one
+  /// has nothing to catch it and surfaces as an unhandled asynchronous error.
+  /// So these tests assert two things at once: the work finishes quietly, and
+  /// nothing is emitted into a dialog that is gone.
+  group('a modal dismissed mid-flight', () {
+    /// Runs [act] and collects everything the cubit emits after [from].
+    ///
+    /// A `StateError` out of `emit` propagates straight out of the awaited
+    /// call, so `await`ing the work is the whole assertion: if the cubit emits
+    /// into itself after close, this rethrows and the test fails where the
+    /// user would have seen a crash.
+    Future<List<DriveStateCreationState>> statesEmittedDuring(
+      DriveStateCreationCubit cubit,
+      Future<void> Function() act,
+    ) async {
+      final seen = <DriveStateCreationState>[];
+      final subscription = cubit.stream.listen(seen.add);
+
+      await act();
+      await subscription.cancel();
+
+      return seen;
+    }
+
+    /// Hangs the cost estimate, and reports when the cubit has actually
+    /// reached it. Without the second half the test races the earlier awaits
+    /// in `prepare` and can close the cubit before the step it means to
+    /// interrupt is even running.
+    ({Completer<void> reached, Completer<DriveStatePublishCost> pricing})
+        hangPricing() {
+      final reached = Completer<void>();
+      final pricing = Completer<DriveStatePublishCost>();
+
+      when(() => costEstimator.estimate(
+            sizeInBytes: any(named: 'sizeInBytes'),
+            wallet: any(named: 'wallet'),
+            walletBalance: any(named: 'walletBalance'),
+          )).thenAnswer((_) {
+        reached.complete();
+        return pricing.future;
+      });
+
+      return (reached: reached, pricing: pricing);
+    }
+
+    ({Completer<void> reached, Completer<DriveStateUploadResult> upload})
+        hangUpload() {
+      final reached = Completer<void>();
+      final upload = Completer<DriveStateUploadResult>();
+
+      when(() => uploader.publish(any(), method: any(named: 'method')))
+          .thenAnswer((_) {
+        reached.complete();
+        return upload.future;
+      });
+
+      return (reached: reached, upload: upload);
+    }
+
+    test('preparing does not emit into a cubit that was closed mid-flight',
+        () async {
+      final hung = hangPricing();
+      final cubit = cubitWith();
+
+      final seen = await statesEmittedDuring(cubit, () async {
+        final preparing = cubit.prepare();
+        await hung.reached.future;
+
+        // The user closes the dialog while the artifact is being priced.
+        await cubit.close();
+        hung.pricing.complete(_cost());
+
+        await preparing;
+      });
+
+      expect(
+        seen,
+        [isA<DriveStateCreationPreparing>()],
+        reason: 'the ready state belongs to a modal that is no longer there',
+      );
+      verifyNever(() => uploader.publish(any(), method: any(named: 'method')));
+    });
+
+    test('preparing does not emit a failure into a closed cubit either',
+        () async {
+      // The same race on the path that fails, which is the one that throws
+      // twice: once from the emit, and once from the catch that handles it —
+      // and the second throw has nothing left to catch it.
+      final hung = hangPricing();
+      final cubit = cubitWith();
+
+      final seen = await statesEmittedDuring(cubit, () async {
+        final preparing = cubit.prepare();
+        await hung.reached.future;
+
+        await cubit.close();
+        hung.pricing.completeError(
+          StateError('the gateway would not price it'),
+        );
+
+        await preparing;
+      });
+
+      expect(seen, [isA<DriveStateCreationPreparing>()]);
+    });
+
+    test('publishing finishes, and reports into the log rather than the modal',
+        () async {
+      final hung = hangUpload();
+      final cubit = cubitWith();
+      await cubit.prepare();
+
+      final seen = await statesEmittedDuring(cubit, () async {
+        final publishing = cubit.publish();
+        await hung.reached.future;
+
+        // Dismissed while the artifact is on the wire. The upload is not
+        // cancelled — it is paid for the moment it is posted — it simply has
+        // nowhere left to report to.
+        await cubit.close();
+        hung.upload.complete(const DriveStateUploadResult.published('tx-id'));
+
+        await publishing;
+      });
+
+      expect(
+        seen,
+        [isA<DriveStateCreationPublishing>()],
+        reason: 'the published state has no modal left to reach',
+      );
+      verify(() => uploader.publish(any(), method: any(named: 'method')))
+          .called(1);
+    });
+
+    test('a publish that fails after the modal closed is not emitted either',
+        () async {
+      final hung = hangUpload();
+      final cubit = cubitWith();
+      await cubit.prepare();
+
+      final seen = await statesEmittedDuring(cubit, () async {
+        final publishing = cubit.publish();
+        await hung.reached.future;
+
+        await cubit.close();
+        hung.upload.completeError(
+          StateError('the gateway rejected the chunk'),
+        );
+
+        await publishing;
+      });
+
+      expect(seen, [isA<DriveStateCreationPublishing>()]);
+    });
   });
 
   group('the shipped uploader', () {

@@ -8,6 +8,7 @@ import 'package:ardrive_uploader/ardrive_uploader.dart'
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:cryptography/cryptography.dart' show SecretKey, Sha256;
+import 'package:flutter/foundation.dart' show visibleForTesting;
 
 /// Why a drive state artifact could not be produced, or could not be opened.
 ///
@@ -77,6 +78,16 @@ enum DriveStateEnvelopeFailure {
   /// The signature does not verify: these are not the bytes the owner signed.
   signatureInvalid,
 }
+
+/// The shape of [processDataItem], so that [DriveStateEnvelopeCodec] can take
+/// it as a collaborator. See [DriveStateEnvelopeCodec._parseDataItem] for why
+/// it is a collaborator at all.
+typedef DriveStateDataItemParser = Future<ProcessedDataItem> Function({
+  required DataStreamGenerator dataItemStreamGenerator,
+  required String id,
+  required int length,
+  required SignatureConfig signatureConfig,
+});
 
 /// A sealed artifact body, together with the two tag values needed to read it
 /// back off chain.
@@ -236,6 +247,15 @@ class DriveStateOpenResult {
 class DriveStateEnvelopeCodec {
   final ArDriveCrypto _crypto;
 
+  /// The signature-checking ANS-104 parse [open] runs.
+  ///
+  /// Injectable only so a test can hand back an item whose data stream fails,
+  /// which is the one branch of [open]'s "never throws" contract that no
+  /// artifact reachable through [seal] can reach. Production is always
+  /// [processDataItem]; nothing but a test may pass anything else, because
+  /// anything else is a way to skip the signature check.
+  final DriveStateDataItemParser _parseDataItem;
+
   /// The most plaintext [open] will produce before refusing.
   ///
   /// [maxSizeSupportedByGCMEncryption] both ways: [seal] will not produce a
@@ -250,7 +270,9 @@ class DriveStateEnvelopeCodec {
     // Injectable only so a test can prove the bound holds without allocating
     // 100 MiB to watch it hold.
     int? maxPlaintextBytes,
+    @visibleForTesting DriveStateDataItemParser? parseDataItem,
   })  : _crypto = crypto ?? ArDriveCrypto(),
+        _parseDataItem = parseDataItem ?? processDataItem,
         maxPlaintextBytes =
             maxPlaintextBytes ?? maxSizeSupportedByGCMEncryption;
 
@@ -338,8 +360,33 @@ class DriveStateEnvelopeCodec {
   /// data item inside verifies and was signed by [expectedOwnerAddress].
   ///
   /// Never throws: every way this can go wrong is a
-  /// [DriveStateEnvelopeFailure] the caller logs before falling back.
+  /// [DriveStateEnvelopeFailure] the caller logs before falling back. That is a
+  /// contract and not a hope, so it is held in two places — every step below
+  /// that can fail is caught where it fails and named, and [_openOrThrow] is
+  /// wrapped once more here so that a step which grows a new failure mode later
+  /// still cannot turn a bad artifact into a failed sync (§2.5). A caught
+  /// throwable is a bug worth fixing, but it is never worth a drive.
   Future<DriveStateOpenResult> open({
+    required DriveStateEnvelope envelope,
+    required SecretKey driveKey,
+    required String expectedOwnerAddress,
+  }) async {
+    try {
+      return await _openOrThrow(
+        envelope: envelope,
+        driveKey: driveKey,
+        expectedOwnerAddress: expectedOwnerAddress,
+      );
+    } catch (e) {
+      return DriveStateOpenResult.failed(
+        DriveStateEnvelopeFailure.malformedFrame,
+        'Reading the artifact threw where it should have refused, which is a '
+        'bug; the drive falls back to an ordinary sync: $e',
+      );
+    }
+  }
+
+  Future<DriveStateOpenResult> _openOrThrow({
     required DriveStateEnvelope envelope,
     required SecretKey driveKey,
     required String expectedOwnerAddress,
@@ -385,7 +432,17 @@ class DriveStateEnvelopeCodec {
     // the signature and owner fields are. Handing the parser a config that
     // disagrees would not fail loudly; it would read the item at the wrong
     // offsets.
-    final signatureType = _readSignatureType(binary);
+    final int signatureType;
+    try {
+      signatureType = _readSignatureType(binary);
+    } catch (e) {
+      return DriveStateOpenResult.failed(
+        DriveStateEnvelopeFailure.malformedFrame,
+        'The decrypted bytes do not begin with a readable ANS-104 signature '
+        'type: $e',
+      );
+    }
+
     if (signatureType != _signatureConfig.signatureType) {
       return DriveStateOpenResult.failed(
         DriveStateEnvelopeFailure.unsupportedSignatureType,
@@ -398,7 +455,7 @@ class DriveStateEnvelopeCodec {
       // Parses the item and checks its signature in one pass, throwing when
       // the signature does not verify. Nothing downstream of here is reached
       // by bytes nobody signed.
-      item = await processDataItem(
+      item = await _parseDataItem(
         dataItemStreamGenerator: () => Stream.value(binary),
         id: await _idOf(binary),
         length: binary.lengthInBytes,
@@ -445,7 +502,12 @@ class DriveStateEnvelopeCodec {
     final Uint8List compressed;
     try {
       compressed = await _collect(item.dataStreamGenerator);
-    } on Error catch (e) {
+    } catch (e) {
+      // Not `on Error`. Draining someone else's stream is the one step here
+      // whose failure modes belong to another package: a range that does not
+      // fit the item raises an `Error`, but a stream is equally free to carry
+      // an `Exception`, and an `on Error` clause lets that one straight past
+      // the caller's fallback and into a failed sync.
       return DriveStateOpenResult.failed(
         DriveStateEnvelopeFailure.malformedFrame,
         'The data item\'s data could not be read back: $e',
@@ -539,36 +601,99 @@ class _PlaintextLimitExceeded implements Exception {
 ///
 /// Subclassing rather than reimplementing: `Inflate` reads back through
 /// `subset` to resolve LZ77 back references, so this has to be a real
-/// [OutputStream] and not merely something with the same three write methods.
-/// Every one of those checks before delegating, so the buffer is never
-/// allocated past the limit — a check afterwards would be a check that runs
-/// once the damage is done.
+/// [OutputStream] and not merely something with the same write methods.
+///
+/// ## Two gates, because one of them is only as complete as the package
+///
+/// The obvious way to bound an output stream is to override its write methods.
+/// That works, and it is the gate that matters, because it refuses *before* the
+/// buffer is grown — which is the whole point when the input is a bomb whose
+/// expansion is the attack. But it is only sound while the set of methods
+/// overridden here is the set the decoder actually calls, and that set is the
+/// package's business, not ours. `archive`'s `OutputStream` writes bytes
+/// through six methods; three are overridden below and the other three
+/// (`writeUint16`, `writeUint32`, `writeUint64`) reach the buffer *through*
+/// [writeByte] in the pinned version — an implementation detail nobody promised
+/// and nothing here can pin. A version that stopped delegating, or that grew a
+/// seventh method, would leave the guard passing its tests and guarding
+/// nothing.
+///
+/// So the second gate is [length]. Overriding the base class's field with a
+/// getter and a setter puts a check on the one thing every write path must do:
+/// no byte can be counted as written without it, whatever method admitted it.
+/// It refuses later than the first gate — the buffer may already have been
+/// grown for the write in progress, bounded by that write's own size — but it
+/// cannot be routed around by a method this class has not heard of.
+///
+/// [admittedBytes] is what keeps the first gate honest: every byte the write
+/// overrides let through is counted, so a test can compare the total against
+/// [length] after a real decode and fail the moment those two disagree. See
+/// `drive_state_envelope_test.dart`, which is the alarm for exactly the
+/// `archive` upgrade described above.
 class _BoundedOutputStream extends OutputStream {
   final int limit;
 
+  /// Shadows `OutputStream.length`, which the base class declares as a plain
+  /// field and reads and writes virtually on every path that puts a byte in
+  /// the buffer.
+  int _length = 0;
+
+  int _admitted = 0;
+
   _BoundedOutputStream(this.limit);
 
-  void _guard(int adding) {
-    if (length + adding > limit) {
-      throw _PlaintextLimitExceeded(length + adding);
+  /// How many bytes reached the buffer through a write method this class
+  /// guards. Equal to [length] exactly when the guards are complete.
+  int get admittedBytes => _admitted;
+
+  @override
+  int get length => _length;
+
+  @override
+  set length(int value) {
+    if (value > limit) {
+      throw _PlaintextLimitExceeded(value);
     }
+    _length = value;
+  }
+
+  void _admit(int adding) {
+    if (_length + adding > limit) {
+      throw _PlaintextLimitExceeded(_length + adding);
+    }
+    _admitted += adding;
   }
 
   @override
   void writeByte(int value) {
-    _guard(1);
+    _admit(1);
     super.writeByte(value);
   }
 
   @override
   void writeBytes(List<int> bytes, [int? len]) {
-    _guard(len ?? bytes.length);
+    _admit(len ?? bytes.length);
     super.writeBytes(bytes, len);
   }
 
   @override
   void writeInputStream(InputStreamBase stream) {
-    _guard(stream.length);
+    _admit(stream.length);
     super.writeInputStream(stream);
+  }
+
+  // `Inflate` calls neither of these on the path `decodeStream` takes, but both
+  // reset `length`, so leaving them alone would leave [admittedBytes] counting
+  // bytes that are no longer there and quietly disarm the alarm above.
+  @override
+  void clear() {
+    super.clear();
+    _admitted = 0;
+  }
+
+  @override
+  void reset() {
+    super.reset();
+    _admitted = 0;
   }
 }

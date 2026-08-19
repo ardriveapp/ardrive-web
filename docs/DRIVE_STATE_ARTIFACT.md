@@ -188,8 +188,37 @@ observed serving wrong data — a truncated GraphQL response under an open
 GCM detects a body that arrived wrong; CTR would import it as state.
 
 Above the 100 MiB boundary the artifact must **split into authenticated parts
-with a manifest**, never fall through to CTR. At 34.63 MiB for ~41k entities,
-that boundary is somewhere near 120k entities and will be reached.
+with a manifest**, never fall through to CTR.
+
+**Where that boundary actually is.** An earlier draft of this section put it
+near 120k entities, extrapolating from the 34.63 MiB in §1.1. That
+was wrong twice over: 34.63 MiB is a VACUUMed SQLite file, and `seal` does not
+weigh a SQLite file — it weighs the serialised JSON payload, whose rows are much
+fatter than SQLite's binary encoding. It also counted entities, while the
+payload carries a revision row per revision as well (D2).
+
+Measured against the wire format `seal` actually refuses on, using
+`jsonEncode` of the exported row types:
+
+| | bytes per row |
+|---|---|
+| `file_entries` | 695 |
+| `file_revisions` | 701 |
+
+41,767 files × (695 + 1.05 × 701) = **57.0 MiB of a 100 MiB budget**, and the
+crossover is at about **73,000 files** — a headroom of ~1.75×, not the ~3× the
+120k figure implied. `test/drive_state/qa_findings_test.dart` holds these
+numbers so that a change to the exported row shape moves the documented figure
+with it.
+
+~1.75× is not much, and three things spend it: **longer paths** (the model uses
+a 45 character path; a deeply nested drive doubles that and every file pays it
+twice, in the entry and in each revision), **`customGQLTags` and
+`customJsonMetadata`** (absent from the modelled drive, unbounded in general),
+and **more revisions per entity** (the model's 1.05 is one real drive's figure,
+not a law). A drive of 40k heavily-revised files with long paths can reach the
+boundary; the D5 refusal is therefore a path users will meet, not a theoretical
+one.
 
 ### 2.4 Never hand an untrusted file to SQLite
 

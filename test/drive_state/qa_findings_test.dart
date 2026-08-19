@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
 import 'package:ardrive/drive_state/data/drive_state_export.dart';
@@ -255,8 +256,7 @@ void main() {
       await attachDriveToConsumer();
     });
 
-    test('the producer can see the file inside its own ghost folder',
-        () async {
+    test('the producer can see the file inside its own ghost folder', () async {
       // The control. The ghost renders in the producer's own client.
       final root = await producerDb.driveDao
           .watchFolderContents(driveId, folderId: rootFolderId)
@@ -438,8 +438,7 @@ void main() {
   /// can put a drive straight back into it, and worse than sync could: the
   /// artifact is immutable, its coverage equals the watermark it just wrote,
   /// and equal coverage is re-imported — so it re-applies on every sync.
-  group('an artifact whose drive row points at a folder it does not carry',
-      () {
+  group('an artifact whose drive row points at a folder it does not carry', () {
     setUp(() async {
       await seedProducerWithAGhost();
       // The producer's drive row names a root folder that no section carries.
@@ -465,8 +464,7 @@ void main() {
             .getSingle();
         final root = await (consumerDb.select(consumerDb.folderEntries)
               ..where((f) =>
-                  f.driveId.equals(driveId) &
-                  f.id.equals(drive.rootFolderId)))
+                  f.driveId.equals(driveId) & f.id.equals(drive.rootFolderId)))
             .getSingleOrNull();
 
         expect(
@@ -557,8 +555,8 @@ void main() {
       final perFileEntry = jsonEncode(file.toJson()).length + 1;
       final perFileRevision = jsonEncode(revision.toJson()).length + 1;
 
-      final estimate =
-          (fileCount * perFileEntry) + (fileCount * revisionsPerFile).round() * perFileRevision;
+      final estimate = (fileCount * perFileEntry) +
+          (fileCount * revisionsPerFile).round() * perFileRevision;
 
       // ignore: avoid_print
       print('file_entries row: $perFileEntry bytes\n'
@@ -569,28 +567,63 @@ void main() {
           '$maxSizeSupportedByGCMEncryption byte '
           '(${maxSizeSupportedByGCMEncryption ~/ (1024 * 1024)} MiB) limit');
 
-      // The target drive fits, but not with the headroom the proposal implies.
+      // The target drive fits, but not with the headroom the proposal implied.
       expect(estimate, lessThan(maxSizeSupportedByGCMEncryption));
 
-      // Proposal 2.3: "At 34.63 MiB for ~41k entities, that boundary is
-      // somewhere near 120k entities and will be reached." That figure is a
-      // VACUUMed SQLite file and predates revisions travelling. Measured
-      // against the JSON that `seal` actually weighs, the crossover is here:
+      // An earlier draft of §2.3 read: "At 34.63 MiB for ~41k entities, that
+      // boundary is somewhere near 120k entities and will be reached." That
+      // figure is a VACUUMed SQLite file, not the JSON `seal` weighs, and it
+      // counted entities rather than the entity *and* revision rows the
+      // payload carries (D2). Measured against the wire format, the crossover
+      // is here — and §2.3 now says so.
       final crossover = maxSizeSupportedByGCMEncryption ~/
           (perFileEntry + (perFileRevision * revisionsPerFile).round());
+      final headroom = maxSizeSupportedByGCMEncryption / estimate;
 
       // ignore: avoid_print
-      print('the AES-GCM boundary is crossed at about $crossover files, not '
-          'the ~120,000 entities proposal 2.3 states');
+      print('the AES-GCM boundary is crossed at about $crossover files, '
+          'leaving ${headroom.toStringAsFixed(2)}x headroom over the target '
+          'drive');
 
       expect(
         crossover,
-        greaterThan(120000),
-        reason: 'proposal 2.3 sizes the refusal boundary at ~120k entities and '
-            'the delivery plan carries that number forward; the JSON wire '
-            'format with revisions crosses it far earlier',
+        lessThan(120000),
+        reason: 'the ~120k figure would only hold if `seal` weighed a VACUUMed '
+            'SQLite file without revisions; it weighs JSON with them',
       );
+
+      // A band rather than an equality: these are row sizes, and the point of
+      // the test is that the documented figure tracks the exported row shape.
+      // Widen the row types and this fails, which is when the doc needs an
+      // edit — not a year later when a user meets the refusal.
+      expect(
+        crossover,
+        inInclusiveRange(68000, 78000),
+        reason: 'docs/DRIVE_STATE_ARTIFACT.md §2.3 documents a crossover of '
+            'about 73,000 files; the exported row shape has moved under it',
+      );
+      expect(
+        headroom,
+        inInclusiveRange(1.6, 1.9),
+        reason: 'docs/DRIVE_STATE_ARTIFACT.md §2.3 documents ~1.75x headroom '
+            'over the 42k-file target drive',
+      );
+    });
+
+    test('the proposal states the measured boundary, not the extrapolated one',
+        () {
+      // The numbers above are only worth measuring if the document a reader
+      // plans against carries them. §2.3 is where D5's refusal is sized.
+      final proposal = File('docs/DRIVE_STATE_ARTIFACT.md').readAsStringSync();
+
+      expect(
+        proposal,
+        isNot(contains('somewhere near 120k entities')),
+        reason: 'the ~120k extrapolation is wrong by ~1.6x and sizes a '
+            'refusal users will actually meet',
+      );
+      expect(proposal, contains('73,000 files'));
+      expect(proposal, contains('1.75'));
     });
   });
 }
-

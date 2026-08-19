@@ -60,7 +60,19 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
 
   /// Builds the artifact, prices it, and stops. Emits
   /// [DriveStateCreationReady] with something that has not been sent anywhere.
+  ///
+  /// Every step here is awaited, and the modal that owns this cubit can be
+  /// dismissed while any of them is in flight — so every resumption point is
+  /// guarded by [isClosed], the same shape `DriveDetailCubit` and
+  /// `DriveAttachCubit` use and the shape [refreshTurboBalance] below already
+  /// used. Without it the await returns into a closed cubit, `emit` throws, and
+  /// the throw lands in the `catch` below, which emits again and throws again —
+  /// this time with nothing to catch it. The sealing this abandons is CPU the
+  /// user has already left the room for; nothing was uploaded and nothing was
+  /// spent.
   Future<void> prepare() async {
+    if (isClosed) return;
+
     emit(DriveStateCreationPreparing());
 
     try {
@@ -78,6 +90,7 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
         driveId,
         profile.user.cipherKey,
       );
+      if (isClosed) return;
 
       if (driveKey == null) {
         emit(DriveStateCreationRefused(
@@ -93,6 +106,7 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
         driveKey: driveKey.key,
         wallet: profile.user.wallet,
       );
+      if (isClosed) return;
 
       if (result.isRefused) {
         logger.i(
@@ -117,6 +131,8 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
           walletBalance: profile.user.walletBalance,
         );
       } catch (e, stackTrace) {
+        if (isClosed) return;
+
         logger.e(
           '[drive-state] could not price an artifact for $driveId',
           e,
@@ -129,6 +145,7 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
         ));
         return;
       }
+      if (isClosed) return;
 
       emit(DriveStateCreationReady(
         artifact: artifact,
@@ -136,6 +153,8 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
         method: cost.defaultMethod,
       ));
     } catch (e, stackTrace) {
+      if (isClosed) return;
+
       logger.e('[drive-state] preparing an artifact failed', e, stackTrace);
       emit(DriveStateCreationFailure(
         'The artifact could not be prepared. Try again.',
@@ -188,7 +207,16 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
   /// and only from [DriveStateCreationReady] — a state that exists solely
   /// because a user was shown what would be published, and what it costs, and
   /// agreed to it.
+  ///
+  /// The upload is a network round trip and the modal can be dismissed during
+  /// it, so the result is emitted only into a cubit that is still open; see
+  /// [prepare]. Closing does **not** cancel the upload — the artifact was paid
+  /// for the moment it was posted, and abandoning it half-posted would be
+  /// worse than finishing it — it only means the outcome is written to the log
+  /// instead of to a modal that is no longer on screen.
   Future<void> publish() async {
+    if (isClosed) return;
+
     final ready = state;
     if (ready is! DriveStateCreationReady) {
       logger.w(
@@ -215,6 +243,14 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
         method: ready.effectiveMethod,
       );
 
+      if (isClosed) {
+        logger.i(
+          '[drive-state] the publish of an artifact for $driveId finished '
+          '(published: ${result.isPublished}) after its modal was dismissed',
+        );
+        return;
+      }
+
       if (result.isPublished) {
         emit(DriveStateCreationPublished(
           artifact: ready.artifact,
@@ -225,6 +261,8 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
       }
     } catch (e, stackTrace) {
       logger.e('[drive-state] publishing an artifact failed', e, stackTrace);
+      if (isClosed) return;
+
       emit(DriveStateCreationFailure(
         'The artifact could not be published. Nothing was spent.',
       ));
