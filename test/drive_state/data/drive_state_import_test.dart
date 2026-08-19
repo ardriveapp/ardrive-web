@@ -69,7 +69,24 @@ void main() {
     String? cipher,
     SecretKey? key,
     Wallet? signer,
+    /// What the *payload* claims about its own coverage, which is the half of
+    /// the claim the owner signs. It defaults to whatever the tags say,
+    /// because that is the only combination a real producer can publish: the
+    /// tags are derived from the signed claim. Setting it apart from the tags
+    /// is how a test builds the artifact this check exists for.
+    Map<String, dynamic>? signedCoverage,
+
+    /// A payload with no coverage claim at all - what a producer that predated
+    /// the field would have written, if one had ever published.
+    bool omitSignedCoverage = false,
   }) async {
+    if (omitSignedCoverage) {
+      payload.remove('coverage');
+    } else {
+      payload['coverage'] =
+          signedCoverage ?? {'blockStart': blockStart, 'blockEnd': blockEnd};
+    }
+
     final sealed = await codec.seal(
       plaintext: Uint8List.fromList(utf8.encode(jsonEncode(payload))),
       driveKey: key ?? driveKey,
@@ -95,7 +112,6 @@ void main() {
           EntityTag.driveStateId: 'drive-state-id',
           EntityTag.stateVersion: stateVersion,
           EntityTag.contentType: ContentType.octetStream,
-          EntityTag.contentEncoding: ContentEncodingTag.gzip,
           EntityTag.blockStart: '$blockStart',
           EntityTag.blockEnd: '$blockEnd',
           EntityTag.entityCount: '${entityCount ?? rowsIn(driveSectionName) + rowsIn(folderEntriesSectionName) + rowsIn(fileEntriesSectionName)}',
@@ -493,6 +509,164 @@ void main() {
       await expectNothingWritten();
     });
 
+    /// The same candidate with different tags over the same body: an
+    /// attacker's whole toolkit, since the bytes are not theirs to change.
+    DriveStateArtifactCandidate retagged(
+      DriveStateArtifactCandidate candidate,
+      Map<String, String> tags,
+    ) =>
+        DriveStateArtifactCandidate(
+          txId: candidate.txId,
+          ownerAddress: candidate.ownerAddress,
+          tags: {...candidate.tags, ...tags},
+          minedAtHeight: candidate.minedAtHeight,
+        );
+
+    test(
+        'rejects a Block-End tag that disagrees with the coverage the payload '
+        'signed', () async {
+      // The attack the signed coverage claim exists for, end to end. A third
+      // party copies the owner's artifact bytes verbatim - they cannot forge
+      // them, so they do not try - re-publishes them under their own wallet
+      // with every tag copied except Block-End, and points a name at it. The
+      // signature verifies, because these are the owner's bytes. The drive
+      // decrypts, the Drive-Id matches, the Entity-Count matches. Only the
+      // coverage is a lie, and if it were believed the drive's watermark
+      // would jump to a height nothing was ever synced to and that range
+      // would never be queried again.
+      await attachDrive(db);
+      final artifact = await sealArtifact(await exportedPayload(), blockEnd: 900);
+
+      final result = await importer.import(
+        candidate: retagged(
+          artifact.candidate,
+          {EntityTag.blockEnd: '9999999'},
+        ),
+        body: artifact.body,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.coverageMismatch);
+      expect(result.detail, contains('9999999'));
+      expect(result.detail, contains('900'));
+      await expectNothingWritten();
+
+      // The same bytes, under the tags their owner published: accepted. So
+      // what was rejected above was the tag, and nothing about the artifact.
+      final honest = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(honest.outcome, DriveStateOutcome.used, reason: honest.detail);
+      expect((await driveRow(db)).lastBlockHeight, 900);
+    });
+
+    test(
+        'rejects a Block-Start tag that hides the gap the payload declares',
+        () async {
+      // The other end of the same claim, and the same prize: an artifact that
+      // genuinely covers [700, 900] moves the watermark nowhere for a client
+      // synced to 500, because of the gap. Re-tagged as starting at 0, it
+      // would move the watermark to 900 across 200 blocks nobody read.
+      await attachDrive(db, lastBlockHeight: 500);
+      final artifact = await sealArtifact(
+        await exportedPayload(),
+        blockStart: 700,
+        blockEnd: 900,
+      );
+
+      final result = await importer.import(
+        candidate: retagged(artifact.candidate, {EntityTag.blockStart: '0'}),
+        body: artifact.body,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.coverageMismatch);
+      expect(await folderRows(db), isEmpty);
+      expect(await fileRows(db), isEmpty);
+      expect((await driveRow(db)).lastBlockHeight, 500);
+    });
+
+    test('rejects an absent Block-Start tag against a payload that has one',
+        () async {
+      // A missing tag reads as 0, which is what every v1 artifact publishes.
+      // A payload claiming otherwise is refused rather than met half way.
+      await attachDrive(db);
+      final artifact = await sealArtifact(
+        await exportedPayload(),
+        blockStart: 700,
+        blockEnd: 900,
+      );
+      final tags = Map<String, String>.from(artifact.candidate.tags)
+        ..remove(EntityTag.blockStart);
+
+      final result = await importer.import(
+        candidate: DriveStateArtifactCandidate(
+          txId: artifact.candidate.txId,
+          ownerAddress: ownerAddress,
+          tags: tags,
+        ),
+        body: artifact.body,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.coverageMismatch);
+      await expectNothingWritten();
+    });
+
+    test('rejects a payload that makes no coverage claim at all', () async {
+      // There is no artifact on chain that predates the claim, so a payload
+      // without one is not an old producer to accommodate. Falling back to
+      // the tag would be reinstating exactly what the claim replaced.
+      await attachDrive(db);
+      final artifact = await sealArtifact(
+        await exportedPayload(),
+        blockEnd: 900,
+        omitSignedCoverage: true,
+      );
+
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.integrityFailed);
+      await expectNothingWritten();
+    });
+
+    test('takes the watermark from the signed claim, not from the tag',
+        () async {
+      // Belt and braces on the check above: even if the two were somehow
+      // allowed to differ, the value that reaches the database is the signed
+      // one. The tag here agrees, so this is about provenance rather than
+      // rejection.
+      await attachDrive(db);
+      final artifact = await sealArtifact(
+        await exportedPayload(),
+        blockEnd: 900,
+        signedCoverage: {'blockStart': 0, 'blockEnd': 900},
+      );
+
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
+      expect(result.stats!.watermark, 900);
+      expect((await driveRow(db)).lastBlockHeight, 900);
+    });
+
     test('is a no-op for an artifact older than the drive\'s watermark',
         () async {
       await attachDrive(db, lastBlockHeight: 1000);
@@ -748,6 +922,31 @@ void main() {
 
       expect(result.isImported, isFalse);
       expect(result.outcome.kind, DriveStateOutcomeKind.rejected);
+    });
+
+    test('a signature this build cannot check is an authorship failure', () {
+      // Not `unknownVersion`. Nothing about the artifact's authorship was
+      // established - the check could not be run at all - and reporting that
+      // as "your client is old" would file an unverifiable artifact under the
+      // same code as a legitimately newer one, which is the distinction §7
+      // exists to keep.
+      expect(
+        DriveStateEnvelopeFailure.unsupportedSignatureType.outcome,
+        DriveStateOutcome.signatureFailed,
+      );
+      // The cipher case above it is the genuine forward-compatibility one and
+      // stays where it is.
+      expect(
+        DriveStateEnvelopeFailure.unsupportedCipher.outcome,
+        DriveStateOutcome.unknownVersion,
+      );
+    });
+
+    test('a decompression bomb is a rejection, not a crash', () {
+      expect(
+        DriveStateEnvelopeFailure.decompressedTooLarge.outcome,
+        DriveStateOutcome.integrityFailed,
+      );
     });
 
     test('every envelope failure has a reason a reader can act on', () {

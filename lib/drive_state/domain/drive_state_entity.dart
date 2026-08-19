@@ -24,6 +24,33 @@ import 'package:package_info_plus/package_info_plus.dart';
 /// entities, whose JSON is encrypted on the way into a transaction, a drive
 /// state artifact is signed before it is compressed and encrypted, so sealing
 /// belongs to the codec and this class only carries the result and its tags.
+///
+/// ## Why there is no `Content-Encoding` tag
+///
+/// The artifact is gzipped, and it still must not say so.
+///
+/// `Content-Encoding` describes the transferred representation, and this
+/// transaction's data is AES-GCM ciphertext. gzip is two layers inside it —
+/// `serialise → gzip → sign → encrypt` — so a reader that acted on the tag
+/// would be gunzipping ciphertext.
+///
+/// Readers do act on it. An AR.IO gateway indexes the tag off both L1
+/// transactions and bundled data items and echoes it onto the data response
+/// (`ar-io-node`, `src/routes/data/handlers.ts`:
+/// `res.header('Content-Encoding', dataAttributes.contentEncoding)`). A
+/// browser `fetch` then decodes the body at the network layer, before any of
+/// this app's code sees it, and fails: `ERR_CONTENT_DECODING_FAILED`. There is
+/// no opt-out in a browser, and `dart:io`'s `autoUncompress` defaults to the
+/// same behaviour. Because tags are immutable, an artifact published with this
+/// tag would be permanently unfetchable through the ordinary data route — on
+/// Flutter Web, unfetchable full stop.
+///
+/// Nothing else in ArDrive sets the tag: `ContentEncodingTag` arrived with
+/// this entity and has no other user. Snapshots, which carry comparable bulk,
+/// tag `Content-Type: application/json` and stop there.
+///
+/// The compression is not a secret worth advertising, either: it is described
+/// by `State-Version`, which is the tag a reader actually dispatches on.
 class DriveStateEntity extends Entity {
   /// The version of the artifact this client writes, in the `State-Version`
   /// tag. A reader that does not know a version must fall back rather than
@@ -46,9 +73,17 @@ class DriveStateEntity extends Entity {
   /// there is no ancestor to locate and no chain to assemble (proposal 3.4).
   /// It is read from the tag rather than assumed, because that is a policy for
   /// v1 and not a limitation of the format.
+  ///
+  /// **A producer must take this from the payload's signed
+  /// `DriveStateCoverage`, not from anywhere else.** An importer rejects an
+  /// artifact whose coverage tags disagree with the claim inside the
+  /// signature, so a tag invented here is an artifact nobody can use — and
+  /// nothing published can be corrected.
   int blockStart;
 
   /// `Block-End`, the highest block height the export accounted for.
+  ///
+  /// The signed coverage claim's upper bound; see [blockStart].
   int? blockEnd;
 
   /// `Data-Start`, the first block in which data was found.
@@ -89,6 +124,11 @@ class DriveStateEntity extends Entity {
 
   /// Builds the entity around a sealed [envelope], so that the body and the
   /// two cipher tags can never disagree with each other.
+  ///
+  /// [blockEnd] gets no such guarantee, because the coverage claim lives in
+  /// the payload and the payload is sealed by the time it arrives here: it
+  /// must be `export.coverage.blockEnd`, and an importer refuses the artifact
+  /// if it is not. See [blockStart].
   factory DriveStateEntity.fromEnvelope({
     required DriveStateEnvelope envelope,
     required String id,
@@ -156,8 +196,10 @@ class DriveStateEntity extends Entity {
       ..addTag(EntityTag.driveId, driveId!)
       ..addTag(EntityTag.driveStateId, id!)
       ..addTag(EntityTag.stateVersion, '$stateVersion')
+      // No `Content-Encoding` tag, deliberately and permanently. The class
+      // doc says why; the short version is that a gateway echoes it as an
+      // HTTP header and the browser then tries to gunzip ciphertext.
       ..addTag(EntityTag.contentType, ContentType.octetStream)
-      ..addTag(EntityTag.contentEncoding, ContentEncodingTag.gzip)
       ..addTag(EntityTag.blockStart, '$blockStart')
       ..addTag(EntityTag.blockEnd, '$blockEnd')
       ..addTag(EntityTag.dataStart, '$dataStart')

@@ -40,6 +40,7 @@ void main() {
           'decrypt-failed',
           'integrity-failed',
           'count-mismatch',
+          'coverage-mismatch',
           'range-already-covered',
         },
       );
@@ -83,6 +84,7 @@ void main() {
         DriveStateOutcome.decryptFailed,
         DriveStateOutcome.integrityFailed,
         DriveStateOutcome.countMismatch,
+        DriveStateOutcome.coverageMismatch,
       ]) {
         expect(DriveStateOutcomeReporter.levelFor(outcome),
             DriveStateLogLevel.warning,

@@ -154,6 +154,47 @@ void main() {
       expect(jsonEncode(first.toJson()), jsonEncode(second.toJson()));
     });
 
+    test('claims coverage up to the drive\'s own watermark, and no further',
+        () async {
+      await db.driveDao.writeToDrive(const DrivesCompanion(
+        id: Value(driveId),
+        lastBlockHeight: Value(1814228),
+      ));
+
+      final export = await exportDriveState(db.driveDao, driveId);
+
+      // The producer accounted for the drive as far as it had synced it, and
+      // saying anything higher would be publishing the gap the coverage claim
+      // exists to close.
+      expect(export.coverage.blockStart, 0);
+      expect(export.coverage.blockEnd, 1814228);
+    });
+
+    test('claims nothing for a drive that has never synced', () async {
+      await db.driveDao.writeToDrive(const DrivesCompanion(
+        id: Value(driveId),
+        lastBlockHeight: Value.absent(),
+      ));
+
+      final export = await exportDriveState(db.driveDao, driveId);
+
+      expect(export.coverage.blockEnd, 0);
+    });
+
+    test('carries the coverage claim inside the signed payload', () async {
+      await db.driveDao.writeToDrive(const DrivesCompanion(
+        id: Value(driveId),
+        lastBlockHeight: Value(900),
+      ));
+
+      final json = (await exportDriveState(db.driveDao, driveId)).toJson();
+
+      // Top level, beside the version: it is a claim about the whole payload,
+      // not a property of any row, and it has to be in the bytes the owner
+      // signs because a transaction tag is not.
+      expect(json['coverage'], {'blockStart': 0, 'blockEnd': 900});
+    });
+
     test('refuses a drive that is not there', () {
       expect(
         () => exportDriveState(db.driveDao, 'no-such-drive'),
@@ -216,13 +257,16 @@ void main() {
     /// means nothing to another, so an importer adopting it would resume
     /// pagination from an arbitrary position.
     ///
-    /// `lastBlockHeight` is the producer's watermark, which is a different
-    /// claim from the artifact's coverage. Adopting one that sits above the
-    /// artifact's Block-End would have a client believe it had synced a range
-    /// the artifact never contained - the drive watermark advancing past
-    /// unsynced entities, which is the silent drop in
-    /// SYNC_SKIPPED_ENTITY_PERSISTENCE.md. Coverage comes from the tag.
-    test('the drive sync cursor and watermark are withheld', () async {
+    /// `lastBlockHeight` must not travel as a *column of the drive row*: a row
+    /// column is adopted wholesale by the merge, unchecked against anything.
+    /// The same integer does travel as the payload's coverage claim, which is
+    /// a different thing - the importer refuses the artifact unless the
+    /// `Block-End` tag agrees with it, and only then advances the watermark
+    /// across ground the claim covers. A watermark adopted without those
+    /// checks is the drive advancing past unsynced entities: the silent drop
+    /// in SYNC_SKIPPED_ENTITY_PERSISTENCE.md.
+    test('the drive sync cursor and watermark are withheld from the row',
+        () async {
       final db = getTestDb();
       addTearDown(db.close);
       await addTestFilesToDb(
@@ -241,13 +285,18 @@ void main() {
         lastBlockHeight: Value(1814228),
       ));
 
-      final encoded = jsonEncode((await exportDriveState(db.driveDao, driveId))
-          .toJson());
+      final export = await exportDriveState(db.driveDao, driveId);
+      final encoded = jsonEncode(export.toJson());
+      final driveRow = jsonEncode(export.drive.toJson());
 
       expect(encoded, isNot(contains('syncCursor')));
       expect(encoded, isNot(contains('an-endpoint-specific-cursor')));
       expect(encoded, isNot(contains('lastBlockHeight')));
-      expect(encoded, isNot(contains('1814228')));
+      // Not as a field of the drive row, under any name.
+      expect(driveRow, isNot(contains('1814228')));
+      // Only as the coverage claim, which is checked against the tags before
+      // anything is done with it.
+      expect(export.coverage.blockEnd, 1814228);
     });
   });
   });
@@ -258,6 +307,7 @@ void main() {
     // Dart infers for a literal.
     Map<String, dynamic> minimalPayload() => jsonDecode(jsonEncode({
           'version': driveStateFormatVersion,
+          'coverage': {'blockStart': 0, 'blockEnd': 900},
           'sections': {
             'drives': {
               'rows': [
@@ -343,6 +393,74 @@ void main() {
           ),
         ),
       );
+    });
+
+    test('reads the coverage claim', () {
+      final export = DriveStateExport.fromJson(minimalPayload());
+
+      expect(export.coverage.blockStart, 0);
+      expect(export.coverage.blockEnd, 900);
+    });
+
+    test('rejects a payload with no coverage claim', () {
+      // Not optional, and not defaulted. A reader that treated an absent
+      // coverage claim as "believe the Block-End tag" would be the reader the
+      // claim was added to remove.
+      final payload = minimalPayload()..remove('coverage');
+
+      expect(
+        () => DriveStateExport.fromJson(payload),
+        throwsA(
+          isA<DriveStateFormatException>().having(
+            (e) => e.error,
+            'error',
+            DriveStateFormatError.malformed,
+          ),
+        ),
+      );
+    });
+
+    test('rejects a coverage claim that is not a block range', () {
+      for (final coverage in [
+        {'blockStart': 900, 'blockEnd': 100},
+        {'blockStart': -1, 'blockEnd': 900},
+        {'blockStart': 0, 'blockEnd': -1},
+        {'blockStart': 0},
+        {'blockStart': 0, 'blockEnd': '900'},
+      ]) {
+        final payload = minimalPayload()..['coverage'] = coverage;
+
+        expect(
+          () => DriveStateExport.fromJson(payload),
+          throwsA(
+            isA<DriveStateFormatException>().having(
+              (e) => e.error,
+              'error',
+              DriveStateFormatError.malformed,
+            ),
+          ),
+          reason: '$coverage is not a coverage claim',
+        );
+      }
+    });
+
+    test('round-trips the coverage claim', () {
+      final export = DriveStateExport.fromJson(minimalPayload());
+      final again = DriveStateExport.fromJson(
+        jsonDecode(jsonEncode(export.toJson())) as Map<String, dynamic>,
+      );
+
+      expect(again.coverage, export.coverage);
+      expect(again, export);
+    });
+
+    test('two payloads that differ only in coverage are not equal', () {
+      final export = DriveStateExport.fromJson(minimalPayload());
+      final other = DriveStateExport.fromJson(
+        minimalPayload()..['coverage'] = {'blockStart': 0, 'blockEnd': 901},
+      );
+
+      expect(other, isNot(equals(export)));
     });
 
     test('rejects a payload without exactly one drive row', () {

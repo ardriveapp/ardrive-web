@@ -48,9 +48,9 @@ class DriveStateImportStats {
   /// landing fewer rows than its `Entity-Count`.
   final int rowsKeptLocallyNewer;
 
-  /// The `lastBlockHeight` the drive was left on. Normally the artifact's
-  /// `Block-End` tag; see [DriveStateImporter] for the one case where it is
-  /// not, and for why it never comes from the payload.
+  /// The `lastBlockHeight` the drive was left on. Normally the end of the
+  /// payload's signed coverage claim; see [DriveStateImporter] for the one
+  /// case where it is not, and for why it never comes from a tag alone.
   final int watermark;
 
   /// Decrypt, verify, decompress, parse.
@@ -139,19 +139,28 @@ extension DriveStateEnvelopeFailureOutcome on DriveStateEnvelopeFailure {
         DriveStateEnvelopeFailure.compressionFailed =>
           DriveStateOutcome.integrityFailed,
 
-        // A cipher or signature scheme this build does not know is the same
-        // situation as an unknown `State-Version`: forward compatibility seen
-        // from the old side (§6), not a defect.
+        // A cipher this build does not know is the same situation as an
+        // unknown `State-Version`: forward compatibility seen from the old
+        // side (§6), not a defect.
         DriveStateEnvelopeFailure.unsupportedCipher =>
           DriveStateOutcome.unknownVersion,
+
+        // A signature scheme this build cannot verify is *not* that. Nothing
+        // about the artifact's authorship has been established - the check
+        // simply could not be run - and reporting it as "your client is old"
+        // would put an unverifiable artifact in the same log line as a
+        // legitimately newer one. It is a rejection for want of a signature,
+        // which is what `signatureFailed` says.
         DriveStateEnvelopeFailure.unsupportedSignatureType =>
-          DriveStateOutcome.unknownVersion,
+          DriveStateOutcome.signatureFailed,
 
         DriveStateEnvelopeFailure.decryptionFailed =>
           DriveStateOutcome.decryptFailed,
 
         // The bytes came out, and were not what they claimed to be.
         DriveStateEnvelopeFailure.decompressionFailed =>
+          DriveStateOutcome.integrityFailed,
+        DriveStateEnvelopeFailure.decompressedTooLarge =>
           DriveStateOutcome.integrityFailed,
         DriveStateEnvelopeFailure.malformedFrame =>
           DriveStateOutcome.integrityFailed,
@@ -186,21 +195,28 @@ extension DriveStateEnvelopeFailureOutcome on DriveStateEnvelopeFailure {
 ///
 /// ## The watermark
 ///
-/// `lastBlockHeight` comes from the `Block-End` **tag** and never from the
-/// payload. The export deliberately withholds the producer's watermark: it is
-/// a different claim from the artifact's coverage, and a client that adopted
-/// one sitting above `Block-End` would believe it had synced a range the
-/// artifact never contained and skip it — the silent drop in
-/// `SYNC_SKIPPED_ENTITY_PERSISTENCE.md`, which is the failure this whole line
-/// of work started from.
+/// `lastBlockHeight` comes from the payload's **signed** coverage claim
+/// ([DriveStateCoverage]), and the `Block-Start` / `Block-End` tags have to
+/// agree with it or the artifact is refused outright.
 ///
-/// The same reasoning applies once more, to `Block-Start`. Every artifact this
-/// client publishes covers `[0, Block-End]` (§3.4), but that is a v1 policy
-/// and not a property of the format, so `Block-Start` is read rather than
-/// assumed. An artifact whose coverage starts *above* what this client has
-/// synced leaves a gap, and adopting its `Block-End` would jump the watermark
-/// over that gap. Its rows are still merged — they can only add — but the
-/// watermark stays where it was and sync walks the range itself.
+/// The tags alone cannot carry this. A transaction tag is chosen by whoever
+/// submits the transaction, so a third party can take an owner's artifact
+/// bytes unchanged — they verify, they decrypt, their `Drive-Id` and
+/// `Entity-Count` match, because they are the owner's bytes — re-publish them
+/// under `Block-End: 9999999`, and have every check but this one pass. The
+/// watermark would jump to a height nothing was ever synced to and that range
+/// would never be queried again: the silent drop in
+/// `SYNC_SKIPPED_ENTITY_PERSISTENCE.md`, which is the failure this whole line
+/// of work started from. The tags stay because discovery has to order
+/// candidates without downloading them; they are checked, not believed.
+///
+/// `Block-Start` matters for the same reason and is checked the same way.
+/// Every artifact this client publishes covers `[0, Block-End]` (§3.4), but
+/// that is a v1 policy and not a property of the format. An artifact whose
+/// coverage starts *above* what this client has synced leaves a gap, and
+/// adopting its `Block-End` would jump the watermark over that gap. Its rows
+/// are still merged — they can only add — but the watermark stays where it was
+/// and sync walks the range itself.
 class DriveStateImporter {
   final DriveDao _driveDao;
   final DriveStateEnvelopeCodec _codec;
@@ -258,6 +274,9 @@ class DriveStateImporter {
     //    produce a reason, not an exception.
     final driveId = candidate.driveId;
     final blockEnd = candidate.blockEnd;
+    // Absent reads as 0: §3.4's v1 artifacts all start there, and a tag that
+    // disagrees with the signed claim is caught below either way.
+    final blockStart = candidate.blockStart ?? 0;
     final declaredCount = candidate.entityCount;
     final cipher = candidate.cipher;
     final cipherIv = candidate.cipherIv;
@@ -356,13 +375,34 @@ class DriveStateImporter {
       );
     }
 
+    // 7. Coverage. The last of the claims a tag makes about the body, and the
+    //    only one that sets a value the drive keeps after the import. Nothing
+    //    signed said anything about coverage until it moved into the payload,
+    //    so this is the check that stops an artifact's own bytes being
+    //    re-published under a range their owner never claimed.
+    //
+    //    An absent `Block-Start` tag reads as 0, which is what every v1
+    //    artifact publishes; a payload claiming otherwise is rejected rather
+    //    than met half way.
+    final coverage = export.coverage;
+    if (coverage.blockEnd != blockEnd || coverage.blockStart != blockStart) {
+      return DriveStateImportResult.rejected(
+        DriveStateOutcome.coverageMismatch,
+        'the tags claim coverage [$blockStart, $blockEnd] and the signed '
+        'payload claims $coverage',
+      );
+    }
+
     final parseDuration = stopwatch.elapsed;
 
     return _merge(
       export: export,
       driveId: driveId,
-      blockStart: candidate.blockStart ?? 0,
-      blockEnd: blockEnd,
+      // The signed values, now that the tags are known to agree with them:
+      // the watermark is set from what the owner signed, not from what a
+      // transaction was labelled with.
+      blockStart: coverage.blockStart,
+      blockEnd: coverage.blockEnd,
       parseDuration: parseDuration,
       stopwatch: stopwatch..reset(),
     );
@@ -453,7 +493,8 @@ class DriveStateImporter {
       if (blockEnd < localWatermark) {
         return DriveStateImportResult.rejected(
           DriveStateOutcome.rangeAlreadyCovered,
-          'Block-End $blockEnd is below the drive\'s $localWatermark',
+          'the artifact\'s coverage ends at $blockEnd, below the drive\'s '
+          '$localWatermark',
         );
       }
 
@@ -492,10 +533,10 @@ class DriveStateImporter {
       });
 
       // The watermark advances only across ground the artifact actually
-      // covers. `Block-Start` is 0 for everything this client publishes, so in
-      // practice this is always `blockEnd`; it is checked because a future
-      // producer's incremental artifact would otherwise move the watermark
-      // over a range nobody synced.
+      // covers. The coverage starts at 0 for everything this client publishes,
+      // so in practice this is always `blockEnd`; it is checked because a
+      // future producer's incremental artifact would otherwise move the
+      // watermark over a range nobody synced.
       final watermark =
           blockStart <= localWatermark ? blockEnd : localWatermark;
 

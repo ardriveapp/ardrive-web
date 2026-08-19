@@ -59,7 +59,7 @@ each other.
 | 1.3 | ArFS entity + tags (§3.2) | ✅ |
 | 1.4 | Discovery by GraphQL, owner-filtered, behind an interface | ✅ |
 | 1.5 | Enumerated outcome vocabulary (§7) | ✅ |
-| 1.6 | Import + merge, validate-before-write, watermark from `Block-End` | ✅ |
+| 1.6 | Import + merge, validate-before-write, watermark from the payload's **signed** coverage claim (the `Block-End` tag is cross-checked against it, never believed on its own) | ✅ |
 | 1.7 | Sync composition behind an `AppConfig` flag defaulting to false | 🔨 |
 | 1.8 | Creation service + confirmation UI, stopping short of upload | 🔨 |
 | 1.9 | Independent QA gate — an agent that wrote none of it | ⬜ |
@@ -91,8 +91,8 @@ Mirrors the existing `src/snapshots/` module rather than inventing a structure.
 | | Item | Status |
 |---|---|---|
 | 3.1 | `src/drive_state/` beside `src/snapshots/`: `drive_state_tags.ts`, `drive_state_types.ts`, `drive_state_query.ts`, `drive_state_data.ts` — same shapes, same naming | ⬜ |
-| 3.2 | Envelope reader: decrypt → parse ANS-104 data item → verify signature → gunzip → sections. Must match ardrive-web byte for byte | ⬜ |
-| 3.3 | Section deserialisation to core-js's own entity types — **not** a port of this app's column names (proposal §8) | ⬜ |
+| 3.2 | Envelope reader: decrypt → parse ANS-104 data item → verify signature → gunzip (**bounded** — gzip reaches 1032:1 and the bytes are verified before they are expanded) → sections. Must match ardrive-web byte for byte | ⬜ |
+| 3.3 | Section deserialisation to core-js's own entity types — **not** a port of this app's column names (proposal §8). Includes the payload's `coverage` claim, which **every** reader must check the `Block-Start` / `Block-End` tags against before adopting a watermark: the tags are unsigned, so anyone can re-publish an owner's verifying bytes under a coverage of their choosing | ⬜ |
 | 3.4 | Reuse `snapshot_obscuring` / `height_range` / `drive_history_composite` for range composition. Do not write a second mechanism | ⬜ |
 | 3.5 | Wire into the live listing path in `arfsdao_anonymous`, beside `parseSnapshotData`. **Sequenced with core-js's own pending snapshot integration** (`src/snapshots/index.ts` notes it is not yet wired in) so drive-state does not overtake it | ⬜ 🔒 coordinate with the desktop work |
 | 3.6 | Cross-implementation test: an artifact produced by ardrive-web opens in core-js and yields identical entities | ⬜ **the acceptance test for the whole feature** |
