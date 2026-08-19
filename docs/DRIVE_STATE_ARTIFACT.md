@@ -3,9 +3,15 @@
 A published, encrypted, parsed-state blob that a client imports in bulk instead
 of replaying a drive's history entity by entity.
 
-**Additive.** Snapshots remain the ArFS interchange format and the fallback. A
+**Additive.** Snapshots remain an ArFS interchange format and the fallback. A
 client that does not understand a state artifact, or cannot decrypt one, syncs
-exactly as it does today. Nothing in the ArFS spec changes.
+exactly as it does today.
+
+**The governing principle: this is a cache, and every failure is a fallback.**
+Unknown version, failed decryption, failed integrity check, missing tag,
+unexpected row - each means *ignore the artifact and sync normally*, never
+*fail the drive*. That single rule is what makes the addition foolproof: the
+worst outcome of anything going wrong is today's performance.
 
 ---
 
@@ -71,17 +77,29 @@ attack package: ciphertext and the salt needed to derive candidate keys from
 guessed passwords, with unlimited time to try. Arweave has no delete. This is the single failure that would make the feature harmful rather
 than merely wrong.
 
-Therefore:
+Therefore the exporter must be **structurally unable** to read them, not merely
+instructed not to:
 
-- The artifact is built from an **explicit allowlist** of one drive's content
-  tables. Never `SELECT *` over the schema, never a file copy of the database.
-- `drives` is exported **column-wise**, excluding `encryptedKey`,
-  `driveKeyGenerated` and `keyEncryptionIv`. `profiles` is never exported at
-  all.
-- A test asserts the allowlist against the live schema and **fails when a new
-  table or column appears**. The realistic failure mode is not this design being
-  wrong today; it is a future migration quietly adding a sensitive column to an
-  exported table. `schemaVersion` is 29 and moves regularly.
+- Define **export views** in the schema that name only exportable columns, and
+  let the exporter query *views only*, never tables. The schema has no views
+  today, so this is additive.
+- A view lists columns explicitly, so a later migration adding a sensitive
+  column to `drives` does not reach the export. That is the realistic failure
+  this defends against: not this design being wrong today, but a future
+  migration quietly widening what an exporter sees. `schemaVersion` is 29 and
+  moves regularly.
+- `profiles` has no export view at all. `drives`' view omits `encryptedKey`,
+  `driveKeyGenerated` and `keyEncryptionIv`.
+- A test still asserts the views against the live schema, but as a second line
+  rather than the only one.
+
+Separating key material into its own store was considered and rejected for now:
+it would migrate `encryptedWallet`, `keySalt`, `encryptedKey` and
+`keyEncryptionIv` out of a live database whose migration fixtures are stale at
+v19, with "user loses wallet access" as the failure mode, and it would still
+leave one drive being exported from a database holding all of them. Worth doing
+on its own security merits - browser storage is readable by any XSS in the
+origin - but as separate hardening work, not as a dependency of this.
 
 ### 2.2 Authenticated encryption, and the 100 MiB cliff
 
@@ -145,25 +163,66 @@ decryptions entirely.
 
 ---
 
-## 3. Format
+## 3. The ArFS entity
 
-A versioned envelope, tagged like any other ArFS entity:
+Specified to match the conventions the Snapshot entity already uses in
+`ar-io-docs/content/build/advanced/arfs/entity-types.mdx`, so it reads as one
+more entity type rather than a bolt-on.
 
-| Tag | Purpose |
-|---|---|
-| `Entity-Type: drive-state` | distinguishes it from `snapshot` |
-| `Drive-Id` | which drive |
-| `State-Version` | envelope version; unknown ⇒ ignore and fall back |
-| `Block-Start` / `Block-End` | the range the state accounts for |
-| `Cipher` / `Cipher-IV` | as elsewhere in ArFS |
+### Tags
+
+```
+Drive-Id:       "<drive uuid this state belongs to>"
+Entity-Type:    "drive-state"
+Drive-State-Id: "<uuid of this drive-state entity>"
+State-Version:  "1"
+Block-Start:    "<minimum block height accounted for, eg 0>"
+Block-End:      "<maximum block height accounted for, eg 1814228>"
+Cipher:         "AES256-GCM"          (private drives)
+Cipher-IV:      "<12 byte IV as Base64>"
+```
+
+`Drive-State-Id` mirrors `Snapshot-Id`; `Block-Start`/`Block-End` carry the same
+meaning they do for a snapshot, and `Cipher`/`Cipher-IV` follow
+`arfs/privacy.mdx` unchanged - AES256-GCM with a 12 byte IV, the parameter
+Base64 encoded in the tag.
 
 `Block-End` is what makes it composable with everything already built: a client
-imports the artifact, then syncs `(Block-End → current]` over GraphQL — the same
-range arithmetic `HeightRange.difference` already performs for snapshots.
+imports the artifact, then covers `(Block-End → current]` from snapshots and
+GraphQL - the same range arithmetic `HeightRange.difference` already performs.
 
-**Unknown `State-Version` must be inert**, not an error. That is what keeps this
-additive: an old client sees a transaction it does not recognise and syncs from
-snapshots, unaware anything was offered.
+**Unknown `State-Version` must be inert**, not an error. An older client sees a
+transaction whose `Entity-Type` it does not query for and syncs from snapshots,
+unaware anything was offered.
+
+### Data
+
+The body is the encrypted serialisation of one drive's exported rows. For a
+private drive it is encrypted with the drive key under the `Cipher`/`Cipher-IV`
+above - **one** encryption over the whole body, which is the entire performance
+point, as against a snapshot's per-entity ciphertext.
+
+The row format is deliberately **not** Drift's schema (§5), and is versioned by
+`State-Version` so it can change without stranding published artifacts.
+
+### A warning from the existing spec
+
+While writing this, a divergence surfaced between the Snapshot spec and every
+snapshot on chain:
+
+| | field |
+|---|---|
+| `entity-types.mdx`, prose and JSON example | `dataJson` |
+| `snapshot_types.dart:18`, `snapshot_item.dart:311` | `jsonMetadata` |
+| Real snapshot `z78YIh…` (200 KB sample) | `jsonMetadata` ×189, `dataJson` ×0 |
+
+An implementer following the published spec would read no metadata from any
+snapshot and silently fall back to fetching every transaction individually -
+precisely the pathology this document exists to remove. It should be corrected
+independently of this work (§7).
+
+The lesson for this entity: **the spec, the implementation and a real artifact
+must be checked against each other**, not assumed to agree.
 
 ---
 
@@ -261,7 +320,38 @@ Caveats, and they are real:
 
 ---
 
-## 7. Open questions
+## 7. Documentation
+
+ArFS is specified in the sibling repository `ar-io-docs`. A new entity type is
+not real until it is documented there, and the divergence found in §3 shows what
+happens when the spec and the implementation drift apart.
+
+**New, in `content/build/advanced/arfs/`:**
+
+- `entity-types.mdx` — a `## Drive State` section beside `## Snapshot`, with
+  `### Drive State Entity Tags` and `### Drive State Entity Data`, matching the
+  shape those Snapshot sections already use.
+- `data-model.mdx` — where the artifact sits relative to drives, snapshots and
+  entities.
+- `reading-data.mdx` — the read order: drive state, then snapshots, then
+  GraphQL, and the rule that any failure falls back rather than fails.
+- `privacy.mdx` — that the body is encrypted with the **drive** key as a single
+  unit, unlike a snapshot's per-entity ciphertext, and that public drives are
+  out of scope for v1 (§2.5).
+
+**Correction, independent of this work:**
+
+- `entity-types.mdx` — the Snapshot data field is `jsonMetadata`, not
+  `dataJson`, in both the prose and the JSON example (§3). This is a live bug
+  against every snapshot on chain and should be fixed on its own, not bundled
+  into a new-feature change.
+
+**Not documentation, but part of the same story:** ardrive-core-js and the CLI
+need the row format and the read order before they can participate (§5).
+
+---
+
+## 8. Open questions
 
 1. **Row format.** Its own compact serialisation, or something existing? It has
    to be readable by Dart and TypeScript, stable across `schemaVersion`, and
@@ -280,7 +370,7 @@ Caveats, and they are real:
 
 ---
 
-## 8. Relationship to the other snapshot work
+## 9. Relationship to the other snapshot work
 
 - `SNAPSHOT_CREATION_FROM_SNAPSHOTS.md` makes *producing snapshots* affordable
   by sourcing the covered range from ancestors rather than the chain.
