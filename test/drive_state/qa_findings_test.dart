@@ -599,14 +599,14 @@ void main() {
       expect(
         crossover,
         inInclusiveRange(68000, 78000),
-        reason: 'docs/DRIVE_STATE_ARTIFACT.md §2.3 documents a crossover of '
+        reason: 'docs/DRIVE_STATE_ARTIFACT.md §2.3 quotes this fixture at '
             'about 73,000 files; the exported row shape has moved under it',
       );
       expect(
         headroom,
         inInclusiveRange(1.6, 1.9),
-        reason: 'docs/DRIVE_STATE_ARTIFACT.md §2.3 documents ~1.75x headroom '
-            'over the 42k-file target drive',
+        reason: 'docs/DRIVE_STATE_ARTIFACT.md §2.3 quotes this fixture at '
+            '~1.75x headroom over the 42k-file target drive',
       );
     });
 
@@ -622,8 +622,12 @@ void main() {
         reason: 'the ~120k extrapolation is wrong by ~1.6x and sizes a '
             'refusal users will actually meet',
       );
-      expect(proposal, contains('73,000 files'));
-      expect(proposal, contains('1.75'));
+      // Both measurements are quoted, and the range they bracket is what a
+      // reader plans against. Asserting the range rather than either figure
+      // keeps this from breaking every time one fixture's names change.
+      expect(proposal, contains('~73,000 files'));
+      expect(proposal, contains('~80,000 files'));
+      expect(proposal, contains('between 70,000 and 80,000 files'));
     });
   });
 }

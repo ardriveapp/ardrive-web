@@ -21,28 +21,38 @@ Three arguments, in increasing order of how much they matter.
 
 ### 1.1 Size — the weakest of the three
 
-| | on disk | gzipped |
+| | serialised | gzipped |
 |---|---|---|
-| State artifact | **34.63 MiB** | **6.65 MiB** |
+| State artifact | **52.16 MiB** | **9.55 MiB** |
 | Snapshot `z78YIh…` | 43.92 MiB | 11.37 MiB |
-| | 1.27× smaller | 1.71× smaller |
+| | 1.19× **larger** | 1.19× smaller |
 
-Modelled on the real drive: 41,767 transactions, 98.4% files / 1.1% folders /
-0.5% drive, `bundledIn` populated (present on 188 of 189 sampled nodes), one
-revision per entity. Built with Drift, `VACUUM`ed, weighed.
+**Measured, not modelled.** `test/drive_state/drive_state_scale_measurement_test.dart`
+builds a drive of 41,767 files across 120 folders at 1.05 revisions per entity —
+the shape of the real drive — runs the actual `exportDriveState`, serialises the
+real wire format and weighs it. Run it with
+`--run-skipped --tags=measurement`; it is skipped by default because it costs
+about a minute.
 
-The model is anchored at one end: the same sample gives 1058 bytes per snapshot
-entry, and 1058 × 41,767 = 44.2 MiB against the snapshot's real 43.92 MiB — a
-0.6% error, so the sample is representative.
+Two details of that fixture matter more than anything else in it. Transaction
+ids and uuids are drawn at their true entropy (32 bytes and 16 bytes), and file
+names are assembled from a small vocabulary the way human file names repeat.
+An earlier version of this measurement interpolated a counter into its ids —
+`data-tx-id-1234-…` — and reported **2.09 MiB gzipped at a 26× ratio**. The ids
+are roughly a third of the payload and real ones do not compress at all, so
+that figure was wrong by more than four times. Anyone re-deriving these numbers
+should check their fixture's entropy before believing a good result.
 
-**Known omissions, all of which would move the number up**: no
-`customJsonMetadata`/`customGQLTags` (the real nodes carry 11 tags, exactly the
-standard ArFS set, so these appear genuinely absent), no license or ArNS rows,
-and one revision per file. More revisions inflate both sides — a snapshot holds
-one entry per transaction, the database one row per revision — so the ratio
-should hold.
+**An earlier revision of this document reported 34.63 MiB / 6.65 MiB.** Those
+came from a different artefact: a Drift database file, `VACUUM`ed and weighed,
+from when this proposal was still "publish the SQLite file". §2.4 rejected that
+in favour of a serialisation of rows, and JSON is bulkier than SQLite's binary
+pages — so the honest number went **up**, and the size column went from a
+modest win to a small loss before compression.
 
-A 1.27× win on disk is modest. This is not the reason to build it.
+A payload that is larger uncompressed and 1.19× smaller gzipped is not an
+argument for anything. Size was always the weakest of the three, and measuring
+it properly made it weaker. **This is not the reason to build it** — §1.2 is.
 
 ### 1.2 Work — the actual reason
 
@@ -197,28 +207,40 @@ weigh a SQLite file — it weighs the serialised JSON payload, whose rows are mu
 fatter than SQLite's binary encoding. It also counted entities, while the
 payload carries a revision row per revision as well (D2).
 
-Measured against the wire format `seal` actually refuses on, using
-`jsonEncode` of the exported row types:
+Two measurements now exist, and they disagree by about 10% for a reason worth
+keeping:
 
-| | bytes per row |
-|---|---|
-| `file_entries` | 695 |
-| `file_revisions` | 701 |
+| | method | crossover | headroom at 42k |
+|---|---|---|---|
+| `qa_findings_test.dart` | one row of each type, weighed and multiplied | ~73,000 files | ~1.75× |
+| `drive_state_scale_measurement_test.dart` | the real `exportDriveState` over a 41,767-file database, whole payload weighed | ~80,000 files | ~1.92× |
 
-41,767 files × (695 + 1.05 × 701) = **57.0 MiB of a 100 MiB budget**, and the
-crossover is at about **73,000 files** — a headroom of ~1.75×, not the ~3× the
-120k figure implied. `test/drive_state/qa_findings_test.dart` holds these
-numbers so that a change to the exported row shape moves the documented figure
-with it.
+Neither is wrong. A row's serialised width is dominated by its **name and
+path**, and the two fixtures assume different ones — so the honest answer is a
+range, not a number:
 
-~1.75× is not much, and three things spend it: **longer paths** (the model uses
-a 45 character path; a deeply nested drive doubles that and every file pays it
-twice, in the entry and in each revision), **`customGQLTags` and
-`customJsonMetadata`** (absent from the modelled drive, unbounded in general),
-and **more revisions per entity** (the model's 1.05 is one real drive's figure,
-not a law). A drive of 40k heavily-revised files with long paths can reach the
-boundary; the D5 refusal is therefore a path users will meet, not a theoretical
-one.
+> **The AES-GCM boundary is crossed somewhere between 70,000 and 80,000 files,
+> depending on how long that drive's names and paths are.**
+
+The end-to-end figure is the one to plan against, because it weighs what `seal`
+weighs: **52.16 MiB for 41,767 files**, 1,306 bytes per entity, of a 100 MiB
+budget.
+
+Headroom under 2× is not much, and three things spend it: **longer paths** (the
+measured drive uses one folder level; a deeply nested drive doubles the path
+and every file pays it twice, in the entry and in each revision),
+**`customGQLTags` and `customJsonMetadata`** (absent from the measured drive,
+unbounded in general), and **more revisions per entity** (1.05 is one real
+drive's figure, not a law — at 2.0 the crossover falls to roughly 55,000
+files). A drive of 50k heavily-revised files with long paths can reach the
+boundary; the D5 refusal is a path users will meet, not a theoretical one.
+
+Note which number the refusal weighs: the **uncompressed** payload. The
+artifact that actually travels is 9.55 MiB gzipped (§1.1), so a drive can be
+refused for being too large while the thing it would have published is small
+enough to send several times over. That is a deliberate consequence of sealing
+after compressing — the bound is on what AES-GCM must hold in one piece, not on
+what the network carries.
 
 ### 2.4 Never hand an untrusted file to SQLite
 
