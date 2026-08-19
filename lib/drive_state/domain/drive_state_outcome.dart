@@ -98,6 +98,20 @@ enum DriveStateOutcome {
     description: 'Entity-Count disagreed with the entities in the payload',
   ),
 
+  /// The `Block-Start` / `Block-End` tags disagree with the coverage the
+  /// payload itself claims (§3.2). Kept apart from [integrityFailed] because
+  /// it is the one rejection that says *somebody re-published somebody else's
+  /// artifact under a coverage of their choosing*: the bytes verify, the drive
+  /// and the entity count match, and only the range is a lie. A log that
+  /// blurred it into "the payload did not match its tags" would hide the
+  /// difference between a damaged artifact and an attempt to jump a drive's
+  /// watermark past unsynced blocks.
+  coverageMismatch(
+    code: 'coverage-mismatch',
+    kind: DriveStateOutcomeKind.rejected,
+    description: 'the coverage tags disagreed with the signed payload',
+  ),
+
   /// The artifact covers a range the local database already holds, so reading
   /// it would cost a download and change nothing. Found and declined, which is
   /// why it is a rejection and not `noneFound` — but it is not a fault.

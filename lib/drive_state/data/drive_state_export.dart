@@ -39,6 +39,9 @@ const String fileEntriesSectionName = 'file_entries';
 const String _sectionsKey = 'sections';
 const String _versionKey = 'version';
 const String _rowsKey = 'rows';
+const String _coverageKey = 'coverage';
+const String _blockStartKey = 'blockStart';
+const String _blockEndKey = 'blockEnd';
 
 /// Why a payload could not be read. Enumerated because §7 requires
 /// "no artifact was used" and "an artifact was rejected because X" to never
@@ -62,16 +65,89 @@ class DriveStateFormatException implements Exception {
   String toString() => 'DriveStateFormatException(${error.name}): $message';
 }
 
+/// The range of block heights the payload accounts for.
+///
+/// This is the artifact's **coverage claim**, and it lives in the payload
+/// rather than only in the `Block-Start` / `Block-End` tags because the
+/// payload is what the owner signs (§2.2). The tags are not: a transaction
+/// tag is chosen by whoever submits the transaction, so anyone who copies an
+/// owner's artifact bytes verbatim can re-publish them under any coverage
+/// they like. Those bytes still verify - they are the owner's - and an
+/// importer that took its watermark from the tag would advance the drive past
+/// a range nothing ever synced, which is the silent drop in
+/// `SYNC_SKIPPED_ENTITY_PERSISTENCE.md`.
+///
+/// So the tags stay, because discovery has to order candidates without
+/// downloading them, and the importer cross-checks them against this before
+/// believing either. Same shape as `Drive-Id` and `Entity-Count`: the tag says
+/// what to expect, the signed body decides.
+class DriveStateCoverage extends Equatable {
+  /// The lowest block height accounted for. Always 0 for anything this client
+  /// publishes (§3.4) - carried rather than assumed, because an incremental
+  /// artifact is a format the importer's range arithmetic already handles, and
+  /// a coverage claim missing its lower bound could not be checked.
+  final int blockStart;
+
+  /// The highest block height accounted for: the producer's own sync
+  /// watermark at the moment of export, and nothing else. A producer that
+  /// claimed more than it had synced would be publishing the very gap this
+  /// field exists to close.
+  final int blockEnd;
+
+  const DriveStateCoverage({
+    required this.blockStart,
+    required this.blockEnd,
+  });
+
+  Map<String, dynamic> toJson() => {
+        _blockStartKey: blockStart,
+        _blockEndKey: blockEnd,
+      };
+
+  factory DriveStateCoverage.fromJson(Map<String, dynamic> json) {
+    final coverage = DriveStateCoverage(
+      blockStart: _required(json, _blockStartKey),
+      blockEnd: _required(json, _blockEndKey),
+    );
+
+    // A range that runs backwards, or below the genesis block, is not a
+    // coverage claim any producer could honestly make. Rejecting it here costs
+    // nothing and keeps the arithmetic downstream working on a real interval.
+    if (coverage.blockStart < 0 ||
+        coverage.blockEnd < 0 ||
+        coverage.blockStart > coverage.blockEnd) {
+      throw DriveStateFormatException(
+        DriveStateFormatError.malformed,
+        'coverage [${coverage.blockStart}, ${coverage.blockEnd}] is not a '
+        'block range',
+      );
+    }
+
+    return coverage;
+  }
+
+  @override
+  List<Object?> get props => [blockStart, blockEnd];
+
+  @override
+  String toString() => '[$blockStart, $blockEnd]';
+}
+
 /// One drive's current state, as an object graph.
 class DriveStateExport extends Equatable {
   final ExportedDrive drive;
   final List<ExportedFolderEntry> folders;
   final List<ExportedFileEntry> files;
 
+  /// What range of the drive's history the rows above account for. Signed
+  /// with them; see [DriveStateCoverage].
+  final DriveStateCoverage coverage;
+
   const DriveStateExport({
     required this.drive,
     required this.folders,
     required this.files,
+    required this.coverage,
   });
 
   /// The number of entities the payload carries, which the entity's
@@ -81,6 +157,7 @@ class DriveStateExport extends Equatable {
 
   Map<String, dynamic> toJson() => {
         _versionKey: driveStateFormatVersion,
+        _coverageKey: coverage.toJson(),
         _sectionsKey: {
           driveSectionName: {
             _rowsKey: [drive.toJson()],
@@ -125,6 +202,14 @@ class DriveStateExport extends Equatable {
     }
 
     return DriveStateExport(
+      // Required, not optional. The reader that treated an absent coverage
+      // claim as "trust the tag" would be the reader this field was added to
+      // remove, and no artifact exists that predates it: nothing has been
+      // published on chain. A payload without one is malformed, which means
+      // the drive syncs the ordinary way.
+      coverage: DriveStateCoverage.fromJson(
+        _asMap(json[_coverageKey], _coverageKey),
+      ),
       drive: ExportedDrive.fromJson(driveRows.single),
       folders: _rowsOf(sections, folderEntriesSectionName)
           .map(ExportedFolderEntry.fromJson)
@@ -136,7 +221,7 @@ class DriveStateExport extends Equatable {
   }
 
   @override
-  List<Object?> get props => [drive, folders, files];
+  List<Object?> get props => [drive, folders, files, coverage];
 }
 
 /// Reads one drive's current state.
@@ -151,29 +236,56 @@ Future<DriveStateExport> exportDriveState(
   DriveDao driveDao,
   String driveId,
 ) async {
-  final driveRow =
-      await driveStateDriveQuery(driveDao, driveId).getSingleOrNull();
+  // One snapshot, not four reads.
+  //
+  // The coverage claim below says what the rows in this payload account for,
+  // so it has to be read from the same state the rows were. Sync commits in
+  // batches; a watermark read after a batch landed would claim blocks whose
+  // rows this export did not carry - which is precisely the lie the importer
+  // trusts when it advances a consumer's watermark.
+  return driveDao.transaction(() async {
+    final driveRow =
+        await driveStateDriveQuery(driveDao, driveId).getSingleOrNull();
 
-  if (driveRow == null) {
-    throw StateError('cannot export drive $driveId: no such drive');
-  }
+    if (driveRow == null) {
+      throw StateError('cannot export drive $driveId: no such drive');
+    }
 
-  final folderRows =
-      await driveStateFolderEntriesQuery(driveDao, driveId).get();
-  final fileRows = await driveStateFileEntriesQuery(driveDao, driveId).get();
+    // Read on its own rather than folded into [driveStateDriveQuery], because
+    // that query's projection is the payload's and `lastBlockHeight` is
+    // withheld from it - see [_withheldDriveColumns]. Adding it there would
+    // put a withheld column in the statement whose SQL is the leak guarantee.
+    final watermark =
+        await driveStateCoverageQuery(driveDao, driveId).getSingleOrNull();
 
-  return DriveStateExport(
-    drive: ExportedDrive._fromRow(driveRow, driveDao.drives),
-    folders: folderRows
-        .map((row) => ExportedFolderEntry._fromRow(row, driveDao.folderEntries))
-        .toList(),
-    files: fileRows
-        .map((row) => ExportedFileEntry._fromRow(row, driveDao.fileEntries))
-        .toList(),
-  );
+    final folderRows =
+        await driveStateFolderEntriesQuery(driveDao, driveId).get();
+    final fileRows = await driveStateFileEntriesQuery(driveDao, driveId).get();
+
+    return DriveStateExport(
+      // The producer's watermark is the only honest answer to "what does this
+      // artifact account for": the rows above are the drive as this client had
+      // synced it, and it had synced it to here. A drive that has never synced
+      // covers nothing, which is a truthful [0, 0] rather than a refusal - the
+      // importer's range arithmetic already declines to advance on it.
+      coverage: DriveStateCoverage(
+        blockStart: 0,
+        blockEnd: watermark?.read(driveDao.drives.lastBlockHeight) ?? 0,
+      ),
+      drive: ExportedDrive._fromRow(driveRow, driveDao.drives),
+      folders: folderRows
+          .map((row) =>
+              ExportedFolderEntry._fromRow(row, driveDao.folderEntries))
+          .toList(),
+      files: fileRows
+          .map((row) => ExportedFileEntry._fromRow(row, driveDao.fileEntries))
+          .toList(),
+    );
+  });
 }
 
-// The three statements [exportDriveState] runs, one per section.
+// The statements [exportDriveState] runs: one per payload section, plus the
+// coverage read.
 //
 // They are built here rather than inline so a test can assert the SQL they
 // generate. The key-material guarantee is a property of that SQL - a
@@ -186,6 +298,24 @@ JoinedSelectStatement driveStateDriveQuery(DriveDao driveDao, String driveId) {
   final drives = driveDao.drives;
   return driveDao.selectOnly(drives)
     ..addColumns(driveStateExportedColumns(drives))
+    ..where(drives.id.equals(driveId));
+}
+
+/// The producer's sync watermark, which becomes the coverage claim.
+///
+/// Deliberately not part of [driveStateDriveQuery]. `lastBlockHeight` is
+/// withheld from the drive row (a row column is adopted wholesale by the
+/// importer's merge, and the consumer's own watermark is not the producer's to
+/// set), and the payload-section queries are the ones whose generated SQL is
+/// asserted to name no withheld column. The coverage claim is a different
+/// thing that happens to read the same number, so it reads it separately.
+JoinedSelectStatement driveStateCoverageQuery(
+  DriveDao driveDao,
+  String driveId,
+) {
+  final drives = driveDao.drives;
+  return driveDao.selectOnly(drives)
+    ..addColumns([drives.lastBlockHeight])
     ..where(drives.id.equals(driveId));
 }
 
@@ -361,14 +491,17 @@ List<GeneratedColumn> _withheldDriveColumns(Drives t) => [
       // indexer. It means nothing to a different endpoint, so an importer
       // that adopted it would resume pagination from an arbitrary position.
       //
-      // `lastBlockHeight` is the *producer's* watermark, which is not the
-      // same claim as the artifact's coverage. If it sits above the
-      // artifact's `Block-End`, an importer that adopted it would believe
-      // it had synced a range the artifact never contained, and skip it -
-      // the drive's watermark advancing past unsynced entities is precisely
-      // the silent-drop failure in SYNC_SKIPPED_ENTITY_PERSISTENCE.md.
-      // Coverage comes from the `Block-End` tag; the importer sets the
-      // watermark from that, and from nothing else.
+      // `lastBlockHeight` is withheld *as a column of the drive row*, which
+      // is not the same thing as the artifact's coverage. A row column is
+      // adopted wholesale by the merge, unchecked against anything; the
+      // coverage claim is a container-level field that the importer refuses
+      // unless the `Block-End` tag agrees with it, and then only advances the
+      // watermark across ground the claim actually covers. The value behind
+      // both is the same integer - see [DriveStateCoverage] - and the
+      // difference is entirely in what a reader is allowed to do with it. A
+      // watermark adopted without those checks is the drive advancing past
+      // unsynced entities: the silent drop in
+      // SYNC_SKIPPED_ENTITY_PERSISTENCE.md.
       t.syncCursor,
       t.lastBlockHeight,
     ];

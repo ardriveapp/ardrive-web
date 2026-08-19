@@ -40,6 +40,7 @@ void main() {
           'decrypt-failed',
           'integrity-failed',
           'count-mismatch',
+          'coverage-mismatch',
           'range-already-covered',
         },
       );
@@ -51,8 +52,8 @@ void main() {
     });
 
     test('classifies "nothing found" apart from every rejection', () {
-      expect(DriveStateOutcome.noneFound.kind,
-          DriveStateOutcomeKind.nothingFound);
+      expect(
+          DriveStateOutcome.noneFound.kind, DriveStateOutcomeKind.nothingFound);
       expect(DriveStateOutcome.used.kind, DriveStateOutcomeKind.used);
 
       final rejections = DriveStateOutcome.values
@@ -83,6 +84,7 @@ void main() {
         DriveStateOutcome.decryptFailed,
         DriveStateOutcome.integrityFailed,
         DriveStateOutcome.countMismatch,
+        DriveStateOutcome.coverageMismatch,
       ]) {
         expect(DriveStateOutcomeReporter.levelFor(outcome),
             DriveStateLogLevel.warning,

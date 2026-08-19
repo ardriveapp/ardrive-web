@@ -30,7 +30,8 @@ class _SpyDiscovery implements DriveStateDiscovery {
   _SpyDiscovery(this._answer);
 
   final DriveStateDiscoveryResult Function() _answer;
-  final calls = <({String driveId, String ownerAddress, int? minBlockHeight})>[];
+  final calls =
+      <({String driveId, String ownerAddress, int? minBlockHeight})>[];
 
   @override
   Future<DriveStateDiscoveryResult> findCandidates({
@@ -306,7 +307,8 @@ void main() {
       expect(discovery.calls.single.minBlockHeight, isNull);
     });
 
-    test('declines an artifact below the height the sync starts from, before '
+    test(
+        'declines an artifact below the height the sync starts from, before '
         'paying for its body', () async {
       final result = await read(
         found(candidate(blockEnd: 50)),

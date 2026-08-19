@@ -258,7 +258,8 @@ class GraphQLDriveStateDiscovery implements DriveStateDiscovery {
 
       for (final edge in edges) {
         final candidate = _toCandidate(edge.node);
-        if (_isUsable(candidate, driveId: driveId, ownerAddress: ownerAddress)) {
+        if (_isUsable(candidate,
+            driveId: driveId, ownerAddress: ownerAddress)) {
           candidates.add(candidate);
         } else {
           discarded++;

@@ -51,8 +51,7 @@ void main() {
         sizeInBytes: 6979321,
       );
 
-  testWidgets('the confirmation shows what would be published',
-      (tester) async {
+  testWidgets('the confirmation shows what would be published', (tester) async {
     await tester.pumpWidget(wrap(DriveStateCreationReady(artifact())));
     await tester.pumpAndSettle();
 
@@ -61,8 +60,8 @@ void main() {
     expect(find.text('6.66 MiB'), findsOneWidget);
     expect(find.text('0 to 1814228'), findsOneWidget);
     expect(find.textContaining('permanent'), findsOneWidget);
-    expect(find.textContaining('Nothing has been uploaded yet'),
-        findsOneWidget);
+    expect(
+        find.textContaining('Nothing has been uploaded yet'), findsOneWidget);
   });
 
   testWidgets('nothing is published until the user asks for it',

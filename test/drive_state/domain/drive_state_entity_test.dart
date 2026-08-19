@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/domain/drive_state_entity.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -61,7 +62,6 @@ void main() {
           EntityTag.driveStateId: driveStateId,
           EntityTag.stateVersion: '1',
           EntityTag.contentType: ContentType.octetStream,
-          EntityTag.contentEncoding: ContentEncodingTag.gzip,
           EntityTag.blockStart: '0',
           EntityTag.blockEnd: '1814228',
           EntityTag.dataStart: '1102394',
@@ -70,6 +70,23 @@ void main() {
           EntityTag.cipher: 'AES256-GCM',
           EntityTag.cipherIv: encodeBytesToBase64(cipherIv),
         });
+      });
+
+      test(
+          'never says Content-Encoding, whatever the body was compressed '
+          'with', () {
+        // The payload really is gzipped, and the tag would really be a lie:
+        // the transaction's data is the ciphertext, and gzip is two layers
+        // inside it. It matters because a gateway echoes this tag onto the
+        // HTTP response, so a browser would gunzip the ciphertext and fail -
+        // permanently, because tags cannot be changed. See the entity's own
+        // documentation.
+        final tx = Transaction();
+
+        entity().addEntityTagsToTransaction(tx);
+
+        expect(tagsOf(tx).keys, isNot(contains(EntityTag.contentEncoding)));
+        expect(tagsOf(tx)[EntityTag.contentType], ContentType.octetStream);
       });
 
       test('publishes a full copy: Block-Start is always 0', () {
@@ -91,7 +108,7 @@ void main() {
 
         expect(tx.data, equals(body));
         expect(tags[EntityTag.entityType], EntityTypeTag.driveState);
-        expect(tags[EntityTag.contentEncoding], ContentEncodingTag.gzip);
+        expect(tags.keys, isNot(contains(EntityTag.contentEncoding)));
         expect(tags[EntityTag.appName], 'ArDrive-App');
         expect(tags[EntityTag.appVersion], '1.3.3.7');
         expect(
@@ -134,7 +151,7 @@ void main() {
           envelope: DriveStateEnvelope(body: body, cipherIv: cipherIv),
           id: driveStateId,
           driveId: driveId,
-          blockEnd: 1814228,
+          coverage: const DriveStateCoverage(blockStart: 0, blockEnd: 1814228),
           dataStart: 1102394,
           dataEnd: 1814012,
           entityCount: 41273,

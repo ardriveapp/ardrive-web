@@ -59,7 +59,8 @@ class _SpyDiscovery implements DriveStateDiscovery {
   DriveStateDiscoveryResult Function() answer =
       () => const DriveStateDiscoveryResult.none();
 
-  final calls = <({String driveId, String ownerAddress, int? minBlockHeight})>[];
+  final calls =
+      <({String driveId, String ownerAddress, int? minBlockHeight})>[];
 
   @override
   Future<DriveStateDiscoveryResult> findCandidates({
@@ -121,12 +122,26 @@ void main() {
   });
 
   /// The artifact as it reaches sync: a body, and the tags an indexer reported.
-  Future<({DriveStateArtifactCandidate candidate, Uint8List body})> sealArtifact({
+  ///
+  /// [blockEnd] moves the producer's own watermark before the export runs, so
+  /// the signed coverage claim and the `Block-End` tag agree - which is what a
+  /// real producer publishes, and what an importer requires. [tamperedTagBlockEnd]
+  /// deliberately breaks that agreement, for the case where someone re-tags a
+  /// genuine body.
+  Future<({DriveStateArtifactCandidate candidate, Uint8List body})>
+      sealArtifact({
     int blockEnd = artifactBlockEnd,
+    int? tamperedTagBlockEnd,
     int? entityCount,
     SecretKey? sealedWith,
   }) async {
+    await producerDb.driveDao.writeToDrive(DrivesCompanion(
+      id: const Value(driveId),
+      lastBlockHeight: Value(blockEnd),
+    ));
+
     final export = await exportDriveState(producerDb.driveDao, driveId);
+    expect(export.coverage.blockEnd, blockEnd);
     final payload = utf8.encode(jsonEncode(export.toJson()));
 
     final sealed = await codec.seal(
@@ -148,9 +163,8 @@ void main() {
           EntityTag.driveStateId: 'drive-state-id',
           EntityTag.stateVersion: '1',
           EntityTag.contentType: ContentType.octetStream,
-          EntityTag.contentEncoding: ContentEncodingTag.gzip,
           EntityTag.blockStart: '0',
-          EntityTag.blockEnd: '$blockEnd',
+          EntityTag.blockEnd: '${tamperedTagBlockEnd ?? blockEnd}',
           EntityTag.entityCount: '${entityCount ?? export.entityCount}',
           EntityTag.cipher: Cipher.aes256,
           EntityTag.cipherIv: sealed.envelope!.cipherIvAsBase64,
@@ -163,11 +177,13 @@ void main() {
   /// Puts an artifact where the sync will find it: discovered, and fetchable.
   Future<void> publish({
     int blockEnd = artifactBlockEnd,
+    int? tamperedTagBlockEnd,
     int? entityCount,
     SecretKey? sealedWith,
   }) async {
     final artifact = await sealArtifact(
       blockEnd: blockEnd,
+      tamperedTagBlockEnd: tamperedTagBlockEnd,
       entityCount: entityCount,
       sealedWith: sealedWith,
     );
@@ -195,8 +211,9 @@ void main() {
           ownerAddress: any(named: 'ownerAddress'),
           strategy: any(named: 'strategy'),
         ));
-    expect(call.callCount, 1, reason: 'the GraphQL pass should run exactly '
-        'once for a single contiguous range');
+    expect(call.callCount, 1,
+        reason: 'the GraphQL pass should run exactly '
+            'once for a single contiguous range');
     return call.captured[0] as int;
   }
 
@@ -215,7 +232,8 @@ void main() {
   }
 
   Future<List<FileEntry>> fileRows() =>
-      (db.select(db.fileEntries)..where((f) => f.driveId.equals(driveId))).get();
+      (db.select(db.fileEntries)..where((f) => f.driveId.equals(driveId)))
+          .get();
 
   Future<List<FolderEntry>> folderRows() =>
       (db.select(db.folderEntries)..where((f) => f.driveId.equals(driveId)))
@@ -402,16 +420,39 @@ void main() {
 
     test('never lets an artifact push the range past the current block',
         () async {
-      // `Block-End` is a tag on a transaction nobody has to trust, and the
-      // range below is `Range(start, currentBlockHeight)` - which throws when
-      // start runs past end. A lying tag may cost a wasted download; it may
-      // not fail the drive.
+      // A *self-consistent* artifact claiming more than this node has seen:
+      // signed coverage and tags agree, so the cross-check passes and the
+      // clamp is the only thing left. Reachable without anyone lying - a
+      // gateway lagging behind the producer answers a lower current height
+      // than the producer legitimately synced to.
+      //
+      // The range below is `Range(start, currentBlockHeight)`, which throws
+      // when start runs past end. An over-large claim may cost a wasted
+      // download; it may not fail the drive.
       await publish(blockEnd: currentBlockHeight + 100000);
 
       final progress = await sync();
 
       expect(progress.last.failedDriveIds, isEmpty);
       expect(gqlStartedAt(), currentBlockHeight);
+    });
+
+    test('refuses a genuine body wearing someone else\'s Block-End', () async {
+      // The tag is what an indexer reports and nobody signs; the coverage
+      // claim is inside the sealed payload. Re-tagging a real artifact to
+      // claim a higher range would walk the watermark across blocks whose
+      // rows it never carried, which is the silent drop this artifact format
+      // exists to avoid. The body is the owner's, correctly sealed - only the
+      // tag is wrong.
+      await publish(tamperedTagBlockEnd: currentBlockHeight - 1);
+
+      final progress = await sync();
+
+      expect(progress.last.failedDriveIds, isEmpty);
+      // Not the artifact's range, and not the tampered one: the ordinary
+      // starting point for a drive with no usable artifact.
+      expect(gqlStartedAt(), startsFromWithoutArtifact);
+      expect((await driveRow()).lastBlockHeight, isNot(currentBlockHeight - 1));
     });
   });
 

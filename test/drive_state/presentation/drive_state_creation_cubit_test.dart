@@ -199,7 +199,8 @@ void main() {
     blocTest<DriveStateCreationCubit, DriveStateCreationState>(
       'refuses when nobody is logged in',
       build: cubitWith,
-      setUp: () => when(() => profileCubit.state).thenReturn(ProfileLoggingOut()),
+      setUp: () =>
+          when(() => profileCubit.state).thenReturn(ProfileLoggingOut()),
       act: (cubit) => cubit.prepare(),
       expect: () => [
         isA<DriveStateCreationPreparing>(),
@@ -276,8 +277,8 @@ void main() {
 
   group('the shipped uploader', () {
     test('publishes nothing, and says so', () async {
-      final result = await const UnwiredDriveStateUploader()
-          .publish(_anyArtifact());
+      final result =
+          await const UnwiredDriveStateUploader().publish(_anyArtifact());
 
       expect(result.isPublished, isFalse);
       expect(result.reason, contains('Nothing was uploaded'));

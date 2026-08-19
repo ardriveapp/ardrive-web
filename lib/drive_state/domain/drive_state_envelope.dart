@@ -45,6 +45,20 @@ enum DriveStateEnvelopeFailure {
   /// The signed data item's data is not a gzip stream.
   decompressionFailed,
 
+  /// The signed data is a gzip stream that expands past
+  /// [DriveStateEnvelopeCodec.maxPlaintextBytes].
+  ///
+  /// Not the same thing as [decompressionFailed]: the stream is valid, and
+  /// that is the problem. gzip reaches about 1032:1, so an artifact of a few
+  /// megabytes — well under anything a size check on the body would catch —
+  /// expands to gigabytes. Verification cannot help, because the owner really
+  /// did sign it, or the bytes are the owner's own and somebody re-published
+  /// them; a browser tab has no memory pressure signal to recover from, it
+  /// simply dies. And an artifact is immutable and sorts newest, so the same
+  /// bomb would be chosen again on the next sync, and the next: the one shape
+  /// of failure that is not a fallback unless it is caught here.
+  decompressedTooLarge,
+
   /// The decrypted bytes cannot be an ANS-104 data item at all: too short to
   /// hold one, or carrying an owner key that cannot be read back out. Bytes
   /// that are the right shape but do not verify are [signatureInvalid], not
@@ -194,6 +208,14 @@ class DriveStateOpenResult {
 /// checkable by anything that speaks ANS-104, and that the parsing and the
 /// verification are the package's rather than ours.
 ///
+/// What signing before compressing does *not* buy is any protection from the
+/// decompressor: a verified signature says the owner produced these bytes, not
+/// that they are safe to expand. Anyone can re-publish the owner's own bytes
+/// verbatim, so the bomb described by
+/// [DriveStateEnvelopeFailure.decompressedTooLarge] reaches the decompressor
+/// by design. [maxPlaintextBytes] is what stops it, and it is the same
+/// boundary [seal] refuses to cross in the other direction.
+///
 /// ## Why gzip is inside the signature
 ///
 /// The item's data is the *compressed* payload, so the signature covers the
@@ -214,8 +236,23 @@ class DriveStateOpenResult {
 class DriveStateEnvelopeCodec {
   final ArDriveCrypto _crypto;
 
-  DriveStateEnvelopeCodec({ArDriveCrypto? crypto})
-      : _crypto = crypto ?? ArDriveCrypto();
+  /// The most plaintext [open] will produce before refusing.
+  ///
+  /// [maxSizeSupportedByGCMEncryption] both ways: [seal] will not produce a
+  /// payload at or above it, so no artifact this codec wrote can legitimately
+  /// open to one. Sharing the constant is what keeps the two halves from
+  /// drifting into a window where a payload can be written and not read, or
+  /// read and not written.
+  final int maxPlaintextBytes;
+
+  DriveStateEnvelopeCodec({
+    ArDriveCrypto? crypto,
+    // Injectable only so a test can prove the bound holds without allocating
+    // 100 MiB to watch it hold.
+    int? maxPlaintextBytes,
+  })  : _crypto = crypto ?? ArDriveCrypto(),
+        maxPlaintextBytes =
+            maxPlaintextBytes ?? maxSizeSupportedByGCMEncryption;
 
   /// The only ANS-104 signature scheme this codec writes, and the only one it
   /// can check: every other [SignatureConfig] in the package throws
@@ -415,9 +452,15 @@ class DriveStateEnvelopeCodec {
       );
     }
 
-    final List<int> plaintext;
+    final Uint8List plaintext;
     try {
-      plaintext = GZipDecoder().decodeBytes(compressed);
+      plaintext = _inflateBounded(compressed);
+    } on _PlaintextLimitExceeded catch (e) {
+      return DriveStateOpenResult.failed(
+        DriveStateEnvelopeFailure.decompressedTooLarge,
+        'The signed data expands past the $maxPlaintextBytes byte limit '
+        '(${compressed.lengthInBytes} compressed bytes reached ${e.reached})',
+      );
     } catch (e) {
       return DriveStateOpenResult.failed(
         DriveStateEnvelopeFailure.decompressionFailed,
@@ -425,7 +468,21 @@ class DriveStateEnvelopeCodec {
       );
     }
 
-    return DriveStateOpenResult.opened(_asBytes(plaintext), signerAddress);
+    return DriveStateOpenResult.opened(plaintext, signerAddress);
+  }
+
+  /// Gunzips [compressed], refusing at [maxPlaintextBytes] rather than
+  /// wherever the process runs out of memory.
+  ///
+  /// The bound is enforced *during* inflation, not after it, which is the only
+  /// place it can be: the size a gzip stream records in its trailer is chosen
+  /// by whoever wrote the stream, so a bomb is free to understate it, and by
+  /// the time the decoder could check the trailer it has already allocated the
+  /// output. Writing through a capped stream costs one comparison per write.
+  Uint8List _inflateBounded(Uint8List compressed) {
+    final output = _BoundedOutputStream(maxPlaintextBytes);
+    GZipDecoder().decodeStream(InputStream(compressed), output);
+    return _asBytes(output.getBytes());
   }
 
   /// The ANS-104 signature type: two bytes, little endian, at offset zero.
@@ -460,4 +517,58 @@ class DriveStateEnvelopeCodec {
 
   static Uint8List _asBytes(List<int> bytes) =>
       bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
+}
+
+/// Raised by [_BoundedOutputStream] and turned into a
+/// [DriveStateEnvelopeFailure.decompressedTooLarge] by the only caller.
+/// Private so that "never throws" stays true of everything this library
+/// exposes.
+class _PlaintextLimitExceeded implements Exception {
+  /// How much had been written when the limit was passed. Not the payload's
+  /// real size — nothing here ever learns that — but enough to say in a log
+  /// that the limit was reached rather than approached.
+  final int reached;
+
+  const _PlaintextLimitExceeded(this.reached);
+
+  @override
+  String toString() => '_PlaintextLimitExceeded($reached)';
+}
+
+/// An `archive` output stream that refuses to grow past a limit.
+///
+/// Subclassing rather than reimplementing: `Inflate` reads back through
+/// `subset` to resolve LZ77 back references, so this has to be a real
+/// [OutputStream] and not merely something with the same three write methods.
+/// Every one of those checks before delegating, so the buffer is never
+/// allocated past the limit — a check afterwards would be a check that runs
+/// once the damage is done.
+class _BoundedOutputStream extends OutputStream {
+  final int limit;
+
+  _BoundedOutputStream(this.limit);
+
+  void _guard(int adding) {
+    if (length + adding > limit) {
+      throw _PlaintextLimitExceeded(length + adding);
+    }
+  }
+
+  @override
+  void writeByte(int value) {
+    _guard(1);
+    super.writeByte(value);
+  }
+
+  @override
+  void writeBytes(List<int> bytes, [int? len]) {
+    _guard(len ?? bytes.length);
+    super.writeBytes(bytes, len);
+  }
+
+  @override
+  void writeInputStream(InputStreamBase stream) {
+    _guard(stream.length);
+    super.writeInputStream(stream);
+  }
 }

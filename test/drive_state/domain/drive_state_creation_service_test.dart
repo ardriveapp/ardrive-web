@@ -212,6 +212,27 @@ void main() {
       expect(tagsOf(tx)[EntityTag.entityCount], '$expectedEntityCount');
     });
 
+    /// The importer refuses any artifact whose tags disagree with the
+    /// coverage claim inside the signed payload, so an artifact that fails
+    /// this check is one nobody can ever use - paid for, on chain, permanent.
+    ///
+    /// It is worth a test even though [DriveStateEntity.fromEnvelope] now
+    /// takes the claim itself and cannot be passed anything else: this is the
+    /// assertion that survives someone deciding the constructor would be
+    /// tidier with two integers.
+    test('tags the block range the sealed payload itself claims', () async {
+      final payload = codec.lastPayloadJson!;
+      final claimed = payload['coverage'] as Map<String, dynamic>;
+
+      final tx = Transaction();
+      artifact.entity.addEntityTagsToTransaction(tx);
+      final tags = tagsOf(tx);
+
+      expect(tags[EntityTag.blockStart], '${claimed['blockStart']}');
+      expect(tags[EntityTag.blockEnd], '${claimed['blockEnd']}');
+      expect(claimed['blockEnd'], lastBlockHeight);
+    });
+
     test("declares Block-End as the drive's own sync watermark", () {
       expect(artifact.blockEnd, lastBlockHeight);
 
@@ -230,8 +251,7 @@ void main() {
       expect(tagsOf(tx)[EntityTag.blockStart], '0');
     });
 
-    test('claims data across the range it covers, because it carries rows',
-        () {
+    test('claims data across the range it covers, because it carries rows', () {
       expect(artifact.dataStart, 0);
       expect(artifact.dataEnd, lastBlockHeight);
     });
@@ -370,6 +390,9 @@ class _RecordingCodec implements DriveStateEnvelopeCodec {
 
   int sealCalls = 0;
   Uint8List? lastPlaintext;
+
+  @override
+  int get maxPlaintextBytes => _real.maxPlaintextBytes;
 
   Map<String, dynamic>? get lastPayloadJson => lastPlaintext == null
       ? null

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:archive/archive.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart' show Cipher;
@@ -372,6 +373,99 @@ void main() {
 
         expect(result.isOpened, isFalse);
         expect(result.failure, DriveStateEnvelopeFailure.decompressionFailed);
+      });
+
+      /// A real bomb, not a mock of one: a run of zeros gzips at about
+      /// 1000:1, which is the whole difficulty. Nothing about the compressed
+      /// size says what it will expand to, and the size recorded in the gzip
+      /// trailer is chosen by whoever wrote the stream.
+      Future<DriveStateEnvelope> sealBomb(int expandedBytes) async {
+        final compressed = GZipEncoder().encode(Uint8List(expandedBytes))!;
+        expect(
+          compressed.length * 100,
+          lessThan(expandedBytes),
+          reason: 'a payload that does not expand by two orders of magnitude '
+              'is not testing what this test is about',
+        );
+
+        return sealBytes(await signedItemOver(compressed, owner));
+      }
+
+      test('refuses a signed payload that expands past the limit', () async {
+        // The bound is injected small so this costs a megabyte rather than a
+        // hundred. What it proves is the same: verification cannot save the
+        // decompressor, because the bytes really are signed - the owner's own
+        // artifact, re-published by anyone who can copy it, is enough.
+        final bounded = DriveStateEnvelopeCodec(maxPlaintextBytes: 64 * 1024);
+
+        final result = await bounded.open(
+          envelope: await sealBomb(4 * 1024 * 1024),
+          driveKey: driveKey,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(result.isOpened, isFalse);
+        expect(result.plaintext, isNull);
+        expect(
+          result.failure,
+          DriveStateEnvelopeFailure.decompressedTooLarge,
+          reason: result.reason,
+        );
+        // A typed refusal, not an exception, and distinct from "this is not a
+        // gzip stream" - it is a perfectly good one.
+        expect(
+          result.failure,
+          isNot(DriveStateEnvelopeFailure.decompressionFailed),
+        );
+      });
+
+      test('opens a payload that sits exactly on the limit', () async {
+        // The other side of the boundary, so the test above cannot be passed
+        // by a codec that refuses everything.
+        final payload = Uint8List(64 * 1024);
+        final bounded = DriveStateEnvelopeCodec(maxPlaintextBytes: 64 * 1024);
+
+        final result = await bounded.open(
+          envelope: (await bounded.seal(
+            plaintext: payload,
+            driveKey: driveKey,
+            wallet: owner,
+          ))
+              .envelope!,
+          driveKey: driveKey,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(result.isOpened, isTrue, reason: result.reason);
+        expect(result.plaintext, hasLength(64 * 1024));
+      });
+
+      test('refuses a payload one byte over the limit', () async {
+        final bounded = DriveStateEnvelopeCodec(maxPlaintextBytes: 64 * 1024);
+
+        final result = await bounded.open(
+          envelope: (await bounded.seal(
+            plaintext: Uint8List(64 * 1024 + 1),
+            driveKey: driveKey,
+            wallet: owner,
+          ))
+              .envelope!,
+          driveKey: driveKey,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(result.failure, DriveStateEnvelopeFailure.decompressedTooLarge);
+      });
+
+      test('bounds decompression at the boundary seal refuses to cross',
+          () async {
+        // The default, which is what production runs with: the two halves
+        // share one constant so no payload can be writable and unreadable, or
+        // readable and unwritable.
+        expect(
+          DriveStateEnvelopeCodec().maxPlaintextBytes,
+          maxSizeSupportedByGCMEncryption,
+        );
       });
 
       test('rejects bytes too short to be a data item at all', () async {

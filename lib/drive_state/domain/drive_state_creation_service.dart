@@ -208,8 +208,15 @@ class DriveStateCreationService {
     // `Block-End` is the drive's own watermark and nothing else. It is the
     // coverage claim an importer adopts as its starting point, so it may only
     // be a height this client actually synced to.
-    final blockEnd = drive.lastBlockHeight;
-    if (blockEnd == null || blockEnd <= 0) {
+    //
+    // Checked here to refuse before paying for an export, but *not* used: the
+    // number that goes on the wire comes from the export below, which reads
+    // the watermark in the same transaction as the rows it carries. This read
+    // is a separate one, and a sync batch can land between the two - tagging
+    // the earlier value would put a `Block-End` on the transaction that the
+    // signed payload contradicts, which every importer rejects. Paid for,
+    // permanent, and useless.
+    if ((drive.lastBlockHeight ?? 0) <= 0) {
       return const DriveStateCreationResult.refused(
         DriveStateCreationRefusal.noWatermark,
         'This drive has not synced far enough to publish its state. Sync it, '
@@ -218,6 +225,17 @@ class DriveStateCreationService {
     }
 
     final export = await exportDriveState(_driveDao, driveId);
+    final blockEnd = export.coverage.blockEnd;
+
+    // The same gate again, against the value that will actually be published.
+    // Reachable if the drive was reset or detached mid-prepare.
+    if (blockEnd <= 0) {
+      return const DriveStateCreationResult.refused(
+        DriveStateCreationRefusal.noWatermark,
+        'This drive has not synced far enough to publish its state. Sync it, '
+        'then try again.',
+      );
+    }
 
     final plaintext = Uint8List.fromList(
       utf8.encode(jsonEncode(export.toJson())),
@@ -244,10 +262,11 @@ class DriveStateCreationService {
       envelope: envelope,
       id: _newArtifactId(),
       driveId: driveId,
-      // `Block-Start` is not passed: it is always 0, because every artifact is
-      // a full copy of the drive as of its `Block-End` and supersedes every
-      // earlier one outright (§3.4).
-      blockEnd: blockEnd,
+      // Both tags come from the payload's own claim, so they cannot
+      // contradict it. `Block-Start` is always 0 there, because every
+      // artifact is a full copy of the drive as of its `Block-End` and
+      // supersedes every earlier one outright (§3.4).
+      coverage: export.coverage,
       dataStart: _dataStart(export),
       dataEnd: _dataEnd(export, blockEnd),
       entityCount: export.entityCount,

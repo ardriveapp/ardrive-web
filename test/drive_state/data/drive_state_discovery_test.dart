@@ -191,7 +191,10 @@ void main() {
     test('excludes another drive and another entity type', () async {
       final gql = _ScriptedGraphQLRetry([
         _page([
-          _tx(id: 'OTHER_DRIVE', driveId: 'some-other-drive', blockEnd: 1900000),
+          _tx(
+              id: 'OTHER_DRIVE',
+              driveId: 'some-other-drive',
+              blockEnd: 1900000),
           _tx(id: 'A_SNAPSHOT', entityType: 'snapshot', blockEnd: 1800000),
           _tx(id: 'MINE', blockEnd: 1000000),
         ]),
@@ -399,7 +402,8 @@ void main() {
         tags: const {'Drive-Id': _driveId},
       );
 
-      expect(() => candidate.tags['Drive-Id'] = 'other', throwsUnsupportedError);
+      expect(
+          () => candidate.tags['Drive-Id'] = 'other', throwsUnsupportedError);
     });
   });
 }
