@@ -1,0 +1,203 @@
+import 'dart:typed_data';
+
+import 'package:ardrive/drive_state/domain/drive_state_entity.dart';
+import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
+import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
+import 'package:arweave/arweave.dart';
+import 'package:arweave/utils.dart';
+import 'package:cryptography/cryptography.dart' show SecretKey;
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:test/test.dart';
+
+typedef DriveHistoryTransaction
+    = DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
+
+void main() {
+  const driveId = '00000000-0000-0000-0000-00000000d21e';
+  const driveStateId = '00000000-0000-0000-0000-000000005747';
+  final createdAt = DateTime.fromMillisecondsSinceEpoch(1234567890000);
+  final body = Uint8List.fromList(List.generate(64, (i) => i));
+  final cipherIv = Uint8List.fromList(List.generate(12, (i) => 12 - i));
+
+  PackageInfo.setMockInitialValues(
+    version: '1.3.3.7',
+    packageName: 'ArDrive-Web-Test',
+    appName: 'ArDrive-Web-Test',
+    buildNumber: '420',
+    buildSignature: 'Test signature',
+  );
+
+  DriveStateEntity entity() => DriveStateEntity(
+        id: driveStateId,
+        driveId: driveId,
+        blockEnd: 1814228,
+        dataStart: 1102394,
+        dataEnd: 1814012,
+        entityCount: 41273,
+        cipher: CipherTag.aes256,
+        cipherIv: encodeBytesToBase64(cipherIv),
+        data: body,
+      )..createdAt = createdAt;
+
+  /// The tags as a client reading them back off GraphQL would see them.
+  Map<String, String> tagsOf(TransactionBase tx) => {
+        for (final tag in tx.tags)
+          decodeBase64ToString(tag.name): decodeBase64ToString(tag.value),
+      };
+
+  group('DriveStateEntity', () {
+    group('addEntityTagsToTransaction', () {
+      test('adds every tag the format specifies, and only those', () {
+        final tx = Transaction();
+
+        entity().addEntityTagsToTransaction(tx);
+
+        expect(tagsOf(tx), {
+          EntityTag.arFs: '0.15',
+          EntityTag.entityType: EntityTypeTag.driveState,
+          EntityTag.driveId: driveId,
+          EntityTag.driveStateId: driveStateId,
+          EntityTag.stateVersion: '1',
+          EntityTag.contentType: ContentType.octetStream,
+          EntityTag.contentEncoding: ContentEncodingTag.gzip,
+          EntityTag.blockStart: '0',
+          EntityTag.blockEnd: '1814228',
+          EntityTag.dataStart: '1102394',
+          EntityTag.dataEnd: '1814012',
+          EntityTag.entityCount: '41273',
+          EntityTag.cipher: 'AES256-GCM',
+          EntityTag.cipherIv: encodeBytesToBase64(cipherIv),
+        });
+      });
+
+      test('publishes a full copy: Block-Start is always 0', () {
+        final tx = Transaction();
+
+        entity().addEntityTagsToTransaction(tx);
+
+        expect(tagsOf(tx)[EntityTag.blockStart], '0');
+      });
+    });
+
+    group('asTransaction', () {
+      test('carries the sealed body, the entity tags and the app tags',
+          () async {
+        AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
+
+        final tx = await entity().asTransaction();
+        final tags = tagsOf(tx);
+
+        expect(tx.data, equals(body));
+        expect(tags[EntityTag.entityType], EntityTypeTag.driveState);
+        expect(tags[EntityTag.contentEncoding], ContentEncodingTag.gzip);
+        expect(tags[EntityTag.appName], 'ArDrive-App');
+        expect(tags[EntityTag.appVersion], '1.3.3.7');
+        expect(
+          tags[EntityTag.unixTime],
+          '${createdAt.millisecondsSinceEpoch ~/ 1000}',
+        );
+      });
+
+      test('refuses a key: the body is sealed by the codec, not here',
+          () async {
+        expect(
+          () => entity().asTransaction(key: SecretKey(List.filled(32, 0))),
+          throwsA(isA<UnsupportedError>()),
+        );
+      });
+    });
+
+    group('asDataItem', () {
+      test('carries the same tags as a transaction', () async {
+        AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
+
+        final item = await entity().asDataItem(null);
+
+        expect(item.data, equals(body));
+        expect(tagsOf(item)[EntityTag.driveStateId], driveStateId);
+        expect(tagsOf(item)[EntityTag.entityCount], '41273');
+      });
+
+      test('refuses a key', () async {
+        expect(
+          () => entity().asDataItem(SecretKey(List.filled(32, 0))),
+          throwsA(isA<UnsupportedError>()),
+        );
+      });
+    });
+
+    group('fromEnvelope', () {
+      test('takes the body and both cipher tags from the envelope', () {
+        final entity = DriveStateEntity.fromEnvelope(
+          envelope: DriveStateEnvelope(body: body, cipherIv: cipherIv),
+          id: driveStateId,
+          driveId: driveId,
+          blockEnd: 1814228,
+          dataStart: 1102394,
+          dataEnd: 1814012,
+          entityCount: 41273,
+        );
+
+        expect(entity.data, equals(body));
+        expect(entity.cipher, CipherTag.aes256);
+        expect(entity.cipherIv, encodeBytesToBase64(cipherIv));
+        expect(entity.blockStart, 0);
+        expect(entity.stateVersion, DriveStateEntity.currentStateVersion);
+      });
+    });
+
+    group('fromTransaction', () {
+      test('reads back everything the entity wrote', () async {
+        AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
+
+        final published = await entity().asTransaction();
+        final onChain = DriveHistoryTransaction.fromJson({
+          'id': 'FAKE TX ID',
+          'owner': {'address': 'FAKE WALLET ADDRESS'},
+          'tags': [
+            for (final tag in published.tags)
+              {
+                'name': decodeBase64ToString(tag.name),
+                'value': decodeBase64ToString(tag.value),
+              },
+          ],
+        });
+
+        final read = await DriveStateEntity.fromTransaction(onChain, body);
+
+        expect(read.id, driveStateId);
+        expect(read.driveId, driveId);
+        expect(read.stateVersion, 1);
+        expect(read.blockStart, 0);
+        expect(read.blockEnd, 1814228);
+        expect(read.dataStart, 1102394);
+        expect(read.dataEnd, 1814012);
+        expect(read.entityCount, 41273);
+        expect(read.cipher, CipherTag.aes256);
+        expect(read.cipherIv, encodeBytesToBase64(cipherIv));
+        expect(read.data, equals(body));
+        expect(read.txId, 'FAKE TX ID');
+        expect(read.ownerAddress, 'FAKE WALLET ADDRESS');
+        expect(read.createdAt, createdAt);
+      });
+
+      test('throws the expected error for a transaction missing its tags',
+          () async {
+        final incomplete = DriveHistoryTransaction.fromJson({
+          'id': 'FAKE TX ID',
+          'owner': {'address': 'FAKE WALLET ADDRESS'},
+          'tags': [
+            {'name': EntityTag.driveStateId, 'value': driveStateId},
+          ],
+        });
+
+        expect(
+          () => DriveStateEntity.fromTransaction(incomplete, null),
+          throwsA(isA<EntityTransactionParseException>()),
+        );
+      });
+    });
+  });
+}
