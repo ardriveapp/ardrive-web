@@ -17,6 +17,15 @@ class AppConfig {
   final int allowedDataItemSizeForTurbo;
   final int autoSyncIntervalInSeconds;
   final bool enableSyncFromSnapshot;
+
+  /// Whether a sync may read a drive's state artifact before it reads
+  /// snapshots (`docs/DRIVE_STATE_ARTIFACT.md` §5).
+  ///
+  /// Off, unlike [enableSyncFromSnapshot]. The artifact format has not been
+  /// published to chain, so no drive has one to read and turning this on can
+  /// only cost a discovery query - and every failure behind it is a fallback,
+  /// never a failed drive. It ships dark and is switched on deliberately.
+  final bool enableSyncFromDriveState;
   final String stripePublishableKey;
   final bool autoSync;
   final bool uploadThumbnails;
@@ -41,6 +50,7 @@ class AppConfig {
     required this.allowedDataItemSizeForTurbo,
     this.autoSyncIntervalInSeconds = 5 * 60,
     this.enableSyncFromSnapshot = true,
+    this.enableSyncFromDriveState = false,
     required this.stripePublishableKey,
     this.autoSync = true,
     this.uploadThumbnails = true,
@@ -63,6 +73,7 @@ class AppConfig {
     int? allowedDataItemSizeForTurbo,
     int? autoSyncIntervalInSeconds,
     bool? enableSyncFromSnapshot,
+    bool? enableSyncFromDriveState,
     String? stripePublishableKey,
     bool? autoSync,
     bool? uploadThumbnails,
@@ -91,6 +102,8 @@ class AppConfig {
           autoSyncIntervalInSeconds ?? this.autoSyncIntervalInSeconds,
       enableSyncFromSnapshot:
           enableSyncFromSnapshot ?? this.enableSyncFromSnapshot,
+      enableSyncFromDriveState:
+          enableSyncFromDriveState ?? this.enableSyncFromDriveState,
       stripePublishableKey: stripePublishableKey ?? this.stripePublishableKey,
       autoSync: autoSync ?? this.autoSync,
       uploadThumbnails: uploadThumbnails ?? this.uploadThumbnails,
