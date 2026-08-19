@@ -60,8 +60,10 @@ each other.
 | 1.4 | Discovery by GraphQL, owner-filtered, behind an interface | ✅ |
 | 1.5 | Enumerated outcome vocabulary (§7) | ✅ |
 | 1.6 | Import + merge, validate-before-write, watermark from the payload's **signed** coverage claim (the `Block-End` tag is cross-checked against it, never believed on its own) | ✅ |
-| 1.7 | Sync composition behind an `AppConfig` flag defaulting to false | 🔨 |
-| 1.8 | Creation service + confirmation UI, stopping short of upload | 🔨 |
+| 1.7 | Sync composition behind an `AppConfig` flag defaulting to false | ✅ |
+| 1.8 | Creation service + confirmation UI | ✅ |
+| 1.8a | **Carry revisions, licences and derived `network_transactions`** (D2 reversal). Entry rows alone render an empty drive: `filesInFolderWithLicenseAndRevisionTransactions` INNER JOINs `network_transactions` through the newest `file_revisions` row, so a restored drive with no revisions shows zero files | 🔨 |
+| 1.8b | **A publish path and an app entry point.** A real Turbo/L1 uploader behind the `DriveStateUploader` seam, cost shown before the click, and a flag-gated item in the new button — until this lands the modal has no caller and the uploader publishes nothing | 🔨 |
 | 1.9 | Independent QA gate — an agent that wrote none of it | ⬜ |
 | 1.10 | Adversarial audit of every layer, findings ranked and re-verified | 🔨 |
 | 1.11 | Export views replacing the typed projection (D7 deferral — needs a schema migration) | 🔒 |
@@ -74,7 +76,7 @@ A new entity type is not real until it is specified here.
 
 | | Item | Status |
 |---|---|---|
-| 2.1 | **Correct the Snapshot spec**: the metadata field is `jsonMetadata`, not `dataJson`, in both prose and the JSON example (`content/build/advanced/arfs/entity-types.mdx`). Independent of this feature and live today — an implementer following the docs reads no metadata from any snapshot | ⬜ ship first, on its own |
+| 2.1 | **Correct the Snapshot spec**: the metadata field is `jsonMetadata`, not `dataJson`, in both prose and the JSON example (`content/build/advanced/arfs/entity-types.mdx`). Independent of this feature and live today — an implementer following the docs reads no metadata from any snapshot. Also corrected in the same pass: `tsSnapshot` was a typo for `txSnapshot`; the field is a sibling of `gqlNode`, not nested in it; and it is a nullable string, not an object | 🔨 committed on `fix/arfs-snapshot-jsonmetadata`, unpushed — needs a human to open the PR |
 | 2.2 | `entity-types.mdx` — a `## Drive State` section beside `## Snapshot`, with `### Drive State Entity Tags` and `### Drive State Entity Data` | ⬜ |
 | 2.3 | `data-model.mdx` — where the artifact sits relative to drives, snapshots and entities | ⬜ |
 | 2.4 | `reading-data.mdx` — the read order (artifact → snapshots → GraphQL) and the rule that every failure falls back rather than fails | ⬜ |
@@ -140,7 +142,10 @@ by another, yielding identical entities. Nothing else proves the format.
    snapshot on chain and has nothing to do with this feature. It should not wait
    behind a proposal, and should not ride in on a feature PR.
 2. **Finish ardrive-web** (1.7–1.10), so the reference implementation is real
-   and reviewed before anything is specified as protocol.
+   and reviewed before anything is specified as protocol. 1.8a is on the
+   critical path in a way the others are not: it changes what the payload
+   contains, so specifying (step 3) or porting (step 4) before it lands would
+   describe a format that is about to change.
 3. **Specify** (2.2–2.5) from the implementation that exists, not from intent —
    the `dataJson` divergence is what happens when those drift apart.
 4. **core-js** (3.1–3.6), ending at the cross-implementation test.
