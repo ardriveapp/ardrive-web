@@ -205,9 +205,51 @@ void main() {
       );
 
       expect(decoded, equals(export));
-      expect(decoded.drive.lastBlockHeight, 1814228);
       expect(decoded.files.first.licenseTxId, 'license-tx');
     });
+
+  group('columns that are not secret but must not travel', () {
+    /// Neither is key material, so neither is caught by the leak test above -
+    /// they are withheld for correctness instead.
+    ///
+    /// `syncCursor` is an opaque cursor issued by one gateway's indexer and
+    /// means nothing to another, so an importer adopting it would resume
+    /// pagination from an arbitrary position.
+    ///
+    /// `lastBlockHeight` is the producer's watermark, which is a different
+    /// claim from the artifact's coverage. Adopting one that sits above the
+    /// artifact's Block-End would have a client believe it had synced a range
+    /// the artifact never contained - the drive watermark advancing past
+    /// unsynced entities, which is the silent drop in
+    /// SYNC_SKIPPED_ENTITY_PERSISTENCE.md. Coverage comes from the tag.
+    test('the drive sync cursor and watermark are withheld', () async {
+      final db = getTestDb();
+      addTearDown(db.close);
+      await addTestFilesToDb(
+        db,
+        driveId: driveId,
+        rootFolderId: rootFolderId,
+        nestedFolderId: 'nested',
+        emptyNestedFolderCount: 0,
+        emptyNestedFolderIdPrefix: 'empty',
+        rootFolderFileCount: 1,
+        nestedFolderFileCount: 0,
+      );
+      await db.driveDao.writeToDrive(DrivesCompanion(
+        id: Value(driveId),
+        syncCursor: const Value('an-endpoint-specific-cursor'),
+        lastBlockHeight: const Value(1814228),
+      ));
+
+      final encoded = jsonEncode((await exportDriveState(db.driveDao, driveId))
+          .toJson());
+
+      expect(encoded, isNot(contains('syncCursor')));
+      expect(encoded, isNot(contains('an-endpoint-specific-cursor')));
+      expect(encoded, isNot(contains('lastBlockHeight')));
+      expect(encoded, isNot(contains('1814228')));
+    });
+  });
   });
 
   group('DriveStateExport.fromJson', () {

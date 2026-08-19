@@ -211,6 +211,22 @@ List<GeneratedColumn> _withheldDriveColumns(Drives t) => [
       t.encryptedKey,
       t.driveKeyGenerated,
       t.keyEncryptionIv,
+      // Not secret, but not portable, and unsafe to adopt.
+      //
+      // `syncCursor` is an opaque GraphQL cursor issued by one gateway's
+      // indexer. It means nothing to a different endpoint, so an importer
+      // that adopted it would resume pagination from an arbitrary position.
+      //
+      // `lastBlockHeight` is the *producer's* watermark, which is not the
+      // same claim as the artifact's coverage. If it sits above the
+      // artifact's `Block-End`, an importer that adopted it would believe
+      // it had synced a range the artifact never contained, and skip it -
+      // the drive's watermark advancing past unsynced entities is precisely
+      // the silent-drop failure in SYNC_SKIPPED_ENTITY_PERSISTENCE.md.
+      // Coverage comes from the `Block-End` tag; the importer sets the
+      // watermark from that, and from nothing else.
+      t.syncCursor,
+      t.lastBlockHeight,
     ];
 
 List<GeneratedColumn> _exportedDriveColumns(Drives t) => [
@@ -218,8 +234,6 @@ List<GeneratedColumn> _exportedDriveColumns(Drives t) => [
       t.rootFolderId,
       t.ownerAddress,
       t.name,
-      t.syncCursor,
-      t.lastBlockHeight,
       t.privacy,
       t.bundledIn,
       t.customJsonMetadata,
@@ -278,8 +292,6 @@ class ExportedDrive extends Equatable {
   final String rootFolderId;
   final String ownerAddress;
   final String name;
-  final String? syncCursor;
-  final int? lastBlockHeight;
   final String privacy;
   final String? bundledIn;
   final String? customJsonMetadata;
@@ -294,8 +306,6 @@ class ExportedDrive extends Equatable {
     required this.rootFolderId,
     required this.ownerAddress,
     required this.name,
-    required this.syncCursor,
-    required this.lastBlockHeight,
     required this.privacy,
     required this.bundledIn,
     required this.customJsonMetadata,
@@ -311,8 +321,6 @@ class ExportedDrive extends Equatable {
         rootFolderId: row.read(t.rootFolderId)!,
         ownerAddress: row.read(t.ownerAddress)!,
         name: row.read(t.name)!,
-        syncCursor: row.read(t.syncCursor),
-        lastBlockHeight: row.read(t.lastBlockHeight),
         privacy: row.read(t.privacy)!,
         bundledIn: row.read(t.bundledIn),
         customJsonMetadata: row.read(t.customJsonMetadata),
@@ -328,8 +336,6 @@ class ExportedDrive extends Equatable {
         'rootFolderId': rootFolderId,
         'ownerAddress': ownerAddress,
         'name': name,
-        'syncCursor': syncCursor,
-        'lastBlockHeight': lastBlockHeight,
         'privacy': privacy,
         'bundledIn': bundledIn,
         'customJsonMetadata': customJsonMetadata,
@@ -345,8 +351,6 @@ class ExportedDrive extends Equatable {
         rootFolderId: _required(json, 'rootFolderId'),
         ownerAddress: _required(json, 'ownerAddress'),
         name: _required(json, 'name'),
-        syncCursor: _optional(json, 'syncCursor'),
-        lastBlockHeight: _optional(json, 'lastBlockHeight'),
         privacy: _required(json, 'privacy'),
         bundledIn: _optional(json, 'bundledIn'),
         customJsonMetadata: _optional(json, 'customJsonMetadata'),
@@ -363,8 +367,6 @@ class ExportedDrive extends Equatable {
         rootFolderId,
         ownerAddress,
         name,
-        syncCursor,
-        lastBlockHeight,
         privacy,
         bundledIn,
         customJsonMetadata,
