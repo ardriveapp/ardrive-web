@@ -103,6 +103,23 @@ void main() {
       expect(isObscured(tester), isTrue);
     });
 
+    testWidgets('a secret and a plain field are the same width',
+        (tester) async {
+      // A dialog stacks a link over a key. The reveal control only exists on
+      // the secret one, so unless its slot is held open on both, the two boxes
+      // render at visibly different widths.
+      double fieldWidth(WidgetTester tester) =>
+          tester.getSize(find.byType(ArDriveTextFieldNew)).width;
+
+      await tester.pumpWidget(wrap(artifact(isSecret: false)));
+      final plain = fieldWidth(tester);
+
+      await tester.pumpWidget(wrap(artifact(isSecret: true)));
+      final secret = fieldWidth(tester);
+
+      expect(secret, plain);
+    });
+
     testWidgets('the value stays intact underneath the mask', (tester) async {
       // Masking is a display concern. If it ever reached the controller the
       // sharer would hand out a string of dots.

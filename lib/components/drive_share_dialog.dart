@@ -47,6 +47,7 @@ class DriveShareDialogState extends State<DriveShareDialog> {
       BlocBuilder<DriveShareCubit, DriveShareState>(
         builder: (context, state) {
           final typography = ArDriveTypographyNew.of(context);
+          final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
           return ArDriveStandardModalNew(
             width: kLargeDialogWidth,
@@ -73,10 +74,7 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                         state.folderName ?? state.drive.name,
                         style: typography.paragraphNormal(
                           fontWeight: ArFontWeight.semiBold,
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colorTokens
-                              .textHigh,
+                          color: colorTokens.textHigh,
                         ),
                       ),
                     ),
@@ -103,22 +101,13 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                             appLocalizationsOf(context).shareFileRevealKey,
                         isSecret: true,
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          appLocalizationsOf(context)
-                              .shareDriveSendKeySeparately,
-                          style: typography.paragraphSmall(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colorTokens
-                                .textLow,
-                          ),
-                        ),
+                      _HelperText(
+                        appLocalizationsOf(context).shareDriveSendKeySeparately,
+                        color: colorTokens.textLow,
                       ),
                     },
                     if (state.drive.isPrivate) ...{
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 20),
                       ArDriveCheckBox(
                         // The checkbox only reads `checked` when it is first
                         // built, so the key forces a fresh one whenever the
@@ -127,11 +116,8 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                         checked: state.keyIsInLink,
                         title: appLocalizationsOf(context)
                             .shareDriveIncludeKeyInLink,
-                        titleStyle: typography.paragraphSmall(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colorTokens
-                              .textMid,
+                        titleStyle: typography.paragraphNormal(
+                          color: colorTokens.textMid,
                         ),
                         onChange: (value) =>
                             context.read<DriveShareCubit>().setKeyIsInLink(
@@ -139,21 +125,13 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                                 ),
                       ),
                       if (state.keyIsInLink)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            appLocalizationsOf(context)
-                                .shareDriveKeyInLinkWarning,
-                            style: typography.paragraphSmall(
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colorTokens
-                                  .strokeRed,
-                            ),
-                          ),
+                        _HelperText(
+                          appLocalizationsOf(context)
+                              .shareDriveKeyInLinkWarning,
+                          color: colorTokens.strokeRed,
                         ),
                     },
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
                     Text(
                       // A keyless private link does *not* grant access on its
                       // own, so it must not be described as though it does -
@@ -166,16 +144,18 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                                   .anyoneCanAccessThisDrivePrivate
                               : appLocalizationsOf(context)
                                   .shareDriveKeylessNotice,
-                      style: typography.paragraphLarge(),
+                      // Guidance, not the headline. As `paragraphLarge` it was
+                      // the largest text in a dialog whose actual subject is
+                      // the two fields above it.
+                      style: typography.paragraphNormal(
+                        color: colorTokens.textMid,
+                      ),
                     ),
                   } else if (state is DriveShareLoadFail)
                     Text(
                       appLocalizationsOf(context).shareDriveFailure,
                       style: typography.paragraphNormal(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colorTokens
-                            .textMid,
+                        color: colorTokens.textMid,
                       ),
                     ),
                 ],
@@ -201,5 +181,25 @@ class DriveShareDialogState extends State<DriveShareDialog> {
             ],
           );
         },
+      );
+}
+
+/// A line of guidance under the control it belongs to.
+///
+/// Same treatment as the file share dialog's, so the two dialogs read as one
+/// design rather than two.
+class _HelperText extends StatelessWidget {
+  const _HelperText(this.text, {required this.color});
+
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Text(
+          text,
+          style: ArDriveTypographyNew.of(context).paragraphSmall(color: color),
+        ),
       );
 }

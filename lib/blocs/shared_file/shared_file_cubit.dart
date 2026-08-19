@@ -114,20 +114,40 @@ class SharedFileCubit extends Cubit<SharedFileState> {
   /// offers Retry.
   static const defaultReadTimeout = Duration(seconds: 15);
 
+  /// The budget for the version history, which is a different kind of read.
+  ///
+  /// Every other read here fetches one thing and gates what the recipient sees;
+  /// this one walks the file's whole revision history, is asked for only when
+  /// the recipient opens the drawer, and blocks nothing while it runs. Holding
+  /// it to the first-paint budget made a file with real history - or a slow
+  /// gateway - report "version history unavailable" where it used to simply
+  /// take a while.
+  static const defaultHistoryTimeout = Duration(minutes: 2);
+
   final Duration _readTimeout;
+
+  final Duration _historyTimeout;
 
   /// Bounds [future], naming [what] so a timeout is legible in the log.
   ///
   /// A [TimeoutException] is deliberately left to propagate: every caller on
   /// the critical path already handles a failed read, either by degrading to
   /// another resolution path or by emitting the failure state.
-  Future<T> _bounded<T>(Future<T> future, String what) => future.timeout(
-        _readTimeout,
-        onTimeout: () => throw TimeoutException(
-          'Timed out after ${_readTimeout.inSeconds}s while $what',
-          _readTimeout,
-        ),
-      );
+  Future<T> _bounded<T>(
+    Future<T> future,
+    String what, {
+    Duration? timeout,
+  }) {
+    final budget = timeout ?? _readTimeout;
+
+    return future.timeout(
+      budget,
+      onTimeout: () => throw TimeoutException(
+        'Timed out after ${budget.inSeconds}s while $what',
+        budget,
+      ),
+    );
+  }
 
   SharedFileCubit({
     required this.fileId,
@@ -139,11 +159,13 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     ArDriveCrypto? crypto,
     Duration propagationRetryDelay = const Duration(seconds: 3),
     Duration readTimeout = defaultReadTimeout,
+    Duration historyTimeout = defaultHistoryTimeout,
   })  : _arweave = arweave,
         _licenseService = licenseService,
         _crypto = crypto ?? ArDriveCrypto(),
         _propagationRetryDelay = propagationRetryDelay,
         _readTimeout = readTimeout,
+        _historyTimeout = historyTimeout,
         // A v2 link can paint its skeleton with the real name and size before
         // a single byte has been fetched.
         super(SharedFileLoadInProgress(payload: linkPayload)) {
@@ -310,6 +332,7 @@ class SharedFileCubit extends Cubit<SharedFileState> {
       final entities = await _bounded(
         _arweave.getAllFileEntitiesWithId(fileId, fileKey),
         'reading the file\'s version history',
+        timeout: _historyTimeout,
       );
 
       if (_isStale(resolution)) {

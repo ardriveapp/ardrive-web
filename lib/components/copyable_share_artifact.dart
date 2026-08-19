@@ -57,6 +57,14 @@ class CopyableShareArtifact extends StatefulWidget {
 }
 
 class _CopyableShareArtifactState extends State<CopyableShareArtifact> {
+  /// The reveal control's footprint, reserved on every row.
+  ///
+  /// Only a secret has something to reveal, but the slot is held open either
+  /// way: without it, the field beside a reveal button is narrower than the one
+  /// without, so a dialog showing a link above a key rendered two boxes of
+  /// visibly different widths.
+  static const _revealSlotWidth = 36.0;
+
   late final TextEditingController _controller =
       TextEditingController(text: widget.text);
 
@@ -113,22 +121,30 @@ class _CopyableShareArtifactState extends State<CopyableShareArtifact> {
             showObfuscationToggle: false,
           ),
         ),
-        if (widget.isSecret) ...[
-          const SizedBox(width: 8),
-          // Material's `IconButton` rather than the `GestureDetector` +
-          // `ArDriveClickArea` pair used elsewhere: this control has no visible
-          // label, so it needs the keyboard focus and the announced name that
-          // a raw gesture detector does not provide.
-          IconButton(
-            icon: isMasked
-                ? ArDriveIcons.eyeClosed(color: colorTokens.textMid)
-                : ArDriveIcons.eyeOpen(color: colorTokens.textMid),
-            onPressed: () => setState(() => _isRevealed = !_isRevealed),
-            tooltip: widget.revealLabel,
-            splashRadius: 20,
-          ),
-        ],
-        const SizedBox(width: 16),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: _revealSlotWidth,
+          child: widget.isSecret
+              // Material's `IconButton` rather than the `GestureDetector` +
+              // `ArDriveClickArea` pair used elsewhere: this control has no
+              // visible label, so it needs the keyboard focus and the announced
+              // name that a raw gesture detector does not provide.
+              ? IconButton(
+                  icon: isMasked
+                      ? ArDriveIcons.eyeClosed(color: colorTokens.textMid)
+                      : ArDriveIcons.eyeOpen(color: colorTokens.textMid),
+                  onPressed: () => setState(() => _isRevealed = !_isRevealed),
+                  tooltip: widget.revealLabel,
+                  splashRadius: 18,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints.tightFor(
+                    width: _revealSlotWidth,
+                    height: _revealSlotWidth,
+                  ),
+                )
+              : null,
+        ),
+        const SizedBox(width: 12),
         CopyButton(
           positionX: 4,
           positionY: 40,
