@@ -315,6 +315,329 @@ void main() {
     });
   });
 
+  /// The half of the payload the file list cannot render without, and the
+  /// table that is rebuilt rather than carried. `drive_state_round_trip_test`
+  /// asserts the consequence through `watchFolderContents`; these assert the
+  /// rows and the derivation.
+  group('revisions, licences, and the transactions derived from them', () {
+    Future<List<FileRevision>> fileRevisionRows([String id = driveId]) =>
+        (db.select(db.fileRevisions)..where((r) => r.driveId.equals(id))).get();
+
+    Future<List<NetworkTransaction>> transactionRows() =>
+        db.select(db.networkTransactions).get();
+
+    test('lands the revisions behind every entry it imported', () async {
+      await attachDrive(db);
+      final artifact =
+          await sealArtifact(await exportedPayload(), blockEnd: 900);
+
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
+      expect(await fileRevisionRows(), hasLength(3));
+      expect(
+        (await fileRevisionRows()).map((r) => r.fileId).toSet(),
+        (await fileRows(db)).map((f) => f.id).toSet(),
+      );
+      expect(
+        await (db.select(db.folderRevisions)
+              ..where((r) => r.driveId.equals(driveId)))
+            .get(),
+        hasLength(3),
+      );
+    });
+
+    /// The table that is not on the wire. Every transaction the imported
+    /// revisions name has to have a row, because the file list reaches
+    /// `network_transactions` through an INNER JOIN and a missing row drops
+    /// the file.
+    test('regenerates a network transaction for every id the revisions name',
+        () async {
+      await attachDrive(db);
+      final artifact =
+          await sealArtifact(await exportedPayload(), blockEnd: 900);
+
+      await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      final known = (await transactionRows()).map((t) => t.id).toSet();
+      for (final revision in await fileRevisionRows()) {
+        expect(known, contains(revision.metadataTxId));
+        expect(known, contains(revision.dataTxId));
+      }
+      for (final revision in await (db.select(db.folderRevisions)
+            ..where((r) => r.driveId.equals(driveId)))
+          .get()) {
+        expect(known, contains(revision.metadataTxId));
+      }
+    });
+
+    /// The sync helpers mark a file's data transaction `pending`, because
+    /// sync writes a revision the moment it reads the metadata and the data
+    /// may not be mined yet. An artifact is not that situation: its coverage
+    /// claim is the producer's own synced watermark. Importing these as
+    /// pending would paint every file in a restored drive with the pending
+    /// icon *and* queue a per-transaction confirmation query for each one —
+    /// 42,000 of them on the drive this feature was measured against, which
+    /// is exactly the work the artifact exists to avoid.
+    test('marks the regenerated transactions as mined, not pending', () async {
+      await attachDrive(db);
+      final artifact =
+          await sealArtifact(await exportedPayload(), blockEnd: 900);
+
+      await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(await transactionRows(), isNotEmpty);
+      for (final tx in await transactionRows()) {
+        expect(tx.status, TransactionStatus.confirmed, reason: tx.id);
+      }
+      expect(await db.driveDao.pendingTransactions().get(), isEmpty);
+    });
+
+    /// A status this client established for itself is not the artifact's to
+    /// overwrite. `network_transactions` is derived local state, not a
+    /// published fact, so the import may only add rows.
+    test('never overwrites a transaction status the client already had',
+        () async {
+      await attachDrive(db);
+      final payload = await exportedPayload();
+
+      // The consumer already knows one of the artifact's data transactions,
+      // and knows it failed.
+      final failedTxId =
+          rowsOf(payload, fileRevisionsSectionName).first['dataTxId'] as String;
+
+      await db.into(db.networkTransactions).insert(
+            NetworkTransactionsCompanion.insert(
+              id: failedTxId,
+              status: const Value(TransactionStatus.failed),
+            ),
+          );
+
+      final artifact = await sealArtifact(payload, blockEnd: 900);
+      await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      final kept = (await transactionRows()).firstWhere(
+        (t) => t.id == failedTxId,
+      );
+      expect(kept.status, TransactionStatus.failed);
+    });
+
+    test('reports what it landed, beside the entities', () async {
+      await attachDrive(db);
+      final artifact =
+          await sealArtifact(await exportedPayload(), blockEnd: 900);
+
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      // 3 file revisions + 3 folder revisions.
+      expect(result.stats!.revisionsWritten, 6);
+      expect(result.detail, contains('revisions=6'));
+      expect(result.detail, contains('transactions='));
+      // Entities are still entities: the count the `Entity-Count` tag is
+      // checked against does not move because revisions travel.
+      expect(result.stats!.entitiesImported, 6);
+      expect(result.detail, contains('imported=6'));
+    });
+
+    test('adds a revision the client lacks and leaves the ones it has',
+        () async {
+      await attachDrive(db);
+      final artifact =
+          await sealArtifact(await exportedPayload(), blockEnd: 900);
+
+      await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+      final afterFirst = await fileRevisionRows();
+
+      // The same artifact again, on a drive that now holds all of it: a
+      // revision's primary key contains its `dateCreated`, so there is
+      // nothing to overwrite and nothing to duplicate.
+      final second = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(second.outcome, DriveStateOutcome.used, reason: second.detail);
+      expect(await fileRevisionRows(), hasLength(afterFirst.length));
+      expect(second.stats!.revisionsWritten, 0);
+    });
+
+    /// Same primary key, different content. A revision is keyed by
+    /// `(fileId, driveId, dateCreated)`, so this is the artifact and the
+    /// client disagreeing about one row rather than the artifact carrying a
+    /// newer one — and the client's own row is the one that stands, which is
+    /// the merge policy the entry sections state and this one inherits.
+    test('leaves a revision the client already holds exactly as it was',
+        () async {
+      await attachDrive(db);
+      final payload = await exportedPayload();
+      final published = rowsOf(payload, fileRevisionsSectionName).first;
+
+      await db.into(db.fileRevisions).insert(
+            FileRevisionsCompanion.insert(
+              fileId: published['fileId'] as String,
+              driveId: driveId,
+              parentFolderId: published['parentFolderId'] as String,
+              name: 'what-this-client-recorded',
+              metadataTxId: published['metadataTxId'] as String,
+              dataTxId: published['dataTxId'] as String,
+              action: RevisionAction.create,
+              size: published['size'] as int,
+              lastModifiedDate: DateTime.fromMillisecondsSinceEpoch(
+                published['lastModifiedDate'] as int,
+              ),
+              dateCreated: Value(
+                DateTime.fromMillisecondsSinceEpoch(
+                  published['dateCreated'] as int,
+                ),
+              ),
+            ),
+          );
+
+      final artifact = await sealArtifact(payload, blockEnd: 900);
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
+      final kept = (await fileRevisionRows())
+          .firstWhere((r) => r.fileId == published['fileId']);
+      expect(kept.name, 'what-this-client-recorded');
+      // And the artifact's other revisions still landed.
+      expect(await fileRevisionRows(), hasLength(3));
+    });
+
+    test('leaves a licence the client already holds exactly as it was',
+        () async {
+      await attachDrive(db);
+
+      // The producer publishes a licence on one of its files.
+      final licensedFileId =
+          (await producerDb.select(producerDb.fileRevisions).get())
+              .first
+              .fileId;
+      await producerDb.into(producerDb.licenses).insert(
+            LicensesCompanion.insert(
+              fileId: licensedFileId,
+              driveId: driveId,
+              dataTxId: 'a-data-tx',
+              licenseTxType: 'assertion',
+              licenseTxId: 'a-license-tx',
+              licenseType: 'udl',
+            ),
+          );
+
+      // The consumer already has the row, and calls it something else.
+      await db.into(db.licenses).insert(
+            LicensesCompanion.insert(
+              fileId: licensedFileId,
+              driveId: driveId,
+              dataTxId: 'a-data-tx',
+              licenseTxType: 'assertion',
+              licenseTxId: 'a-license-tx',
+              licenseType: 'what-this-client-recorded',
+            ),
+          );
+
+      final artifact =
+          await sealArtifact(await exportedPayload(), blockEnd: 900);
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
+      expect(
+        (await db.select(db.licenses).get()).single.licenseType,
+        'what-this-client-recorded',
+      );
+    });
+
+    test('rejects a payload whose revisions belong to another drive', () async {
+      await attachDrive(db);
+      final payload = await exportedPayload();
+      rowsOf(payload, fileRevisionsSectionName).first['driveId'] = otherDriveId;
+
+      final artifact = await sealArtifact(payload, blockEnd: 900);
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.integrityFailed);
+      expect(result.detail, contains(otherDriveId));
+      expect(await fileRevisionRows(), isEmpty);
+      expect(await fileRows(db), isEmpty);
+    });
+
+    test('rejects a payload whose licences belong to another drive', () async {
+      await attachDrive(db);
+      final payload = await exportedPayload();
+      // The producer has no licences, so put one there to be rejected.
+      rowsOf(payload, licensesSectionName).add({
+        'fileId': 'a-file',
+        'driveId': otherDriveId,
+        'dataTxId': 'a-data-tx',
+        'licenseTxType': 'assertion',
+        'licenseTxId': 'a-license-tx',
+        'bundledIn': null,
+        'dateCreated': 1000,
+        'licenseType': 'udl',
+        'customGQLTags': null,
+      });
+
+      final artifact = await sealArtifact(payload, blockEnd: 900);
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.integrityFailed);
+      expect(result.detail, contains(otherDriveId));
+      expect(await db.select(db.licenses).get(), isEmpty);
+    });
+  });
+
   group('merging, not replacing', () {
     test('does not clobber a row the database holds a newer copy of', () async {
       await attachDrive(db);

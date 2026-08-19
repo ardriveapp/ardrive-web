@@ -117,13 +117,20 @@ void main() {
       expectRefused(db.profiles);
     });
 
-    test('refuses the revision tables', () {
-      // Read for existence, never for content: decision D2 is current state
-      // only, and a revision carries metadata transaction ids that say
-      // nothing the current row does not.
-      expectRefused(db.driveRevisions);
-      expectRefused(db.folderRevisions);
-      expectRefused(db.fileRevisions);
+    /// `network_transactions` is the table the file list actually joins to,
+    /// and the one an implementer is likeliest to reach for. It stays refused:
+    /// it has no `driveId`, so a projection of it cannot be limited to the
+    /// drive being published, and every row it needs is derivable from the
+    /// revisions that name it.
+    test('refuses network_transactions, which cannot be scoped to one drive',
+        () {
+      expectRefused(db.networkTransactions);
+      expect(
+        db.networkTransactions.$columns.map((c) => c.name),
+        isNot(contains('driveId')),
+        reason: 'the reason it is refused is that it has no driveId — if a '
+            'migration ever gives it one, this decision is worth retaking',
+      );
     });
 
     test('refuses every table it does not export', () {
@@ -137,6 +144,69 @@ void main() {
       expect(refused, isNotEmpty);
       for (final table in refused) {
         expectRefused(table);
+      }
+    });
+  });
+
+  /// Decision D2, reversed. The revision tables used to be refused here, on
+  /// the reasoning that entries are what the explorer renders. They are not:
+  /// `filesInFolderWithLicenseAndRevisionTransactions` INNER JOINs
+  /// `network_transactions` twice through a `file_revisions` subquery, so a
+  /// file with no revision is dropped from every folder listing. See
+  /// `drive_state_round_trip_test.dart`, which asserts the consequence
+  /// end to end.
+  group('the tables the reversal of D2 put on the wire', () {
+    test('exports all three revision tables and licenses', () {
+      expect(
+        driveStateExportedTables(db).map((t) => t.actualTableName),
+        containsAll(<String>[
+          driveRevisionsSectionName,
+          folderRevisionsSectionName,
+          fileRevisionsSectionName,
+          licensesSectionName,
+        ]),
+      );
+    });
+
+    /// The tables carry no key material, so there is nothing to withhold —
+    /// but "nothing withheld" has to be a decision that was taken, not a list
+    /// nobody wrote. The projection test above proves every column is
+    /// classified; this proves the classification is the deliberate one.
+    test('withholds nothing from them, and reads all of them', () {
+      for (final table in <TableInfo>[
+        db.driveRevisions,
+        db.folderRevisions,
+        db.fileRevisions,
+        db.licenses,
+      ]) {
+        expect(driveStateWithheldColumns(table), isEmpty);
+        expect(
+          driveStateExportedColumns(table).map((c) => c.name).toSet(),
+          table.$columns.map((c) => c.name).toSet(),
+        );
+      }
+    });
+
+    /// The three `drives` guards, restated against the new tables. They are
+    /// absent rather than withheld — a revision has never had them — and this
+    /// fails if a migration ever adds one.
+    test('none of them has a column the drive row withholds', () {
+      final guarded =
+          driveStateWithheldColumns(db.drives).map((c) => c.name).toSet();
+      expect(guarded, contains('encryptedKey'));
+
+      for (final table in <TableInfo>[
+        db.driveRevisions,
+        db.folderRevisions,
+        db.fileRevisions,
+        db.licenses,
+      ]) {
+        expect(
+          table.$columns.map((c) => c.name),
+          isNot(anyElement(isIn(guarded))),
+          reason: '${table.actualTableName} grew a column that `drives` '
+              'refuses to publish',
+        );
       }
     });
   });
@@ -250,7 +320,23 @@ void main() {
             driveStateFolderEntriesQuery(db.driveDao, driveId),
         fileEntriesSectionName:
             driveStateFileEntriesQuery(db.driveDao, driveId),
+        driveRevisionsSectionName:
+            driveStateDriveRevisionsQuery(db.driveDao, driveId),
+        folderRevisionsSectionName:
+            driveStateFolderRevisionsQuery(db.driveDao, driveId),
+        fileRevisionsSectionName:
+            driveStateFileRevisionsQuery(db.driveDao, driveId),
+        licensesSectionName: driveStateLicensesQuery(db.driveDao, driveId),
       };
+
+      // Every table the export is willing to read has a statement asserted
+      // here. Naming them twice — once in `_exportedTableNames`, once in this
+      // map — is how a guard ends up covering three sections while the export
+      // writes seven.
+      expect(
+        statements.keys.toSet(),
+        driveStateExportedTables(db).map((t) => t.actualTableName).toSet(),
+      );
 
       statements.forEach((section, statement) {
         final sql = statement.constructQuery().sql;
@@ -558,6 +644,219 @@ void main() {
         );
         expect(export.files, hasLength(6));
         expect(export.entityCount, 12);
+      });
+    });
+
+    /// The sections the reversal of D2 added. Without them the importer lands
+    /// `file_entries` rows that `filesInFolderWithLicenseAndRevisionTransactions`
+    /// drops on its two INNER JOINs, and the restored drive shows nothing.
+    group('the revisions the entries are versions of', () {
+      test('carries a revision for every entry it exports', () async {
+        final export = await exportDriveState(db.driveDao, driveId);
+
+        // The same set, by construction: a revision is what
+        // `_folderEntryCameFromChain` tests for, so the rows that travel and
+        // the rows that vouch for them cannot disagree.
+        expect(
+          export.folderRevisions.map((r) => r.folderId).toSet(),
+          export.folders.map((f) => f.id).toSet(),
+        );
+        expect(
+          export.fileRevisions.map((r) => r.fileId).toSet(),
+          export.files.map((f) => f.id).toSet(),
+        );
+      });
+
+      test('carries the transaction ids the file list joins through', () async {
+        final export = await exportDriveState(db.driveDao, driveId);
+
+        expect(export.fileRevisions, isNotEmpty);
+        for (final revision in export.fileRevisions) {
+          expect(revision.metadataTxId, isNotEmpty);
+          expect(revision.dataTxId, isNotEmpty);
+        }
+        for (final revision in export.folderRevisions) {
+          expect(revision.metadataTxId, isNotEmpty);
+        }
+      });
+
+      test('carries every revision of a file, not only the newest', () async {
+        await db.into(db.fileRevisions).insert(
+              FileRevisionsCompanion.insert(
+                fileId: '${rootFolderId}0',
+                driveId: driveId,
+                parentFolderId: rootFolderId,
+                name: 'renamed',
+                metadataTxId: 'second-metadata-tx',
+                dataTxId: 'second-data-tx',
+                action: RevisionAction.rename,
+                size: 500,
+                lastModifiedDate: DateTime(2020),
+                dateCreated: Value(DateTime(2020)),
+              ),
+            );
+
+        final export = await exportDriveState(db.driveDao, driveId);
+        final revisions = export.fileRevisions
+            .where((r) => r.fileId == '${rootFolderId}0')
+            .toList();
+
+        expect(revisions, hasLength(2));
+        // Oldest first: the primary key order, which is what makes two
+        // exports of one state byte-identical.
+        expect(
+          revisions.map((r) => r.dateCreated),
+          [DateTime(2017, 9, 7, 17, 30), DateTime(2020)],
+        );
+        // And the entity count is unmoved. `Entity-Count` counts entities, and
+        // a second revision is a second version of one file, not a second
+        // file. A build that counted rows here would reject every artifact
+        // written by a build that counted entities.
+        expect(export.entityCount, 12);
+      });
+
+      test('carries the drive\'s own revisions', () async {
+        await db.into(db.driveRevisions).insert(
+              DriveRevisionsCompanion.insert(
+                driveId: driveId,
+                rootFolderId: rootFolderId,
+                ownerAddress: 'fake-owner-address',
+                name: 'fake-drive-name',
+                privacy: DrivePrivacyTag.public,
+                metadataTxId: 'drive-metadata-tx',
+                action: RevisionAction.create,
+                dateCreated: Value(DateTime(2017, 9, 7, 17, 30)),
+              ),
+            );
+
+        final export = await exportDriveState(db.driveDao, driveId);
+
+        expect(export.driveRevisions, hasLength(1));
+        expect(export.driveRevisions.single.metadataTxId, 'drive-metadata-tx');
+        expect(export.entityCount, 12);
+      });
+
+      test('reads revisions only for the named drive', () async {
+        const otherDriveId = 'other-drive-id';
+        await addTestFilesToDb(
+          db,
+          driveId: otherDriveId,
+          rootFolderId: 'other-root-folder-id',
+          nestedFolderId: 'other-nested-folder-id',
+          emptyNestedFolderCount: 1,
+          emptyNestedFolderIdPrefix: 'other-empty-',
+          rootFolderFileCount: 1,
+          nestedFolderFileCount: 1,
+        );
+        await addFolderRevisionsToDb(
+          db,
+          driveId: otherDriveId,
+          folderIds: ['other-root-folder-id'],
+        );
+
+        final export = await exportDriveState(db.driveDao, driveId);
+
+        expect(
+          export.fileRevisions.every((r) => r.driveId == driveId),
+          isTrue,
+        );
+        expect(
+          export.folderRevisions.every((r) => r.driveId == driveId),
+          isTrue,
+        );
+        expect(export.folderRevisions, hasLength(5));
+        expect(export.fileRevisions, hasLength(6));
+      });
+
+      test('orders revisions so two exports of one state agree', () async {
+        final first = await exportDriveState(db.driveDao, driveId);
+        final second = await exportDriveState(db.driveDao, driveId);
+
+        expect(
+          first.fileRevisions.map((r) => r.fileId).toList(),
+          equals(List.of(first.fileRevisions.map((r) => r.fileId))..sort()),
+        );
+        expect(jsonEncode(first.toJson()), jsonEncode(second.toJson()));
+      });
+    });
+
+    group('licences', () {
+      Future<void> attachLicense(String fileId) => db.into(db.licenses).insert(
+            LicensesCompanion.insert(
+              fileId: fileId,
+              driveId: driveId,
+              dataTxId: '${fileId}Data',
+              licenseTxType: 'assertion',
+              licenseTxId: '${fileId}License',
+              licenseType: 'udl',
+              dateCreated: Value(DateTime(2017, 9, 7, 17, 30)),
+            ),
+          );
+
+      test('travel with the file they are attached to', () async {
+        await attachLicense('${rootFolderId}0');
+
+        final export = await exportDriveState(db.driveDao, driveId);
+
+        expect(export.licenses, hasLength(1));
+        expect(export.licenses.single.licenseTxId, '${rootFolderId}0License');
+        expect(export.licenses.single.licenseType, 'udl');
+        // A licence is an attachment to an entity, not one of its own.
+        expect(export.entityCount, 12);
+      });
+
+      /// The licence join is a LEFT JOIN, so a licence row for a file that is
+      /// not in the payload hides nothing — it is simply a row about nothing.
+      /// It is dropped by the same rule every other section obeys.
+      test('do not travel for a file no revision vouches for', () async {
+        await db.into(db.fileEntries).insert(
+              FileEntriesCompanion.insert(
+                id: 'unsynced-file-id',
+                driveId: driveId,
+                parentFolderId: rootFolderId,
+                name: 'unsynced-file-id',
+                dataTxId: 'unsynced-file-data',
+                size: 500,
+                lastModifiedDate: DateTime.now(),
+                path: '',
+              ),
+            );
+        await attachLicense('unsynced-file-id');
+
+        final export = await exportDriveState(db.driveDao, driveId);
+
+        expect(
+            export.files.map((f) => f.id), isNot(contains('unsynced-file-id')));
+        expect(export.licenses, isEmpty);
+      });
+
+      test('are read only for the named drive', () async {
+        await attachLicense('${rootFolderId}0');
+        await addTestFilesToDb(
+          db,
+          driveId: 'other-drive-id',
+          rootFolderId: 'other-root-folder-id',
+          nestedFolderId: 'other-nested-folder-id',
+          emptyNestedFolderCount: 0,
+          emptyNestedFolderIdPrefix: 'other-empty-',
+          rootFolderFileCount: 1,
+          nestedFolderFileCount: 0,
+        );
+        await db.into(db.licenses).insert(
+              LicensesCompanion.insert(
+                fileId: 'other-root-folder-id0',
+                driveId: 'other-drive-id',
+                dataTxId: 'other-root-folder-id0Data',
+                licenseTxType: 'assertion',
+                licenseTxId: 'other-drive-license',
+                licenseType: 'udl',
+              ),
+            );
+
+        final export = await exportDriveState(db.driveDao, driveId);
+
+        expect(export.licenses, hasLength(1));
+        expect(export.licenses.single.driveId, driveId);
       });
     });
 

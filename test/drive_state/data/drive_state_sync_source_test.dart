@@ -158,6 +158,9 @@ void main() {
       DriveStateImportResult.imported(DriveStateImportStats(
         foldersWritten: 2,
         filesWritten: 1,
+        revisionsWritten: 3,
+        licensesWritten: 0,
+        transactionsWritten: 5,
         rowsKeptLocallyNewer: 0,
         watermark: watermark,
         parseDuration: const Duration(milliseconds: 4),

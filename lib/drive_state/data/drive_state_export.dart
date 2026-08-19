@@ -15,13 +15,33 @@ import 'package:equatable/equatable.dart';
 ///    migration; the projections plus [driveStateExportedColumns] /
 ///    [driveStateWithheldColumns] are what a drift test can assert against the
 ///    live schema.
-///  * **Current state only** (decision D2). `file_entries` and
-///    `folder_entries` hold one row per entity; no revision's *contents* are
-///    read. History stays available through snapshots and GraphQL.
-///  * **Only what came from the chain.** Those two tables also hold rows this
-///    client invented locally, and publishing one is not recoverable - see
-///    [_folderEntryCameFromChain]. The revision tables are read for existence
-///    alone, as the discriminator.
+///  * **Every revision, not the current state alone** (decision D2, reversed).
+///    An earlier version of this file carried `drives`, `folder_entries` and
+///    `file_entries` and nothing else, on the reasoning that entries are what
+///    the explorer renders. That reasoning was false.
+///    `filesInFolderWithLicenseAndRevisionTransactions`
+///    (`lib/models/queries/drive_queries.drift`) - the query the file list
+///    actually runs - **INNER JOINs** `network_transactions` twice, through a
+///    correlated subselect that reads the newest `file_revisions` row for each
+///    file. An entry with no revision behind it fails the ON condition and is
+///    dropped, so an artifact of entries alone imports a drive that shows
+///    nothing, in every folder, and does not heal: the import advances the
+///    watermark past the range those revisions live in. So the revision tables
+///    are on the wire, all of them, and every revision rather than the newest -
+///    measured at 1.05 revisions per entity on a real 42k-file drive, which
+///    buys the version history for about 5% more rows. `licenses` travels for
+///    the same reason in the weaker form: its join is a LEFT JOIN, so a
+///    missing row hides no file, it silently drops the licence.
+///  * **`network_transactions` is derived, not carried.** It is four columns,
+///    it has no `driveId` to scope it to this drive, and every row the file
+///    list needs is reconstructible from the revisions that name it. The
+///    importer rebuilds it through the same `lib/sync/utils/` helpers sync
+///    uses, so there is one derivation with one set of tests rather than two.
+///  * **Only what came from the chain.** `folder_entries` and `file_entries`
+///    also hold rows this client invented locally, and publishing one is not
+///    recoverable - see [_folderEntryCameFromChain]. A revision is the
+///    discriminator, which is now also a section: the rows that travel and the
+///    rows that vouch for them are the same set.
 
 /// The section format this build writes, and the newest it can read.
 ///
@@ -35,6 +55,10 @@ const int driveStateFormatVersion = 1;
 const String driveSectionName = 'drives';
 const String folderEntriesSectionName = 'folder_entries';
 const String fileEntriesSectionName = 'file_entries';
+const String driveRevisionsSectionName = 'drive_revisions';
+const String folderRevisionsSectionName = 'folder_revisions';
+const String fileRevisionsSectionName = 'file_revisions';
+const String licensesSectionName = 'licenses';
 
 const String _sectionsKey = 'sections';
 const String _versionKey = 'version';
@@ -139,6 +163,20 @@ class DriveStateExport extends Equatable {
   final List<ExportedFolderEntry> folders;
   final List<ExportedFileEntry> files;
 
+  /// Every revision of every entity above, oldest first within each entity.
+  ///
+  /// Not the newest per entity: the file details panel lists a file's whole
+  /// history, and dropping the superseded rows to save 5% would publish an
+  /// artifact that restores a drive with no history in it - permanently, since
+  /// the range those revisions live in is one the importer's watermark then
+  /// skips.
+  final List<ExportedDriveRevision> driveRevisions;
+  final List<ExportedFolderRevision> folderRevisions;
+  final List<ExportedFileRevision> fileRevisions;
+
+  /// The licences the user attached to their own files.
+  final List<ExportedLicense> licenses;
+
   /// What range of the drive's history the rows above account for. Signed
   /// with them; see [DriveStateCoverage].
   final DriveStateCoverage coverage;
@@ -147,12 +185,24 @@ class DriveStateExport extends Equatable {
     required this.drive,
     required this.folders,
     required this.files,
+    required this.driveRevisions,
+    required this.folderRevisions,
+    required this.fileRevisions,
+    required this.licenses,
     required this.coverage,
   });
 
-  /// The number of entities the payload carries, which the entity's
+  /// The number of **entities** the payload carries, which the entity's
   /// `Entity-Count` tag declares so that an importer can prove the body meant
   /// what the tags promised (§3.2).
+  ///
+  /// Entities, not rows. A revision is a version *of* an entity, not another
+  /// entity, and a licence is an attachment to one - so neither is counted
+  /// here even though both now travel. This is a contract, not a preference:
+  /// the tag is written by [DriveStateCreationService], checked by
+  /// [DriveStateImporter], and shown in the confirmation modal, and a build
+  /// that counted revisions would reject every artifact written by a build
+  /// that counted entities.
   int get entityCount => folders.length + files.length + 1;
 
   Map<String, dynamic> toJson() => {
@@ -167,6 +217,18 @@ class DriveStateExport extends Equatable {
           },
           fileEntriesSectionName: {
             _rowsKey: files.map((f) => f.toJson()).toList(),
+          },
+          driveRevisionsSectionName: {
+            _rowsKey: driveRevisions.map((r) => r.toJson()).toList(),
+          },
+          folderRevisionsSectionName: {
+            _rowsKey: folderRevisions.map((r) => r.toJson()).toList(),
+          },
+          fileRevisionsSectionName: {
+            _rowsKey: fileRevisions.map((r) => r.toJson()).toList(),
+          },
+          licensesSectionName: {
+            _rowsKey: licenses.map((l) => l.toJson()).toList(),
           },
         },
       };
@@ -217,11 +279,32 @@ class DriveStateExport extends Equatable {
       files: _rowsOf(sections, fileEntriesSectionName)
           .map(ExportedFileEntry.fromJson)
           .toList(),
+      driveRevisions: _rowsOf(sections, driveRevisionsSectionName)
+          .map(ExportedDriveRevision.fromJson)
+          .toList(),
+      folderRevisions: _rowsOf(sections, folderRevisionsSectionName)
+          .map(ExportedFolderRevision.fromJson)
+          .toList(),
+      fileRevisions: _rowsOf(sections, fileRevisionsSectionName)
+          .map(ExportedFileRevision.fromJson)
+          .toList(),
+      licenses: _rowsOf(sections, licensesSectionName)
+          .map(ExportedLicense.fromJson)
+          .toList(),
     );
   }
 
   @override
-  List<Object?> get props => [drive, folders, files, coverage];
+  List<Object?> get props => [
+        drive,
+        folders,
+        files,
+        driveRevisions,
+        folderRevisions,
+        fileRevisions,
+        licenses,
+        coverage,
+      ];
 }
 
 /// Reads one drive's current state.
@@ -261,6 +344,13 @@ Future<DriveStateExport> exportDriveState(
     final folderRows =
         await driveStateFolderEntriesQuery(driveDao, driveId).get();
     final fileRows = await driveStateFileEntriesQuery(driveDao, driveId).get();
+    final driveRevisionRows =
+        await driveStateDriveRevisionsQuery(driveDao, driveId).get();
+    final folderRevisionRows =
+        await driveStateFolderRevisionsQuery(driveDao, driveId).get();
+    final fileRevisionRows =
+        await driveStateFileRevisionsQuery(driveDao, driveId).get();
+    final licenseRows = await driveStateLicensesQuery(driveDao, driveId).get();
 
     return DriveStateExport(
       // The producer's watermark is the only honest answer to "what does this
@@ -279,6 +369,21 @@ Future<DriveStateExport> exportDriveState(
           .toList(),
       files: fileRows
           .map((row) => ExportedFileEntry._fromRow(row, driveDao.fileEntries))
+          .toList(),
+      driveRevisions: driveRevisionRows
+          .map((row) =>
+              ExportedDriveRevision._fromRow(row, driveDao.driveRevisions))
+          .toList(),
+      folderRevisions: folderRevisionRows
+          .map((row) =>
+              ExportedFolderRevision._fromRow(row, driveDao.folderRevisions))
+          .toList(),
+      fileRevisions: fileRevisionRows
+          .map((row) =>
+              ExportedFileRevision._fromRow(row, driveDao.fileRevisions))
+          .toList(),
+      licenses: licenseRows
+          .map((row) => ExportedLicense._fromRow(row, driveDao.licenses))
           .toList(),
     );
   });
@@ -345,6 +450,89 @@ JoinedSelectStatement driveStateFileEntriesQuery(
     ..orderBy([OrderingTerm.asc(fileEntries.id)]);
 }
 
+/// The drive's `drive_revisions` rows, ordered by their primary key.
+///
+/// The whole table for this drive, not the newest row: the drive's own history
+/// is what the activity view reads, and there is at most a handful of them.
+///
+/// Its primary key is `(driveId, dateCreated)` and `driveId` is fixed by the
+/// where clause, so ordering by `dateCreated` alone is a total order over the
+/// result - which is what the byte-identical guarantee needs.
+JoinedSelectStatement driveStateDriveRevisionsQuery(
+  DriveDao driveDao,
+  String driveId,
+) {
+  final revisions = driveDao.driveRevisions;
+  return driveDao.selectOnly(revisions)
+    ..addColumns(driveStateExportedColumns(revisions))
+    ..where(revisions.driveId.equals(driveId))
+    ..orderBy([OrderingTerm.asc(revisions.dateCreated)]);
+}
+
+/// The drive's `folder_revisions` rows, ordered by their primary key.
+///
+/// No `cameFromChain` filter, and none is needed: a revision *is* the thing
+/// that filter tests for. The set of folder ids here and the set of folder
+/// entries [driveStateFolderEntriesQuery] returns are the same set by
+/// construction - the stand-in rows sync and `DriveDao` invent have no
+/// revision to carry.
+JoinedSelectStatement driveStateFolderRevisionsQuery(
+  DriveDao driveDao,
+  String driveId,
+) {
+  final revisions = driveDao.folderRevisions;
+  return driveDao.selectOnly(revisions)
+    ..addColumns(driveStateExportedColumns(revisions))
+    ..where(revisions.driveId.equals(driveId))
+    ..orderBy([
+      OrderingTerm.asc(revisions.folderId),
+      OrderingTerm.asc(revisions.dateCreated),
+    ]);
+}
+
+/// The drive's `file_revisions` rows, ordered by their primary key.
+///
+/// Every revision, oldest first within each file. The newest is what the file
+/// list resolves its transactions from; the rest are the version history the
+/// file details panel shows.
+JoinedSelectStatement driveStateFileRevisionsQuery(
+  DriveDao driveDao,
+  String driveId,
+) {
+  final revisions = driveDao.fileRevisions;
+  return driveDao.selectOnly(revisions)
+    ..addColumns(driveStateExportedColumns(revisions))
+    ..where(revisions.driveId.equals(driveId))
+    ..orderBy([
+      OrderingTerm.asc(revisions.fileId),
+      OrderingTerm.asc(revisions.dateCreated),
+    ]);
+}
+
+/// The drive's `licenses` rows, ordered by their primary key.
+///
+/// Filtered to licences whose file has a revision, which is the same rule
+/// every other section obeys: nothing travels that no revision vouches for. A
+/// licence attached to a file that is not in the payload is a row about
+/// nothing - the file itself would have been filtered out by
+/// [_fileEntryCameFromChain] - so this drops exactly the rows a consumer could
+/// not use.
+JoinedSelectStatement driveStateLicensesQuery(
+  DriveDao driveDao,
+  String driveId,
+) {
+  final licenses = driveDao.licenses;
+  return driveDao.selectOnly(licenses)
+    ..addColumns(driveStateExportedColumns(licenses))
+    ..where(
+        licenses.driveId.equals(driveId) & _licenseFileCameFromChain(driveDao))
+    ..orderBy([
+      OrderingTerm.asc(licenses.fileId),
+      OrderingTerm.asc(licenses.dataTxId),
+      OrderingTerm.asc(licenses.licenseTxId),
+    ]);
+}
+
 /// Whether a `folder_entries` row came off the chain, rather than being
 /// invented by this client.
 ///
@@ -404,6 +592,20 @@ Expression<bool> _fileEntryCameFromChain(DriveDao driveDao) {
   );
 }
 
+/// The same discriminator applied to a `licenses` row, through the file it is
+/// attached to.
+Expression<bool> _licenseFileCameFromChain(DriveDao driveDao) {
+  final licenses = driveDao.licenses;
+  final revisions = driveDao.fileRevisions;
+
+  return existsQuery(
+    driveDao.selectOnly(revisions)
+      ..addColumns([revisions.fileId])
+      ..where(revisions.fileId.equalsExp(licenses.fileId) &
+          revisions.driveId.equalsExp(licenses.driveId)),
+  );
+}
+
 /// Every table the export may read, by its name in the schema - which is also
 /// its section name on the wire.
 ///
@@ -419,10 +621,20 @@ Expression<bool> _fileEntryCameFromChain(DriveDao driveDao) {
 /// column at all, and exporting one would publish rows about the user's other
 /// drives to everyone holding this drive's key. `profiles` holds the wallet
 /// and is never exportable at any scope.
+///
+/// `network_transactions` is the one the file list genuinely needs, and it is
+/// still not here. It stays off the wire for the reason above - no `driveId`,
+/// so no way to publish this drive's rows without publishing every drive's -
+/// and the importer regenerates it from the revisions instead, through the
+/// same helpers sync derives it with.
 const List<String> _exportedTableNames = [
   driveSectionName,
   folderEntriesSectionName,
   fileEntriesSectionName,
+  driveRevisionsSectionName,
+  folderRevisionsSectionName,
+  fileRevisionsSectionName,
+  licensesSectionName,
 ];
 
 /// The tables of [_exportedTableNames], resolved against a live database.
@@ -455,7 +667,7 @@ List<GeneratedColumn> driveStateWithheldColumns(TableInfo table) =>
 /// places.
 ///
 /// Refusing an unlisted table is the point of this function, not an accident
-/// of falling off the end of it: `profiles`, the revision tables and every
+/// of falling off the end of it: `profiles`, `network_transactions` and every
 /// other table in the schema throw here.
 ({List<GeneratedColumn> exported, List<GeneratedColumn> withheld}) _classify(
   TableInfo table,
@@ -472,6 +684,27 @@ List<GeneratedColumn> driveStateWithheldColumns(TableInfo table) =>
     }
     if (table is FileEntries) {
       return (exported: _exportedFileEntryColumns(table), withheld: const []);
+    }
+    if (table is DriveRevisions) {
+      return (
+        exported: _exportedDriveRevisionColumns(table),
+        withheld: const [],
+      );
+    }
+    if (table is FolderRevisions) {
+      return (
+        exported: _exportedFolderRevisionColumns(table),
+        withheld: const [],
+      );
+    }
+    if (table is FileRevisions) {
+      return (
+        exported: _exportedFileRevisionColumns(table),
+        withheld: const [],
+      );
+    }
+    if (table is Licenses) {
+      return (exported: _exportedLicenseColumns(table), withheld: const []);
     }
   }
   throw ArgumentError('${table.actualTableName} is not an exported table');
@@ -558,6 +791,111 @@ List<GeneratedColumn> _exportedFileEntryColumns(FileEntries t) => [
       t.fallbackTxId,
       t.originalOwner,
       t.importSource,
+    ];
+
+/// `drive_revisions` in full — nothing is withheld, and here is the check.
+///
+/// The three classes of column that must not travel are key material, anything
+/// a key can be derived from, and anything meaningful only to the endpoint
+/// that issued it. This table has none: it is the drive's metadata as it stood
+/// at each revision (`rootFolderId`, `ownerAddress`, `name`, `privacy`,
+/// `bundledIn`, the custom metadata blobs, `isHidden`), plus `metadataTxId`,
+/// which is a public Arweave transaction id, plus the `action` and
+/// `dateCreated` that order the history.
+///
+/// Note the absence, rather than the withholding, of the three columns
+/// `drives` guards: `encryptedKey`, `driveKeyGenerated` and `keyEncryptionIv`
+/// are local key storage, not revision facts, and the revision tables have
+/// never had them. There is no `syncCursor` or `lastBlockHeight` here either,
+/// for the same reason.
+List<GeneratedColumn> _exportedDriveRevisionColumns(DriveRevisions t) => [
+      t.driveId,
+      t.rootFolderId,
+      t.ownerAddress,
+      t.name,
+      t.privacy,
+      t.metadataTxId,
+      t.dateCreated,
+      t.action,
+      t.bundledIn,
+      t.customJsonMetadata,
+      t.customGQLTags,
+      t.isHidden,
+    ];
+
+/// `folder_revisions` in full, for the same reasons: entity metadata, one
+/// public transaction id, and the ordering columns.
+List<GeneratedColumn> _exportedFolderRevisionColumns(FolderRevisions t) => [
+      t.folderId,
+      t.driveId,
+      t.name,
+      t.parentFolderId,
+      t.metadataTxId,
+      t.dateCreated,
+      t.action,
+      t.customJsonMetadata,
+      t.customGQLTags,
+      t.isHidden,
+    ];
+
+/// `file_revisions` in full.
+///
+/// Column for column this is `file_entries` plus `metadataTxId`, `action` and
+/// the licence pointer, and every one of the shared columns is already
+/// published by [_exportedFileEntryColumns] - so a column withheld here but
+/// exported there would protect nothing.
+///
+/// The three that deserve a sentence each, because they name people or places
+/// rather than the file:
+///
+///  * `pinnedDataOwnerAddress` and `originalOwner` are the wallet addresses of
+///    *other* people, on data this drive pinned or imported. Public by
+///    construction - they are read off the chain - and the file cannot be
+///    resolved without them: `_buildPinnedDataTxOwnerOverrides` scopes the
+///    confirmation query by exactly this address.
+///  * `importSource` records where an imported file came from. Already on the
+///    entry row, and the same value.
+///
+/// `dataTxId` and `metadataTxId` are the point of the section.
+List<GeneratedColumn> _exportedFileRevisionColumns(FileRevisions t) => [
+      t.fileId,
+      t.driveId,
+      t.name,
+      t.parentFolderId,
+      t.size,
+      t.lastModifiedDate,
+      t.dataContentType,
+      t.metadataTxId,
+      t.dataTxId,
+      t.licenseTxId,
+      t.thumbnail,
+      t.bundledIn,
+      t.dateCreated,
+      t.customJsonMetadata,
+      t.customGQLTags,
+      t.action,
+      t.pinnedDataOwnerAddress,
+      t.isHidden,
+      t.assignedNames,
+      t.fallbackTxId,
+      t.originalOwner,
+      t.importSource,
+    ];
+
+/// `licenses` in full: two public transaction ids, the licence's type and
+/// shape, the file it is attached to, and `dateCreated`. A licence is a public
+/// declaration about what others may do with the data - there is nothing in
+/// the row that is not already on chain in the licence transaction itself.
+List<GeneratedColumn> _exportedLicenseColumns(Licenses t) => [
+      t.fileId,
+      t.driveId,
+      t.dataTxId,
+      t.licenseTxType,
+      t.licenseTxId,
+      t.bundledIn,
+      t.dateCreated,
+      t.licenseType,
+      t.customGQLTags,
     ];
 
 /// A `drives` row with the key material structurally absent.
@@ -894,6 +1232,412 @@ class ExportedFileEntry extends Equatable {
         fallbackTxId,
         originalOwner,
         importSource,
+      ];
+}
+
+/// A `drive_revisions` row.
+class ExportedDriveRevision extends Equatable {
+  final String driveId;
+  final String rootFolderId;
+  final String ownerAddress;
+  final String name;
+  final String privacy;
+  final String metadataTxId;
+  final DateTime dateCreated;
+  final String action;
+  final String? bundledIn;
+  final String? customJsonMetadata;
+  final String? customGQLTags;
+  final bool isHidden;
+
+  const ExportedDriveRevision({
+    required this.driveId,
+    required this.rootFolderId,
+    required this.ownerAddress,
+    required this.name,
+    required this.privacy,
+    required this.metadataTxId,
+    required this.dateCreated,
+    required this.action,
+    required this.bundledIn,
+    required this.customJsonMetadata,
+    required this.customGQLTags,
+    required this.isHidden,
+  });
+
+  factory ExportedDriveRevision._fromRow(TypedResult row, DriveRevisions t) =>
+      ExportedDriveRevision(
+        driveId: row.read(t.driveId)!,
+        rootFolderId: row.read(t.rootFolderId)!,
+        ownerAddress: row.read(t.ownerAddress)!,
+        name: row.read(t.name)!,
+        privacy: row.read(t.privacy)!,
+        metadataTxId: row.read(t.metadataTxId)!,
+        dateCreated: row.read(t.dateCreated)!,
+        action: row.read(t.action)!,
+        bundledIn: row.read(t.bundledIn),
+        customJsonMetadata: row.read(t.customJsonMetadata),
+        customGQLTags: row.read(t.customGQLTags),
+        isHidden: row.read(t.isHidden)!,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'driveId': driveId,
+        'rootFolderId': rootFolderId,
+        'ownerAddress': ownerAddress,
+        'name': name,
+        'privacy': privacy,
+        'metadataTxId': metadataTxId,
+        'dateCreated': _dateToJson(dateCreated),
+        'action': action,
+        'bundledIn': bundledIn,
+        'customJsonMetadata': customJsonMetadata,
+        'customGQLTags': customGQLTags,
+        'isHidden': isHidden,
+      };
+
+  factory ExportedDriveRevision.fromJson(Map<String, dynamic> json) =>
+      ExportedDriveRevision(
+        driveId: _required(json, 'driveId'),
+        rootFolderId: _required(json, 'rootFolderId'),
+        ownerAddress: _required(json, 'ownerAddress'),
+        name: _required(json, 'name'),
+        privacy: _required(json, 'privacy'),
+        metadataTxId: _required(json, 'metadataTxId'),
+        dateCreated: _requiredDate(json, 'dateCreated'),
+        action: _required(json, 'action'),
+        bundledIn: _optional(json, 'bundledIn'),
+        customJsonMetadata: _optional(json, 'customJsonMetadata'),
+        customGQLTags: _optional(json, 'customGQLTags'),
+        isHidden: _required(json, 'isHidden'),
+      );
+
+  @override
+  List<Object?> get props => [
+        driveId,
+        rootFolderId,
+        ownerAddress,
+        name,
+        privacy,
+        metadataTxId,
+        dateCreated,
+        action,
+        bundledIn,
+        customJsonMetadata,
+        customGQLTags,
+        isHidden,
+      ];
+}
+
+/// A `folder_revisions` row.
+class ExportedFolderRevision extends Equatable {
+  final String folderId;
+  final String driveId;
+  final String name;
+  final String? parentFolderId;
+  final String metadataTxId;
+  final DateTime dateCreated;
+  final String action;
+  final String? customJsonMetadata;
+  final String? customGQLTags;
+  final bool isHidden;
+
+  const ExportedFolderRevision({
+    required this.folderId,
+    required this.driveId,
+    required this.name,
+    required this.parentFolderId,
+    required this.metadataTxId,
+    required this.dateCreated,
+    required this.action,
+    required this.customJsonMetadata,
+    required this.customGQLTags,
+    required this.isHidden,
+  });
+
+  factory ExportedFolderRevision._fromRow(TypedResult row, FolderRevisions t) =>
+      ExportedFolderRevision(
+        folderId: row.read(t.folderId)!,
+        driveId: row.read(t.driveId)!,
+        name: row.read(t.name)!,
+        parentFolderId: row.read(t.parentFolderId),
+        metadataTxId: row.read(t.metadataTxId)!,
+        dateCreated: row.read(t.dateCreated)!,
+        action: row.read(t.action)!,
+        customJsonMetadata: row.read(t.customJsonMetadata),
+        customGQLTags: row.read(t.customGQLTags),
+        isHidden: row.read(t.isHidden)!,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'folderId': folderId,
+        'driveId': driveId,
+        'name': name,
+        'parentFolderId': parentFolderId,
+        'metadataTxId': metadataTxId,
+        'dateCreated': _dateToJson(dateCreated),
+        'action': action,
+        'customJsonMetadata': customJsonMetadata,
+        'customGQLTags': customGQLTags,
+        'isHidden': isHidden,
+      };
+
+  factory ExportedFolderRevision.fromJson(Map<String, dynamic> json) =>
+      ExportedFolderRevision(
+        folderId: _required(json, 'folderId'),
+        driveId: _required(json, 'driveId'),
+        name: _required(json, 'name'),
+        parentFolderId: _optional(json, 'parentFolderId'),
+        metadataTxId: _required(json, 'metadataTxId'),
+        dateCreated: _requiredDate(json, 'dateCreated'),
+        action: _required(json, 'action'),
+        customJsonMetadata: _optional(json, 'customJsonMetadata'),
+        customGQLTags: _optional(json, 'customGQLTags'),
+        isHidden: _required(json, 'isHidden'),
+      );
+
+  @override
+  List<Object?> get props => [
+        folderId,
+        driveId,
+        name,
+        parentFolderId,
+        metadataTxId,
+        dateCreated,
+        action,
+        customJsonMetadata,
+        customGQLTags,
+        isHidden,
+      ];
+}
+
+/// A `file_revisions` row — the one the file list cannot render without.
+class ExportedFileRevision extends Equatable {
+  final String fileId;
+  final String driveId;
+  final String name;
+  final String parentFolderId;
+  final int size;
+  final DateTime lastModifiedDate;
+  final String? dataContentType;
+  final String metadataTxId;
+  final String dataTxId;
+  final String? licenseTxId;
+  final String? thumbnail;
+  final String? bundledIn;
+  final DateTime dateCreated;
+  final String? customJsonMetadata;
+  final String? customGQLTags;
+  final String action;
+  final String? pinnedDataOwnerAddress;
+  final bool isHidden;
+  final String? assignedNames;
+  final String? fallbackTxId;
+  final String? originalOwner;
+  final String? importSource;
+
+  const ExportedFileRevision({
+    required this.fileId,
+    required this.driveId,
+    required this.name,
+    required this.parentFolderId,
+    required this.size,
+    required this.lastModifiedDate,
+    required this.dataContentType,
+    required this.metadataTxId,
+    required this.dataTxId,
+    required this.licenseTxId,
+    required this.thumbnail,
+    required this.bundledIn,
+    required this.dateCreated,
+    required this.customJsonMetadata,
+    required this.customGQLTags,
+    required this.action,
+    required this.pinnedDataOwnerAddress,
+    required this.isHidden,
+    required this.assignedNames,
+    required this.fallbackTxId,
+    required this.originalOwner,
+    required this.importSource,
+  });
+
+  factory ExportedFileRevision._fromRow(TypedResult row, FileRevisions t) =>
+      ExportedFileRevision(
+        fileId: row.read(t.fileId)!,
+        driveId: row.read(t.driveId)!,
+        name: row.read(t.name)!,
+        parentFolderId: row.read(t.parentFolderId)!,
+        size: row.read(t.size)!,
+        lastModifiedDate: row.read(t.lastModifiedDate)!,
+        dataContentType: row.read(t.dataContentType),
+        metadataTxId: row.read(t.metadataTxId)!,
+        dataTxId: row.read(t.dataTxId)!,
+        licenseTxId: row.read(t.licenseTxId),
+        thumbnail: row.read(t.thumbnail),
+        bundledIn: row.read(t.bundledIn),
+        dateCreated: row.read(t.dateCreated)!,
+        customJsonMetadata: row.read(t.customJsonMetadata),
+        customGQLTags: row.read(t.customGQLTags),
+        action: row.read(t.action)!,
+        pinnedDataOwnerAddress: row.read(t.pinnedDataOwnerAddress),
+        isHidden: row.read(t.isHidden)!,
+        assignedNames: row.read(t.assignedNames),
+        fallbackTxId: row.read(t.fallbackTxId),
+        originalOwner: row.read(t.originalOwner),
+        importSource: row.read(t.importSource),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'fileId': fileId,
+        'driveId': driveId,
+        'name': name,
+        'parentFolderId': parentFolderId,
+        'size': size,
+        'lastModifiedDate': _dateToJson(lastModifiedDate),
+        'dataContentType': dataContentType,
+        'metadataTxId': metadataTxId,
+        'dataTxId': dataTxId,
+        'licenseTxId': licenseTxId,
+        'thumbnail': thumbnail,
+        'bundledIn': bundledIn,
+        'dateCreated': _dateToJson(dateCreated),
+        'customJsonMetadata': customJsonMetadata,
+        'customGQLTags': customGQLTags,
+        'action': action,
+        'pinnedDataOwnerAddress': pinnedDataOwnerAddress,
+        'isHidden': isHidden,
+        'assignedNames': assignedNames,
+        'fallbackTxId': fallbackTxId,
+        'originalOwner': originalOwner,
+        'importSource': importSource,
+      };
+
+  factory ExportedFileRevision.fromJson(Map<String, dynamic> json) =>
+      ExportedFileRevision(
+        fileId: _required(json, 'fileId'),
+        driveId: _required(json, 'driveId'),
+        name: _required(json, 'name'),
+        parentFolderId: _required(json, 'parentFolderId'),
+        size: _required(json, 'size'),
+        lastModifiedDate: _requiredDate(json, 'lastModifiedDate'),
+        dataContentType: _optional(json, 'dataContentType'),
+        metadataTxId: _required(json, 'metadataTxId'),
+        dataTxId: _required(json, 'dataTxId'),
+        licenseTxId: _optional(json, 'licenseTxId'),
+        thumbnail: _optional(json, 'thumbnail'),
+        bundledIn: _optional(json, 'bundledIn'),
+        dateCreated: _requiredDate(json, 'dateCreated'),
+        customJsonMetadata: _optional(json, 'customJsonMetadata'),
+        customGQLTags: _optional(json, 'customGQLTags'),
+        action: _required(json, 'action'),
+        pinnedDataOwnerAddress: _optional(json, 'pinnedDataOwnerAddress'),
+        isHidden: _required(json, 'isHidden'),
+        assignedNames: _optional(json, 'assignedNames'),
+        fallbackTxId: _optional(json, 'fallbackTxId'),
+        originalOwner: _optional(json, 'originalOwner'),
+        importSource: _optional(json, 'importSource'),
+      );
+
+  @override
+  List<Object?> get props => [
+        fileId,
+        driveId,
+        name,
+        parentFolderId,
+        size,
+        lastModifiedDate,
+        dataContentType,
+        metadataTxId,
+        dataTxId,
+        licenseTxId,
+        thumbnail,
+        bundledIn,
+        dateCreated,
+        customJsonMetadata,
+        customGQLTags,
+        action,
+        pinnedDataOwnerAddress,
+        isHidden,
+        assignedNames,
+        fallbackTxId,
+        originalOwner,
+        importSource,
+      ];
+}
+
+/// A `licenses` row.
+class ExportedLicense extends Equatable {
+  final String fileId;
+  final String driveId;
+  final String dataTxId;
+  final String licenseTxType;
+  final String licenseTxId;
+  final String? bundledIn;
+  final DateTime dateCreated;
+  final String licenseType;
+  final String? customGQLTags;
+
+  const ExportedLicense({
+    required this.fileId,
+    required this.driveId,
+    required this.dataTxId,
+    required this.licenseTxType,
+    required this.licenseTxId,
+    required this.bundledIn,
+    required this.dateCreated,
+    required this.licenseType,
+    required this.customGQLTags,
+  });
+
+  factory ExportedLicense._fromRow(TypedResult row, Licenses t) =>
+      ExportedLicense(
+        fileId: row.read(t.fileId)!,
+        driveId: row.read(t.driveId)!,
+        dataTxId: row.read(t.dataTxId)!,
+        licenseTxType: row.read(t.licenseTxType)!,
+        licenseTxId: row.read(t.licenseTxId)!,
+        bundledIn: row.read(t.bundledIn),
+        dateCreated: row.read(t.dateCreated)!,
+        licenseType: row.read(t.licenseType)!,
+        customGQLTags: row.read(t.customGQLTags),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'fileId': fileId,
+        'driveId': driveId,
+        'dataTxId': dataTxId,
+        'licenseTxType': licenseTxType,
+        'licenseTxId': licenseTxId,
+        'bundledIn': bundledIn,
+        'dateCreated': _dateToJson(dateCreated),
+        'licenseType': licenseType,
+        'customGQLTags': customGQLTags,
+      };
+
+  factory ExportedLicense.fromJson(Map<String, dynamic> json) =>
+      ExportedLicense(
+        fileId: _required(json, 'fileId'),
+        driveId: _required(json, 'driveId'),
+        dataTxId: _required(json, 'dataTxId'),
+        licenseTxType: _required(json, 'licenseTxType'),
+        licenseTxId: _required(json, 'licenseTxId'),
+        bundledIn: _optional(json, 'bundledIn'),
+        dateCreated: _requiredDate(json, 'dateCreated'),
+        licenseType: _required(json, 'licenseType'),
+        customGQLTags: _optional(json, 'customGQLTags'),
+      );
+
+  @override
+  List<Object?> get props => [
+        fileId,
+        driveId,
+        dataTxId,
+        licenseTxType,
+        licenseTxId,
+        bundledIn,
+        dateCreated,
+        licenseType,
+        customGQLTags,
       ];
 }
 
