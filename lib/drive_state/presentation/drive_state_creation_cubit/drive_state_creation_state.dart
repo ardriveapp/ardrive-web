@@ -8,8 +8,8 @@ abstract class DriveStateCreationState extends Equatable {
 
 class DriveStateCreationInitial extends DriveStateCreationState {}
 
-/// Exporting and sealing. Nothing has left the device, and nothing will as a
-/// result of this state.
+/// Exporting, sealing and pricing. Nothing has left the device, and nothing
+/// will as a result of this state.
 class DriveStateCreationPreparing extends DriveStateCreationState {}
 
 /// An artifact was deliberately not produced. Carries the sentence that says
@@ -35,12 +35,44 @@ class DriveStateCreationRefused extends DriveStateCreationState {
   List<Object?> get props => [refusal, reason];
 }
 
-/// Built, sealed, **unsent**. The confirmation modal renders this, and only a
-/// user's click moves it on.
+/// Built, sealed, priced, **unsent**. The confirmation modal renders this, and
+/// only a user's click moves it on.
 class DriveStateCreationReady extends DriveStateCreationState {
   final PreparedDriveStateArtifact artifact;
 
-  DriveStateCreationReady(this.artifact);
+  /// What publishing would cost, and whether it can be paid for.
+  final DriveStatePublishCost cost;
+
+  /// The transport the user currently has selected.
+  final UploadMethod method;
+
+  DriveStateCreationReady({
+    required this.artifact,
+    required this.cost,
+    required this.method,
+  });
+
+  /// The transport that would actually carry the artifact.
+  ///
+  /// A free upload is a Turbo billing outcome, not a third transport, so it
+  /// goes over Turbo whatever the selector last said — the same rule
+  /// `CreateSnapshotCubit._useTurboUpload` applies, and the reason the modal
+  /// hides the selector entirely when the upload is free.
+  UploadMethod get effectiveMethod => cost.isFree ? UploadMethod.turbo : method;
+
+  /// Whether the confirm button does anything. The single source of truth for
+  /// both the button's enabled state and the cubit's own refusal to publish.
+  bool get canPublish => cost.canPayWith(effectiveMethod);
+
+  DriveStateCreationReady copyWith({
+    DriveStatePublishCost? cost,
+    UploadMethod? method,
+  }) =>
+      DriveStateCreationReady(
+        artifact: artifact,
+        cost: cost ?? this.cost,
+        method: method ?? this.method,
+      );
 
   @override
   List<Object?> get props => [
@@ -49,6 +81,8 @@ class DriveStateCreationReady extends DriveStateCreationState {
         artifact.sizeInBytes,
         artifact.blockStart,
         artifact.blockEnd,
+        cost,
+        method,
       ];
 }
 
@@ -75,7 +109,7 @@ class DriveStateCreationPublished extends DriveStateCreationState {
 }
 
 /// Something went wrong that is not a refusal: a bug, a database that went
-/// away, an upload seam that reported a failure.
+/// away, a price that could not be established, an upload that failed.
 class DriveStateCreationFailure extends DriveStateCreationState {
   final String message;
 

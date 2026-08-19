@@ -26,6 +26,20 @@ class AppConfig {
   /// only cost a discovery query - and every failure behind it is a fallback,
   /// never a failed drive. It ships dark and is switched on deliberately.
   final bool enableSyncFromDriveState;
+
+  /// Whether the app offers to **publish** a drive state artifact.
+  ///
+  /// Separate from [enableSyncFromDriveState] on purpose. Reading an artifact
+  /// costs nothing and every failure behind it is a fallback; publishing one
+  /// spends real money and cannot be undone. A user switching creation on to
+  /// try it must not thereby start trusting artifacts during sync, and a user
+  /// who wants to read artifacts must not thereby be offered a button that
+  /// spends. Two risks, two switches.
+  ///
+  /// Off in every flavour. `docs/drive-state/DECISIONS.md` D3 makes publishing
+  /// an explicit user action; this flag decides whether that action is even
+  /// offered, and nothing turns it on but a person.
+  final bool enableDriveStatePublishing;
   final String stripePublishableKey;
   final bool autoSync;
   final bool uploadThumbnails;
@@ -51,6 +65,7 @@ class AppConfig {
     this.autoSyncIntervalInSeconds = 5 * 60,
     this.enableSyncFromSnapshot = true,
     this.enableSyncFromDriveState = false,
+    this.enableDriveStatePublishing = false,
     required this.stripePublishableKey,
     this.autoSync = true,
     this.uploadThumbnails = true,
@@ -74,6 +89,7 @@ class AppConfig {
     int? autoSyncIntervalInSeconds,
     bool? enableSyncFromSnapshot,
     bool? enableSyncFromDriveState,
+    bool? enableDriveStatePublishing,
     String? stripePublishableKey,
     bool? autoSync,
     bool? uploadThumbnails,
@@ -86,8 +102,7 @@ class AppConfig {
     int? maxConcurrentDataFetches,
   }) {
     return AppConfig(
-      arweaveGatewayUrl:
-          arweaveGatewayUrl ?? this.arweaveGatewayUrl,
+      arweaveGatewayUrl: arweaveGatewayUrl ?? this.arweaveGatewayUrl,
       arweaveGatewayForDataRequest:
           arweaveGatewayForDataRequest ?? this.arweaveGatewayForDataRequest,
       useTurboUpload: useTurboUpload ?? this.useTurboUpload,
@@ -104,6 +119,8 @@ class AppConfig {
           enableSyncFromSnapshot ?? this.enableSyncFromSnapshot,
       enableSyncFromDriveState:
           enableSyncFromDriveState ?? this.enableSyncFromDriveState,
+      enableDriveStatePublishing:
+          enableDriveStatePublishing ?? this.enableDriveStatePublishing,
       stripePublishableKey: stripePublishableKey ?? this.stripePublishableKey,
       autoSync: autoSync ?? this.autoSync,
       uploadThumbnails: uploadThumbnails ?? this.uploadThumbnails,

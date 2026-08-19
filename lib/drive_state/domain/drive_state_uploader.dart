@@ -1,22 +1,33 @@
+import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
 import 'package:ardrive/drive_state/domain/drive_state_creation_service.dart';
 
-/// The seam a prepared artifact would leave through, and the reason there is
-/// nothing behind it yet.
+/// The seam a prepared artifact leaves through.
 ///
-/// `docs/drive-state/DECISIONS.md` D8 puts executing an upload outside this
-/// branch entirely: the artifact is built and tested, and nothing in the
-/// system sends it. The seam exists anyway, because a confirmation flow whose
-/// confirm button goes nowhere is a flow nobody has actually checked — the
-/// button is wired, the states it produces are real, and the last step is the
-/// one that is deliberately absent.
+/// `docs/drive-state/DECISIONS.md` D8 — "built and tested, never executed by
+/// the loop" — is still in force and is what shapes this file. The capability
+/// now exists, and the rail did not move: nothing reaches [publish] except a
+/// person pressing the confirm button in
+/// `drive_state_creation_modal.dart`. Preparation does not call it, no timer
+/// calls it, no retry re-enters it, and no test lets a real implementation
+/// past a mock.
 ///
-/// When upload lands, an implementation calls `entity.asTransaction()` or
-/// `entity.asDataItem()` — the entity is ready for either, and §4.4 requires
-/// both to remain possible — and this interface is all that has to change.
+/// An implementation calls `entity.asTransaction()` or `entity.asDataItem()`
+/// depending on [UploadMethod] — the entity is ready for either, and
+/// `docs/DRIVE_STATE_ARTIFACT.md` §4.4 requires both to remain possible, so
+/// that the format survives Turbo disappearing and works for a user with
+/// nothing but an Arweave wallet.
 abstract class DriveStateUploader {
-  /// Publishes [artifact]. Called only from a user's explicit confirmation,
-  /// never from preparation, and never from a test.
-  Future<DriveStateUploadResult> publish(PreparedDriveStateArtifact artifact);
+  /// Publishes [artifact] over [method]. Called only from a user's explicit
+  /// confirmation, never from preparation, and never against a real network
+  /// from a test.
+  ///
+  /// [method] is the transport the user chose and paid for, resolved by the
+  /// cubit — a free Turbo upload arrives here as [UploadMethod.turbo], since
+  /// "free" is a Turbo billing outcome and not a third transport.
+  Future<DriveStateUploadResult> publish(
+    PreparedDriveStateArtifact artifact, {
+    required UploadMethod method,
+  });
 }
 
 /// What an upload did, or why it did not happen.
@@ -37,19 +48,24 @@ class DriveStateUploadResult {
   bool get isFailed => txId == null;
 }
 
-/// The implementation this build ships: it publishes nothing and says so.
+/// The implementation used whenever publishing is switched off: it publishes
+/// nothing and says so.
 ///
-/// Not a stub left by accident. D8 makes "nothing is uploaded by any agent" a
-/// framework rail rather than a convention, and the way to hold a rail is to
-/// have no code that could cross it — not to have code that crosses it behind
-/// a flag someone can flip.
+/// Not a stub left by accident, and not dead code now that a real uploader
+/// exists. `AppConfig.enableDriveStatePublishing` gates the menu item, and
+/// this class gates the flow a second time from the other end — with the flag
+/// off, `promptToCreateDriveState` hands the cubit an uploader that has no
+/// network collaborator to reach. The way to hold a rail is to have no code
+/// that could cross it, rather than code that crosses it behind a boolean
+/// somebody can get wrong.
 class UnwiredDriveStateUploader implements DriveStateUploader {
   const UnwiredDriveStateUploader();
 
   @override
   Future<DriveStateUploadResult> publish(
-    PreparedDriveStateArtifact artifact,
-  ) async =>
+    PreparedDriveStateArtifact artifact, {
+    required UploadMethod method,
+  }) async =>
       const DriveStateUploadResult.failed(
         'Publishing a drive state artifact is not enabled in this build. '
         'Nothing was uploaded and nothing was spent.',
