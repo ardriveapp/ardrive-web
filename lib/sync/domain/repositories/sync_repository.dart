@@ -4,6 +4,10 @@ import 'dart:math';
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
+import 'package:ardrive/drive_state/data/drive_state_import.dart';
+import 'package:ardrive/drive_state/data/drive_state_sync_source.dart';
+import 'package:ardrive/drive_state/domain/drive_state_outcome.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/drive_entity.dart';
 import 'package:ardrive/entities/file_entity.dart';
@@ -127,6 +131,7 @@ abstract class SyncRepository {
     required SnapshotValidationService snapshotValidationService,
     required ARNSRepository arnsRepository,
     required UserPreferencesRepository userPreferencesRepository,
+    DriveStateSyncSource? driveStateSyncSource,
   }) {
     return _SyncRepository(
       arweave: arweave,
@@ -136,6 +141,7 @@ abstract class SyncRepository {
       snapshotValidationService: snapshotValidationService,
       arnsRepository: arnsRepository,
       userPreferencesRepository: userPreferencesRepository,
+      driveStateSyncSource: driveStateSyncSource,
     );
   }
 }
@@ -148,6 +154,23 @@ class _SyncRepository implements SyncRepository {
   final SnapshotValidationService _snapshotValidationService;
   final ARNSRepository _arnsRepository;
   final UserPreferencesRepository _userPreferencesRepository;
+
+  /// The drive state artifact source (`docs/DRIVE_STATE_ARTIFACT.md` §5).
+  ///
+  /// Null until first used, and only ever used behind
+  /// [AppConfig.enableSyncFromDriveState], because building it reads
+  /// [ArweaveService.graphQLRetry] - work no sync should pay for while the
+  /// feature is off.
+  DriveStateSyncSource? _driveStateSyncSource;
+
+  DriveStateSyncSource get _driveStateSource =>
+      _driveStateSyncSource ??= DriveStateSyncSource(
+        arweave: _arweave,
+        discovery: GraphQLDriveStateDiscovery(
+          graphQLRetry: _arweave.graphQLRetry,
+        ),
+        importer: DriveStateImporter(_driveDao),
+      );
 
   final Map<String, GhostFolder> _ghostFolders = {};
   final Set<String> _folderIds = <String>{};
@@ -211,7 +234,9 @@ class _SyncRepository implements SyncRepository {
     required SnapshotValidationService snapshotValidationService,
     required ARNSRepository arnsRepository,
     required UserPreferencesRepository userPreferencesRepository,
-  })  : _arweave = arweave,
+    DriveStateSyncSource? driveStateSyncSource,
+  })  : _driveStateSyncSource = driveStateSyncSource,
+        _arweave = arweave,
         _driveDao = driveDao,
         _configService = configService,
         _snapshotValidationService = snapshotValidationService,
@@ -1563,6 +1588,66 @@ class _SyncRepository implements SyncRepository {
     return DateTime.now().isAfter(transactionCreatedDate.add(pendingWaitTime));
   }
 
+  /// Reads this drive's state artifact before the snapshot pass, and returns
+  /// the block height the rest of the sync should start from.
+  ///
+  /// `docs/DRIVE_STATE_ARTIFACT.md` §5 makes the artifact the first of three
+  /// sources; what it covers, the two below it need not. That composition is
+  /// the return value: [lastBlockHeight] raised to the top of the range an
+  /// import actually landed, which the caller feeds to the same
+  /// `obscuredBy`/[HeightRange.difference] arithmetic that already composes
+  /// snapshots - one mechanism, one more range in it.
+  ///
+  /// Three gates, in the order they cost anything:
+  ///
+  ///  * the config flag, off by default, so nothing changes for anyone until
+  ///    it is switched on;
+  ///  * a drive key, because v1 is private-drive only (§2.6) - a public drive
+  ///    never issues a discovery query;
+  ///  * a `try` around everything, because no drive may fail over an artifact.
+  ///
+  /// Returns [lastBlockHeight] unchanged on every path but a successful
+  /// import, so the worst an artifact can do to a sync is cost it a query.
+  Future<int> _readDriveStateArtifact({
+    required String driveId,
+    required String ownerAddress,
+    required SecretKey? driveKey,
+    required int lastBlockHeight,
+    required int currentBlockHeight,
+  }) async {
+    if (!_configService.config.enableSyncFromDriveState || driveKey == null) {
+      return lastBlockHeight;
+    }
+
+    try {
+      final result = await _driveStateSource.read(
+        driveId: driveId,
+        ownerAddress: ownerAddress,
+        driveKey: driveKey,
+        lastBlockHeight: lastBlockHeight,
+      );
+
+      // Never past the tip. The range below is built as
+      // `Range(start: <this>, end: currentBlockHeight)`, and `Range` throws
+      // when start runs past end - which would fail the drive, the one thing
+      // this feature may not do. Two ordinary things put them in that order:
+      // `Block-End` is a tag on a transaction nobody has to trust, and
+      // [syncDriveById] passes a tip of 0.
+      return min(
+        max(lastBlockHeight, result.coveredThroughBlock),
+        max(lastBlockHeight, currentBlockHeight),
+      );
+    } catch (e) {
+      // [DriveStateSyncSource.read] does not throw, so this is unreachable by
+      // design - which is exactly why it is here. The one thing this feature
+      // may never do is fail a drive, and that promise should not rest on
+      // another file continuing to keep its own.
+      logger.w('${DriveStateOutcomeReporter.logPrefix} $driveId: the artifact '
+          'path threw and was abandoned; syncing normally: $e');
+      return lastBlockHeight;
+    }
+  }
+
   Stream<double> _syncDrive(
     String driveId, {
     SecretKey? cipherKey,
@@ -1597,6 +1682,19 @@ class _SyncRepository implements SyncRepository {
         }
       }
     }
+
+    // The first of the three sources §5 composes: whatever the artifact
+    // covered, the snapshot and GraphQL passes below need not. Off by default,
+    // private drives only, and every failure inside is a fallback - so this
+    // can only ever move the start of the work below forward.
+    final syncFromBlockHeight = await _readDriveStateArtifact(
+      driveId: driveId,
+      ownerAddress: ownerAddress,
+      driveKey: driveKey?.key,
+      lastBlockHeight: lastBlockHeight,
+      currentBlockHeight: currentBlockHeight,
+    );
+
     final fetchPhaseStartDT = DateTime.now();
 
     logger.d('Fetching all transactions for drive ${drive.id}');
@@ -1616,16 +1714,16 @@ class _SyncRepository implements SyncRepository {
         final snapshotsStream = prefetchedSnapshots != null
             ? Stream.fromIterable(prefetchedSnapshots)
             : _arweave.getAllSnapshotsOfDrive(
-                driveId, lastBlockHeight, ownerAddress: ownerAddress);
+                driveId, syncFromBlockHeight, ownerAddress: ownerAddress);
 
         snapshotItems = await SnapshotItem.instantiateAll(
           snapshotsStream,
-          lastBlockHeight: lastBlockHeight,
+          lastBlockHeight: syncFromBlockHeight,
           arweave: _arweave,
         ).toList();
 
         logger.i('[snapshot] $driveId: ${snapshotItems.length} usable '
-            'from $source source (above block $lastBlockHeight)');
+            'from $source source (above block $syncFromBlockHeight)');
 
         final beforeValidation = snapshotItems.length;
         List<SnapshotItem> snapshotsVerified = await _snapshotValidationService
@@ -1656,7 +1754,7 @@ class _SyncRepository implements SyncRepository {
       final totalRangeToQueryFor = HeightRange(
         rangeSegments: [
           Range(
-            start: lastBlockHeight,
+            start: syncFromBlockHeight,
             end: currentBlockHeight,
           ),
         ],
