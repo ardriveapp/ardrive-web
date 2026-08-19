@@ -9,8 +9,19 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
   final ArDriveDownloader _arDriveDownloader;
   final DownloadPolicy _downloadPolicy;
 
+  /// The cipher the share link named, when it named one.
+  ///
+  /// Supplied only for a transaction the caller knows is bundled - see
+  /// `_downloadFile` for why that qualification is load bearing.
+  final String? cipher;
+
+  /// The cipher IV the share link named. Travels with [cipher] or not at all.
+  final String? cipherIv;
+
   SharedFileDownloadCubit({
     this.fileKey,
+    this.cipher,
+    this.cipherIv,
     required this.revision,
     required ArweaveService arweave,
     required ArDriveCrypto crypto,
@@ -85,17 +96,33 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
     }
 
     if (fileKey != null && !isPinFile) {
-      // Private/encrypted files need cipher/IV tags from the data transaction
-      final dataTx = await _arweave.getTransactionDetails(dataTxId);
+      if (cipher != null && cipherIv != null) {
+        // The link already said what this transaction is encrypted with, so
+        // the lookup that would have asked is skipped entirely. Carrying `c`
+        // and `iv` in a share link only pays for itself here - before this,
+        // every private download re-fetched tags the link had already
+        // delivered, which on a rate-limited connection is a call that can
+        // fail outright.
+        //
+        // `verifyDownload` stays false, and correctly so: it turns on the
+        // arweave client's chunk check for L1 transactions, and the caller
+        // only supplies these tags for a data item it knows is bundled -
+        // which is not an L1 transaction and has no chunks to check.
+        cipherTag = cipher;
+        cipherIvTag = cipherIv;
+      } else {
+        // Private/encrypted files need cipher/IV tags from the data transaction
+        final dataTx = await _arweave.getTransactionDetails(dataTxId);
 
-      if (dataTx == null) {
-        throw StateError(
-            'Data transaction not found for file ${revision.id} with txId $dataTxId from gateway ${_arweave.client.api.gatewayUrl.origin}');
+        if (dataTx == null) {
+          throw StateError(
+              'Data transaction not found for file ${revision.id} with txId $dataTxId from gateway ${_arweave.client.api.gatewayUrl.origin}');
+        }
+
+        cipherTag = dataTx.getTag(EntityTag.cipher);
+        cipherIvTag = dataTx.getTag(EntityTag.cipherIv);
+        verifyDownload = dataTx.getTag(EntityTag.appName) == 'ArDrive-CLI';
       }
-
-      cipherTag = dataTx.getTag(EntityTag.cipher);
-      cipherIvTag = dataTx.getTag(EntityTag.cipherIv);
-      verifyDownload = dataTx.getTag(EntityTag.appName) == 'ArDrive-CLI';
     }
 
     logger.d('File size: ${revision.size}');

@@ -500,11 +500,32 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   Future<void> _download(BuildContext context, FileRevision revision) async {
     setState(() => _isDownloading = true);
 
+    final payload = widget.state.payload;
+
+    // The link's own cipher, handed to the download so it does not re-fetch
+    // tags the link already delivered - the reason `c` and `iv` are in the
+    // schema at all.
+    //
+    // Only for a data item the link says is bundled. `verifyDownload` turns on
+    // the arweave client's chunk check for L1 transactions and is decided by a
+    // tag on that same lookup, so skipping the lookup for something that might
+    // be L1 would drop a check without saying so. A bundled item is not an L1
+    // transaction, so for those there is nothing to drop.
+    //
+    // It must also be *this* revision's cipher: the recipient may have moved
+    // the page to a newer one, whose bytes the link never described.
+    final linkDescribesTarget = payload != null &&
+        payload.hasCipherDetails &&
+        payload.bundledInTxId != null &&
+        payload.dataTxId == revision.dataTxId;
+
     try {
       await promptToDownloadSharedFile(
         revision: ARFSFactory().getARFSFileFromFileRevision(revision),
         context: context,
         fileKey: widget.state.fileKey,
+        cipher: linkDescribesTarget ? payload.cipher : null,
+        cipherIv: linkDescribesTarget ? payload.cipherIv : null,
       );
     } finally {
       if (mounted) {

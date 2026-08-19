@@ -103,6 +103,8 @@ Future<void> promptToDownloadSharedFile({
   required BuildContext context,
   SecretKey? fileKey,
   required ARFSFileEntity revision,
+  String? cipher,
+  String? cipherIv,
 }) {
   final cubit = SharedFileDownloadCubit(
     arDriveDownloader: ArDriveDownloader(
@@ -113,6 +115,8 @@ Future<void> promptToDownloadSharedFile({
     crypto: ArDriveCrypto(),
     revision: revision,
     fileKey: fileKey,
+    cipher: cipher,
+    cipherIv: cipherIv,
     arweave: context.read<ArweaveService>(),
   );
   return showArDriveDialog(
