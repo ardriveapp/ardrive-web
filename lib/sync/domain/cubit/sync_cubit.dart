@@ -70,8 +70,35 @@ class SyncCubit extends Cubit<SyncState> {
       .values
       .fold(0, (sum, txIds) => sum + txIds.length);
 
-  void _captureSkippedEntities(SyncProgress progress) {
+  DateTime? _lastSyncCompletedAt;
+  Set<String>? _lastSyncCoveredDriveIds;
+
+  /// When a sync last ran to completion, or `null` if none has in this
+  /// session.
+  ///
+  /// The distinction matters to anything reading
+  /// [lastSyncSkippedEntityTxIdsByDrive] as evidence: the map starts empty, so
+  /// "no sync has run" and "a sync ran and skipped nothing" are otherwise the
+  /// same value. A cancelled sync returns before the capture, so it leaves
+  /// this at whatever the previous completed sync set.
+  DateTime? get lastSyncCompletedAt => _lastSyncCompletedAt;
+
+  /// The drives the last completed sync covered, or `null` when it covered
+  /// every attached drive.
+  ///
+  /// A scoped sync *replaces* [lastSyncSkippedEntityTxIdsByDrive] wholesale,
+  /// so syncing drive B erases what an earlier sync recorded for drive A.
+  /// Without knowing what a report covered, its silence about a drive cannot
+  /// be read as that drive being clean.
+  Set<String>? get lastSyncCoveredDriveIds => _lastSyncCoveredDriveIds;
+
+  void _captureSkippedEntities(
+    SyncProgress progress, {
+    Set<String>? coveredDriveIds,
+  }) {
     _lastSyncSkippedEntityTxIdsByDrive = progress.skippedEntityTxIdsByDrive;
+    _lastSyncCompletedAt = DateTime.now();
+    _lastSyncCoveredDriveIds = coveredDriveIds;
   }
 
   SyncCubit({
@@ -404,7 +431,12 @@ class SyncCubit extends Cubit<SyncState> {
 
     unawaited(_updateContext());
 
-    _captureSkippedEntities(_syncProgress);
+    _captureSkippedEntities(
+      _syncProgress,
+      // A retry sync visits only the drives it was handed; anything else is a
+      // sweep of every attached drive.
+      coveredDriveIds: driveIdsToRetry?.toSet(),
+    );
 
     // Check if sync completed with errors (only for non-cancelled syncs)
     if (_syncProgress.hasErrors) {
@@ -551,7 +583,7 @@ class SyncCubit extends Cubit<SyncState> {
 
     _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
 
-    _captureSkippedEntities(_syncProgress);
+    _captureSkippedEntities(_syncProgress, coveredDriveIds: {driveId});
 
     // Check if sync completed with errors
     if (_syncProgress.hasErrors) {
