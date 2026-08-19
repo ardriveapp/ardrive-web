@@ -27,30 +27,6 @@ import 'package:flutter/foundation.dart';
 ///    data items to be read without preference, so nothing here filters on
 ///    `bundledIn`.
 
-/// Tags specific to the `drive-state` entity (§3.2). The rest — `Drive-Id`,
-/// `Entity-Type`, `Block-Start`, `Block-End`, `Data-Start`, `Data-End`,
-/// `Cipher`, `Cipher-IV`, `Unix-Time`, `ArFS` — already exist as [EntityTag]
-/// and are reused from there rather than restated.
-class DriveStateTag {
-  /// Mirrors `Snapshot-Id`: the uuid of this drive-state entity.
-  static const driveStateId = 'Drive-State-Id';
-
-  /// The payload format version (§6). Bumps only when an older reader would
-  /// *misinterpret* a payload, never for an addition.
-  static const stateVersion = 'State-Version';
-
-  /// The payload is compressed before encryption, and a client cannot discover
-  /// that from an encrypted body, so it is declared (§3.2).
-  static const contentEncoding = 'Content-Encoding';
-
-  /// An integrity check, not a statistic (§3.2).
-  static const entityCount = 'Entity-Count';
-}
-
-/// The `Entity-Type` value that makes this entity invisible to clients that
-/// predate it — which is the whole basis of the additive property (§3.1).
-const String driveStateEntityType = 'drive-state';
-
 /// A transaction an indexer claims is a drive state artifact.
 ///
 /// Nothing here has been verified. The tags are as reported; the getters parse
@@ -100,9 +76,9 @@ class DriveStateArtifactCandidate extends Equatable {
   String? get driveId => tags[EntityTag.driveId];
   String? get entityType => tags[EntityTag.entityType];
   String? get arFsVersion => tags[EntityTag.arFs];
-  String? get driveStateId => tags[DriveStateTag.driveStateId];
-  String? get stateVersion => tags[DriveStateTag.stateVersion];
-  String? get contentEncoding => tags[DriveStateTag.contentEncoding];
+  String? get driveStateId => tags[EntityTag.driveStateId];
+  String? get stateVersion => tags[EntityTag.stateVersion];
+  String? get contentEncoding => tags[EntityTag.contentEncoding];
   String? get cipher => tags[EntityTag.cipher];
   String? get cipherIv => tags[EntityTag.cipherIv];
 
@@ -120,7 +96,7 @@ class DriveStateArtifactCandidate extends Equatable {
   int? get dataStart => _intTag(EntityTag.dataStart);
   int? get dataEnd => _intTag(EntityTag.dataEnd);
 
-  int? get entityCount => _intTag(DriveStateTag.entityCount);
+  int? get entityCount => _intTag(EntityTag.entityCount);
   int? get unixTime => _intTag(EntityTag.unixTime);
 
   bool get isBundled => bundledInTxId != null;
@@ -348,7 +324,7 @@ class GraphQLDriveStateDiscovery implements DriveStateDiscovery {
   }) =>
       candidate.ownerAddress == ownerAddress &&
       candidate.driveId == driveId &&
-      candidate.entityType == driveStateEntityType;
+      candidate.entityType == EntityTypeTag.driveState;
 
   /// Newest first by `Block-End` (§3.4: a later artifact supersedes every
   /// earlier one outright).
