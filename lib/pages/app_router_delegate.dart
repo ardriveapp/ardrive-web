@@ -44,6 +44,19 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   String? driveName;
   String? driveFolderId;
 
+  /// The drive a folder link named, held until that drive is the selected one.
+  ///
+  /// A folder link opened by someone who does not have the drive yet goes
+  /// through the attach flow, which ends by clearing [driveId] so the prompt
+  /// cannot re-fire. The drive is then selected fresh, [driveFolderId] reads as
+  /// belonging to a different drive, and the folder the link named is dropped -
+  /// so every recipient who was not already in the drive landed at its root,
+  /// which made a folder link a drive link with extra characters.
+  ///
+  /// One shot: cleared as soon as that drive is selected, so ordinary
+  /// navigation away from the drive still discards the folder as it always has.
+  String? _pendingFolderDriveId;
+
   DriveKey? sharedDriveKey;
   String? sharedRawDriveKey;
 
@@ -198,8 +211,19 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     if (state is DrivesLoadSuccess) {
                       final selectedDriveChanged =
                           driveId != state.selectedDriveId;
-                      if (selectedDriveChanged) {
+
+                      // The drive a folder link named has just become the
+                      // selected one, so its folder is not stale - it is the
+                      // whole point of the link.
+                      final isTheLinkedDrive = _pendingFolderDriveId != null &&
+                          _pendingFolderDriveId == state.selectedDriveId;
+
+                      if (selectedDriveChanged && !isTheLinkedDrive) {
                         driveFolderId = null;
+                      }
+
+                      if (isTheLinkedDrive) {
+                        _pendingFolderDriveId = null;
                       }
 
                       driveId = state.selectedDriveId;
@@ -386,6 +410,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     driveId = configuration.driveId;
     driveName = configuration.driveName;
     driveFolderId = configuration.driveFolderId;
+    _pendingFolderDriveId =
+        configuration.driveFolderId == null ? null : configuration.driveId;
     sharedDriveKey = configuration.sharedDriveKey;
     sharedRawDriveKey = configuration.sharedRawDriveKey;
     sharedFileId = configuration.sharedFileId;
@@ -404,6 +430,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     driveId = null;
     driveName = null;
     driveFolderId = null;
+    _pendingFolderDriveId = null;
     sharedDriveKey = null;
     sharedRawDriveKey = null;
     sharedFileId = null;

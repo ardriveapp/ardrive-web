@@ -90,39 +90,16 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
             );
           }
 
-          // A private share link no longer carries the drive's name - it is a
-          // secret, and it is recoverable from the drive's own record once the
-          // key is in hand. Resolve it here so the auto-attach below still
-          // has one.
+          // The key is the whole precondition. A private share link no longer
+          // carries the drive's name - it is a secret, and `submit()` resolves
+          // the real one from the drive's own record on its way through.
           //
-          // Deliberately resolved *before* `submit()` rather than inside it:
-          // `submit()` reads the name controller up front so that a name the
-          // user typed by hand is the one the drive is attached under, and
-          // moving that read later would silently discard it.
-          if (driveNameController.text.isEmpty &&
-              driveKeyController.text.isNotEmpty) {
-            // Guarded: this runs inside a microtask started from the
-            // constructor whose future nobody awaits, so a network or decode
-            // failure in here would otherwise surface as an unhandled
-            // asynchronous error. A name that will not resolve is not fatal -
-            // the auto-submit below is simply skipped and the form stays open
-            // for the recipient to act on, which is what a keyless link
-            // already does.
-            try {
-              await driveNameLoader();
-            } catch (e, stacktrace) {
-              logger.e(
-                'Failed to resolve the name of the shared drive',
-                e,
-                stacktrace,
-              );
-            }
-
-            if (isClosed) return;
-          }
-
-          if (driveNameController.text.isNotEmpty &&
-              driveKeyController.text.isNotEmpty) {
+          // Gating this on the name as well used to mean that a link whose key
+          // was wrong, or whose drive could not be found, simply sat there:
+          // auto-attach was skipped and nothing said why. Letting `submit()`
+          // run surfaces those through the states it already emits -
+          // `DriveAttachInvalidDriveKey` and `DriveAttachDriveNotFound`.
+          if (driveKeyController.text.isNotEmpty) {
             submit();
           }
         }
@@ -136,7 +113,12 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
   void submit() async {
     final driveId = driveIdController.text;
-    final driveName = driveNameController.text;
+
+    // Read before the loaders below overwrite the field with the drive's own
+    // name. A name typed by hand is the one the drive is attached under; an
+    // empty one is not a preference, so it falls back to whatever the chain
+    // says once the loaders have run.
+    final typedDriveName = driveNameController.text;
 
     try {
       final previousState = state;
@@ -185,6 +167,10 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         emit(DriveAttachInitial());
         return;
       }
+
+      final driveName = typedDriveName.isNotEmpty
+          ? typedDriveName
+          : driveNameController.text;
 
       await _driveDao.writeDriveEntity(
         name: driveName,
