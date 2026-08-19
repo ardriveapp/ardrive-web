@@ -3,6 +3,7 @@ import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/turbo/models/free_upload_status.dart';
+import 'package:ardrive/turbo/models/turbo_free_allowance.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
@@ -175,11 +176,17 @@ class DriveStatePublishCostEstimator {
       }
     }
 
-    final turboBalance =
-        await _turboBalanceRetriever.getBalance(wallet).catchError((Object e) {
+    // `try`/`catch` rather than `.catchError`, to match the guard above and
+    // because the two are not equivalent: `.catchError` is attached to a future
+    // the call has already returned, so a collaborator that throws on the way
+    // to returning one is not caught by it at all.
+    BigInt turboBalance;
+    try {
+      turboBalance = await _turboBalanceRetriever.getBalance(wallet);
+    } catch (e) {
       logger.e('[drive-state] could not read the Turbo balance', e);
-      return BigInt.zero;
-    });
+      turboBalance = BigInt.zero;
+    }
 
     return DriveStatePublishCost(
       costEstimateAr: costEstimateAr,
@@ -201,6 +208,12 @@ class DriveStatePublishCostEstimator {
   /// Being small enough is not sufficient: the wallet's free allowance has to
   /// cover it too, or Turbo rejects the upload with a 402 after the user was
   /// told it was free.
+  ///
+  /// Asking costs a request to the payment service, and that request failing is
+  /// a Turbo failure like any other: it degrades to "not free", never to a
+  /// failed estimate. An estimate that throws is an artifact that is never
+  /// offered at all — so letting this one line escape would mean a Turbo outage
+  /// silently removing the feature from users who were going to pay in AR.
   Future<FreeUploadStatus> _freeStatus({
     required int sizeInBytes,
     required Wallet wallet,
@@ -212,10 +225,21 @@ class DriveStatePublishCostEstimator {
         sizeInBytes <= _configService.config.allowedDataItemSizeForTurbo;
     if (!isSizeEligible) return FreeUploadStatus.notEligible;
 
+    final TurboFreeAllowance allowance;
+    try {
+      allowance = await _turboBalanceRetriever.getFreeAllowance(wallet);
+    } catch (e) {
+      logger.w(
+        '[drive-state] Turbo could not report a free allowance; the artifact '
+        'is priced as a paid upload: $e',
+      );
+      return FreeUploadStatus.notEligible;
+    }
+
     return freeUploadStatusFor(
       isSizeEligible: true,
       byteCount: sizeInBytes,
-      allowance: await _turboBalanceRetriever.getFreeAllowance(wallet),
+      allowance: allowance,
     );
   }
 }

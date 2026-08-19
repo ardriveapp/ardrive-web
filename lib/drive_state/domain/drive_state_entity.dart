@@ -184,16 +184,40 @@ class DriveStateEntity extends Entity {
     }
   }
 
+  /// The tags without which a published artifact is unreadable, checked before
+  /// any of them is written.
+  ///
+  /// A real check and not an `assert`, unlike every sibling entity. `assert` is
+  /// stripped from release builds, so a null here would not stop a release
+  /// client: it would interpolate to the literal `null` and publish
+  /// `Block-End: null` — a transaction that is paid for, permanent, and refused
+  /// by every reader including the client that wrote it, because
+  /// [fromTransaction] parses these tags with `int.parse`. There is no way to
+  /// correct a tag after the fact, so the only place this can be caught is
+  /// before the transaction exists.
+  void _requireTags() {
+    final missing = <String>[
+      if (id == null) 'Drive-State-Id',
+      if (driveId == null) 'Drive-Id',
+      if (blockEnd == null) 'Block-End',
+      if (dataStart == null) 'Data-Start',
+      if (dataEnd == null) 'Data-End',
+      if (entityCount == null) 'Entity-Count',
+      if (cipher == null) 'Cipher',
+      if (cipherIv == null) 'Cipher-IV',
+    ];
+
+    if (missing.isNotEmpty) {
+      throw StateError(
+        'A drive state entity cannot be tagged without ${missing.join(', ')}; '
+        'publishing it would spend money on an artifact no reader can use.',
+      );
+    }
+  }
+
   @override
   void addEntityTagsToTransaction<T extends TransactionBase>(T tx) {
-    assert(id != null &&
-        driveId != null &&
-        blockEnd != null &&
-        dataStart != null &&
-        dataEnd != null &&
-        entityCount != null &&
-        cipher != null &&
-        cipherIv != null);
+    _requireTags();
 
     tx
       ..addArFsTag()
