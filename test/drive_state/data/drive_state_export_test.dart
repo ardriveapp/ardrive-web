@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:ardrive/drive_state/data/drive_state_export.dart';
+import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:drift/drift.dart';
@@ -39,16 +40,40 @@ void main() {
       );
     }
 
-    test('classifies every column of drives', () {
-      expectProjectionCoversTable(db.drives);
+    // Driven off `driveStateExportedTables` rather than a list of table names
+    // written out here, so that a section added for a fourth table is
+    // classified before it can ship: naming the tables twice is how a guard
+    // ends up covering three of them while the export reads four.
+    test('classifies every column of every exported table', () {
+      final tables = driveStateExportedTables(db);
+
+      expect(tables, isNotEmpty);
+      for (final table in tables) {
+        expectProjectionCoversTable(table);
+      }
     });
 
-    test('classifies every column of folder_entries', () {
-      expectProjectionCoversTable(db.folderEntries);
-    });
+    /// The artifact covers one drive and is encrypted with that one drive's
+    /// key, so every table it reads has to be answerable to "which drive is
+    /// this row about". The neighbouring tables that look exportable —
+    /// `network_transactions`, `arns_records`, `ant_records` — have no
+    /// `driveId` at all, and publishing one would hand everyone holding this
+    /// drive's key a list of the user's other drives.
+    test('every exported table can be scoped to one drive', () {
+      for (final table in driveStateExportedTables(db)) {
+        final columns = table.$columns.map((c) => c.name);
 
-    test('classifies every column of file_entries', () {
-      expectProjectionCoversTable(db.fileEntries);
+        // `drives` is the one drive; it is scoped by its own primary key.
+        final scopingColumn =
+            table.actualTableName == driveSectionName ? 'id' : 'driveId';
+
+        expect(
+          columns,
+          contains(scopingColumn),
+          reason: '${table.actualTableName} has no $scopingColumn, so its '
+              'rows cannot be limited to the drive being exported',
+        );
+      }
     });
 
     test('withholds the drive key and everything needed to unwrap it', () {
@@ -71,10 +96,62 @@ void main() {
     });
   });
 
+  /// The most important promise the export makes is about the tables it will
+  /// not read, and a promise nothing asserts is a promise the next refactor
+  /// keeps by luck.
+  group('tables the export refuses', () {
+    void expectRefused(TableInfo table) {
+      expect(
+        () => driveStateExportedColumns(table),
+        throwsA(isA<ArgumentError>()),
+        reason: '${table.actualTableName} must not be exportable',
+      );
+      expect(
+        () => driveStateWithheldColumns(table),
+        throwsA(isA<ArgumentError>()),
+        reason: '${table.actualTableName} must not be exportable',
+      );
+    }
+
+    test('refuses profiles, which holds the wallet', () {
+      expectRefused(db.profiles);
+    });
+
+    test('refuses the revision tables', () {
+      // Read for existence, never for content: decision D2 is current state
+      // only, and a revision carries metadata transaction ids that say
+      // nothing the current row does not.
+      expectRefused(db.driveRevisions);
+      expectRefused(db.folderRevisions);
+      expectRefused(db.fileRevisions);
+    });
+
+    test('refuses every table it does not export', () {
+      final exported =
+          driveStateExportedTables(db).map((t) => t.actualTableName).toSet();
+
+      final refused = db.allTables
+          .where((t) => !exported.contains(t.actualTableName))
+          .toList();
+
+      expect(refused, isNotEmpty);
+      for (final table in refused) {
+        expectRefused(table);
+      }
+    });
+  });
+
   group('exportDriveState', () {
     const driveId = 'drive-id';
     const rootFolderId = 'root-folder-id';
     const nestedFolderId = 'nested-folder-id';
+    const emptyFolderIdPrefix = 'empty-nested-folder-id';
+
+    final syncedFolderIds = [
+      rootFolderId,
+      nestedFolderId,
+      ...List.generate(3, (i) => '$emptyFolderIdPrefix$i'),
+    ];
 
     setUp(() async {
       await addTestFilesToDb(
@@ -83,9 +160,17 @@ void main() {
         rootFolderId: rootFolderId,
         nestedFolderId: nestedFolderId,
         emptyNestedFolderCount: 3,
-        emptyNestedFolderIdPrefix: 'empty-nested-folder-id',
+        emptyNestedFolderIdPrefix: emptyFolderIdPrefix,
         rootFolderFileCount: 4,
         nestedFolderFileCount: 2,
+      );
+      // `addTestFilesToDb` writes file revisions but no folder ones, which
+      // would make every folder read as a local stand-in. This is a drive
+      // whose folders all synced.
+      await addFolderRevisionsToDb(
+        db,
+        driveId: driveId,
+        folderIds: syncedFolderIds,
       );
     });
 
@@ -96,6 +181,7 @@ void main() {
       expect(export.drive.rootFolderId, rootFolderId);
       expect(export.folders.map((f) => f.id), contains(rootFolderId));
       // root + nested + 3 empty
+      expect(export.folders.map((f) => f.id).toSet(), syncedFolderIds.toSet());
       expect(export.folders, hasLength(5));
       expect(export.files, hasLength(6));
       expect(export.entityCount, 12);
@@ -106,10 +192,21 @@ void main() {
     });
 
     test('carries no key material even when the drive holds some', () async {
+      // High entropy on purpose: short byte strings collide with ordinary
+      // text, and a leak has to be caught in whatever encoding it takes.
+      final encryptedKey = Uint8List.fromList([
+        0x8f, 0x2b, 0xd4, 0x61, 0x9c, 0x07, 0xa3, 0x5e, //
+        0x13, 0xf0, 0x6d, 0xba, 0x47, 0x91, 0xce, 0x25,
+      ]);
+      final keyEncryptionIv = Uint8List.fromList([
+        0x5a, 0xe3, 0x1c, 0x76, 0xb8, 0x04, //
+        0xdf, 0x92, 0x30, 0xa7, 0x6b, 0xfe,
+      ]);
+
       await db.update(db.drives).write(
             DrivesCompanion(
-              encryptedKey: Value(Uint8List.fromList([1, 2, 3, 4])),
-              keyEncryptionIv: Value(Uint8List.fromList([5, 6, 7])),
+              encryptedKey: Value(encryptedKey),
+              keyEncryptionIv: Value(keyEncryptionIv),
               driveKeyGenerated: const Value(true),
             ),
           );
@@ -117,11 +214,73 @@ void main() {
       final export = await exportDriveState(db.driveDao, driveId);
       final encoded = jsonEncode(export.toJson());
 
-      for (final field in ['encryptedKey', 'keyEncryptionIv', 'driveKeyGenerated']) {
+      for (final field in [
+        'encryptedKey',
+        'keyEncryptionIv',
+        'driveKeyGenerated'
+      ]) {
         expect(encoded, isNot(contains(field)));
       }
-      // The bytes themselves, base64 or otherwise, must not appear either.
-      expect(encoded, isNot(contains('AQIDBA')));
+
+      // The bytes themselves, in both shapes they could take. Drift's default
+      // serializer passes a `Uint8List` through untransformed, so a leak
+      // through a generated `toJson()` renders as a JSON array of ints, which
+      // a base64 assertion alone would sail straight past.
+      for (final bytes in [encryptedKey, keyEncryptionIv]) {
+        expect(encoded, isNot(contains(base64.encode(bytes))));
+        expect(encoded, isNot(contains(bytes.join(','))));
+      }
+    });
+
+    /// What the assertions above test is one rendering of one value; what
+    /// actually keeps key material out of the artifact is the shape of the
+    /// query — a `selectOnly` that names every column it reads, so a column
+    /// added by a later migration is invisible until someone classifies it.
+    /// So assert the SQL.
+    test('the statements it runs name no withheld column', () {
+      final withheld = <String>{
+        for (final table in driveStateExportedTables(db))
+          ...driveStateWithheldColumns(table).map((c) => c.name),
+      };
+      expect(withheld, contains('encryptedKey'));
+
+      final statements = {
+        driveSectionName: driveStateDriveQuery(db.driveDao, driveId),
+        folderEntriesSectionName:
+            driveStateFolderEntriesQuery(db.driveDao, driveId),
+        fileEntriesSectionName:
+            driveStateFileEntriesQuery(db.driveDao, driveId),
+      };
+
+      statements.forEach((section, statement) {
+        final sql = statement.constructQuery().sql;
+
+        for (final column in withheld) {
+          expect(
+            sql,
+            isNot(contains(column)),
+            reason: 'the $section query reads $column',
+          );
+        }
+
+        // A star select would publish whatever the next migration adds.
+        expect(
+          sql,
+          isNot(contains('*')),
+          reason: 'the $section query must name the columns it reads',
+        );
+      });
+
+      // And what it does read is exactly the classified projection.
+      statements.forEach((section, statement) {
+        final sql = statement.constructQuery().sql;
+        final table = driveStateExportedTables(db)
+            .firstWhere((t) => t.actualTableName == section);
+
+        for (final column in driveStateExportedColumns(table)) {
+          expect(sql, contains(column.name));
+        }
+      });
     });
 
     test('reads only the named drive', () async {
@@ -136,11 +295,21 @@ void main() {
         rootFolderFileCount: 1,
         nestedFolderFileCount: 1,
       );
+      await addFolderRevisionsToDb(
+        db,
+        driveId: otherDriveId,
+        folderIds: [
+          'other-root-folder-id',
+          'other-nested-folder-id',
+          'other-empty-0',
+        ],
+      );
 
       final export = await exportDriveState(db.driveDao, driveId);
 
       expect(export.folders.every((f) => f.driveId == driveId), isTrue);
       expect(export.files.every((f) => f.driveId == driveId), isTrue);
+      expect(export.folders, hasLength(5));
     });
 
     test('orders rows by id so two exports of one state agree', () async {
@@ -208,48 +377,179 @@ void main() {
       expect(decoded.files.first.licenseTxId, 'license-tx');
     });
 
-  group('columns that are not secret but must not travel', () {
-    /// Neither is key material, so neither is caught by the leak test above -
-    /// they are withheld for correctness instead.
-    ///
-    /// `syncCursor` is an opaque cursor issued by one gateway's indexer and
-    /// means nothing to another, so an importer adopting it would resume
-    /// pagination from an arbitrary position.
-    ///
-    /// `lastBlockHeight` is the producer's watermark, which is a different
-    /// claim from the artifact's coverage. Adopting one that sits above the
-    /// artifact's Block-End would have a client believe it had synced a range
-    /// the artifact never contained - the drive watermark advancing past
-    /// unsynced entities, which is the silent drop in
-    /// SYNC_SKIPPED_ENTITY_PERSISTENCE.md. Coverage comes from the tag.
-    test('the drive sync cursor and watermark are withheld', () async {
-      final db = getTestDb();
-      addTearDown(db.close);
-      await addTestFilesToDb(
-        db,
-        driveId: driveId,
-        rootFolderId: rootFolderId,
-        nestedFolderId: 'nested',
-        emptyNestedFolderCount: 0,
-        emptyNestedFolderIdPrefix: 'empty',
-        rootFolderFileCount: 1,
-        nestedFolderFileCount: 0,
-      );
-      await db.driveDao.writeToDrive(const DrivesCompanion(
-        id: Value(driveId),
-        syncCursor: Value('an-endpoint-specific-cursor'),
-        lastBlockHeight: Value(1814228),
-      ));
+    /// The artifact is immutable, and the importer keeps a local row only
+    /// when it is strictly newer than the published one. A row this client
+    /// invented is stamped with *now*, so it is always newer than a real row
+    /// carrying its revision's chain commit time — publishing one would
+    /// overwrite a correctly synced folder in every client that imported it,
+    /// with no way to take it back.
+    group('rows this client invented never travel', () {
+      test('a ghost folder is not exported', () async {
+        // As `SyncRepository` writes one: named after its own uuid, parented
+        // to the drive root, stamped now.
+        await db.into(db.folderEntries).insert(
+              FolderEntriesCompanion.insert(
+                id: 'ghost-folder-id',
+                driveId: driveId,
+                name: 'ghost-folder-id',
+                parentFolderId: const Value(rootFolderId),
+                path: '',
+                isGhost: const Value(true),
+                lastUpdated: Value(DateTime.now()),
+                dateCreated: Value(DateTime.now()),
+              ),
+            );
 
-      final encoded = jsonEncode((await exportDriveState(db.driveDao, driveId))
-          .toJson());
+        final export = await exportDriveState(db.driveDao, driveId);
 
-      expect(encoded, isNot(contains('syncCursor')));
-      expect(encoded, isNot(contains('an-endpoint-specific-cursor')));
-      expect(encoded, isNot(contains('lastBlockHeight')));
-      expect(encoded, isNot(contains('1814228')));
+        expect(
+          export.folders.map((f) => f.id),
+          isNot(contains('ghost-folder-id')),
+        );
+        expect(export.folders, hasLength(5));
+        expect(export.entityCount, 12);
+      });
+
+      test('a ghost that has since synced is exported', () async {
+        await db.into(db.folderEntries).insert(
+              FolderEntriesCompanion.insert(
+                id: 'ghost-folder-id',
+                driveId: driveId,
+                name: 'ghost-folder-id',
+                parentFolderId: const Value(rootFolderId),
+                path: '',
+                isGhost: const Value(true),
+                lastUpdated: Value(DateTime.now()),
+              ),
+            );
+        // Its real metadata lands. `isGhost` is not the discriminator — a
+        // revision is — so the row travels now.
+        await addFolderRevisionsToDb(
+          db,
+          driveId: driveId,
+          folderIds: ['ghost-folder-id'],
+        );
+
+        final export = await exportDriveState(db.driveDao, driveId);
+
+        expect(export.folders.map((f) => f.id), contains('ghost-folder-id'));
+        expect(export.folders, hasLength(6));
+        expect(export.entityCount, 13);
+      });
+
+      /// The root folder placeholder carries no marker at all — not
+      /// `isGhost`, since the upsert that lands real metadata leaves absent
+      /// columns alone and the flag would stick forever — so a filter on
+      /// `isGhost` would publish it.
+      test('a root folder placeholder is not exported', () async {
+        const discoveredDriveId = 'discovered-drive-id';
+        const discoveredRootFolderId = 'discovered-root-folder-id';
+
+        // The real path: a drive found on chain gets a root folder row so it
+        // can be opened before its metadata arrives.
+        await db.driveDao.updateUserDrives({
+          DriveEntity(
+            id: discoveredDriveId,
+            name: 'a discovered drive',
+            rootFolderId: discoveredRootFolderId,
+            privacy: DrivePrivacyTag.public,
+            authMode: DriveAuthModeTag.none,
+          )..ownerAddress = 'owner-address': null,
+        }, null);
+
+        final placeholder = await db.driveDao
+            .folderById(folderId: discoveredRootFolderId)
+            .getSingle();
+        expect(placeholder.isGhost, isFalse,
+            reason: 'the placeholder carries no marker of its own');
+
+        final export = await exportDriveState(db.driveDao, discoveredDriveId);
+
+        expect(export.folders, isEmpty);
+        expect(export.files, isEmpty);
+        expect(export.entityCount, 1);
+      });
+
+      test('the root folder is exported once its metadata syncs', () async {
+        const discoveredDriveId = 'discovered-drive-id';
+        const discoveredRootFolderId = 'discovered-root-folder-id';
+
+        await db.driveDao.updateUserDrives({
+          DriveEntity(
+            id: discoveredDriveId,
+            name: 'a discovered drive',
+            rootFolderId: discoveredRootFolderId,
+            privacy: DrivePrivacyTag.public,
+            authMode: DriveAuthModeTag.none,
+          )..ownerAddress = 'owner-address': null,
+        }, null);
+        await addFolderRevisionsToDb(
+          db,
+          driveId: discoveredDriveId,
+          folderIds: [discoveredRootFolderId],
+        );
+
+        final export = await exportDriveState(db.driveDao, discoveredDriveId);
+
+        expect(export.folders.map((f) => f.id), [discoveredRootFolderId]);
+        expect(export.entityCount, 2);
+      });
+
+      test('a file with no revision is not exported', () async {
+        await db.into(db.fileEntries).insert(
+              FileEntriesCompanion.insert(
+                id: 'unsynced-file-id',
+                driveId: driveId,
+                parentFolderId: rootFolderId,
+                name: 'unsynced-file-id',
+                dataTxId: 'unsynced-file-data',
+                size: 500,
+                lastModifiedDate: DateTime.now(),
+                path: '',
+              ),
+            );
+
+        final export = await exportDriveState(db.driveDao, driveId);
+
+        expect(
+          export.files.map((f) => f.id),
+          isNot(contains('unsynced-file-id')),
+        );
+        expect(export.files, hasLength(6));
+        expect(export.entityCount, 12);
+      });
     });
-  });
+
+    group('columns that are not secret but must not travel', () {
+      /// Neither is key material, so neither is caught by the leak test above -
+      /// they are withheld for correctness instead.
+      ///
+      /// `syncCursor` is an opaque cursor issued by one gateway's indexer and
+      /// means nothing to another, so an importer adopting it would resume
+      /// pagination from an arbitrary position.
+      ///
+      /// `lastBlockHeight` is the producer's watermark, which is a different
+      /// claim from the artifact's coverage. Adopting one that sits above the
+      /// artifact's Block-End would have a client believe it had synced a range
+      /// the artifact never contained - the drive watermark advancing past
+      /// unsynced entities, which is the silent drop in
+      /// SYNC_SKIPPED_ENTITY_PERSISTENCE.md. Coverage comes from the tag.
+      test('the drive sync cursor and watermark are withheld', () async {
+        await db.driveDao.writeToDrive(const DrivesCompanion(
+          id: Value(driveId),
+          syncCursor: Value('an-endpoint-specific-cursor'),
+          lastBlockHeight: Value(1814228),
+        ));
+
+        final encoded =
+            jsonEncode((await exportDriveState(db.driveDao, driveId)).toJson());
+
+        expect(encoded, isNot(contains('syncCursor')));
+        expect(encoded, isNot(contains('an-endpoint-specific-cursor')));
+        expect(encoded, isNot(contains('lastBlockHeight')));
+        expect(encoded, isNot(contains('1814228')));
+      });
+    });
   });
 
   group('DriveStateExport.fromJson', () {
@@ -297,8 +597,8 @@ void main() {
 
     test('ignores a field it does not know', () {
       final payload = minimalPayload();
-      final driveRow = ((payload['sections'] as Map)['drives']
-          as Map)['rows'] as List;
+      final driveRow =
+          ((payload['sections'] as Map)['drives'] as Map)['rows'] as List;
       (driveRow.single as Map)['somethingNew'] = 'ignored';
 
       expect(DriveStateExport.fromJson(payload).drive.name, 'a drive');
@@ -329,8 +629,8 @@ void main() {
 
     test('rejects a missing required field as malformed', () {
       final payload = minimalPayload();
-      final driveRow = ((payload['sections'] as Map)['drives']
-          as Map)['rows'] as List;
+      final driveRow =
+          ((payload['sections'] as Map)['drives'] as Map)['rows'] as List;
       (driveRow.single as Map).remove('ownerAddress');
 
       expect(

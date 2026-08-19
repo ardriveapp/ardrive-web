@@ -174,6 +174,14 @@ void main() {
       rootFolderFileCount: 2,
       nestedFolderFileCount: 1,
     );
+    // The producer publishes a drive it has actually synced: the export
+    // carries only rows a revision vouches for, and `addTestFilesToDb` writes
+    // revisions for its files but not for its folders.
+    await addFolderRevisionsToDb(
+      producerDb,
+      driveId: driveId,
+      folderIds: [rootFolderId, nestedFolderId, 'empty-nested-folder-id0'],
+    );
     // The producer owns the drive it publishes, and is far ahead of the
     // consumer. The watermark tests turn on that number never travelling.
     await producerDb.driveDao.writeToDrive(
