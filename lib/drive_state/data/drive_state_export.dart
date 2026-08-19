@@ -5,7 +5,7 @@ import 'package:equatable/equatable.dart';
 /// Exports one drive's current state from the local database, and converts it
 /// to and from the artifact's section format.
 ///
-/// Two rules from `docs/DRIVE_STATE_ARTIFACT.md` shape everything here:
+/// Three rules from `docs/DRIVE_STATE_ARTIFACT.md` shape everything here:
 ///
 ///  * **No key material may leave the database** (§2.1). Every table is read
 ///    through a projection that names its columns, so a column added by a
@@ -16,8 +16,12 @@ import 'package:equatable/equatable.dart';
 ///    [driveStateWithheldColumns] are what a drift test can assert against the
 ///    live schema.
 ///  * **Current state only** (decision D2). `file_entries` and
-///    `folder_entries` hold one row per entity; the revision tables are not
+///    `folder_entries` hold one row per entity; no revision's *contents* are
 ///    read. History stays available through snapshots and GraphQL.
+///  * **Only what came from the chain.** Those two tables also hold rows this
+///    client invented locally, and publishing one is not recoverable - see
+///    [_folderEntryCameFromChain]. The revision tables are read for existence
+///    alone, as the discriminator.
 
 /// The section format this build writes, and the newest it can read.
 ///
@@ -147,40 +151,158 @@ Future<DriveStateExport> exportDriveState(
   DriveDao driveDao,
   String driveId,
 ) async {
-  final drives = driveDao.drives;
-  final driveRow = await (driveDao.selectOnly(drives)
-        ..addColumns(driveStateExportedColumns(drives))
-        ..where(drives.id.equals(driveId)))
-      .getSingleOrNull();
+  final driveRow =
+      await driveStateDriveQuery(driveDao, driveId).getSingleOrNull();
 
   if (driveRow == null) {
     throw StateError('cannot export drive $driveId: no such drive');
   }
 
-  final folderEntries = driveDao.folderEntries;
-  final folderRows = await (driveDao.selectOnly(folderEntries)
-        ..addColumns(driveStateExportedColumns(folderEntries))
-        ..where(folderEntries.driveId.equals(driveId))
-        ..orderBy([OrderingTerm.asc(folderEntries.id)]))
-      .get();
-
-  final fileEntries = driveDao.fileEntries;
-  final fileRows = await (driveDao.selectOnly(fileEntries)
-        ..addColumns(driveStateExportedColumns(fileEntries))
-        ..where(fileEntries.driveId.equals(driveId))
-        ..orderBy([OrderingTerm.asc(fileEntries.id)]))
-      .get();
+  final folderRows =
+      await driveStateFolderEntriesQuery(driveDao, driveId).get();
+  final fileRows = await driveStateFileEntriesQuery(driveDao, driveId).get();
 
   return DriveStateExport(
-    drive: ExportedDrive._fromRow(driveRow, drives),
+    drive: ExportedDrive._fromRow(driveRow, driveDao.drives),
     folders: folderRows
-        .map((row) => ExportedFolderEntry._fromRow(row, folderEntries))
+        .map((row) => ExportedFolderEntry._fromRow(row, driveDao.folderEntries))
         .toList(),
     files: fileRows
-        .map((row) => ExportedFileEntry._fromRow(row, fileEntries))
+        .map((row) => ExportedFileEntry._fromRow(row, driveDao.fileEntries))
         .toList(),
   );
 }
+
+// The three statements [exportDriveState] runs, one per section.
+//
+// They are built here rather than inline so a test can assert the SQL they
+// generate. The key-material guarantee is a property of that SQL - a
+// `selectOnly` that names every column it reads - and a test that reads the
+// query text proves the mechanism, where a test that greps the encoded payload
+// only proves one rendering of one value.
+
+/// The `drives` row the export reads.
+JoinedSelectStatement driveStateDriveQuery(DriveDao driveDao, String driveId) {
+  final drives = driveDao.drives;
+  return driveDao.selectOnly(drives)
+    ..addColumns(driveStateExportedColumns(drives))
+    ..where(drives.id.equals(driveId));
+}
+
+/// The drive's chain-derived `folder_entries` rows, ordered by id.
+JoinedSelectStatement driveStateFolderEntriesQuery(
+  DriveDao driveDao,
+  String driveId,
+) {
+  final folderEntries = driveDao.folderEntries;
+  return driveDao.selectOnly(folderEntries)
+    ..addColumns(driveStateExportedColumns(folderEntries))
+    ..where(folderEntries.driveId.equals(driveId) &
+        _folderEntryCameFromChain(driveDao))
+    ..orderBy([OrderingTerm.asc(folderEntries.id)]);
+}
+
+/// The drive's chain-derived `file_entries` rows, ordered by id.
+JoinedSelectStatement driveStateFileEntriesQuery(
+  DriveDao driveDao,
+  String driveId,
+) {
+  final fileEntries = driveDao.fileEntries;
+  return driveDao.selectOnly(fileEntries)
+    ..addColumns(driveStateExportedColumns(fileEntries))
+    ..where(
+        fileEntries.driveId.equals(driveId) & _fileEntryCameFromChain(driveDao))
+    ..orderBy([OrderingTerm.asc(fileEntries.id)]);
+}
+
+/// Whether a `folder_entries` row came off the chain, rather than being
+/// invented by this client.
+///
+/// Not every row in that table is a folder that exists on Arweave:
+///
+///  * **Ghost folders.** When a file names a parent whose own metadata was
+///    never found, sync writes a stand-in row: named after its own uuid,
+///    parented to the drive root, `isGhost: true`, stamped `DateTime.now()`
+///    (`SyncRepository`). A normal state, not corruption - but a local guess.
+///  * **Root folder placeholders.** `DriveDao._rootFolderPlaceholder` inserts
+///    a row for a discovered drive's root folder so the drive can be opened
+///    before its metadata arrives. It sets no timestamp, so SQLite's
+///    `strftime('%s','now')` default applies, and it deliberately sets no
+///    `isGhost` either: the upsert that lands real metadata leaves absent
+///    columns alone, so the flag would stick forever. It therefore carries no
+///    marker of its own - which is why filtering on `isGhost` is not enough.
+///
+/// Both are stamped with *now*, while a synced row carries its revision's
+/// chain commit time. Since the importer keeps a local row only when it is
+/// strictly newer than the artifact's, a fabricated row always wins: an
+/// artifact carrying one would replace a correctly synced folder with a
+/// uuid-named, root-parented ghost in every client that imported it, and an
+/// artifact cannot be recalled.
+///
+/// A revision is the honest discriminator, because one is written only when
+/// real metadata is read - by sync, or by the local action that uploaded it.
+/// It is the same signal `DriveDetailCubit` uses to tell a genuinely empty
+/// drive from one that has never synced.
+Expression<bool> _folderEntryCameFromChain(DriveDao driveDao) {
+  final entries = driveDao.folderEntries;
+  final revisions = driveDao.folderRevisions;
+
+  return existsQuery(
+    driveDao.selectOnly(revisions)
+      ..addColumns([revisions.folderId])
+      ..where(revisions.folderId.equalsExp(entries.id) &
+          revisions.driveId.equalsExp(entries.driveId)),
+  );
+}
+
+/// The same discriminator for `file_entries`.
+///
+/// No code path fabricates a file row today, so this filters nothing out of a
+/// healthy database. It is applied anyway because the rule the export needs is
+/// "publish what the chain said", not "publish what no known bug wrote", and
+/// the next stand-in row should be dropped by a filter that already exists
+/// rather than by one nobody remembered to add.
+Expression<bool> _fileEntryCameFromChain(DriveDao driveDao) {
+  final entries = driveDao.fileEntries;
+  final revisions = driveDao.fileRevisions;
+
+  return existsQuery(
+    driveDao.selectOnly(revisions)
+      ..addColumns([revisions.fileId])
+      ..where(revisions.fileId.equalsExp(entries.id) &
+          revisions.driveId.equalsExp(entries.driveId)),
+  );
+}
+
+/// Every table the export may read, by its name in the schema - which is also
+/// its section name on the wire.
+///
+/// One list, consulted by [driveStateExportedColumns],
+/// [driveStateWithheldColumns] and by the drift guard test. A table that is
+/// not named here is refused whatever anyone classifies, so a section added
+/// for a fourth table cannot slip past a guard that only knew about three.
+///
+/// Adding to it is a decision, not a formality. The artifact covers *one*
+/// drive and is encrypted with *that* drive's key, so an exported table must
+/// be scopable to a single drive: the near tables that look tempting -
+/// `network_transactions`, `arns_records`, `ant_records` - have no `driveId`
+/// column at all, and exporting one would publish rows about the user's other
+/// drives to everyone holding this drive's key. `profiles` holds the wallet
+/// and is never exportable at any scope.
+const List<String> _exportedTableNames = [
+  driveSectionName,
+  folderEntriesSectionName,
+  fileEntriesSectionName,
+];
+
+/// The tables of [_exportedTableNames], resolved against a live database.
+///
+/// The guard test iterates this, so whatever the export is willing to read is
+/// exactly what has to be classified column by column.
+List<TableInfo> driveStateExportedTables(GeneratedDatabase db) => [
+      for (final name in _exportedTableNames)
+        db.allTables.firstWhere((t) => t.actualTableName == name),
+    ];
 
 /// The columns of [table] the export reads, in wire order.
 ///
@@ -188,18 +310,40 @@ Future<DriveStateExport> exportDriveState(
 /// migration that adds a column to an exported table makes
 /// `exported + withheld` disagree with the table's own column list, and the
 /// test fails until the new column is deliberately placed in one or the other.
-List<GeneratedColumn> driveStateExportedColumns(TableInfo table) {
-  if (table is Drives) return _exportedDriveColumns(table);
-  if (table is FolderEntries) return _exportedFolderEntryColumns(table);
-  if (table is FileEntries) return _exportedFileEntryColumns(table);
-  throw ArgumentError('${table.actualTableName} is not an exported table');
-}
+List<GeneratedColumn> driveStateExportedColumns(TableInfo table) =>
+    _classify(table).exported;
 
 /// The columns of [table] the export deliberately does not read.
-List<GeneratedColumn> driveStateWithheldColumns(TableInfo table) {
-  if (table is Drives) return _withheldDriveColumns(table);
-  if (table is FolderEntries) return const [];
-  if (table is FileEntries) return const [];
+List<GeneratedColumn> driveStateWithheldColumns(TableInfo table) =>
+    _classify(table).withheld;
+
+/// Both halves of one table's classification, decided together.
+///
+/// Together, because two lists maintained apart drift apart: the guarantee is
+/// that `exported + withheld` accounts for every column of the table, and a
+/// column can only go missing from both if the two are written in different
+/// places.
+///
+/// Refusing an unlisted table is the point of this function, not an accident
+/// of falling off the end of it: `profiles`, the revision tables and every
+/// other table in the schema throw here.
+({List<GeneratedColumn> exported, List<GeneratedColumn> withheld}) _classify(
+  TableInfo table,
+) {
+  if (_exportedTableNames.contains(table.actualTableName)) {
+    if (table is Drives) {
+      return (
+        exported: _exportedDriveColumns(table),
+        withheld: _withheldDriveColumns(table),
+      );
+    }
+    if (table is FolderEntries) {
+      return (exported: _exportedFolderEntryColumns(table), withheld: const []);
+    }
+    if (table is FileEntries) {
+      return (exported: _exportedFileEntryColumns(table), withheld: const []);
+    }
+  }
   throw ArgumentError('${table.actualTableName} is not an exported table');
 }
 
