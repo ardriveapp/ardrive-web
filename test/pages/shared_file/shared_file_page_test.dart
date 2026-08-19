@@ -708,6 +708,37 @@ void main() {
       verify(() => cubit.showRevision(any())).called(1);
     });
 
+    testWidgets('a pinned link names its version pinned, and still lets go',
+        (tester) async {
+      // Pinning is the sharer saying which version they mean, not a limit on
+      // the recipient - who can reach every other version on chain anyway, and
+      // whom the freshness banner already offers "View latest". So the chip
+      // changes and nothing else does.
+      await pumpPage(
+        tester,
+        success(
+          isPinned: true,
+          activityRevisions: [
+            fileRevision(dataTxId: 'data-tx-newer'),
+            fileRevision(),
+          ],
+          activityStatus: SharedFileActivityStatus.loaded,
+        ),
+      );
+
+      await tester.tap(find.byType(ExpansionTile).last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Pinned'), findsOneWidget);
+      expect(find.text('This link'), findsNothing);
+
+      // And the newer one is still selectable.
+      await tester.tap(find.text('Latest'));
+      await tester.pumpAndSettle();
+
+      verify(() => cubit.showRevision(any())).called(1);
+    });
+
     testWidgets('shows the verification badge the link earned', (tester) async {
       await pumpPage(tester, success(verification: LinkVerification.verified));
 

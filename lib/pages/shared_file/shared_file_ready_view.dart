@@ -305,6 +305,7 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
         revisions: state.activityRevisions,
         status: state.activityStatus,
         currentRevision: revision,
+        isPinned: state.isPinned,
         // Nothing may move the target while bytes are on their way, and
         // nothing may start a second change while one is running - the same
         // guard the freshness banner's actions use.
@@ -978,6 +979,7 @@ class SharedFileVersionsDrawer extends StatelessWidget {
     required this.onOpened,
     required this.onSelected,
     this.isDisabled = false,
+    this.isPinned = false,
   });
 
   /// Newest first. Seeded with the shared revision the moment the list opens.
@@ -1001,6 +1003,16 @@ class SharedFileVersionsDrawer extends StatelessWidget {
   /// True while a download or another selection is in flight - nothing may
   /// move the target while bytes are on their way.
   final bool isDisabled;
+
+  /// Whether the link deliberately names one revision.
+  ///
+  /// Only changes what the link's own row is *called*. A pinned link is the
+  /// sharer saying which version they mean, not a restriction on the
+  /// recipient - who can reach every other version of the file on chain
+  /// regardless - so selecting away from it stays as free as it already is
+  /// from the freshness banner, which offers a pinned link "View latest" and
+  /// hands it back with [SharedFileCubit.showSharedRevision].
+  final bool isPinned;
 
   @override
   Widget build(BuildContext context) {
@@ -1033,6 +1045,7 @@ class SharedFileVersionsDrawer extends StatelessWidget {
             isNewest: revision.dataTxId == revisions.first.dataTxId &&
                 revisions.length > 1,
             isFromLink: revision.dataTxId == sharedRevision.dataTxId,
+            isPinned: isPinned,
             isDisabled: isDisabled,
             onSelected: () => onSelected(revision),
           ),
@@ -1086,6 +1099,7 @@ class _SharedFileVersionRow extends StatelessWidget {
     required this.isSelected,
     required this.isNewest,
     required this.isFromLink,
+    required this.isPinned,
     required this.isDisabled,
     required this.onSelected,
   });
@@ -1094,6 +1108,7 @@ class _SharedFileVersionRow extends StatelessWidget {
   final bool isSelected;
   final bool isNewest;
   final bool isFromLink;
+  final bool isPinned;
   final bool isDisabled;
   final VoidCallback onSelected;
 
@@ -1147,7 +1162,13 @@ class _SharedFileVersionRow extends StatelessWidget {
               if (isFromLink) ...[
                 const SizedBox(width: 8),
                 _VersionChip(
-                  appLocalizationsOf(context).sharedFileVersionFromLink,
+                  // "Pinned" says the sharer chose this version; "This link"
+                  // says only that the link carried it. On a pinned link the
+                  // first is the fact worth knowing, and it is what makes the
+                  // way back obvious after selecting something else.
+                  isPinned
+                      ? appLocalizationsOf(context).sharedFileVersionPinned
+                      : appLocalizationsOf(context).sharedFileVersionFromLink,
                 ),
               ] else if (isNewest) ...[
                 const SizedBox(width: 8),
