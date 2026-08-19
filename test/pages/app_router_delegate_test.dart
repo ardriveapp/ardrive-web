@@ -64,6 +64,28 @@ void main() {
       expect(delegate.driveFolderId, isNull);
     });
 
+    test('never carries another drive\'s folder in under its name', () async {
+      // The pending marker used to preserve whatever folder was in view when
+      // its drive arrived, rather than restoring the one the link named. A
+      // recipient who wandered off before the drive was selected therefore
+      // landed on drive A showing a folder that belongs to drive B.
+      const otherFolderId = 'd5eaed3d-6e5d-7f4e-bd5f-9f4d3e6f7a81';
+
+      await delegate.setNewRoutePath(
+        AppRoutePath.folderDetail(driveId: driveId, driveFolderId: folderId),
+      );
+
+      // Away to another drive, and into a folder there.
+      delegate.onDriveSelected(otherDriveId);
+      delegate.driveFolderId = otherFolderId;
+
+      // Now the linked drive finally arrives.
+      delegate.onDriveSelected(driveId);
+
+      expect(delegate.driveFolderId, folderId);
+      expect(delegate.driveFolderId, isNot(otherFolderId));
+    });
+
     test('does not follow the user to a different drive', () async {
       await delegate.setNewRoutePath(
         AppRoutePath.folderDetail(driveId: driveId, driveFolderId: folderId),

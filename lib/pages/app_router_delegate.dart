@@ -57,6 +57,17 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// navigation away from the drive still discards the folder as it always has.
   String? _pendingFolderDriveId;
 
+  /// The folder that link named, held with the drive it belongs to.
+  ///
+  /// Kept alongside [_pendingFolderDriveId] rather than read off
+  /// [driveFolderId] when the drive arrives: between the link opening and that
+  /// drive being selected the recipient may have been somewhere else entirely,
+  /// and [driveFolderId] would by then hold a folder from whatever drive they
+  /// were last in. Restoring *this* is the difference between opening the
+  /// folder the link named and opening another drive's folder under this
+  /// drive's name.
+  String? _pendingFolderId;
+
   /// Reconciles the folder in view with the drive that has just been selected.
   ///
   /// Selecting a different drive discards the folder, which is what ordinary
@@ -73,14 +84,17 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     final isTheLinkedDrive = _pendingFolderDriveId != null &&
         _pendingFolderDriveId == selectedDriveId;
 
-    if (selectedDriveChanged && !isTheLinkedDrive) {
-      driveFolderId = null;
-    }
-
-    // One shot. Released as soon as it is honored, so navigating away from the
-    // drive and back lands at its root rather than jumping to the old folder.
     if (isTheLinkedDrive) {
+      // The folder the link named, not the one in view - see [_pendingFolderId].
+      driveFolderId = _pendingFolderId;
+
+      // One shot. Released as soon as it is honored, so navigating away from
+      // the drive and back lands at its root rather than jumping to the old
+      // folder.
       _pendingFolderDriveId = null;
+      _pendingFolderId = null;
+    } else if (selectedDriveChanged) {
+      driveFolderId = null;
     }
 
     driveId = selectedDriveId;
@@ -424,6 +438,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     driveFolderId = configuration.driveFolderId;
     _pendingFolderDriveId =
         configuration.driveFolderId == null ? null : configuration.driveId;
+    _pendingFolderId = configuration.driveFolderId;
     sharedDriveKey = configuration.sharedDriveKey;
     sharedRawDriveKey = configuration.sharedRawDriveKey;
     sharedFileId = configuration.sharedFileId;
@@ -443,6 +458,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     driveName = null;
     driveFolderId = null;
     _pendingFolderDriveId = null;
+    _pendingFolderId = null;
     sharedDriveKey = null;
     sharedRawDriveKey = null;
     sharedFileId = null;
