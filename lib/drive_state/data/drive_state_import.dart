@@ -139,12 +139,10 @@ extension DriveStateEnvelopeFailureOutcome on DriveStateEnvelopeFailure {
         DriveStateEnvelopeFailure.compressionFailed =>
           DriveStateOutcome.integrityFailed,
 
-        // A cipher, frame layout or signature scheme this build does not know
-        // is the same situation as an unknown `State-Version`: forward
-        // compatibility seen from the old side (§6), not a defect.
+        // A cipher or signature scheme this build does not know is the same
+        // situation as an unknown `State-Version`: forward compatibility seen
+        // from the old side (§6), not a defect.
         DriveStateEnvelopeFailure.unsupportedCipher =>
-          DriveStateOutcome.unknownVersion,
-        DriveStateEnvelopeFailure.unsupportedFrameVersion =>
           DriveStateOutcome.unknownVersion,
         DriveStateEnvelopeFailure.unsupportedSignatureType =>
           DriveStateOutcome.unknownVersion,
