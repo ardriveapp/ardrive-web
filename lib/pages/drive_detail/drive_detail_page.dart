@@ -31,6 +31,7 @@ import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/dev_tools/shortcut_handler.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/drive_state/presentation/drive_state_creation_modal.dart';
+import 'package:ardrive/drive_state/presentation/drive_state_publish_offer.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
@@ -635,15 +636,41 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                             ),
                                           ),
                                         ),
-                                        // Private drives only: the artifact is
-                                        // sealed under the drive key, and a
-                                        // public drive has none. Owner only:
-                                        // an artifact signed by anyone else is
-                                        // rejected by every importer.
-                                        if (isDriveOwner &&
-                                            driveDetailState
-                                                    .currentDrive.privacy ==
-                                                DrivePrivacyTag.private)
+                                        // The same gate as the New menu's
+                                        // entry, through the same function.
+                                        //
+                                        // This item predates the publishing
+                                        // flag and checked only ownership and
+                                        // privacy, so it stayed in the menu
+                                        // with the feature switched off and
+                                        // led to a modal that refuses. It also
+                                        // missed two conditions the other
+                                        // entry point checks.
+                                        //
+                                        // `DriveStatePublishOffer.disabled` is
+                                        // treated as hidden here, and only
+                                        // here: `ArDriveDropdownItem` has no
+                                        // disabled state, so the empty-drive
+                                        // case cannot be shown greyed out with
+                                        // its reason the way the New menu shows
+                                        // it. An item that looks live and does
+                                        // nothing is worse than no item.
+                                        if (driveStatePublishOffer(
+                                              publishingEnabled: context
+                                                  .read<ConfigService>()
+                                                  .config
+                                                  .enableDriveStatePublishing,
+                                              isPrivateDrive: driveDetailState
+                                                      .currentDrive.privacy !=
+                                                  DrivePrivacyTag.public,
+                                              isDriveOwner: isDriveOwner,
+                                              hasWritePermissions:
+                                                  driveDetailState
+                                                      .hasWritePermissions,
+                                              driveIsEmpty:
+                                                  driveDetailState.driveIsEmpty,
+                                            ) ==
+                                            DriveStatePublishOffer.offered)
                                           ArDriveDropdownItem(
                                             onClick: () {
                                               promptToCreateDriveState(

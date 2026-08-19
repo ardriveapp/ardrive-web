@@ -27,6 +27,67 @@ import 'package:flutter_test/flutter_test.dart';
 /// `presentation/drive_state_creation_cubit_test.dart`, where each `prepare`
 /// case ends in `verifyNever(() => uploader.publish(...))`.
 void main() {
+  /// The property the other tests in this file could not see.
+  ///
+  /// Every test below asserts something about a *function* — that
+  /// `driveStatePublishOffer` hides the entry, that `driveStateUploaderFor`
+  /// returns the unwired uploader. All of them passed while a second entry
+  /// point sat in `drive_detail_page.dart` checking only ownership and
+  /// privacy, opening the publish modal with the feature switched off. A unit
+  /// test cannot see a call site it was never handed.
+  ///
+  /// So this one reads the source. The invariant is about the codebase rather
+  /// than about any object in it: *the modal is opened from nowhere that has
+  /// not consulted the gate.* `vendored_pdfjs_test.dart` establishes the
+  /// precedent for asserting on files rather than behaviour when that is where
+  /// the property actually lives.
+  group('every way into the publish flow is gated', () {
+    test('nothing opens the modal without consulting the gate', () {
+      const entryPoint = 'promptToCreateDriveState(';
+      const gate = 'driveStatePublishOffer';
+
+      final offenders = <String>[];
+
+      for (final file in Directory('lib')
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'))) {
+        final source = file.readAsStringSync();
+
+        // The declaration itself, not a call site.
+        if (source.contains('Future<void> $entryPoint')) continue;
+        if (!source.contains(entryPoint)) continue;
+        if (source.contains(gate)) continue;
+
+        offenders.add(file.path);
+      }
+
+      expect(
+        offenders,
+        isEmpty,
+        reason: 'these files open the drive state publish modal without '
+            'reading `$gate`, so the feature flag does not gate them: '
+            '${offenders.join(', ')}',
+      );
+    });
+
+    test(
+        'the gate is actually consulted somewhere, so the check is not '
+        'vacuous', () {
+      final callers = Directory('lib')
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'))
+          .where(
+              (f) => f.readAsStringSync().contains('promptToCreateDriveState('))
+          .toList();
+
+      // The declaration plus its call sites. If this ever drops to one, the
+      // test above is passing because nothing opens the modal at all.
+      expect(callers.length, greaterThanOrEqualTo(2));
+    });
+  });
+
   group('the flag ships off', () {
     test('AppConfig defaults publishing to off', () {
       expect(
