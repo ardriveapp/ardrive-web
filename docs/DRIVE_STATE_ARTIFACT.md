@@ -331,7 +331,7 @@ ArFS:             "0.15"
 Entity-Type:      "drive-state"
 Drive-Id:         "<drive uuid this state belongs to>"
 Drive-State-Id:   "<uuid of this drive-state entity>"
-State-Version:    "1"
+State-Version:    "1.0"       (major.minor — see 6)
 Content-Type:     "application/octet-stream"
 Block-Start:      "0"          (always — see 3.4)
 Block-End:        "<maximum block height accounted for, eg 1814228>"
@@ -394,10 +394,19 @@ and a top-level `coverage` object. The signature covers the whole container —
 sections, version and coverage alike. See §2.2 for why the gzip step comes
 before the signature and not after.
 
+`version` is the same `major.minor` string the `State-Version` tag carries, and
+a producer writes both from one constant. **A reader must refuse an artifact
+whose tag and payload version disagree**, for the same reason it refuses one
+whose `Block-*` tags disagree with the signed coverage: the tag is chosen by
+whoever posts the transaction and the payload is what the owner signed. Any
+disagreement, including one only in the minor — "the minor changes nothing this
+reader dispatches on" is true, and is not a reason to believe the half anybody
+can rewrite.
+
 **`coverage` is load-bearing, not informational.**
 
 ```json
-{ "version": 1, "coverage": { "blockStart": 0, "blockEnd": 1814228 }, "...": "sections" }
+{ "version": "1.0", "coverage": { "blockStart": 0, "blockEnd": 1814228 }, "...": "sections" }
 ```
 
 It states the block range the rows in *this* payload account for, and it is the
@@ -593,12 +602,50 @@ safe is the separation of **additive** from **breaking**:
 - **Known sections are required**, even when empty. See below — this is the
   half that is easy to get wrong.
 - **Unknown tags are ignored** — already how ArFS works.
-- **`State-Version` bumps only when an older reader would *misinterpret* the
-  payload**, never for an addition. Bumping on additions locks out clients that
-  could have used most of it, which defeats the point.
+- **`State-Version` is `major.minor`, and only the *major* bumps when an older
+  reader would *misinterpret* the payload.** An addition moves the minor.
+  Bumping the major on additions locks out clients that could have used most of
+  it, which defeats the point.
 
 Anything later — aggregate totals, additional indexes, whatever is wanted in six
-months — arrives as a new section that existing clients ignore.
+months — arrives as a new section that existing clients ignore, under a higher
+minor.
+
+**Why two components, and what a reader does with them.**
+
+A single integer conflates the two changes above. It has to move for a
+breaking change, so an older reader can refuse; and it must not move for an
+addition, so an older reader can still read. One number cannot do both, and the
+one that stayed put through an addition is the one §6.1 is about.
+
+`major.minor` separates them. **No patch component**: the version answers one
+question — what may a reader assume is in this payload — and there is no
+bug-fix level of that. A third digit would be a number no reader could act on.
+Two components also match the protocol this extends, which tags `ArFS: "0.15"`.
+
+The reader rule, in full:
+
+| what arrives | what a reader does |
+|---|---|
+| **a higher major** | refuse — `unknown-version`, "the artifact is newer than this client" |
+| **a lower major** | refuse — `unknown-version`, "the artifact predates a breaking change". Its **own** message; see below |
+| **the same major, any minor** | accept. Unknown sections and fields are ignored; known sections are still required |
+| **anything that will not parse** — absent, `"1"`, `"1.0.0"`, `"x.y"`, a number too long to hold identically on every platform | `integrity-failed`, not `unknown-version`. A version you cannot compare tells you nothing about whether you could have read the artifact |
+
+The lower-major arm is refused *explicitly*, and not left to whatever the
+section checks make of it. Without its own arm, what an older major meets
+depends on the payload's **shape** rather than on its version, and both answers
+are wrong: a payload that genuinely lacks a section is refused with
+*"payload is missing the `file_revisions` section"* — a sentence about a
+truncated artifact, not an obsolete one, sending the reader after the wrong bug
+— and a payload that is structurally compatible by accident is **accepted**,
+under a format the reader never agreed to. That is §6.1's mistake read from the
+other end.
+
+A bare `"1"` is **not** tolerated as `1.0`. No writer emits that shape, and
+nothing has been published on chain, so accepting it would be a compatibility
+path with no producer at the other end of it — untested code guarding a case
+that cannot occur.
 
 ### 6.1 Why a known section must be present even when empty
 
@@ -624,8 +671,9 @@ sees a drive they know has files, containing none, with nothing in any log.
 
 Hence the asymmetry. A section this build knows must be present; its rows array
 may be empty, which is a producer saying something rather than saying nothing.
-A load-bearing section added later raises `State-Version`, which older readers
-already refuse cleanly — the one case the third rule above is *for*.
+A load-bearing section added later raises the **major** of `State-Version`,
+which older readers already refuse cleanly — the one case the third rule above
+is *for*. An optional one raises the minor, and older readers keep working.
 
 ---
 
@@ -641,7 +689,8 @@ never look the same.**
 Per drive, per sync:
 
 - whether an artifact was used;
-- if not, an **enumerated reason** — `none found`, `unknown State-Version`,
+- if not, an **enumerated reason** — `none found`, `unknown State-Version`
+  (a major this build does not read, in either direction),
   `signature failed`, `decrypt failed`, `integrity failed`, `entity count
   mismatch`, `coverage mismatch`, `range already covered`, `fetch failed`;
 - entities imported from artifact / snapshot / GraphQL;

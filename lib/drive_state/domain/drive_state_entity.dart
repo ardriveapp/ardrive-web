@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
+import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -53,19 +54,21 @@ import 'package:package_info_plus/package_info_plus.dart';
 /// The compression is not a secret worth advertising, either: it is described
 /// by `State-Version`, which is the tag a reader actually dispatches on.
 class DriveStateEntity extends Entity {
-  /// The version of the artifact this client writes, in the `State-Version`
-  /// tag. A reader that does not know a version must fall back rather than
-  /// guess.
-  static const int currentStateVersion = 1;
-
   /// `Drive-State-Id`, this entity's own uuid. Mirrors `Snapshot-Id`.
   String? id;
 
   /// `Drive-Id`, the drive whose state this is.
   String? driveId;
 
-  /// `State-Version`.
-  int stateVersion;
+  /// `State-Version`, as `major.minor` — see [DriveStateFormatVersion].
+  ///
+  /// The same value the payload declares in its own `version` field, from the
+  /// same constant, so a producer cannot tag one version and sign another. An
+  /// importer cross-checks the two and refuses an artifact whose tag and
+  /// signed payload disagree, exactly as it does for `Block-Start`/`Block-End`
+  /// — the tag is chosen by whoever posts the transaction and nobody signs it,
+  /// so it is a hint and the payload is the claim.
+  DriveStateFormatVersion stateVersion;
 
   /// `Block-Start`.
   ///
@@ -112,7 +115,7 @@ class DriveStateEntity extends Entity {
   DriveStateEntity({
     this.id,
     this.driveId,
-    this.stateVersion = currentStateVersion,
+    this.stateVersion = DriveStateFormatVersion.current,
     this.blockStart = 0,
     this.blockEnd,
     this.dataStart,
@@ -165,7 +168,8 @@ class DriveStateEntity extends Entity {
       return DriveStateEntity(
         id: transaction.getTag(EntityTag.driveStateId),
         driveId: transaction.getTag(EntityTag.driveId),
-        stateVersion: int.parse(transaction.getTag(EntityTag.stateVersion)!),
+        stateVersion: DriveStateFormatVersion.parse(
+            transaction.getTag(EntityTag.stateVersion)!),
         blockStart: int.parse(transaction.getTag(EntityTag.blockStart)!),
         blockEnd: int.parse(transaction.getTag(EntityTag.blockEnd)!),
         dataStart: int.parse(transaction.getTag(EntityTag.dataStart) ?? '-1'),

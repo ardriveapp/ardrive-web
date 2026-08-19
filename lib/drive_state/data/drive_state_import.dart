@@ -2,8 +2,8 @@ import 'dart:convert';
 
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
 import 'package:ardrive/drive_state/data/drive_state_export.dart';
-import 'package:ardrive/drive_state/domain/drive_state_entity.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
+import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
 import 'package:ardrive/drive_state/domain/drive_state_outcome.dart';
 import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
@@ -396,14 +396,52 @@ class DriveStateImporter {
       );
     }
 
-    // 2. `State-Version`. A version this build does not know is skipped, never
-    //    guessed at (§6).
-    final stateVersion = int.tryParse(candidate.stateVersion ?? '');
-    if (stateVersion != DriveStateEntity.currentStateVersion) {
+    // 2. `State-Version`, `major.minor` (§6). A version this build does not
+    //    read is skipped, never guessed at — and the three ways that can
+    //    happen are reported as three different things, because they are.
+    //
+    //    This is the tag, which nobody signs; the payload repeats the claim
+    //    inside the signature and step 5 cross-checks the two. Reading it here
+    //    is still worth it: it is the only version available before the body
+    //    is decrypted, so it settles the common forward-compatibility case
+    //    without spending a signature verification on an artifact this build
+    //    was never going to read.
+    const currentVersion = DriveStateFormatVersion.current;
+    final taggedVersion = DriveStateFormatVersion.tryParse(
+      candidate.stateVersion,
+    );
+
+    if (taggedVersion == null) {
+      // Not `unknownVersion`. A version that cannot be parsed is not a version
+      // that can be compared, so nothing has been established about whether
+      // this build could have read the artifact — the same distinction the
+      // envelope's `unsupportedSignatureType` draws when it declines to report
+      // an unverifiable artifact as a merely newer one.
+      final raw = candidate.stateVersion;
+
+      return DriveStateImportResult.rejected(
+        DriveStateOutcome.integrityFailed,
+        'State-Version is ${raw == null ? 'absent' : '"$raw"'}, which is not '
+        'a major.minor format version',
+      );
+    }
+    if (taggedVersion.isNewerThanThisBuild) {
       return DriveStateImportResult.rejected(
         DriveStateOutcome.unknownVersion,
-        'State-Version is ${candidate.stateVersion}, and this build reads '
-        '${DriveStateEntity.currentStateVersion}',
+        'State-Version is $taggedVersion and this build reads '
+        '${currentVersion.major}.x: the artifact is newer than this client',
+      );
+    }
+    if (taggedVersion.isOlderThanThisBuild) {
+      // Its own arm and its own sentence. Without it, what an older major
+      // meets depends on the payload's shape and not on its version: a
+      // missing-section refusal that describes a truncated payload rather
+      // than an obsolete one, or no refusal at all.
+      return DriveStateImportResult.rejected(
+        DriveStateOutcome.unknownVersion,
+        'State-Version is $taggedVersion and this build reads '
+        '${currentVersion.major}.x: the artifact predates a breaking change '
+        'to the format',
       );
     }
 
@@ -453,7 +491,36 @@ class DriveStateImporter {
       );
     }
 
-    // 5. Identity. The tag names the drive; the payload has to agree, and so
+    // 5. Version agreement. Step 2 read the `State-Version` tag; this is the
+    //    same claim from inside the signature, and the two have to match.
+    //
+    //    Exactly the shape `Block-Start`/`Block-End` already has, and settled
+    //    the same way (§3.3): the tag is chosen by whoever posts the
+    //    transaction and nobody signs it, the payload field is the owner's,
+    //    and a reader that met them half way would be trusting the half
+    //    anybody can rewrite. A correct producer cannot trip this — both come
+    //    from [DriveStateFormatVersion.current] — so the only artifacts it
+    //    turns away are ones whose tag was written by something other than the
+    //    wallet that signed the body.
+    //
+    //    Any disagreement, including one only in the minor. "The minor changes
+    //    nothing this reader dispatches on" is true and is not a reason to
+    //    accept a tag that contradicts a signature; it is the reasoning §6.1
+    //    is a case study in.
+    //
+    //    Not `unknownVersion`: nothing here says this client is old. It says
+    //    the artifact's tag and its signed body disagree, which is
+    //    [DriveStateOutcome.integrityFailed] — the payload did not match the
+    //    shape its tags declared.
+    if (export.version != taggedVersion) {
+      return DriveStateImportResult.rejected(
+        DriveStateOutcome.integrityFailed,
+        'State-Version is tagged $taggedVersion and the signed payload '
+        'declares ${export.version}',
+      );
+    }
+
+    // 6. Identity. The tag names the drive; the payload has to agree, and so
     //    does every row in it. Without this an artifact could write rows into
     //    a drive nobody named — the one mistake a merge across a shared
     //    database must never make.
@@ -464,7 +531,7 @@ class DriveStateImporter {
     );
     if (identity != null) return identity;
 
-    // 6. `Entity-Count`. GCM proved the ciphertext arrived intact; this proves
+    // 7. `Entity-Count`. GCM proved the ciphertext arrived intact; this proves
     //    the body meant what the tags promised (§3.2). Decisive and cheap, and
     //    it runs before a single row is written.
     if (export.entityCount != declaredCount) {
@@ -476,7 +543,7 @@ class DriveStateImporter {
       );
     }
 
-    // 7. Coverage. The last of the claims a tag makes about the body, and the
+    // 8. Coverage. The last of the claims a tag makes about the body, and the
     //    only one that sets a value the drive keeps after the import. Nothing
     //    signed said anything about coverage until it moved into the payload,
     //    so this is the check that stops an artifact's own bytes being

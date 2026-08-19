@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/domain/drive_state_entity.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
+import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -60,7 +61,7 @@ void main() {
           EntityTag.entityType: EntityTypeTag.driveState,
           EntityTag.driveId: driveId,
           EntityTag.driveStateId: driveStateId,
-          EntityTag.stateVersion: '1',
+          EntityTag.stateVersion: '1.0',
           EntityTag.contentType: ContentType.octetStream,
           EntityTag.blockStart: '0',
           EntityTag.blockEnd: '1814228',
@@ -229,7 +230,7 @@ void main() {
         expect(entity.cipher, CipherTag.aes256);
         expect(entity.cipherIv, encodeBytesToBase64(cipherIv));
         expect(entity.blockStart, 0);
-        expect(entity.stateVersion, DriveStateEntity.currentStateVersion);
+        expect(entity.stateVersion, DriveStateFormatVersion.current);
       });
     });
 
@@ -254,7 +255,7 @@ void main() {
 
         expect(read.id, driveStateId);
         expect(read.driveId, driveId);
-        expect(read.stateVersion, 1);
+        expect(read.stateVersion, const DriveStateFormatVersion(1, 0));
         expect(read.blockStart, 0);
         expect(read.blockEnd, 1814228);
         expect(read.dataStart, 1102394);
@@ -266,6 +267,55 @@ void main() {
         expect(read.txId, 'FAKE TX ID');
         expect(read.ownerAddress, 'FAKE WALLET ADDRESS');
         expect(read.createdAt, createdAt);
+      });
+
+      test('refuses a State-Version tag that is not major.minor', () async {
+        // Every other tag is present and well formed, and the `1.0` case below
+        // proves it: the only thing that decides these is the version.
+        DriveHistoryTransaction taggedVersion(String version) =>
+            DriveHistoryTransaction.fromJson({
+              'id': 'FAKE TX ID',
+              'owner': {'address': 'FAKE WALLET ADDRESS'},
+              'tags': [
+                {'name': EntityTag.driveStateId, 'value': driveStateId},
+                {'name': EntityTag.driveId, 'value': driveId},
+                {'name': EntityTag.stateVersion, 'value': version},
+                {'name': EntityTag.blockStart, 'value': '0'},
+                {'name': EntityTag.blockEnd, 'value': '1814228'},
+                {'name': EntityTag.entityCount, 'value': '41273'},
+                {'name': EntityTag.cipher, 'value': CipherTag.aes256},
+                {
+                  'name': EntityTag.cipherIv,
+                  'value': encodeBytesToBase64(cipherIv),
+                },
+                {
+                  'name': EntityTag.unixTime,
+                  'value': '${createdAt.millisecondsSinceEpoch ~/ 1000}',
+                },
+              ],
+            });
+
+        // The positive control. Without it a missing tag elsewhere would make
+        // every case below pass for a reason that has nothing to do with the
+        // version - which is exactly how this test failed to catch anything on
+        // its first draft.
+        final read = await DriveStateEntity.fromTransaction(
+          taggedVersion('1.0'),
+          body,
+        );
+        expect(read.stateVersion, DriveStateFormatVersion.current);
+
+        // The bare integer this tag used to carry is in the list on purpose.
+        // Nothing has been published on chain, so there is no `"1"` to be
+        // compatible with - and reading one as 1.0 would be a compatibility
+        // path with no producer at the other end of it.
+        for (final malformed in ['1', '1.0.0', '', 'x.y', '1.-1', '01.0']) {
+          await expectLater(
+            DriveStateEntity.fromTransaction(taggedVersion(malformed), body),
+            throwsA(isA<EntityTransactionParseException>()),
+            reason: '"$malformed" is not a version this client ever wrote',
+          );
+        }
       });
 
       test('throws the expected error for a transaction missing its tags',

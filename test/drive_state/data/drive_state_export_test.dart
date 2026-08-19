@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:ardrive/drive_state/data/drive_state_export.dart';
+import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -448,6 +449,17 @@ void main() {
       // not a property of any row, and it has to be in the bytes the owner
       // signs because a transaction tag is not.
       expect(json['coverage'], {'blockStart': 0, 'blockEnd': 900});
+    });
+
+    test('declares its format version as major.minor, in the signed bytes',
+        () async {
+      final json = (await exportDriveState(db.driveDao, driveId)).toJson();
+
+      // A string, not the bare integer this used to be: `major.minor` is what
+      // separates an addition an older reader can ignore from a change it
+      // would misread (§6), and one integer cannot say which happened.
+      expect(json['version'], '1.0');
+      expect(json['version'], DriveStateFormatVersion.current.toString());
     });
 
     test('refuses a drive that is not there', () {
@@ -917,7 +929,7 @@ void main() {
     // dynamic types a real payload arrives with, rather than the tighter ones
     // Dart infers for a literal.
     Map<String, dynamic> minimalPayload() => jsonDecode(jsonEncode({
-          'version': driveStateFormatVersion,
+          'version': '1.0',
           'coverage': {'blockStart': 0, 'blockEnd': 900},
           'sections': {
             'drives': {
@@ -1006,9 +1018,128 @@ void main() {
       expect(export.licenses, isEmpty);
     });
 
-    test('rejects a version it could misread, with a distinct reason', () {
-      final payload = minimalPayload()
-        ..['version'] = driveStateFormatVersion + 1;
+    test('reads the version it was given', () {
+      expect(
+        DriveStateExport.fromJson(minimalPayload()).version,
+        DriveStateFormatVersion.current,
+      );
+    });
+
+    test('accepts any minor of its own major', () {
+      // The whole point of the split: a minor moves for an addition, and
+      // additions are what unknown sections and fields are ignored for. A
+      // reader that refused a higher minor would refuse the artifacts §6 was
+      // written to keep readable.
+      for (final minor in [0, 1, 9, 10, 999]) {
+        final payload = minimalPayload()..['version'] = '1.$minor';
+
+        final export = DriveStateExport.fromJson(payload);
+
+        expect(export.drive.id, 'drive-id');
+        expect(export.version, DriveStateFormatVersion(1, minor));
+      }
+    });
+
+    test('rejects a newer major, with a distinct reason', () {
+      final payload = minimalPayload()..['version'] = '2.0';
+
+      expect(
+        () => DriveStateExport.fromJson(payload),
+        throwsA(
+          isA<DriveStateFormatException>()
+              .having(
+                (e) => e.error,
+                'error',
+                DriveStateFormatError.unsupportedVersion,
+              )
+              .having((e) => e.message, 'message', contains('newer')),
+        ),
+      );
+    });
+
+    test('rejects an older major explicitly, not as a missing section', () {
+      // The failure §6.1 is a case study in, read from the other end. Without
+      // its own arm, what an older major meets depends on the payload's shape
+      // rather than on its version - and this payload is the case that shows
+      // why that is not good enough: it is structurally the current format
+      // with a different number on it, so every check below passes and the
+      // artifact is imported under a format nobody agreed to.
+      final payload = minimalPayload()..['version'] = '0.9';
+
+      expect(
+        () => DriveStateExport.fromJson(payload),
+        throwsA(
+          isA<DriveStateFormatException>()
+              .having(
+                (e) => e.error,
+                'error',
+                DriveStateFormatError.unsupportedVersion,
+              )
+              .having((e) => e.message, 'message', contains('predates'))
+              .having(
+                (e) => e.message,
+                'message',
+                isNot(contains('section')),
+              ),
+        ),
+      );
+    });
+
+    test('rejects a version it cannot parse as malformed, not unsupported', () {
+      // A version that cannot be compared says nothing about whether this
+      // build could have read the payload, so it must not be reported as
+      // though it had. `1` is the bare integer this field used to carry:
+      // nothing was ever published in that shape, so tolerating it would be an
+      // untested path with no producer at the other end of it.
+      for (final version in [
+        '1',
+        '1.0.0',
+        'x.y',
+        '1.-1',
+        '',
+        ' 1.0',
+        '01.0',
+        '1.0 ',
+        '+1.0',
+        '1000000000.0',
+        '99999999999999999999.0',
+      ]) {
+        final payload = minimalPayload()..['version'] = version;
+
+        expect(
+          () => DriveStateExport.fromJson(payload),
+          throwsA(
+            isA<DriveStateFormatException>().having(
+              (e) => e.error,
+              'error',
+              DriveStateFormatError.malformed,
+            ),
+          ),
+          reason: '"$version" is not a major.minor version',
+        );
+      }
+    });
+
+    test('rejects a version that is not a string at all', () {
+      for (final version in [1, 1.0, null, <String, dynamic>{}]) {
+        final payload = minimalPayload()..['version'] = version;
+
+        expect(
+          () => DriveStateExport.fromJson(payload),
+          throwsA(
+            isA<DriveStateFormatException>().having(
+              (e) => e.error,
+              'error',
+              DriveStateFormatError.malformed,
+            ),
+          ),
+          reason: '$version is not a version string',
+        );
+      }
+    });
+
+    test('rejects a payload with no version at all', () {
+      final payload = minimalPayload()..remove('version');
 
       expect(
         () => DriveStateExport.fromJson(payload),
@@ -1016,7 +1147,7 @@ void main() {
           isA<DriveStateFormatException>().having(
             (e) => e.error,
             'error',
-            DriveStateFormatError.unsupportedVersion,
+            DriveStateFormatError.malformed,
           ),
         ),
       );

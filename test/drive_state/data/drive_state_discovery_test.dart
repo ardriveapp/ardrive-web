@@ -234,7 +234,7 @@ void main() {
             unixTime: 1700000123,
             extraTags: {
               'Drive-State-Id': 'STATE_UUID',
-              'State-Version': '1',
+              'State-Version': '1.0',
               'Content-Encoding': 'gzip',
               'Entity-Count': '12043',
               'Cipher': 'AES256-GCM',
@@ -254,7 +254,7 @@ void main() {
       expect(candidate.entityType, 'drive-state');
       expect(candidate.arFsVersion, '0.15');
       expect(candidate.driveStateId, 'STATE_UUID');
-      expect(candidate.stateVersion, '1');
+      expect(candidate.stateVersion, '1.0');
       expect(candidate.contentEncoding, 'gzip');
       expect(candidate.entityCount, 12043);
       expect(candidate.cipher, 'AES256-GCM');

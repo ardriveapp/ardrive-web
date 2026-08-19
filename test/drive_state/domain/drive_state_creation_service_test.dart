@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/domain/drive_state_creation_service.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
+import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
 import 'package:ardrive/drive_state/domain/drive_state_sync_skip_status.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -231,6 +232,22 @@ void main() {
       expect(tags[EntityTag.blockStart], '${claimed['blockStart']}');
       expect(tags[EntityTag.blockEnd], '${claimed['blockEnd']}');
       expect(claimed['blockEnd'], lastBlockHeight);
+    });
+
+    /// The version has exactly the shape the coverage claim has: it is written
+    /// twice, once in a tag anybody can rewrite and once inside the signature,
+    /// and an importer refuses an artifact whose two copies disagree. A
+    /// producer that let them drift would publish something no reader accepts,
+    /// permanently and having paid for it - so the assertion is that they come
+    /// from one constant, not two that happen to match today.
+    test('tags the same format version the sealed payload declares', () {
+      final payload = codec.lastPayloadJson!;
+
+      final tx = Transaction();
+      artifact.entity.addEntityTagsToTransaction(tx);
+
+      expect(tagsOf(tx)[EntityTag.stateVersion], payload['version']);
+      expect(payload['version'], DriveStateFormatVersion.current.toString());
     });
 
     test("declares Block-End as the drive's own sync watermark", () {

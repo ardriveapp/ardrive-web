@@ -54,12 +54,22 @@ enum DriveStateOutcome {
     description: 'no drive-state artifact exists for this drive',
   ),
 
-  /// `State-Version` names a format this build cannot read (§6). An older
-  /// reader meeting a newer artifact is expected, not broken.
+  /// `State-Version` names a major this build does not read (§6) — in either
+  /// direction. An older reader meeting a newer artifact is expected, not
+  /// broken, and so is the reverse once a major has moved.
+  ///
+  /// The `code` covers both because the operational answer is the same: sync
+  /// normally, this artifact was not for us. Which direction it was is in the
+  /// detail, which names both versions.
+  ///
+  /// A `State-Version` that cannot be *parsed* is not this. That is
+  /// [integrityFailed]: a version nothing can compare says nothing about
+  /// whether this build could have read the artifact, and filing it here would
+  /// put a mistagged artifact in the same log line as a legitimately newer one.
   unknownVersion(
     code: 'unknown-version',
     kind: DriveStateOutcomeKind.rejected,
-    description: 'State-Version is newer than this build can read',
+    description: 'State-Version names a format this build does not read',
   ),
 
   /// The payload signature did not verify against the drive owner (§2.2).

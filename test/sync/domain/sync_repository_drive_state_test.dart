@@ -161,7 +161,7 @@ void main() {
           EntityTag.entityType: EntityTypeTag.driveState,
           EntityTag.driveId: driveId,
           EntityTag.driveStateId: 'drive-state-id',
-          EntityTag.stateVersion: '1',
+          EntityTag.stateVersion: '1.0',
           EntityTag.contentType: ContentType.octetStream,
           EntityTag.blockStart: '0',
           EntityTag.blockEnd: '${tamperedTagBlockEnd ?? blockEnd}',

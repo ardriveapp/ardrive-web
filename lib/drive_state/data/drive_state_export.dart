@@ -1,3 +1,4 @@
+import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
@@ -43,13 +44,6 @@ import 'package:equatable/equatable.dart';
 ///    discriminator, which is now also a section: the rows that travel and the
 ///    rows that vouch for them are the same set.
 
-/// The section format this build writes, and the newest it can read.
-///
-/// Per §6 this bumps only when an older reader would *misinterpret* a payload,
-/// never for an added section or field — bumping on additions would lock out
-/// clients that could have used most of the artifact.
-const int driveStateFormatVersion = 1;
-
 /// Section names. They match the table each section carries so that a reader
 /// in another language can map them without knowing this app's schema.
 const String driveSectionName = 'drives';
@@ -60,7 +54,8 @@ const String folderRevisionsSectionName = 'folder_revisions';
 const String fileRevisionsSectionName = 'file_revisions';
 const String licensesSectionName = 'licenses';
 
-/// Every section a payload of this format version must carry.
+/// Every section a payload of [DriveStateFormatVersion.current]'s major must
+/// carry.
 ///
 /// Order matters only for the message a refusal prints. Presence is what is
 /// checked — see [DriveStateExport.fromJson] for why an absent section cannot
@@ -86,8 +81,15 @@ const String _blockEndKey = 'blockEnd';
 /// "no artifact was used" and "an artifact was rejected because X" to never
 /// look the same in a log.
 enum DriveStateFormatError {
-  /// The payload declares a version this build does not understand. Callers
-  /// must treat this as "ignore the artifact", never as a corrupt drive.
+  /// The payload declares a **readable but wrong** major version — a format
+  /// this build could name and still cannot read, in either direction (§6).
+  /// Callers must treat this as "ignore the artifact", never as a corrupt
+  /// drive.
+  ///
+  /// A version this build cannot even *parse* is [malformed] instead. The two
+  /// are different facts: this one says the artifact was written to a format
+  /// whose number we understood and did not share, and that says nothing was
+  /// established at all.
   unsupportedVersion,
 
   /// A section, row or required field was missing or the wrong shape.
@@ -196,6 +198,20 @@ class DriveStateExport extends Equatable {
   /// with them; see [DriveStateCoverage].
   final DriveStateCoverage coverage;
 
+  /// The format version this payload declares, `major.minor` (§6).
+  ///
+  /// Inside the signature, unlike the `State-Version` tag that repeats it, so
+  /// this is the copy an importer trusts and the tag is the hint it
+  /// cross-checks — the same split, for the same reason, as
+  /// [DriveStateCoverage] against `Block-Start`/`Block-End`.
+  ///
+  /// Defaulted rather than required because a producer has exactly one
+  /// truthful answer — this build writes this build's format — and a required
+  /// parameter would only be somewhere for a caller to pass something else.
+  /// [DriveStateExport.fromJson] sets it from the wire, so a parsed payload
+  /// carries what it declared rather than what this build assumes.
+  final DriveStateFormatVersion version;
+
   const DriveStateExport({
     required this.drive,
     required this.folders,
@@ -205,6 +221,7 @@ class DriveStateExport extends Equatable {
     required this.fileRevisions,
     required this.licenses,
     required this.coverage,
+    this.version = DriveStateFormatVersion.current,
   });
 
   /// The number of **entities** the payload carries, which the entity's
@@ -221,7 +238,7 @@ class DriveStateExport extends Equatable {
   int get entityCount => folders.length + files.length + 1;
 
   Map<String, dynamic> toJson() => {
-        _versionKey: driveStateFormatVersion,
+        _versionKey: version.toString(),
         _coverageKey: coverage.toJson(),
         _sectionsKey: {
           driveSectionName: {
@@ -269,21 +286,62 @@ class DriveStateExport extends Equatable {
   ///
   /// So: a known section must be present, even if its rows array is empty.
   /// [toJson] always writes all of them, so this costs a correct producer
-  /// nothing. A future version that adds a *load-bearing* section raises
-  /// [driveStateFormatVersion] instead, which the check above already turns
-  /// into a clean refusal by older readers.
+  /// nothing. A future version that adds a *load-bearing* section raises the
+  /// **major** of [DriveStateFormatVersion.current] instead, which the version
+  /// check below turns into a clean refusal by older readers.
+  ///
+  /// ## The version check, and why it has three arms
+  ///
+  /// [DriveStateFormatVersion] carries the argument for `major.minor`; this is
+  /// what it costs here.
+  ///
+  ///  * **unparseable** — absent, empty, `"1"`, `"1.0.0"`, `"x.y"` — is
+  ///    [DriveStateFormatError.malformed]. A version that cannot be compared
+  ///    establishes nothing about whether this build could have read the
+  ///    payload, so it must not be reported as though it had.
+  ///  * **a higher major** is the ordinary forward-compatibility case: an
+  ///    older client meeting a newer artifact, expected and not a defect.
+  ///  * **a lower major** is refused here, explicitly, rather than left to
+  ///    the checks below. Without this arm what happens to it depends on the
+  ///    payload's *shape* rather than on its version, which is the whole
+  ///    problem: one that genuinely lacks a section fails saying *"payload is
+  ///    missing the file_revisions section"*, sending a reader hunting for a
+  ///    truncated payload instead of an obsolete one — and one that is
+  ///    structurally compatible by accident is **accepted**, under a format
+  ///    this build never agreed to read. §6.1 is a whole section about a
+  ///    version number that let two different shapes look like the same
+  ///    format; this is the same mistake read from the other end.
   factory DriveStateExport.fromJson(Map<String, dynamic> json) {
-    final version = json[_versionKey];
-    if (version is! int) {
+    final declaredVersion = json[_versionKey];
+    if (declaredVersion is! String) {
       throw const DriveStateFormatException(
         DriveStateFormatError.malformed,
-        'payload has no integer "$_versionKey"',
+        'payload has no string "$_versionKey"',
       );
     }
-    if (version > driveStateFormatVersion) {
+
+    final version = DriveStateFormatVersion.tryParse(declaredVersion);
+    if (version == null) {
+      throw DriveStateFormatException(
+        DriveStateFormatError.malformed,
+        'payload declares "$_versionKey": "$declaredVersion", which is not a '
+        'major.minor format version',
+      );
+    }
+    if (version.isNewerThanThisBuild) {
       throw DriveStateFormatException(
         DriveStateFormatError.unsupportedVersion,
-        'payload version $version is newer than $driveStateFormatVersion',
+        'the payload is written under format $version and this build reads '
+        '${DriveStateFormatVersion.current.major}.x: the artifact is newer '
+        'than this client',
+      );
+    }
+    if (version.isOlderThanThisBuild) {
+      throw DriveStateFormatException(
+        DriveStateFormatError.unsupportedVersion,
+        'the payload is written under format $version and this build reads '
+        '${DriveStateFormatVersion.current.major}.x: the artifact predates a '
+        'breaking change to the format',
       );
     }
 
@@ -310,6 +368,7 @@ class DriveStateExport extends Equatable {
     }
 
     return DriveStateExport(
+      version: version,
       // Required, not optional. The reader that treated an absent coverage
       // claim as "trust the tag" would be the reader this field was added to
       // remove, and no artifact exists that predates it: nothing has been
@@ -350,6 +409,7 @@ class DriveStateExport extends Equatable {
         fileRevisions,
         licenses,
         coverage,
+        version,
       ];
 }
 

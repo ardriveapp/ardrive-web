@@ -66,7 +66,7 @@ void main() {
     required int blockEnd,
     int blockStart = 0,
     int? entityCount,
-    String stateVersion = '1',
+    String? stateVersion = '1.0',
     String? cipher,
     SecretKey? key,
     Wallet? signer,
@@ -112,7 +112,7 @@ void main() {
           EntityTag.entityType: EntityTypeTag.driveState,
           EntityTag.driveId: taggedDriveId,
           EntityTag.driveStateId: 'drive-state-id',
-          EntityTag.stateVersion: stateVersion,
+          if (stateVersion != null) EntityTag.stateVersion: stateVersion,
           EntityTag.contentType: ContentType.octetStream,
           EntityTag.blockStart: '$blockStart',
           EntityTag.blockEnd: '$blockEnd',
@@ -1481,12 +1481,14 @@ void main() {
       expect(await fileRows(db), isEmpty);
     });
 
-    test('a State-Version this build does not read', () async {
+    test('a State-Version tagged with a newer major', () async {
       await attachDrive(db);
+      final payload = await exportedPayload();
+      payload['version'] = '2.0';
       final artifact = await sealArtifact(
-        await exportedPayload(),
+        payload,
         blockEnd: 900,
-        stateVersion: '2',
+        stateVersion: '2.0',
       );
 
       final result = await importer.import(
@@ -1497,6 +1499,179 @@ void main() {
       );
 
       expect(result.outcome, DriveStateOutcome.unknownVersion);
+      expect(result.detail, contains('newer'));
+    });
+
+    test('a State-Version tagged with an older major says so itself', () async {
+      // The arm §6.1 is about. Without it, what an older major meets depends
+      // on the payload's shape rather than on its version: refused for the
+      // wrong reason if it happens to lack a section, and not refused at all
+      // if it does not.
+      await attachDrive(db);
+      final payload = await exportedPayload();
+      payload['version'] = '0.9';
+      final artifact = await sealArtifact(
+        payload,
+        blockEnd: 900,
+        stateVersion: '0.9',
+      );
+
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.unknownVersion);
+      expect(result.detail, contains('predates'));
+      expect(result.detail, isNot(contains('section')));
+    });
+
+    test('a State-Version tag that is not a major.minor version', () async {
+      // Malformed, not unknown: a version nothing can parse cannot be
+      // compared, so nothing has been established about whether this build
+      // could have read the artifact. `1` is the bare integer this tag used to
+      // carry, and no artifact was ever published carrying it.
+      await attachDrive(db);
+
+      for (final tagged in [
+        '1',
+        '1.0.0',
+        'x.y',
+        '1.-1',
+        '',
+        '01.0',
+        ' 1.0',
+        '99999999999999999999.0',
+        null,
+      ]) {
+        final artifact = await sealArtifact(
+          await exportedPayload(),
+          blockEnd: 900,
+          stateVersion: tagged,
+        );
+
+        final result = await importer.import(
+          candidate: artifact.candidate,
+          body: artifact.body,
+          driveKey: driveKey,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(
+          result.outcome,
+          DriveStateOutcome.integrityFailed,
+          reason: '"$tagged" is not a version to compare against',
+        );
+        expect(await fileRows(db), isEmpty);
+      }
+    });
+
+    test('a State-Version tag settles it before a signature is verified',
+        () async {
+      // What reading the tag buys. It is the only version available before the
+      // body is decrypted, so an artifact this build was never going to read
+      // costs one GraphQL result rather than a download, a decryption and a
+      // signature verification.
+      //
+      // Proven by handing it a body that is not an envelope at all: if the tag
+      // were not consulted first, the codec would fail on those bytes and the
+      // rejection would be about the envelope rather than about the version.
+      await attachDrive(db);
+      final artifact =
+          await sealArtifact(await exportedPayload(), blockEnd: 900);
+      final notAnEnvelope = Uint8List.fromList(List.filled(64, 7));
+
+      for (final tagged in ['2.0', '0.9']) {
+        final tags = Map<String, String>.from(artifact.candidate.tags)
+          ..[EntityTag.stateVersion] = tagged;
+
+        final result = await importer.import(
+          candidate: DriveStateArtifactCandidate(
+            txId: artifact.candidate.txId,
+            ownerAddress: ownerAddress,
+            tags: tags,
+          ),
+          body: notAnEnvelope,
+          driveKey: driveKey,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(result.outcome, DriveStateOutcome.unknownVersion);
+        expect(result.detail, contains('State-Version'));
+        expect(result.detail, contains(tagged));
+      }
+    });
+
+    test('a minor this build has never heard of imports normally', () async {
+      // The whole reason for two components. A minor moves for an addition,
+      // and additions are exactly what unknown sections and fields are ignored
+      // for - so a higher minor of this build's major must land, not be turned
+      // away. Tagged and signed at the same 1.7 because a producer writes one
+      // constant into both.
+      await attachDrive(db);
+      final payload = await exportedPayload();
+      payload['version'] = '1.7';
+      (payload['sections'] as Map<String, dynamic>)['aggregate_totals'] = {
+        'rows': [
+          {'whatever': 1},
+        ],
+      };
+
+      final artifact = await sealArtifact(
+        payload,
+        blockEnd: 900,
+        stateVersion: '1.7',
+      );
+
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
+      expect(await fileRows(db), isNotEmpty);
+    });
+
+    test('a State-Version tag that disagrees with the signed payload',
+        () async {
+      // The same shape as the `Block-Start`/`Block-End` cross-check, and
+      // settled the same way: the tag is chosen by whoever posts the
+      // transaction and nobody signs it, the payload field is the owner's.
+      // A disagreement in the minor alone is still a disagreement - "the minor
+      // changes nothing this reader dispatches on" is true and is not a reason
+      // to believe the half anybody can rewrite.
+      await attachDrive(db);
+
+      for (final tagged in ['1.1', '1.9']) {
+        final payload = await exportedPayload();
+        payload['version'] = '1.0';
+
+        final artifact = await sealArtifact(
+          payload,
+          blockEnd: 900,
+          stateVersion: tagged,
+        );
+
+        final result = await importer.import(
+          candidate: artifact.candidate,
+          body: artifact.body,
+          driveKey: driveKey,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(
+          result.outcome,
+          DriveStateOutcome.integrityFailed,
+          reason: 'tagged $tagged over a payload signed 1.0',
+        );
+        expect(result.detail, contains(tagged));
+        expect(result.detail, contains('1.0'));
+        expect(await fileRows(db), isEmpty);
+      }
     });
 
     test('a cipher that is not AES256-GCM', () async {
@@ -1563,7 +1738,7 @@ void main() {
     test('a payload that is not a drive state container', () async {
       await attachDrive(db);
       final artifact = await sealArtifact(
-        {'version': 1, 'sections': <String, dynamic>{}},
+        {'version': '1.0', 'sections': <String, dynamic>{}},
         blockEnd: 900,
         entityCount: 0,
       );
@@ -1578,10 +1753,14 @@ void main() {
       expect(result.outcome, DriveStateOutcome.integrityFailed);
     });
 
-    test('a payload from a format version newer than this build', () async {
+    test('a signed payload from a format version newer than this build',
+        () async {
+      // The tag says 1.0 and passes; the version inside the signature is what
+      // refuses it. That is the copy that governs, because it is the only one
+      // the owner signed.
       await attachDrive(db);
       final payload = await exportedPayload();
-      payload['version'] = driveStateFormatVersion + 1;
+      payload['version'] = '2.0';
 
       final artifact = await sealArtifact(payload, blockEnd: 900);
       final result = await importer.import(
@@ -1592,6 +1771,50 @@ void main() {
       );
 
       expect(result.outcome, DriveStateOutcome.unknownVersion);
+      expect(result.detail, contains('newer'));
+    });
+
+    test('a signed payload from a format version older than this build',
+        () async {
+      await attachDrive(db);
+      final payload = await exportedPayload();
+      payload['version'] = '0.9';
+
+      final artifact = await sealArtifact(payload, blockEnd: 900);
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.unknownVersion);
+      expect(result.detail, contains('predates'));
+      expect(result.detail, isNot(contains('section')));
+    });
+
+    test('a signed payload whose version cannot be parsed', () async {
+      await attachDrive(db);
+
+      for (final declared in ['1', '1.0.0', 'x.y', '', 1, null]) {
+        final payload = await exportedPayload();
+        payload['version'] = declared;
+
+        final artifact = await sealArtifact(payload, blockEnd: 900);
+        final result = await importer.import(
+          candidate: artifact.candidate,
+          body: artifact.body,
+          driveKey: driveKey,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(
+          result.outcome,
+          DriveStateOutcome.integrityFailed,
+          reason: '$declared is not a version to compare against',
+        );
+        expect(await fileRows(db), isEmpty);
+      }
     });
 
     test('a drive this client does not have', () async {

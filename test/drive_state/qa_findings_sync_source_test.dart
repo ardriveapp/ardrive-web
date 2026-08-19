@@ -64,7 +64,7 @@ void main() {
         tags: {
           EntityTag.entityType: EntityTypeTag.driveState,
           EntityTag.driveId: driveId,
-          EntityTag.stateVersion: '1',
+          EntityTag.stateVersion: '1.0',
           EntityTag.blockStart: '0',
           EntityTag.blockEnd: '$blockEnd',
           EntityTag.entityCount: '3',
