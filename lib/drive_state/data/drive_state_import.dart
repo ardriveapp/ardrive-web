@@ -5,7 +5,9 @@ import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/domain/drive_state_entity.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
 import 'package:ardrive/drive_state/domain/drive_state_outcome.dart';
+import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/sync/utils/network_transaction_utils.dart';
 import 'package:ardrive_utils/ardrive_utils.dart' show EntityTag;
 import 'package:arweave/utils.dart' as utils;
 import 'package:cryptography/cryptography.dart' show SecretKey;
@@ -43,6 +45,20 @@ class DriveStateImportStats {
   final int foldersWritten;
   final int filesWritten;
 
+  /// Rows added to `drive_revisions`, `folder_revisions` and `file_revisions`,
+  /// and to `licenses`.
+  ///
+  /// Counted separately from the entities because they are not entities — see
+  /// [DriveStateExport.entityCount]. They are here because they are most of
+  /// the payload and all of the reason the file list renders at all, so an
+  /// import that landed entities and no revisions has to be visible in the
+  /// log rather than inferred from an empty screen.
+  final int revisionsWritten;
+  final int licensesWritten;
+
+  /// `network_transactions` rows regenerated from those revisions.
+  final int transactionsWritten;
+
   /// Rows the artifact carried that were *not* written, because the local copy
   /// was newer. Not an error — it is the number that explains an import
   /// landing fewer rows than its `Entity-Count`.
@@ -62,6 +78,9 @@ class DriveStateImportStats {
   const DriveStateImportStats({
     required this.foldersWritten,
     required this.filesWritten,
+    required this.revisionsWritten,
+    required this.licensesWritten,
+    required this.transactionsWritten,
     required this.rowsKeptLocallyNewer,
     required this.watermark,
     required this.parseDuration,
@@ -75,6 +94,8 @@ class DriveStateImportStats {
   String toString() => 'imported=$entitiesImported '
       '(folders=$foldersWritten files=$filesWritten '
       'kept-local=$rowsKeptLocallyNewer) '
+      'revisions=$revisionsWritten licenses=$licensesWritten '
+      'transactions=$transactionsWritten '
       'watermark=$watermark '
       'parse=${parseDuration.inMilliseconds}ms '
       'merge=${mergeDuration.inMilliseconds}ms';
@@ -186,6 +207,18 @@ extension DriveStateEnvelopeFailureOutcome on DriveStateEnvelopeFailure {
 ///    likelier to be something uploaded since the artifact was published than
 ///    something removed, and an artifact that deleted rows would turn one
 ///    stale publication into data loss;
+///  * the revision tables and `licenses` obey the same rule, arrived at
+///    differently. Their primary keys *contain* their version — a revision is
+///    keyed by `(entityId, driveId, dateCreated)` — so a newer copy of a row
+///    is not a conflicting write, it is a different key. There is therefore
+///    nothing for a `lastUpdated` comparison to decide: the artifact can only
+///    add, and a row the client already holds is left exactly as it is. That
+///    is what [InsertMode.insertOrIgnore] says, and it is strictly the safer
+///    half of the same policy;
+///  * `network_transactions` is not in the payload at all. It is rebuilt from
+///    the revisions above through the same `lib/sync/utils/` helpers sync
+///    derives it with, and inserted the same way — a status this client
+///    established for itself is never overwritten by a derived one;
 ///  * the drive's key material and its sync cursor are never touched. They are
 ///    not in the payload — [ExportedDrive] structurally has nowhere to put
 ///    them — and the update names its columns, so they cannot be nulled out by
@@ -422,9 +455,17 @@ class DriveStateImporter {
       );
     }
 
+    // Every row of every section, not just the entry ones. A revision carries
+    // its own `driveId` and is written by primary key, so a payload smuggling
+    // one for another drive would rewrite that drive's history — the same
+    // mistake as an entry row, on a table an importer is likelier to forget.
     for (final rowDriveId in [
       ...export.folders.map((f) => f.driveId),
       ...export.files.map((f) => f.driveId),
+      ...export.driveRevisions.map((r) => r.driveId),
+      ...export.folderRevisions.map((r) => r.driveId),
+      ...export.fileRevisions.map((r) => r.driveId),
+      ...export.licenses.map((l) => l.driveId),
     ]) {
       if (rowDriveId != driveId) {
         return DriveStateImportResult.rejected(
@@ -526,10 +567,81 @@ class DriveStateImporter {
           .map(_fileCompanion)
           .toList();
 
+      // The revisions the entries above are versions of, and the licences
+      // attached to them. Built before the write because the derivation of
+      // `network_transactions` reads them.
+      final driveRevisionRows =
+          export.driveRevisions.map(_driveRevisionCompanion).toList();
+      final folderRevisionRows =
+          export.folderRevisions.map(_folderRevisionCompanion).toList();
+      final fileRevisionRows =
+          export.fileRevisions.map(_fileRevisionCompanion).toList();
+      final licenseRows = export.licenses.map(_licenseCompanion).toList();
+
+      // `network_transactions` is derived, never carried: it has no `driveId`
+      // to scope it by, so publishing it would publish rows about the user's
+      // other drives to everyone holding this drive's key. These are the same
+      // helpers `SyncRepository` derives it with, so there is one derivation
+      // with one set of tests rather than a second one here that drifts.
+      final transactionRows = [
+        ...createNetworkTransactionsCompanionsForDrives(driveRevisionRows),
+        ...createNetworkTransactionsCompanionsForFolders(folderRevisionRows),
+        ...createNetworkTransactionsCompanionsForFiles(fileRevisionRows),
+        // A licence transaction is not derivable from a revision - a composed
+        // licence shares the data transaction's id, an assertion has its own -
+        // so it comes from the licence row, through the same single place the
+        // rest of the app derives it: `LicensesCompanionExtensions`.
+        ...licenseRows.expand((l) => l.getTransactionCompanions()),
+      ].map(_asMined).toList();
+
+      final revisionsBefore = await _revisionRowCount(driveId);
+      final licensesBefore = await _rowCount(_driveDao.licenses, driveId);
+      final transactionsBefore = await _transactionRowCount();
+
       await _driveDao.batch((b) {
+        // Transactions first: the revision tables carry foreign keys onto
+        // them. SQLite is not enforcing those here - no `PRAGMA foreign_keys`
+        // is set - but writing in an order that would satisfy them if it were
+        // costs nothing and stops this being the statement that breaks the day
+        // somebody turns them on.
+        b.insertAll(
+          _driveDao.networkTransactions,
+          transactionRows,
+          mode: InsertMode.insertOrIgnore,
+        );
+        b.insertAll(
+          _driveDao.driveRevisions,
+          driveRevisionRows,
+          mode: InsertMode.insertOrIgnore,
+        );
+        b.insertAll(
+          _driveDao.folderRevisions,
+          folderRevisionRows,
+          mode: InsertMode.insertOrIgnore,
+        );
+        b.insertAll(
+          _driveDao.fileRevisions,
+          fileRevisionRows,
+          mode: InsertMode.insertOrIgnore,
+        );
+        b.insertAll(
+          _driveDao.licenses,
+          licenseRows,
+          mode: InsertMode.insertOrIgnore,
+        );
         b.insertAllOnConflictUpdate(folderEntries, folderRows);
         b.insertAllOnConflictUpdate(fileEntries, fileRows);
       });
+
+      // Counted rather than assumed. `insertOrIgnore` leaves a row the client
+      // already had alone, so the number of rows offered is not the number of
+      // rows landed, and the log line §7 asks for is about what changed.
+      final revisionsWritten =
+          await _revisionRowCount(driveId) - revisionsBefore;
+      final licensesWritten =
+          await _rowCount(_driveDao.licenses, driveId) - licensesBefore;
+      final transactionsWritten =
+          await _transactionRowCount() - transactionsBefore;
 
       // The watermark advances only across ground the artifact actually
       // covers. The coverage starts at 0 for everything this client publishes,
@@ -554,6 +666,9 @@ class DriveStateImporter {
         DriveStateImportStats(
           foldersWritten: folderRows.length,
           filesWritten: fileRows.length,
+          revisionsWritten: revisionsWritten,
+          licensesWritten: licensesWritten,
+          transactionsWritten: transactionsWritten,
           rowsKeptLocallyNewer: kept,
           watermark: watermark,
           parseDuration: parseDuration,
@@ -583,6 +698,47 @@ class DriveStateImporter {
     return {
       for (final row in rows) row.read(id)!: row.read(lastUpdated)!,
     };
+  }
+
+  /// How many rows [table] holds for one drive.
+  Future<int> _rowCount(TableInfo table, String driveId) async {
+    final owner = table.columnsByName['driveId']! as GeneratedColumn<String>;
+    final count = countAll();
+
+    final row = await (_driveDao.selectOnly(table)
+          ..addColumns([count])
+          ..where(owner.equals(driveId)))
+        .getSingle();
+
+    return row.read(count)!;
+  }
+
+  /// All three revision tables together, which is how the log reports them.
+  Future<int> _revisionRowCount(String driveId) async =>
+      await _rowCount(_driveDao.driveRevisions, driveId) +
+      await _rowCount(_driveDao.folderRevisions, driveId) +
+      await _rowCount(_driveDao.fileRevisions, driveId);
+
+  /// How many rows `network_transactions` holds, in total.
+  ///
+  /// The whole table, not the ids this import is about. It has no `driveId` to
+  /// filter on, and the obvious alternative — `id IN (every id the revisions
+  /// name)` — is a variable per id: on the 42,000 file drive this feature was
+  /// measured against that is upwards of 84,000 of them, well past SQLite's
+  /// `SQLITE_MAX_VARIABLE_NUMBER`, and it would turn a statistic into the
+  /// thing that fails the import.
+  ///
+  /// Taking the difference across the write inside the merge's own transaction
+  /// gives the same answer for free: no other statement runs between the two
+  /// reads, so every row that appeared is one this import inserted.
+  Future<int> _transactionRowCount() async {
+    final count = countAll();
+
+    final row = await (_driveDao.selectOnly(_driveDao.networkTransactions)
+          ..addColumns([count]))
+        .getSingle();
+
+    return row.read(count)!;
   }
 }
 
@@ -633,6 +789,112 @@ FolderEntriesCompanion _folderCompanion(ExportedFolderEntry folder) =>
       customGQLTags: Value(folder.customGQLTags),
       isHidden: Value(folder.isHidden),
     );
+
+/// Every column of `drive_revisions`, named.
+DriveRevisionsCompanion _driveRevisionCompanion(ExportedDriveRevision rev) =>
+    DriveRevisionsCompanion(
+      driveId: Value(rev.driveId),
+      rootFolderId: Value(rev.rootFolderId),
+      ownerAddress: Value(rev.ownerAddress),
+      name: Value(rev.name),
+      privacy: Value(rev.privacy),
+      metadataTxId: Value(rev.metadataTxId),
+      dateCreated: Value(rev.dateCreated),
+      action: Value(rev.action),
+      bundledIn: Value(rev.bundledIn),
+      customJsonMetadata: Value(rev.customJsonMetadata),
+      customGQLTags: Value(rev.customGQLTags),
+      isHidden: Value(rev.isHidden),
+    );
+
+/// Every column of `folder_revisions`, named.
+FolderRevisionsCompanion _folderRevisionCompanion(ExportedFolderRevision rev) =>
+    FolderRevisionsCompanion(
+      folderId: Value(rev.folderId),
+      driveId: Value(rev.driveId),
+      name: Value(rev.name),
+      parentFolderId: Value(rev.parentFolderId),
+      metadataTxId: Value(rev.metadataTxId),
+      dateCreated: Value(rev.dateCreated),
+      action: Value(rev.action),
+      customJsonMetadata: Value(rev.customJsonMetadata),
+      customGQLTags: Value(rev.customGQLTags),
+      isHidden: Value(rev.isHidden),
+    );
+
+/// Every column of `file_revisions`, named.
+FileRevisionsCompanion _fileRevisionCompanion(ExportedFileRevision rev) =>
+    FileRevisionsCompanion(
+      fileId: Value(rev.fileId),
+      driveId: Value(rev.driveId),
+      name: Value(rev.name),
+      parentFolderId: Value(rev.parentFolderId),
+      size: Value(rev.size),
+      lastModifiedDate: Value(rev.lastModifiedDate),
+      dataContentType: Value(rev.dataContentType),
+      metadataTxId: Value(rev.metadataTxId),
+      dataTxId: Value(rev.dataTxId),
+      licenseTxId: Value(rev.licenseTxId),
+      thumbnail: Value(rev.thumbnail),
+      bundledIn: Value(rev.bundledIn),
+      dateCreated: Value(rev.dateCreated),
+      customJsonMetadata: Value(rev.customJsonMetadata),
+      customGQLTags: Value(rev.customGQLTags),
+      action: Value(rev.action),
+      pinnedDataOwnerAddress: Value(rev.pinnedDataOwnerAddress),
+      isHidden: Value(rev.isHidden),
+      assignedNames: Value(rev.assignedNames),
+      fallbackTxId: Value(rev.fallbackTxId),
+      originalOwner: Value(rev.originalOwner),
+      importSource: Value(rev.importSource),
+    );
+
+/// Every column of `licenses`, named.
+LicensesCompanion _licenseCompanion(ExportedLicense license) =>
+    LicensesCompanion(
+      fileId: Value(license.fileId),
+      driveId: Value(license.driveId),
+      dataTxId: Value(license.dataTxId),
+      licenseTxType: Value(license.licenseTxType),
+      licenseTxId: Value(license.licenseTxId),
+      bundledIn: Value(license.bundledIn),
+      dateCreated: Value(license.dateCreated),
+      licenseType: Value(license.licenseType),
+      customGQLTags: Value(license.customGQLTags),
+    );
+
+/// A derived `network_transactions` row, marked as what it is: mined.
+///
+/// The sync helpers set a file's **data** transaction to `pending`, and they
+/// are right to. Sync writes a revision the moment it reads the metadata, and
+/// the metadata can be on chain before the data it points at is — so sync
+/// leaves the data transaction to be confirmed by a later pass, which is what
+/// `_updateTransactionStatuses` is for.
+///
+/// An import is not that situation. These rows arrive inside an artifact whose
+/// signed coverage claim is the producer's own sync watermark: the producer
+/// had walked the chain to `Block-End` and these are the transactions it read
+/// there. Carrying them over as `pending` would do two things, both bad and
+/// both certain, to buy a distinction the payload cannot make anyway:
+///
+///  * every file in a restored drive would render with the pending icon
+///    (`fileStatusFromTransactions`) until something confirmed it;
+///  * and that something is a per-transaction gateway query — on a 42,000 file
+///    drive, 42,000 of them, which is precisely the work the artifact exists
+///    to avoid. An artifact that imported in one decryption and then triggered
+///    a full confirmation sweep would have saved nothing.
+///
+/// The residual case is a producer that published while one of its own uploads
+/// was still unmined. Its consumer would show that one file as confirmed when
+/// it is not, and find out at download time. That is a narrow and recoverable
+/// wrong answer; the alternative is a wrong answer about every file in the
+/// drive, every time.
+///
+/// The true statuses are in the producer's `network_transactions`, which
+/// cannot travel: it has no `driveId`, so publishing it would publish rows
+/// about the user's other drives to everyone holding this drive's key.
+NetworkTransactionsCompanion _asMined(NetworkTransactionsCompanion tx) =>
+    tx.copyWith(status: const Value(TransactionStatus.confirmed));
 
 /// Every column of `file_entries`, named.
 FileEntriesCompanion _fileCompanion(ExportedFileEntry file) =>
