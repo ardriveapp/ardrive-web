@@ -2362,6 +2362,26 @@
   "@shareDriveSendKeySeparately": {
     "description": "Helper text under the drive key field explaining the two-artifact handover"
   },
+  "sharedFileChooseVersion": "Choose which version to download.",
+  "@sharedFileChooseVersion": {
+    "description": "Helper line above the recipient's list of file versions"
+  },
+  "sharedFileVersionLatest": "Latest",
+  "@sharedFileVersionLatest": {
+    "description": "Chip marking the newest version in the recipient's version list"
+  },
+  "sharedFileVersionFromLink": "This link",
+  "@sharedFileVersionFromLink": {
+    "description": "Chip marking the version the share link points at"
+  },
+  "sharedFileVersionsLooking": "Looking for other versions\u2026",
+  "@sharedFileVersionsLooking": {
+    "description": "Shown while the rest of a file's version history is being fetched"
+  },
+  "sharedFileVersionsUnavailableShort": "Couldn\u2019t check for other versions.",
+  "@sharedFileVersionsUnavailableShort": {
+    "description": "Shown when the version history could not be read; the version the recipient was sent is still listed and downloadable"
+  },
   "attachDriveLookingUp": "Looking up drive…",
   "@attachDriveLookingUp": {
     "description": "Shown while the entered drive ID is being resolved"

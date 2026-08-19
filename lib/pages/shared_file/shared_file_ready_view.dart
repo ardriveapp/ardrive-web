@@ -17,6 +17,7 @@ import 'package:ardrive/pages/shared_file/shared_file_thumbnail.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/file_revision_base.dart';
+import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -303,6 +304,14 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
       SharedFileVersionsDrawer(
         revisions: state.activityRevisions,
         status: state.activityStatus,
+        currentRevision: revision,
+        // Nothing may move the target while bytes are on their way, and
+        // nothing may start a second change while one is running - the same
+        // guard the freshness banner's actions use.
+        isDisabled: _isDownloading || _isChangingRevision,
+        onSelected: (picked) => _changeRevision(
+          () => context.read<SharedFileCubit>().showRevision(picked),
+        ),
         // The revision the link named, which stays marked as the shared one
         // even while the newest is being shown.
         sharedRevision: state.sharedRevision,
@@ -940,7 +949,7 @@ class SharedFileDetailsDrawer extends StatelessWidget {
   }
 }
 
-/// The file's revisions, newest first.
+/// The file's revisions, newest first, as something the recipient can act on.
 ///
 /// Replaces the share page's old Activity tab: same information, none of the
 /// tab chrome, and - because a revision history costs one metadata fetch per
@@ -950,37 +959,54 @@ class SharedFileDetailsDrawer extends StatelessWidget {
 /// `fileRevisions`: the latter is the download target and holds exactly one
 /// revision on every v2 link, so reading the history from it would show a
 /// one-line history of the file's own current version.
+///
+/// ## Why this never makes the recipient wait
+///
+/// The version the link named is already in hand before the list is opened -
+/// it is what the page is showing - so the resolver seeds the list with it and
+/// this renders that row from the first frame. Everything else fills in around
+/// it. Nothing here gates Download, the preview, or anything above the card,
+/// and a lookup that fails costs the list and nothing else: the row the
+/// recipient was sent stays, and stays selected.
 class SharedFileVersionsDrawer extends StatelessWidget {
   const SharedFileVersionsDrawer({
     super.key,
     required this.revisions,
     required this.status,
     required this.sharedRevision,
+    required this.currentRevision,
     required this.onOpened,
+    required this.onSelected,
+    this.isDisabled = false,
   });
 
-  /// Newest first. Empty until [onOpened] has been answered.
+  /// Newest first. Seeded with the shared revision the moment the list opens.
   final List<FileRevision> revisions;
 
   final SharedFileActivityStatus status;
 
-  /// The revision the link named - the one that gets marked as shared.
+  /// The revision the link named - the one that wears the "this link" chip.
   final FileRevision sharedRevision;
+
+  /// The revision the page is currently showing and would download.
+  final FileRevision currentRevision;
 
   /// Called every time the drawer is opened; the resolver answers the first
   /// one, ignores the rest, and tries again after a failure.
   final VoidCallback onOpened;
 
+  /// Called with the revision the recipient picked.
+  final ValueChanged<FileRevision> onSelected;
+
+  /// True while a download or another selection is in flight - nothing may
+  /// move the target while bytes are on their way.
+  final bool isDisabled;
+
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
-
-    // A history that is still coming spins; one that failed says so; one that
-    // arrived empty says the same rather than spinning for ever.
     final isLoading = status == SharedFileActivityStatus.notLoaded ||
         status == SharedFileActivityStatus.loading;
-    final isUnavailable =
-        status == SharedFileActivityStatus.failed || revisions.isEmpty;
+    final hasFailed = status == SharedFileActivityStatus.failed;
 
     return _SharedFileDrawer(
       title: appLocalizationsOf(context).sharedFileVersionHistoryTitle,
@@ -990,59 +1016,202 @@ class SharedFileVersionsDrawer extends StatelessWidget {
         }
       },
       children: [
-        if (isLoading)
-          const Padding(
-            padding: EdgeInsets.only(bottom: 8),
-            child: SizedBox(
-              height: 16,
-              width: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          )
-        else if (isUnavailable)
+        if (revisions.length > 1)
           Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: 4),
             child: Text(
-              appLocalizationsOf(context).sharedFileVersionHistoryUnavailable,
+              appLocalizationsOf(context).sharedFileChooseVersion,
               style: ArDriveTypography.body.captionRegular(
                 color: SharedFileColors.subtle(context),
               ),
             ),
-          )
-        else
-          for (final revision in revisions)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      formatDateToUtcString(revision.dateCreated),
-                      style: ArDriveTypography.body.captionRegular(
-                        color: colors.themeFgDefault,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    filesize(revision.size),
+          ),
+        for (final revision in revisions)
+          _SharedFileVersionRow(
+            revision: revision,
+            isSelected: revision.dataTxId == currentRevision.dataTxId,
+            isNewest: revision.dataTxId == revisions.first.dataTxId &&
+                revisions.length > 1,
+            isFromLink: revision.dataTxId == sharedRevision.dataTxId,
+            isDisabled: isDisabled,
+            onSelected: () => onSelected(revision),
+          ),
+        if (isLoading)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, bottom: 8),
+            child: Text(
+              appLocalizationsOf(context).sharedFileVersionsLooking,
+              style: ArDriveTypography.body.captionRegular(
+                color: SharedFileColors.subtle(context),
+              ),
+            ),
+          ),
+        if (hasFailed)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, bottom: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    appLocalizationsOf(context)
+                        .sharedFileVersionsUnavailableShort,
                     style: ArDriveTypography.body.captionRegular(
                       color: SharedFileColors.subtle(context),
                     ),
                   ),
-                  if (revision.dataTxId == sharedRevision.dataTxId) ...[
-                    const SizedBox(width: 8),
-                    Text(
-                      appLocalizationsOf(context).sharedFileSharedVersion,
-                      style: ArDriveTypography.body.captionBold(
-                        color: SharedFileColors.subtle(context),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+                ),
+                const SizedBox(width: 8),
+                // The drawer's own retry: `loadActivity` runs again after a
+                // failure, so pressing this is all it takes.
+                ArDriveTextButton(
+                  text: appLocalizationsOf(context).sharedFileRetry,
+                  onPressed: onOpened,
+                ),
+              ],
             ),
+          ),
       ],
+    );
+  }
+}
+
+/// One version, and the control that selects it.
+///
+/// A row rather than a line of text: choosing a version is what this list is
+/// for. Laid out so the same row works under a thumb - the whole row is the
+/// target, and it is never shorter than 44px.
+class _SharedFileVersionRow extends StatelessWidget {
+  const _SharedFileVersionRow({
+    required this.revision,
+    required this.isSelected,
+    required this.isNewest,
+    required this.isFromLink,
+    required this.isDisabled,
+    required this.onSelected,
+  });
+
+  final FileRevision revision;
+  final bool isSelected;
+  final bool isNewest;
+  final bool isFromLink;
+  final bool isDisabled;
+  final VoidCallback onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+    final subtle = SharedFileColors.subtle(context);
+
+    return Semantics(
+      selected: isSelected,
+      inMutuallyExclusiveGroup: true,
+      child: InkWell(
+        onTap: isDisabled || isSelected ? null : onSelected,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 44),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? colors.themeBgSubtle : null,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Row(
+            children: [
+              _VersionRadio(isSelected: isSelected),
+              const SizedBox(width: 11),
+              Expanded(
+                child: ArDriveTooltip(
+                  // The row shows the short date so that it still fits beside
+                  // a size and a chip on a phone; the exact timestamp is one
+                  // hover away, the same pairing the drive explorer uses.
+                  message: formatDateToUtcString(revision.dateCreated),
+                  child: Text(
+                    yMMdDateFormatter.format(revision.dateCreated),
+                    overflow: TextOverflow.ellipsis,
+                    style: isSelected
+                        ? ArDriveTypography.body
+                            .captionBold(color: colors.themeFgDefault)
+                        : ArDriveTypography.body
+                            .captionRegular(color: colors.themeFgDefault),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                filesize(revision.size),
+                style: ArDriveTypography.body.captionRegular(color: subtle),
+              ),
+              // At most one chip. A row that is both the newest and the one the
+              // link named would otherwise carry two labels saying much the
+              // same thing, and on a phone that is what pushes it over.
+              if (isFromLink) ...[
+                const SizedBox(width: 8),
+                _VersionChip(
+                  appLocalizationsOf(context).sharedFileVersionFromLink,
+                ),
+              ] else if (isNewest) ...[
+                const SizedBox(width: 8),
+                _VersionChip(
+                  appLocalizationsOf(context).sharedFileVersionLatest,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The selected mark. Drawn rather than themed so that it reads as a choice
+/// even where the platform's own radio does not fit this card's density.
+class _VersionRadio extends StatelessWidget {
+  const _VersionRadio({required this.isSelected});
+
+  final bool isSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return ExcludeSemantics(
+      child: Container(
+        width: 16,
+        height: 16,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: isSelected ? colorTokens.containerRed : null,
+          border: Border.all(
+            color: isSelected ? colorTokens.containerRed : colorTokens.strokeMid,
+            width: isSelected ? 5 : 1.5,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VersionChip extends StatelessWidget {
+  const _VersionChip(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: colors.themeBgSubtle,
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: Text(
+        label,
+        style: ArDriveTypography.body.captionBold(
+          color: SharedFileColors.subtle(context),
+        ),
+      ),
     );
   }
 }

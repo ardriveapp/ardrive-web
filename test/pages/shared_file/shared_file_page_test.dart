@@ -49,6 +49,21 @@ class GatedKeySession extends SharedFileKeySession {
 /// The assertions here are about what a *recipient* can see and do: the file
 /// they are being given, one obvious download, a key gate that never lies to
 /// them, and no transaction id in their face.
+/// Only ever handed to `any()`, never read.
+final fileRevisionFallback = FileRevision(
+  fileId: 'fallback',
+  driveId: 'fallback',
+  name: 'fallback',
+  parentFolderId: 'fallback',
+  size: 0,
+  lastModifiedDate: DateTime.utc(2024),
+  metadataTxId: 'fallback',
+  dataTxId: 'fallback',
+  dateCreated: DateTime.utc(2024),
+  action: RevisionAction.create,
+  isHidden: false,
+);
+
 void main() {
   const fileId = 'file-id';
 
@@ -190,6 +205,8 @@ void main() {
     await tester.pump();
   }
 
+  setUpAll(() => registerFallbackValue(fileRevisionFallback));
+
   setUp(() {
     cubit = MockSharedFileCubit();
     states = StreamController<SharedFileState>.broadcast();
@@ -200,6 +217,7 @@ void main() {
     when(() => cubit.loadActivity()).thenAnswer((_) async {});
     when(() => cubit.showLatestRevision()).thenAnswer((_) async {});
     when(() => cubit.showSharedRevision()).thenAnswer((_) async {});
+    when(() => cubit.showRevision(any())).thenAnswer((_) async {});
   });
 
   tearDown(() async {
@@ -536,13 +554,14 @@ void main() {
 
       verifyNever(() => cubit.loadActivity());
 
-      // Deliberately not `pumpAndSettle`: an unanswered history shows a
-      // spinner, and a spinner never settles.
       await tester.tap(find.byType(ExpansionTile).last);
       await tester.pump();
 
       verify(() => cubit.loadActivity()).called(1);
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      // No spinner: the version the link named is already in hand, so the list
+      // says what it is still looking for rather than showing nothing.
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.textContaining('Looking for other versions'), findsOneWidget);
 
       // The history lives on its own list. It is empty on a v2 link until the
       // resolver answers, and `fileRevisions` - the download target - is never
@@ -556,7 +575,7 @@ void main() {
       ));
       await tester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.textContaining('Looking for other versions'), findsNothing);
       expect(find.text(filesize(12)), findsOneWidget);
     });
 
@@ -639,6 +658,54 @@ void main() {
 
       // The type still shows: the link really did carry it.
       expect(find.text('File type'), findsOneWidget);
+    });
+
+    testWidgets('a failed history keeps the version the recipient was sent',
+        (tester) async {
+      // The state a rate limited connection lands in. It costs the list, never
+      // the file - so the row stays, and it stays selected.
+      await pumpPage(
+        tester,
+        success(
+          activityRevisions: [fileRevision()],
+          activityStatus: SharedFileActivityStatus.failed,
+        ),
+      );
+
+      await tester.tap(find.byType(ExpansionTile).last);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('Couldn\u2019t check for other versions'),
+        findsOneWidget,
+      );
+      expect(find.text('Retry'), findsOneWidget);
+      // The version itself is still listed, and Download is untouched.
+      expect(find.text('Download'), findsOneWidget);
+    });
+
+    testWidgets('choosing a version asks the resolver for it', (tester) async {
+      await pumpPage(
+        tester,
+        success(
+          activityRevisions: [
+            fileRevision(dataTxId: 'data-tx-newer'),
+            fileRevision(),
+          ],
+          activityStatus: SharedFileActivityStatus.loaded,
+        ),
+      );
+
+      await tester.tap(find.byType(ExpansionTile).last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Latest'), findsOneWidget);
+      expect(find.text('This link'), findsOneWidget);
+
+      await tester.tap(find.text('Latest'));
+      await tester.pumpAndSettle();
+
+      verify(() => cubit.showRevision(any())).called(1);
     });
 
     testWidgets('shows the verification badge the link earned', (tester) async {
