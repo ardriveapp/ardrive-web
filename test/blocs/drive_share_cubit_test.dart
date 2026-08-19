@@ -244,6 +244,37 @@ void main() {
       expect(link, contains('driveKey='));
     });
 
+    test('toggling the key rebuilds the link without a loading state',
+        (
+    ) async {
+      // The dialog renders a centred spinner for DriveShareLoadInProgress, so
+      // re-announcing it here would blank the dialog and take the checkbox the
+      // sharer just clicked off the screen. The file share dialog rebuilds its
+      // link with no loading state; this one matches.
+      when(() => profileCubit.state).thenReturn(ProfilePromptAdd());
+
+      await insertDrive(isPrivate: true);
+      await driveDao.putDriveKeyInMemory(driveID: driveId, driveKey: driveKey);
+
+      final c = cubit(await drive());
+
+      await settled(c);
+
+      final states = <DriveShareState>[];
+      final subscription = c.stream.listen(states.add);
+
+      await c.setKeyIsInLink(true);
+      await Future<void>.delayed(Duration.zero);
+      await subscription.cancel();
+
+      expect(states, isNot(contains(isA<DriveShareLoadInProgress>())));
+      expect(states.last, isA<DriveShareLoadSuccess>());
+      expect(
+        (states.last as DriveShareLoadSuccess).driveShareLink.toString(),
+        contains('driveKey='),
+      );
+    });
+
     test('a folder share carries the folder\'s own name', () async {
       // The dialog confirms what is being shared. Described by the drive's
       // name, a folder share would confirm the wrong thing.

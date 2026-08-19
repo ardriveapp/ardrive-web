@@ -35,6 +35,17 @@ class DriveShareCubit extends Cubit<DriveShareState> {
   /// [SharedFileCubit] uses.
   int _generation = 0;
 
+  /// The drive's key, resolved once.
+  ///
+  /// Toggling the checkbox rebuilds the link from what is already in hand: it
+  /// must not go back to the database for a key that cannot have changed, and
+  /// it must not blank the dialog to a spinner - which would take the very
+  /// control the sharer just clicked off the screen. The file share dialog
+  /// rebuilds its link with no loading state at all, and this one should feel
+  /// the same. Only populated on success, so a retry after a failure resolves
+  /// afresh.
+  DriveKey? _driveKeyCache;
+
   DriveShareCubit({
     required this.drive,
     this.folderId,
@@ -55,7 +66,8 @@ class DriveShareCubit extends Cubit<DriveShareState> {
 
     _keyIsInLink = value;
 
-    await loadDriveShareDetails();
+    // No progress state: this is a rebuild, not a load.
+    await _buildShareDetails(announceProgress: false);
   }
 
   /// Builds the share link for [drive], or fails in a way the dialog can show.
@@ -65,7 +77,10 @@ class DriveShareCubit extends Cubit<DriveShareState> {
   /// throws becomes an unhandled asynchronous error: the cubit would stay in
   /// [DriveShareLoadInProgress] and the dialog would spin forever, which is
   /// exactly what a missing drive key used to do.
-  Future<void> loadDriveShareDetails() async {
+  Future<void> loadDriveShareDetails() =>
+      _buildShareDetails(announceProgress: true);
+
+  Future<void> _buildShareDetails({required bool announceProgress}) async {
     final generation = ++_generation;
 
     // Captured once. Read twice - once to build the link and once to describe
@@ -74,7 +89,9 @@ class DriveShareCubit extends Cubit<DriveShareState> {
     // render a key-bearing link unmasked.
     final keyIsInLink = _keyIsInLink;
 
-    emit(DriveShareLoadInProgress());
+    if (announceProgress) {
+      emit(DriveShareLoadInProgress());
+    }
 
     try {
       final driveKey = drive.isPrivate ? await _driveKey() : null;
@@ -138,6 +155,12 @@ class DriveShareCubit extends Cubit<DriveShareState> {
   /// Neither is guaranteed, and a [StateError] here is a real outcome rather
   /// than a should-never-happen: it lands on the failure state above.
   Future<DriveKey> _driveKey() async {
+    final cached = _driveKeyCache;
+
+    if (cached != null) {
+      return cached;
+    }
+
     final profileState = _profileCubit.state;
 
     final driveKey = profileState is ProfileLoggedIn
@@ -147,6 +170,8 @@ class DriveShareCubit extends Cubit<DriveShareState> {
     if (driveKey == null) {
       throw StateError('Drive key not found');
     }
+
+    _driveKeyCache = driveKey;
 
     return driveKey;
   }
