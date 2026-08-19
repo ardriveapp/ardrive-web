@@ -607,6 +607,13 @@ JoinedSelectStatement driveStateLicensesQuery(
 /// real metadata is read - by sync, or by the local action that uploaded it.
 /// It is the same signal `DriveDetailCubit` uses to tell a genuinely empty
 /// drive from one that has never synced.
+///
+/// The cost of dropping them is paid on the other side, on purpose. A ghost's
+/// *files* have revisions and so do travel, which leaves the payload naming a
+/// parent it does not carry; `DriveStateImporter` closes that graph by
+/// materialising the stand-in locally (`_ghostFolderStandIn`), where a
+/// fabricated row stays this client's own guess instead of becoming every
+/// importer's.
 Expression<bool> _folderEntryCameFromChain(DriveDao driveDao) {
   final entries = driveDao.folderEntries;
   final revisions = driveDao.folderRevisions;

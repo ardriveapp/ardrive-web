@@ -756,6 +756,256 @@ void main() {
     });
   });
 
+  /// A drive is a tree, and the merge has to leave one behind.
+  ///
+  /// The export publishes only rows a revision vouches for, and a ghost folder
+  /// has none - that is what makes it a ghost. Its *files* do, so they travel
+  /// and their parent does not. Nothing in the app lists a file except by its
+  /// parent, and the import advances the watermark past the range whose
+  /// metadata would have re-derived the ghost, so an unresolved parent is a
+  /// permanently invisible file rather than a temporarily misplaced one.
+  group('the row graph', () {
+    /// Removes a folder's revision, which is exactly what makes the export
+    /// treat its entry as a row this client invented: a ghost, in other words.
+    Future<void> forgetFolderRevisions(List<String> folderIds) =>
+        (producerDb.delete(producerDb.folderRevisions)
+              ..where((r) => r.folderId.isIn(folderIds)))
+            .go();
+
+    Future<DriveStateImportResult> publishAndImport() async {
+      final artifact =
+          await sealArtifact(await exportedPayload(), blockEnd: 900);
+      return importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+    }
+
+    Future<FolderEntry> folderRow(String id) =>
+        (db.select(db.folderEntries)..where((f) => f.id.equals(id)))
+            .getSingle();
+
+    test('materialises the ghost a file\'s parent has become', () async {
+      await forgetFolderRevisions([nestedFolderId]);
+      await attachDrive(db);
+
+      final result = await publishAndImport();
+      expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
+      expect(result.stats!.foldersWritten, 2);
+      expect(result.stats!.foldersMaterialised, 1);
+
+      // The shape `SyncRepository.createGhosts` writes, so that the ghost UI
+      // and its Fix flow work on it unchanged.
+      final ghost = await folderRow(nestedFolderId);
+      expect(ghost.isGhost, isTrue);
+      expect(ghost.name, nestedFolderId);
+      expect(ghost.parentFolderId, rootFolderId);
+
+      // And the file inside it is reachable, which is the whole point.
+      final contents = await db.driveDao
+          .watchFolderContents(driveId, folderId: nestedFolderId)
+          .first;
+      expect(contents.files.map((f) => f.id), ['${nestedFolderId}0']);
+
+      final root = await db.driveDao
+          .watchFolderContents(driveId, folderId: rootFolderId)
+          .first;
+      expect(root.subfolders.map((f) => f.id), contains(nestedFolderId));
+    });
+
+    test('materialises the ghost a folder\'s parent has become', () async {
+      // A folder whose own parent is the ghost - the nesting case, and the one
+      // no file reaches, so it is the folder section that has to be walked.
+      await producerDb.into(producerDb.folderEntries).insert(
+            FolderEntriesCompanion.insert(
+              id: 'child-of-a-ghost',
+              driveId: driveId,
+              parentFolderId: const Value('a-folder-that-never-resolved'),
+              name: 'child-of-a-ghost',
+              path: '',
+            ),
+          );
+      await addFolderRevisionsToDb(
+        producerDb,
+        driveId: driveId,
+        folderIds: ['child-of-a-ghost'],
+      );
+      await attachDrive(db);
+
+      final result = await publishAndImport();
+      expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
+      expect(result.stats!.foldersMaterialised, 1);
+
+      final ghost = await folderRow('a-folder-that-never-resolved');
+      expect(ghost.isGhost, isTrue);
+      expect(ghost.parentFolderId, rootFolderId);
+
+      // A stand-in is parented at the root, never at another stand-in, so one
+      // pass closes a chain of any depth.
+      expect((await folderRow('child-of-a-ghost')).parentFolderId,
+          'a-folder-that-never-resolved');
+    });
+
+    test('materialises nothing when every parent already resolves', () async {
+      await attachDrive(db);
+
+      final result = await publishAndImport();
+      expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
+      expect(result.stats!.foldersMaterialised, 0);
+    });
+
+    test('keeps a local folder row that is newer and has a revision behind it',
+        () async {
+      await attachDrive(db);
+      // Renamed locally after the artifact was published, and vouched for the
+      // way a real rename vouches for itself. The stand-in rule must not reach
+      // this row.
+      await db.into(db.folderEntries).insert(
+            FolderEntriesCompanion.insert(
+              id: nestedFolderId,
+              driveId: driveId,
+              parentFolderId: const Value(rootFolderId),
+              name: 'renamed-locally',
+              path: '',
+              lastUpdated: Value(DateTime(2030)),
+            ),
+          );
+      await addFolderRevisionsToDb(
+        db,
+        driveId: driveId,
+        folderIds: [nestedFolderId],
+      );
+
+      final result = await publishAndImport();
+      expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
+      expect(result.stats!.rowsKeptLocallyNewer, 1);
+      expect((await folderRow(nestedFolderId)).name, 'renamed-locally');
+    });
+
+    test('keeps a local stand-in the artifact does not vouch for either',
+        () async {
+      // The export never publishes a folder row without its revision, but an
+      // importer checks what arrived rather than trusting the producer to have
+      // run the filter. A payload that skipped it is offering a guess of its
+      // own - possibly its *own* ghost, stamped `now` - and a guess does not
+      // get to overrule this client's guess.
+      final payload = await exportedPayload();
+      final revisions = (payload['sections']
+              as Map<String, dynamic>)[folderRevisionsSectionName]
+          as Map<String, dynamic>;
+      revisions['rows'] = (revisions['rows'] as List)
+          .where(
+              (r) => (r as Map<String, dynamic>)['folderId'] != nestedFolderId)
+          .toList();
+
+      await attachDrive(db);
+      await db.into(db.folderEntries).insert(
+            FolderEntriesCompanion.insert(
+              id: nestedFolderId,
+              driveId: driveId,
+              parentFolderId: const Value(rootFolderId),
+              name: nestedFolderId,
+              path: '',
+              isGhost: const Value(true),
+              lastUpdated: Value(DateTime(2030)),
+            ),
+          );
+
+      final artifact = await sealArtifact(payload, blockEnd: 900);
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        driveKey: driveKey,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
+      expect(result.stats!.rowsKeptLocallyNewer, 1);
+      expect((await folderRow(nestedFolderId)).isGhost, isTrue);
+    });
+
+    test('refuses a payload naming a root folder nothing can resolve',
+        () async {
+      // Reachable from a broken producer - a drive whose root folder metadata
+      // never resolved has a placeholder row, which the export's chain-derived
+      // filter drops - and trivially from a hostile one, since an artifact is
+      // authentic, signed and permanent.
+      await producerDb.driveDao.writeToDrive(
+        const DrivesCompanion(
+          id: Value(driveId),
+          rootFolderId: Value('a-folder-that-is-in-no-section'),
+        ),
+      );
+      await attachDrive(db);
+
+      final result = await publishAndImport();
+
+      expect(result.outcome, DriveStateOutcome.integrityFailed);
+      expect(result.detail, contains('a-folder-that-is-in-no-section'));
+      // Refused before the first write, like every other rejection: a partial
+      // import is worse than none.
+      expect(await folderRows(db), isEmpty);
+      expect(await fileRows(db), isEmpty);
+      expect((await driveRow(db)).lastBlockHeight, 0);
+      expect((await driveRow(db)).rootFolderId, rootFolderId);
+    });
+
+    test('imports when the root folder is only in the local database',
+        () async {
+      // The producer's root folder metadata never resolved, so the payload
+      // cannot carry it - but the consumer attached this drive and holds
+      // `DriveDao._rootFolderPlaceholder`'s row for it. Nothing is missing.
+      await forgetFolderRevisions([rootFolderId]);
+      await attachDrive(db);
+      await db.into(db.folderEntries).insert(
+            FolderEntriesCompanion.insert(
+              id: rootFolderId,
+              driveId: driveId,
+              name: 'stale-local-name',
+              path: '',
+            ),
+          );
+
+      final result = await publishAndImport();
+      expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
+      expect(result.stats!.foldersMaterialised, 0);
+    });
+
+    test('materialises the root folder the drive is keeping, if it must',
+        () async {
+      // Nothing carries the root and nothing local holds it, but the drive is
+      // keeping its own `rootFolderId` rather than adopting the payload's - so
+      // there is no claim to refuse, and a stand-in parented at a root that
+      // does not exist would be an orphan of the kind it was written to fix.
+      await forgetFolderRevisions(
+        [rootFolderId, nestedFolderId, 'empty-nested-folder-id0'],
+      );
+      await (producerDb.delete(producerDb.fileEntries)
+            ..where((f) => f.parentFolderId.equals(rootFolderId)))
+          .go();
+      await (producerDb.delete(producerDb.fileRevisions)
+            ..where((r) => r.parentFolderId.equals(rootFolderId)))
+          .go();
+      // Newer than the payload's drive row, so its metadata is not adopted.
+      await attachDrive(db, lastUpdated: DateTime(2025));
+
+      final result = await publishAndImport();
+      expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
+      expect(result.stats!.foldersMaterialised, 2);
+
+      final root = await folderRow(rootFolderId);
+      expect(root.parentFolderId, null);
+      expect(root.isGhost, isFalse);
+      expect((await folderRow(nestedFolderId)).parentFolderId, rootFolderId);
+
+      // The drive opens, which is what a root folder row is for.
+      final contents = await db.driveDao.watchFolderContents(driveId).first;
+      expect(contents.folder.id, rootFolderId);
+    });
+  });
+
   group('validation, before anything is written', () {
     /// Every rejection test asserts this, because a partial import is worse
     /// than none: the drive would carry rows from an artifact nobody trusted,
