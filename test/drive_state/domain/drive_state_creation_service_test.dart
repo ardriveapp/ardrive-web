@@ -65,6 +65,18 @@ void main() {
       rootFolderFileCount: rootFileCount,
       nestedFolderFileCount: nestedFileCount,
     );
+    // `addTestFilesToDb` writes file revisions but no folder ones, and the
+    // export carries only chain-derived rows. This is a drive whose folders
+    // all synced.
+    await addFolderRevisionsToDb(
+      db,
+      driveId: driveId,
+      folderIds: [
+        rootFolderId,
+        nestedFolderId,
+        ...List.generate(emptyFolderCount, (i) => 'empty-nested-folder-id$i'),
+      ],
+    );
 
     // A private drive this wallet owns, synced to a real height: the only
     // shape the service will produce anything for.

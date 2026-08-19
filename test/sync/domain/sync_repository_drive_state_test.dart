@@ -273,6 +273,18 @@ void main() {
       rootFolderFileCount: 2,
       nestedFolderFileCount: 1,
     );
+    // `addTestFilesToDb` writes file revisions but no folder ones, and the
+    // export carries only chain-derived rows. This is a producer whose
+    // folders all synced.
+    await addFolderRevisionsToDb(
+      producerDb,
+      driveId: driveId,
+      folderIds: [
+        rootFolderId,
+        nestedFolderId,
+        'empty-nested-folder-id0',
+      ],
+    );
     await producerDb.driveDao.writeToDrive(DrivesCompanion(
       id: const Value(driveId),
       ownerAddress: Value(ownerAddress),
