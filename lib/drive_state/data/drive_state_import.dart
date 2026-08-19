@@ -719,6 +719,41 @@ class DriveStateImporter {
                 ))
           .toList();
 
+      // Closure is not acyclicity.
+      //
+      // Every `parentFolderId` now resolves, but `A -> B -> A` resolves too,
+      // and `DriveDao.getFolderTree` recurses on `parentFolderId` with no
+      // depth bound: a cycle hangs drive size, folder download, manifests and
+      // share-folder selection, permanently, because the same payload
+      // re-applies on every sync once `blockEnd == localWatermark`.
+      //
+      // Chain data cannot produce one — a folder's parent is fixed by its
+      // metadata and history only moves forward — so this is a check against a
+      // payload that was malformed or built by a broken producer. That is
+      // exactly the case the threat model keeps: an artifact is authentic,
+      // permanent, and cannot be recalled.
+      //
+      // Local parents are read too, because a cycle does not have to live
+      // wholly inside the payload: re-parenting one carried folder onto a
+      // local folder whose own ancestor is that carried folder closes a loop
+      // out of two individually innocent rows.
+      final localParents = await _parentFolderIdById(driveId);
+      final effectiveParents = <String, String?>{
+        ...localParents,
+        for (final row in standInFolderRows)
+          row.id.value: row.parentFolderId.value,
+        for (final folder in folders) folder.id: folder.parentFolderId,
+      };
+
+      final cycle = _firstFolderCycle(effectiveParents);
+      if (cycle != null) {
+        return DriveStateImportResult.rejected(
+          DriveStateOutcome.integrityFailed,
+          'the folder graph this payload would leave behind contains a cycle: '
+          '${cycle.join(' -> ')}',
+        );
+      }
+
       // The revisions the entries above are versions of, and the licences
       // attached to them. Built before the write because the derivation of
       // `network_transactions` reads them.
@@ -840,6 +875,25 @@ class DriveStateImporter {
   /// `id -> lastUpdated` for one drive's rows, which is everything the merge
   /// needs to know about what is already there. Reading whole rows to compare
   /// one column would be the same query and a great deal more memory.
+  /// `parentFolderId` for every folder this drive already holds.
+  ///
+  /// Read separately from [_lastUpdatedById] rather than widening it, because
+  /// only the cycle check needs parents and every other caller would carry the
+  /// column for nothing.
+  Future<Map<String, String?>> _parentFolderIdById(String driveId) async {
+    final folders = _driveDao.folderEntries;
+
+    final rows = await (_driveDao.selectOnly(folders)
+          ..addColumns([folders.id, folders.parentFolderId])
+          ..where(folders.driveId.equals(driveId)))
+        .get();
+
+    return {
+      for (final row in rows)
+        row.read(folders.id)!: row.read(folders.parentFolderId),
+    };
+  }
+
   Future<Map<String, DateTime>> _lastUpdatedById(
     TableInfo table, {
     required String driveId,
@@ -1189,6 +1243,48 @@ LicensesCompanion _licenseCompanion(ExportedLicense license) =>
 /// The true statuses are in the producer's `network_transactions`, which
 /// cannot travel: it has no `driveId`, so publishing it would publish rows
 /// about the user's other drives to everyone holding this drive's key.
+/// The first `parentFolderId` cycle in [parents], as the path around it, or
+/// null if the graph is acyclic.
+///
+/// One pass with three colours rather than a walk per folder: at 42,000
+/// folders the per-folder walk is quadratic in the depth of the tree, and this
+/// runs on every import. A node already proven acyclic is never re-entered.
+///
+/// A parent that is absent from [parents] terminates a chain rather than
+/// failing it. Absence here means "no row will exist for it", which the
+/// closure check immediately above has already refused; treating it as a
+/// second failure would report a cycle for a graph that has none.
+List<String>? _firstFolderCycle(Map<String, String?> parents) {
+  const onStack = 1, settled = 2;
+  final state = <String, int>{};
+
+  for (final start in parents.keys) {
+    if (state[start] == settled) continue;
+
+    // Iterative, because a drive's folder tree is user-shaped: nothing stops
+    // it being deep enough to overflow the stack, and a payload built to do
+    // exactly that is the case this function exists for.
+    final path = <String>[];
+
+    String? current = start;
+    while (current != null && state[current] != settled) {
+      if (state[current] == onStack) {
+        return [...path.sublist(path.indexOf(current)), current];
+      }
+
+      state[current] = onStack;
+      path.add(current);
+      current = parents.containsKey(current) ? parents[current] : null;
+    }
+
+    for (final id in path) {
+      state[id] = settled;
+    }
+  }
+
+  return null;
+}
+
 NetworkTransactionsCompanion _asMined(NetworkTransactionsCompanion tx) =>
     tx.copyWith(status: const Value(TransactionStatus.confirmed));
 

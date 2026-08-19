@@ -815,6 +815,115 @@ void main() {
       expect(root.subfolders.map((f) => f.id), contains(nestedFolderId));
     });
 
+    /// Closure is not acyclicity. Every `parentFolderId` resolving says every
+    /// parent has a row, not that walking parents ever stops — and
+    /// `DriveDao.getFolderTree` recurses on `parentFolderId` with no depth
+    /// bound, so a loop hangs drive size, folder download, manifests and
+    /// share-folder selection. It hangs them permanently: once
+    /// `blockEnd == localWatermark` the same payload re-applies on every sync.
+    ///
+    /// Chain data cannot produce a cycle, so this is a guard against a
+    /// malformed or broken producer — which is the case the threat model
+    /// keeps, because an artifact is authentic, permanent and cannot be
+    /// recalled.
+    group('cycles', () {
+      test('refuses a payload whose folders point at each other', () async {
+        await producerDb.into(producerDb.folderEntries).insert(
+              FolderEntriesCompanion.insert(
+                id: 'loop-a',
+                driveId: driveId,
+                parentFolderId: const Value('loop-b'),
+                name: 'loop-a',
+                path: '',
+              ),
+            );
+        await producerDb.into(producerDb.folderEntries).insert(
+              FolderEntriesCompanion.insert(
+                id: 'loop-b',
+                driveId: driveId,
+                parentFolderId: const Value('loop-a'),
+                name: 'loop-b',
+                path: '',
+              ),
+            );
+        await addFolderRevisionsToDb(
+          producerDb,
+          driveId: driveId,
+          folderIds: ['loop-a', 'loop-b'],
+        );
+        await attachDrive(db);
+
+        final result = await publishAndImport();
+
+        expect(result.outcome, DriveStateOutcome.integrityFailed);
+        expect(result.detail, contains('cycle'));
+        // Validate before write: nothing landed.
+        expect(await db.select(db.folderEntries).get(), isEmpty);
+      });
+
+      /// The half that a payload-only check would miss. Neither row is a cycle
+      /// by itself: the local folder is a perfectly ordinary child, and the
+      /// carried row only re-parents one folder. The loop exists solely in the
+      /// graph the merge would leave behind, which is the graph that has to be
+      /// checked.
+      test('refuses a loop it would close through a row already held',
+          () async {
+        await attachDrive(db);
+
+        // Locally: nested sits under a folder that the payload is about to
+        // re-parent underneath nested.
+        await db.into(db.folderEntries).insert(
+              FolderEntriesCompanion.insert(
+                id: 'local-child',
+                driveId: driveId,
+                parentFolderId: Value(nestedFolderId),
+                name: 'local-child',
+                path: '',
+              ),
+            );
+
+        await (producerDb.update(producerDb.folderEntries)
+              ..where((f) => f.id.equals(nestedFolderId)))
+            .write(const FolderEntriesCompanion(
+          parentFolderId: Value('local-child'),
+        ));
+
+        final result = await publishAndImport();
+
+        expect(result.outcome, DriveStateOutcome.integrityFailed);
+        expect(result.detail, contains('cycle'));
+      });
+
+      test('a deep chain that ends at the root is not a cycle', () async {
+        var parent = rootFolderId;
+        final chain = [for (var i = 0; i < 60; i++) 'deep-$i'];
+
+        for (final id in chain) {
+          await producerDb.into(producerDb.folderEntries).insert(
+                FolderEntriesCompanion.insert(
+                  id: id,
+                  driveId: driveId,
+                  parentFolderId: Value(parent),
+                  name: id,
+                  path: '',
+                ),
+              );
+          parent = id;
+        }
+        await addFolderRevisionsToDb(
+          producerDb,
+          driveId: driveId,
+          folderIds: chain,
+        );
+        await attachDrive(db);
+
+        final result = await publishAndImport();
+
+        expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
+        expect((await folderRow('deep-59')).id, 'deep-59');
+      });
+    });
+
     test('materialises the ghost a folder\'s parent has become', () async {
       // A folder whose own parent is the ghost - the nesting case, and the one
       // no file reaches, so it is the folder section that has to be walked.
