@@ -45,6 +45,22 @@ class DriveStateImportStats {
   final int foldersWritten;
   final int filesWritten;
 
+  /// Stand-in `folder_entries` rows the merge invented so that every
+  /// `parentFolderId` it wrote resolves — see [DriveStateImporter]'s row graph
+  /// section.
+  ///
+  /// Reported because it is the number that says *this drive arrived with
+  /// holes in it*. Non-zero is normal, not a fault: a producer's ghost folder
+  /// cannot travel, so its consumer rebuilds one. A number that climbs across
+  /// a fleet is the signal that producers are publishing while unresolved
+  /// metadata is still outstanding, and §7 exists so that signal is in the log
+  /// rather than inferred from a screenshot.
+  ///
+  /// Defaulted rather than required: it is a measurement added after the
+  /// vocabulary settled, and the callers that build this by hand are naming
+  /// what they assert on.
+  final int foldersMaterialised;
+
   /// Rows added to `drive_revisions`, `folder_revisions` and `file_revisions`,
   /// and to `licenses`.
   ///
@@ -77,6 +93,7 @@ class DriveStateImportStats {
 
   const DriveStateImportStats({
     required this.foldersWritten,
+    this.foldersMaterialised = 0,
     required this.filesWritten,
     required this.revisionsWritten,
     required this.licensesWritten,
@@ -93,7 +110,8 @@ class DriveStateImportStats {
   @override
   String toString() => 'imported=$entitiesImported '
       '(folders=$foldersWritten files=$filesWritten '
-      'kept-local=$rowsKeptLocallyNewer) '
+      'kept-local=$rowsKeptLocallyNewer '
+      'materialised-folders=$foldersMaterialised) '
       'revisions=$revisionsWritten licenses=$licensesWritten '
       'transactions=$transactionsWritten '
       'watermark=$watermark '
@@ -207,14 +225,33 @@ extension DriveStateEnvelopeFailureOutcome on DriveStateEnvelopeFailure {
 ///    likelier to be something uploaded since the artifact was published than
 ///    something removed, and an artifact that deleted rows would turn one
 ///    stale publication into data loss;
-///  * the revision tables and `licenses` obey the same rule, arrived at
-///    differently. Their primary keys *contain* their version — a revision is
-///    keyed by `(entityId, driveId, dateCreated)` — so a newer copy of a row
-///    is not a conflicting write, it is a different key. There is therefore
-///    nothing for a `lastUpdated` comparison to decide: the artifact can only
-///    add, and a row the client already holds is left exactly as it is. That
-///    is what [InsertMode.insertOrIgnore] says, and it is strictly the safer
-///    half of the same policy;
+///  * a local row that is *newer* is only newer if something vouches for it.
+///    The two rows this client fabricates — a ghost folder
+///    (`SyncRepository.createGhosts`) and a root folder placeholder
+///    (`DriveDao._rootFolderPlaceholder`) — are stamped with *now*, while the
+///    artifact's genuine row carries its chain commit time, so a timestamp
+///    comparison alone hands every contest to the stand-in and the artifact
+///    can never heal one. See [_folderStandInLoses] for the predicate that
+///    fixes it and for why it is scoped to `folder_entries`;
+///  * the revision tables obey the same rule, arrived at differently. Their
+///    primary keys *contain* their version — a revision is keyed by
+///    `(entityId, driveId, dateCreated)` — so a newer copy of a row is not a
+///    conflicting write, it is a different key. There is therefore nothing for
+///    a `lastUpdated` comparison to decide: the artifact can only add, and a
+///    row the client already holds is left exactly as it is. That is what
+///    [InsertMode.insertOrIgnore] says, and it is strictly the safer half of
+///    the same policy;
+///  * `licenses` lands the same way for a different reason, and it is worth
+///    stating because the obvious one is wrong: its primary key is
+///    `(fileId, driveId, dataTxId, licenseTxId)` and holds no version at all.
+///    Two rows sharing that key are not two versions of a licence — they are
+///    the same licence transaction attached to the same file data
+///    transaction. Every remaining column describes that transaction, is read
+///    from the chain, and is never edited afterwards: `DriveDao.insertLicense`
+///    only ever inserts, and re-licensing a file mints a new `licenseTxId`,
+///    which is a new key and so a new row. An overwrite would therefore write
+///    back the values already there; ignoring is the cheaper and the safer of
+///    two statements with the same effect;
 ///  * `network_transactions` is not in the payload at all. It is rebuilt from
 ///    the revisions above through the same `lib/sync/utils/` helpers sync
 ///    derives it with, and inserted the same way — a status this client
@@ -224,6 +261,38 @@ extension DriveStateEnvelopeFailureOutcome on DriveStateEnvelopeFailure {
 ///    them — and the update names its columns, so they cannot be nulled out by
 ///    accident either;
 ///  * no statement here can see another drive's rows.
+///
+/// ## The row graph
+///
+/// A drive is a tree, and the merge has to leave one behind. Two ways it would
+/// not, both reachable from an *honest* producer, and both permanent because
+/// the import advances the watermark past the range whose metadata would have
+/// repaired them:
+///
+///  * **A parent that is in no section.** The export publishes only rows a
+///    revision vouches for, and a ghost folder has no revision by definition —
+///    that is what makes it a ghost. The files inside it do have revisions, so
+///    they travel and their parent does not. Nothing in this app lists a file
+///    except by its parent, so such a file is in the database and in no
+///    folder. Every `parentFolderId` this merge writes is therefore resolved
+///    before the first statement runs, and one that resolves neither in the
+///    payload nor in this database is *materialised* — see
+///    [_ghostFolderStandIn]. Materialised here rather than carried, because a
+///    fabricated row must never travel: it is stamped `now` and would outrank
+///    every real row in every client that imported it
+///    (`_folderEntryCameFromChain`).
+///  * **A `rootFolderId` that is in no section.** [_driveCompanion] adopts the
+///    payload's `rootFolderId`, and `DriveDao` records what a missing root
+///    folder row costs: `watchFolderContents` drops it with a `.where` and its
+///    combined stream never emits, stranding the explorer on a spinner that
+///    nothing retries, while `getFolderTree` throws outright. A payload naming
+///    a root this client cannot resolve either is **refused**, not repaired —
+///    see [_merge]. Inventing that row would leave the drive opening onto an
+///    empty folder while its real contents hang off the root it used to have,
+///    for ever: coverage equals the watermark the import just wrote, and the
+///    rollback guard only declines *lower* coverage, so the same payload
+///    re-applies on every sync and undoes what `updateUserDrives` repaired.
+///    Refusing costs one ordinary sync and leaves the drive correct.
 ///
 /// ## The watermark
 ///
@@ -542,29 +611,112 @@ class DriveStateImporter {
           await _lastUpdatedById(folderEntries, driveId: driveId);
       final localFiles = await _lastUpdatedById(fileEntries, driveId: driveId);
 
+      // Which folder rows a revision vouches for, on each side. The payload's
+      // half is read from the payload rather than assumed from the export's
+      // filter: an importer checks what arrived, it does not trust the
+      // producer to have run the code it was supposed to.
+      final localVouchedFolders = await _folderIdsWithRevisions(driveId);
+      final artifactVouchedFolders =
+          export.folderRevisions.map((r) => r.folderId).toSet();
+
+      // The drive's own row follows the same rule as every other row, and the
+      // answer is needed here rather than at the write because it decides
+      // which `rootFolderId` the drive ends the import with — which is the
+      // one that has to resolve.
+      final overwriteDriveMetadata =
+          !local.lastUpdated.isAfter(export.drive.lastUpdated);
+      final rootFolderId = overwriteDriveMetadata
+          ? export.drive.rootFolderId
+          : local.rootFolderId;
+
+      final carriedFolderIds = export.folders.map((f) => f.id).toSet();
+
+      /// Whether a folder id names a row that will exist when this merge ends,
+      /// without anything being invented for it.
+      bool resolves(String folderId) =>
+          carriedFolderIds.contains(folderId) ||
+          localFolders.containsKey(folderId);
+
+      // The row graph, checked before the first write. A drive whose
+      // `rootFolderId` names nothing cannot be opened at all, and this is the
+      // one such row that must not be materialised: see the class comment.
+      // Only checked when the payload's value is the one being adopted — a
+      // local `rootFolderId` that resolves nowhere is this client's own
+      // pre-existing defect, and refusing an artifact over it would decline
+      // the very thing that could repair the drive.
+      if (overwriteDriveMetadata && !resolves(rootFolderId)) {
+        return DriveStateImportResult.rejected(
+          DriveStateOutcome.integrityFailed,
+          'the payload\'s drive row names root folder $rootFolderId, which no '
+          'section carries and this client does not hold',
+        );
+      }
+
       var kept = 0;
 
       bool artifactWins(
         String id,
         DateTime lastUpdated,
-        Map<String, DateTime> known,
-      ) {
+        Map<String, DateTime> known, {
+        bool localRowIsAStandIn = false,
+      }) {
         final localLastUpdated = known[id];
-        if (localLastUpdated != null && localLastUpdated.isAfter(lastUpdated)) {
+        if (localLastUpdated == null) return true;
+        if (localRowIsAStandIn) return true;
+        if (localLastUpdated.isAfter(lastUpdated)) {
           kept++;
           return false;
         }
         return true;
       }
 
-      final folderRows = export.folders
-          .where((f) => artifactWins(f.id, f.lastUpdated, localFolders))
-          .map(_folderCompanion)
+      final folders = export.folders
+          .where((f) => artifactWins(
+                f.id,
+                f.lastUpdated,
+                localFolders,
+                localRowIsAStandIn: _folderStandInLoses(
+                  folderId: f.id,
+                  artifactVouched: artifactVouchedFolders,
+                  localVouched: localVouchedFolders,
+                ),
+              ))
           .toList();
 
-      final fileRows = export.files
+      final files = export.files
           .where((f) => artifactWins(f.id, f.lastUpdated, localFiles))
-          .map(_fileCompanion)
+          .toList();
+
+      final folderRows = folders.map(_folderCompanion).toList();
+      final fileRows = files.map(_fileCompanion).toList();
+
+      // Every parent this merge is about to write, that resolves nowhere.
+      final unresolvedParents = <String>{
+        ...folders.map((f) => f.parentFolderId).whereType<String>(),
+        ...files.map((f) => f.parentFolderId),
+      }..removeWhere(resolves);
+
+      // A stand-in is parented to the drive's root folder, exactly as
+      // `SyncRepository.createGhosts` parents one - so the root has to resolve
+      // too, or the stand-in is an orphan of the kind it was written to fix.
+      // Only reachable when the payload's `rootFolderId` was *not* adopted:
+      // the guard above refuses the case where it was.
+      if (unresolvedParents.isNotEmpty && !resolves(rootFolderId)) {
+        unresolvedParents.add(rootFolderId);
+      }
+
+      final standInFolderRows = unresolvedParents
+          .map((id) => id == rootFolderId
+              ? _rootFolderStandIn(
+                  driveId: driveId,
+                  rootFolderId: id,
+                  name: export.drive.name,
+                )
+              : _ghostFolderStandIn(
+                  driveId: driveId,
+                  folderId: id,
+                  parentFolderId: rootFolderId,
+                ))
           .toList();
 
       // The revisions the entries above are versions of, and the licences
@@ -630,6 +782,14 @@ class DriveStateImporter {
           mode: InsertMode.insertOrIgnore,
         );
         b.insertAllOnConflictUpdate(folderEntries, folderRows);
+        // `insertOrIgnore`, never an upsert: a stand-in is this client's guess
+        // and must lose to anything real, including a row another statement in
+        // this same batch landed.
+        b.insertAll(
+          folderEntries,
+          standInFolderRows,
+          mode: InsertMode.insertOrIgnore,
+        );
         b.insertAllOnConflictUpdate(fileEntries, fileRows);
       });
 
@@ -656,15 +816,14 @@ class DriveStateImporter {
         _driveCompanion(
           export.drive,
           watermark: watermark,
-          // The drive's own row follows the same rule as every other row.
-          overwriteMetadata:
-              !local.lastUpdated.isAfter(export.drive.lastUpdated),
+          overwriteMetadata: overwriteDriveMetadata,
         ),
       );
 
       return DriveStateImportResult.imported(
         DriveStateImportStats(
           foldersWritten: folderRows.length,
+          foldersMaterialised: standInFolderRows.length,
           filesWritten: fileRows.length,
           revisionsWritten: revisionsWritten,
           licensesWritten: licensesWritten,
@@ -698,6 +857,22 @@ class DriveStateImporter {
     return {
       for (final row in rows) row.read(id)!: row.read(lastUpdated)!,
     };
+  }
+
+  /// The folder ids this database holds a `folder_revisions` row for.
+  ///
+  /// The local half of [_folderStandInLoses]. Read as a set of ids rather than
+  /// as an existence check per contested row, because the contested rows are
+  /// counted in tens of thousands and this is one statement either way.
+  Future<Set<String>> _folderIdsWithRevisions(String driveId) async {
+    final revisions = _driveDao.folderRevisions;
+
+    final rows = await (_driveDao.selectOnly(revisions, distinct: true)
+          ..addColumns([revisions.folderId])
+          ..where(revisions.driveId.equals(driveId)))
+        .get();
+
+    return {for (final row in rows) row.read(revisions.folderId)!};
   }
 
   /// How many rows [table] holds for one drive.
@@ -788,6 +963,109 @@ FolderEntriesCompanion _folderCompanion(ExportedFolderEntry folder) =>
       customJsonMetadata: Value(folder.customJsonMetadata),
       customGQLTags: Value(folder.customGQLTags),
       isHidden: Value(folder.isHidden),
+    );
+
+/// Whether the local `folder_entries` row for [folderId] is a stand-in that
+/// must give way to the artifact's copy whatever the two timestamps say.
+///
+/// The merge's ordinary rule is *the newer `lastUpdated` wins*, and for a
+/// folder that rule is decided against a number the consumer made up. This
+/// client fabricates exactly two kinds of `folder_entries` row, and both are
+/// stamped with the moment they were written rather than with anything from
+/// the chain:
+///
+///  * a **ghost**, when a file names a parent whose own metadata was never
+///    read (`SyncRepository.createGhosts`, `DateTime.now()`);
+///  * a **root folder placeholder**, so a drive can be opened before its root
+///    folder metadata arrives (`DriveDao._rootFolderPlaceholder`, which sets
+///    no timestamp and so takes SQLite's `strftime('%s','now')`).
+///
+/// The artifact's genuine row carries its revision's chain commit time, which
+/// is older by construction. So the timestamp comparison hands every one of
+/// these contests to the stand-in, permanently: the artifact is immutable, and
+/// the import advances the watermark past the range whose metadata would have
+/// let sync heal it. A drive keeps a uuid-named folder parented to its root
+/// and can never be told the real name.
+///
+/// The discriminator is the one the export already uses in the other
+/// direction (`_folderEntryCameFromChain`): a revision is written only when
+/// real metadata was read, so a row with no revision behind it is a guess. A
+/// row the artifact vouches for with a revision therefore beats a local row
+/// nothing vouches for — and nothing else changes, so a genuine local row that
+/// is newer still wins, and equal ages still go to the artifact.
+///
+/// **Scoped to `folder_entries` on purpose.** The mirror rule for files would
+/// be wrong: no code path fabricates a `file_entries` row (the same conclusion
+/// `_fileEntryCameFromChain` records), so an unvouched local file row is not a
+/// stand-in — it is an ordinary row whose revision this client has yet to
+/// write. Overwriting it would undo a local rename or a local upload. The
+/// asymmetry with the export is deliberate: over-applying the filter there
+/// omits a row from a payload, over-applying it here destroys one.
+bool _folderStandInLoses({
+  required String folderId,
+  required Set<String> artifactVouched,
+  required Set<String> localVouched,
+}) =>
+    artifactVouched.contains(folderId) && !localVouched.contains(folderId);
+
+/// A stand-in for a folder the payload's rows name as a parent and no section
+/// carries.
+///
+/// The same row `SyncRepository.createGhosts` writes, deliberately: named
+/// after its own uuid, parented to the drive root, `isGhost: true`, stamped
+/// now. Matching it is the whole point — the ghost UI, the **Fix** flow and
+/// the sync path that later replaces the row all key off exactly this shape,
+/// and a second kind of placeholder would need a second set of all three.
+///
+/// The consumer therefore ends up where the producer already is: a ghost
+/// folder with a Fix button, holding its files. Without it the files are in
+/// the database and in no folder — nothing in this app lists a file except by
+/// its parent — and no later sync repairs them, because the import moved the
+/// watermark past the metadata that registered the ghost in the first place.
+///
+/// Parenting every stand-in at the drive root, rather than at whatever named
+/// it, is also `createGhosts`' behaviour and is what makes this terminate: a
+/// stand-in introduces no new unresolved parent, so one pass closes a graph of
+/// any depth — a ghost inside a ghost included.
+FolderEntriesCompanion _ghostFolderStandIn({
+  required String driveId,
+  required String folderId,
+  required String parentFolderId,
+}) =>
+    FolderEntriesCompanion.insert(
+      id: folderId,
+      driveId: driveId,
+      parentFolderId: Value(parentFolderId),
+      name: folderId,
+      path: '',
+      isGhost: const Value(true),
+      isHidden: const Value(false),
+      dateCreated: Value(DateTime.now()),
+      lastUpdated: Value(DateTime.now()),
+    );
+
+/// A stand-in for the drive's own root folder.
+///
+/// `DriveDao._rootFolderPlaceholder`'s row, for its reasons: **not** marked
+/// `isGhost`, because the upsert that lands the real metadata leaves absent
+/// columns alone and the flag would stick for ever; and with no
+/// `parentFolderId`, because [_ghostFolderStandIn] points a stand-in at the
+/// drive root, which for the root itself would be a self-reference. That is
+/// also why `createGhosts` excludes root folders.
+///
+/// Only reached when the drive is keeping its *own* `rootFolderId` — the
+/// payload's is refused when it resolves nowhere, rather than materialised.
+FolderEntriesCompanion _rootFolderStandIn({
+  required String driveId,
+  required String rootFolderId,
+  required String name,
+}) =>
+    FolderEntriesCompanion.insert(
+      id: rootFolderId,
+      driveId: driveId,
+      name: name,
+      isHidden: const Value(false),
+      path: '',
     );
 
 /// Every column of `drive_revisions`, named.
@@ -884,11 +1162,29 @@ LicensesCompanion _licenseCompanion(ExportedLicense license) =>
 ///    to avoid. An artifact that imported in one decryption and then triggered
 ///    a full confirmation sweep would have saved nothing.
 ///
-/// The residual case is a producer that published while one of its own uploads
-/// was still unmined. Its consumer would show that one file as confirmed when
-/// it is not, and find out at download time. That is a narrow and recoverable
-/// wrong answer; the alternative is a wrong answer about every file in the
-/// drive, every time.
+/// The residual case is wider than "still unmined", and it is worth stating
+/// exactly, because the export joins nothing to `network_transactions`: a
+/// revision travels whatever status the producer held for it. So this confirms
+/// every transaction the producer had **not** confirmed at publication —
+/// `pending`, and `failed` too. A consumer shows those files as confirmed and
+/// finds out at download time, and nothing re-checks: `pendingTransactions`
+/// (`lib/models/queries/drive_queries.drift`) selects `status = 'pending'`
+/// only, so a row written straight to `confirmed` is never revisited.
+///
+/// Narrowing it would have to happen in the export, by not publishing a
+/// revision whose transaction this client calls `failed`, and that is worse
+/// than the wrong status. `failed` is not an authority: `SyncRepository
+/// ._updateTransactionStatuses` sets it when a gateway reported the id
+/// not-found for longer than a threshold, which a gateway can do about a
+/// transaction that is perfectly well on chain. Dropping such rows would omit
+/// real files from the payload while the import still advances the watermark
+/// past the range their metadata lives in — turning a wrong icon into a file
+/// the consumer can never see. That is the failure this file's row-graph
+/// section exists to prevent, arrived at from the other side.
+///
+/// So the row travels and its status is the thing that is wrong, deliberately:
+/// a recoverable wrong answer about the producer's own unconfirmed uploads,
+/// against a wrong answer about every file in the drive, every time.
 ///
 /// The true statuses are in the producer's `network_transactions`, which
 /// cannot travel: it has no `driveId`, so publishing it would publish rows
