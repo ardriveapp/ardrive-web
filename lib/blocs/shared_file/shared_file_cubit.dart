@@ -326,7 +326,16 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     final resolution = _resolution;
     final fileKey = _lastAttemptedFileKey;
 
-    emit(current.copyWith(activityStatus: SharedFileActivityStatus.loading));
+    emit(current.copyWith(
+      activityStatus: SharedFileActivityStatus.loading,
+      // The version the link named is already in hand - it is what the page is
+      // showing. It renders the moment the list is opened, and the rest of the
+      // history fills in around it, so expanding never costs a wait and a
+      // failed lookup never empties the list.
+      activityRevisions: current.activityRevisions.isEmpty
+          ? [current.sharedRevision]
+          : current.activityRevisions,
+    ));
 
     try {
       final entities = await _bounded(
@@ -369,6 +378,45 @@ class SharedFileCubit extends Cubit<SharedFileState> {
         emit(latest.copyWith(activityStatus: SharedFileActivityStatus.failed));
       }
     }
+  }
+
+  /// Makes [revision] what the page shows and downloads.
+  ///
+  /// The version list's own action. [showLatestRevision] and
+  /// [showSharedRevision] remain the banner's two shortcuts; this is the
+  /// general case behind them, so a recipient can pick any version the file
+  /// has rather than only the two the page happens to offer.
+  ///
+  /// The banner stays honest afterwards because "a newer version exists" is
+  /// re-derived from where the selection landed: on the newest revision there
+  /// is nothing newer to offer, and on any older one there is.
+  ///
+  /// Selecting is deliberate, so unlike the freshness check it *does* move the
+  /// download target - that is the whole point of the control. Nothing moves it
+  /// on the recipient's behalf.
+  Future<void> showRevision(FileRevision revision) async {
+    final current = state;
+
+    if (current is! SharedFileLoadSuccess) {
+      return;
+    }
+
+    // Already the target. Re-emitting would drop the license for no reason.
+    if (revision.dataTxId == current.revision.dataTxId) {
+      return;
+    }
+
+    final history = current.activityRevisions;
+    final isNewest =
+        history.isNotEmpty && revision.dataTxId == history.first.dataTxId;
+
+    emit(_withTarget(current, revision, showsLatestRevision: isNewest));
+
+    await _fetchLicense(
+      revision,
+      current.ownerAddress,
+      resolution: _resolution,
+    );
   }
 
   /// Takes the file's newest revision as what the page shows and downloads.
